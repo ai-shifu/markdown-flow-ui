@@ -11,9 +11,13 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@types/unist": "^3.0.3",
     "next": "15.3.5",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
+    "unist": "^0.0.1",
+    "unist-util-visit": "^5.0.0"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^4.0.1",

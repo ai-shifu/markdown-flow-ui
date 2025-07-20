@@ -14,7 +14,7 @@ interface CustomButtonNode {
 
 type CustomButtonProps = {
   node: CustomButtonNode
-  onClick?: (value: string) => void
+  onButtonClick?: (value: string) => void
 }
 
 interface ComponentsWithCustomButton extends Components {
@@ -22,13 +22,13 @@ interface ComponentsWithCustomButton extends Components {
 }
 
 // 定义自定义按钮组件
-const CustomButton = ({ node, onClick }: CustomButtonProps) => {
+const CustomButton = ({ node, onButtonClick }: CustomButtonProps) => {
   return createElement(
     'button',
     {
       className: 'custom-button',
       onClick: () => {
-        onClick?.(node.properties?.value || '')
+        onButtonClick?.(node.properties?.value || '')
         console.log('CustomButton clicked', node.properties?.value)
       }
     },

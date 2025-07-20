@@ -1,1 +1,2 @@
-export * from './ContentRender';
+import ContentRender from './ContentRender'
+export default ContentRender

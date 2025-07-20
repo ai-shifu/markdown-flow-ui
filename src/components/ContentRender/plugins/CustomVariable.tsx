@@ -15,7 +15,7 @@ interface CustomVariableNode {
 // 定义自定义按钮组件的 Props 类型
 interface CustomVariableProps {
   node: CustomVariableNode
-  onVariableSetting?: (variable: string, value: string) => void
+  onVariableSet?: (variable: string, value: string) => void
 }
 
 interface ComponentsWithCustomVariable extends Components {
@@ -25,11 +25,11 @@ interface ComponentsWithCustomVariable extends Components {
 // 定义自定义按钮组件
 const CustomButtonInputVariable = ({
   node,
-  onVariableSetting
+  onVariableSet
 }: CustomVariableProps) => {
   const [inputValue, setInputValue] = React.useState('')
   const handleButtonClick = (value: string) => {
-    onVariableSetting?.(node.properties?.variableName || '', value)
+    onVariableSet?.(node.properties?.variableName || '', value)
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,7 +37,7 @@ const CustomButtonInputVariable = ({
   }
 
   const handleInputBlur = () => {
-    onVariableSetting?.(node.properties?.variableName || '', inputValue)
+    onVariableSet?.(node.properties?.variableName || '', inputValue)
   }
 
   return createElement(

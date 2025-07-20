@@ -12,17 +12,30 @@ import CustomButtonInputVariable, {
 
 // 定义组件 Props 类型
 interface ContentRenderProps {
-  content: string
+  content: string // 渲染的内容
+  customRenderBar?: React.ReactNode // 可选的自定义渲染栏
+  onButtonClick?: (buttonText: string) => void
+  onVariableSet?: (variableName: string, value: string) => void
 }
 
 // 扩展组件接口
 type CustomComponents = ComponentsWithCustomVariable &
   ComponentsWithCustomButton
 
-const ContentRender: React.FC<ContentRenderProps> = ({ content }) => {
+const ContentRender: React.FC<ContentRenderProps> = ({ 
+  content, 
+  customRenderBar,
+  onButtonClick, 
+  onVariableSet  // 新增解构
+}) => {
   const components: CustomComponents = {
-    'custom-variable': CustomButtonInputVariable,
-    'custom-button': CustomButton
+    'custom-variable': (props) => (
+      <CustomButtonInputVariable 
+        {...props} 
+        onVariableSet={onVariableSet}
+      />
+    ),
+    'custom-button': (props) => (<CustomButton {...props} onButtonClick={onButtonClick} />)
   }
 
   return (
@@ -36,6 +49,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({ content }) => {
       >
         {content}
       </ReactMarkdown>
+      {customRenderBar}
     </div>
   )
 }

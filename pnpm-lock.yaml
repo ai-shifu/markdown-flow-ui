@@ -23,6 +23,9 @@ importers:
       react-markdown:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.1.8)(react@19.1.0)
+      unified:
+        specifier: ^11.0.5
+        version: 11.0.5
       unist:
         specifier: ^0.0.1
         version: 0.0.1

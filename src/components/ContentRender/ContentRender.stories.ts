@@ -31,6 +31,8 @@ export const ContentRenderStory1: Story = {
   点击继续: ?[Continue]
   
   或者尝试: ?[确认提交]
+
+  或者尝试: ?[{{inputVariable}}确认提交]
   `,
   },
 };

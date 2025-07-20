@@ -1,36 +1,38 @@
 import React from 'react'
 import { createElement } from 'react'
-import type { Components } from 'react-markdown';
+import type { Components } from 'react-markdown'
 
 // 定义自定义按钮节点的类型
 interface CustomButtonNode {
-  type: 'customButton'
-  buttonText: string
-  data?: {
-    hName?: string
-    hProperties?: Record<string, any>
-    hChildren?: Array<{ type: string; value: string }>
+  type: 'element'
+  tagName: 'custom-button'
+  properties?: {
+    className?: string
+    value?: string
   }
 }
 
-// 定义自定义按钮组件的 Props 类型
-interface CustomButtonProps {
+type CustomButtonProps = {
   node: CustomButtonNode
+  onClick?: (value: string) => void
 }
 
 interface ComponentsWithCustomButton extends Components {
-  customButton?: React.ComponentType<CustomButtonProps>;
+  'custom-button': React.ComponentType<CustomButtonProps>
 }
 
 // 定义自定义按钮组件
-const CustomButton: React.FC<CustomButtonProps> = ({ node }) => {
+const CustomButton = ({ node, onClick }: CustomButtonProps) => {
   return createElement(
     'button',
     {
       className: 'custom-button',
-      onClick: () => alert(`Clicked: ${node.buttonText}`)
+      onClick: () => {
+        onClick?.(node.properties?.value || '')
+        console.log('CustomButton clicked', node.properties?.value)
+      }
     },
-    node.buttonText
+    `${node.properties?.value}`
   )
 }
 

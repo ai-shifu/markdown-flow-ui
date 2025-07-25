@@ -35,6 +35,13 @@ export const ContentRenderStory1: Story = {
   或者尝试: ?[%{{inputVariable}}确认提交]
 
   或者尝试: ?[%{{inputVariable}}...希望我怎么称呼你]
+
+  \`\`\`javascript
+function hello() {
+  console.log('Hello World!')
+  return true
+}
+
   `,
   },
 };

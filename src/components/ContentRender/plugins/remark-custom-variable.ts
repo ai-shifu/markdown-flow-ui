@@ -14,16 +14,16 @@ interface CustomVariableNode extends Node {
 
 // 调整正则顺序，优先匹配变量格式
 const FORMAT_REGEXES = [
-  // 格式1: ?[{{variable}}button1|button2|...placeholder] (最复杂格式优先)
+  // 格式1: ?[%{{variable}}button1|button2|...placeholder] (最复杂格式优先)
   /\?\[\%\{\{(\w+)\}\}([^\|\]]+(?:\|[^\|\]]+)*)\|\.\.\.([^\]]+)\]/,
 
-  // 格式2: ?[{{variable}}button1|button2]
+  // 格式2: ?[%{{variable}}button1|button2]
   /\?\[\%\{\{(\w+)\}\}([^\|\]]+(?:\|[^\|\]]+)+)\]/,
 
-  // 格式3: ?[{{variable}}button]
+  // 格式3: ?[%{{variable}}button]
   /\?\[\%\{\{(\w+)\}\}([^\|\]]+)\]/,
 
-  // 格式4: ?[{{variable}}...placeholder]
+  // 格式4: ?[%{{variable}}...placeholder]
   /\?\[\%\{\{(\w+)\}\}\.\.\.([^\]]+)\]/
 ]
 

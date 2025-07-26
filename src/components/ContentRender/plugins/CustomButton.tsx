@@ -23,7 +23,11 @@ interface ComponentsWithCustomButton extends Components {
 }
 
 // 定义自定义按钮组件
-const CustomButton = ({ node, defaultButtonText ,onSend }: CustomButtonProps) => {
+const CustomButton = ({
+  node,
+  defaultButtonText,
+  onSend
+}: CustomButtonProps) => {
   const { buttonText, ...restProps } = node.properties || {}
 
   const handleButtonClick = () => {
@@ -36,7 +40,9 @@ const CustomButton = ({ node, defaultButtonText ,onSend }: CustomButtonProps) =>
       disabled={defaultButtonText !== undefined}
       size='sm'
       onClick={handleButtonClick}
-      className="cursor-pointer h-6 text-sm"
+      className={`cursor-pointer h-6 text-sm hover:bg-gray-200 ${
+        defaultButtonText === buttonText ? 'bg-black text-white' : ''
+      }`}
       {...restProps}
     >
       {buttonText}

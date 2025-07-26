@@ -70,7 +70,7 @@ const CustomButtonInputVariable = ({
           type='button'
           size='sm'
           onClick={() => handleButtonClick(text)}
-          className={`cursor-pointer h-6 text-sm ${
+          className={`cursor-pointer h-6 text-sm hover:bg-gray-200 ${
             defaultButtonText === text ? 'bg-black text-white' : ''
           }`}
         >

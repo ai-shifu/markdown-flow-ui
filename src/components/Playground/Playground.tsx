@@ -17,7 +17,7 @@ const ChatSSEComponent: React.FC<ChatSSEComponentProps> = ({
     useMarkdownInfo(originContent)
 
   const { block_count, interaction_blocks } = markdownInfo || {}
-  console.log('markdownInfo', markdownInfo)
+
   const [currentBlockIndex, setCurrentBlockIndex] = useState<number>(0)
   const [contentList, setContentList] = useState<ContentRenderProps[]>([])
 
@@ -110,6 +110,7 @@ const ChatSSEComponent: React.FC<ChatSSEComponentProps> = ({
         } else {
           empList[currentBlockIndex].content = totalContent
         }
+        console.log('empList', empList)
         setContentList(empList)
       } catch (error) {
         console.error('Error processing SSE message:', error)
@@ -139,6 +140,10 @@ const ChatSSEComponent: React.FC<ChatSSEComponentProps> = ({
       user_input: params.inputText || params.buttonText,
       variables: newVariables
     })
+    const newContentList = [...contentList]
+    contentList[currentBlockIndex].defaultInputText = params.inputText
+    contentList[currentBlockIndex].defaultButtonText = params.buttonText
+    setContentList(newContentList)
   }
 
   return (

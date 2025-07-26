@@ -1,5 +1,5 @@
 import React from 'react'
-import { createElement } from 'react'
+import { Button } from "@/components/ui/button"
 import type { Components } from 'react-markdown'
 
 // 定义自定义按钮节点的类型
@@ -9,6 +9,8 @@ interface CustomButtonNode {
   properties?: {
     className?: string
     value?: string
+    variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
+    size?: 'default' | 'sm' | 'lg' | 'icon'
   }
 }
 
@@ -23,16 +25,21 @@ interface ComponentsWithCustomButton extends Components {
 
 // 定义自定义按钮组件
 const CustomButton = ({ node, onButtonClick }: CustomButtonProps) => {
-  return createElement(
-    'button',
-    {
-      className: 'custom-button',
-      onClick: () => {
-        onButtonClick?.(node.properties?.value || '')
-        console.log('CustomButton clicked', node.properties?.value)
-      }
-    },
-    `${node.properties?.value}`
+  const { value, className, variant, size, ...restProps } = node.properties || {}
+  
+  return (
+    <Button
+      variant={variant || 'default'}
+      size={size || 'sm'}
+      onClick={() => {
+        onButtonClick?.(value || '')
+        console.log('CustomButton clicked', value)
+      }}
+      className={className}
+      {...restProps}
+    >
+      {value}
+    </Button>
   )
 }
 

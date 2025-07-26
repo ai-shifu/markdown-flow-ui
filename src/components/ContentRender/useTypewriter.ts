@@ -4,6 +4,7 @@ interface UseTypewriterProps {
   content: string
   typingSpeed?: number
   isStreaming?: boolean
+  disabled?: boolean // 添加这个参数来禁用打字机效果
 }
 
 interface UseTypewriterReturn {
@@ -16,7 +17,8 @@ interface UseTypewriterReturn {
 const useTypewriter = ({
   content,
   typingSpeed = 30,
-  isStreaming = false
+  isStreaming = false,
+  disabled = false // 默认不禁用
 }: UseTypewriterProps): UseTypewriterReturn => {
   const [displayContent, setDisplayContent] = useState<string>('')
   const [isTyping, setIsTyping] = useState<boolean>(false)
@@ -66,6 +68,18 @@ const useTypewriter = ({
 
   // 处理内容变化
   useEffect(() => {
+    // 如果禁用了打字机效果，直接显示全部内容
+    if (disabled) {
+      clearTimer()
+      setDisplayContent(content)
+      setIsTyping(false)
+      // 更新引用以避免后续的流式更新问题
+      contentRef.current = content
+      indexRef.current = content.length
+      previousContentRef.current = content
+      return
+    }
+
     if (isStreaming) {
       // 流式模式：只处理新增内容
       if (content.length > previousContentRef.current.length) {
@@ -82,7 +96,7 @@ const useTypewriter = ({
     }
     
     previousContentRef.current = content
-  }, [content, isStreaming, start, typeWriter, clearTimer])
+  }, [content, isStreaming, start, typeWriter, clearTimer, disabled])
 
   // 组件卸载时清理
   useEffect(() => {

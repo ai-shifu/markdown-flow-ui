@@ -22,6 +22,7 @@ interface ContentRenderProps {
   onButtonClick?: (buttonText: string) => void
   onVariableSet?: (variableName: string, value: string) => void
   typingSpeed?: number
+  disableTyping?: boolean
   isStreaming?: boolean
 }
 
@@ -35,13 +36,16 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   onButtonClick,
   onVariableSet,
   typingSpeed = 30,
-  isStreaming = false
+  disableTyping = false,
+  isStreaming = false,
+  
 }) => {
   // 使用自定义Hook处理打字机效果
   const { displayContent, isTyping } = useTypewriter({
     content,
     typingSpeed,
-    isStreaming
+    isStreaming,
+    disabled: disableTyping
   })
 
   const components: CustomComponents = {

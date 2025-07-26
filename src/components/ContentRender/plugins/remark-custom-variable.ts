@@ -12,100 +12,171 @@ interface CustomVariableNode extends Node {
   }
 }
 
-// 调整正则顺序，优先匹配变量格式
-const FORMAT_REGEXES = [
-  // 格式1: ?[%{{variable}}button1|button2|...placeholder] (最复杂格式优先)
-  /\?\[\%\{\{(\w+)\}\}([^\|\]]+(?:\|[^\|\]]+)*)\|\.\.\.([^\]]+)\]/,
+// 定义格式类型枚举
+enum FormatType {
+  BUTTONS_WITH_PLACEHOLDER = 0,  // 按钮+占位符
+  BUTTONS_ONLY = 1,              // 只有按钮
+  SINGLE_BUTTON = 2,             // 单个按钮
+  PLACEHOLDER_ONLY = 3           // 只有占位符
+}
 
-  // 格式2: ?[%{{variable}}button1|button2]
-  /\?\[\%\{\{(\w+)\}\}([^\|\]]+(?:\|[^\|\]]+)+)\]/,
+// 定义匹配规则接口
+interface MatchRule {
+  regex: RegExp
+  type: FormatType
+}
 
-  // 格式3: ?[%{{variable}}button]
-  /\?\[\%\{\{(\w+)\}\}([^\|\]]+)\]/,
-
-  // 格式4: ?[%{{variable}}...placeholder]
-  /\?\[\%\{\{(\w+)\}\}\.\.\.([^\]]+)\]/
+// 配置化的匹配规则（调整顺序和逻辑）
+const MATCH_RULES: MatchRule[] = [
+  {
+    // 格式1: ?[%{{variable}} button1 | button2 | ... placeholder] (按钮+占位符，优先级最高)
+    regex: /\?\[\%\{\{\s*(\w+)\s*\}\}\s*([^\|\]]+(?:\s*\|\s*[^\|\]]+)*)\s*\|\s*\.\.\.\s*([^\]]+)\]/,
+    type: FormatType.BUTTONS_WITH_PLACEHOLDER
+  },
+  {
+    // 格式4: ?[%{{variable}} ... placeholder] (只有占位符，提高优先级)
+    regex: /\?\[\%\{\{\s*(\w+)\s*\}\}\s*\.\.\.\s*([^\]]+)\]/,
+    type: FormatType.PLACEHOLDER_ONLY
+  },
+  {
+    // 格式2: ?[%{{variable}} button1 | button2] (只有按钮)
+    regex: /\?\[\%\{\{\s*(\w+)\s*\}\}\s*([^\|\]]+(?:\s*\|\s*[^\|\]]+)+)\s*\]/,
+    type: FormatType.BUTTONS_ONLY
+  },
+  {
+    // 格式3: ?[%{{variable}} button] (单个按钮)
+    regex: /\?\[\%\{\{\s*(\w+)\s*\}\}\s*([^\|\]]+)\s*\]/,
+    type: FormatType.SINGLE_BUTTON
+  }
 ]
 
-export default function remarkCustomButtonInputVariable () {
+// 解析结果接口
+interface ParsedResult {
+  variableName: string
+  buttonTexts: string[]
+  placeholder?: string
+}
+
+/**
+ * 解析不同格式的内容
+ */
+function parseContentByType(match: RegExpExecArray, formatType: FormatType): ParsedResult {
+  const variableName = match[1].trim()
+  
+  switch (formatType) {
+    case FormatType.BUTTONS_WITH_PLACEHOLDER:
+      // ?[%{{variable}} button1 | button2 | ... placeholder]
+      return {
+        variableName,
+        buttonTexts: match[2].split('|').map(text => text.trim()).filter(text => text.length > 0),
+        placeholder: match[3].trim()
+      }
+
+    case FormatType.BUTTONS_ONLY:
+      // ?[%{{variable}} button1 | button2]
+      return {
+        variableName,
+        buttonTexts: match[2].split('|').map(text => text.trim()).filter(text => text.length > 0),
+        placeholder: undefined
+      }
+
+    case FormatType.SINGLE_BUTTON:
+      // ?[%{{variable}} button]
+      const buttonText = match[2].trim()
+      return {
+        variableName,
+        buttonTexts: buttonText ? [buttonText] : [],
+        placeholder: undefined
+      }
+
+    case FormatType.PLACEHOLDER_ONLY:
+      // ?[%{{variable}} ... placeholder]
+      return {
+        variableName,
+        buttonTexts: [],
+        placeholder: match[2].trim()
+      }
+
+    default:
+      throw new Error(`Unsupported format type: ${formatType}`)
+  }
+}
+
+/**
+ * 查找第一个匹配的规则
+ */
+function findFirstMatch(value: string): { match: RegExpExecArray; rule: MatchRule } | null {
+  for (const rule of MATCH_RULES) {
+    rule.regex.lastIndex = 0
+    const match = rule.regex.exec(value)
+    if (match) {
+      return { match, rule }
+    }
+  }
+  return null
+}
+
+/**
+ * 创建AST节点片段
+ */
+function createSegments(
+  value: string, 
+  startIndex: number, 
+  endIndex: number, 
+  parsedResult: ParsedResult
+): Array<Literal | CustomVariableNode> {
+  return [
+    {
+      type: 'text',
+      value: value.substring(0, startIndex)
+    } as Literal,
+    {
+      type: 'element',
+      data: {
+        hName: 'custom-variable',
+        hProperties: parsedResult
+      }
+    } as CustomVariableNode,
+    {
+      type: 'text',
+      value: value.substring(endIndex)
+    } as Literal
+  ]
+}
+
+export default function remarkCustomButtonInputVariable() {
   return (tree: Node) => {
     visit(
       tree,
       'text',
       (node: Literal, index: number | null, parent: Parent | null) => {
-        const value = node.value as string
+        // 输入验证
         if (index === null || parent === null) return
-        let match: RegExpExecArray | null = null
-        let formatType = 0
-        for (let i = 0; i < FORMAT_REGEXES.length; i++) {
-          const regex = FORMAT_REGEXES[i]
-          regex.lastIndex = 0
-          match = regex.exec(value)
-          if (match) {
-            formatType = i
-            break
-          }
-        }
+        
+        const value = node.value as string
+        const matchResult = findFirstMatch(value)
+        
+        if (!matchResult) return
 
-        if (!match) return
-
+        const { match, rule } = matchResult
         const startIndex = match.index
         const endIndex = startIndex + match[0].length
 
-        type Segment = Literal | CustomVariableNode
-
-        let variableName = ''
-        let buttonTexts: string[] = []
-        let placeholder: string | undefined = undefined
-
-        // 根据匹配的格式类型解析结果
-        switch (formatType) {
-          case 0: // ?[{{variable}}button1|button2|...placeholder]
-            variableName = match[1]
-            buttonTexts = match[2].split('|')
-            placeholder = match[3]
-            break
-
-          case 1: // ?[{{variable}}button1|button2]
-            variableName = match[1]
-            buttonTexts = match[2].split('|')
-            break
-
-          case 2: // ?[{{variable}}button]
-            variableName = match[1]
-            buttonTexts = [match[2]]
-            break
-          case 3: // ?[{{variable}}...placeholder]
-            variableName = match[1]
-            placeholder = match[2]
-            break
+        try {
+          // 解析匹配结果
+          const parsedResult = parseContentByType(match, rule.type)
+          
+          // 创建新的节点片段
+          const segments = createSegments(value, startIndex, endIndex, parsedResult)
+          
+          // 替换原节点
+          parent.children.splice(index, 1, ...segments)
+          
+        } catch (error) {
+          console.warn('Failed to parse custom variable syntax:', error)
+          // 如果解析失败，保持原样不处理
+          return
         }
-
-        const segments: Segment[] = [
-          {
-            type: 'text',
-            value: value.substring(0, startIndex)
-          } as Literal,
-          {
-            type: 'element',
-            data: {
-              hName: 'custom-variable',
-              value: variableName,
-              hProperties: { variableName, buttonTexts, placeholder },
-              hChildren: [
-                {
-                  type: 'text',
-                  value: value.substring(startIndex + 1, endIndex)
-                } as Literal
-              ]
-            }
-          } as CustomVariableNode,
-          {
-            type: 'text',
-            value: value.substring(endIndex)
-          } as Literal
-        ]
-        parent.children.splice(index, 1, ...segments)
       }
     )
   }

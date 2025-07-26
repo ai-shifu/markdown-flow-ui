@@ -74,7 +74,7 @@ export const ContentRenderStory2: Story = {
 用{{sys_user_style}}风格向性别是{{gender}}，名叫{{sys_user_nickname}}的用户讲课：
 反问用户看到下面的图是否会觉得不舒服？
 
-![AI 统治世界图](image_url)
+![AI 统治世界图](http://gips3.baidu.com/it/u=1821127123,1149655687&fm=3028&app=3028&f=JPEG&fmt=auto?w=720&h=1280)
 
 用同理心表示，不舒服是正常的，这是人类共同的反应
 问用户是不是真的是人类？如果是，请登录
@@ -107,7 +107,7 @@ export const ContentRenderStory3: Story = {
 
 ## 链接与图片
 [普通链接](https://example.com)
-![图片描述](image.jpg "标题")
+![图片描述](http://gips3.baidu.com/it/u=1821127123,1149655687&fm=3028&app=3028&f=JPEG&fmt=auto?w=720&h=1280)
 
 ## 引用块
 > 这是一个引用块
@@ -199,7 +199,7 @@ export const ContentRenderStory4: Story = {
 
 ## 链接与图片
 [普通链接](https://example.com)
-![图片描述](image.jpg "标题")
+![图片描述](http://gips3.baidu.com/it/u=1821127123,1149655687&fm=3028&app=3028&f=JPEG&fmt=auto?w=720&h=1280)
 
 ## 引用块
 > 这是一个引用块

@@ -1,6 +1,7 @@
 import React from 'react'
 import { Button } from "@/components/ui/button"
 import type { Components } from 'react-markdown'
+import { OnSendContentParams } from '@/components/types'
 
 // 定义自定义按钮节点的类型
 interface CustomButtonNode {
@@ -16,7 +17,7 @@ interface CustomButtonNode {
 
 type CustomButtonProps = {
   node: CustomButtonNode
-  onButtonClick?: (value: string) => void
+  onSend?: (content: OnSendContentParams) => void
 }
 
 interface ComponentsWithCustomButton extends Components {
@@ -24,7 +25,7 @@ interface ComponentsWithCustomButton extends Components {
 }
 
 // 定义自定义按钮组件
-const CustomButton = ({ node, onButtonClick }: CustomButtonProps) => {
+const CustomButton = ({ node, onSend }: CustomButtonProps) => {
   const { value, className, variant, size, ...restProps } = node.properties || {}
   
   return (
@@ -32,7 +33,7 @@ const CustomButton = ({ node, onButtonClick }: CustomButtonProps) => {
       variant={variant || 'default'}
       size={size || 'sm'}
       onClick={() => {
-        onButtonClick?.(value || '')
+        onSend?.({ buttonText: value || '' })
         console.log('CustomButton clicked', value)
       }}
       className={className}

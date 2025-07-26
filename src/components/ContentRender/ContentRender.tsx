@@ -14,13 +14,15 @@ import 'highlight.js/styles/github.css'
 import highlightLanguages from './utils/highlightLanguages'
 import useTypewriter from './useTypewriter'
 import './contentRender.css'
+import { OnSendContentParams } from '@/components/types'
+import "@/styles/globals.css";
+
 
 // 定义组件 Props 类型
 interface ContentRenderProps {
   content: string
   customRenderBar?: React.ReactNode
-  onButtonClick?: (buttonText: string) => void
-  onVariableSet?: (variableName: string, value: string) => void
+  onSend?: (content: OnSendContentParams) => void
   typingSpeed?: number
   disableTyping?: boolean
   isStreaming?: boolean
@@ -33,8 +35,7 @@ type CustomComponents = ComponentsWithCustomVariable &
 const ContentRender: React.FC<ContentRenderProps> = ({
   content,
   customRenderBar,
-  onButtonClick,
-  onVariableSet,
+  onSend,
   typingSpeed = 30,
   disableTyping = false,
   isStreaming = false,
@@ -50,10 +51,10 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
   const components: CustomComponents = {
     'custom-variable': props => (
-      <CustomButtonInputVariable {...props} onVariableSet={onVariableSet} />
+      <CustomButtonInputVariable {...props} onSend={onSend} />
     ),
     'custom-button': props => (
-      <CustomButton {...props} onButtonClick={onButtonClick} />
+      <CustomButton {...props} onSend={onSend} />
     ),
     // 自定义代码块组件以支持更好的高亮效果
     code: props => {

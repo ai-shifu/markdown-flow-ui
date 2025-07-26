@@ -1,19 +1,18 @@
 import React from 'react'
 import ContentRender from '../ContentRender'
+import { OnSendContentParams } from '@/components/types'
 
 // 定义组件 Props 类型
 interface MarkdownFlowProps {
   contents: string[]
   customRenderBar?: React.ReactNode // 可选的自定义渲染栏
-  onButtonClick?: (buttonText: string) => void
-  onVariableSet?: (variableName: string, value: string) => void
+  onSend?: (content: OnSendContentParams) => void // 用户操作后的回调
 }
 
 const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   contents,
   customRenderBar,
-  onButtonClick,
-  onVariableSet
+  onSend
 }) => {
   return (
     <div className='markdown-flow'>
@@ -22,8 +21,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
           key={index}
           content={content}
           customRenderBar={customRenderBar}
-          onButtonClick={onButtonClick}
-          onVariableSet={onVariableSet}
+          onSend={onSend}
         />
       ))}
     </div>

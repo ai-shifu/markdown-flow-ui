@@ -2,6 +2,7 @@ import React from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { Components } from 'react-markdown'
+import { OnSendContentParams } from '@/components/types'
 
 // 定义自定义变量节点的类型
 interface CustomVariableNode {
@@ -16,7 +17,7 @@ interface CustomVariableNode {
 // 定义自定义变量组件的 Props 类型
 interface CustomVariableProps {
   node: CustomVariableNode
-  onVariableSet?: (variable: string, value: string) => void
+  onSend?: (content: OnSendContentParams) => void
 }
 
 interface ComponentsWithCustomVariable extends Components {
@@ -26,12 +27,15 @@ interface ComponentsWithCustomVariable extends Components {
 // 定义自定义变量组件
 const CustomButtonInputVariable = ({
   node,
-  onVariableSet
+  onSend
 }: CustomVariableProps) => {
   const [inputValue, setInputValue] = React.useState('')
 
   const handleButtonClick = (value: string) => {
-    onVariableSet?.(node.properties?.variableName || '', value)
+    onSend?.({
+      variableName: node.properties?.variableName || '',
+      buttonText: value
+    })
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,7 +43,10 @@ const CustomButtonInputVariable = ({
   }
 
   const handleInputBlur = () => {
-    onVariableSet?.(node.properties?.variableName || '', inputValue)
+    onSend?.({
+      variableName: node.properties?.variableName || '',
+      inputText: inputValue
+    })
   }
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {

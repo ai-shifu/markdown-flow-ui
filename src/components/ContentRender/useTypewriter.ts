@@ -4,7 +4,7 @@ interface UseTypewriterProps {
   content: string
   typingSpeed?: number
   isStreaming?: boolean
-  disabled?: boolean // 添加这个参数来禁用打字机效果
+  disabled?: boolean
 }
 
 interface UseTypewriterReturn {
@@ -18,7 +18,7 @@ const useTypewriter = ({
   content,
   typingSpeed = 30,
   isStreaming = false,
-  disabled = false // 默认不禁用
+  disabled = false
 }: UseTypewriterProps): UseTypewriterReturn => {
   const [displayContent, setDisplayContent] = useState<string>('')
   const [isTyping, setIsTyping] = useState<boolean>(false)
@@ -35,16 +35,49 @@ const useTypewriter = ({
     }
   }, [])
 
+  // 更安全的字符处理函数
+  const getCharacterAt = useCallback((str: string, index: number): string => {
+    // 处理代理对（surrogate pairs）- 用于emoji和其他Unicode字符
+    if (index >= str.length) return ''
+    
+    const char = str.charAt(index)
+    // 检查是否是代理对的开始
+    if (char >= '\uD800' && char <= '\uDBFF' && index + 1 < str.length) {
+      const nextChar = str.charAt(index + 1)
+      if (nextChar >= '\uDC00' && nextChar <= '\uDFFF') {
+        return char + nextChar // 返回完整的代理对
+      }
+    }
+    return char
+  }, [])
+
+  // 获取下一个字符的长度（用于正确递增索引）
+  const getCharacterLength = useCallback((str: string, index: number): number => {
+    if (index >= str.length) return 0
+    
+    const char = str.charAt(index)
+    if (char >= '\uD800' && char <= '\uDBFF' && index + 1 < str.length) {
+      const nextChar = str.charAt(index + 1)
+      if (nextChar >= '\uDC00' && nextChar <= '\uDFFF') {
+        return 2
+      }
+    }
+    return 1
+  }, [])
+
   // 打字机核心逻辑
   const typeWriter = useCallback(() => {
     if (indexRef.current < contentRef.current.length) {
-      setDisplayContent(prev => prev + contentRef.current.charAt(indexRef.current))
-      indexRef.current++
+      const char = getCharacterAt(contentRef.current, indexRef.current)
+      const charLength = getCharacterLength(contentRef.current, indexRef.current)
+      
+      setDisplayContent(prev => prev + char)
+      indexRef.current += charLength
       timerRef.current = setTimeout(typeWriter, typingSpeed)
     } else {
       setIsTyping(false)
     }
-  }, [typingSpeed])
+  }, [typingSpeed, getCharacterAt, getCharacterLength])
 
   // 重置打字机
   const reset = useCallback(() => {
@@ -73,7 +106,6 @@ const useTypewriter = ({
       clearTimer()
       setDisplayContent(content)
       setIsTyping(false)
-      // 更新引用以避免后续的流式更新问题
       contentRef.current = content
       indexRef.current = content.length
       previousContentRef.current = content
@@ -81,7 +113,6 @@ const useTypewriter = ({
     }
 
     if (isStreaming) {
-      // 流式模式：只处理新增内容
       if (content.length > previousContentRef.current.length) {
         clearTimer()
         const newContent = content.slice(previousContentRef.current.length)

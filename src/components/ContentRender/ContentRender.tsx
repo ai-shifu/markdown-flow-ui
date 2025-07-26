@@ -11,17 +11,16 @@ import CustomButtonInputVariable, {
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import 'highlight.js/styles/github.css'
-import highlightLanguages from './utils/highlightLanguages'
+import { highlightLanguages, subsetLanguages } from './utils/highlightLanguages'
 import useTypewriter from './useTypewriter'
 import './contentRender.css'
-import { OnSendContentParams } from '@/components/types'
-import "@/styles/globals.css";
-
+import { OnSendContentParams, CustomRenderBarProps } from '@/components/types'
+import '@/styles/globals.css'
 
 // 定义组件 Props 类型
 interface ContentRenderProps {
   content: string
-  customRenderBar?: React.ReactNode
+  customRenderBar?: CustomRenderBarProps
   onSend?: (content: OnSendContentParams) => void
   typingSpeed?: number
   disableTyping?: boolean
@@ -38,8 +37,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   onSend,
   typingSpeed = 30,
   disableTyping = false,
-  isStreaming = false,
-  
+  isStreaming = false
 }) => {
   // 使用自定义Hook处理打字机效果
   const { displayContent, isTyping } = useTypewriter({
@@ -53,9 +51,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     'custom-variable': props => (
       <CustomButtonInputVariable {...props} onSend={onSend} />
     ),
-    'custom-button': props => (
-      <CustomButton {...props} onSend={onSend} />
-    ),
+    'custom-button': props => <CustomButton {...props} onSend={onSend} />,
     // 自定义代码块组件以支持更好的高亮效果
     code: props => {
       const { inline, className, children, ...rest } = props as any
@@ -79,10 +75,11 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     td: ({ node, ...props }) => <td className='content-render-td' {...props} />,
     tr: ({ node, ...props }) => <tr className='content-render-tr' {...props} />,
     li: ({ node, ...props }) => {
-      const className = node?.properties?.className;
+      const className = node?.properties?.className
       const hasTaskListItem =
-        (typeof className === 'string' && className.includes('task-list-item')) ||
-        (Array.isArray(className) && className.includes('task-list-item'));
+        (typeof className === 'string' &&
+          className.includes('task-list-item')) ||
+        (Array.isArray(className) && className.includes('task-list-item'))
       if (hasTaskListItem) {
         return <li className='content-render-task-list-item' {...props} />
       }
@@ -116,18 +113,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
             rehypeHighlight,
             {
               languages: highlightLanguages,
-              subset: [
-                'javascript',
-                'typescript',
-                'python',
-                'java',
-                'html',
-                'css',
-                'json',
-                'bash',
-                'sql',
-                'markdown'
-              ]
+              subset: subsetLanguages
             }
           ]
         ]}
@@ -135,7 +121,12 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       >
         {displayContent}
       </ReactMarkdown>
-      {customRenderBar}
+      {customRenderBar &&
+        React.createElement(customRenderBar, {
+          content,
+          displayContent,
+          onSend
+        })}
       {isTyping && <span className='typing-cursor ml-1 animate-pulse'>|</span>}
     </div>
   )

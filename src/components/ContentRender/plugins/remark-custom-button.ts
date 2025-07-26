@@ -16,6 +16,7 @@ const BUTTON_REGEX = /\?\[([^\]]+)\]/
 
 export default function remarkCustomButton () {
   return (tree: Node) => {
+    console.log('remarkCustomButton', tree)
     visit(
       tree,
       'text',
@@ -42,7 +43,7 @@ export default function remarkCustomButton () {
             type: 'element',
             data: {
               hName: 'custom-button',
-              hProperties: { value: match[1] }
+              hProperties: { buttonText: match[1] }
             }
           } as CustomButtonNode,
           {

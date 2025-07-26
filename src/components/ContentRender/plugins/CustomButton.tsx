@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button'
 import type { Components } from 'react-markdown'
 import { OnSendContentParams } from '@/components/types'
 
@@ -8,10 +8,7 @@ interface CustomButtonNode {
   type: 'element'
   tagName: 'custom-button'
   properties?: {
-    className?: string
-    value?: string
-    variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
-    size?: 'default' | 'sm' | 'lg' | 'icon'
+    buttonText?: string
   }
 }
 
@@ -26,20 +23,21 @@ interface ComponentsWithCustomButton extends Components {
 
 // 定义自定义按钮组件
 const CustomButton = ({ node, onSend }: CustomButtonProps) => {
-  const { value, className, variant, size, ...restProps } = node.properties || {}
-  
+  const { buttonText, ...restProps } = node.properties || {}
+
+  const handleButtonClick = () => {
+    onSend?.({ buttonText: buttonText || '' })
+  }
+
   return (
     <Button
-      variant={variant || 'default'}
-      size={size || 'sm'}
-      onClick={() => {
-        onSend?.({ buttonText: value || '' })
-        console.log('CustomButton clicked', value)
-      }}
-      className={className}
+      variant='outline'
+      size='sm'
+      onClick={handleButtonClick}
+      className="cursor-pointer"
       {...restProps}
     >
-      {value}
+      {buttonText}
     </Button>
   )
 }

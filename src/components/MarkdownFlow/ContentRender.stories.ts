@@ -21,6 +21,7 @@ type Story = StoryObj<typeof meta>;
 
 export const MarkdownFlowStory1: Story = {
   args: {
-    contents: ['## 欢迎使用自定义按钮','dfddfdfdf','dfdfdfddfdf','## 欢迎使用自定义按钮','点击继续: ?[Continue]','或者尝试: ?[确认提交]','或者尝试: ?[{{inputVariable}}确认提交]'],
+    disableTyping: false,
+    contents: ['或者尝试: ?[确认提交]'],
   },
 };

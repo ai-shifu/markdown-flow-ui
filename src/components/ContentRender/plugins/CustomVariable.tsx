@@ -63,7 +63,7 @@ const CustomButtonInputVariable = ({
           variant="outline"
           size="sm"
           onClick={() => handleButtonClick(text)}
-          className="custom-variable-button"
+          className="cursor-pointer"
         >
           {text}
         </Button>

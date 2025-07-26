@@ -1,17 +1,23 @@
 import React from 'react'
 import ContentRender from '../ContentRender'
-import { OnSendContentParams } from '@/components/types'
+import { OnSendContentParams, CustomRenderBarProps } from '@/components/types'
 
 // 定义组件 Props 类型
 interface MarkdownFlowProps {
   contents: string[]
-  customRenderBar?: React.ReactNode // 可选的自定义渲染栏
+  customRenderBar?: CustomRenderBarProps
+  typingSpeed?: number
+  disableTyping?: boolean
+  isStreaming?: boolean
   onSend?: (content: OnSendContentParams) => void // 用户操作后的回调
 }
 
 const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   contents,
   customRenderBar,
+  disableTyping,
+  isStreaming = false,
+  typingSpeed = 30,
   onSend
 }) => {
   return (
@@ -22,6 +28,9 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
           content={content}
           customRenderBar={customRenderBar}
           onSend={onSend}
+          disableTyping={disableTyping}
+          isStreaming={isStreaming}
+          typingSpeed={typingSpeed}
         />
       ))}
     </div>

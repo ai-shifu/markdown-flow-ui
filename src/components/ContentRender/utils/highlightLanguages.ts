@@ -27,4 +27,17 @@ const highlightLanguages = {
   md: markdown
 }
 
-export default highlightLanguages
+const subsetLanguages = [
+  'javascript',
+  'typescript',
+  'python',
+  'java',
+  'html',
+  'css',
+  'json',
+  'bash',
+  'sql',
+  'markdown'
+]
+
+export { highlightLanguages, subsetLanguages }

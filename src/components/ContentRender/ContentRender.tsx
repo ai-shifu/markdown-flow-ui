@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkCustomButton from './plugins/remark-custom-button'
 import CustomButton, {
@@ -16,15 +16,19 @@ import useTypewriter from './useTypewriter'
 import './contentRender.css'
 import { OnSendContentParams, CustomRenderBarProps } from '@/components/types'
 import '@/styles/globals.css'
+import remarkBreaks from 'remark-breaks'
 
 // 定义组件 Props 类型
-interface ContentRenderProps {
+export interface ContentRenderProps  {
   content: string
   customRenderBar?: CustomRenderBarProps
   onSend?: (content: OnSendContentParams) => void
   typingSpeed?: number
   disableTyping?: boolean
   isStreaming?: boolean
+  defaultButtonText?: string
+  defaultVariableName?: string // 用户设置变量的名称
+  defaultInputText?: string // 用户输入的文本
 }
 
 // 扩展组件接口
@@ -37,8 +41,11 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   onSend,
   typingSpeed = 30,
   disableTyping = false,
-  isStreaming = false
+  isStreaming = false,
+  defaultButtonText,
+  defaultInputText
 }) => {
+
   // 使用自定义Hook处理打字机效果
   const { displayContent, isTyping } = useTypewriter({
     content,
@@ -49,10 +56,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
   const components: CustomComponents = {
     'custom-variable': props => (
-      <CustomButtonInputVariable {...props} onSend={onSend} />
+      <CustomButtonInputVariable {...props} defaultButtonText={defaultButtonText} defaultInputText={defaultInputText} onSend={onSend} />
     ),
-    'custom-button': props => <CustomButton {...props} onSend={onSend} />,
-    // 自定义代码块组件以支持更好的高亮效果
+    'custom-button': props => <CustomButton {...props} defaultButtonText={defaultButtonText} onSend={onSend} />,
     code: props => {
       const { inline, className, children, ...rest } = props as any
       const match = /language-(\w+)/.exec(className || '')
@@ -106,7 +112,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         remarkPlugins={[
           remarkGfm,
           remarkCustomButtonInputVariable,
-          remarkCustomButton
+          remarkCustomButton,
+          remarkBreaks
         ]}
         rehypePlugins={[
           [

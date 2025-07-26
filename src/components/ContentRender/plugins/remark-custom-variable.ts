@@ -26,11 +26,15 @@ interface MatchRule {
   type: FormatType
 }
 
-// 配置化的匹配规则（调整顺序和逻辑）
+// 定义分隔符（支持英文|和中文｜）
+const SEPARATOR = '[|｜]'  // 匹配英文|或中文｜
+const SEPARATOR_GLOBAL = new RegExp(SEPARATOR, 'g')
+
+// 配置化的匹配规则（调整顺序和逻辑，使用统一的分隔符）
 const MATCH_RULES: MatchRule[] = [
   {
     // 格式1: ?[%{{variable}} button1 | button2 | ... placeholder] (按钮+占位符，优先级最高)
-    regex: /\?\[\%\{\{\s*(\w+)\s*\}\}\s*([^\|\]]+(?:\s*\|\s*[^\|\]]+)*)\s*\|\s*\.\.\.\s*([^\]]+)\]/,
+    regex: new RegExp(`\\?\\[\\%\\{\\{\\s*(\\w+)\\s*\\}\\}\\s*([^\\]\\|｜]+(?:\\s*${SEPARATOR}\\s*[^\\]\\|｜]+)*)\\s*${SEPARATOR}\\s*\\.\\.\\.\\s*([^\\]]+)\\]`),
     type: FormatType.BUTTONS_WITH_PLACEHOLDER
   },
   {
@@ -40,12 +44,12 @@ const MATCH_RULES: MatchRule[] = [
   },
   {
     // 格式2: ?[%{{variable}} button1 | button2] (只有按钮)
-    regex: /\?\[\%\{\{\s*(\w+)\s*\}\}\s*([^\|\]]+(?:\s*\|\s*[^\|\]]+)+)\s*\]/,
+    regex: new RegExp(`\\?\\[\\%\\{\\{\\s*(\\w+)\\s*\\}\\}\\s*([^\\]\\|｜]+(?:\\s*${SEPARATOR}\\s*[^\\]\\|｜]+)+)\\s*\\]`),
     type: FormatType.BUTTONS_ONLY
   },
   {
     // 格式3: ?[%{{variable}} button] (单个按钮)
-    regex: /\?\[\%\{\{\s*(\w+)\s*\}\}\s*([^\|\]]+)\s*\]/,
+    regex: /\?\[\%\{\{\s*(\w+)\s*\}\}\s*([^\|\]｜]+)\s*\]/,
     type: FormatType.SINGLE_BUTTON
   }
 ]
@@ -68,7 +72,7 @@ function parseContentByType(match: RegExpExecArray, formatType: FormatType): Par
       // ?[%{{variable}} button1 | button2 | ... placeholder]
       return {
         variableName,
-        buttonTexts: match[2].split('|').map(text => text.trim()).filter(text => text.length > 0),
+        buttonTexts: match[2].split(SEPARATOR_GLOBAL).map(text => text.trim()).filter(text => text.length > 0),
         placeholder: match[3].trim()
       }
 
@@ -76,7 +80,7 @@ function parseContentByType(match: RegExpExecArray, formatType: FormatType): Par
       // ?[%{{variable}} button1 | button2]
       return {
         variableName,
-        buttonTexts: match[2].split('|').map(text => text.trim()).filter(text => text.length > 0),
+        buttonTexts: match[2].split(SEPARATOR_GLOBAL).map(text => text.trim()).filter(text => text.length > 0),
         placeholder: undefined
       }
 

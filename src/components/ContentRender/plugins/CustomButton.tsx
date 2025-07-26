@@ -14,6 +14,7 @@ interface CustomButtonNode {
 
 type CustomButtonProps = {
   node: CustomButtonNode
+  defaultButtonText?: string
   onSend?: (content: OnSendContentParams) => void
 }
 
@@ -22,7 +23,7 @@ interface ComponentsWithCustomButton extends Components {
 }
 
 // 定义自定义按钮组件
-const CustomButton = ({ node, onSend }: CustomButtonProps) => {
+const CustomButton = ({ node, defaultButtonText ,onSend }: CustomButtonProps) => {
   const { buttonText, ...restProps } = node.properties || {}
 
   const handleButtonClick = () => {
@@ -32,9 +33,10 @@ const CustomButton = ({ node, onSend }: CustomButtonProps) => {
   return (
     <Button
       variant='outline'
+      disabled={defaultButtonText !== undefined}
       size='sm'
       onClick={handleButtonClick}
-      className="cursor-pointer"
+      className="cursor-pointer h-6 text-sm"
       {...restProps}
     >
       {buttonText}

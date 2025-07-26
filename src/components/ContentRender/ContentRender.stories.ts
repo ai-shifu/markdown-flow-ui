@@ -179,10 +179,10 @@ $$
 export const ContentRenderStory4: Story = {
   args: {
     disableTyping: true,
-    content: `# Markdown 语法示例
+    content: `# Markdown 语法示例 \n\n ## 基础文本样式
+**粗体文本**、*斜体文本*、~~删除线文本~~、\`行内代码\` 
 
-## 基础文本样式
-**粗体文本**、*斜体文本*、~~删除线文本~~、\`行内代码\`
+?[%{{ sys_user_style }}幽默|大气|二次元｜...能否详细说明你偏好的风格特征]
 
 ## 列表
 ### 无序列表
@@ -265,5 +265,13 @@ $$
 
 ## 结束语
 以上展示了各种Markdown语法元素，包括自定义变量语法。`,
+  },
+};
+
+
+export const ContentRenderStory5: Story = {
+  args: {
+    disableTyping: true,
+    content: `#第一章 认识一下呀岗，很高兴能你～作为老师先热烈欢迎你加入这段的学习旅程你知道吗正在以前所未有的着我们的从智能手机，到自动驾驶汽车医疗诊断AI技能已经成为未来之钥匙 🔑！\n\nAI不仅能让你在脱颖而出，更重要的是它能帮我们更好地数字，用现实相信我，这让你受益学习体验✨\n\n对了，我你呢？希望堂课上不仅能知识，更能成为好朋友 😊[DONE]`,
   },
 };

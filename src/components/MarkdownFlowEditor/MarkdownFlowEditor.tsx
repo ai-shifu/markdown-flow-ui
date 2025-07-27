@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { markdown } from '@codemirror/lang-markdown';
-import { oneDark } from '@codemirror/theme-one-dark';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface MarkdownFlowEditorProps {
@@ -9,7 +8,7 @@ interface MarkdownFlowEditorProps {
   onChange?: (value: string) => void;
   className?: string;
   readOnly?: boolean;
-  maxWidth?: string; // 添加最大宽度属性
+  maxWidth?: string;
 }
 
 const MarkdownFlowEditor: React.FC<MarkdownFlowEditorProps> = ({

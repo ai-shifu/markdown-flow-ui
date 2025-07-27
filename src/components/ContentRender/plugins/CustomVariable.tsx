@@ -20,6 +20,7 @@ interface CustomVariableProps {
   node: CustomVariableNode
   defaultButtonText?: string
   defaultInputText?: string
+  readonly?: boolean
   onSend?: (content: OnSendContentParams) => void
 }
 
@@ -30,6 +31,7 @@ interface ComponentsWithCustomVariable extends Components {
 // 定义自定义变量组件
 const CustomButtonInputVariable = ({
   node,
+  readonly,
   defaultButtonText,
   defaultInputText,
   onSend
@@ -63,9 +65,7 @@ const CustomButtonInputVariable = ({
       {node.properties?.buttonTexts?.map((text, index) => (
         <Button
           key={index}
-          disabled={
-            defaultButtonText !== undefined || defaultInputText !== undefined
-          }
+          disabled={readonly}
           variant='outline'
           type='button'
           size='sm'
@@ -81,7 +81,7 @@ const CustomButtonInputVariable = ({
         <span className='text-sm flex rounded-md border'>
           <Input
             type='text'
-            disabled={defaultInputText !== undefined}
+            disabled={readonly}
             placeholder={node.properties?.placeholder}
             value={inputValue}
             onChange={handleInputChange}
@@ -98,6 +98,7 @@ const CustomButtonInputVariable = ({
             variant='ghost'
             size='icon'
             onClick={handleSendClick}
+            disabled={readonly}
             className='h-6 w-6 mr-1 hover:bg-gray-200'
           >
             <SendIcon className='h-4 w-4' />

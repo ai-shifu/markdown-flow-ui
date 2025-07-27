@@ -27,8 +27,8 @@ export interface ContentRenderProps  {
   disableTyping?: boolean
   isStreaming?: boolean
   defaultButtonText?: string
-  defaultVariableName?: string // 用户设置变量的名称
   defaultInputText?: string // 用户输入的文本
+  readonly?: boolean
 }
 
 // 扩展组件接口
@@ -40,10 +40,11 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   customRenderBar,
   onSend,
   typingSpeed = 30,
-  disableTyping = false,
+  disableTyping = true,
   isStreaming = false,
   defaultButtonText,
-  defaultInputText
+  defaultInputText,
+  readonly = false
 }) => {
 
   // 使用自定义Hook处理打字机效果
@@ -56,9 +57,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
   const components: CustomComponents = {
     'custom-variable': props => (
-      <CustomButtonInputVariable {...props} defaultButtonText={defaultButtonText} defaultInputText={defaultInputText} onSend={onSend} />
+      <CustomButtonInputVariable {...props} readonly={readonly} defaultButtonText={defaultButtonText} defaultInputText={defaultInputText} onSend={onSend} />
     ),
-    'custom-button': props => <CustomButton {...props} defaultButtonText={defaultButtonText} onSend={onSend} />,
+    'custom-button': props => <CustomButton {...props} readonly={readonly}  defaultButtonText={defaultButtonText} onSend={onSend} />,
     code: props => {
       const { inline, className, children, ...rest } = props as any
       const match = /language-(\w+)/.exec(className || '')

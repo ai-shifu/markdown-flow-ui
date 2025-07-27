@@ -19,9 +19,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const MarkdownFlowStory1: Story = {
+export const MarkdownFlowStory: Story = {
   args: {
-    disableTyping: false,
-    contents: ['或者尝试: ?[确认提交]'],
+  },
+};
+
+export const MarkdownFlowWithHistoryMessageList: Story = {
+  args: {
   },
 };

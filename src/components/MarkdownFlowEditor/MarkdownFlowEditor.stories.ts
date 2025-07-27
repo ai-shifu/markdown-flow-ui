@@ -2,30 +2,47 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 
 // import { fn } from 'storybook/test';
 
-import Playground from './Playground';
+import MarkdownFlowEditor from './MarkdownFlowEditor';
 
 const meta = {
-  title: 'Playground',
-  component: Playground,
+  title: 'MarkdownFlow/MarkdownFlowEditor',
+  component: MarkdownFlowEditor,
   parameters: {
     layout: 'centered',
   },
   tags: ['autodocs'],
   argTypes: {
-    originContent: {
+    value: {
       control: 'text',
-      description: 'Markdown content to render',
+      description: 'Markdown content to edit',
+    },
+    onChange: {
+      action: 'onChange',
+      description: 'Callback when content changes',
+    },
+    className: {
+      control: 'text',
+      description: 'Class name to apply to the editor',
+    },
+    readOnly: {
+      control: 'boolean',
+      description: 'Whether the editor is read-only',
     },
   },
-  args: { originContent: '' },
-} satisfies Meta<typeof Playground>;
+  args: { 
+    value: '',
+    onChange: (value) => console.log(value),
+    className: '',
+    readOnly: false,
+   },
+} satisfies Meta<typeof MarkdownFlowEditor>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const PlaygroundStory1: Story = {
+export const MarkdownFlowEditorStory: Story = {
   args: {
-    originContent: `===# 第一章 认识一下===
+    value: `===# 第一章 认识一下===
 
 用友好的语气讲课：
 - 先问好，介绍自己叫孙志岗，欢迎用户来听 AI 课
@@ -56,6 +73,11 @@ export const PlaygroundStory1: Story = {
 用同理心表示，不舒服是正常的，这是人类共同的反应
 问用户是不是真的是人类？如果是，请登录
 
-?[登录](login_url)`
+?[登录](login_url)`,
+  onChange: (value) => {
+    console.log(value)
+  },
+
   },
 };
+

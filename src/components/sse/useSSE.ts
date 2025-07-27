@@ -93,10 +93,7 @@ const useSSE = <T = any>(
               try {
                 parsedData = JSON.parse(event.data)
               } catch (e) {}
-
-              // 更新实时显示的数据
               setData(parsedData)
-              // 同时保存最终数据（用于结束后传递）
               finalDataRef.current += parsedData
             } catch (err) {
               console.error('Error parsing SSE message:', err)
@@ -136,7 +133,6 @@ const useSSE = <T = any>(
     }
   }, [])
 
-  // 初始化 & 清理副作用
   useEffect(() => {
     mountedRef.current = true
     isManuallyClosedRef.current = false
@@ -156,7 +152,6 @@ const useSSE = <T = any>(
         close()
       }
     } else {
-      // 不自动连接时的清理
       return () => {
         mountedRef.current = false
         isManuallyClosedRef.current = true

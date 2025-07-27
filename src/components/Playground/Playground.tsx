@@ -5,10 +5,10 @@ import useMarkdownInfo from './useMarkdownInfo'
 import MarkdownFlow from '../MarkdownFlow'
 import { ContentRenderProps } from '@/components/ContentRender/ContentRender'
 
-type ChatSSEComponentProps = {
+type PlaygroundComponentProps = {
   originContent: string
 }
-const ChatSSEComponent: React.FC<ChatSSEComponentProps> = ({
+const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   originContent
 }) => {
   const [content, setContent] = useState<string>('')
@@ -57,8 +57,6 @@ const ChatSSEComponent: React.FC<ChatSSEComponentProps> = ({
           role: 'assistant',
           content: ''
         }
-      } else {
-        // newContext[currentBlockIndex].content = data
       }
       newContext.push({
         role: 'assistant',
@@ -71,7 +69,7 @@ const ChatSSEComponent: React.FC<ChatSSEComponentProps> = ({
       })
       setCurrentBlockIndex(newIndex)
     },
-    [currentBlockIndex, block_count, interaction_blocks]
+    [currentBlockIndex, block_count, interaction_blocks, sseParams]
   )
 
   const { data, sseIndex, connect, close } = useSSE<any>(
@@ -125,6 +123,7 @@ const ChatSSEComponent: React.FC<ChatSSEComponentProps> = ({
 
   // 处理自定义组件的回调
   const handleSend = (params: any) => {
+    debugger
     const newVariables = {
       ...sseParams.variables,
       [params.variableName]: params.inputText || params.buttonText
@@ -140,10 +139,6 @@ const ChatSSEComponent: React.FC<ChatSSEComponentProps> = ({
       user_input: params.inputText || params.buttonText,
       variables: newVariables
     })
-    const newContentList = [...contentList]
-    contentList[currentBlockIndex].defaultInputText = params.inputText
-    contentList[currentBlockIndex].defaultButtonText = params.buttonText
-    setContentList(newContentList)
   }
 
   return (
@@ -154,4 +149,4 @@ const ChatSSEComponent: React.FC<ChatSSEComponentProps> = ({
   )
 }
 
-export default ChatSSEComponent
+export default PlaygroundComponent

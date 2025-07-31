@@ -123,7 +123,6 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
 
   // 处理自定义组件的回调
   const handleSend = (params: any) => {
-    debugger
     const newVariables = {
       ...sseParams.variables,
       [params.variableName]: params.inputText || params.buttonText

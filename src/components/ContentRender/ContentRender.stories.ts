@@ -36,13 +36,25 @@ export const ContentRenderStory1: Story = {
 
   或者尝试: ?[%{{inputVariable}}...希望我怎么称呼你]
 
-  \`\`\`javascript
-function hello() {
-  console.log('Hello World!')
-  return true
-}
+  # 欢迎使用 Markdown
+
+这是一个 **粗体** 文本和 *斜体* 文本。
+
+- 列表项1
+- 列表项2
+
+[Google](https://google.com)
+
+![图片](http://gips3.baidu.com/it/u=1821127123,1149655687&fm=3028&app=3028&f=JPEG&fmt=auto?w=720&h=1280)
+
+~~删除线文本~~
+
+
+\`\`\`javascript
+console.log('Hello World');
 
   `,
+    disableTyping: false
   },
 };
 
@@ -82,6 +94,7 @@ export const ContentRenderStory2: Story = {
 ?[登录](login_url)
 
   `,
+    disableTyping: false
   },
 };
 

@@ -43,12 +43,12 @@ const MATCH_RULES: MatchRule[] = [
     type: FormatType.PLACEHOLDER_ONLY
   },
   {
-    // 格式2: ?[%{{variable}} button1 | button2] (只有按钮)
+    // 格式2: ?[%{{variable}} button1 | button2]
     regex: new RegExp(`\\?\\[\\%\\{\\{\\s*(\\w+)\\s*\\}\\}\\s*([^\\]\\|｜]+(?:\\s*${SEPARATOR}\\s*[^\\]\\|｜]+)+)\\s*\\]`),
     type: FormatType.BUTTONS_ONLY
   },
   {
-    // 格式3: ?[%{{variable}} button] (单个按钮)
+    // 格式3: ?[%{{variable}} button]
     regex: /\?\[\%\{\{\s*(\w+)\s*\}\}\s*([^\|\]｜]+)\s*\]/,
     type: FormatType.SINGLE_BUTTON
   }

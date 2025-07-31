@@ -1,140 +1,201 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface UseTypewriterProps {
   content: string
   typingSpeed?: number
-  isStreaming?: boolean
   disabled?: boolean
-}
-
-interface UseTypewriterReturn {
-  displayContent: string
-  isTyping: boolean
-  reset: () => void
-  start: () => void
 }
 
 const useTypewriter = ({
   content,
   typingSpeed = 30,
-  isStreaming = false,
   disabled = false
-}: UseTypewriterProps): UseTypewriterReturn => {
-  const [displayContent, setDisplayContent] = useState<string>('')
-  const [isTyping, setIsTyping] = useState<boolean>(false)
-  const contentRef = useRef<string>('')
-  const indexRef = useRef<number>(0)
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
-  const previousContentRef = useRef<string>('')
+}: UseTypewriterProps) => {
+  const [displayContent, setDisplayContent] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // 清理定时器
-  const clearTimer = useCallback(() => {
+  const clearTimer = () => {
     if (timerRef.current) {
       clearTimeout(timerRef.current)
       timerRef.current = null
     }
-  }, [])
+  }
 
-  // 更安全的字符处理函数
-  const getCharacterAt = useCallback((str: string, index: number): string => {
-    // 处理代理对（surrogate pairs）- 用于emoji和其他Unicode字符
-    if (index >= str.length) return ''
-    
-    const char = str.charAt(index)
-    // 检查是否是代理对的开始
-    if (char >= '\uD800' && char <= '\uDBFF' && index + 1 < str.length) {
-      const nextChar = str.charAt(index + 1)
-      if (nextChar >= '\uDC00' && nextChar <= '\uDFFF') {
-        return char + nextChar // 返回完整的代理对
+  // 解析内容，识别各种 Markdown 语法块
+  const parseContent = (text: string) => {
+    const segments: string[] = []
+    let i = 0
+
+    while (i < text.length) {
+      const char = text[i]
+
+      // 1. 标题 (# 开头的行)
+      if (char === '#' && (i === 0 || text[i - 1] === '\n')) {
+        // 找到行结束
+        let lineEnd = text.indexOf('\n', i)
+        if (lineEnd === -1) lineEnd = text.length
+        segments.push(text.substring(i, lineEnd + (lineEnd < text.length ? 1 : 0)))
+        i = lineEnd + (lineEnd < text.length ? 1 : 0)
+        continue
       }
-    }
-    return char
-  }, [])
 
-  // 获取下一个字符的长度（用于正确递增索引）
-  const getCharacterLength = useCallback((str: string, index: number): number => {
-    if (index >= str.length) return 0
-    
-    const char = str.charAt(index)
-    if (char >= '\uD800' && char <= '\uDBFF' && index + 1 < str.length) {
-      const nextChar = str.charAt(index + 1)
-      if (nextChar >= '\uDC00' && nextChar <= '\uDFFF') {
-        return 2
+      // 2. 代码块 (``` 开头)
+      if (char === '`' && text[i + 1] === '`' && text[i + 2] === '`') {
+        const blockEnd = text.indexOf('```', i + 3)
+        if (blockEnd !== -1) {
+          segments.push(text.substring(i, blockEnd + 3))
+          i = blockEnd + 3
+          continue
+        }
       }
+
+      // 3. 行内代码 (`code`)
+      if (char === '`') {
+        const inlineEnd = text.indexOf('`', i + 1)
+        if (inlineEnd !== -1) {
+          segments.push(text.substring(i, inlineEnd + 1))
+          i = inlineEnd + 1
+          continue
+        }
+      }
+
+      // 4. 链接 [text](url)
+      if (char === '[') {
+        const closeBracket = text.indexOf(']', i)
+        if (closeBracket !== -1 && text[closeBracket + 1] === '(') {
+          const closeParen = text.indexOf(')', closeBracket)
+          if (closeParen !== -1) {
+            segments.push(text.substring(i, closeParen + 1))
+            i = closeParen + 1
+            continue
+          }
+        }
+      }
+
+      // 5. 图片 ![alt](url)
+      if (char === '!' && text[i + 1] === '[') {
+        const closeBracket = text.indexOf(']', i + 1)
+        if (closeBracket !== -1 && text[closeBracket + 1] === '(') {
+          const closeParen = text.indexOf(')', closeBracket)
+          if (closeParen !== -1) {
+            segments.push(text.substring(i, closeParen + 1))
+            i = closeParen + 1
+            continue
+          }
+        }
+      }
+
+      // 6. 引用块 (> 开头的行)
+      if (char === '>' && (i === 0 || text[i - 1] === '\n')) {
+        let lineEnd = text.indexOf('\n', i)
+        if (lineEnd === -1) lineEnd = text.length
+        segments.push(text.substring(i, lineEnd + (lineEnd < text.length ? 1 : 0)))
+        i = lineEnd + (lineEnd < text.length ? 1 : 0)
+        continue
+      }
+
+      // 7. 原有的标记块 ?[text]
+      if (char === '?' && text[i + 1] === '[') {
+        const closeBracket = text.indexOf(']', i + 2)
+        if (closeBracket !== -1) {
+          segments.push(text.substring(i, closeBracket + 1))
+          i = closeBracket + 1
+          continue
+        }
+      }
+
+      // 8. 粗体 **text**
+      if (char === '*' && text[i + 1] === '*') {
+        const boldEnd = text.indexOf('**', i + 2)
+        if (boldEnd !== -1) {
+          segments.push(text.substring(i, boldEnd + 2))
+          i = boldEnd + 2
+          continue
+        }
+      }
+
+      // 9. 斜体 *text*
+      if (char === '*' && text[i + 1] !== '*') {
+        const italicEnd = text.indexOf('*', i + 1)
+        if (italicEnd !== -1) {
+          segments.push(text.substring(i, italicEnd + 1))
+          i = italicEnd + 1
+          continue
+        }
+      }
+
+      // 10. 删除线 ~~text~~
+      if (char === '~' && text[i + 1] === '~') {
+        const strikeEnd = text.indexOf('~~', i + 2)
+        if (strikeEnd !== -1) {
+          segments.push(text.substring(i, strikeEnd + 2))
+          i = strikeEnd + 2
+          continue
+        }
+      }
+
+      // 11. 分割线
+      if ((char === '-' && text[i + 1] === '-' && text[i + 2] === '-') ||
+        (char === '*' && text[i + 1] === '*' && text[i + 2] === '*')) {
+        let lineEnd = text.indexOf('\n', i)
+        if (lineEnd === -1) lineEnd = text.length
+        segments.push(text.substring(i, lineEnd + (lineEnd < text.length ? 1 : 0)))
+        i = lineEnd + (lineEnd < text.length ? 1 : 0)
+        continue
+      }
+
+      // 普通字符
+      segments.push(char)
+      i++
     }
-    return 1
-  }, [])
 
-  // 打字机核心逻辑
-  const typeWriter = useCallback(() => {
-    if (indexRef.current < contentRef.current.length) {
-      const char = getCharacterAt(contentRef.current, indexRef.current)
-      const charLength = getCharacterLength(contentRef.current, indexRef.current)
-      
-      setDisplayContent(prev => prev + char)
-      indexRef.current += charLength
-      timerRef.current = setTimeout(typeWriter, typingSpeed)
-    } else {
-      setIsTyping(false)
-    }
-  }, [typingSpeed, getCharacterAt, getCharacterLength])
+    return segments
+  }
 
-  // 重置打字机
-  const reset = useCallback(() => {
-    clearTimer()
-    contentRef.current = ''
-    indexRef.current = 0
-    setDisplayContent('')
-    setIsTyping(false)
-    previousContentRef.current = ''
-  }, [clearTimer])
-
-  // 启动打字机
-  const start = useCallback(() => {
-    clearTimer()
-    contentRef.current = content
-    indexRef.current = 0
-    setIsTyping(true)
-    setDisplayContent('')
-    typeWriter()
-  }, [clearTimer, content, typeWriter])
-
-  // 处理内容变化
   useEffect(() => {
-    // 如果禁用了打字机效果，直接显示全部内容
+    // 如果禁用，直接显示全部内容
     if (disabled) {
       clearTimer()
       setDisplayContent(content)
       setIsTyping(false)
-      contentRef.current = content
-      indexRef.current = content.length
-      previousContentRef.current = content
       return
     }
 
-    if (isStreaming) {
-      if (content.length > previousContentRef.current.length) {
-        clearTimer()
-        const newContent = content.slice(previousContentRef.current.length)
-        contentRef.current = newContent
-        indexRef.current = 0
-        setIsTyping(true)
-        typeWriter()
-      }
-    } else {
-      // 普通模式：完整重新开始
-      start()
-    }
-    
-    previousContentRef.current = content
-  }, [content, isStreaming, start, typeWriter, clearTimer, disabled])
+    clearTimer()
+    setDisplayContent('')
+    setIsTyping(true)
 
-  // 组件卸载时清理
-  useEffect(() => {
-    return () => {
-      clearTimer()
+    const segments = parseContent(content)
+    let currentIndex = 0
+
+    const type = () => {
+      if (currentIndex < segments.length) {
+        setDisplayContent(prev => prev + (segments[currentIndex] || ''))
+        currentIndex++
+        timerRef.current = setTimeout(type, typingSpeed)
+      } else {
+        setIsTyping(false)
+      }
     }
-  }, [clearTimer])
+
+    type()
+
+    return () => clearTimer()
+  }, [content, typingSpeed, disabled])
+
+  const reset = () => {
+    clearTimer()
+    setDisplayContent('')
+    setIsTyping(false)
+  }
+
+  const start = () => {
+    clearTimer()
+    setDisplayContent('')
+    setIsTyping(true)
+  }
 
   return {
     displayContent,

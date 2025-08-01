@@ -8,7 +8,7 @@ interface UseTypewriterProps {
 
 const useTypewriter = ({
   content,
-  typingSpeed = 30,
+  typingSpeed = 80,
   disabled = false
 }: UseTypewriterProps) => {
   const [displayContent, setDisplayContent] = useState('')
@@ -90,11 +90,11 @@ const useTypewriter = ({
       if (earliestMatch && earliestIndex >= 0) {
         // 如果在匹配之前有普通文本，先添加普通文本
         if (earliestIndex > 0) {
-          segments.push(remainingText.substring(0, earliestIndex))
+          segments.push(...Array.from(remainingText.substring(0, earliestIndex)))
           remainingText = remainingText.substring(earliestIndex)
         }
         
-        // 添加匹配到的 Markdown 语法块
+        // 添加匹配到的 Markdown 语法块作为一个整体
         segments.push(earliestMatch.match[0])
         remainingText = remainingText.substring(earliestMatch.match[0].length)
         matched = true
@@ -128,7 +128,7 @@ const useTypewriter = ({
 
     const type = () => {
       if (currentIndex < segments.length) {
-        setDisplayContent(prev => prev + segments[currentIndex])
+        setDisplayContent(prev => prev + (segments[currentIndex] || ''))
         currentIndex++
         timerRef.current = setTimeout(type, typingSpeed)
       } else {

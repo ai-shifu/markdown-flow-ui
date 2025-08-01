@@ -1,6 +1,7 @@
 import React from 'react'
 import ContentRender from '../ContentRender'
 import { ContentRenderProps } from '@/components/ContentRender/ContentRender'
+import './markdownFlow.css'
 
 // 定义组件 Props 类型
 interface MarkdownFlowProps {

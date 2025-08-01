@@ -25,7 +25,6 @@ export interface ContentRenderProps  {
   onSend?: (content: OnSendContentParams) => void
   typingSpeed?: number
   disableTyping?: boolean
-  isStreaming?: boolean
   defaultButtonText?: string
   defaultInputText?: string // 用户输入的文本
   readonly?: boolean
@@ -41,7 +40,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   onSend,
   typingSpeed = 30,
   disableTyping = true,
-  isStreaming = false,
   defaultButtonText,
   defaultInputText,
   readonly = false
@@ -51,7 +49,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   const { displayContent, isTyping } = useTypewriter({
     content,
     typingSpeed,
-    isStreaming,
     disabled: disableTyping
   })
 

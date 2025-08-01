@@ -90,11 +90,12 @@ const useSSE = <T = any>(
 
             try {
               let parsedData: any = event.data
-              try {
-                parsedData = JSON.parse(event.data)
-              } catch (e) {}
-              setData(parsedData)
+              // try {
+              //   parsedData = JSON.parse(event.data)
+              // } catch (e) {}
+              // setData(parsedData)
               finalDataRef.current += parsedData
+              setData(finalDataRef.current as any)
             } catch (err) {
               console.error('Error parsing SSE message:', err)
             }

@@ -12,12 +12,12 @@ const meta = {
   },
   tags: ['autodocs'],
   argTypes: {
-    originContent: {
+      defaultContent: {
       control: 'text',
       description: 'Markdown content to render',
     },
   },
-  args: { originContent: '' },
+  args: {   defaultContent: '' },
 } satisfies Meta<typeof Playground>;
 
 export default meta;
@@ -25,7 +25,7 @@ type Story = StoryObj<typeof meta>;
 
 export const PlaygroundStory1: Story = {
   args: {
-    originContent: `===# 第一章 认识一下===
+    defaultContent: `===# 第一章 认识一下===
 
 用友好的语气讲课：
 - 先问好，介绍自己叫孙志岗，欢迎用户来听 AI 课

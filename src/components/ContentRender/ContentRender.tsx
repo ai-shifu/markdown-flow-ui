@@ -19,7 +19,7 @@ import '@/styles/globals.css'
 import remarkBreaks from 'remark-breaks'
 
 // 定义组件 Props 类型
-export interface ContentRenderProps  {
+export interface ContentRenderProps {
   content: string
   customRenderBar?: CustomRenderBarProps
   onSend?: (content: OnSendContentParams) => void
@@ -44,19 +44,31 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   defaultInputText,
   readonly = false
 }) => {
-
   // 使用自定义Hook处理打字机效果
   const { displayContent, isTyping } = useTypewriter({
-    content,
+    content: content,
     typingSpeed,
     disabled: disableTyping
   })
 
   const components: CustomComponents = {
     'custom-variable': props => (
-      <CustomButtonInputVariable {...props} readonly={readonly} defaultButtonText={defaultButtonText} defaultInputText={defaultInputText} onSend={onSend} />
+      <CustomButtonInputVariable
+        {...props}
+        readonly={readonly}
+        defaultButtonText={defaultButtonText}
+        defaultInputText={defaultInputText}
+        onSend={onSend}
+      />
     ),
-    'custom-button': props => <CustomButton {...props} readonly={readonly}  defaultButtonText={defaultButtonText} onSend={onSend} />,
+    'custom-button': props => (
+      <CustomButton
+        {...props}
+        readonly={readonly}
+        defaultButtonText={defaultButtonText}
+        onSend={onSend}
+      />
+    ),
     code: props => {
       const { inline, className, children, ...rest } = props as any
       const match = /language-(\w+)/.exec(className || '')

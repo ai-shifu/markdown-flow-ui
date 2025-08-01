@@ -1,28 +1,35 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
-import ContentRender from '@/components/ContentRender'
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import useSSE from '@/components/sse/useSSE'
 import useMarkdownInfo from './useMarkdownInfo'
 import MarkdownFlow from '../MarkdownFlow'
 import { ContentRenderProps } from '@/components/ContentRender/ContentRender'
 
 type PlaygroundComponentProps = {
-  originContent: string
+  defaultContent: string // 原始markdown文本
+  defaultVariables?: {
+    // 默认变量组
+    [key: string]: any
+  }
+  defaultDocumentPrompt?: string // 默认文档提示
+  sseUrl?: string // 建立sse连接人url
 }
 const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
-  originContent
+  defaultContent,
+  defaultVariables,
+  defaultDocumentPrompt,
+  sseUrl = 'https://play.dev.pillowai.cn/api/v1/playground/generate'
 }) => {
+  // 当前展示的消息
   const [content, setContent] = useState<string>('')
   const contentEndRef = useRef<HTMLDivElement>(null)
   const { data: markdownInfo, loading: isMarkdownLoading } =
-    useMarkdownInfo(originContent)
-
+    useMarkdownInfo(defaultContent)
   const { block_count, interaction_blocks } = markdownInfo || {}
-
   const [currentBlockIndex, setCurrentBlockIndex] = useState<number>(0)
   const [contentList, setContentList] = useState<ContentRenderProps[]>([])
 
   const [sseParams, setSseParams] = useState<any>({
-    content: originContent,
+    content: defaultContent,
     block_index: 0,
     context: [
       {
@@ -30,9 +37,9 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
         content: ''
       }
     ],
-    variables: null,
+    variables: defaultVariables,
     user_input: null,
-    document_prompt: null,
+    document_prompt: defaultDocumentPrompt,
     interaction_prompt: null,
     interaction_error_prompt: null,
     model: null
@@ -72,15 +79,13 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
     [currentBlockIndex, block_count, interaction_blocks, sseParams]
   )
 
-  const { data, sseIndex, connect, close } = useSSE<any>(
-    'https://play.dev.pillowai.cn/api/v1/playground/generate',
-    {
-      method: 'POST',
-      body: getSSEBody(),
-      autoConnect: !!markdownInfo,
-      onFinish: handleOnFinish
-    }
-  )
+  // data是sse推送的message
+  const { data, sseIndex, connect, close } = useSSE<any>(sseUrl, {
+    method: 'POST',
+    body: getSSEBody(),
+    autoConnect: !!markdownInfo,
+    onFinish: handleOnFinish
+  })
 
   useEffect(() => {
     if (!!markdownInfo) {
@@ -92,23 +97,17 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   useEffect(() => {
     if (data) {
       try {
-        let newContent = ''
-        if (typeof data === 'string') {
-          newContent = data
-        }
-        const totalContent = content + newContent
-        setContent(totalContent)
+        const newContent = data
+        setContent(newContent)
+        
         const empList = contentList ? [...contentList] : []
         if (!empList[currentBlockIndex]) {
           empList[currentBlockIndex] = {
-            content: totalContent,
-            disableTyping: true,
-            onSend: handleSend
+            content: newContent,
           }
         } else {
-          empList[currentBlockIndex].content = totalContent
+          empList[currentBlockIndex].content = newContent
         }
-        console.log('empList', empList)
         setContentList(empList)
       } catch (error) {
         console.error('Error processing SSE message:', error)
@@ -119,7 +118,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   // 自动滚动
   useEffect(() => {
     contentEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [content])
+  }, [defaultContent])
 
   // 处理自定义组件的回调
   const handleSend = (params: any) => {
@@ -138,11 +137,26 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
       user_input: params.inputText || params.buttonText,
       variables: newVariables
     })
+
+    const empList = contentList ? [...contentList] : []
+    const last = empList[empList.length - 1]
+    last.readonly = true
+    last.defaultButtonText = params.buttonText
+    last.defaultInputText = params.inputText
+    setContentList(empList)
+  }
+
+  const customRenderBar = () => {
+    return <></>
   }
 
   return (
     <div className='w-full'>
-      <MarkdownFlow contentList={contentList} />
+      <MarkdownFlow
+        contentList={contentList}
+        customRenderBar={customRenderBar}
+        onSend={handleSend}
+      />
       <div ref={contentEndRef} />
     </div>
   )

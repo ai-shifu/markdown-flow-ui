@@ -1,0 +1,28 @@
+# 构建相关
+.next/
+out/
+.storybook/
+storybook-static/
+
+# 开发相关
+node_modules/
+*.log
+.git/
+.github/
+.gitignore
+.nvmrc
+.prettierignore
+.prettierrc
+.eslintignore
+.eslintrc.json
+.editorconfig
+
+# 测试相关
+__tests__/
+__mocks__/
+coverage/
+
+# 其他
+.env*
+!.env.example
+README.md

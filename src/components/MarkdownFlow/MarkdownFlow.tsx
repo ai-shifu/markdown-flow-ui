@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef, useEffect } from 'react'
 import ContentRender from '../ContentRender'
 import './markdownFlow.css'
 import { OnSendContentParams, CustomRenderBarProps } from '@/components/types'
@@ -26,8 +26,12 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   typingSpeed,
   disableTyping
 }) => {
+  const contentEndRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    contentEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [contentList])
   return (
-    <div className='markdown-flow'>
+    <div className='markdown-flow' ref={contentEndRef}>
       {contentList?.map((contentInfo, index) => (
         <ContentRender
           key={index}

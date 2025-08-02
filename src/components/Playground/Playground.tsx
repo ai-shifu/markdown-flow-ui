@@ -19,9 +19,6 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   defaultDocumentPrompt,
   sseUrl = 'https://play.dev.pillowai.cn/api/v1/playground/generate'
 }) => {
-  // 当前展示的消息
-  const [content, setContent] = useState<string>('')
-  const contentEndRef = useRef<HTMLDivElement>(null)
   const { data: markdownInfo, loading: isMarkdownLoading } =
     useMarkdownInfo(defaultContent)
   const { block_count, interaction_blocks } = markdownInfo || {}
@@ -49,8 +46,6 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   }
 
   const handleOnFinish = (data: string) => {
-    // 清空当前消息
-    setContent('')
     const newIndex = currentBlockIndex + 1
     // 跳过交互块或者最后一个块
     if (
@@ -96,8 +91,6 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
     if (data) {
       try {
         const newContent = data
-        setContent(newContent)
-
         const empList = contentList ? [...contentList] : []
         if (!empList[currentBlockIndex]) {
           empList[currentBlockIndex] = {
@@ -112,11 +105,6 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
       }
     }
   }, [data])
-
-  // 自动滚动
-  useEffect(() => {
-    contentEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [content])
 
   // 处理自定义组件的回调
   const handleSend = (params: any) => {
@@ -157,7 +145,6 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
         customRenderBar={customRenderBar}
         onSend={handleSend}
       />
-      <div ref={contentEndRef} />
     </div>
   )
 }

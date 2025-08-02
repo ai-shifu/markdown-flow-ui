@@ -3,7 +3,7 @@ import ContentRender from '../ContentRender'
 import './markdownFlow.css'
 import { OnSendContentParams, CustomRenderBarProps } from '@/components/types'
 
-interface MarkdownFlowProps {
+export interface MarkdownFlowProps {
   initialContentList?: {
     content: string
     isFinished?: boolean
@@ -15,6 +15,7 @@ interface MarkdownFlowProps {
   onSend?: (content: OnSendContentParams) => void
   typingSpeed?: number
   disableTyping?: boolean
+  onBlockComplete?: (blockIndex: number) => void
 }
 
 const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
@@ -22,7 +23,8 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   customRenderBar,
   onSend: onSendProp,
   typingSpeed: typingSpeedProp,
-  disableTyping: disableTypingProp
+  disableTyping: disableTypingProp,
+  onBlockComplete
 }) => {
   return (
     <div className='markdown-flow'>
@@ -43,6 +45,10 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             customRenderBar={customRenderBar}
             onSend={onSend}
             typingSpeed={typingSpeed}
+            onTypeFinished={() => {
+              console.log(`Block ${index} typing finished`);
+              onBlockComplete?.(index)
+            }}
           />
         )
       })}

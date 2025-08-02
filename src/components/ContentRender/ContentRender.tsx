@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkCustomButton from './plugins/remark-custom-button'
 import CustomButton, {
@@ -11,7 +11,10 @@ import CustomButtonInputVariable, {
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import 'highlight.js/styles/github.css'
-import { highlightLanguages, subsetLanguages } from './utils/highlight-languages'
+import {
+  highlightLanguages,
+  subsetLanguages
+} from './utils/highlight-languages'
 import useTypewriter from './useTypewriter'
 import './contentRender.css'
 import { OnSendContentParams, CustomRenderBarProps } from '@/components/types'
@@ -29,6 +32,7 @@ export interface ContentRenderProps {
   defaultButtonText?: string
   defaultInputText?: string // 用户输入的文本
   readonly?: boolean
+  onTypeFinished?: () => void
 }
 
 // 扩展组件接口
@@ -43,10 +47,11 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   disableTyping = true,
   defaultButtonText,
   defaultInputText,
-  readonly = false
+  readonly = false,
+  onTypeFinished
 }) => {
   // 使用自定义Hook处理打字机效果
-  const { displayContent, isTyping } = useTypewriter({
+  const { displayContent, isTyping, isComplete } = useTypewriter({
     content: processMarkdownText(content),
     typingSpeed,
     disabled: disableTyping
@@ -116,6 +121,19 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       return <input {...props} />
     }
   }
+
+  const hasCompleted = useRef(false)
+
+  useEffect(() => {
+    if (isComplete && !hasCompleted.current) {
+      console.log('[ContentRender] Typing is complete, calling onTypeFinished')
+      hasCompleted.current = true // 标记已完成
+      onTypeFinished?.() // 调用传入的回调
+    }
+  }, [isComplete, onTypeFinished])
+  useEffect(() => {
+    hasCompleted.current = false // 内容改变时重置完成状态
+  }, [content])
 
   return (
     <div className='content-render'>

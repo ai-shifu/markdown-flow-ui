@@ -44,7 +44,7 @@ const processMarkdownText = (text: string): string => {
   // 5. 处理特殊空格
   processed = processed.replace(/&nbsp;|\u00A0/g, ' ')
 
-  return processed
+  return processed || ''
 }
 
 export { unescapeMarkdown, processMarkdownText }

@@ -1,84 +1,68 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 interface UseTypewriterProps {
-  content: string
+  content?: string
   typingSpeed?: number
   disabled?: boolean
 }
 
+interface Segment {
+  content: string
+  isMarkdown: boolean
+  type?: string
+}
+
 const useTypewriter = ({
-  content,
+  content = '',
   typingSpeed = 80,
   disabled = false
-}: UseTypewriterProps) => {
+}: UseTypewriterProps = {}) => {
   const [displayContent, setDisplayContent] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [isComplete, setIsComplete] = useState(false) // 新增：表示打印是否完成
 
-  // 清理定时器
-  const clearTimer = () => {
+  const parsedSegmentsRef = useRef<Segment[]>([])
+  const displayIndexRef = useRef(0)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isMountedRef = useRef(true)
+  const lastContentRef = useRef('')
+
+  // Cleanup function
+  const clearTimer = useCallback(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current)
       timerRef.current = null
     }
-  }
+  }, [])
 
-  // Markdown 模式定义（按优先级排序）
-  const markdownPatterns = [
-    // 自定义标记块 ?[xxx]（最高优先级）
+  // Markdown patterns
+  const markdownPatterns = useRef([
     { pattern: /\?\[[^\]]*\]/, type: 'custom-tag' },
-    
-    // 代码块
     { pattern: /```[\s\S]*?```/, type: 'code-block' },
-    
-    // 标题（行首的 #）
     { pattern: /^#{1,6}\s[^\n]*$/m, type: 'header' },
-    
-    // 粗斜体
     { pattern: /\*\*\*[^*]+\*\*\*/, type: 'bold-italic' },
-    
-    // 粗体
     { pattern: /\*\*[^*]+\*\*/, type: 'bold' },
-    
-    // 斜体
     { pattern: /(?<!\*)\*[^*]+\*(?!\*)/, type: 'italic' },
-    
-    // 删除线
     { pattern: /~~[^~]+~~/, type: 'strikethrough' },
-    
-    // 行内代码
     { pattern: /`[^`]+`/, type: 'inline-code' },
-    
-    // 图片
     { pattern: /!\[[^\]]*\]\([^\)]*\)/, type: 'image' },
-    
-    // 链接
     { pattern: /(?<!\!)\[[^\]]*\]\([^\)]*\)/, type: 'link' },
-    
-    // 引用块（整行）
     { pattern: /^(>\s*)+[^\n]*$/m, type: 'blockquote' },
-    
-    // 分割线
     { pattern: /^[-*]{3,}$/m, type: 'hr' },
-    
-    // 无序列表项
     { pattern: /^[*-]\s+[^\n]*$/m, type: 'list-item' },
-    
-    // 有序列表项
     { pattern: /^\d+\.\s+[^\n]*$/m, type: 'ordered-list-item' },
-  ]
+  ]).current
 
-  // 解析内容，识别各种 Markdown 语法块
-  const parseContent = (text: string) => {
-    const segments: string[] = []
-    let remainingText = text
+  // Parse content into segments
+  const parseContent = useCallback((text: string): Segment[] => {
+    const segments: Segment[] = []
+    let remainingText = text || ''
     
     while (remainingText.length > 0) {
       let matched = false
       let earliestMatch: { match: RegExpExecArray; pattern: typeof markdownPatterns[0] } | null = null
       let earliestIndex = Infinity
       
-      // 查找所有模式中最早匹配的
       for (const pattern of markdownPatterns) {
         const match = pattern.pattern.exec(remainingText)
         if (match && match.index < earliestIndex) {
@@ -88,76 +72,148 @@ const useTypewriter = ({
       }
       
       if (earliestMatch && earliestIndex >= 0) {
-        // 如果在匹配之前有普通文本，先添加普通文本
         if (earliestIndex > 0) {
-          segments.push(...Array.from(remainingText.substring(0, earliestIndex)))
+          const plainText = remainingText.substring(0, earliestIndex)
+          segments.push(...Array.from(plainText).map(char => ({
+            content: char,
+            isMarkdown: false
+          })))
           remainingText = remainingText.substring(earliestIndex)
         }
         
-        // 添加匹配到的 Markdown 语法块作为一个整体
-        segments.push(earliestMatch.match[0])
+        segments.push({
+          content: earliestMatch.match[0],
+          isMarkdown: true,
+          type: earliestMatch.pattern.type
+        })
         remainingText = remainingText.substring(earliestMatch.match[0].length)
         matched = true
       }
       
-      // 如果没有匹配到任何模式，添加第一个字符
       if (!matched) {
-        segments.push(remainingText[0])
+        segments.push({
+          content: remainingText[0],
+          isMarkdown: false
+        })
         remainingText = remainingText.substring(1)
       }
     }
     
     return segments
-  }
+  }, [markdownPatterns])
 
-  useEffect(() => {
-    // 如果禁用，直接显示全部内容
-    if (disabled) {
-      clearTimer()
-      setDisplayContent(content)
+  // Typing function
+  const type = useCallback(() => {
+    if (!isMountedRef.current) return
+
+    if (displayIndexRef.current < parsedSegmentsRef.current.length) {
+      const segment = parsedSegmentsRef.current[displayIndexRef.current]
+      setDisplayContent(prev => prev + (segment?.content || ''))
+      displayIndexRef.current++
+      
+      if (isMountedRef.current) {
+        timerRef.current = setTimeout(type, typingSpeed)
+      }
+    } else {
       setIsTyping(false)
+      setIsComplete(true) // 打印完成
+    }
+  }, [typingSpeed])
+
+  // Main effect
+  useEffect(() => {
+    const newContent = content || ''
+    const oldContent = lastContentRef.current
+
+    // 如果内容相同，不处理
+    if (newContent === oldContent) {
       return
     }
 
-    clearTimer()
-    setDisplayContent('')
-    setIsTyping(true)
+    // 禁用模式：立即显示全部
+    if (disabled) {
+      clearTimer()
+      const segments = parseContent(newContent)
+      setDisplayContent(segments.map(s => s.content).join(''))
+      setIsTyping(false)
+      setIsComplete(true) // 禁用模式下直接完成
+      lastContentRef.current = newContent
+      return
+    }
 
-    const segments = parseContent(content)
-    let currentIndex = 0
+    // 检查是否是内容增长
+    const isContentGrowth = newContent.length >= oldContent.length && newContent.startsWith(oldContent)
 
-    const type = () => {
-      if (currentIndex < segments.length) {
-        setDisplayContent(prev => prev + (segments[currentIndex] || ''))
-        currentIndex++
-        timerRef.current = setTimeout(type, typingSpeed)
-      } else {
-        setIsTyping(false)
+    if (isContentGrowth && oldContent) {
+      // 内容增长：更新segments但保持当前打字状态
+      const segments = parseContent(newContent)
+      const oldSegmentCount = parsedSegmentsRef.current.length
+      parsedSegmentsRef.current = segments
+
+      // 更新完成状态
+      const isNowComplete = displayIndexRef.current >= segments.length
+      setIsComplete(isNowComplete)
+      
+      // 如果还有内容要打，开始打字
+      if (!isNowComplete && (!isTyping || displayIndexRef.current >= oldSegmentCount)) {
+        setIsTyping(true)
+        type()
+      }
+    } else {
+      // 全新内容：重新开始
+      clearTimer()
+      setDisplayContent('')
+      const segments = parseContent(newContent)
+      parsedSegmentsRef.current = segments
+      displayIndexRef.current = 0
+      
+      const isNowComplete = segments.length === 0
+      setIsComplete(isNowComplete)
+      
+      if (!isNowComplete && newContent && isMountedRef.current) {
+        setIsTyping(true)
+        type()
       }
     }
 
-    type()
+    lastContentRef.current = newContent
+  }, [content, disabled, clearTimer, parseContent, type, isTyping])
 
-    return () => clearTimer()
-  }, [content, typingSpeed, disabled])
+  // Cleanup
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      clearTimer()
+    }
+  }, [clearTimer])
 
-  const reset = () => {
+  const reset = useCallback(() => {
     clearTimer()
     setDisplayContent('')
+    parsedSegmentsRef.current = []
+    displayIndexRef.current = 0
     setIsTyping(false)
-  }
+    setIsComplete(false) // 重置完成状态
+    lastContentRef.current = ''
+  }, [clearTimer])
 
-  const start = () => {
+  const start = useCallback(() => {
     clearTimer()
+    displayIndexRef.current = 0
     setDisplayContent('')
     setIsTyping(true)
-  }
+    setIsComplete(false) // 开始时重置完成状态
+    type()
+  }, [clearTimer, type])
 
   return {
     displayContent,
     isTyping,
+    isComplete, // 新增：返回完成状态
     reset,
-    start
+    start,
+    getSegments: () => parsedSegmentsRef.current
   }
 }
 

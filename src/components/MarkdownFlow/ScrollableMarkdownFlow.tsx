@@ -4,21 +4,11 @@ import useScrollToBottom from './useScrollToBottom'
 import { OnSendContentParams, CustomRenderBarProps } from '@/components/types'
 import { ChevronDown } from 'lucide-react'
 import { Button } from '../ui/button'
+import type { MarkdownFlowProps } from './MarkdownFlow'
 
 import './markdownFlow.css'
 
-interface ScrollableMarkdownFlowProps {
-  initialContentList?: {
-    content: string
-    isFinished?: boolean
-    defaultInputText?: string
-    defaultButtonText?: string
-    readonly?: boolean
-  }[]
-  customRenderBar?: CustomRenderBarProps
-  onSend?: (content: OnSendContentParams) => void
-  typingSpeed?: number
-  disableTyping?: boolean
+interface ScrollableMarkdownFlowProps extends MarkdownFlowProps {
   height?: string | number
   className?: string
 }
@@ -27,6 +17,7 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
   initialContentList = [],
   customRenderBar,
   onSend,
+  onBlockComplete,
   typingSpeed,
   disableTyping,
   height = '100%',
@@ -63,6 +54,7 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
           onSend={onSend}
           typingSpeed={typingSpeed}
           disableTyping={disableTyping}
+          onBlockComplete={onBlockComplete}
         />
       </div>
       {showScrollToBottom && (

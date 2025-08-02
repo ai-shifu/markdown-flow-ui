@@ -134,15 +134,10 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
     setContentList(empList)
   }
 
-  const customRenderBar = () => {
-    return <></>
-  }
-
   return (
     <div className='w-full'>
       <MarkdownFlow
-        contentList={contentList}
-        customRenderBar={customRenderBar}
+        initialContentList={contentList}
         onSend={handleSend}
       />
     </div>

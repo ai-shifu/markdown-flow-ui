@@ -5,12 +5,11 @@ import { OnSendContentParams, CustomRenderBarProps } from '@/components/types'
 
 // 定义组件 Props 类型
 interface MarkdownFlowProps {
-  contentList?: {
+  initialContentList?: {
     content: string
     isFinished?: boolean
     defaultInputText?: string
     defaultButtonText?: string
-    defaultVariableName?: string
     readonly?: boolean
   }[]
   customRenderBar?: CustomRenderBarProps
@@ -20,28 +19,42 @@ interface MarkdownFlowProps {
 }
 
 const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
-  contentList,
+  initialContentList = [],
   customRenderBar,
-  onSend,
-  typingSpeed,
-  disableTyping
+  onSend: onSendProp,
+  typingSpeed: typingSpeedProp,
+  disableTyping: disableTypingProp
 }) => {
   const contentEndRef = useRef<HTMLDivElement>(null)
+
+  // 自动滚动到底部
   useEffect(() => {
     contentEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [contentList])
+  }, [initialContentList])
+
   return (
-    <div className='markdown-flow' ref={contentEndRef}>
-      {contentList?.map((contentInfo, index) => (
-        <ContentRender
-          key={index}
-          {...contentInfo}
-          disableTyping={contentInfo.isFinished ? true : disableTyping}
-          customRenderBar={customRenderBar}
-          onSend={contentInfo.isFinished ? undefined : onSend}
-          typingSpeed={contentInfo.isFinished ? undefined : typingSpeed}
-        />
-      ))}
+    <div className='markdown-flow'>
+      {initialContentList.map((contentInfo, index) => {
+        const isFinished = contentInfo.isFinished ?? false
+        const disableTyping = isFinished || disableTypingProp
+        const onSend = isFinished ? undefined : onSendProp
+        const typingSpeed = isFinished ? undefined : typingSpeedProp
+
+        return (
+          <ContentRender
+            key={index}
+            content={contentInfo.content}
+            defaultInputText={contentInfo.defaultInputText}
+            defaultButtonText={contentInfo.defaultButtonText}
+            readonly={contentInfo.readonly}
+            disableTyping={disableTyping}
+            customRenderBar={customRenderBar}
+            onSend={onSend}
+            typingSpeed={typingSpeed}
+          />
+        )
+      })}
+      <div ref={contentEndRef} />
     </div>
   )
 }

@@ -11,12 +11,13 @@ import CustomButtonInputVariable, {
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import 'highlight.js/styles/github.css'
-import { highlightLanguages, subsetLanguages } from './utils/highlightLanguages'
+import { highlightLanguages, subsetLanguages } from './utils/highlight-languages'
 import useTypewriter from './useTypewriter'
 import './contentRender.css'
 import { OnSendContentParams, CustomRenderBarProps } from '@/components/types'
 import '@/styles/globals.css'
 import remarkBreaks from 'remark-breaks'
+import { processMarkdownText } from './utils/process-markdown'
 
 // 定义组件 Props 类型
 export interface ContentRenderProps {
@@ -46,7 +47,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 }) => {
   // 使用自定义Hook处理打字机效果
   const { displayContent, isTyping } = useTypewriter({
-    content: content,
+    content: processMarkdownText(content),
     typingSpeed,
     disabled: disableTyping
   })

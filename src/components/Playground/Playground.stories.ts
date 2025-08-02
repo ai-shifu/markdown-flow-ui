@@ -56,6 +56,6 @@ export const PlaygroundStory1: Story = {
 用同理心表示，不舒服是正常的，这是人类共同的反应
 问用户是不是真的是人类？如果是，请登录
 
-?[登录](login_url)`
+?[登录]`
   },
 };

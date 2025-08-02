@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react'
+import React, { useMemo, useState, useRef, useEffect, useCallback, use } from 'react'
 import useSSE from '@/components/sse/useSSE'
 import useMarkdownInfo from './useMarkdownInfo'
 import MarkdownFlow from '../MarkdownFlow'
@@ -48,37 +48,35 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
     return JSON.stringify(sseParams)
   }
 
-  const handleOnFinish = useCallback(
-    (data: string, sseIndex: number) => {
-      setContent('')
-      const newIndex = currentBlockIndex + 1
-      if (
-        (data && interaction_blocks?.includes(currentBlockIndex)) ||
-        newIndex >= (block_count ?? 0)
-      ) {
-        return
-      }
-      const newContext = sseParams.context ? [...sseParams.context] : []
-      if (!newContext[currentBlockIndex]) {
-        newContext[currentBlockIndex] = {
-          role: 'assistant',
-          content: ''
-        }
-      }
-      newContext.push({
-        role: 'assistant',
-        content: ''
-      })
-      setSseParams({
-        ...sseParams,
-        block_index: newIndex,
-        context: newContext
-      })
-      setCurrentBlockIndex(newIndex)
-    },
-    [currentBlockIndex, block_count, interaction_blocks, sseParams]
-  )
-
+  const handleOnFinish = (data: string) => {
+    // 清空当前消息
+    setContent('')
+    const newIndex = currentBlockIndex + 1
+    // 跳过交互块或者最后一个块
+    if (
+      (data && interaction_blocks?.includes(currentBlockIndex)) ||
+      newIndex >= (block_count ?? 0)
+    ) {
+      return
+    }
+    // 修改参数继续发起请求
+    const newContext = sseParams.context ? [...sseParams.context] : []
+    if(newContext[currentBlockIndex]){
+     newContext[currentBlockIndex].content = data 
+    }
+    newContext.push({
+      role: 'assistant',
+      content: ''
+    })
+    // 更新参数
+    setSseParams({
+      ...sseParams,
+      user_input: null,
+      block_index: newIndex,
+      context: newContext
+    })
+    setCurrentBlockIndex(newIndex)
+  }
   // data是sse推送的message
   const { data, sseIndex, connect, close } = useSSE<any>(sseUrl, {
     method: 'POST',
@@ -99,11 +97,11 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
       try {
         const newContent = data
         setContent(newContent)
-        
+
         const empList = contentList ? [...contentList] : []
         if (!empList[currentBlockIndex]) {
           empList[currentBlockIndex] = {
-            content: newContent,
+            content: newContent
           }
         } else {
           empList[currentBlockIndex].content = newContent
@@ -118,19 +116,21 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   // 自动滚动
   useEffect(() => {
     contentEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [defaultContent])
+  }, [content])
 
   // 处理自定义组件的回调
   const handleSend = (params: any) => {
+    const userInput = params.inputText || params.buttonText
     const newVariables = {
       ...sseParams.variables,
       [params.variableName]: params.inputText || params.buttonText
     }
     const newContext = [...sseParams.context]
-    newContext.push({
-      role: 'user',
-      content: params.inputText || params.buttonText
-    })
+    if(newContext[currentBlockIndex]){
+      newContext[currentBlockIndex].content = userInput
+      newContext[currentBlockIndex].role = 'user'
+    }
+    // 更新参数
     setSseParams({
       ...sseParams,
       context: newContext,

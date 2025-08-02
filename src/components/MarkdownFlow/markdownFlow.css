@@ -1,3 +1,15 @@
 .markdown-flow {
+}
 
+.scroll-to-bottom-btn {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  border-radius: 100%;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.scroll-to-bottom-btn:hover {
+  background-color: var(--primary-color);
 }

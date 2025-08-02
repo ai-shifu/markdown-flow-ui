@@ -1,9 +1,8 @@
-import React, { useRef, useEffect } from 'react'
+import React from 'react'
 import ContentRender from '../ContentRender'
 import './markdownFlow.css'
 import { OnSendContentParams, CustomRenderBarProps } from '@/components/types'
 
-// 定义组件 Props 类型
 interface MarkdownFlowProps {
   initialContentList?: {
     content: string
@@ -25,13 +24,6 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   typingSpeed: typingSpeedProp,
   disableTyping: disableTypingProp
 }) => {
-  const contentEndRef = useRef<HTMLDivElement>(null)
-
-  // 自动滚动到底部
-  useEffect(() => {
-    contentEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [initialContentList])
-
   return (
     <div className='markdown-flow'>
       {initialContentList.map((contentInfo, index) => {
@@ -54,7 +46,6 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
           />
         )
       })}
-      <div ref={contentEndRef} />
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import useSSE from '@/components/sse/useSSE'
 import useMarkdownInfo from './useMarkdownInfo'
-import MarkdownFlow from '../MarkdownFlow'
+import MarkdownFlow from '../MarkdownFlow/ScrollableMarkdownFlow'
 import { ContentRenderProps } from '@/components/ContentRender/ContentRender'
 import { OnSendContentParams } from '@/components/types'
 
@@ -12,6 +12,7 @@ type PlaygroundComponentProps = {
   }
   defaultDocumentPrompt?: string
   sseUrl?: string
+  styles?: React.CSSProperties
 }
 
 type SSEParams = {
@@ -35,7 +36,8 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   defaultContent,
   defaultVariables = {},
   defaultDocumentPrompt = '',
-  sseUrl = 'https://play.dev.pillowai.cn/api/v1/playground/generate'
+  sseUrl = 'https://play.dev.pillowai.cn/api/v1/playground/generate',
+  styles = {}
 }) => {
   const { data: markdownInfo, loading: isMarkdownLoading } =
     useMarkdownInfo(defaultContent)
@@ -202,7 +204,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   }
 
   return (
-    <div className='w-full'>
+    <div style={styles}>
       <MarkdownFlow initialContentList={contentList} onSend={handleSend} />
     </div>
   )

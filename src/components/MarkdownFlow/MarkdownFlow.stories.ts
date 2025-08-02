@@ -12,20 +12,14 @@ const meta = {
   },
   tags: ['autodocs'],
   argTypes: {
-    contentList: {
+    initialContentList: {
       description: 'MarkdownFlow 内容列表',
       table: {
         type: { summary: '{ content: string; inputText?: string; buttonText?: string; variableName?: string; }[]' },
       },
     },
-    currentContent: {
-      description: '当前内容',
-      table: {
-        type: { summary: '{ content: string; inputText?: string; buttonText?: string; variableName?: string; }' },
-      },
-    },
   },
-  args: { contentList: [] },
+  args: { initialContentList: [] },
 } satisfies Meta<typeof MarkdownFlow>;
 
 export default meta;
@@ -33,7 +27,7 @@ type Story = StoryObj<typeof meta>;
 
 export const MarkdownFlowStory: Story = {
   args: {
-    contentList: [
+    initialContentList: [
       {
         content: `你好呀！👋 我是孙志岗，很高兴能和你一起探索AI的奇妙世界~ \n\n在开始之前，我想先和你聊聊为什么学习AI这么重要🌟：\n\n- AI正在改变我们的生活、工作和学习方式\n\n- 掌握AI技能可以让你在未来更有竞争力\n\n- 学习AI不仅能解决实际问题，还能培养创新思维\n\n说了这么多，还不知道该怎么称呼你呢？😊 可以告诉我你的名字或你喜欢的称呼吗？`
       },
@@ -67,10 +61,5 @@ export const MarkdownFlowStory: Story = {
         readonly: true,
       },
     ],
-  },
-};
-
-export const MarkdownFlowWithHistoryMessageList: Story = {
-  args: {
   },
 };

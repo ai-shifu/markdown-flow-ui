@@ -1,8 +1,8 @@
 import React from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button } from '../../ui/button'
+import { Input } from '../../ui/input'
 import type { Components } from 'react-markdown'
-import { OnSendContentParams } from '@/components/types'
+import { OnSendContentParams } from '../../types'
 import { SendIcon } from 'lucide-react'
 
 // 定义自定义变量节点的类型

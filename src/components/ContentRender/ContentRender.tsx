@@ -17,8 +17,8 @@ import {
 } from './utils/highlight-languages'
 import useTypewriter from './useTypewriter'
 import './contentRender.css'
-import { OnSendContentParams, CustomRenderBarProps } from '@/components/types'
-import '@/styles/globals.css'
+import { OnSendContentParams, CustomRenderBarProps } from '../types'
+import '../../styles/globals.css'
 import remarkBreaks from 'remark-breaks'
 import { processMarkdownText } from './utils/process-markdown'
 

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import useSSE from '@/components/sse/useSSE'
+import useSSE from '../sse/useSSE'
 import useMarkdownInfo from './useMarkdownInfo'
 import MarkdownFlow from '../MarkdownFlow/ScrollableMarkdownFlow'
-import { ContentRenderProps } from '@/components/ContentRender/ContentRender'
-import { OnSendContentParams } from '@/components/types'
+import { ContentRenderProps } from '../ContentRender/ContentRender'
+import { OnSendContentParams } from '../types'
 
 type PlaygroundComponentProps = {
   defaultContent: string

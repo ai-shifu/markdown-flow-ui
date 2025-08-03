@@ -1,7 +1,7 @@
 import React from 'react'
-import { Button } from '@/components/ui/button'
+import { Button } from '../../ui/button'
 import type { Components } from 'react-markdown'
-import { OnSendContentParams } from '@/components/types'
+import { OnSendContentParams } from '../../types'
 
 // 定义自定义按钮节点的类型
 interface CustomButtonNode {

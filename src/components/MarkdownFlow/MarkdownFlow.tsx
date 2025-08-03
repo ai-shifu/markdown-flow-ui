@@ -1,7 +1,7 @@
 import React from 'react'
 import ContentRender from '../ContentRender'
 import './markdownFlow.css'
-import { OnSendContentParams, CustomRenderBarProps } from '@/components/types'
+import { OnSendContentParams, CustomRenderBarProps } from '../types'
 
 export interface MarkdownFlowProps {
   initialContentList?: {

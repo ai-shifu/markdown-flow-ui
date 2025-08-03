@@ -53,7 +53,7 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
           customRenderBar={customRenderBar}
           onSend={onSend}
           typingSpeed={typingSpeed}
-          disableTyping={disableTyping}
+          disableTyping={true}
           onBlockComplete={onBlockComplete}
         />
       </div>

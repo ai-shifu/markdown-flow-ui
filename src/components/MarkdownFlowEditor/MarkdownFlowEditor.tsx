@@ -3,7 +3,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { markdown } from '@codemirror/lang-markdown';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
-interface MarkdownFlowEditorProps {
+export interface MarkdownFlowEditorProps {
   value?: string;
   onChange?: (value: string) => void;
   className?: string;

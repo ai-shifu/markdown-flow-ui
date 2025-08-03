@@ -11,8 +11,8 @@ type PlaygroundComponentProps = {
     [key: string]: any
   }
   defaultDocumentPrompt?: string
-  sseUrl?: string
   styles?: React.CSSProperties
+  sseUrl?: string
 }
 
 type SSEParams = {
@@ -36,8 +36,8 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   defaultContent,
   defaultVariables = {},
   defaultDocumentPrompt = '',
+  styles = {},
   sseUrl = 'https://play.dev.pillowai.cn/api/v1/playground/generate',
-  styles = {}
 }) => {
   const { data: markdownInfo, loading: isMarkdownLoading } =
     useMarkdownInfo(defaultContent)

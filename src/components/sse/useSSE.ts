@@ -97,7 +97,6 @@ const useSSE = <T = any>(
               finalDataRef.current += parsedData
               setData(finalDataRef.current as any)
             } catch (err) {
-              console.error('Error parsing SSE message:', err)
             }
           }
         },

@@ -22,18 +22,7 @@ export default defineConfig({
         'react',
         'react-dom',
         'next',
-        'next/router',
-        '@codemirror/lang-markdown',
-        '@codemirror/language-data',
-        '@codemirror/view',
-        '@uiw/react-codemirror',
-        '@microsoft/fetch-event-source',
-        'react-markdown',
-        'rehype-highlight',
-        'remark-gfm',
-        'remark-breaks',
-        'unified',
-        'unist-util-visit',
+        'next/router'
       ],
       output: {
         globals: {

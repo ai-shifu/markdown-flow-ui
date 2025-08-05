@@ -7,6 +7,7 @@ type PlaygroundComponentProps = {
     defaultDocumentPrompt?: string;
     styles?: React.CSSProperties;
     sseUrl?: string;
+    sessionId?: string;
 };
 declare const PlaygroundComponent: React.FC<PlaygroundComponentProps>;
 export default PlaygroundComponent;

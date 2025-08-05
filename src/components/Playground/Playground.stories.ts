@@ -32,6 +32,7 @@ type Story = StoryObj<typeof meta>;
 
 export const PlaygroundStory1: Story = {
   args: {
+    sessionId: '111',
     defaultContent: `===# 第一章 认识一下===
 
 用友好的语气讲课：

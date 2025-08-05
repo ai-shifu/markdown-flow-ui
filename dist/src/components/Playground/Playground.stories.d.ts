@@ -9,6 +9,7 @@ declare const meta: {
         defaultDocumentPrompt?: string;
         styles?: React.CSSProperties;
         sseUrl?: string;
+        sessionId?: string;
     }>;
     parameters: {
         layout: string;
@@ -19,9 +20,14 @@ declare const meta: {
             control: "text";
             description: string;
         };
+        sessionId: {
+            control: "text";
+            description: string;
+        };
     };
     args: {
         defaultContent: string;
+        sessionId: string;
     };
 };
 export default meta;

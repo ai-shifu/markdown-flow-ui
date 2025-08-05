@@ -123,7 +123,7 @@ function el() {
       }
     }
     function i() {
-      var g = D.A;
+      var g = O.A;
       return g === null ? null : g.getOwner();
     }
     function a() {
@@ -138,7 +138,7 @@ function el() {
     }
     function s(g, G) {
       function j() {
-        U || (U = !0, console.error(
+        $ || ($ = !0, console.error(
           "%s: `key` is not a prop. Trying to access it will result in `undefined` being returned. If you need to access the same value within the child component, you should pass it as a different prop. (https://react.dev/link/special-props)",
           G
         ));
@@ -190,7 +190,7 @@ function el() {
       var ge = G.children;
       if (ge !== void 0)
         if (b)
-          if (H(ge)) {
+          if (U(ge)) {
             for (b = 0; b < ge.length; b++)
               d(ge[b]);
             Object.freeze && Object.freeze(ge);
@@ -239,7 +239,7 @@ React keys must be passed directly to JSX without using spread:
     function d(g) {
       typeof g == "object" && g !== null && g.$$typeof === p && g._store && (g._store.validated = 1);
     }
-    var f = Wr, p = Symbol.for("react.transitional.element"), m = Symbol.for("react.portal"), h = Symbol.for("react.fragment"), k = Symbol.for("react.strict_mode"), y = Symbol.for("react.profiler"), S = Symbol.for("react.consumer"), w = Symbol.for("react.context"), N = Symbol.for("react.forward_ref"), A = Symbol.for("react.suspense"), _ = Symbol.for("react.suspense_list"), L = Symbol.for("react.memo"), v = Symbol.for("react.lazy"), R = Symbol.for("react.activity"), x = Symbol.for("react.client.reference"), D = f.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, F = Object.prototype.hasOwnProperty, H = Array.isArray, M = console.createTask ? console.createTask : function() {
+    var f = Wr, p = Symbol.for("react.transitional.element"), m = Symbol.for("react.portal"), h = Symbol.for("react.fragment"), k = Symbol.for("react.strict_mode"), y = Symbol.for("react.profiler"), S = Symbol.for("react.consumer"), w = Symbol.for("react.context"), N = Symbol.for("react.forward_ref"), A = Symbol.for("react.suspense"), _ = Symbol.for("react.suspense_list"), L = Symbol.for("react.memo"), v = Symbol.for("react.lazy"), R = Symbol.for("react.activity"), x = Symbol.for("react.client.reference"), O = f.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, F = Object.prototype.hasOwnProperty, U = Array.isArray, D = console.createTask ? console.createTask : function() {
       return null;
     };
     f = {
@@ -247,12 +247,12 @@ React keys must be passed directly to JSX without using spread:
         return g();
       }
     };
-    var U, Q = {}, se = f.react_stack_bottom_frame.bind(
+    var $, Q = {}, se = f.react_stack_bottom_frame.bind(
       f,
       a
-    )(), O = M(r(a)), fe = {};
+    )(), I = D(r(a)), fe = {};
     Jt.Fragment = h, Jt.jsx = function(g, G, j, b, le) {
-      var _e = 1e4 > D.recentlyCreatedOwnerStacks++;
+      var _e = 1e4 > O.recentlyCreatedOwnerStacks++;
       return u(
         g,
         G,
@@ -261,10 +261,10 @@ React keys must be passed directly to JSX without using spread:
         b,
         le,
         _e ? Error("react-stack-top-frame") : se,
-        _e ? M(r(g)) : O
+        _e ? D(r(g)) : I
       );
     }, Jt.jsxs = function(g, G, j, b, le) {
-      var _e = 1e4 > D.recentlyCreatedOwnerStacks++;
+      var _e = 1e4 > O.recentlyCreatedOwnerStacks++;
       return u(
         g,
         G,
@@ -273,7 +273,7 @@ React keys must be passed directly to JSX without using spread:
         b,
         le,
         _e ? Error("react-stack-top-frame") : se,
-        _e ? M(r(g)) : O
+        _e ? D(r(g)) : I
       );
     };
   }()), Jt;
@@ -589,7 +589,7 @@ Ve.prototype.property = "";
 Ve.prototype.spaceSeparated = !1;
 Ve.prototype.space = void 0;
 let El = 0;
-const re = Rt(), Oe = Rt(), Nr = Rt(), I = Rt(), ve = Rt(), $t = Rt(), Xe = Rt();
+const re = Rt(), Oe = Rt(), Nr = Rt(), M = Rt(), ve = Rt(), $t = Rt(), Xe = Rt();
 function Rt() {
   return 2 ** ++El;
 }
@@ -599,7 +599,7 @@ const Ar = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   booleanish: Oe,
   commaOrSpaceSeparated: Xe,
   commaSeparated: $t,
-  number: I,
+  number: M,
   overloadedBoolean: Nr,
   spaceSeparated: ve
 }, Symbol.toStringTag, { value: "Module" })), nr = (
@@ -653,9 +653,9 @@ const Go = Gt({
     ariaAutoComplete: null,
     ariaBusy: Oe,
     ariaChecked: Oe,
-    ariaColCount: I,
-    ariaColIndex: I,
-    ariaColSpan: I,
+    ariaColCount: M,
+    ariaColIndex: M,
+    ariaColSpan: M,
     ariaControls: ve,
     ariaCurrent: null,
     ariaDescribedBy: ve,
@@ -672,7 +672,7 @@ const Go = Gt({
     ariaKeyShortcuts: null,
     ariaLabel: null,
     ariaLabelledBy: ve,
-    ariaLevel: I,
+    ariaLevel: M,
     ariaLive: null,
     ariaModal: Oe,
     ariaMultiLine: Oe,
@@ -680,21 +680,21 @@ const Go = Gt({
     ariaOrientation: null,
     ariaOwns: ve,
     ariaPlaceholder: null,
-    ariaPosInSet: I,
+    ariaPosInSet: M,
     ariaPressed: Oe,
     ariaReadOnly: Oe,
     ariaRelevant: null,
     ariaRequired: Oe,
     ariaRoleDescription: ve,
-    ariaRowCount: I,
-    ariaRowIndex: I,
-    ariaRowSpan: I,
+    ariaRowCount: M,
+    ariaRowIndex: M,
+    ariaRowSpan: M,
     ariaSelected: Oe,
-    ariaSetSize: I,
+    ariaSetSize: M,
     ariaSort: null,
-    ariaValueMax: I,
-    ariaValueMin: I,
-    ariaValueNow: I,
+    ariaValueMax: M,
+    ariaValueMin: M,
+    ariaValueNow: M,
     ariaValueText: null,
     role: null
   },
@@ -740,13 +740,13 @@ const _l = Gt({
     checked: re,
     cite: null,
     className: ve,
-    cols: I,
+    cols: M,
     colSpan: null,
     content: null,
     contentEditable: Oe,
     controls: re,
     controlsList: ve,
-    coords: I | $t,
+    coords: M | $t,
     crossOrigin: null,
     data: null,
     dateTime: null,
@@ -768,9 +768,9 @@ const _l = Gt({
     formNoValidate: re,
     formTarget: null,
     headers: ve,
-    height: I,
+    height: M,
     hidden: Nr,
-    high: I,
+    high: M,
     href: null,
     hrefLang: null,
     htmlFor: ve,
@@ -795,14 +795,14 @@ const _l = Gt({
     list: null,
     loading: null,
     loop: re,
-    low: I,
+    low: M,
     manifest: null,
     max: null,
-    maxLength: I,
+    maxLength: M,
     media: null,
     method: null,
     min: null,
-    minLength: I,
+    minLength: M,
     multiple: re,
     muted: re,
     name: null,
@@ -898,7 +898,7 @@ const _l = Gt({
     onWaiting: null,
     onWheel: null,
     open: re,
-    optimum: I,
+    optimum: M,
     pattern: null,
     ping: ve,
     placeholder: null,
@@ -913,8 +913,8 @@ const _l = Gt({
     rel: ve,
     required: re,
     reversed: re,
-    rows: I,
-    rowSpan: I,
+    rows: M,
+    rowSpan: M,
     sandbox: ve,
     scope: null,
     scoped: re,
@@ -924,19 +924,19 @@ const _l = Gt({
     shadowRootDelegatesFocus: re,
     shadowRootMode: null,
     shape: null,
-    size: I,
+    size: M,
     sizes: null,
     slot: null,
-    span: I,
+    span: M,
     spellCheck: Oe,
     src: null,
     srcDoc: null,
     srcLang: null,
     srcSet: null,
-    start: I,
+    start: M,
     step: null,
     style: null,
-    tabIndex: I,
+    tabIndex: M,
     target: null,
     title: null,
     translate: null,
@@ -944,7 +944,7 @@ const _l = Gt({
     typeMustMatch: re,
     useMap: null,
     value: Oe,
-    width: I,
+    width: M,
     wrap: null,
     writingSuggestions: null,
     // Legacy.
@@ -961,11 +961,11 @@ const _l = Gt({
     // `<body>`. Use CSS `background-image` instead
     bgColor: null,
     // `<body>` and table elements. Use CSS `background-color` instead
-    border: I,
+    border: M,
     // `<table>`. Use CSS `border-width` instead,
     borderColor: null,
     // `<table>`. Use CSS `border-color` instead,
-    bottomMargin: I,
+    bottomMargin: M,
     // `<body>`
     cellPadding: null,
     // `<table>`
@@ -999,9 +999,9 @@ const _l = Gt({
     // `<table>`
     frameBorder: null,
     // `<iframe>`. Use CSS `border` instead
-    hSpace: I,
+    hSpace: M,
     // `<img>` and `<object>`
-    leftMargin: I,
+    leftMargin: M,
     // `<body>`
     link: null,
     // `<body>`. Use CSS `a:link {color: *}` instead
@@ -1009,9 +1009,9 @@ const _l = Gt({
     // `<frame>`, `<iframe>`, and `<img>`. Use an `<a>`
     lowSrc: null,
     // `<img>`. Use a `<picture>`
-    marginHeight: I,
+    marginHeight: M,
     // `<body>`
-    marginWidth: I,
+    marginWidth: M,
     // `<body>`
     noResize: re,
     // `<frame>`
@@ -1029,7 +1029,7 @@ const _l = Gt({
     // `<isindex>`
     rev: null,
     // `<link>`
-    rightMargin: I,
+    rightMargin: M,
     // `<body>`
     rules: null,
     // `<table>`
@@ -1043,7 +1043,7 @@ const _l = Gt({
     // `<table>`
     text: null,
     // `<body>`. Use CSS `color` instead
-    topMargin: I,
+    topMargin: M,
     // `<body>`
     valueType: null,
     // `<param>`
@@ -1053,7 +1053,7 @@ const _l = Gt({
     // Several. Use CSS `vertical-align` instead
     vLink: null,
     // `<body>`. Use CSS `a:visited {color}` instead
-    vSpace: I,
+    vSpace: M,
     // `<img>` and `<object>`
     // Non-standard Properties.
     allowTransparency: null,
@@ -1063,7 +1063,7 @@ const _l = Gt({
     disableRemotePlayback: re,
     prefix: null,
     property: null,
-    results: I,
+    results: M,
     security: null,
     unselectable: null
   },
@@ -1247,27 +1247,27 @@ const _l = Gt({
   },
   properties: {
     about: Xe,
-    accentHeight: I,
+    accentHeight: M,
     accumulate: null,
     additive: null,
     alignmentBaseline: null,
-    alphabetic: I,
-    amplitude: I,
+    alphabetic: M,
+    amplitude: M,
     arabicForm: null,
-    ascent: I,
+    ascent: M,
     attributeName: null,
     attributeType: null,
-    azimuth: I,
+    azimuth: M,
     bandwidth: null,
     baselineShift: null,
     baseFrequency: null,
     baseProfile: null,
     bbox: null,
     begin: null,
-    bias: I,
+    bias: M,
     by: null,
     calcMode: null,
-    capHeight: I,
+    capHeight: M,
     className: ve,
     clip: null,
     clipPath: null,
@@ -1288,26 +1288,26 @@ const _l = Gt({
     d: null,
     dataType: null,
     defaultAction: null,
-    descent: I,
-    diffuseConstant: I,
+    descent: M,
+    diffuseConstant: M,
     direction: null,
     display: null,
     dur: null,
-    divisor: I,
+    divisor: M,
     dominantBaseline: null,
     download: re,
     dx: null,
     dy: null,
     edgeMode: null,
     editable: null,
-    elevation: I,
+    elevation: M,
     enableBackground: null,
     end: null,
     event: null,
-    exponent: I,
+    exponent: M,
     externalResourcesRequired: null,
     fill: null,
-    fillOpacity: I,
+    fillOpacity: M,
     fillRule: null,
     filter: null,
     filterRes: null,
@@ -1337,27 +1337,27 @@ const _l = Gt({
     gradientTransform: null,
     gradientUnits: null,
     handler: null,
-    hanging: I,
+    hanging: M,
     hatchContentUnits: null,
     hatchUnits: null,
     height: null,
     href: null,
     hrefLang: null,
-    horizAdvX: I,
-    horizOriginX: I,
-    horizOriginY: I,
+    horizAdvX: M,
+    horizOriginX: M,
+    horizOriginY: M,
     id: null,
-    ideographic: I,
+    ideographic: M,
     imageRendering: null,
     initialVisibility: null,
     in: null,
     in2: null,
-    intercept: I,
-    k: I,
-    k1: I,
-    k2: I,
-    k3: I,
-    k4: I,
+    intercept: M,
+    k: M,
+    k1: M,
+    k2: M,
+    k3: M,
+    k4: M,
     kernelMatrix: Xe,
     kernelUnitLength: null,
     keyPoints: null,
@@ -1371,7 +1371,7 @@ const _l = Gt({
     lengthAdjust: null,
     letterSpacing: null,
     lightingColor: null,
-    limitingConeAngle: I,
+    limitingConeAngle: M,
     local: null,
     markerEnd: null,
     markerMid: null,
@@ -1387,7 +1387,7 @@ const _l = Gt({
     media: null,
     mediaCharacterEncoding: null,
     mediaContentEncodings: null,
-    mediaSize: I,
+    mediaSize: M,
     mediaTime: null,
     method: null,
     min: null,
@@ -1493,12 +1493,12 @@ const _l = Gt({
     origin: null,
     overflow: null,
     overlay: null,
-    overlinePosition: I,
-    overlineThickness: I,
+    overlinePosition: M,
+    overlineThickness: M,
     paintOrder: null,
     panose1: null,
     path: null,
-    pathLength: I,
+    pathLength: M,
     patternContentUnits: null,
     patternTransform: null,
     patternUnits: null,
@@ -1508,9 +1508,9 @@ const _l = Gt({
     playbackOrder: null,
     pointerEvents: null,
     points: null,
-    pointsAtX: I,
-    pointsAtY: I,
-    pointsAtZ: I,
+    pointsAtX: M,
+    pointsAtY: M,
+    pointsAtZ: M,
     preserveAlpha: null,
     preserveAspectRatio: null,
     primitiveUnits: null,
@@ -1542,8 +1542,8 @@ const _l = Gt({
     side: null,
     slope: null,
     snapshotTime: null,
-    specularConstant: I,
-    specularExponent: I,
+    specularConstant: M,
+    specularExponent: M,
     spreadMethod: null,
     spacing: null,
     startOffset: null,
@@ -1553,30 +1553,30 @@ const _l = Gt({
     stitchTiles: null,
     stopColor: null,
     stopOpacity: null,
-    strikethroughPosition: I,
-    strikethroughThickness: I,
+    strikethroughPosition: M,
+    strikethroughThickness: M,
     string: null,
     stroke: null,
     strokeDashArray: Xe,
     strokeDashOffset: null,
     strokeLineCap: null,
     strokeLineJoin: null,
-    strokeMiterLimit: I,
-    strokeOpacity: I,
+    strokeMiterLimit: M,
+    strokeOpacity: M,
     strokeWidth: null,
     style: null,
-    surfaceScale: I,
+    surfaceScale: M,
     syncBehavior: null,
     syncBehaviorDefault: null,
     syncMaster: null,
     syncTolerance: null,
     syncToleranceDefault: null,
     systemLanguage: Xe,
-    tabIndex: I,
+    tabIndex: M,
     tableValues: null,
     target: null,
-    targetX: I,
-    targetY: I,
+    targetX: M,
+    targetY: M,
     textAnchor: null,
     textDecoration: null,
     textRendering: null,
@@ -1591,22 +1591,22 @@ const _l = Gt({
     transformOrigin: null,
     u1: null,
     u2: null,
-    underlinePosition: I,
-    underlineThickness: I,
+    underlinePosition: M,
+    underlineThickness: M,
     unicode: null,
     unicodeBidi: null,
     unicodeRange: null,
-    unitsPerEm: I,
+    unitsPerEm: M,
     values: null,
-    vAlphabetic: I,
-    vMathematical: I,
+    vAlphabetic: M,
+    vMathematical: M,
     vectorEffect: null,
-    vHanging: I,
-    vIdeographic: I,
+    vHanging: M,
+    vIdeographic: M,
     version: null,
-    vertAdvY: I,
-    vertOriginX: I,
-    vertOriginY: I,
+    vertAdvY: M,
+    vertOriginX: M,
+    vertOriginY: M,
     viewBox: null,
     viewTarget: null,
     visibility: null,
@@ -1618,7 +1618,7 @@ const _l = Gt({
     x1: null,
     x2: null,
     xChannelSelector: null,
-    xHeight: I,
+    xHeight: M,
     y: null,
     y1: null,
     y2: null,
@@ -1714,76 +1714,76 @@ function Rl() {
     if (!h) return [];
     k = k || {};
     var y = 1, S = 1;
-    function w(H) {
-      var M = H.match(t);
-      M && (y += M.length);
-      var U = H.lastIndexOf(l);
-      S = ~U ? H.length - U : S + H.length;
+    function w(U) {
+      var D = U.match(t);
+      D && (y += D.length);
+      var $ = U.lastIndexOf(l);
+      S = ~$ ? U.length - $ : S + U.length;
     }
     function N() {
-      var H = { line: y, column: S };
-      return function(M) {
-        return M.position = new A(H), v(), M;
+      var U = { line: y, column: S };
+      return function(D) {
+        return D.position = new A(U), v(), D;
       };
     }
-    function A(H) {
-      this.start = H, this.end = { line: y, column: S }, this.source = k.source;
+    function A(U) {
+      this.start = U, this.end = { line: y, column: S }, this.source = k.source;
     }
     A.prototype.content = h;
-    function _(H) {
-      var M = new Error(
-        k.source + ":" + y + ":" + S + ": " + H
+    function _(U) {
+      var D = new Error(
+        k.source + ":" + y + ":" + S + ": " + U
       );
-      if (M.reason = H, M.filename = k.source, M.line = y, M.column = S, M.source = h, !k.silent) throw M;
+      if (D.reason = U, D.filename = k.source, D.line = y, D.column = S, D.source = h, !k.silent) throw D;
     }
-    function L(H) {
-      var M = H.exec(h);
-      if (M) {
-        var U = M[0];
-        return w(U), h = h.slice(U.length), M;
+    function L(U) {
+      var D = U.exec(h);
+      if (D) {
+        var $ = D[0];
+        return w($), h = h.slice($.length), D;
       }
     }
     function v() {
       L(n);
     }
-    function R(H) {
-      var M;
-      for (H = H || []; M = x(); )
-        M !== !1 && H.push(M);
-      return H;
+    function R(U) {
+      var D;
+      for (U = U || []; D = x(); )
+        D !== !1 && U.push(D);
+      return U;
     }
     function x() {
-      var H = N();
+      var U = N();
       if (!(c != h.charAt(0) || u != h.charAt(1))) {
-        for (var M = 2; d != h.charAt(M) && (u != h.charAt(M) || c != h.charAt(M + 1)); )
-          ++M;
-        if (M += 2, d === h.charAt(M - 1))
+        for (var D = 2; d != h.charAt(D) && (u != h.charAt(D) || c != h.charAt(D + 1)); )
+          ++D;
+        if (D += 2, d === h.charAt(D - 1))
           return _("End of comment missing");
-        var U = h.slice(2, M - 2);
-        return S += 2, w(U), h = h.slice(M), S += 2, H({
+        var $ = h.slice(2, D - 2);
+        return S += 2, w($), h = h.slice(D), S += 2, U({
           type: f,
-          comment: U
+          comment: $
         });
       }
     }
-    function D() {
-      var H = N(), M = L(r);
-      if (M) {
+    function O() {
+      var U = N(), D = L(r);
+      if (D) {
         if (x(), !L(i)) return _("property missing ':'");
-        var U = L(a), Q = H({
+        var $ = L(a), Q = U({
           type: p,
-          property: m(M[0].replace(e, d)),
-          value: U ? m(U[0].replace(e, d)) : d
+          property: m(D[0].replace(e, d)),
+          value: $ ? m($[0].replace(e, d)) : d
         });
         return L(o), Q;
       }
     }
     function F() {
-      var H = [];
-      R(H);
-      for (var M; M = D(); )
-        M !== !1 && (H.push(M), R(H));
-      return H;
+      var U = [];
+      R(U);
+      for (var D; D = O(); )
+        D !== !1 && (U.push(D), R(U));
+      return U;
     }
     return v(), F();
   };
@@ -2858,20 +2858,20 @@ function vc(e, t, n) {
   function A(_, L, v) {
     let R = 0;
     return x;
-    function x(U) {
-      return _.enter("lineEnding"), _.consume(U), _.exit("lineEnding"), D;
+    function x($) {
+      return _.enter("lineEnding"), _.consume($), _.exit("lineEnding"), O;
     }
-    function D(U) {
-      return _.enter("codeFencedFence"), ue(U) ? pe(_, F, "linePrefix", r.parser.constructs.disable.null.includes("codeIndented") ? void 0 : 4)(U) : F(U);
+    function O($) {
+      return _.enter("codeFencedFence"), ue($) ? pe(_, F, "linePrefix", r.parser.constructs.disable.null.includes("codeIndented") ? void 0 : 4)($) : F($);
     }
-    function F(U) {
-      return U === s ? (_.enter("codeFencedFenceSequence"), H(U)) : v(U);
+    function F($) {
+      return $ === s ? (_.enter("codeFencedFenceSequence"), U($)) : v($);
     }
-    function H(U) {
-      return U === s ? (R++, _.consume(U), H) : R >= o ? (_.exit("codeFencedFenceSequence"), ue(U) ? pe(_, M, "whitespace")(U) : M(U)) : v(U);
+    function U($) {
+      return $ === s ? (R++, _.consume($), U) : R >= o ? (_.exit("codeFencedFenceSequence"), ue($) ? pe(_, D, "whitespace")($) : D($)) : v($);
     }
-    function M(U) {
-      return U === null || X(U) ? (_.exit("codeFencedFence"), L(U)) : v(U);
+    function D($) {
+      return $ === null || X($) ? (_.exit("codeFencedFence"), L($)) : v($);
     }
   }
 }
@@ -3573,35 +3573,35 @@ function tu(e, t, n) {
     return b === 47 || b === 62 || ue(b) ? w(b) : n(b);
   }
   function x(b) {
-    return b === 62 ? (e.consume(b), D) : n(b);
+    return b === 62 ? (e.consume(b), O) : n(b);
   }
-  function D(b) {
-    return b === null || X(b) ? F(b) : ue(b) ? (e.consume(b), D) : n(b);
+  function O(b) {
+    return b === null || X(b) ? F(b) : ue(b) ? (e.consume(b), O) : n(b);
   }
   function F(b) {
-    return b === 45 && i === 2 ? (e.consume(b), Q) : b === 60 && i === 1 ? (e.consume(b), se) : b === 62 && i === 4 ? (e.consume(b), G) : b === 63 && i === 3 ? (e.consume(b), g) : b === 93 && i === 5 ? (e.consume(b), fe) : X(b) && (i === 6 || i === 7) ? (e.exit("htmlFlowData"), e.check(Qc, j, H)(b)) : b === null || X(b) ? (e.exit("htmlFlowData"), H(b)) : (e.consume(b), F);
-  }
-  function H(b) {
-    return e.check(Jc, M, j)(b);
-  }
-  function M(b) {
-    return e.enter("lineEnding"), e.consume(b), e.exit("lineEnding"), U;
+    return b === 45 && i === 2 ? (e.consume(b), Q) : b === 60 && i === 1 ? (e.consume(b), se) : b === 62 && i === 4 ? (e.consume(b), G) : b === 63 && i === 3 ? (e.consume(b), g) : b === 93 && i === 5 ? (e.consume(b), fe) : X(b) && (i === 6 || i === 7) ? (e.exit("htmlFlowData"), e.check(Qc, j, U)(b)) : b === null || X(b) ? (e.exit("htmlFlowData"), U(b)) : (e.consume(b), F);
   }
   function U(b) {
-    return b === null || X(b) ? H(b) : (e.enter("htmlFlowData"), F(b));
+    return e.check(Jc, D, j)(b);
+  }
+  function D(b) {
+    return e.enter("lineEnding"), e.consume(b), e.exit("lineEnding"), $;
+  }
+  function $(b) {
+    return b === null || X(b) ? U(b) : (e.enter("htmlFlowData"), F(b));
   }
   function Q(b) {
     return b === 45 ? (e.consume(b), g) : F(b);
   }
   function se(b) {
-    return b === 47 ? (e.consume(b), o = "", O) : F(b);
+    return b === 47 ? (e.consume(b), o = "", I) : F(b);
   }
-  function O(b) {
+  function I(b) {
     if (b === 62) {
       const le = o.toLowerCase();
       return Vi.includes(le) ? (e.consume(b), G) : F(b);
     }
-    return He(b) && o.length < 8 ? (e.consume(b), o += String.fromCharCode(b), O) : F(b);
+    return He(b) && o.length < 8 ? (e.consume(b), o += String.fromCharCode(b), I) : F(b);
   }
   function fe(b) {
     return b === 93 ? (e.consume(b), g) : F(b);
@@ -3699,30 +3699,30 @@ function ou(e, t, n) {
     return g === 47 ? (e.consume(g), Q) : g === 58 || g === 95 || He(g) ? (e.consume(g), x) : X(g) ? (o = R, se(g)) : ue(g) ? (e.consume(g), R) : Q(g);
   }
   function x(g) {
-    return g === 45 || g === 46 || g === 58 || g === 95 || Fe(g) ? (e.consume(g), x) : D(g);
+    return g === 45 || g === 46 || g === 58 || g === 95 || Fe(g) ? (e.consume(g), x) : O(g);
   }
-  function D(g) {
-    return g === 61 ? (e.consume(g), F) : X(g) ? (o = D, se(g)) : ue(g) ? (e.consume(g), D) : R(g);
+  function O(g) {
+    return g === 61 ? (e.consume(g), F) : X(g) ? (o = O, se(g)) : ue(g) ? (e.consume(g), O) : R(g);
   }
   function F(g) {
-    return g === null || g === 60 || g === 61 || g === 62 || g === 96 ? n(g) : g === 34 || g === 39 ? (e.consume(g), i = g, H) : X(g) ? (o = F, se(g)) : ue(g) ? (e.consume(g), F) : (e.consume(g), M);
-  }
-  function H(g) {
-    return g === i ? (e.consume(g), i = void 0, U) : g === null ? n(g) : X(g) ? (o = H, se(g)) : (e.consume(g), H);
-  }
-  function M(g) {
-    return g === null || g === 34 || g === 39 || g === 60 || g === 61 || g === 96 ? n(g) : g === 47 || g === 62 || xe(g) ? R(g) : (e.consume(g), M);
+    return g === null || g === 60 || g === 61 || g === 62 || g === 96 ? n(g) : g === 34 || g === 39 ? (e.consume(g), i = g, U) : X(g) ? (o = F, se(g)) : ue(g) ? (e.consume(g), F) : (e.consume(g), D);
   }
   function U(g) {
+    return g === i ? (e.consume(g), i = void 0, $) : g === null ? n(g) : X(g) ? (o = U, se(g)) : (e.consume(g), U);
+  }
+  function D(g) {
+    return g === null || g === 34 || g === 39 || g === 60 || g === 61 || g === 96 ? n(g) : g === 47 || g === 62 || xe(g) ? R(g) : (e.consume(g), D);
+  }
+  function $(g) {
     return g === 47 || g === 62 || xe(g) ? R(g) : n(g);
   }
   function Q(g) {
     return g === 62 ? (e.consume(g), e.exit("htmlTextData"), e.exit("htmlText"), t) : n(g);
   }
   function se(g) {
-    return e.exit("htmlTextData"), e.enter("lineEnding"), e.consume(g), e.exit("lineEnding"), O;
+    return e.exit("htmlTextData"), e.enter("lineEnding"), e.consume(g), e.exit("lineEnding"), I;
   }
-  function O(g) {
+  function I(g) {
     return ue(g) ? pe(e, fe, "linePrefix", r.parser.constructs.disable.null.includes("codeIndented") ? void 0 : 4)(g) : fe(g);
   }
   function fe(g) {
@@ -4282,82 +4282,82 @@ function Wu(e, t, n) {
   };
   let u = t.tokenize.call(c, l);
   return t.resolveAll && a.push(t), c;
-  function d(D) {
-    return o = et(o, D), k(), o[o.length - 1] !== null ? [] : (v(t, 0), c.events = qn(a, c.events, c), c.events);
+  function d(O) {
+    return o = et(o, O), k(), o[o.length - 1] !== null ? [] : (v(t, 0), c.events = qn(a, c.events, c), c.events);
   }
-  function f(D, F) {
-    return Yu(p(D), F);
+  function f(O, F) {
+    return Yu(p(O), F);
   }
-  function p(D) {
-    return Vu(o, D);
+  function p(O) {
+    return Vu(o, O);
   }
   function m() {
     const {
-      _bufferIndex: D,
+      _bufferIndex: O,
       _index: F,
-      line: H,
-      column: M,
-      offset: U
+      line: U,
+      column: D,
+      offset: $
     } = r;
     return {
-      _bufferIndex: D,
+      _bufferIndex: O,
       _index: F,
-      line: H,
-      column: M,
-      offset: U
+      line: U,
+      column: D,
+      offset: $
     };
   }
-  function h(D) {
-    i[D.line] = D.column, x();
+  function h(O) {
+    i[O.line] = O.column, x();
   }
   function k() {
-    let D;
+    let O;
     for (; r._index < o.length; ) {
       const F = o[r._index];
       if (typeof F == "string")
-        for (D = r._index, r._bufferIndex < 0 && (r._bufferIndex = 0); r._index === D && r._bufferIndex < F.length; )
+        for (O = r._index, r._bufferIndex < 0 && (r._bufferIndex = 0); r._index === O && r._bufferIndex < F.length; )
           y(F.charCodeAt(r._bufferIndex));
       else
         y(F);
     }
   }
-  function y(D) {
-    u = u(D);
+  function y(O) {
+    u = u(O);
   }
-  function S(D) {
-    X(D) ? (r.line++, r.column = 1, r.offset += D === -3 ? 2 : 1, x()) : D !== -1 && (r.column++, r.offset++), r._bufferIndex < 0 ? r._index++ : (r._bufferIndex++, r._bufferIndex === // Points w/ non-negative `_bufferIndex` reference
+  function S(O) {
+    X(O) ? (r.line++, r.column = 1, r.offset += O === -3 ? 2 : 1, x()) : O !== -1 && (r.column++, r.offset++), r._bufferIndex < 0 ? r._index++ : (r._bufferIndex++, r._bufferIndex === // Points w/ non-negative `_bufferIndex` reference
     // strings.
     /** @type {string} */
-    o[r._index].length && (r._bufferIndex = -1, r._index++)), c.previous = D;
+    o[r._index].length && (r._bufferIndex = -1, r._index++)), c.previous = O;
   }
-  function w(D, F) {
-    const H = F || {};
-    return H.type = D, H.start = m(), c.events.push(["enter", H, c]), s.push(H), H;
+  function w(O, F) {
+    const U = F || {};
+    return U.type = O, U.start = m(), c.events.push(["enter", U, c]), s.push(U), U;
   }
-  function N(D) {
+  function N(O) {
     const F = s.pop();
     return F.end = m(), c.events.push(["exit", F, c]), F;
   }
-  function A(D, F) {
-    v(D, F.from);
+  function A(O, F) {
+    v(O, F.from);
   }
-  function _(D, F) {
+  function _(O, F) {
     F.restore();
   }
-  function L(D, F) {
-    return H;
-    function H(M, U, Q) {
-      let se, O, fe, g;
-      return Array.isArray(M) ? (
+  function L(O, F) {
+    return U;
+    function U(D, $, Q) {
+      let se, I, fe, g;
+      return Array.isArray(D) ? (
         /* c8 ignore next 1 */
-        j(M)
-      ) : "tokenize" in M ? (
+        j(D)
+      ) : "tokenize" in D ? (
         // Looks like a construct.
         j([
           /** @type {Construct} */
-          M
+          D
         ])
-      ) : G(M);
+      ) : G(D);
       function G(be) {
         return me;
         function me(ge) {
@@ -4371,7 +4371,7 @@ function Wu(e, t, n) {
         }
       }
       function j(be) {
-        return se = be, O = 0, be.length === 0 ? Q : b(be[O]);
+        return se = be, I = 0, be.length === 0 ? Q : b(be[I]);
       }
       function b(be) {
         return me;
@@ -4388,24 +4388,24 @@ function Wu(e, t, n) {
         }
       }
       function le(be) {
-        return D(fe, g), U;
+        return O(fe, g), $;
       }
       function _e(be) {
-        return g.restore(), ++O < se.length ? b(se[O]) : Q;
+        return g.restore(), ++I < se.length ? b(se[I]) : Q;
       }
     }
   }
-  function v(D, F) {
-    D.resolveAll && !a.includes(D) && a.push(D), D.resolve && Je(c.events, F, c.events.length - F, D.resolve(c.events.slice(F), c)), D.resolveTo && (c.events = D.resolveTo(c.events, c));
+  function v(O, F) {
+    O.resolveAll && !a.includes(O) && a.push(O), O.resolve && Je(c.events, F, c.events.length - F, O.resolve(c.events.slice(F), c)), O.resolveTo && (c.events = O.resolveTo(c.events, c));
   }
   function R() {
-    const D = m(), F = c.previous, H = c.currentConstruct, M = c.events.length, U = Array.from(s);
+    const O = m(), F = c.previous, U = c.currentConstruct, D = c.events.length, $ = Array.from(s);
     return {
-      from: M,
+      from: D,
       restore: Q
     };
     function Q() {
-      r = D, c.previous = F, c.currentConstruct = H, c.events.length = M, s = U, x();
+      r = O, c.previous = F, c.currentConstruct = U, c.events.length = D, s = $, x();
     }
   }
   function x() {
@@ -4611,7 +4611,7 @@ function nd(e) {
       codeFencedFenceMeta: m,
       codeFlowValue: x,
       codeIndented: l(y),
-      codeText: l(U),
+      codeText: l($),
       codeTextData: x,
       data: x,
       definition: l(),
@@ -4621,14 +4621,14 @@ function nd(e) {
       emphasis: l(),
       hardBreakEscape: l(F),
       hardBreakTrailing: l(F),
-      htmlFlow: l(H),
+      htmlFlow: l(U),
       htmlFlowData: x,
-      htmlText: l(M),
+      htmlText: l(D),
       htmlTextData: x,
       image: l(se),
       label: fe,
-      labelText: O,
-      lineEnding: D,
+      labelText: I,
+      lineEnding: O,
       link: l(Q),
       listItem: l(),
       listOrdered: l(),
@@ -4855,7 +4855,7 @@ function nd(e) {
     const B = this.stack.pop();
     B.value += this.sliceSerialize(T), B.position.end = xt(T.end);
   }
-  function D(T) {
+  function O(T) {
     const B = this.stack[this.stack.length - 1];
     if (this.data.atHardBreak) {
       const J = B.children[B.children.length - 1];
@@ -4867,15 +4867,15 @@ function nd(e) {
   function F() {
     this.data.atHardBreak = !0;
   }
-  function H() {
-    const T = this.resume(), B = this.stack[this.stack.length - 1];
-    B.value = T;
-  }
-  function M() {
-    const T = this.resume(), B = this.stack[this.stack.length - 1];
-    B.value = T;
-  }
   function U() {
+    const T = this.resume(), B = this.stack[this.stack.length - 1];
+    B.value = T;
+  }
+  function D() {
+    const T = this.resume(), B = this.stack[this.stack.length - 1];
+    B.value = T;
+  }
+  function $() {
     const T = this.resume(), B = this.stack[this.stack.length - 1];
     B.value = T;
   }
@@ -4897,7 +4897,7 @@ function nd(e) {
       delete T.identifier, delete T.label;
     this.data.referenceType = void 0;
   }
-  function O(T) {
+  function I(T) {
     const B = this.sliceSerialize(T), J = this.stack[this.stack.length - 2];
     J.label = Ju(B), J.identifier = it(B).toLowerCase();
   }
@@ -7667,9 +7667,9 @@ const Me = (e) => {
     "bottom-left",
     // Deprecated since Tailwind CSS v4.1.0, see https://github.com/tailwindlabs/tailwindcss/pull/17378
     "left-bottom"
-  ], A = () => [...N(), W, q], _ = () => ["auto", "hidden", "clip", "visible", "scroll"], L = () => ["auto", "contain", "none"], v = () => [W, q, l], R = () => [Bt, "full", "auto", ...v()], x = () => [wt, "none", "subgrid", W, q], D = () => ["auto", {
+  ], A = () => [...N(), W, q], _ = () => ["auto", "hidden", "clip", "visible", "scroll"], L = () => ["auto", "contain", "none"], v = () => [W, q, l], R = () => [Bt, "full", "auto", ...v()], x = () => [wt, "none", "subgrid", W, q], O = () => ["auto", {
     span: ["full", wt, W, q]
-  }, wt, W, q], F = () => [wt, "auto", W, q], H = () => ["auto", "min", "max", "fr", W, q], M = () => ["start", "end", "center", "between", "around", "evenly", "stretch", "baseline", "center-safe", "end-safe"], U = () => ["start", "end", "center", "stretch", "center-safe", "end-safe"], Q = () => ["auto", ...v()], se = () => [Bt, "auto", "full", "dvw", "dvh", "lvw", "lvh", "svw", "svh", "min", "max", "fit", ...v()], O = () => [e, W, q], fe = () => [...N(), Eo, yo, {
+  }, wt, W, q], F = () => [wt, "auto", W, q], U = () => ["auto", "min", "max", "fr", W, q], D = () => ["start", "end", "center", "between", "around", "evenly", "stretch", "baseline", "center-safe", "end-safe"], $ = () => ["start", "end", "center", "stretch", "center-safe", "end-safe"], Q = () => ["auto", ...v()], se = () => [Bt, "auto", "full", "dvw", "dvh", "lvw", "lvh", "svw", "svh", "min", "max", "fit", ...v()], I = () => [e, W, q], fe = () => [...N(), Eo, yo, {
     position: [W, q]
   }], g = () => ["no-repeat", {
     repeat: ["", "x", "y", "space", "round"]
@@ -8002,7 +8002,7 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/grid-column
        */
       "col-start-end": [{
-        col: D()
+        col: O()
       }],
       /**
        * Grid Column Start
@@ -8030,7 +8030,7 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/grid-row
        */
       "row-start-end": [{
-        row: D()
+        row: O()
       }],
       /**
        * Grid Row Start
@@ -8058,14 +8058,14 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/grid-auto-columns
        */
       "auto-cols": [{
-        "auto-cols": H()
+        "auto-cols": U()
       }],
       /**
        * Grid Auto Rows
        * @see https://tailwindcss.com/docs/grid-auto-rows
        */
       "auto-rows": [{
-        "auto-rows": H()
+        "auto-rows": U()
       }],
       /**
        * Gap
@@ -8093,35 +8093,35 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/justify-content
        */
       "justify-content": [{
-        justify: [...M(), "normal"]
+        justify: [...D(), "normal"]
       }],
       /**
        * Justify Items
        * @see https://tailwindcss.com/docs/justify-items
        */
       "justify-items": [{
-        "justify-items": [...U(), "normal"]
+        "justify-items": [...$(), "normal"]
       }],
       /**
        * Justify Self
        * @see https://tailwindcss.com/docs/justify-self
        */
       "justify-self": [{
-        "justify-self": ["auto", ...U()]
+        "justify-self": ["auto", ...$()]
       }],
       /**
        * Align Content
        * @see https://tailwindcss.com/docs/align-content
        */
       "align-content": [{
-        content: ["normal", ...M()]
+        content: ["normal", ...D()]
       }],
       /**
        * Align Items
        * @see https://tailwindcss.com/docs/align-items
        */
       "align-items": [{
-        items: [...U(), {
+        items: [...$(), {
           baseline: ["", "last"]
         }]
       }],
@@ -8130,7 +8130,7 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/align-self
        */
       "align-self": [{
-        self: ["auto", ...U(), {
+        self: ["auto", ...$(), {
           baseline: ["", "last"]
         }]
       }],
@@ -8139,21 +8139,21 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/place-content
        */
       "place-content": [{
-        "place-content": M()
+        "place-content": D()
       }],
       /**
        * Place Items
        * @see https://tailwindcss.com/docs/place-items
        */
       "place-items": [{
-        "place-items": [...U(), "baseline"]
+        "place-items": [...$(), "baseline"]
       }],
       /**
        * Place Self
        * @see https://tailwindcss.com/docs/place-self
        */
       "place-self": [{
-        "place-self": ["auto", ...U()]
+        "place-self": ["auto", ...$()]
       }],
       // Spacing
       /**
@@ -8505,14 +8505,14 @@ const Me = (e) => {
        * @see https://v3.tailwindcss.com/docs/placeholder-color
        */
       "placeholder-color": [{
-        placeholder: O()
+        placeholder: I()
       }],
       /**
        * Text Color
        * @see https://tailwindcss.com/docs/text-color
        */
       "text-color": [{
-        text: O()
+        text: I()
       }],
       /**
        * Text Decoration
@@ -8538,7 +8538,7 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/text-decoration-color
        */
       "text-decoration-color": [{
-        decoration: O()
+        decoration: I()
       }],
       /**
        * Text Underline Offset
@@ -8676,7 +8676,7 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/background-color
        */
       "bg-color": [{
-        bg: O()
+        bg: I()
       }],
       /**
        * Gradient Color Stops From Position
@@ -8704,21 +8704,21 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/gradient-color-stops
        */
       "gradient-from": [{
-        from: O()
+        from: I()
       }],
       /**
        * Gradient Color Stops Via
        * @see https://tailwindcss.com/docs/gradient-color-stops
        */
       "gradient-via": [{
-        via: O()
+        via: I()
       }],
       /**
        * Gradient Color Stops To
        * @see https://tailwindcss.com/docs/gradient-color-stops
        */
       "gradient-to": [{
-        to: O()
+        to: I()
       }],
       // ---------------
       // --- Borders ---
@@ -8934,70 +8934,70 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/border-color
        */
       "border-color": [{
-        border: O()
+        border: I()
       }],
       /**
        * Border Color X
        * @see https://tailwindcss.com/docs/border-color
        */
       "border-color-x": [{
-        "border-x": O()
+        "border-x": I()
       }],
       /**
        * Border Color Y
        * @see https://tailwindcss.com/docs/border-color
        */
       "border-color-y": [{
-        "border-y": O()
+        "border-y": I()
       }],
       /**
        * Border Color S
        * @see https://tailwindcss.com/docs/border-color
        */
       "border-color-s": [{
-        "border-s": O()
+        "border-s": I()
       }],
       /**
        * Border Color E
        * @see https://tailwindcss.com/docs/border-color
        */
       "border-color-e": [{
-        "border-e": O()
+        "border-e": I()
       }],
       /**
        * Border Color Top
        * @see https://tailwindcss.com/docs/border-color
        */
       "border-color-t": [{
-        "border-t": O()
+        "border-t": I()
       }],
       /**
        * Border Color Right
        * @see https://tailwindcss.com/docs/border-color
        */
       "border-color-r": [{
-        "border-r": O()
+        "border-r": I()
       }],
       /**
        * Border Color Bottom
        * @see https://tailwindcss.com/docs/border-color
        */
       "border-color-b": [{
-        "border-b": O()
+        "border-b": I()
       }],
       /**
        * Border Color Left
        * @see https://tailwindcss.com/docs/border-color
        */
       "border-color-l": [{
-        "border-l": O()
+        "border-l": I()
       }],
       /**
        * Divide Color
        * @see https://tailwindcss.com/docs/divide-color
        */
       "divide-color": [{
-        divide: O()
+        divide: I()
       }],
       /**
        * Outline Style
@@ -9025,7 +9025,7 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/outline-color
        */
       "outline-color": [{
-        outline: O()
+        outline: I()
       }],
       // ---------------
       // --- Effects ---
@@ -9049,7 +9049,7 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/box-shadow#setting-the-shadow-color
        */
       "shadow-color": [{
-        shadow: O()
+        shadow: I()
       }],
       /**
        * Inset Box Shadow
@@ -9063,7 +9063,7 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/box-shadow#setting-the-inset-shadow-color
        */
       "inset-shadow-color": [{
-        "inset-shadow": O()
+        "inset-shadow": I()
       }],
       /**
        * Ring Width
@@ -9084,7 +9084,7 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/box-shadow#setting-the-ring-color
        */
       "ring-color": [{
-        ring: O()
+        ring: I()
       }],
       /**
        * Ring Offset Width
@@ -9102,7 +9102,7 @@ const Me = (e) => {
        * @see https://github.com/tailwindlabs/tailwindcss/blob/v4.0.0/packages/tailwindcss/src/utilities.ts#L4158
        */
       "ring-offset-color": [{
-        "ring-offset": O()
+        "ring-offset": I()
       }],
       /**
        * Inset Ring Width
@@ -9116,7 +9116,7 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/box-shadow#setting-the-inset-ring-color
        */
       "inset-ring-color": [{
-        "inset-ring": O()
+        "inset-ring": I()
       }],
       /**
        * Text Shadow
@@ -9130,7 +9130,7 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/text-shadow#setting-the-shadow-color
        */
       "text-shadow-color": [{
-        "text-shadow": O()
+        "text-shadow": I()
       }],
       /**
        * Opacity
@@ -9181,10 +9181,10 @@ const Me = (e) => {
         "mask-linear-to": me()
       }],
       "mask-image-linear-from-color": [{
-        "mask-linear-from": O()
+        "mask-linear-from": I()
       }],
       "mask-image-linear-to-color": [{
-        "mask-linear-to": O()
+        "mask-linear-to": I()
       }],
       "mask-image-t-from-pos": [{
         "mask-t-from": me()
@@ -9193,10 +9193,10 @@ const Me = (e) => {
         "mask-t-to": me()
       }],
       "mask-image-t-from-color": [{
-        "mask-t-from": O()
+        "mask-t-from": I()
       }],
       "mask-image-t-to-color": [{
-        "mask-t-to": O()
+        "mask-t-to": I()
       }],
       "mask-image-r-from-pos": [{
         "mask-r-from": me()
@@ -9205,10 +9205,10 @@ const Me = (e) => {
         "mask-r-to": me()
       }],
       "mask-image-r-from-color": [{
-        "mask-r-from": O()
+        "mask-r-from": I()
       }],
       "mask-image-r-to-color": [{
-        "mask-r-to": O()
+        "mask-r-to": I()
       }],
       "mask-image-b-from-pos": [{
         "mask-b-from": me()
@@ -9217,10 +9217,10 @@ const Me = (e) => {
         "mask-b-to": me()
       }],
       "mask-image-b-from-color": [{
-        "mask-b-from": O()
+        "mask-b-from": I()
       }],
       "mask-image-b-to-color": [{
-        "mask-b-to": O()
+        "mask-b-to": I()
       }],
       "mask-image-l-from-pos": [{
         "mask-l-from": me()
@@ -9229,10 +9229,10 @@ const Me = (e) => {
         "mask-l-to": me()
       }],
       "mask-image-l-from-color": [{
-        "mask-l-from": O()
+        "mask-l-from": I()
       }],
       "mask-image-l-to-color": [{
-        "mask-l-to": O()
+        "mask-l-to": I()
       }],
       "mask-image-x-from-pos": [{
         "mask-x-from": me()
@@ -9241,10 +9241,10 @@ const Me = (e) => {
         "mask-x-to": me()
       }],
       "mask-image-x-from-color": [{
-        "mask-x-from": O()
+        "mask-x-from": I()
       }],
       "mask-image-x-to-color": [{
-        "mask-x-to": O()
+        "mask-x-to": I()
       }],
       "mask-image-y-from-pos": [{
         "mask-y-from": me()
@@ -9253,10 +9253,10 @@ const Me = (e) => {
         "mask-y-to": me()
       }],
       "mask-image-y-from-color": [{
-        "mask-y-from": O()
+        "mask-y-from": I()
       }],
       "mask-image-y-to-color": [{
-        "mask-y-to": O()
+        "mask-y-to": I()
       }],
       "mask-image-radial": [{
         "mask-radial": [W, q]
@@ -9268,10 +9268,10 @@ const Me = (e) => {
         "mask-radial-to": me()
       }],
       "mask-image-radial-from-color": [{
-        "mask-radial-from": O()
+        "mask-radial-from": I()
       }],
       "mask-image-radial-to-color": [{
-        "mask-radial-to": O()
+        "mask-radial-to": I()
       }],
       "mask-image-radial-shape": [{
         "mask-radial": ["circle", "ellipse"]
@@ -9295,10 +9295,10 @@ const Me = (e) => {
         "mask-conic-to": me()
       }],
       "mask-image-conic-from-color": [{
-        "mask-conic-from": O()
+        "mask-conic-from": I()
       }],
       "mask-image-conic-to-color": [{
-        "mask-conic-to": O()
+        "mask-conic-to": I()
       }],
       /**
        * Mask Mode
@@ -9405,7 +9405,7 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/filter-drop-shadow#setting-the-shadow-color
        */
       "drop-shadow-color": [{
-        "drop-shadow": O()
+        "drop-shadow": I()
       }],
       /**
        * Grayscale
@@ -9776,7 +9776,7 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/accent-color
        */
       accent: [{
-        accent: O()
+        accent: I()
       }],
       /**
        * Appearance
@@ -9790,7 +9790,7 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/just-in-time-mode#caret-color-utilities
        */
       "caret-color": [{
-        caret: O()
+        caret: I()
       }],
       /**
        * Color Scheme
@@ -10036,7 +10036,7 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/fill
        */
       fill: [{
-        fill: ["none", ...O()]
+        fill: ["none", ...I()]
       }],
       /**
        * Stroke Width
@@ -10050,7 +10050,7 @@ const Me = (e) => {
        * @see https://tailwindcss.com/docs/stroke
        */
       stroke: [{
-        stroke: ["none", ...O()]
+        stroke: ["none", ...I()]
       }],
       // ---------------------
       // --- Accessibility ---
@@ -12231,15 +12231,15 @@ function Bm(e, t, n) {
   let i = 0, a = 0, o;
   return s;
   function s(x) {
-    let D = r.events.length - 1;
-    for (; D > -1; ) {
-      const M = r.events[D][1].type;
-      if (M === "lineEnding" || // Note: markdown-rs uses `whitespace` instead of `linePrefix`
-      M === "linePrefix") D--;
+    let O = r.events.length - 1;
+    for (; O > -1; ) {
+      const D = r.events[O][1].type;
+      if (D === "lineEnding" || // Note: markdown-rs uses `whitespace` instead of `linePrefix`
+      D === "linePrefix") O--;
       else break;
     }
-    const F = D > -1 ? r.events[D][1].type : null, H = F === "tableHead" || F === "tableRow" ? _ : l;
-    return H === _ && r.parser.lazy[r.now().line] ? n(x) : H(x);
+    const F = O > -1 ? r.events[O][1].type : null, U = F === "tableHead" || F === "tableRow" ? _ : l;
+    return U === _ && r.parser.lazy[r.now().line] ? n(x) : U(x);
   }
   function l(x) {
     return e.enter("tableHead"), e.enter("tableRow"), c(x);
@@ -16838,9 +16838,9 @@ const Do = "[A-Za-z$_][0-9A-Za-z$_]*", xh = [
   hs
 );
 function Hr(e) {
-  const t = e.regex, n = (O, { after: fe }) => {
-    const g = "</" + O[0].slice(1);
-    return O.input.indexOf(g, fe) !== -1;
+  const t = e.regex, n = (I, { after: fe }) => {
+    const g = "</" + I[0].slice(1);
+    return I.input.indexOf(g, fe) !== -1;
   }, r = Do, i = {
     begin: "<>",
     end: "</>"
@@ -16851,8 +16851,8 @@ function Hr(e) {
      * @param {RegExpMatchArray} match
      * @param {CallbackResponse} response
      */
-    isTrulyOpeningTag: (O, fe) => {
-      const g = O[0].length + O.index, G = O.input[g];
+    isTrulyOpeningTag: (I, fe) => {
+      const g = I[0].length + I.index, G = I.input[g];
       if (
         // HTML should not include another raw `<` inside a tag
         // nested type?
@@ -16864,9 +16864,9 @@ function Hr(e) {
         fe.ignoreMatch();
         return;
       }
-      G === ">" && (n(O, { after: g }) || fe.ignoreMatch());
+      G === ">" && (n(I, { after: g }) || fe.ignoreMatch());
       let j;
-      const b = O.input.substring(g);
+      const b = I.input.substring(g);
       if (j = b.match(/^\s*=/)) {
         fe.ignoreMatch();
         return;
@@ -17124,28 +17124,28 @@ function Hr(e) {
     label: "func.def",
     contains: [_],
     illegal: /%/
-  }, D = {
+  }, O = {
     relevance: 0,
     match: /\b[A-Z][A-Z_0-9]+\b/,
     className: "variable.constant"
   };
-  function F(O) {
-    return t.concat("(?!", O.join("|"), ")");
+  function F(I) {
+    return t.concat("(?!", I.join("|"), ")");
   }
-  const H = {
+  const U = {
     match: t.concat(
       /\b/,
       F([
         ...bs,
         "super",
         "import"
-      ].map((O) => `${O}\\s*\\(`)),
+      ].map((I) => `${I}\\s*\\(`)),
       r,
       t.lookahead(/\s*\(/)
     ),
     className: "title.function",
     relevance: 0
-  }, M = {
+  }, D = {
     begin: t.concat(/\./, t.lookahead(
       t.concat(r, /(?![0-9A-Za-z$_(])/)
     )),
@@ -17154,7 +17154,7 @@ function Hr(e) {
     keywords: "prototype",
     className: "property",
     relevance: 0
-  }, U = {
+  }, $ = {
     match: [
       /get|set/,
       /\s+/,
@@ -17322,7 +17322,7 @@ function Hr(e) {
         match: /\.\.\./,
         relevance: 0
       },
-      M,
+      D,
       // hack: prevents detection of keywords in some circumstances
       // .keyword()
       // $keyword = x
@@ -17335,10 +17335,10 @@ function Hr(e) {
         className: { 1: "title.function" },
         contains: [_]
       },
-      H,
-      D,
-      L,
       U,
+      O,
+      L,
+      $,
       {
         match: /\$[(.]/
         // relevance booster for a pattern common to JS libs: `$(something)` and `$.something`
@@ -19682,11 +19682,11 @@ function Uh(e) {
     begin: /<<<[ \t]*(?:(\w+)|"(\w+)")\n/,
     end: /[ \t]*(\w+)\b/,
     contains: e.QUOTE_STRING_MODE.contains.concat(l),
-    "on:begin": (M, U) => {
-      U.data._beginMatch = M[1] || M[2];
+    "on:begin": (D, $) => {
+      $.data._beginMatch = D[1] || D[2];
     },
-    "on:end": (M, U) => {
-      U.data._beginMatch !== M[1] && U.ignoreMatch();
+    "on:end": (D, $) => {
+      $.data._beginMatch !== D[1] && $.ignoreMatch();
     }
   }, f = e.END_SAME_AS_BEGIN({
     begin: /<<<[ \t]*'(\w+)'\n/,
@@ -19914,14 +19914,14 @@ function Uh(e) {
     "stdClass"
   ], N = {
     keyword: y,
-    literal: ((M) => {
-      const U = [];
-      return M.forEach((Q) => {
-        U.push(Q), Q.toLowerCase() === Q ? U.push(Q.toUpperCase()) : U.push(Q.toLowerCase());
-      }), U;
+    literal: ((D) => {
+      const $ = [];
+      return D.forEach((Q) => {
+        $.push(Q), Q.toLowerCase() === Q ? $.push(Q.toUpperCase()) : $.push(Q.toLowerCase());
+      }), $;
     })(k),
     built_in: S
-  }, A = (M) => M.map((U) => U.replace(/\|\d+$/, "")), _ = { variants: [
+  }, A = (D) => D.map(($) => $.replace(/\|\d+$/, "")), _ = { variants: [
     {
       match: [
         /new/,
@@ -20005,7 +20005,7 @@ function Uh(e) {
       h,
       _
     ]
-  }, D = {
+  }, O = {
     relevance: 0,
     match: [
       /\b/,
@@ -20018,7 +20018,7 @@ function Uh(e) {
     scope: { 3: "title.function.invoke" },
     contains: [x]
   };
-  x.contains.push(D);
+  x.contains.push(O);
   const F = [
     R,
     v,
@@ -20026,7 +20026,7 @@ function Uh(e) {
     m,
     h,
     _
-  ], H = {
+  ], U = {
     begin: t.concat(
       /#\[\s*\\?/,
       t.either(
@@ -20074,7 +20074,7 @@ function Uh(e) {
     case_insensitive: !1,
     keywords: N,
     contains: [
-      H,
+      U,
       e.HASH_COMMENT_MODE,
       e.COMMENT("//", "$"),
       e.COMMENT(
@@ -20108,7 +20108,7 @@ function Uh(e) {
         match: /\$this\b/
       },
       o,
-      D,
+      O,
       v,
       {
         match: [
@@ -20146,7 +20146,7 @@ function Uh(e) {
             keywords: N,
             contains: [
               "self",
-              H,
+              U,
               o,
               v,
               e.C_BLOCK_COMMENT_MODE,
@@ -23570,7 +23570,7 @@ function ub(e) {
       relevance: 0,
       contains: [e.BACKSLASH_ESCAPE]
     }
-  ], D = {
+  ], O = {
     begin: /\/[^\s](?=[^/\n]*\/)/,
     end: /\//,
     contains: x
@@ -23588,25 +23588,25 @@ function ub(e) {
         }
       ]
     };
-  }, H = {
+  }, U = {
     scope: "regexp",
     variants: [
       F("###"),
       F("##"),
       F("#"),
-      D
+      O
     ]
-  }, M = { match: ke(/`/, lt, /`/) }, U = {
+  }, D = { match: ke(/`/, lt, /`/) }, $ = {
     className: "variable",
     match: /\$\d+/
   }, Q = {
     className: "variable",
     match: `\\$${Hn}+`
   }, se = [
-    M,
-    U,
+    D,
+    $,
     Q
-  ], O = {
+  ], I = {
     match: /(@|#(un)?)available/,
     scope: "keyword",
     starts: { contains: [
@@ -23628,7 +23628,7 @@ function ub(e) {
     scope: "meta",
     match: ke(/@/, lt)
   }, G = [
-    O,
+    I,
     fe,
     g
   ], j = {
@@ -23688,7 +23688,7 @@ function ub(e) {
       "self",
       le,
       ...r,
-      H,
+      U,
       ...u,
       ...p,
       ...k,
@@ -23744,7 +23744,7 @@ function ub(e) {
     match: [
       /(func|macro)/,
       /\s+/,
-      $e(M.match, lt, xr)
+      $e(D.match, lt, xr)
     ],
     className: {
       1: "keyword",
@@ -23891,7 +23891,7 @@ function ub(e) {
         contains: [...r],
         relevance: 0
       },
-      H,
+      U,
       ...u,
       ...p,
       ...k,
@@ -24051,9 +24051,9 @@ const Gn = "[A-Za-z$_][0-9A-Za-z$_]*", Ts = [
   Cs
 );
 function db(e) {
-  const t = e.regex, n = (O, { after: fe }) => {
-    const g = "</" + O[0].slice(1);
-    return O.input.indexOf(g, fe) !== -1;
+  const t = e.regex, n = (I, { after: fe }) => {
+    const g = "</" + I[0].slice(1);
+    return I.input.indexOf(g, fe) !== -1;
   }, r = Gn, i = {
     begin: "<>",
     end: "</>"
@@ -24064,8 +24064,8 @@ function db(e) {
      * @param {RegExpMatchArray} match
      * @param {CallbackResponse} response
      */
-    isTrulyOpeningTag: (O, fe) => {
-      const g = O[0].length + O.index, G = O.input[g];
+    isTrulyOpeningTag: (I, fe) => {
+      const g = I[0].length + I.index, G = I.input[g];
       if (
         // HTML should not include another raw `<` inside a tag
         // nested type?
@@ -24077,9 +24077,9 @@ function db(e) {
         fe.ignoreMatch();
         return;
       }
-      G === ">" && (n(O, { after: g }) || fe.ignoreMatch());
+      G === ">" && (n(I, { after: g }) || fe.ignoreMatch());
       let j;
-      const b = O.input.substring(g);
+      const b = I.input.substring(g);
       if (j = b.match(/^\s*=/)) {
         fe.ignoreMatch();
         return;
@@ -24337,28 +24337,28 @@ function db(e) {
     label: "func.def",
     contains: [_],
     illegal: /%/
-  }, D = {
+  }, O = {
     relevance: 0,
     match: /\b[A-Z][A-Z_0-9]+\b/,
     className: "variable.constant"
   };
-  function F(O) {
-    return t.concat("(?!", O.join("|"), ")");
+  function F(I) {
+    return t.concat("(?!", I.join("|"), ")");
   }
-  const H = {
+  const U = {
     match: t.concat(
       /\b/,
       F([
         ...Rs,
         "super",
         "import"
-      ].map((O) => `${O}\\s*\\(`)),
+      ].map((I) => `${I}\\s*\\(`)),
       r,
       t.lookahead(/\s*\(/)
     ),
     className: "title.function",
     relevance: 0
-  }, M = {
+  }, D = {
     begin: t.concat(/\./, t.lookahead(
       t.concat(r, /(?![0-9A-Za-z$_(])/)
     )),
@@ -24367,7 +24367,7 @@ function db(e) {
     keywords: "prototype",
     className: "property",
     relevance: 0
-  }, U = {
+  }, $ = {
     match: [
       /get|set/,
       /\s+/,
@@ -24535,7 +24535,7 @@ function db(e) {
         match: /\.\.\./,
         relevance: 0
       },
-      M,
+      D,
       // hack: prevents detection of keywords in some circumstances
       // .keyword()
       // $keyword = x
@@ -24548,10 +24548,10 @@ function db(e) {
         className: { 1: "title.function" },
         contains: [_]
       },
-      H,
-      D,
-      L,
       U,
+      O,
+      L,
+      $,
       {
         match: /\$[(.]/
         // relevance booster for a pattern common to JS libs: `$(something)` and `$.something`
@@ -25558,7 +25558,7 @@ function hb() {
       return V;
     }).map((te) => `(${te})`).join(C);
   }
-  const _ = /\b\B/, L = "[a-zA-Z]\\w*", v = "[a-zA-Z_]\\w*", R = "\\b\\d+(\\.\\d+)?", x = "(-?)(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)", D = "\\b(0b[01]+)", F = "!|!=|!==|%|%=|&|&&|&=|\\*|\\*=|\\+|\\+=|,|-|-=|/=|/|:|;|<<|<<=|<=|<|===|==|=|>>>=|>>=|>=|>>>|>>|>|\\?|\\[|\\{|\\(|\\^|\\^=|\\||\\|=|\\|\\||~", H = (E = {}) => {
+  const _ = /\b\B/, L = "[a-zA-Z]\\w*", v = "[a-zA-Z_]\\w*", R = "\\b\\d+(\\.\\d+)?", x = "(-?)(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)", O = "\\b(0b[01]+)", F = "!|!=|!==|%|%=|&|&&|&=|\\*|\\*=|\\+|\\+=|,|-|-=|/=|/|:|;|<<|<<=|<=|<|===|==|=|>>>=|>>=|>=|>>>|>>|>|\\?|\\[|\\{|\\(|\\^|\\^=|\\||\\|=|\\|\\||~", U = (E = {}) => {
     const C = /^#![ ]*\//;
     return E.binary && (E.begin = h(
       C,
@@ -25575,24 +25575,24 @@ function hb() {
         z.index !== 0 && te.ignoreMatch();
       }
     }, E);
-  }, M = {
+  }, D = {
     begin: "\\\\[\\s\\S]",
     relevance: 0
-  }, U = {
+  }, $ = {
     scope: "string",
     begin: "'",
     end: "'",
     illegal: "\\n",
-    contains: [M]
+    contains: [D]
   }, Q = {
     scope: "string",
     begin: '"',
     end: '"',
     illegal: "\\n",
-    contains: [M]
+    contains: [D]
   }, se = {
     begin: /\b(a|an|the|are|I'm|isn't|don't|doesn't|won't|but|just|should|pretty|simply|enough|gonna|going|wtf|so|such|will|you|your|they|like|more)\b/
-  }, O = function(E, C, z = {}) {
+  }, I = function(E, C, z = {}) {
     const te = r(
       {
         scope: "comment",
@@ -25658,7 +25658,7 @@ function hb() {
         // look for 3 words in a row
       }
     ), te;
-  }, fe = O("//", "$"), g = O("/\\*", "\\*/"), G = O("#", "$"), j = {
+  }, fe = I("//", "$"), g = I("/\\*", "\\*/"), G = I("#", "$"), j = {
     scope: "number",
     begin: R,
     relevance: 0
@@ -25668,19 +25668,19 @@ function hb() {
     relevance: 0
   }, le = {
     scope: "number",
-    begin: D,
+    begin: O,
     relevance: 0
   }, _e = {
     scope: "regexp",
     begin: /\/(?=[^/\n]*\/)/,
     end: /\/[gimuy]*/,
     contains: [
-      M,
+      D,
       {
         begin: /\[/,
         end: /\]/,
         relevance: 0,
-        contains: [M]
+        contains: [D]
       }
     ]
   }, be = {
@@ -25698,11 +25698,11 @@ function hb() {
   };
   var Te = /* @__PURE__ */ Object.freeze({
     __proto__: null,
-    APOS_STRING_MODE: U,
-    BACKSLASH_ESCAPE: M,
+    APOS_STRING_MODE: $,
+    BACKSLASH_ESCAPE: D,
     BINARY_NUMBER_MODE: le,
-    BINARY_NUMBER_RE: D,
-    COMMENT: O,
+    BINARY_NUMBER_RE: O,
+    COMMENT: I,
     C_BLOCK_COMMENT_MODE: g,
     C_LINE_COMMENT_MODE: fe,
     C_NUMBER_MODE: b,
@@ -25732,7 +25732,7 @@ function hb() {
     QUOTE_STRING_MODE: Q,
     REGEXP_MODE: _e,
     RE_STARTERS_RE: F,
-    SHEBANG: H,
+    SHEBANG: U,
     TITLE_MODE: be,
     UNDERSCORE_IDENT_RE: v,
     UNDERSCORE_TITLE_MODE: me
@@ -26010,19 +26010,19 @@ https://github.com/highlightjs/highlight.js/issues/2277`), Ie = P, we = Z), de =
     }
     function Xt(P, Z, de, we) {
       const Ie = /* @__PURE__ */ Object.create(null);
-      function rt($, Y) {
-        return $.keywords[Y];
+      function rt(H, Y) {
+        return H.keywords[Y];
       }
       function kt() {
         if (!ne.keywords) {
           De.addText(Se);
           return;
         }
-        let $ = 0;
+        let H = 0;
         ne.keywordPatternRe.lastIndex = 0;
         let Y = ne.keywordPatternRe.exec(Se), ie = "";
         for (; Y; ) {
-          ie += Se.substring($, Y.index);
+          ie += Se.substring(H, Y.index);
           const Ee = st.case_insensitive ? Y[0].toLowerCase() : Y[0], Be = rt(ne, Ee);
           if (Be) {
             const [mt, Xs] = Be;
@@ -26034,92 +26034,92 @@ https://github.com/highlightjs/highlight.js/issues/2277`), Ie = P, we = Z), de =
             }
           } else
             ie += Y[0];
-          $ = ne.keywordPatternRe.lastIndex, Y = ne.keywordPatternRe.exec(Se);
+          H = ne.keywordPatternRe.lastIndex, Y = ne.keywordPatternRe.exec(Se);
         }
-        ie += Se.substring($), De.addText(ie);
+        ie += Se.substring(H), De.addText(ie);
       }
       function _n() {
         if (Se === "") return;
-        let $ = null;
+        let H = null;
         if (typeof ne.subLanguage == "string") {
           if (!C[ne.subLanguage]) {
             De.addText(Se);
             return;
           }
-          $ = Xt(ne.subLanguage, Se, !0, Si[ne.subLanguage]), Si[ne.subLanguage] = /** @type {CompiledMode} */
-          $._top;
+          H = Xt(ne.subLanguage, Se, !0, Si[ne.subLanguage]), Si[ne.subLanguage] = /** @type {CompiledMode} */
+          H._top;
         } else
-          $ = Xn(Se, ne.subLanguage.length ? ne.subLanguage : null);
-        ne.relevance > 0 && (xn += $.relevance), De.__addSublanguage($._emitter, $.language);
+          H = Xn(Se, ne.subLanguage.length ? ne.subLanguage : null);
+        ne.relevance > 0 && (xn += H.relevance), De.__addSublanguage(H._emitter, H.language);
       }
       function Ze() {
         ne.subLanguage != null ? _n() : kt(), Se = "";
       }
-      function at($, Y) {
-        $ !== "" && (De.startScope(Y), De.addText($), De.endScope());
+      function at(H, Y) {
+        H !== "" && (De.startScope(Y), De.addText(H), De.endScope());
       }
-      function _i($, Y) {
+      function _i(H, Y) {
         let ie = 1;
         const Ee = Y.length - 1;
         for (; ie <= Ee; ) {
-          if (!$._emit[ie]) {
+          if (!H._emit[ie]) {
             ie++;
             continue;
           }
-          const Be = st.classNameAliases[$[ie]] || $[ie], mt = Y[ie];
+          const Be = st.classNameAliases[H[ie]] || H[ie], mt = Y[ie];
           Be ? at(mt, Be) : (Se = mt, kt(), Se = ""), ie++;
         }
       }
-      function ki($, Y) {
-        return $.scope && typeof $.scope == "string" && De.openNode(st.classNameAliases[$.scope] || $.scope), $.beginScope && ($.beginScope._wrap ? (at(Se, st.classNameAliases[$.beginScope._wrap] || $.beginScope._wrap), Se = "") : $.beginScope._multi && (_i($.beginScope, Y), Se = "")), ne = Object.create($, { parent: { value: ne } }), ne;
+      function ki(H, Y) {
+        return H.scope && typeof H.scope == "string" && De.openNode(st.classNameAliases[H.scope] || H.scope), H.beginScope && (H.beginScope._wrap ? (at(Se, st.classNameAliases[H.beginScope._wrap] || H.beginScope._wrap), Se = "") : H.beginScope._multi && (_i(H.beginScope, Y), Se = "")), ne = Object.create(H, { parent: { value: ne } }), ne;
       }
-      function xi($, Y, ie) {
-        let Ee = w($.endRe, ie);
+      function xi(H, Y, ie) {
+        let Ee = w(H.endRe, ie);
         if (Ee) {
-          if ($["on:end"]) {
-            const Be = new t($);
-            $["on:end"](Y, Be), Be.isMatchIgnored && (Ee = !1);
+          if (H["on:end"]) {
+            const Be = new t(H);
+            H["on:end"](Y, Be), Be.isMatchIgnored && (Ee = !1);
           }
           if (Ee) {
-            for (; $.endsParent && $.parent; )
-              $ = $.parent;
-            return $;
+            for (; H.endsParent && H.parent; )
+              H = H.parent;
+            return H;
           }
         }
-        if ($.endsWithParent)
-          return xi($.parent, Y, ie);
+        if (H.endsWithParent)
+          return xi(H.parent, Y, ie);
       }
-      function Ws($) {
-        return ne.matcher.regexIndex === 0 ? (Se += $[0], 1) : (tr = !0, 0);
+      function Ws(H) {
+        return ne.matcher.regexIndex === 0 ? (Se += H[0], 1) : (tr = !0, 0);
       }
-      function Vs($) {
-        const Y = $[0], ie = $.rule, Ee = new t(ie), Be = [ie.__beforeBegin, ie["on:begin"]];
+      function Vs(H) {
+        const Y = H[0], ie = H.rule, Ee = new t(ie), Be = [ie.__beforeBegin, ie["on:begin"]];
         for (const mt of Be)
-          if (mt && (mt($, Ee), Ee.isMatchIgnored))
+          if (mt && (mt(H, Ee), Ee.isMatchIgnored))
             return Ws(Y);
-        return ie.skip ? Se += Y : (ie.excludeBegin && (Se += Y), Ze(), !ie.returnBegin && !ie.excludeBegin && (Se = Y)), ki(ie, $), ie.returnBegin ? 0 : Y.length;
+        return ie.skip ? Se += Y : (ie.excludeBegin && (Se += Y), Ze(), !ie.returnBegin && !ie.excludeBegin && (Se = Y)), ki(ie, H), ie.returnBegin ? 0 : Y.length;
       }
-      function Ys($) {
-        const Y = $[0], ie = Z.substring($.index), Ee = xi(ne, $, ie);
+      function Ys(H) {
+        const Y = H[0], ie = Z.substring(H.index), Ee = xi(ne, H, ie);
         if (!Ee)
           return mi;
         const Be = ne;
-        ne.endScope && ne.endScope._wrap ? (Ze(), at(Y, ne.endScope._wrap)) : ne.endScope && ne.endScope._multi ? (Ze(), _i(ne.endScope, $)) : Be.skip ? Se += Y : (Be.returnEnd || Be.excludeEnd || (Se += Y), Ze(), Be.excludeEnd && (Se = Y));
+        ne.endScope && ne.endScope._wrap ? (Ze(), at(Y, ne.endScope._wrap)) : ne.endScope && ne.endScope._multi ? (Ze(), _i(ne.endScope, H)) : Be.skip ? Se += Y : (Be.returnEnd || Be.excludeEnd || (Se += Y), Ze(), Be.excludeEnd && (Se = Y));
         do
           ne.scope && De.closeNode(), !ne.skip && !ne.subLanguage && (xn += ne.relevance), ne = ne.parent;
         while (ne !== Ee.parent);
-        return Ee.starts && ki(Ee.starts, $), Be.returnEnd ? 0 : Y.length;
+        return Ee.starts && ki(Ee.starts, H), Be.returnEnd ? 0 : Y.length;
       }
       function js() {
-        const $ = [];
+        const H = [];
         for (let Y = ne; Y !== st; Y = Y.parent)
-          Y.scope && $.unshift(Y.scope);
-        $.forEach((Y) => De.openNode(Y));
+          Y.scope && H.unshift(Y.scope);
+        H.forEach((Y) => De.openNode(Y));
       }
       let kn = {};
-      function wi($, Y) {
+      function wi(H, Y) {
         const ie = Y && Y[0];
-        if (Se += $, ie == null)
+        if (Se += H, ie == null)
           return Ze(), 0;
         if (kn.type === "begin" && Y.type === "end" && kn.index === Y.index && ie === "") {
           if (Se += Z.slice(Y.index, Y.index + 1), !Ae) {
@@ -26159,10 +26159,10 @@ https://github.com/highlightjs/highlight.js/issues/2277`), Ie = P, we = Z), de =
         else {
           for (ne.matcher.considerAll(); ; ) {
             er++, tr ? tr = !1 : ne.matcher.considerAll(), ne.matcher.lastIndex = Tt;
-            const $ = ne.matcher.exec(Z);
-            if (!$) break;
-            const Y = Z.substring(Tt, $.index), ie = wi(Y, $);
-            Tt = $.index + ie;
+            const H = ne.matcher.exec(Z);
+            if (!H) break;
+            const Y = Z.substring(Tt, H.index), ie = wi(Y, H);
+            Tt = H.index + ie;
           }
           wi(Z.substring(Tt));
         }
@@ -26174,18 +26174,18 @@ https://github.com/highlightjs/highlight.js/issues/2277`), Ie = P, we = Z), de =
           _emitter: De,
           _top: ne
         };
-      } catch ($) {
-        if ($.message && $.message.includes("Illegal"))
+      } catch (H) {
+        if (H.message && H.message.includes("Illegal"))
           return {
             language: P,
             value: je(Z),
             illegal: !0,
             relevance: 0,
             _illegalBy: {
-              message: $.message,
+              message: H.message,
               index: Tt,
               context: Z.slice(Tt - 100, Tt + 100),
-              mode: $.mode,
+              mode: H.mode,
               resultSoFar: Jn
             },
             _emitter: De
@@ -26196,11 +26196,11 @@ https://github.com/highlightjs/highlight.js/issues/2277`), Ie = P, we = Z), de =
             value: je(Z),
             illegal: !1,
             relevance: 0,
-            errorRaised: $,
+            errorRaised: H,
             _emitter: De,
             _top: ne
           };
-        throw $;
+        throw H;
       }
     }
     function Zn(P) {
@@ -26677,14 +26677,14 @@ const vb = {
     for (; _.length > 0; ) {
       let L = !1, v = null, R = 1 / 0;
       for (const x of h) {
-        const D = x.pattern.exec(_);
-        D && D.index < R && (R = D.index, v = { match: D, pattern: x });
+        const O = x.pattern.exec(_);
+        O && O.index < R && (R = O.index, v = { match: O, pattern: x });
       }
       if (v && R >= 0) {
         if (R > 0) {
           const x = _.substring(0, R);
-          A.push(...Array.from(x).map((D) => ({
-            content: D,
+          A.push(...Array.from(x).map((O) => ({
+            content: O,
             isMarkdown: !1
           }))), _ = _.substring(R);
         }
@@ -27031,9 +27031,10 @@ const Ob = (e) => {
   defaultVariables: t = {},
   defaultDocumentPrompt: n = "",
   styles: r = {},
-  sseUrl: i = "https://play.dev.pillowai.cn/api/v1/playground/generate"
+  sseUrl: i = "https://play.dev.pillowai.cn/api/v1/playground/generate",
+  sessionId: a
 }) => {
-  const { data: a, loading: o } = pl(e), { block_count: s = 0, interaction_blocks: l = [] } = a || {}, [c, u] = Ge(0), [d, f] = Ge([]), [p, m] = Ge({
+  const { data: o, loading: s } = pl(e), { block_count: l = 0, interaction_blocks: c = [] } = o || {}, [u, d] = Ge(0), [f, p] = Ge([]), [m, h] = Ge({
     content: e,
     block_index: 0,
     context: [{ role: "assistant", content: "" }],
@@ -27043,79 +27044,80 @@ const Ob = (e) => {
     interaction_prompt: null,
     interaction_error_prompt: null,
     model: null
-  }), h = () => JSON.stringify(p), k = (v) => {
-    const R = c + 1;
-    return !(v && l.includes(c) || R >= s);
-  }, y = (v) => {
-    const R = [...p.context];
-    for (; R.length <= c; )
-      R.push({ role: "assistant", content: "" });
-    return R[c] = {
-      ...R[c],
-      content: v
-    }, R.length <= c + 1 && R.push({ role: "assistant", content: "" }), R;
-  }, S = (v) => {
-    const R = [...d];
-    for (; R.length <= c; )
-      R.push({ content: "" });
-    return R[c] = {
-      ...R[c],
-      content: v
-    }, R;
-  }, w = (v) => {
-    const R = [...d], x = R.length - 1;
-    return x >= 0 && (R[x] = {
-      ...R[x],
+  }), k = () => JSON.stringify(m), y = (R) => {
+    const x = u + 1;
+    return !(R && c.includes(u) || x >= l);
+  }, S = (R) => {
+    const x = [...m.context];
+    for (; x.length <= u; )
+      x.push({ role: "assistant", content: "" });
+    return x[u] = {
+      ...x[u],
+      content: R
+    }, x.length <= u + 1 && x.push({ role: "assistant", content: "" }), x;
+  }, w = (R) => {
+    const x = [...f];
+    for (; x.length <= u; )
+      x.push({ content: "" });
+    return x[u] = {
+      ...x[u],
+      content: R
+    }, x;
+  }, N = (R) => {
+    const x = [...f], O = x.length - 1;
+    return O >= 0 && (x[O] = {
+      ...x[O],
       readonly: !0,
-      defaultButtonText: v.buttonText,
-      defaultInputText: v.inputText
-    }), R;
-  }, N = (v) => {
-    if (!k(v))
+      defaultButtonText: R.buttonText,
+      defaultInputText: R.inputText
+    }), x;
+  }, A = (R) => {
+    if (!y(R))
       return;
-    const R = y(v), x = c + 1;
-    m((D) => ({
-      ...D,
+    const x = S(R), O = u + 1;
+    h((F) => ({
+      ...F,
       user_input: null,
-      block_index: x,
-      context: R
-    })), u(x);
-  }, { data: A, connect: _ } = dl(i, {
+      block_index: O,
+      context: x
+    })), d(O);
+  }, { data: _, connect: L } = dl(i, {
     method: "POST",
-    body: h(),
-    autoConnect: !!a && !o,
-    onFinish: N
+    body: k(),
+    headers: a ? { "session-id": a } : {},
+    autoConnect: !!o && !s,
+    onFinish: A
   });
   Qe(() => {
-    a && !o && _();
-  }, [a, o, _]), Qe(() => {
-    if (A)
+    o && !s && L();
+  }, [o, s, L]), Qe(() => {
+    if (_)
       try {
-        const v = S(A);
-        f(v);
-      } catch (v) {
-        console.error("Error processing SSE message:", v);
+        const R = w(_);
+        p(R);
+      } catch (R) {
+        console.error("Error processing SSE message:", R);
       }
-  }, [A]);
-  const L = (v) => {
-    const R = v.inputText || v.buttonText || "", x = [...p.context];
-    x[c] && (x[c] = {
-      ...x[c],
-      content: R,
+  }, [_]);
+  const v = (R) => {
+    const x = R.inputText || R.buttonText || "", O = [...m.context];
+    O[u] && (O[u] = {
+      ...O[u],
+      content: x,
       role: "user"
-    }), m((F) => ({
-      ...F,
-      context: x,
-      user_input: R ?? null,
+    }), h((U) => ({
+      ...U,
+      context: O,
+      user_input: x ?? null,
       variables: {
-        ...F.variables,
-        [v.variableName || ""]: R
+        ...U.variables,
+        [R.variableName || ""]: x
       }
     }));
-    const D = w(v);
-    f(D);
+    const F = N(R);
+    p(F);
   };
-  return /* @__PURE__ */ ae.jsx("div", { style: r, children: /* @__PURE__ */ ae.jsx(Pb, { initialContentList: d, onSend: L }) });
+  return /* @__PURE__ */ ae.jsx("div", { style: r, children: /* @__PURE__ */ ae.jsx(Pb, { initialContentList: f, onSend: v }) });
 };
 export {
   Lb as MarkdownFlow,

@@ -16,8 +16,15 @@ const meta = {
       control: 'text',
       description: 'Markdown content to render',
     },
+    sessionId: {
+      control: 'text',
+      description: 'Session ID for the request',
+    },
   },
-  args: {   defaultContent: '' },
+  args: {   
+    defaultContent: '',
+    sessionId: ''
+  },
 } satisfies Meta<typeof Playground>;
 
 export default meta;

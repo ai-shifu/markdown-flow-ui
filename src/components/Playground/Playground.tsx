@@ -13,6 +13,7 @@ type PlaygroundComponentProps = {
   defaultDocumentPrompt?: string
   styles?: React.CSSProperties
   sseUrl?: string
+  sessionId?: string
 }
 
 type SSEParams = {
@@ -38,6 +39,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   defaultDocumentPrompt = '',
   styles = {},
   sseUrl = 'https://play.dev.pillowai.cn/api/v1/playground/generate',
+  sessionId,
 }) => {
   const { data: markdownInfo, loading: isMarkdownLoading } =
     useMarkdownInfo(defaultContent)
@@ -153,6 +155,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   const { data, connect } = useSSE<any>(sseUrl, {
     method: 'POST',
     body: getSSEBody(),
+    headers: sessionId ? { 'session-id': sessionId } : {},
     autoConnect: !!markdownInfo && !isMarkdownLoading,
     onFinish: handleOnFinish
   })

@@ -51,7 +51,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   onTypeFinished
 }) => {
   // 使用自定义Hook处理打字机效果
-  const { displayContent, isTyping, isComplete } = useTypewriter({
+  const { displayContent, isComplete } = useTypewriter({
     content: processMarkdownText(content),
     typingSpeed,
     disabled: disableTyping
@@ -157,13 +157,19 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       >
         {displayContent}
       </ReactMarkdown>
+      {/* {isTyping && <span className='typing-cursor animate-pulse' style={{ 
+        display: 'inline', 
+        fontSize: '0.25em', 
+        lineHeight: 'inherit',
+        marginLeft: '1px',
+        verticalAlign: 'baseline'
+      }}>●</span>} */}
       {customRenderBar &&
         React.createElement(customRenderBar, {
           content,
           displayContent,
           onSend
         })}
-      {isTyping && <span className='typing-cursor ml-1 animate-pulse'>|</span>}
     </div>
   )
 }

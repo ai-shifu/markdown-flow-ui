@@ -48,7 +48,7 @@ const CustomButtonInputVariable = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value)
   }
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleSendClick()
     }
@@ -78,21 +78,28 @@ const CustomButtonInputVariable = ({
         </Button>
       ))}
       {node.properties?.placeholder && (
-        <span className='text-sm flex rounded-md border'>
+        <span className='text-sm flex rounded-md border relative group'>
           <Input
             type='text'
             disabled={readonly}
             placeholder={node.properties?.placeholder}
             value={inputValue}
             onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             className='custom-variable-input w-40 h-6 text-sm border-0 shadow-none outline-none ring-0'
             style={{
               border: 'none',
               outline: 'none',
               boxShadow: 'none'
             }}
+            title={node.properties.placeholder}
           />
+          {/* Tooltip */}
+          {node.properties.placeholder.length > 10 && (
+            <div className='absolute bottom-full left-0 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 whitespace-nowrap max-w-xs'>
+              {node.properties.placeholder}
+            </div>
+          )}
           <Button
             type='button'
             variant='ghost'

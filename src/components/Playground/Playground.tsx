@@ -3,7 +3,8 @@ import useSSE from '../sse/useSSE'
 import useMarkdownInfo from './useMarkdownInfo'
 import MarkdownFlow from '../MarkdownFlow/ScrollableMarkdownFlow'
 import { ContentRenderProps } from '../ContentRender/ContentRender'
-import { OnSendContentParams } from '../types'
+import { OnSendContentParams, CustomRenderBarProps } from '../types'
+import { Loader } from 'lucide-react'
 
 type PlaygroundComponentProps = {
   defaultContent: string
@@ -47,6 +48,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
 
   const [currentBlockIndex, setCurrentBlockIndex] = useState<number>(0)
   const [contentList, setContentList] = useState<ContentRenderProps[]>([])
+  const [loadingBlockIndex, setLoadingBlockIndex] = useState<number | null>(null)
 
   const [sseParams, setSseParams] = useState<SSEParams>({
     content: defaultContent,
@@ -62,14 +64,6 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
 
   const getSSEBody = (): string => {
     return JSON.stringify(sseParams)
-  }
-  // 判断是否应该继续到下一个块：用户操作和最后一个块停下来
-  const shouldContinueToNextBlock = (data: string): boolean => {
-    const nextIndex = currentBlockIndex + 1
-    return !(
-      (data && interaction_blocks.includes(currentBlockIndex)) ||
-      nextIndex >= block_count
-    )
   }
   // 返回sse params中的context字段
   const updateContextParamsForNextBlock = (
@@ -112,6 +106,11 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
       content: newData
     }
 
+    // 清除 loading 状态
+    if (loadingBlockIndex === currentBlockIndex) {
+      setLoadingBlockIndex(null)
+    }
+
     return newList
   }
 
@@ -135,12 +134,26 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   }
 
   const handleOnFinish = (data: string) => {
-    if (!shouldContinueToNextBlock(data)) {
+    const nextIndex = currentBlockIndex + 1
+    const isCurrentInteractionBlock = interaction_blocks.includes(currentBlockIndex)
+    
+    // 如果当前块是 interaction block，且有数据，则停止继续
+    if (data && isCurrentInteractionBlock) {
+      return
+    }
+    
+    // 如果下一个块是 interaction block，预设 loading 状态
+    const isNextInteractionBlock = interaction_blocks.includes(nextIndex)
+    if (isNextInteractionBlock && nextIndex < block_count) {
+      setLoadingBlockIndex(nextIndex)
+    }
+    
+    // 如果已经到达最后一个块，则停止
+    if (nextIndex >= block_count) {
       return
     }
 
     const newContext = updateContextParamsForNextBlock(data)
-    const nextIndex = currentBlockIndex + 1
 
     setSseParams(prev => ({
       ...prev,
@@ -150,6 +163,25 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
     }))
 
     setCurrentBlockIndex(nextIndex)
+  }
+
+  // 为 contentList 添加 loading 状态处理
+  const getContentListWithLoading = (): ContentRenderProps[] => {
+    const list = [...contentList]
+    
+    // 如果有 loadingBlockIndex，确保该位置有内容并添加 loading 标识
+    if (loadingBlockIndex !== null) {
+      while (list.length <= loadingBlockIndex) {
+        list.push({ content: '' })
+      }
+      // 为 loading 的块添加自定义渲染栏
+      list[loadingBlockIndex] = {
+        ...list[loadingBlockIndex],
+        customRenderBar: LoadingBar
+      }
+    }
+    
+    return list
   }
 
   const { data, connect } = useSSE<any>(sseUrl, {
@@ -176,6 +208,13 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
       }
     }
   }, [data])
+
+  // 创建 Loading 组件
+  const LoadingBar: CustomRenderBarProps = ({ content, displayContent, onSend }) => {
+    return (
+      <span className="flex gap-[10px] items-center"><Loader className="animate-spin" style={{ width: '15px', height: '15px' }} />请稍等...</span>
+    )
+  }
 
   const handleSend = (params: OnSendContentParams) => {
     const userInput = params.inputText || params.buttonText || ''
@@ -206,9 +245,20 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
     setContentList(updatedList)
   }
 
+  // 类型适配函数
+  const getAdaptedContentList = () => {
+    return getContentListWithLoading().map(item => ({
+      content: item.content,
+      customRenderBar: item.customRenderBar || (() => null),
+      defaultButtonText: item.defaultButtonText,
+      defaultInputText: item.defaultInputText,
+      readonly: item.readonly
+    }))
+  }
+
   return (
     <div style={styles}>
-      <MarkdownFlow initialContentList={contentList} onSend={handleSend} />
+      <MarkdownFlow initialContentList={getAdaptedContentList()} onSend={handleSend} />
     </div>
   )
 }

@@ -10,6 +10,7 @@ export interface MarkdownFlowProps {
     defaultInputText?: string
     defaultButtonText?: string
     readonly?: boolean
+    customRenderBar: CustomRenderBarProps
   }[]
   customRenderBar?: CustomRenderBarProps
   onSend?: (content: OnSendContentParams) => void
@@ -33,7 +34,6 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
         const disableTyping = isFinished || disableTypingProp
         const onSend = isFinished ? undefined : onSendProp
         const typingSpeed = isFinished ? undefined : typingSpeedProp
-
         return (
           <ContentRender
             key={index}
@@ -42,7 +42,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             defaultButtonText={contentInfo.defaultButtonText}
             readonly={contentInfo.readonly}
             disableTyping={disableTyping}
-            customRenderBar={customRenderBar}
+            customRenderBar={contentInfo.customRenderBar || customRenderBar}
             onSend={onSend}
             typingSpeed={typingSpeed}
             onTypeFinished={() => {

@@ -6,7 +6,7 @@ type OnSendContentParams = {
 }
 
 type CustomRenderBarProps = React.ComponentType<{
-    content: string
+    content?: string
     onSend?: (content: OnSendContentParams) => void
     displayContent: string
   }>

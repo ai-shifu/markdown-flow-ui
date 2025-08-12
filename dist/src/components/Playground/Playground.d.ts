@@ -8,6 +8,7 @@ type PlaygroundComponentProps = {
     styles?: React.CSSProperties;
     sseUrl?: string;
     sessionId?: string;
+    disableTyping?: boolean;
 };
 declare const PlaygroundComponent: React.FC<PlaygroundComponentProps>;
 export default PlaygroundComponent;

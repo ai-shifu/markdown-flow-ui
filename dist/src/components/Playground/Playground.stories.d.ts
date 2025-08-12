@@ -10,6 +10,7 @@ declare const meta: {
         styles?: React.CSSProperties;
         sseUrl?: string;
         sessionId?: string;
+        disableTyping?: boolean;
     }>;
     parameters: {
         layout: string;

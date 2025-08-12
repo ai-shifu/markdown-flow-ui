@@ -10,7 +10,7 @@ export interface MarkdownFlowProps {
     defaultInputText?: string
     defaultButtonText?: string
     readonly?: boolean
-    customRenderBar: CustomRenderBarProps
+    customRenderBar?: CustomRenderBarProps
   }[]
   customRenderBar?: CustomRenderBarProps
   onSend?: (content: OnSendContentParams) => void

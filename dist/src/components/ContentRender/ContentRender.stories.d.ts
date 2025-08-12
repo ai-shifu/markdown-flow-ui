@@ -22,4 +22,4 @@ export declare const ContentRenderStory1: Story;
 export declare const ContentRenderStory2: Story;
 export declare const ContentRenderStory3: Story;
 export declare const ContentRenderStory4: Story;
-export declare const ContentRenderStory5: Story;
+export declare const ContentRenderMarkdownStyleShow: Story;

@@ -7,6 +7,25 @@
   margin: 0 auto;
 }
 
+.content-render.markdown-body {
+  background-color: transparent;
+  color: inherit;
+}
+
+.content-render-ol,
+.content-render-ul {
+  margin: 0 0 1rem 0;
+  padding-left: 2rem;
+}
+
+.content-render-ol {
+  list-style-type: decimal;
+}
+
+.content-render-ul {
+  list-style-type: disc;
+}
+
 .content-render-table-container {
   overflow-x: auto;
   margin: 1rem 0;

@@ -11,6 +11,7 @@ import CustomButtonInputVariable, {
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import 'highlight.js/styles/github.css'
+import 'github-markdown-css/github-markdown.css'
 import {
   highlightLanguages,
   subsetLanguages
@@ -107,6 +108,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       }
       return <li {...props} />
     },
+    ol: ({ node, ...props }) => <ol className='content-render-ol' {...props} />,
+    ul: ({ node, ...props }) => <ul className='content-render-ul' {...props} />,
     input: ({ node, ...props }) => {
       if (props.type === 'checkbox') {
         return (
@@ -136,7 +139,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   }, [content])
 
   return (
-    <div className='content-render'>
+    <div className='content-render markdown-body'>
       <ReactMarkdown
         remarkPlugins={[
           remarkGfm,

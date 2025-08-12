@@ -15,6 +15,7 @@ type PlaygroundComponentProps = {
   styles?: React.CSSProperties
   sseUrl?: string
   sessionId?: string
+  disableTyping?: boolean
 }
 
 type SSEParams = {
@@ -41,6 +42,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   styles = {},
   sseUrl = 'https://play.dev.pillowai.cn/api/v1/playground/generate',
   sessionId,
+  disableTyping
 }) => {
   const { data: markdownInfo, loading: isMarkdownLoading } =
     useMarkdownInfo(defaultContent)
@@ -258,7 +260,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
 
   return (
     <div style={styles}>
-      <MarkdownFlow initialContentList={getAdaptedContentList()} onSend={handleSend} />
+      <MarkdownFlow initialContentList={getAdaptedContentList()} onSend={handleSend} disableTyping={disableTyping} />
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import useSSE from '../sse/useSSE'
 import useMarkdownInfo from './useMarkdownInfo'
-import MarkdownFlow from '../MarkdownFlow/ScrollableMarkdownFlow'
+import ScrollableMarkdownFlow from '../MarkdownFlow/ScrollableMarkdownFlow'
 import { ContentRenderProps } from '../ContentRender/ContentRender'
 import { OnSendContentParams, CustomRenderBarProps } from '../types'
 import { Loader } from 'lucide-react'
@@ -260,7 +260,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
 
   return (
     <div style={styles}>
-      <MarkdownFlow initialContentList={getAdaptedContentList()} onSend={handleSend} disableTyping={disableTyping} />
+      <ScrollableMarkdownFlow initialContentList={getAdaptedContentList()} onSend={handleSend} disableTyping={disableTyping} />
     </div>
   )
 }

@@ -281,15 +281,7 @@ $$
   },
 };
 
-
-export const ContentRenderStory5: Story = {
-  args: {
-    disableTyping: true,
-    content: `#第一章 认识一下呀岗，很高兴能你～作为老师先热烈欢迎你加入这段的学习旅程你知道吗正在以前所未有的着我们的从智能手机，到自动驾驶汽车医疗诊断AI技能已经成为未来之钥匙 🔑！\n\nAI不仅能让你在脱颖而出，更重要的是它能帮我们更好地数字，用现实相信我，这让你受益学习体验✨\n\n对了，我你呢？希望堂课上不仅能知识，更能成为好朋友 😊[DONE]`,
-  },
-};
-
-export const ContentRenderStory6: Story = {
+export const ContentRenderMarkdownStyleShow: Story = {
   args: {
     disableTyping: true,
     content: `# 完整Markdown语法测试

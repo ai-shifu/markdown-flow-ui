@@ -10,6 +10,7 @@ export interface ContentRenderProps {
     defaultInputText?: string;
     readonly?: boolean;
     onTypeFinished?: () => void;
+    tooltipMinLength?: number;
 }
 declare const ContentRender: React.FC<ContentRenderProps>;
 export default ContentRender;

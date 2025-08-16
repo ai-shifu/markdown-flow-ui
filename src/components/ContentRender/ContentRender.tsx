@@ -19,7 +19,6 @@ import {
 import useTypewriter from './useTypewriter'
 import './contentRender.css'
 import { OnSendContentParams, CustomRenderBarProps } from '../types'
-import '../../styles/globals.css'
 import remarkBreaks from 'remark-breaks'
 import { processMarkdownText } from './utils/process-markdown'
 
@@ -34,6 +33,7 @@ export interface ContentRenderProps {
   defaultInputText?: string // 用户输入的文本
   readonly?: boolean
   onTypeFinished?: () => void
+  tooltipMinLength?: number // 控制tooltip显示的最小字符长度，默认10
 }
 
 // 扩展组件接口
@@ -49,7 +49,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   defaultButtonText,
   defaultInputText,
   readonly = false,
-  onTypeFinished
+  onTypeFinished,
+  tooltipMinLength
 }) => {
   // 使用自定义Hook处理打字机效果
   const { displayContent, isComplete } = useTypewriter({
@@ -66,6 +67,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         defaultButtonText={defaultButtonText}
         defaultInputText={defaultInputText}
         onSend={onSend}
+        tooltipMinLength={tooltipMinLength}
       />
     ),
     'custom-button': props => (

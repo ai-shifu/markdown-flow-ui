@@ -42,9 +42,11 @@ const CustomButton = ({
       disabled={readonly}
       size='sm'
       onClick={handleButtonClick}
-      className={`cursor-pointer h-6 text-sm hover:bg-gray-200 ${
-        defaultButtonText === buttonText ? 'bg-black text-white' : ''
-      }`}
+      className={`cursor-pointer h-6 text-sm hover:bg-gray-200`}
+      style={{
+        backgroundColor: defaultButtonText === buttonText ? 'var(--primary, #2563eb)' : undefined,
+        color: defaultButtonText === buttonText ? 'var(--primary-foreground, white)' : undefined
+      }}
       {...restProps}
     >
       {buttonText}

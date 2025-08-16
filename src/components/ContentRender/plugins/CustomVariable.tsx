@@ -22,6 +22,7 @@ interface CustomVariableProps {
   defaultInputText?: string
   readonly?: boolean
   onSend?: (content: OnSendContentParams) => void
+  tooltipMinLength?: number // 控制tooltip显示的最小字符长度，默认10
 }
 
 interface ComponentsWithCustomVariable extends Components {
@@ -34,7 +35,8 @@ const CustomButtonInputVariable = ({
   readonly,
   defaultButtonText,
   defaultInputText,
-  onSend
+  onSend,
+  tooltipMinLength = 10
 }: CustomVariableProps) => {
   const [inputValue, setInputValue] = React.useState(defaultInputText || '')
 
@@ -70,9 +72,11 @@ const CustomButtonInputVariable = ({
           type='button'
           size='sm'
           onClick={() => handleButtonClick(text)}
-          className={`cursor-pointer h-6 text-sm hover:bg-gray-200 ${
-            defaultButtonText === text ? 'bg-black text-white' : ''
-          }`}
+          className={`cursor-pointer h-6 text-sm hover:bg-gray-200`}
+          style={{
+            backgroundColor: defaultButtonText === text ? 'var(--primary, #2563eb)' : undefined,
+            color: defaultButtonText === text ? 'var(--primary-foreground, white)' : undefined
+          }}
         >
           {text}
         </Button>
@@ -86,7 +90,7 @@ const CustomButtonInputVariable = ({
             value={inputValue}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            className='custom-variable-input w-40 h-6 text-sm border-0 shadow-none outline-none ring-0'
+            className='w-40 h-6 text-sm border-0 shadow-none outline-none ring-0'
             style={{
               border: 'none',
               outline: 'none',
@@ -95,11 +99,17 @@ const CustomButtonInputVariable = ({
             title={node.properties.placeholder}
           />
           {/* Tooltip */}
-          {node.properties.placeholder.length > 10 && (
-            <div className='absolute bottom-full left-0 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 whitespace-nowrap max-w-xs'>
+          {/* {node.properties.placeholder.length > tooltipMinLength && (
+            <div 
+              className='absolute bottom-full left-0 mb-2 px-2 py-1 text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 whitespace-nowrap max-w-xs'
+              style={{
+                backgroundColor: 'var(--tooltip-bg, #374151)',
+                color: 'var(--tooltip-text, white)'
+              }}
+            >
               {node.properties.placeholder}
             </div>
-          )}
+          )} */}
           <Button
             type='button'
             variant='ghost'

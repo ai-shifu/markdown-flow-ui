@@ -10180,7 +10180,11 @@ const A_ = ({
       disabled: e,
       size: "sm",
       onClick: o,
-      className: `cursor-pointer h-6 text-sm hover:bg-gray-200 ${t === r ? "bg-black text-white" : ""}`,
+      className: "cursor-pointer h-6 text-sm hover:bg-gray-200",
+      style: {
+        backgroundColor: t === r ? "var(--primary, #2563eb)" : void 0,
+        color: t === r ? "var(--primary-foreground, white)" : void 0
+      },
       ...s,
       children: r
     }
@@ -10441,36 +10445,41 @@ const U_ = [
   readonly: e,
   defaultButtonText: t,
   defaultInputText: i,
-  onSend: r
+  onSend: r,
+  tooltipMinLength: s = 10
 }) => {
-  const [s, o] = ch.useState(i || ""), a = (h) => {
+  const [o, a] = ch.useState(i || ""), l = (f) => {
     r?.({
       variableName: n.properties?.variableName || "",
-      buttonText: h
+      buttonText: f
     });
-  }, l = (h) => {
-    o(h.target.value);
-  }, c = (h) => {
-    h.key === "Enter" && u();
-  }, u = () => {
+  }, c = (f) => {
+    a(f.target.value);
+  }, u = (f) => {
+    f.key === "Enter" && h();
+  }, h = () => {
     r?.({
       variableName: n.properties?.variableName || "",
-      inputText: s
+      inputText: o
     });
   };
   return /* @__PURE__ */ ce.jsxs("span", { className: "custom-variable-container inline-flex items-center gap-2 flex-wrap", children: [
-    n.properties?.buttonTexts?.map((h, f) => /* @__PURE__ */ ce.jsx(
+    n.properties?.buttonTexts?.map((f, d) => /* @__PURE__ */ ce.jsx(
       ka,
       {
         disabled: e,
         variant: "outline",
         type: "button",
         size: "sm",
-        onClick: () => a(h),
-        className: `cursor-pointer h-6 text-sm hover:bg-gray-200 ${t === h ? "bg-black text-white" : ""}`,
-        children: h
+        onClick: () => l(f),
+        className: "cursor-pointer h-6 text-sm hover:bg-gray-200",
+        style: {
+          backgroundColor: t === f ? "var(--primary, #2563eb)" : void 0,
+          color: t === f ? "var(--primary-foreground, white)" : void 0
+        },
+        children: f
       },
-      f
+      d
     )),
     n.properties?.placeholder && /* @__PURE__ */ ce.jsxs("span", { className: "text-sm flex rounded-md border relative group", children: [
       /* @__PURE__ */ ce.jsx(
@@ -10479,10 +10488,10 @@ const U_ = [
           type: "text",
           disabled: e,
           placeholder: n.properties?.placeholder,
-          value: s,
-          onChange: l,
-          onKeyDown: c,
-          className: "custom-variable-input w-40 h-6 text-sm border-0 shadow-none outline-none ring-0",
+          value: o,
+          onChange: c,
+          onKeyDown: u,
+          className: "w-40 h-6 text-sm border-0 shadow-none outline-none ring-0",
           style: {
             border: "none",
             outline: "none",
@@ -10491,14 +10500,13 @@ const U_ = [
           title: n.properties.placeholder
         }
       ),
-      n.properties.placeholder.length > 10 && /* @__PURE__ */ ce.jsx("div", { className: "absolute bottom-full left-0 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 whitespace-nowrap max-w-xs", children: n.properties.placeholder }),
       /* @__PURE__ */ ce.jsx(
         ka,
         {
           type: "button",
           variant: "ghost",
           size: "icon",
-          onClick: u,
+          onClick: h,
           disabled: e,
           className: "h-6 w-6 mr-1 hover:bg-gray-200",
           children: /* @__PURE__ */ ce.jsx(G_, { className: "h-4 w-4" })
@@ -26818,60 +26826,62 @@ const qP = (n) => {
   defaultButtonText: s,
   defaultInputText: o,
   readonly: a = !1,
-  onTypeFinished: l
+  onTypeFinished: l,
+  tooltipMinLength: c
 }) => {
-  const { displayContent: c, isComplete: u } = BP({
+  const { displayContent: u, isComplete: h } = BP({
     content: VP(n),
     typingSpeed: i,
     disabled: r
-  }), h = {
-    "custom-variable": (d) => /* @__PURE__ */ ce.jsx(
+  }), f = {
+    "custom-variable": (p) => /* @__PURE__ */ ce.jsx(
       W_,
       {
-        ...d,
+        ...p,
         readonly: a,
         defaultButtonText: s,
         defaultInputText: o,
-        onSend: t
+        onSend: t,
+        tooltipMinLength: c
       }
     ),
-    "custom-button": (d) => /* @__PURE__ */ ce.jsx(
+    "custom-button": (p) => /* @__PURE__ */ ce.jsx(
       A_,
       {
-        ...d,
+        ...p,
         readonly: a,
         defaultButtonText: s,
         onSend: t
       }
     ),
-    code: (d) => {
-      const { inline: p, className: m, children: O, ...g } = d, y = /language-(\w+)/.exec(m || "");
-      return !p && y ? /* @__PURE__ */ ce.jsx("code", { className: m, ...g, children: O }) : /* @__PURE__ */ ce.jsx("code", { className: m, ...g, children: O });
+    code: (p) => {
+      const { inline: m, className: O, children: g, ...y } = p, S = /language-(\w+)/.exec(O || "");
+      return !m && S ? /* @__PURE__ */ ce.jsx("code", { className: O, ...y, children: g }) : /* @__PURE__ */ ce.jsx("code", { className: O, ...y, children: g });
     },
-    table: ({ node: d, ...p }) => /* @__PURE__ */ ce.jsx("div", { className: "content-render-table-container", children: /* @__PURE__ */ ce.jsx("table", { className: "content-render-table", ...p }) }),
-    th: ({ node: d, ...p }) => /* @__PURE__ */ ce.jsx("th", { className: "content-render-th", ...p }),
-    td: ({ node: d, ...p }) => /* @__PURE__ */ ce.jsx("td", { className: "content-render-td", ...p }),
-    tr: ({ node: d, ...p }) => /* @__PURE__ */ ce.jsx("tr", { className: "content-render-tr", ...p }),
-    li: ({ node: d, ...p }) => {
-      const m = d?.properties?.className;
-      return typeof m == "string" && m.includes("task-list-item") || Array.isArray(m) && m.includes("task-list-item") ? /* @__PURE__ */ ce.jsx("li", { className: "content-render-task-list-item", ...p }) : /* @__PURE__ */ ce.jsx("li", { ...p });
+    table: ({ node: p, ...m }) => /* @__PURE__ */ ce.jsx("div", { className: "content-render-table-container", children: /* @__PURE__ */ ce.jsx("table", { className: "content-render-table", ...m }) }),
+    th: ({ node: p, ...m }) => /* @__PURE__ */ ce.jsx("th", { className: "content-render-th", ...m }),
+    td: ({ node: p, ...m }) => /* @__PURE__ */ ce.jsx("td", { className: "content-render-td", ...m }),
+    tr: ({ node: p, ...m }) => /* @__PURE__ */ ce.jsx("tr", { className: "content-render-tr", ...m }),
+    li: ({ node: p, ...m }) => {
+      const O = p?.properties?.className;
+      return typeof O == "string" && O.includes("task-list-item") || Array.isArray(O) && O.includes("task-list-item") ? /* @__PURE__ */ ce.jsx("li", { className: "content-render-task-list-item", ...m }) : /* @__PURE__ */ ce.jsx("li", { ...m });
     },
-    ol: ({ node: d, ...p }) => /* @__PURE__ */ ce.jsx("ol", { className: "content-render-ol", ...p }),
-    ul: ({ node: d, ...p }) => /* @__PURE__ */ ce.jsx("ul", { className: "content-render-ul", ...p }),
-    input: ({ node: d, ...p }) => p.type === "checkbox" ? /* @__PURE__ */ ce.jsx(
+    ol: ({ node: p, ...m }) => /* @__PURE__ */ ce.jsx("ol", { className: "content-render-ol", ...m }),
+    ul: ({ node: p, ...m }) => /* @__PURE__ */ ce.jsx("ul", { className: "content-render-ul", ...m }),
+    input: ({ node: p, ...m }) => m.type === "checkbox" ? /* @__PURE__ */ ce.jsx(
       "input",
       {
         type: "checkbox",
         className: "content-render-checkbox",
         disabled: !0,
-        ...p
+        ...m
       }
-    ) : /* @__PURE__ */ ce.jsx("input", { ...p })
-  }, f = ft(!1);
+    ) : /* @__PURE__ */ ce.jsx("input", { ...m })
+  }, d = ft(!1);
   return dt(() => {
-    u && !f.current && (console.log("[ContentRender] Typing is complete, calling onTypeFinished"), f.current = !0, l?.());
-  }, [u, l]), dt(() => {
-    f.current = !1;
+    h && !d.current && (console.log("[ContentRender] Typing is complete, calling onTypeFinished"), d.current = !0, l?.());
+  }, [h, l]), dt(() => {
+    d.current = !1;
   }, [n]), /* @__PURE__ */ ce.jsxs("div", { className: "content-render markdown-body", children: [
     /* @__PURE__ */ ce.jsx(
       ME,
@@ -26891,13 +26901,13 @@ const qP = (n) => {
             }
           ]
         ],
-        components: h,
-        children: c
+        components: f,
+        children: u
       }
     ),
     e && ch.createElement(e, {
       content: n,
-      displayContent: c,
+      displayContent: u,
       onSend: t
     })
   ] });
@@ -27026,7 +27036,7 @@ const qP = (n) => {
             customRenderBar: e,
             onSend: t,
             typingSpeed: r,
-            disableTyping: !1,
+            disableTyping: s,
             onBlockComplete: i
           }
         ) }),

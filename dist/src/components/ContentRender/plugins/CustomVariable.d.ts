@@ -15,10 +15,11 @@ interface CustomVariableProps {
     defaultInputText?: string;
     readonly?: boolean;
     onSend?: (content: OnSendContentParams) => void;
+    tooltipMinLength?: number;
 }
 interface ComponentsWithCustomVariable extends Components {
     'custom-variable': React.ComponentType<CustomVariableProps>;
 }
-declare const CustomButtonInputVariable: ({ node, readonly, defaultButtonText, defaultInputText, onSend }: CustomVariableProps) => React.JSX.Element;
+declare const CustomButtonInputVariable: ({ node, readonly, defaultButtonText, defaultInputText, onSend, tooltipMinLength }: CustomVariableProps) => React.JSX.Element;
 export default CustomButtonInputVariable;
 export type { CustomVariableProps, CustomVariableNode, ComponentsWithCustomVariable };

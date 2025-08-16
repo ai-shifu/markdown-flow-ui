@@ -14,12 +14,18 @@ const FINISHED_MESSAGE = '[DONE]'
 
 interface UseSSEOptions extends RequestInit {
   autoConnect?: boolean
+  onStart?: (index: number) => void
   onFinish?: (finalData: any, index: number) => void
   maxRetries?: number
   retryDelay?: number
 }
 
-type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error' | 'closed'
+type ConnectionState =
+  | 'disconnected'
+  | 'connecting'
+  | 'connected'
+  | 'error'
+  | 'closed'
 
 const useSSE = <T = any>(
   url: string,
@@ -37,13 +43,10 @@ const useSSE = <T = any>(
   const finalDataRef = useRef<string>('')
   const retryCountRef = useRef(0)
 
-  const { 
-    autoConnect = true, 
-    maxRetries = 3, 
-    retryDelay = 1000 
-  } = options
+  const { autoConnect = true, maxRetries = 3, retryDelay = 1000 } = options
 
-  const isActive = () => mountedRef.current && connectionStateRef.current !== 'closed'
+  const isActive = () =>
+    mountedRef.current && connectionStateRef.current !== 'closed'
 
   const retry = useCallback(async () => {
     if (retryCountRef.current < maxRetries && isActive()) {
@@ -56,9 +59,11 @@ const useSSE = <T = any>(
   }, [maxRetries, retryDelay])
 
   const connect = useCallback(async () => {
-    if (connectionStateRef.current === 'connecting' || 
-        connectionStateRef.current === 'connected' || 
-        !isActive()) {
+    if (
+      connectionStateRef.current === 'connecting' ||
+      connectionStateRef.current === 'connected' ||
+      !isActive()
+    ) {
       return
     }
 
@@ -97,6 +102,7 @@ const useSSE = <T = any>(
             setIsLoading(false)
             setError(null)
             retryCountRef.current = 0
+            options.onStart?.(newIndex)
           }
         },
         onmessage: event => {
@@ -106,7 +112,6 @@ const useSSE = <T = any>(
               close()
               return
             }
-
             try {
               let parsedData: any = event.data
               finalDataRef.current += parsedData
@@ -145,12 +150,12 @@ const useSSE = <T = any>(
   const close = useCallback(() => {
     connectionStateRef.current = 'closed'
     retryCountRef.current = 0
-    
+
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
       abortControllerRef.current = null
     }
-    
+
     if (mountedRef.current) {
       setIsLoading(false)
     }

@@ -15,7 +15,11 @@ const FINISHED_MESSAGE = '[DONE]'
 interface UseSSEOptions extends RequestInit {
   autoConnect?: boolean
   onFinish?: (finalData: any, index: number) => void
+  maxRetries?: number
+  retryDelay?: number
 }
+
+type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error' | 'closed'
 
 const useSSE = <T = any>(
   url: string,
@@ -27,28 +31,41 @@ const useSSE = <T = any>(
   const [sseIndex, setSseIndex] = useState<number | null>(null)
 
   const abortControllerRef = useRef<AbortController | null>(null)
-  const hasConnectedRef = useRef(false)
   const mountedRef = useRef(true)
-  const isManuallyClosedRef = useRef(false)
+  const connectionStateRef = useRef<ConnectionState>('disconnected')
   const currentIndexRef = useRef(-1)
   const finalDataRef = useRef<string>('')
+  const retryCountRef = useRef(0)
 
-  const { autoConnect = true } = options
+  const { 
+    autoConnect = true, 
+    maxRetries = 3, 
+    retryDelay = 1000 
+  } = options
+
+  const isActive = () => mountedRef.current && connectionStateRef.current !== 'closed'
+
+  const retry = useCallback(async () => {
+    if (retryCountRef.current < maxRetries && isActive()) {
+      retryCountRef.current++
+      await new Promise(resolve => setTimeout(resolve, retryDelay))
+      if (isActive()) {
+        await connect()
+      }
+    }
+  }, [maxRetries, retryDelay])
 
   const connect = useCallback(async () => {
-    if (
-      hasConnectedRef.current ||
-      !mountedRef.current ||
-      isManuallyClosedRef.current
-    ) {
+    if (connectionStateRef.current === 'connecting' || 
+        connectionStateRef.current === 'connected' || 
+        !isActive()) {
       return
     }
 
     try {
+      connectionStateRef.current = 'connecting'
       setIsLoading(true)
       setError(null)
-      isManuallyClosedRef.current = false
-      hasConnectedRef.current = true
 
       const newIndex = ++currentIndexRef.current
       setSseIndex(newIndex)
@@ -75,13 +92,15 @@ const useSSE = <T = any>(
         signal: abortController.signal,
         openWhenHidden: true,
         onopen: async response => {
-          if (mountedRef.current && !isManuallyClosedRef.current) {
+          if (isActive()) {
+            connectionStateRef.current = 'connected'
             setIsLoading(false)
             setError(null)
+            retryCountRef.current = 0
           }
         },
         onmessage: event => {
-          if (mountedRef.current && !isManuallyClosedRef.current) {
+          if (isActive()) {
             if (event.data.toUpperCase() === FINISHED_MESSAGE) {
               options.onFinish?.(finalDataRef.current, newIndex)
               close()
@@ -90,44 +109,48 @@ const useSSE = <T = any>(
 
             try {
               let parsedData: any = event.data
-              // try {
-              //   parsedData = JSON.parse(event.data)
-              // } catch (e) {}
-              // setData(parsedData)
               finalDataRef.current += parsedData
               setData(finalDataRef.current as any)
             } catch (err) {
+              console.warn('Failed to process SSE message:', err)
             }
           }
         },
         onclose: () => {
-          if (mountedRef.current && !isManuallyClosedRef.current) {
+          if (isActive()) {
+            connectionStateRef.current = 'disconnected'
             setIsLoading(false)
           }
         },
         onerror: err => {
-          if (mountedRef.current && !isManuallyClosedRef.current) {
+          if (isActive()) {
+            connectionStateRef.current = 'error'
             setError(err)
             setIsLoading(false)
+            retry()
           }
-          return
+          throw err
         }
       })
     } catch (err) {
-      if (mountedRef.current && !isManuallyClosedRef.current) {
+      if (isActive()) {
+        connectionStateRef.current = 'error'
         setError(err as Error)
         setIsLoading(false)
+        retry()
       }
     }
-  }, [url, JSON.stringify(options)])
+  }, [url, JSON.stringify(options), retry])
 
   const close = useCallback(() => {
-    isManuallyClosedRef.current = true
+    connectionStateRef.current = 'closed'
+    retryCountRef.current = 0
+    
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
       abortControllerRef.current = null
     }
-    hasConnectedRef.current = false
+    
     if (mountedRef.current) {
       setIsLoading(false)
     }
@@ -135,26 +158,24 @@ const useSSE = <T = any>(
 
   useEffect(() => {
     mountedRef.current = true
-    isManuallyClosedRef.current = false
-    hasConnectedRef.current = false
+    connectionStateRef.current = 'disconnected'
+    retryCountRef.current = 0
 
     if (autoConnect) {
       const timeoutId = setTimeout(() => {
-        if (!hasConnectedRef.current) {
+        if (connectionStateRef.current === 'disconnected') {
           connect()
         }
       }, 100)
 
       return () => {
         mountedRef.current = false
-        isManuallyClosedRef.current = true
         clearTimeout(timeoutId)
         close()
       }
     } else {
       return () => {
         mountedRef.current = false
-        isManuallyClosedRef.current = true
         close()
       }
     }
@@ -162,18 +183,16 @@ const useSSE = <T = any>(
 
   // 监听 url 和 options 变化以重新连接
   useEffect(() => {
-    // 如果不是首次加载，则关闭当前连接并重新连接
-    if (hasConnectedRef.current) {
+    if (connectionStateRef.current !== 'disconnected') {
       close()
-      hasConnectedRef.current = false
-      isManuallyClosedRef.current = false
       setData(null)
       setError(null)
-      setIsLoading(true)
       finalDataRef.current = ''
+      connectionStateRef.current = 'disconnected'
+      retryCountRef.current = 0
 
       const timeoutId = setTimeout(() => {
-        if (!hasConnectedRef.current) {
+        if (connectionStateRef.current === 'disconnected' && isActive()) {
           connect()
         }
       }, 100)

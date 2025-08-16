@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import useSSE from '../sse/useSSE'
 import useMarkdownInfo from './useMarkdownInfo'
 import ScrollableMarkdownFlow from '../MarkdownFlow/ScrollableMarkdownFlow'
@@ -48,7 +48,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
     useMarkdownInfo(defaultContent)
   const { block_count = 0, interaction_blocks = [] } = markdownInfo || {}
 
-  const [currentBlockIndex, setCurrentBlockIndex] = useState<number>(0)
+  const currentBlockIndexRef = useRef<number>(0)
   const [contentList, setContentList] = useState<ContentRenderProps[]>([])
   const [loadingBlockIndex, setLoadingBlockIndex] = useState<number | null>(null)
 
@@ -74,18 +74,18 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
     const newContext = [...sseParams.context]
 
     // 确保数组长度足够
-    while (newContext.length <= currentBlockIndex) {
+    while (newContext.length <= currentBlockIndexRef.current) {
       newContext.push({ role: 'assistant', content: '' })
     }
 
     // 更新当前块内容
-    newContext[currentBlockIndex] = {
-      ...newContext[currentBlockIndex],
+    newContext[currentBlockIndexRef.current] = {
+      ...newContext[currentBlockIndexRef.current],
       content: currentData
     }
 
     // 添加下一个块的占位符
-    if (newContext.length <= currentBlockIndex + 1) {
+    if (newContext.length <= currentBlockIndexRef.current + 1) {
       newContext.push({ role: 'assistant', content: '' })
     }
 
@@ -98,18 +98,18 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
     const newList = [...contentList]
 
     // 确保数组长度足够
-    while (newList.length <= currentBlockIndex) {
+    while (newList.length <= currentBlockIndexRef.current) {
       newList.push({ content: '' })
     }
 
     // 更新当前块内容
-    newList[currentBlockIndex] = {
-      ...newList[currentBlockIndex],
+    newList[currentBlockIndexRef.current] = {
+      ...newList[currentBlockIndexRef.current],
       content: newData
     }
 
     // 清除 loading 状态
-    if (loadingBlockIndex === currentBlockIndex) {
+    if (loadingBlockIndex === currentBlockIndexRef.current) {
       setLoadingBlockIndex(null)
     }
 
@@ -136,8 +136,8 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   }
 
   const handleOnFinish = (data: string) => {
-    const nextIndex = currentBlockIndex + 1
-    const isCurrentInteractionBlock = interaction_blocks.includes(currentBlockIndex)
+    const nextIndex = currentBlockIndexRef.current + 1
+    const isCurrentInteractionBlock = interaction_blocks.includes(currentBlockIndexRef.current)
     
     // 如果当前块是 interaction block，且有数据，则停止继续
     if (data && isCurrentInteractionBlock) {
@@ -164,7 +164,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
       context: newContext
     }))
 
-    setCurrentBlockIndex(nextIndex)
+    currentBlockIndexRef.current = nextIndex
   }
 
   // 为 contentList 添加 loading 状态处理
@@ -223,9 +223,9 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
 
     // 更新上下文
     const newContext = [...sseParams.context]
-    if (newContext[currentBlockIndex]) {
-      newContext[currentBlockIndex] = {
-        ...newContext[currentBlockIndex],
+    if (newContext[currentBlockIndexRef.current]) {
+      newContext[currentBlockIndexRef.current] = {
+        ...newContext[currentBlockIndexRef.current],
         content: userInput,
         role: 'user'
       }

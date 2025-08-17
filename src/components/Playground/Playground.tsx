@@ -111,9 +111,9 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
     }
 
     // 清除 loading 状态
-    // if (loadingBlockIndex === currentIndex) {
-    //   setLoadingBlockIndex(null)
-    // }
+    if (loadingBlockIndex === currentIndex) {
+      setLoadingBlockIndex(null)
+    }
 
     return newList
   }
@@ -170,6 +170,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
       userOperateErrorFlag.current = true
       const updatedList = updateContentListWithUserError(data)
       setContentList(updatedList)
+      setLoadingBlockIndex(null) // 清除loading状态
       return
     }
 
@@ -200,6 +201,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
 
   const handleOnStart = () => {
     currentMessageIndexRef.current = contentList.length
+    setLoadingBlockIndex(currentMessageIndexRef.current)
   }
 
   // 为 contentList 添加 loading 状态处理
@@ -296,7 +298,6 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
 
   // 类型适配函数
   const getAdaptedContentList = () => {
-    return contentList
     return getContentListWithLoading().map(item => ({
       content: item.content,
       customRenderBar: item.customRenderBar || (() => null),

@@ -49,8 +49,8 @@ const useTypewriter = ({
     { pattern: /(?<!\!)\[[^\]]*\]\([^\)]*\)/, type: 'link' },
     { pattern: /^(>\s*)+[^\n]*$/m, type: 'blockquote' },
     { pattern: /^[-*]{3,}$/m, type: 'hr' },
-    { pattern: /^[*-]\s+[^\n]*$/m, type: 'list-item' },
-    { pattern: /^\d+\.\s+[^\n]*$/m, type: 'ordered-list-item' },
+    // { pattern: /^(\s*)[-*+]\s+(\[[ xX]\])?\s*[^\n]*(\n(\s{2,}|\t+)[^\n]*)*$/m, type: 'list-item' },
+    // { pattern: /^(\s*)\d+\.\s+[^\n]*(\n(\s{2,}|\t+)[^\n]*)*$/m, type: 'ordered-list-item' },
   ]).current
 
   // Parse content into segments
@@ -154,8 +154,8 @@ const useTypewriter = ({
       const isNowComplete = displayIndexRef.current >= segments.length
       setIsComplete(isNowComplete)
       
-      // 如果还有内容要打，开始打字
-      if (!isNowComplete && (!isTyping || displayIndexRef.current >= oldSegmentCount)) {
+      // 如果还有内容要打，确保打字机继续工作
+      if (!isNowComplete && !isTyping) {
         setIsTyping(true)
         type()
       }

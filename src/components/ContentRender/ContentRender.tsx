@@ -16,7 +16,7 @@ import {
   highlightLanguages,
   subsetLanguages
 } from './utils/highlight-languages'
-import useTypewriter from './useTypewriter'
+import useTypewriterStateMachine from './useTypewriterStateMachine'
 import './contentRender.css'
 import { OnSendContentParams, CustomRenderBarProps } from '../types'
 import remarkBreaks from 'remark-breaks'
@@ -53,7 +53,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   tooltipMinLength
 }) => {
   // 使用自定义Hook处理打字机效果
-  const { displayContent, isComplete } = useTypewriter({
+  const { displayContent, isComplete } = useTypewriterStateMachine({
     content: processMarkdownText(content),
     typingSpeed,
     disabled: disableTyping

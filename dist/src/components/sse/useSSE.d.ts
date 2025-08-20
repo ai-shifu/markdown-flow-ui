@@ -8,7 +8,10 @@ interface UseSSEReturn<T = any> {
 }
 interface UseSSEOptions extends RequestInit {
     autoConnect?: boolean;
+    onStart?: (index: number) => void;
     onFinish?: (finalData: any, index: number) => void;
+    maxRetries?: number;
+    retryDelay?: number;
 }
 declare const useSSE: <T = any>(url: string, options?: UseSSEOptions) => UseSSEReturn<T>;
 export default useSSE;

@@ -27176,8 +27176,10 @@ const qP = (n) => {
       return;
     }
     const Y = h.current + 1;
-    if (u.includes(Y) && Y < c && g(Y), Y >= c)
+    if (u.includes(Y) && Y < c && g(Y), Y >= c) {
+      g(null);
       return;
+    }
     const Z = v(z);
     S((W) => ({
       ...W,

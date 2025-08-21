@@ -183,6 +183,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
 
     // 如果已经到达最后一个块，则停止
     if (nextIndex >= block_count) {
+      setLoadingBlockIndex(null) // 清除loading状态
       return
     }
 

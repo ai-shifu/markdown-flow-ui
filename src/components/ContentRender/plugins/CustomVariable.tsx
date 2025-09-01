@@ -1,32 +1,32 @@
-import { SendIcon } from 'lucide-react'
-import React from 'react'
-import type { Components } from 'react-markdown'
-import { OnSendContentParams } from '../../types'
-import { Button } from '../../ui/button'
-import { Input } from '../../ui/input'
+import { SendIcon } from "lucide-react";
+import React from "react";
+import type { Components } from "react-markdown";
+import { OnSendContentParams } from "../../types";
+import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
 
 // Define custom variable node type
 interface CustomVariableNode {
-  tagName: 'custom-variable'
+  tagName: "custom-variable";
   properties?: {
-    variableName?: string
-    buttonTexts?: string[]
-    buttonValues?: string[]
-    placeholder?: string
-  }
+    variableName?: string;
+    buttonTexts?: string[];
+    buttonValues?: string[];
+    placeholder?: string;
+  };
 }
 
 // Define custom variable component Props type
 interface CustomVariableProps {
-  node: CustomVariableNode
-  defaultButtonText?: string
-  defaultInputText?: string
-  readonly?: boolean
-  onSend?: (content: OnSendContentParams) => void
+  node: CustomVariableNode;
+  defaultButtonText?: string;
+  defaultInputText?: string;
+  readonly?: boolean;
+  onSend?: (content: OnSendContentParams) => void;
 }
 
 interface ComponentsWithCustomVariable extends Components {
-  'custom-variable'?: React.ComponentType<CustomVariableProps>
+  "custom-variable"?: React.ComponentType<CustomVariableProps>;
 }
 
 // Define custom variable component
@@ -37,29 +37,29 @@ const CustomButtonInputVariable = ({
   defaultInputText,
   onSend,
 }: CustomVariableProps) => {
-  const [inputValue, setInputValue] = React.useState(defaultInputText || '')
+  const [inputValue, setInputValue] = React.useState(defaultInputText || "");
 
   const handleButtonClick = (value: string) => {
     onSend?.({
-      variableName: node.properties?.variableName || '',
-      buttonText: value
-    })
-  }
+      variableName: node.properties?.variableName || "",
+      buttonText: value,
+    });
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value)
-  }
+    setInputValue(e.target.value);
+  };
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSendClick()
+    if (e.key === "Enter") {
+      handleSendClick();
     }
-  }
+  };
   const handleSendClick = () => {
     onSend?.({
-      variableName: node.properties?.variableName || '',
-      inputText: inputValue
-    })
-  }
+      variableName: node.properties?.variableName || "",
+      inputText: inputValue,
+    });
+  };
 
   return (
     <span className="custom-variable-container inline-flex items-center gap-2 flex-wrap">
@@ -122,10 +122,11 @@ const CustomButtonInputVariable = ({
       )}
     </span>
   );
-}
+};
 
-export default CustomButtonInputVariable
+export default CustomButtonInputVariable;
 export type {
-  ComponentsWithCustomVariable, CustomVariableNode, CustomVariableProps
-}
-
+  ComponentsWithCustomVariable,
+  CustomVariableNode,
+  CustomVariableProps,
+};

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import CodeMirror from '@uiw/react-codemirror';
-import { markdown } from '@codemirror/lang-markdown';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import React, { useState } from "react";
+import CodeMirror from "@uiw/react-codemirror";
+import { markdown } from "@codemirror/lang-markdown";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 export interface MarkdownFlowEditorProps {
   value?: string;
@@ -12,11 +12,11 @@ export interface MarkdownFlowEditorProps {
 }
 
 const MarkdownFlowEditor: React.FC<MarkdownFlowEditorProps> = ({
-  value = '',
+  value = "",
   onChange,
-  className = '',
+  className = "",
   readOnly = false,
-  maxWidth = '100%' // Default max width is 100%
+  maxWidth = "100%", // Default max width is 100%
 }) => {
   const [markdownContent, setMarkdownContent] = useState(value);
 
@@ -28,7 +28,7 @@ const MarkdownFlowEditor: React.FC<MarkdownFlowEditorProps> = ({
   };
 
   return (
-    <Card 
+    <Card
       className={`w-full h-full flex flex-col ${className}`}
       style={{ maxWidth }}
     >
@@ -39,9 +39,7 @@ const MarkdownFlowEditor: React.FC<MarkdownFlowEditorProps> = ({
         <CodeMirror
           value={markdownContent}
           height="100%"
-          extensions={[
-            markdown()
-          ]}
+          extensions={[markdown()]}
           onChange={handleChange}
           editable={!readOnly}
           basicSetup={{
@@ -51,9 +49,9 @@ const MarkdownFlowEditor: React.FC<MarkdownFlowEditorProps> = ({
             foldGutter: false,
           }}
           style={{
-            height: '100%',
-            width: '100%',
-            overflowWrap: 'break-word' // Auto line wrapping
+            height: "100%",
+            width: "100%",
+            overflowWrap: "break-word", // Auto line wrapping
           }}
         />
       </CardContent>

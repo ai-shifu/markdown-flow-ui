@@ -31,7 +31,10 @@ const meta = {
   },
   args: {
     value: '',
-    onChange: value => console.log(value),
+    onChange: value => {
+      // eslint-disable-next-line no-console
+      console.log(value);
+    },
     className: '',
     readOnly: false,
   },
@@ -75,6 +78,7 @@ export const MarkdownFlowEditorStory: Story = {
 
 ?[登录](login_url)`,
     onChange: value => {
+      // eslint-disable-next-line no-console
       console.log(value);
     },
   },

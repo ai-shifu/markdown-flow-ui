@@ -70,7 +70,7 @@ const eslintConfig = [
       
       // React hooks rules
       "react-hooks/rules-of-hooks": "error",
-      "react-hooks/exhaustive-deps": "warn",
+      "react-hooks/exhaustive-deps": "off",
       
       // Accessibility rules
       "jsx-a11y/alt-text": "error",

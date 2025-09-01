@@ -112,6 +112,7 @@ const useSSE = <T = string | number | boolean | object>(
               finalDataRef.current += parsedData;
               setData(finalDataRef.current as T);
             } catch (err) {
+              // eslint-disable-next-line no-console
               console.warn('Failed to process SSE message:', err);
             }
           }

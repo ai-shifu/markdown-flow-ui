@@ -120,7 +120,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
   useEffect(() => {
     if (isComplete && !hasCompleted.current) {
-      console.log('[ContentRender] Typing is complete, calling onTypeFinished');
       hasCompleted.current = true; // Mark as completed
       onTypeFinished?.(); // Call the passed callback
     }

@@ -47,8 +47,8 @@ const useMarkdownInfo = (content: string) => {
         } else {
           setError(result.message || 'Request failed');
         }
-      } catch (err: any) {
-        setError(err.message || 'Network error');
+      } catch (err: Error | unknown) {
+        setError(err instanceof Error ? err.message : 'Network error');
       } finally {
         setLoading(false);
       }

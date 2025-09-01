@@ -5,7 +5,7 @@ import type { Components } from 'react-markdown'
 import { OnSendContentParams } from '../../types'
 import { SendIcon } from 'lucide-react'
 
-// 定义自定义变量节点的类型
+// Define custom variable node type
 interface CustomVariableNode {
   tagName: 'custom-variable'
   properties?: {
@@ -16,28 +16,26 @@ interface CustomVariableNode {
   }
 }
 
-// 定义自定义变量组件的 Props 类型
+// Define custom variable component Props type
 interface CustomVariableProps {
   node: CustomVariableNode
   defaultButtonText?: string
   defaultInputText?: string
   readonly?: boolean
   onSend?: (content: OnSendContentParams) => void
-  tooltipMinLength?: number // 控制tooltip显示的最小字符长度，默认10
 }
 
 interface ComponentsWithCustomVariable extends Components {
   'custom-variable'?: React.ComponentType<CustomVariableProps>
 }
 
-// 定义自定义变量组件
+// Define custom variable component
 const CustomButtonInputVariable = ({
   node,
   readonly,
   defaultButtonText,
   defaultInputText,
   onSend,
-  tooltipMinLength = 10
 }: CustomVariableProps) => {
   const [inputValue, setInputValue] = React.useState(defaultInputText || '')
 
@@ -99,18 +97,7 @@ const CustomButtonInputVariable = ({
             }}
             title={node.properties.placeholder}
           />
-          {/* Tooltip */}
-          {/* {node.properties.placeholder.length > tooltipMinLength && (
-            <div 
-              className='absolute bottom-full left-0 mb-2 px-2 py-1 text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 whitespace-nowrap max-w-xs'
-              style={{
-                backgroundColor: 'var(--tooltip-bg, #374151)',
-                color: 'var(--tooltip-text, white)'
-              }}
-            >
-              {node.properties.placeholder}
-            </div>
-          )} */}
+
           <Button
             type='button'
             variant='ghost'

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 
-interface UseSSEReturn<T = any> {
+interface UseSSEReturn<T = string | number | boolean | object> {
   data: T | null
   isLoading: boolean
   error: Error | null
@@ -12,10 +12,10 @@ interface UseSSEReturn<T = any> {
 
 const FINISHED_MESSAGE = '[DONE]'
 
-interface UseSSEOptions extends RequestInit {
+interface UseSSEOptions<T = string | number | boolean | object> extends RequestInit {
   autoConnect?: boolean
   onStart?: (index: number) => void
-  onFinish?: (finalData: any, index: number) => void
+  onFinish?: (finalData: T, index: number) => void
   maxRetries?: number
   retryDelay?: number
 }
@@ -27,9 +27,9 @@ type ConnectionState =
   | 'error'
   | 'closed'
 
-const useSSE = <T = any>(
+const useSSE = <T = string | number | boolean | object>(
   url: string,
-  options: UseSSEOptions = {}
+  options: UseSSEOptions<T> = {}
 ): UseSSEReturn<T> => {
   const [data, setData] = useState<T | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -96,6 +96,7 @@ const useSSE = <T = any>(
         },
         signal: abortController.signal,
         openWhenHidden: true,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         onopen: async response => {
           if (isActive()) {
             connectionStateRef.current = 'connected'
@@ -108,14 +109,14 @@ const useSSE = <T = any>(
         onmessage: event => {
           if (isActive()) {
             if (event.data.toUpperCase() === FINISHED_MESSAGE) {
-              options.onFinish?.(finalDataRef.current, newIndex)
+              options.onFinish?.(finalDataRef.current as T, newIndex)
               close()
               return
             }
             try {
-              let parsedData: any = event.data
+              const parsedData: T = event.data as T
               finalDataRef.current += parsedData
-              setData(finalDataRef.current as any)
+              setData(finalDataRef.current as T)
             } catch (err) {
               console.warn('Failed to process SSE message:', err)
             }

@@ -3,7 +3,6 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 // import { fn } from 'storybook/test';
 
 import MarkdownFlowEditor from './MarkdownFlowEditor';
-import type { MarkdownFlowEditorProps } from './MarkdownFlowEditor';
 
 const meta = {
   title: 'MarkdownFlow/MarkdownFlowEditor',

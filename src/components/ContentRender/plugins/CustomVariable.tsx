@@ -23,7 +23,6 @@ interface CustomVariableProps {
   defaultInputText?: string
   readonly?: boolean
   onSend?: (content: OnSendContentParams) => void
-  tooltipMinLength?: number // Control minimum character length for tooltip display, default 10
 }
 
 interface ComponentsWithCustomVariable extends Components {
@@ -37,7 +36,6 @@ const CustomButtonInputVariable = ({
   defaultButtonText,
   defaultInputText,
   onSend,
-  tooltipMinLength = 10
 }: CustomVariableProps) => {
   const [inputValue, setInputValue] = React.useState(defaultInputText || '')
 
@@ -110,17 +108,6 @@ const CustomButtonInputVariable = ({
             title={node.properties.placeholder}
           />
           {/* Tooltip */}
-          {/* {node.properties.placeholder.length > tooltipMinLength && (
-            <div
-              className='absolute bottom-full left-0 mb-2 px-2 py-1 text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 whitespace-nowrap max-w-xs'
-              style={{
-                backgroundColor: 'var(--tooltip-bg, #374151)',
-                color: 'var(--tooltip-text, white)'
-              }}
-            >
-              {node.properties.placeholder}
-            </div>
-          )} */}
           <Button
             type="button"
             variant="ghost"

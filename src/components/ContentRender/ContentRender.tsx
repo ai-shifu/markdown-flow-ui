@@ -1,26 +1,25 @@
-import React, { useEffect, useRef } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkFlow from "remark-flow";
-import CustomButtonInputVariable, {
-  ComponentsWithCustomVariable,
-} from "./plugins/CustomVariable";
-import MermaidChart from "./plugins/MermaidChart";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeHighlight from "rehype-highlight";
-import rehypeKatex from "rehype-katex";
-import "highlight.js/styles/github.css";
-import "./github-markdown-light.css";
-import "katex/dist/katex.min.css";
-import {
-  highlightLanguages,
-  subsetLanguages,
-} from "./utils/highlight-languages";
-import useTypewriterStateMachine from "./useTypewriterStateMachine";
-import "./contentRender.css";
-import { OnSendContentParams, CustomRenderBarProps } from "../types";
-import remarkBreaks from "remark-breaks";
-import { processMarkdownText } from "./utils/process-markdown";
+import React, { useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight';
+import rehypeKatex from 'rehype-katex';
+import remarkBreaks from 'remark-breaks';
+import remarkFlow from 'remark-flow';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+
+import { OnSendContentParams, CustomRenderBarProps } from '../types';
+
+import CustomButtonInputVariable, { ComponentsWithCustomVariable } from './plugins/CustomVariable';
+import MermaidChart from './plugins/MermaidChart';
+import useTypewriterStateMachine from './useTypewriterStateMachine';
+import { highlightLanguages, subsetLanguages } from './utils/highlight-languages';
+import { processMarkdownText } from './utils/process-markdown';
+
+import 'highlight.js/styles/github.css';
+import 'katex/dist/katex.min.css';
+import './github-markdown-light.css';
+
+import './contentRender.css';
 
 // Define component Props type
 export interface ContentRenderProps {
@@ -59,7 +58,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   });
 
   const components: CustomComponents = {
-    "custom-variable": (props) => (
+    'custom-variable': props => (
       <CustomButtonInputVariable
         {...props}
         readonly={readonly}
@@ -69,14 +68,14 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         tooltipMinLength={tooltipMinLength}
       />
     ),
-    code: (props) => {
+    code: props => {
       const { inline, className, children, ...rest } = props;
-      const match = /language-(\w+)/.exec(className || "");
-      const language = match ? match[1] : "";
+      const match = /language-(\w+)/.exec(className || '');
+      const language = match ? match[1] : '';
 
       // Handle Mermaid diagrams
-      if (!inline && language === "mermaid") {
-        return <MermaidChart chart={String(children).replace(/\n$/, "")} />;
+      if (!inline && language === 'mermaid') {
+        return <MermaidChart chart={String(children).replace(/\n$/, '')} />;
       }
 
       return !inline && match ? (
@@ -90,36 +89,28 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       );
     },
     table: ({ ...props }) => (
-      <div className="content-render-table-container">
-        <table className="content-render-table" {...props} />
+      <div className='content-render-table-container'>
+        <table className='content-render-table' {...props} />
       </div>
     ),
-    th: ({ ...props }) => <th className="content-render-th" {...props} />,
-    td: ({ ...props }) => <td className="content-render-td" {...props} />,
-    tr: ({ ...props }) => <tr className="content-render-tr" {...props} />,
+    th: ({ ...props }) => <th className='content-render-th' {...props} />,
+    td: ({ ...props }) => <td className='content-render-td' {...props} />,
+    tr: ({ ...props }) => <tr className='content-render-tr' {...props} />,
     li: ({ node, ...props }) => {
       const className = node?.properties?.className;
       const hasTaskListItem =
-        (typeof className === "string" &&
-          className.includes("task-list-item")) ||
-        (Array.isArray(className) && className.includes("task-list-item"));
+        (typeof className === 'string' && className.includes('task-list-item')) ||
+        (Array.isArray(className) && className.includes('task-list-item'));
       if (hasTaskListItem) {
-        return <li className="content-render-task-list-item" {...props} />;
+        return <li className='content-render-task-list-item' {...props} />;
       }
       return <li {...props} />;
     },
-    ol: ({ ...props }) => <ol className="content-render-ol" {...props} />,
-    ul: ({ ...props }) => <ul className="content-render-ul" {...props} />,
+    ol: ({ ...props }) => <ol className='content-render-ol' {...props} />,
+    ul: ({ ...props }) => <ul className='content-render-ul' {...props} />,
     input: ({ ...props }) => {
-      if (props.type === "checkbox") {
-        return (
-          <input
-            type="checkbox"
-            className="content-render-checkbox"
-            disabled
-            {...props}
-          />
-        );
+      if (props.type === 'checkbox') {
+        return <input type='checkbox' className='content-render-checkbox' disabled {...props} />;
       }
       return <input {...props} />;
     },
@@ -129,7 +120,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
   useEffect(() => {
     if (isComplete && !hasCompleted.current) {
-      console.log("[ContentRender] Typing is complete, calling onTypeFinished");
+      console.log('[ContentRender] Typing is complete, calling onTypeFinished');
       hasCompleted.current = true; // Mark as completed
       onTypeFinished?.(); // Call the passed callback
     }
@@ -139,7 +130,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   }, [content]);
 
   return (
-    <div className="content-render markdown-body">
+    <div className='content-render markdown-body'>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath, remarkFlow, remarkBreaks]}
         rehypePlugins={[

@@ -1,3 +1,3 @@
-import Playground from "./Playground";
+import Playground from './Playground';
 
 export default Playground;

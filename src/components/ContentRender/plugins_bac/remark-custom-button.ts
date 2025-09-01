@@ -1,9 +1,9 @@
-import { visit } from "unist-util-visit";
-import type { Node, Parent, Literal } from "unist";
+import type { Node, Parent, Literal } from 'unist';
+import { visit } from 'unist-util-visit';
 
 // Define custom button node type
 interface CustomButtonNode extends Node {
-  type: "element";
+  type: 'element';
   data?: {
     hName?: string;
     hProperties?: Record<string, string | number | boolean>;
@@ -16,44 +16,40 @@ const BUTTON_REGEX = /\?\[([^\]]+)\]/;
 
 export default function remarkCustomButton() {
   return (tree: Node) => {
-    visit(
-      tree,
-      "text",
-      (node: Literal, index: number | null, parent: Parent | null) => {
-        const value = node.value as string;
-        const match = BUTTON_REGEX.exec(value);
+    visit(tree, 'text', (node: Literal, index: number | null, parent: Parent | null) => {
+      const value = node.value as string;
+      const match = BUTTON_REGEX.exec(value);
 
-        // If there is no match or missing parent node/index, exit
-        if (!match || index === null || parent === null) return;
+      // If there is no match or missing parent node/index, exit
+      if (!match || index === null || parent === null) return;
 
-        const startIndex = match.index;
-        const endIndex = startIndex + match[0].length;
+      const startIndex = match.index;
+      const endIndex = startIndex + match[0].length;
 
-        // Explicitly define the union type of the paragraph
-        type Segment = Literal | CustomButtonNode;
+      // Explicitly define the union type of the paragraph
+      type Segment = Literal | CustomButtonNode;
 
-        // Build the replacement segment (explicit type declaration)
-        const segments: Segment[] = [
-          {
-            type: "text",
-            value: value.substring(0, startIndex),
-          } as Literal,
-          {
-            type: "element",
-            data: {
-              hName: "custom-button",
-              hProperties: { buttonText: match[1] },
-            },
-          } as CustomButtonNode,
-          {
-            type: "text",
-            value: value.substring(endIndex),
-          } as Literal,
-        ];
+      // Build the replacement segment (explicit type declaration)
+      const segments: Segment[] = [
+        {
+          type: 'text',
+          value: value.substring(0, startIndex),
+        } as Literal,
+        {
+          type: 'element',
+          data: {
+            hName: 'custom-button',
+            hProperties: { buttonText: match[1] },
+          },
+        } as CustomButtonNode,
+        {
+          type: 'text',
+          value: value.substring(endIndex),
+        } as Literal,
+      ];
 
-        // Replace the original node
-        parent.children.splice(index, 1, ...segments);
-      },
-    );
+      // Replace the original node
+      parent.children.splice(index, 1, ...segments);
+    });
   };
 }

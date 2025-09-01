@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { fetchEventSource } from "@microsoft/fetch-event-source";
+import { fetchEventSource } from '@microsoft/fetch-event-source';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface UseSSEReturn<T = string | number | boolean | object> {
   data: T | null;
@@ -10,10 +10,9 @@ interface UseSSEReturn<T = string | number | boolean | object> {
   close: () => void;
 }
 
-const FINISHED_MESSAGE = "[DONE]";
+const FINISHED_MESSAGE = '[DONE]';
 
-interface UseSSEOptions<T = string | number | boolean | object>
-  extends RequestInit {
+interface UseSSEOptions<T = string | number | boolean | object> extends RequestInit {
   autoConnect?: boolean;
   onStart?: (index: number) => void;
   onFinish?: (finalData: T, index: number) => void;
@@ -21,16 +20,11 @@ interface UseSSEOptions<T = string | number | boolean | object>
   retryDelay?: number;
 }
 
-type ConnectionState =
-  | "disconnected"
-  | "connecting"
-  | "connected"
-  | "error"
-  | "closed";
+type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error' | 'closed';
 
 const useSSE = <T = string | number | boolean | object>(
   url: string,
-  options: UseSSEOptions<T> = {},
+  options: UseSSEOptions<T> = {}
 ): UseSSEReturn<T> => {
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -39,20 +33,19 @@ const useSSE = <T = string | number | boolean | object>(
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
-  const connectionStateRef = useRef<ConnectionState>("disconnected");
+  const connectionStateRef = useRef<ConnectionState>('disconnected');
   const currentIndexRef = useRef(-1);
-  const finalDataRef = useRef<string>("");
+  const finalDataRef = useRef<string>('');
   const retryCountRef = useRef(0);
 
   const { autoConnect = true, maxRetries = 3, retryDelay = 1000 } = options;
 
-  const isActive = () =>
-    mountedRef.current && connectionStateRef.current !== "closed";
+  const isActive = () => mountedRef.current && connectionStateRef.current !== 'closed';
 
   const retry = useCallback(async () => {
     if (retryCountRef.current < maxRetries && isActive()) {
       retryCountRef.current++;
-      await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
       if (isActive()) {
         await connect();
       }
@@ -61,53 +54,53 @@ const useSSE = <T = string | number | boolean | object>(
 
   const connect = useCallback(async () => {
     if (
-      connectionStateRef.current === "connecting" ||
-      connectionStateRef.current === "connected" ||
+      connectionStateRef.current === 'connecting' ||
+      connectionStateRef.current === 'connected' ||
       !isActive()
     ) {
       return;
     }
 
     try {
-      connectionStateRef.current = "connecting";
+      connectionStateRef.current = 'connecting';
       setIsLoading(true);
       setError(null);
 
       const newIndex = ++currentIndexRef.current;
       setSseIndex(newIndex);
-      finalDataRef.current = "";
+      finalDataRef.current = '';
 
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
       await fetchEventSource(url, {
         ...options,
-        method: "POST",
+        method: 'POST',
         headers: {
-          Accept: "text/event-stream",
-          "Content-Type": "application/json",
-          "Cache-Control": "no-cache",
+          Accept: 'text/event-stream',
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
           ...Object.entries(options.headers || {}).reduce(
             (acc, [key, value]) => {
               acc[key] = String(value);
               return acc;
             },
-            {} as Record<string, string>,
+            {} as Record<string, string>
           ),
         },
         signal: abortController.signal,
         openWhenHidden: true,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        onopen: async (response) => {
+        onopen: async response => {
           if (isActive()) {
-            connectionStateRef.current = "connected";
+            connectionStateRef.current = 'connected';
             setIsLoading(false);
             setError(null);
             retryCountRef.current = 0;
             options.onStart?.(newIndex);
           }
         },
-        onmessage: (event) => {
+        onmessage: event => {
           if (isActive()) {
             if (event.data.toUpperCase() === FINISHED_MESSAGE) {
               options.onFinish?.(finalDataRef.current as T, newIndex);
@@ -119,19 +112,19 @@ const useSSE = <T = string | number | boolean | object>(
               finalDataRef.current += parsedData;
               setData(finalDataRef.current as T);
             } catch (err) {
-              console.warn("Failed to process SSE message:", err);
+              console.warn('Failed to process SSE message:', err);
             }
           }
         },
         onclose: () => {
           if (isActive()) {
-            connectionStateRef.current = "disconnected";
+            connectionStateRef.current = 'disconnected';
             setIsLoading(false);
           }
         },
-        onerror: (err) => {
+        onerror: err => {
           if (isActive()) {
-            connectionStateRef.current = "error";
+            connectionStateRef.current = 'error';
             setError(err);
             setIsLoading(false);
             retry();
@@ -141,7 +134,7 @@ const useSSE = <T = string | number | boolean | object>(
       });
     } catch (err) {
       if (isActive()) {
-        connectionStateRef.current = "error";
+        connectionStateRef.current = 'error';
         setError(err as Error);
         setIsLoading(false);
         retry();
@@ -150,7 +143,7 @@ const useSSE = <T = string | number | boolean | object>(
   }, [url, JSON.stringify(options), retry]);
 
   const close = useCallback(() => {
-    connectionStateRef.current = "closed";
+    connectionStateRef.current = 'closed';
     retryCountRef.current = 0;
 
     if (abortControllerRef.current) {
@@ -165,12 +158,12 @@ const useSSE = <T = string | number | boolean | object>(
 
   useEffect(() => {
     mountedRef.current = true;
-    connectionStateRef.current = "disconnected";
+    connectionStateRef.current = 'disconnected';
     retryCountRef.current = 0;
 
     if (autoConnect) {
       const timeoutId = setTimeout(() => {
-        if (connectionStateRef.current === "disconnected") {
+        if (connectionStateRef.current === 'disconnected') {
           connect();
         }
       }, 100);
@@ -190,16 +183,16 @@ const useSSE = <T = string | number | boolean | object>(
 
   // Listen for url and options changes to reconnect
   useEffect(() => {
-    if (connectionStateRef.current !== "disconnected") {
+    if (connectionStateRef.current !== 'disconnected') {
       close();
       setData(null);
       setError(null);
-      finalDataRef.current = "";
-      connectionStateRef.current = "disconnected";
+      finalDataRef.current = '';
+      connectionStateRef.current = 'disconnected';
       retryCountRef.current = 0;
 
       const timeoutId = setTimeout(() => {
-        if (connectionStateRef.current === "disconnected" && isActive()) {
+        if (connectionStateRef.current === 'disconnected' && isActive()) {
           connect();
         }
       }, 100);

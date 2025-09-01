@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useRef } from "react";
-import useSSE from "../sse/useSSE";
-import useMarkdownInfo from "./useMarkdownInfo";
-import ScrollableMarkdownFlow from "../MarkdownFlow/ScrollableMarkdownFlow";
-import { ContentRenderProps } from "../ContentRender/ContentRender";
-import { OnSendContentParams, CustomRenderBarProps } from "../types";
-import { Loader } from "lucide-react";
+import { Loader } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+
+import { ContentRenderProps } from '../ContentRender/ContentRender';
+import ScrollableMarkdownFlow from '../MarkdownFlow/ScrollableMarkdownFlow';
+import useSSE from '../sse/useSSE';
+import { OnSendContentParams, CustomRenderBarProps } from '../types';
+
+import useMarkdownInfo from './useMarkdownInfo';
 
 type PlaygroundComponentProps = {
   defaultContent: string;
@@ -38,27 +40,24 @@ type SSEParams = {
 const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   defaultContent,
   defaultVariables = {},
-  defaultDocumentPrompt = "",
+  defaultDocumentPrompt = '',
   styles = {},
-  sseUrl = "https://play.dev.pillowai.cn/api/v1/playground/generate",
+  sseUrl = 'https://play.dev.pillowai.cn/api/v1/playground/generate',
   sessionId,
   disableTyping,
 }) => {
-  const { data: markdownInfo, loading: isMarkdownLoading } =
-    useMarkdownInfo(defaultContent);
+  const { data: markdownInfo, loading: isMarkdownLoading } = useMarkdownInfo(defaultContent);
   const { block_count = 0, interaction_blocks = [] } = markdownInfo || {};
   const currentBlockIndexRef = useRef<number>(0);
   const currentMessageIndexRef = useRef<number>(0);
   const userOperateErrorFlag = useRef<boolean>(false);
   const [contentList, setContentList] = useState<ContentRenderProps[]>([]);
-  const [loadingBlockIndex, setLoadingBlockIndex] = useState<number | null>(
-    null,
-  );
+  const [loadingBlockIndex, setLoadingBlockIndex] = useState<number | null>(null);
 
   const [sseParams, setSseParams] = useState<SSEParams>({
     content: defaultContent,
     block_index: 0,
-    context: [{ role: "assistant", content: "" }],
+    context: [{ role: 'assistant', content: '' }],
     variables: defaultVariables,
     user_input: null,
     document_prompt: defaultDocumentPrompt,
@@ -72,13 +71,13 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   };
   // Update context params for next block from SSE response
   const updateContextParamsForNextBlock = (
-    currentData: string,
+    currentData: string
   ): Array<{ role: string; content: string }> => {
     const newContext = [...sseParams.context];
 
     // Ensure array has sufficient length
     while (newContext.length <= currentBlockIndexRef.current) {
-      newContext.push({ role: "assistant", content: "" });
+      newContext.push({ role: 'assistant', content: '' });
     }
 
     // Update current block content
@@ -89,19 +88,17 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
 
     // Add placeholder for next block
     if (newContext.length <= currentBlockIndexRef.current + 1) {
-      newContext.push({ role: "assistant", content: "" });
+      newContext.push({ role: 'assistant', content: '' });
     }
 
     return newContext;
   };
   // Return updated contentList after SSE data update
-  const updateContentListWithSseData = (
-    newData: string,
-  ): ContentRenderProps[] => {
+  const updateContentListWithSseData = (newData: string): ContentRenderProps[] => {
     const newList = [...contentList];
     const currentIndex = currentMessageIndexRef.current;
     while (newList.length <= currentIndex) {
-      newList.push({ content: "" });
+      newList.push({ content: '' });
     }
 
     // Update current block content
@@ -119,9 +116,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   };
 
   // Return contentList after user operation
-  const updateContentListWithUserOperate = (
-    params: OnSendContentParams,
-  ): ContentRenderProps[] => {
+  const updateContentListWithUserOperate = (params: OnSendContentParams): ContentRenderProps[] => {
     const newList = [...contentList];
     const lastIndex = newList.length - 1;
     if (lastIndex >= 0) {
@@ -147,17 +142,15 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
     newList.push({
       ...item,
       readonly: false,
-      defaultButtonText: "",
-      defaultInputText: "",
+      defaultButtonText: '',
+      defaultInputText: '',
     });
 
     return newList;
   };
 
   const handleOnFinish = (data: string) => {
-    const isCurrentInteractionBlock = interaction_blocks.includes(
-      currentBlockIndexRef.current,
-    );
+    const isCurrentInteractionBlock = interaction_blocks.includes(currentBlockIndexRef.current);
 
     // Stop if current block is interaction block content with data
     if (data && isCurrentInteractionBlock && data.match(/\?\[/)) {
@@ -188,7 +181,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
 
     const newContext = updateContextParamsForNextBlock(data);
 
-    setSseParams((prev) => ({
+    setSseParams(prev => ({
       ...prev,
       user_input: null,
       block_index: nextIndex,
@@ -211,7 +204,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
     // If loadingBlockIndex exists, ensure content at that position and add loading identifier
     if (loadingBlockIndex !== null) {
       while (list.length <= loadingBlockIndex) {
-        list.push({ content: "" });
+        list.push({ content: '' });
       }
       // Add custom render bar for loading block
       list[loadingBlockIndex] = {
@@ -224,9 +217,9 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   };
 
   const { data, connect } = useSSE<string>(sseUrl, {
-    method: "POST",
+    method: 'POST',
     body: getSSEBody(),
-    headers: sessionId ? { "session-id": sessionId } : {},
+    headers: sessionId ? { 'session-id': sessionId } : {},
     autoConnect: !!markdownInfo && !isMarkdownLoading,
     onStart: handleOnStart,
     onFinish: handleOnFinish,
@@ -244,7 +237,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
         const updatedList = updateContentListWithSseData(data);
         setContentList(updatedList);
       } catch (error) {
-        console.error("Error processing SSE message:", error);
+        console.error('Error processing SSE message:', error);
       }
     }
   }, [data]);
@@ -252,11 +245,8 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   // Create Loading component
   const LoadingBar: CustomRenderBarProps = ({}) => {
     return (
-      <span className="flex gap-[10px] items-center">
-        <Loader
-          className="animate-spin"
-          style={{ width: "15px", height: "15px" }}
-        />
+      <span className='flex gap-[10px] items-center'>
+        <Loader className='animate-spin' style={{ width: '15px', height: '15px' }} />
         Loading...
       </span>
     );
@@ -264,25 +254,25 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
 
   const handleSend = (params: OnSendContentParams) => {
     userOperateErrorFlag.current = false;
-    const userInput = params.inputText || params.buttonText || "";
+    const userInput = params.inputText || params.buttonText || '';
     // Update context
     const newContext = [...sseParams.context];
     if (newContext[currentBlockIndexRef.current]) {
       newContext[currentBlockIndexRef.current] = {
         ...newContext[currentBlockIndexRef.current],
         content: userInput,
-        role: "user",
+        role: 'user',
       };
     }
 
     // Update SSE parameters
-    setSseParams((prev) => ({
+    setSseParams(prev => ({
       ...prev,
       context: newContext,
       user_input: userInput ?? null,
       variables: {
         ...prev.variables,
-        [params.variableName || ""]: userInput,
+        [params.variableName || '']: userInput,
       },
       t: +new Date(),
     }));
@@ -294,7 +284,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
 
   // Type adapter function
   const getAdaptedContentList = () => {
-    return getContentListWithLoading().map((item) => ({
+    return getContentListWithLoading().map(item => ({
       content: item.content,
       customRenderBar: item.customRenderBar || (() => null),
       defaultButtonText: item.defaultButtonText,

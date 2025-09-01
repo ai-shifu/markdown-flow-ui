@@ -1,23 +1,23 @@
-import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 
 // import { fn } from 'storybook/test';
 
-import ContentRender from "./ContentRender";
+import ContentRender from './ContentRender';
 
 const meta = {
-  title: "MarkdownFlow/ContentRender",
+  title: 'MarkdownFlow/ContentRender',
   component: ContentRender,
   parameters: {
-    layout: "centered",
+    layout: 'centered',
   },
-  tags: ["autodocs"],
+  tags: ['autodocs'],
   argTypes: {
     content: {
-      control: "text",
-      description: "Markdown content to render",
+      control: 'text',
+      description: 'Markdown content to render',
     },
   },
-  args: { content: "" },
+  args: { content: '' },
 } satisfies Meta<typeof ContentRender>;
 
 export default meta;

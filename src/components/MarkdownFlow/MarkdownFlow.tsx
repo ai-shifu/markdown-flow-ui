@@ -1,7 +1,8 @@
-import React from "react";
-import ContentRender from "../ContentRender";
-import "./markdownFlow.css";
-import { OnSendContentParams, CustomRenderBarProps } from "../types";
+import React from 'react';
+
+import ContentRender from '../ContentRender';
+import './markdownFlow.css';
+import { OnSendContentParams, CustomRenderBarProps } from '../types';
 
 export interface MarkdownFlowProps {
   initialContentList?: {
@@ -28,7 +29,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   onBlockComplete,
 }) => {
   return (
-    <div className="markdown-flow">
+    <div className='markdown-flow'>
       {initialContentList.map((contentInfo, index) => {
         const isFinished = contentInfo.isFinished ?? false;
         const disableTyping = isFinished || disableTypingProp;

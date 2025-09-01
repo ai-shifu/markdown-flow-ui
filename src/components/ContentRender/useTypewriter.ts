@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface UseTypewriterProps {
   content?: string;
@@ -13,11 +13,11 @@ interface Segment {
 }
 
 const useTypewriter = ({
-  content = "",
+  content = '',
   typingSpeed = 80,
   disabled = false,
 }: UseTypewriterProps = {}) => {
-  const [displayContent, setDisplayContent] = useState("");
+  const [displayContent, setDisplayContent] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isComplete, setIsComplete] = useState(false); // Added: indicates if typing is complete
 
@@ -25,7 +25,7 @@ const useTypewriter = ({
   const displayIndexRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
-  const lastContentRef = useRef("");
+  const lastContentRef = useRef('');
 
   // Cleanup function
   const clearTimer = useCallback(() => {
@@ -37,18 +37,18 @@ const useTypewriter = ({
 
   // Markdown patterns
   const markdownPatterns = useRef([
-    { pattern: /\?\[[^\]]*\]/, type: "custom-tag" },
-    { pattern: /```[\s\S]*?```/, type: "code-block" },
-    { pattern: /^#{1,6}\s[^\n]*$/m, type: "header" },
-    { pattern: /\*\*\*[^*]+\*\*\*/, type: "bold-italic" },
-    { pattern: /\*\*[^*]+\*\*/, type: "bold" },
-    { pattern: /(?<!\*)\*[^*]+\*(?!\*)/, type: "italic" },
-    { pattern: /~~[^~]+~~/, type: "strikethrough" },
-    { pattern: /`[^`]+`/, type: "inline-code" },
-    { pattern: /!\[[^\]]*\]\([^\)]*\)/, type: "image" },
-    { pattern: /(?<!\!)\[[^\]]*\]\([^\)]*\)/, type: "link" },
-    { pattern: /^(>\s*)+[^\n]*$/m, type: "blockquote" },
-    { pattern: /^[-*]{3,}$/m, type: "hr" },
+    { pattern: /\?\[[^\]]*\]/, type: 'custom-tag' },
+    { pattern: /```[\s\S]*?```/, type: 'code-block' },
+    { pattern: /^#{1,6}\s[^\n]*$/m, type: 'header' },
+    { pattern: /\*\*\*[^*]+\*\*\*/, type: 'bold-italic' },
+    { pattern: /\*\*[^*]+\*\*/, type: 'bold' },
+    { pattern: /(?<!\*)\*[^*]+\*(?!\*)/, type: 'italic' },
+    { pattern: /~~[^~]+~~/, type: 'strikethrough' },
+    { pattern: /`[^`]+`/, type: 'inline-code' },
+    { pattern: /!\[[^\]]*\]\([^\)]*\)/, type: 'image' },
+    { pattern: /(?<!\!)\[[^\]]*\]\([^\)]*\)/, type: 'link' },
+    { pattern: /^(>\s*)+[^\n]*$/m, type: 'blockquote' },
+    { pattern: /^[-*]{3,}$/m, type: 'hr' },
     // { pattern: /^(\s*)[-*+]\s+(\[[ xX]\])?\s*[^\n]*(\n(\s{2,}|\t+)[^\n]*)*$/m, type: 'list-item' },
     // { pattern: /^(\s*)\d+\.\s+[^\n]*(\n(\s{2,}|\t+)[^\n]*)*$/m, type: 'ordered-list-item' },
   ]).current;
@@ -57,7 +57,7 @@ const useTypewriter = ({
   const parseContent = useCallback(
     (text: string): Segment[] => {
       const segments: Segment[] = [];
-      let remainingText = text || "";
+      let remainingText = text || '';
 
       while (remainingText.length > 0) {
         let matched = false;
@@ -79,10 +79,10 @@ const useTypewriter = ({
           if (earliestIndex > 0) {
             const plainText = remainingText.substring(0, earliestIndex);
             segments.push(
-              ...Array.from(plainText).map((char) => ({
+              ...Array.from(plainText).map(char => ({
                 content: char,
                 isMarkdown: false,
-              })),
+              }))
             );
             remainingText = remainingText.substring(earliestIndex);
           }
@@ -92,9 +92,7 @@ const useTypewriter = ({
             isMarkdown: true,
             type: earliestMatch.pattern.type,
           });
-          remainingText = remainingText.substring(
-            earliestMatch.match[0].length,
-          );
+          remainingText = remainingText.substring(earliestMatch.match[0].length);
           matched = true;
         }
 
@@ -109,7 +107,7 @@ const useTypewriter = ({
 
       return segments;
     },
-    [markdownPatterns],
+    [markdownPatterns]
   );
 
   // Typing function
@@ -118,7 +116,7 @@ const useTypewriter = ({
 
     if (displayIndexRef.current < parsedSegmentsRef.current.length) {
       const segment = parsedSegmentsRef.current[displayIndexRef.current];
-      setDisplayContent((prev) => prev + (segment?.content || ""));
+      setDisplayContent(prev => prev + (segment?.content || ''));
       displayIndexRef.current++;
 
       if (isMountedRef.current) {
@@ -132,7 +130,7 @@ const useTypewriter = ({
 
   // Main effect
   useEffect(() => {
-    const newContent = content || "";
+    const newContent = content || '';
     const oldContent = lastContentRef.current;
 
     // If content is the same, don't process
@@ -144,7 +142,7 @@ const useTypewriter = ({
     if (disabled) {
       clearTimer();
       const segments = parseContent(newContent);
-      setDisplayContent(segments.map((s) => s.content).join(""));
+      setDisplayContent(segments.map(s => s.content).join(''));
       setIsTyping(false);
       setIsComplete(true); // Complete directly in disabled mode
       lastContentRef.current = newContent;
@@ -153,8 +151,7 @@ const useTypewriter = ({
 
     // Check if content is growing
     const isContentGrowth =
-      newContent.length >= oldContent.length &&
-      newContent.startsWith(oldContent);
+      newContent.length >= oldContent.length && newContent.startsWith(oldContent);
 
     if (isContentGrowth && oldContent) {
       // Content growth: reparse entire content and update segments
@@ -173,7 +170,7 @@ const useTypewriter = ({
     } else {
       // New content: start over
       clearTimer();
-      setDisplayContent("");
+      setDisplayContent('');
       const segments = parseContent(newContent);
       parsedSegmentsRef.current = segments;
       displayIndexRef.current = 0;
@@ -201,18 +198,18 @@ const useTypewriter = ({
 
   const reset = useCallback(() => {
     clearTimer();
-    setDisplayContent("");
+    setDisplayContent('');
     parsedSegmentsRef.current = [];
     displayIndexRef.current = 0;
     setIsTyping(false);
     setIsComplete(false); // Reset completion status
-    lastContentRef.current = "";
+    lastContentRef.current = '';
   }, [clearTimer]);
 
   const start = useCallback(() => {
     clearTimer();
     displayIndexRef.current = 0;
-    setDisplayContent("");
+    setDisplayContent('');
     setIsTyping(true);
     setIsComplete(false); // Reset completion status at start
     type();

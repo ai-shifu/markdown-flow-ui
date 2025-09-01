@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 
 interface MarkdownInfoData {
   block_count: number;
@@ -26,17 +26,17 @@ const useMarkdownInfo = (content: string) => {
 
         // Use Next.js built-in fetch
         const response = await fetch(
-          "https://play.dev.pillowai.cn/api/v1/playground/markdownflow_info",
+          'https://play.dev.pillowai.cn/api/v1/playground/markdownflow_info',
           {
-            method: "POST",
+            method: 'POST',
             headers: {
-              "Content-Type": "application/json",
+              'Content-Type': 'application/json',
             },
             body: JSON.stringify({ content }),
             // Next.js fetch caching options
-            cache: "no-store",
+            cache: 'no-store',
             // Or use next: { revalidate: 0 } to disable cache
-          },
+          }
         );
 
         if (!response.ok) {
@@ -48,10 +48,10 @@ const useMarkdownInfo = (content: string) => {
         if (result.code === 200) {
           setData(result.data);
         } else {
-          setError(result.message || "Request failed");
+          setError(result.message || 'Request failed');
         }
       } catch (err: Error | unknown) {
-        setError(err instanceof Error ? err.message : "Network error");
+        setError(err instanceof Error ? err.message : 'Network error');
       } finally {
         setLoading(false);
       }

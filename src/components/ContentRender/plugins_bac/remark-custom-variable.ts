@@ -1,5 +1,5 @@
-import { visit } from "unist-util-visit";
-import type { Node, Parent, Literal } from "unist";
+import type { Node, Parent, Literal } from 'unist';
+import { visit } from 'unist-util-visit';
 
 interface CustomVariableNode extends Node {
   data: {
@@ -27,15 +27,15 @@ interface MatchRule {
 }
 
 // Define separator (supports English | and Chinese ｜)
-const SEPARATOR = "[|｜]"; // Match English | or Chinese ｜
-const SEPARATOR_GLOBAL = new RegExp(SEPARATOR, "g");
+const SEPARATOR = '[|｜]'; // Match English | or Chinese ｜
+const SEPARATOR_GLOBAL = new RegExp(SEPARATOR, 'g');
 
 // Configurable matching rules (adjust order and logic, use统一的 separator)
 const MATCH_RULES: MatchRule[] = [
   {
     // Format 1: ?[%{{variable}} button1 | button2 | ... placeholder] (buttons with placeholder, highest priority)
     regex: new RegExp(
-      `\\?\\[\\%\\{\\{\\s*(\\w+)\\s*\\}\\}\\s*([^\\]\\|｜]+(?:\\s*${SEPARATOR}\\s*[^\\]\\|｜]+)*)\\s*${SEPARATOR}\\s*\\.\\.\\.\\s*([^\\]]+)\\]`,
+      `\\?\\[\\%\\{\\{\\s*(\\w+)\\s*\\}\\}\\s*([^\\]\\|｜]+(?:\\s*${SEPARATOR}\\s*[^\\]\\|｜]+)*)\\s*${SEPARATOR}\\s*\\.\\.\\.\\s*([^\\]]+)\\]`
     ),
     type: FormatType.BUTTONS_WITH_PLACEHOLDER,
   },
@@ -47,7 +47,7 @@ const MATCH_RULES: MatchRule[] = [
   {
     // Format 2: ?[%{{variable}} button1 | button2]
     regex: new RegExp(
-      `\\?\\[\\%\\{\\{\\s*(\\w+)\\s*\\}\\}\\s*([^\\]\\|｜]+(?:\\s*${SEPARATOR}\\s*[^\\]\\|｜]+)+)\\s*\\]`,
+      `\\?\\[\\%\\{\\{\\s*(\\w+)\\s*\\}\\}\\s*([^\\]\\|｜]+(?:\\s*${SEPARATOR}\\s*[^\\]\\|｜]+)+)\\s*\\]`
     ),
     type: FormatType.BUTTONS_ONLY,
   },
@@ -68,10 +68,7 @@ interface ParsedResult {
 /**
  * Parse different formats of content
  */
-function parseContentByType(
-  match: RegExpExecArray,
-  formatType: FormatType,
-): ParsedResult {
+function parseContentByType(match: RegExpExecArray, formatType: FormatType): ParsedResult {
   const variableName = match[1].trim();
 
   switch (formatType) {
@@ -81,8 +78,8 @@ function parseContentByType(
         variableName,
         buttonTexts: match[2]
           .split(SEPARATOR_GLOBAL)
-          .map((text) => text.trim())
-          .filter((text) => text.length > 0),
+          .map(text => text.trim())
+          .filter(text => text.length > 0),
         placeholder: match[3].trim(),
       };
 
@@ -92,8 +89,8 @@ function parseContentByType(
         variableName,
         buttonTexts: match[2]
           .split(SEPARATOR_GLOBAL)
-          .map((text) => text.trim())
-          .filter((text) => text.length > 0),
+          .map(text => text.trim())
+          .filter(text => text.length > 0),
         placeholder: undefined,
       };
 
@@ -122,9 +119,7 @@ function parseContentByType(
 /**
  * Find the first matching rule
  */
-function findFirstMatch(
-  value: string,
-): { match: RegExpExecArray; rule: MatchRule } | null {
+function findFirstMatch(value: string): { match: RegExpExecArray; rule: MatchRule } | null {
   for (const rule of MATCH_RULES) {
     rule.regex.lastIndex = 0;
     const match = rule.regex.exec(value);
@@ -142,22 +137,22 @@ function createSegments(
   value: string,
   startIndex: number,
   endIndex: number,
-  parsedResult: ParsedResult,
+  parsedResult: ParsedResult
 ): Array<Literal | CustomVariableNode> {
   return [
     {
-      type: "text",
+      type: 'text',
       value: value.substring(0, startIndex),
     } as Literal,
     {
-      type: "element",
+      type: 'element',
       data: {
-        hName: "custom-variable",
+        hName: 'custom-variable',
         hProperties: parsedResult,
       },
     } as CustomVariableNode,
     {
-      type: "text",
+      type: 'text',
       value: value.substring(endIndex),
     } as Literal,
   ];
@@ -165,42 +160,33 @@ function createSegments(
 
 export default function remarkCustomButtonInputVariable() {
   return (tree: Node) => {
-    visit(
-      tree,
-      "text",
-      (node: Literal, index: number | null, parent: Parent | null) => {
-        // Input validation
-        if (index === null || parent === null) return;
+    visit(tree, 'text', (node: Literal, index: number | null, parent: Parent | null) => {
+      // Input validation
+      if (index === null || parent === null) return;
 
-        const value = node.value as string;
-        const matchResult = findFirstMatch(value);
+      const value = node.value as string;
+      const matchResult = findFirstMatch(value);
 
-        if (!matchResult) return;
+      if (!matchResult) return;
 
-        const { match, rule } = matchResult;
-        const startIndex = match.index;
-        const endIndex = startIndex + match[0].length;
+      const { match, rule } = matchResult;
+      const startIndex = match.index;
+      const endIndex = startIndex + match[0].length;
 
-        try {
-          // Parse matching result
-          const parsedResult = parseContentByType(match, rule.type);
+      try {
+        // Parse matching result
+        const parsedResult = parseContentByType(match, rule.type);
 
-          // Create new node fragments
-          const segments = createSegments(
-            value,
-            startIndex,
-            endIndex,
-            parsedResult,
-          );
+        // Create new node fragments
+        const segments = createSegments(value, startIndex, endIndex, parsedResult);
 
-          // Replace the original node
-          parent.children.splice(index, 1, ...segments);
-        } catch (error) {
-          console.warn("Failed to parse custom variable syntax:", error);
-          // If parsing fails, keep the original content
-          return;
-        }
-      },
-    );
+        // Replace the original node
+        parent.children.splice(index, 1, ...segments);
+      } catch (error) {
+        console.warn('Failed to parse custom variable syntax:', error);
+        // If parsing fails, keep the original content
+        return;
+      }
+    });
   };
 }

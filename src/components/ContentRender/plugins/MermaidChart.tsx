@@ -1,13 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
-import mermaid from "mermaid";
+import mermaid from 'mermaid';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface MermaidChartProps {
   chart: string;
 }
 
 const MermaidChart: React.FC<MermaidChartProps> = ({ chart }) => {
-  const [svg, setSvg] = useState("");
-  const [error, setError] = useState("");
+  const [svg, setSvg] = useState('');
+  const [error, setError] = useState('');
   const elementRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -16,9 +16,9 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart }) => {
         // Initialize mermaid
         mermaid.initialize({
           startOnLoad: false,
-          theme: "default",
-          securityLevel: "loose",
-          fontFamily: "inherit",
+          theme: 'default',
+          securityLevel: 'loose',
+          fontFamily: 'inherit',
         });
 
         // Generate unique ID for this chart
@@ -27,7 +27,7 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart }) => {
         // Render the chart
         const { svg: renderedSvg } = await mermaid.render(id, chart);
         setSvg(renderedSvg);
-        setError("");
+        setError('');
       } catch (err) {
         setError(`Failed to render Mermaid chart: ${err}`);
       }
@@ -41,20 +41,20 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart }) => {
   if (error) {
     return (
       <div
-        className="mermaid-fallback"
+        className='mermaid-fallback'
         style={{
-          margin: "1rem 0",
-          position: "relative",
+          margin: '1rem 0',
+          position: 'relative',
         }}
       >
         <pre
           style={{
-            padding: "1rem",
-            backgroundColor: "#f6f8fa",
-            border: "1px solid #d1d9e0",
-            borderRadius: "6px",
-            fontSize: "0.9em",
-            overflow: "auto",
+            padding: '1rem',
+            backgroundColor: '#f6f8fa',
+            border: '1px solid #d1d9e0',
+            borderRadius: '6px',
+            fontSize: '0.9em',
+            overflow: 'auto',
             fontFamily:
               'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Menlo", monospace',
             margin: 0,
@@ -64,15 +64,15 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart }) => {
         </pre>
         <div
           style={{
-            position: "absolute",
-            top: "0.5rem",
-            right: "0.5rem",
-            fontSize: "0.75em",
-            color: "#656d76",
-            backgroundColor: "#f6f8fa",
-            padding: "0.25rem 0.5rem",
-            borderRadius: "3px",
-            border: "1px solid #d1d9e0",
+            position: 'absolute',
+            top: '0.5rem',
+            right: '0.5rem',
+            fontSize: '0.75em',
+            color: '#656d76',
+            backgroundColor: '#f6f8fa',
+            padding: '0.25rem 0.5rem',
+            borderRadius: '3px',
+            border: '1px solid #d1d9e0',
           }}
         >
           mermaid
@@ -84,11 +84,11 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart }) => {
   return (
     <div
       ref={elementRef}
-      className="mermaid-chart-container"
+      className='mermaid-chart-container'
       style={{
-        margin: "1rem 0",
-        textAlign: "center",
-        overflow: "auto",
+        margin: '1rem 0',
+        textAlign: 'center',
+        overflow: 'auto',
       }}
     >
       {svg ? (
@@ -96,9 +96,9 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart }) => {
       ) : (
         <div
           style={{
-            padding: "2rem",
-            color: "#666",
-            fontStyle: "italic",
+            padding: '2rem',
+            color: '#666',
+            fontStyle: 'italic',
           }}
         >
           Loading Mermaid chart...

@@ -1,13 +1,13 @@
-import javascript from "highlight.js/lib/languages/javascript";
-import typescript from "highlight.js/lib/languages/typescript";
-import python from "highlight.js/lib/languages/python";
-import java from "highlight.js/lib/languages/java";
-import html from "highlight.js/lib/languages/xml";
-import css from "highlight.js/lib/languages/css";
-import json from "highlight.js/lib/languages/json";
-import bash from "highlight.js/lib/languages/bash";
-import sql from "highlight.js/lib/languages/sql";
-import markdown from "highlight.js/lib/languages/markdown";
+import bash from 'highlight.js/lib/languages/bash';
+import css from 'highlight.js/lib/languages/css';
+import java from 'highlight.js/lib/languages/java';
+import javascript from 'highlight.js/lib/languages/javascript';
+import json from 'highlight.js/lib/languages/json';
+import markdown from 'highlight.js/lib/languages/markdown';
+import python from 'highlight.js/lib/languages/python';
+import sql from 'highlight.js/lib/languages/sql';
+import typescript from 'highlight.js/lib/languages/typescript';
+import html from 'highlight.js/lib/languages/xml';
 
 const highlightLanguages = {
   javascript,
@@ -28,16 +28,16 @@ const highlightLanguages = {
 };
 
 const subsetLanguages = [
-  "javascript",
-  "typescript",
-  "python",
-  "java",
-  "html",
-  "css",
-  "json",
-  "bash",
-  "sql",
-  "markdown",
+  'javascript',
+  'typescript',
+  'python',
+  'java',
+  'html',
+  'css',
+  'json',
+  'bash',
+  'sql',
+  'markdown',
 ];
 
 export { highlightLanguages, subsetLanguages };

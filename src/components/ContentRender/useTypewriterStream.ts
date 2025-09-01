@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface UseTypewriterProps {
   content?: string;
@@ -13,11 +13,11 @@ interface Segment {
 }
 
 const useTypewriterStream = ({
-  content = "",
+  content = '',
   typingSpeed = 80,
   disabled = false,
 }: UseTypewriterProps = {}) => {
-  const [displayContent, setDisplayContent] = useState("");
+  const [displayContent, setDisplayContent] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
 
@@ -25,7 +25,7 @@ const useTypewriterStream = ({
   const displayIndexRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
-  const lastContentRef = useRef("");
+  const lastContentRef = useRef('');
   const lastParsedLengthRef = useRef(0);
 
   // Cleanup function
@@ -61,7 +61,7 @@ const useTypewriterStream = ({
 
       return segments;
     },
-    [],
+    []
   );
 
   // Full content parsing - used for initial content or content reset
@@ -86,7 +86,7 @@ const useTypewriterStream = ({
 
     if (displayIndexRef.current < parsedSegmentsRef.current.length) {
       const segment = parsedSegmentsRef.current[displayIndexRef.current];
-      setDisplayContent((prev) => prev + (segment?.content || ""));
+      setDisplayContent(prev => prev + (segment?.content || ''));
       displayIndexRef.current++;
 
       if (isMountedRef.current) {
@@ -100,7 +100,7 @@ const useTypewriterStream = ({
 
   // Main effect
   useEffect(() => {
-    const newContent = content || "";
+    const newContent = content || '';
     const oldContent = lastContentRef.current;
 
     // If content is the same, don't process
@@ -121,24 +121,16 @@ const useTypewriterStream = ({
 
     // Check if content is growing
     const isContentGrowth =
-      newContent.length >= oldContent.length &&
-      newContent.startsWith(oldContent);
+      newContent.length >= oldContent.length && newContent.startsWith(oldContent);
 
     if (isContentGrowth && oldContent) {
       // Content growth: parse only new parts
-      const newSegments = parseIncrementalContent(
-        newContent,
-        lastParsedLengthRef.current,
-      );
-      parsedSegmentsRef.current = [
-        ...parsedSegmentsRef.current,
-        ...newSegments,
-      ];
+      const newSegments = parseIncrementalContent(newContent, lastParsedLengthRef.current);
+      parsedSegmentsRef.current = [...parsedSegmentsRef.current, ...newSegments];
       lastParsedLengthRef.current = newContent.length;
 
       // Update completion status
-      const isNowComplete =
-        displayIndexRef.current >= parsedSegmentsRef.current.length;
+      const isNowComplete = displayIndexRef.current >= parsedSegmentsRef.current.length;
       setIsComplete(isNowComplete);
 
       // If there's more content to type, ensure typewriter continues working
@@ -149,7 +141,7 @@ const useTypewriterStream = ({
     } else {
       // New content: start over
       clearTimer();
-      setDisplayContent("");
+      setDisplayContent('');
       const segments = parseFullContent(newContent);
       parsedSegmentsRef.current = segments;
       displayIndexRef.current = 0;
@@ -165,15 +157,7 @@ const useTypewriterStream = ({
     }
 
     lastContentRef.current = newContent;
-  }, [
-    content,
-    disabled,
-    clearTimer,
-    parseIncrementalContent,
-    parseFullContent,
-    type,
-    isTyping,
-  ]);
+  }, [content, disabled, clearTimer, parseIncrementalContent, parseFullContent, type, isTyping]);
 
   // Cleanup
   useEffect(() => {
@@ -186,19 +170,19 @@ const useTypewriterStream = ({
 
   const reset = useCallback(() => {
     clearTimer();
-    setDisplayContent("");
+    setDisplayContent('');
     parsedSegmentsRef.current = [];
     displayIndexRef.current = 0;
     setIsTyping(false);
     setIsComplete(false);
-    lastContentRef.current = "";
+    lastContentRef.current = '';
     lastParsedLengthRef.current = 0;
   }, [clearTimer]);
 
   const start = useCallback(() => {
     clearTimer();
     displayIndexRef.current = 0;
-    setDisplayContent("");
+    setDisplayContent('');
     setIsTyping(true);
     setIsComplete(false);
     type();

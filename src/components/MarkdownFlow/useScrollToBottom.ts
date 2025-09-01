@@ -1,7 +1,7 @@
-import { useRef, useEffect, useCallback, RefObject, useState } from "react";
+import { useRef, useEffect, useCallback, RefObject, useState } from 'react';
 
 interface UseScrollToBottomOptions {
-  behavior?: "smooth" | "auto";
+  behavior?: 'smooth' | 'auto';
   autoScrollOnInit?: boolean;
   scrollDelay?: number;
   scrollThreshold?: number;
@@ -18,10 +18,10 @@ interface UseScrollToBottomReturn {
 const useScrollToBottom = (
   containerRef: RefObject<HTMLDivElement | null>,
   dependencies: unknown[] = [],
-  options: UseScrollToBottomOptions = {},
+  options: UseScrollToBottomOptions = {}
 ): UseScrollToBottomReturn => {
   const {
-    behavior = "smooth",
+    behavior = 'smooth',
     autoScrollOnInit = true,
     scrollDelay = 100,
     scrollThreshold = 10,
@@ -39,7 +39,7 @@ const useScrollToBottom = (
 
   // Clear all timers
   const clearAllTimers = useCallback(() => {
-    Object.values(timers.current).forEach((timer) => {
+    Object.values(timers.current).forEach(timer => {
       if (timer) clearTimeout(timer);
     });
   }, []);
@@ -103,12 +103,12 @@ const useScrollToBottom = (
       }, 150);
     };
 
-    container.addEventListener("scroll", handleScroll);
+    container.addEventListener('scroll', handleScroll);
     // Initialize state
     updateScrollState();
 
     return () => {
-      container.removeEventListener("scroll", handleScroll);
+      container.removeEventListener('scroll', handleScroll);
       if (timers.current.scroll) {
         clearTimeout(timers.current.scroll);
       }

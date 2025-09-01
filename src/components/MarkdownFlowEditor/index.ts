@@ -1,2 +1,2 @@
-import MarkdownFlowEditor from "./MarkdownFlowEditor";
+import MarkdownFlowEditor from './MarkdownFlowEditor';
 export default MarkdownFlowEditor;

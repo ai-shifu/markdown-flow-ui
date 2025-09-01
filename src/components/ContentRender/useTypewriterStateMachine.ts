@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface UseTypewriterProps {
   content?: string;
@@ -14,14 +14,14 @@ interface Segment {
 
 // State machine states
 type ParseState =
-  | "normal"
-  | "code_block"
-  | "inline_code"
-  | "bold"
-  | "italic"
-  | "link_text"
-  | "link_url"
-  | "custom_tag";
+  | 'normal'
+  | 'code_block'
+  | 'inline_code'
+  | 'bold'
+  | 'italic'
+  | 'link_text'
+  | 'link_url'
+  | 'custom_tag';
 
 interface ParserState {
   state: ParseState;
@@ -31,11 +31,11 @@ interface ParserState {
 }
 
 const useTypewriterStateMachine = ({
-  content = "",
+  content = '',
   typingSpeed = 80,
   disabled = false,
 }: UseTypewriterProps = {}) => {
-  const [displayContent, setDisplayContent] = useState("");
+  const [displayContent, setDisplayContent] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
 
@@ -43,12 +43,12 @@ const useTypewriterStateMachine = ({
   const displayIndexRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
-  const lastContentRef = useRef("");
+  const lastContentRef = useRef('');
   const parserStateRef = useRef<ParserState>({
-    state: "normal",
-    buffer: "",
+    state: 'normal',
+    buffer: '',
     depth: 0,
-    tempBuffer: "",
+    tempBuffer: '',
   });
 
   // Cleanup function
@@ -70,182 +70,182 @@ const useTypewriterStateMachine = ({
       const nextNextChar = newChars[i + 2];
 
       switch (state.state) {
-        case "normal":
+        case 'normal':
           // Check custom tag ?[
-          if (char === "?" && nextChar === "[") {
+          if (char === '?' && nextChar === '[') {
             if (state.buffer) {
               // Output previous plain text
               for (const c of state.buffer) {
                 segments.push({ content: c, isMarkdown: false });
               }
-              state.buffer = "";
+              state.buffer = '';
             }
-            state.state = "custom_tag";
-            state.tempBuffer = "?[";
+            state.state = 'custom_tag';
+            state.tempBuffer = '?[';
             i++;
           }
           // Check code block start
-          else if (char === "`" && nextChar === "`" && nextNextChar === "`") {
+          else if (char === '`' && nextChar === '`' && nextNextChar === '`') {
             if (state.buffer) {
               // Output previous plain text
               for (const c of state.buffer) {
                 segments.push({ content: c, isMarkdown: false });
               }
-              state.buffer = "";
+              state.buffer = '';
             }
-            state.state = "code_block";
-            state.tempBuffer = "```";
+            state.state = 'code_block';
+            state.tempBuffer = '```';
             i += 2;
           }
           // Check inline code
-          else if (char === "`") {
+          else if (char === '`') {
             if (state.buffer) {
               for (const c of state.buffer) {
                 segments.push({ content: c, isMarkdown: false });
               }
-              state.buffer = "";
+              state.buffer = '';
             }
-            state.state = "inline_code";
-            state.tempBuffer = "`";
+            state.state = 'inline_code';
+            state.tempBuffer = '`';
           }
           // Check bold
-          else if (char === "*" && nextChar === "*") {
+          else if (char === '*' && nextChar === '*') {
             if (state.buffer) {
               for (const c of state.buffer) {
                 segments.push({ content: c, isMarkdown: false });
               }
-              state.buffer = "";
+              state.buffer = '';
             }
-            state.state = "bold";
-            state.tempBuffer = "**";
+            state.state = 'bold';
+            state.tempBuffer = '**';
             i++;
           }
           // Check italic
-          else if (char === "*") {
+          else if (char === '*') {
             if (state.buffer) {
               for (const c of state.buffer) {
                 segments.push({ content: c, isMarkdown: false });
               }
-              state.buffer = "";
+              state.buffer = '';
             }
-            state.state = "italic";
-            state.tempBuffer = "*";
+            state.state = 'italic';
+            state.tempBuffer = '*';
           }
           // Check link
-          else if (char === "[") {
+          else if (char === '[') {
             if (state.buffer) {
               for (const c of state.buffer) {
                 segments.push({ content: c, isMarkdown: false });
               }
-              state.buffer = "";
+              state.buffer = '';
             }
-            state.state = "link_text";
-            state.tempBuffer = "[";
+            state.state = 'link_text';
+            state.tempBuffer = '[';
           } else {
             state.buffer += char;
           }
           break;
 
-        case "code_block":
+        case 'code_block':
           state.tempBuffer += char;
           // Check code block end
-          if (char === "`" && nextChar === "`" && nextNextChar === "`") {
-            state.tempBuffer += "``";
+          if (char === '`' && nextChar === '`' && nextNextChar === '`') {
+            state.tempBuffer += '``';
             segments.push({
               content: state.tempBuffer,
               isMarkdown: true,
-              type: "code-block",
+              type: 'code-block',
             });
-            state.tempBuffer = "";
-            state.state = "normal";
+            state.tempBuffer = '';
+            state.state = 'normal';
             i += 2;
           }
           break;
 
-        case "inline_code":
+        case 'inline_code':
           state.tempBuffer += char;
-          if (char === "`") {
+          if (char === '`') {
             segments.push({
               content: state.tempBuffer,
               isMarkdown: true,
-              type: "inline-code",
+              type: 'inline-code',
             });
-            state.tempBuffer = "";
-            state.state = "normal";
+            state.tempBuffer = '';
+            state.state = 'normal';
           }
           break;
 
-        case "bold":
+        case 'bold':
           state.tempBuffer += char;
-          if (char === "*" && nextChar === "*") {
-            state.tempBuffer += "*";
+          if (char === '*' && nextChar === '*') {
+            state.tempBuffer += '*';
             segments.push({
               content: state.tempBuffer,
               isMarkdown: true,
-              type: "bold",
+              type: 'bold',
             });
-            state.tempBuffer = "";
-            state.state = "normal";
+            state.tempBuffer = '';
+            state.state = 'normal';
             i++;
           }
           break;
 
-        case "italic":
+        case 'italic':
           state.tempBuffer += char;
-          if (char === "*" && nextChar !== "*") {
+          if (char === '*' && nextChar !== '*') {
             segments.push({
               content: state.tempBuffer,
               isMarkdown: true,
-              type: "italic",
+              type: 'italic',
             });
-            state.tempBuffer = "";
-            state.state = "normal";
+            state.tempBuffer = '';
+            state.state = 'normal';
           }
           break;
 
-        case "link_text":
+        case 'link_text':
           state.tempBuffer += char;
-          if (char === "]" && nextChar === "(") {
-            state.tempBuffer += "(";
-            state.state = "link_url";
+          if (char === ']' && nextChar === '(') {
+            state.tempBuffer += '(';
+            state.state = 'link_url';
             i++;
           }
           break;
 
-        case "link_url":
+        case 'link_url':
           state.tempBuffer += char;
-          if (char === ")") {
+          if (char === ')') {
             segments.push({
               content: state.tempBuffer,
               isMarkdown: true,
-              type: "link",
+              type: 'link',
             });
-            state.tempBuffer = "";
-            state.state = "normal";
+            state.tempBuffer = '';
+            state.state = 'normal';
           }
           break;
 
-        case "custom_tag":
+        case 'custom_tag':
           state.tempBuffer += char;
-          if (char === "]") {
+          if (char === ']') {
             segments.push({
               content: state.tempBuffer,
               isMarkdown: true,
-              type: "custom-tag",
+              type: 'custom-tag',
             });
-            state.tempBuffer = "";
-            state.state = "normal";
+            state.tempBuffer = '';
+            state.state = 'normal';
           }
           break;
       }
     }
 
     // Process remaining plain text
-    if (state.state === "normal" && state.buffer) {
+    if (state.state === 'normal' && state.buffer) {
       for (const c of state.buffer) {
         segments.push({ content: c, isMarkdown: false });
       }
-      state.buffer = "";
+      state.buffer = '';
     }
 
     return segments;
@@ -257,7 +257,7 @@ const useTypewriterStateMachine = ({
 
     if (displayIndexRef.current < parsedSegmentsRef.current.length) {
       const segment = parsedSegmentsRef.current[displayIndexRef.current];
-      setDisplayContent((prev) => prev + (segment?.content || ""));
+      setDisplayContent(prev => prev + (segment?.content || ''));
       displayIndexRef.current++;
 
       if (isMountedRef.current) {
@@ -271,7 +271,7 @@ const useTypewriterStateMachine = ({
 
   // Main effect
   useEffect(() => {
-    const newContent = content || "";
+    const newContent = content || '';
     const oldContent = lastContentRef.current;
 
     // If content is the same, don't process
@@ -291,21 +291,16 @@ const useTypewriterStateMachine = ({
 
     // Check if content is growing
     const isContentGrowth =
-      newContent.length >= oldContent.length &&
-      newContent.startsWith(oldContent);
+      newContent.length >= oldContent.length && newContent.startsWith(oldContent);
 
     if (isContentGrowth && oldContent) {
       // Content growth: parse only new parts
       const newChars = newContent.substring(oldContent.length);
       const newSegments = parseWithStateMachine(newChars);
-      parsedSegmentsRef.current = [
-        ...parsedSegmentsRef.current,
-        ...newSegments,
-      ];
+      parsedSegmentsRef.current = [...parsedSegmentsRef.current, ...newSegments];
 
       // Update completion status
-      const isNowComplete =
-        displayIndexRef.current >= parsedSegmentsRef.current.length;
+      const isNowComplete = displayIndexRef.current >= parsedSegmentsRef.current.length;
       setIsComplete(isNowComplete);
 
       // If there's more content to type, ensure typewriter continues working
@@ -316,14 +311,14 @@ const useTypewriterStateMachine = ({
     } else {
       // New content: start over
       clearTimer();
-      setDisplayContent("");
+      setDisplayContent('');
 
       // Reset parser state
       parserStateRef.current = {
-        state: "normal",
-        buffer: "",
+        state: 'normal',
+        buffer: '',
         depth: 0,
-        tempBuffer: "",
+        tempBuffer: '',
       };
 
       const segments = parseWithStateMachine(newContent);
@@ -353,24 +348,24 @@ const useTypewriterStateMachine = ({
 
   const reset = useCallback(() => {
     clearTimer();
-    setDisplayContent("");
+    setDisplayContent('');
     parsedSegmentsRef.current = [];
     displayIndexRef.current = 0;
     setIsTyping(false);
     setIsComplete(false);
-    lastContentRef.current = "";
+    lastContentRef.current = '';
     parserStateRef.current = {
-      state: "normal",
-      buffer: "",
+      state: 'normal',
+      buffer: '',
       depth: 0,
-      tempBuffer: "",
+      tempBuffer: '',
     };
   }, [clearTimer]);
 
   const start = useCallback(() => {
     clearTimer();
     displayIndexRef.current = 0;
-    setDisplayContent("");
+    setDisplayContent('');
     setIsTyping(true);
     setIsComplete(false);
     type();

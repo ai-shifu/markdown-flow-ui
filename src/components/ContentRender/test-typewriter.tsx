@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from "react";
-import ContentRender from "./ContentRender";
+import React, { useState, useEffect } from 'react';
+
+import ContentRender from './ContentRender';
 
 const TypewriterTest = () => {
-  const [testContent, setTestContent] = useState("");
+  const [testContent, setTestContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
 
   // Simulate streaming output
   const startStreaming = () => {
     setIsStreaming(true);
-    setTestContent("");
+    setTestContent('');
   };
 
   useEffect(() => {
@@ -72,17 +73,13 @@ function test() {
   }, [isStreaming]);
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div style={{ padding: '20px' }}>
       <h1>打字机效果测试</h1>
       <button onClick={startStreaming} disabled={isStreaming}>
-        {isStreaming ? "流式输出中..." : "开始测试"}
+        {isStreaming ? '流式输出中...' : '开始测试'}
       </button>
-      <div style={{ marginTop: "20px" }}>
-        <ContentRender
-          content={testContent}
-          disableTyping={false}
-          typingSpeed={30}
-        />
+      <div style={{ marginTop: '20px' }}>
+        <ContentRender content={testContent} disableTyping={false} typingSpeed={30} />
       </div>
     </div>
   );

@@ -1,12 +1,13 @@
-import React from "react";
-import { Button } from "../../ui/button";
-import type { Components } from "react-markdown";
-import { OnSendContentParams } from "../../types";
+import React from 'react';
+import type { Components } from 'react-markdown';
+
+import { OnSendContentParams } from '../../types';
+import { Button } from '../../ui/button';
 
 // Define custom button node type
 interface CustomButtonNode {
-  type: "element";
-  tagName: "custom-button";
+  type: 'element';
+  tagName: 'custom-button';
   properties?: {
     buttonText?: string;
   };
@@ -20,38 +21,27 @@ type CustomButtonProps = {
 };
 
 interface ComponentsWithCustomButton extends Components {
-  "custom-button"?: React.ComponentType<CustomButtonProps>;
+  'custom-button'?: React.ComponentType<CustomButtonProps>;
 }
 
 // Define custom button component
-const CustomButton = ({
-  node,
-  readonly,
-  defaultButtonText,
-  onSend,
-}: CustomButtonProps) => {
+const CustomButton = ({ node, readonly, defaultButtonText, onSend }: CustomButtonProps) => {
   const { buttonText, ...restProps } = node.properties || {};
 
   const handleButtonClick = () => {
-    onSend?.({ buttonText: buttonText || "" });
+    onSend?.({ buttonText: buttonText || '' });
   };
 
   return (
     <Button
-      variant="outline"
+      variant='outline'
       disabled={readonly}
-      size="sm"
+      size='sm'
       onClick={handleButtonClick}
       className={`cursor-pointer h-6 text-sm hover:bg-gray-200`}
       style={{
-        backgroundColor:
-          defaultButtonText === buttonText
-            ? "var(--primary, #2563eb)"
-            : undefined,
-        color:
-          defaultButtonText === buttonText
-            ? "var(--primary-foreground, white)"
-            : undefined,
+        backgroundColor: defaultButtonText === buttonText ? 'var(--primary, #2563eb)' : undefined,
+        color: defaultButtonText === buttonText ? 'var(--primary-foreground, white)' : undefined,
       }}
       {...restProps}
     >

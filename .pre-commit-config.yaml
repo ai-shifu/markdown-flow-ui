@@ -1,9 +1,9 @@
 ci:
   autofix_prs: true
-  autoupdate_schedule: disabled   # Strict version control; manual `pre-commit autoupdate` PR when needed
+  autoupdate_schedule: quarterly   # Strict version control; manual `pre-commit autoupdate` PR when needed
 
 repos:
-  # ESLint (使用本地配置)
+  # ESLint (use local config)
   - repo: local
     hooks:
       - id: eslint
@@ -13,9 +13,9 @@ repos:
         files: \.(ts|tsx|js|jsx)$
         args:
           - "--fix"
-          - "--max-warnings=20"  # 与本地package.json保持一致
+          - "--max-warnings=20"  # keep consistent with local package.json
 
-  # Prettier (使用本地配置)
+  # Prettier (use local config)
   - repo: local
     hooks:
       - id: prettier
@@ -26,7 +26,7 @@ repos:
         args:
           - "--write"
 
-  # TypeScript类型检查
+  # TypeScript type check
   - repo: local
     hooks:
       - id: tsc

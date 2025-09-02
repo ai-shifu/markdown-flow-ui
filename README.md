@@ -1,9 +1,9 @@
 <div align="center">
   <h1>Markdown Flow UI</h1>
   <p><strong>A React library designed for conversational AI applications with streaming typewriter effects and interactive components.</strong></p>
-  
+
   English | [简体中文](README_ZH-CN.md)
-  
+
   [![npm version](https://badge.fury.io/js/markdown-flow-ui.svg)](https://badge.fury.io/js/markdown-flow-ui)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)

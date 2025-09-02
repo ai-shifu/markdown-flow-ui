@@ -1,9 +1,9 @@
 <div align="center">
   <h1>Markdown Flow UI</h1>
   <p><strong>专为对话式AI应用设计的React组件库，具有流式打字机效果和交互组件。</strong></p>
-  
+
   [English](README.md) | 简体中文
-  
+
   [![npm version](https://badge.fury.io/js/markdown-flow-ui.svg)](https://badge.fury.io/js/markdown-flow-ui)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)

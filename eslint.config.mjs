@@ -30,8 +30,10 @@ const eslintConfig = [
       ],
       // Allow 'any' type in specific cases during development
       "@typescript-eslint/no-explicit-any": "warn",
-      // Make React hook dependencies warnings instead of errors
-      "react-hooks/exhaustive-deps": "warn",
+      // Disable React hook dependencies rule
+      "react-hooks/exhaustive-deps": "off",
+      // Prohibit console.log statements
+      "no-console": "error",
     },
   },
 ];

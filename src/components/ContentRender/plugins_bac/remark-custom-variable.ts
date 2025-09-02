@@ -30,7 +30,7 @@ interface MatchRule {
 const SEPARATOR = "[|｜]"; // 匹配英文|或中文｜
 const SEPARATOR_GLOBAL = new RegExp(SEPARATOR, "g");
 
-// Configurable matching rules (adjust order and logic, use统一的 separator)
+// Configurable matching rules (adjust order and logic, use a unified separator)
 const MATCH_RULES: MatchRule[] = [
   {
     // Format 1: ?[%{{variable}} button1 | button2 | ... placeholder] (buttons with placeholder, highest priority)

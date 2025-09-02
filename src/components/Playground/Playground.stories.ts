@@ -1,29 +1,29 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 // import { fn } from 'storybook/test';
 
-import Playground from './Playground';
+import Playground from "./Playground";
 
 const meta = {
-  title: 'Playground',
+  title: "Playground",
   component: Playground,
   parameters: {
-    layout: 'centered',
+    layout: "centered",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
-      defaultContent: {
-      control: 'text',
-      description: 'Markdown content to render',
+    defaultContent: {
+      control: "text",
+      description: "Markdown content to render",
     },
     sessionId: {
-      control: 'text',
-      description: 'Session ID for the request',
+      control: "text",
+      description: "Session ID for the request",
     },
   },
-  args: {   
-    defaultContent: '',
-    sessionId: ''
+  args: {
+    defaultContent: "",
+    sessionId: "",
   },
 } satisfies Meta<typeof Playground>;
 
@@ -32,7 +32,7 @@ type Story = StoryObj<typeof meta>;
 
 export const PlaygroundStory1: Story = {
   args: {
-    sessionId: '111',
+    sessionId: "111",
     defaultContent: `===# 第一章 认识一下===
 
 用友好的语气讲课：
@@ -65,13 +65,11 @@ export const PlaygroundStory1: Story = {
 问用户是不是真的是人类？如果是，请登录
 
 ?[登录]`,
-styles: {
-    height: '500px',
-    width: '500px',
-    border: '1px solid #ccc',
+    styles: {
+      height: "500px",
+      width: "500px",
+      border: "1px solid #ccc",
+    },
+    disableTyping: false,
   },
-  disableTyping: false
-
-  },
-  
 };

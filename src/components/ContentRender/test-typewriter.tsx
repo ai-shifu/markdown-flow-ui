@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react'
-import ContentRender from './ContentRender'
+import React, { useState, useEffect } from "react";
+import ContentRender from "./ContentRender";
 
 const TypewriterTest = () => {
-  const [testContent, setTestContent] = useState('')
-  const [isStreaming, setIsStreaming] = useState(false)
+  const [testContent, setTestContent] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
 
   // Simulate streaming output
   const startStreaming = () => {
-    setIsStreaming(true)
-    setTestContent('')
-  }
+    setIsStreaming(true);
+    setTestContent("");
+  };
 
   useEffect(() => {
-    if (!isStreaming) return
+    if (!isStreaming) return;
 
     const fullContent = `# 欢迎使用 Markdown Flow
 
@@ -55,37 +55,37 @@ function test() {
 
 ## 结束语
 
-以上是完整的测试内容，验证打字机效果是否正常工作。`
+以上是完整的测试内容，验证打字机效果是否正常工作。`;
 
-    let index = 0
+    let index = 0;
     const interval = setInterval(() => {
       if (index <= fullContent.length) {
-        setTestContent(fullContent.substring(0, index))
-        index++
+        setTestContent(fullContent.substring(0, index));
+        index++;
       } else {
-        clearInterval(interval)
-        setIsStreaming(false)
+        clearInterval(interval);
+        setIsStreaming(false);
       }
-    }, 50)
+    }, 50);
 
-    return () => clearInterval(interval)
-  }, [isStreaming])
+    return () => clearInterval(interval);
+  }, [isStreaming]);
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div style={{ padding: "20px" }}>
       <h1>打字机效果测试</h1>
       <button onClick={startStreaming} disabled={isStreaming}>
-        {isStreaming ? '流式输出中...' : '开始测试'}
+        {isStreaming ? "流式输出中..." : "开始测试"}
       </button>
-      <div style={{ marginTop: '20px' }}>
-        <ContentRender 
+      <div style={{ marginTop: "20px" }}>
+        <ContentRender
           content={testContent}
           disableTyping={false}
           typingSpeed={30}
         />
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default TypewriterTest
+export default TypewriterTest;

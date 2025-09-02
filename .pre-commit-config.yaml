@@ -1,0 +1,41 @@
+ci:
+  skip: [eslint]  # Skip ESLint hooks in pre-commit.ci since it does not work
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+    -   id: check-yaml
+        exclude: ^pnpm-lock\.yaml$
+    -   id: check-json
+    -   id: check-merge-conflict
+    -   id: check-symlinks
+    -   id: end-of-file-fixer
+        exclude: ^pnpm-lock\.yaml$
+    -   id: trailing-whitespace
+        exclude: ^pnpm-lock\.yaml$
+    -   id: pretty-format-json
+        args: ['--autofix', '--indent=2', '--no-ensure-ascii']
+        files: \.(json)$
+        exclude: ^(pnpm-lock\.yaml|package-lock\.json)$
+-   repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.8.3
+    hooks:
+    -   id: commitizen
+        stages: [commit-msg]
+        additional_dependencies: ['markupsafe==2.0.1']
+-   repo: local
+    hooks:
+    -   id: prettier
+        name: Prettier
+        entry: prettier
+        language: node
+        files: ^src/.*\.(js|jsx|ts|tsx|mjs|cjs|css|scss|md|json)$
+        args: ['--write']
+        additional_dependencies: ['prettier@^3.5.3']
+        pass_filenames: true
+    -   id: eslint
+        name: ESLint
+        entry: bash -c 'npm run lint -- --fix --max-warnings 0 --file $(echo "$@" | tr " " "\n" | grep -E "\.(js|jsx|ts|tsx)$") || true' --
+        language: system
+        files: ^src/.*\.(js|jsx|ts|tsx)$
+        pass_filenames: true

@@ -1,16 +1,16 @@
-import React, { useRef } from 'react'
-import MarkdownFlow from './MarkdownFlow'
-import useScrollToBottom from './useScrollToBottom'
-import { OnSendContentParams, CustomRenderBarProps } from '../types'
-import { ChevronDown } from 'lucide-react'
-import { Button } from '../ui/button'
-import type { MarkdownFlowProps } from './MarkdownFlow'
+import React, { useRef } from "react";
+import MarkdownFlow from "./MarkdownFlow";
+import useScrollToBottom from "./useScrollToBottom";
+import { OnSendContentParams, CustomRenderBarProps } from "../types";
+import { ChevronDown } from "lucide-react";
+import { Button } from "../ui/button";
+import type { MarkdownFlowProps } from "./MarkdownFlow";
 
-import './markdownFlow.css'
+import "./markdownFlow.css";
 
 export interface ScrollableMarkdownFlowProps extends MarkdownFlowProps {
-  height?: string | number
-  className?: string
+  height?: string | number;
+  className?: string;
 }
 
 const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
@@ -20,34 +20,34 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
   onBlockComplete,
   typingSpeed,
   disableTyping,
-  height = '100%',
-  className = '',
+  height = "100%",
+  className = "",
   ...restProps
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const { showScrollToBottom, handleUserScrollToBottom } = useScrollToBottom(
     containerRef,
     [
       initialContentList?.length >= 1
         ? JSON.stringify(initialContentList[initialContentList?.length - 1])
-        : null
+        : null,
     ],
     {
       // Listen for content count changes
-      behavior: 'smooth',
+      behavior: "smooth",
       autoScrollOnInit: true,
-      scrollDelay: 100
-    }
-  )
+      scrollDelay: 100,
+    },
+  );
 
   return (
     <div
       className={`scrollable-markdown-container ${className}`}
-      style={{ height, position: 'relative' }}
+      style={{ height, position: "relative" }}
       {...restProps}
     >
-      <div ref={containerRef} style={{ height: '100%', overflow: 'auto' }}>
+      <div ref={containerRef} style={{ height: "100%", overflow: "auto" }}>
         <MarkdownFlow
           initialContentList={initialContentList}
           customRenderBar={customRenderBar}
@@ -59,18 +59,18 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
       </div>
       {showScrollToBottom && (
         <Button
-          className='h-6 w-6 border hover:bg-gray-200 scroll-to-bottom-btn'
-          type='button'
-          variant='ghost'
-          size='icon'
+          className="h-6 w-6 border hover:bg-gray-200 scroll-to-bottom-btn"
+          type="button"
+          variant="ghost"
+          size="icon"
           onClick={handleUserScrollToBottom}
-          aria-label='滚动到底部'
+          aria-label="滚动到底部"
         >
           <ChevronDown />
         </Button>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default ScrollableMarkdownFlow
+export default ScrollableMarkdownFlow;

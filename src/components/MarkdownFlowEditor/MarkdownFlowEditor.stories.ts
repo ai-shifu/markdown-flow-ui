@@ -1,41 +1,41 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 // import { fn } from 'storybook/test';
 
-import MarkdownFlowEditor from './MarkdownFlowEditor';
-import type { MarkdownFlowEditorProps } from './MarkdownFlowEditor';
+import MarkdownFlowEditor from "./MarkdownFlowEditor";
+import type { MarkdownFlowEditorProps } from "./MarkdownFlowEditor";
 
 const meta = {
-  title: 'MarkdownFlow/MarkdownFlowEditor',
+  title: "MarkdownFlow/MarkdownFlowEditor",
   component: MarkdownFlowEditor,
   parameters: {
-    layout: 'centered',
+    layout: "centered",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     value: {
-      control: 'text',
-      description: 'Markdown content to edit',
+      control: "text",
+      description: "Markdown content to edit",
     },
     onChange: {
-      action: 'onChange',
-      description: 'Callback when content changes',
+      action: "onChange",
+      description: "Callback when content changes",
     },
     className: {
-      control: 'text',
-      description: 'Class name to apply to the editor',
+      control: "text",
+      description: "Class name to apply to the editor",
     },
     readOnly: {
-      control: 'boolean',
-      description: 'Whether the editor is read-only',
+      control: "boolean",
+      description: "Whether the editor is read-only",
     },
   },
-  args: { 
-    value: '',
+  args: {
+    value: "",
     onChange: (value) => console.log(value),
-    className: '',
+    className: "",
     readOnly: false,
-   },
+  },
 } satisfies Meta<typeof MarkdownFlowEditor>;
 
 export default meta;
@@ -75,10 +75,8 @@ export const MarkdownFlowEditorStory: Story = {
 问用户是不是真的是人类？如果是，请登录
 
 ?[登录](login_url)`,
-  onChange: (value) => {
-    console.log(value)
-  },
-
+    onChange: (value) => {
+      console.log(value);
+    },
   },
 };
-

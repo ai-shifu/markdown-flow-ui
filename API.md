@@ -992,7 +992,6 @@ For additional help:
 
 - [GitHub Issues](https://github.com/ai-shifu/markdown-flow-ui/issues)
 - [GitHub Discussions](https://github.com/ai-shifu/markdown-flow-ui/discussions)
-- [Contributing Guide](./CONTRIBUTING.md)
 
 ---
 

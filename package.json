@@ -60,7 +60,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.1.6",
     "playwright": "^1.54.1",
-    "prettier": "^3.6.2",
+    "prettier": "^3.5.3",
     "rollup": "^4.46.2",
     "rollup-plugin-dts": "^6.2.1",
     "storybook": "^9.0.16",
@@ -102,8 +102,8 @@
     "build": "vite build",
     "build-storybook": "storybook build",
     "dev": "next dev --turbopack",
-    "lint": "next lint",
-    "lint:fix": "next lint --fix",
+    "lint": "next lint --max-warnings 0",
+    "lint:fix": "next lint --fix --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepublishOnly": "npm run build",
@@ -112,11 +112,11 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
+    "src/**/*.{js,jsx,ts,tsx,mjs,cjs}": [
+      "next lint --fix --max-warnings 0 --file",
       "prettier --write"
     ],
-    "*.{json,md,yml,yaml}": [
+    "src/**/*.{css,scss,md,json}": [
       "prettier --write"
     ]
   },

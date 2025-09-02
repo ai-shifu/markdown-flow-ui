@@ -88,6 +88,15 @@
     "storybook"
   ],
   "license": "MIT",
+  "lint-staged": {
+    "src/**/*.{css,scss,md,json}": [
+      "prettier --write"
+    ],
+    "src/**/*.{js,jsx,ts,tsx,mjs,cjs}": [
+      "next lint --fix --max-warnings 0 --file",
+      "prettier --write"
+    ]
+  },
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",
   "name": "markdown-flow-ui",
@@ -102,23 +111,14 @@
     "build": "vite build",
     "build-storybook": "storybook build",
     "dev": "next dev --turbopack",
-    "lint": "next lint --max-warnings 0",
-    "lint:fix": "next lint --fix --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "lint": "next lint --max-warnings 0",
+    "lint:fix": "next lint --fix --max-warnings 0",
+    "prepare": "husky",
     "prepublishOnly": "npm run build",
     "start": "next start",
-    "storybook": "storybook dev -p 6006",
-    "prepare": "husky"
-  },
-  "lint-staged": {
-    "src/**/*.{js,jsx,ts,tsx,mjs,cjs}": [
-      "next lint --fix --max-warnings 0 --file",
-      "prettier --write"
-    ],
-    "src/**/*.{css,scss,md,json}": [
-      "prettier --write"
-    ]
+    "storybook": "storybook dev -p 6006"
   },
   "types": "dist/index.d.ts",
   "version": "0.1.0-alpha.26"

@@ -36,7 +36,7 @@ const useMarkdownInfo = (content: string) => {
             // Next.js fetch caching options
             cache: "no-store",
             // Or use next: { revalidate: 0 } to disable cache
-          },
+          }
         );
 
         if (!response.ok) {

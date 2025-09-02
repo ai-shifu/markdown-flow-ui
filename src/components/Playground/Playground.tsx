@@ -52,7 +52,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   const userOperateErrorFlag = useRef<boolean>(false);
   const [contentList, setContentList] = useState<ContentRenderProps[]>([]);
   const [loadingBlockIndex, setLoadingBlockIndex] = useState<number | null>(
-    null,
+    null
   );
 
   const [sseParams, setSseParams] = useState<SSEParams>({
@@ -72,7 +72,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   };
   // Update context params for next block from SSE response
   const updateContextParamsForNextBlock = (
-    currentData: string,
+    currentData: string
   ): Array<{ role: string; content: string }> => {
     const newContext = [...sseParams.context];
 
@@ -96,7 +96,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   };
   // Return updated contentList after SSE data update
   const updateContentListWithSseData = (
-    newData: string,
+    newData: string
   ): ContentRenderProps[] => {
     const newList = [...contentList];
     const currentIndex = currentMessageIndexRef.current;
@@ -120,7 +120,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
 
   // Return contentList after user operation
   const updateContentListWithUserOperate = (
-    params: OnSendContentParams,
+    params: OnSendContentParams
   ): ContentRenderProps[] => {
     const newList = [...contentList];
     const lastIndex = newList.length - 1;
@@ -156,7 +156,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
 
   const handleOnFinish = (data: string) => {
     const isCurrentInteractionBlock = interaction_blocks.includes(
-      currentBlockIndexRef.current,
+      currentBlockIndexRef.current
     );
 
     // Stop if current block is interaction block content with data
@@ -251,9 +251,9 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
 
   // Create Loading component
   const LoadingBar: CustomRenderBarProps = ({
-    content,
-    displayContent,
-    onSend,
+    content: _content,
+    displayContent: _displayContent,
+    onSend: _onSend,
   }) => {
     return (
       <span className="flex gap-[10px] items-center">

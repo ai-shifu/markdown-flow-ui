@@ -35,7 +35,7 @@ const MATCH_RULES: MatchRule[] = [
   {
     // Format 1: ?[%{{variable}} button1 | button2 | ... placeholder] (buttons with placeholder, highest priority)
     regex: new RegExp(
-      `\\?\\[\\%\\{\\{\\s*(\\w+)\\s*\\}\\}\\s*([^\\]\\|｜]+(?:\\s*${SEPARATOR}\\s*[^\\]\\|｜]+)*)\\s*${SEPARATOR}\\s*\\.\\.\\.\\s*([^\\]]+)\\]`,
+      `\\?\\[\\%\\{\\{\\s*(\\w+)\\s*\\}\\}\\s*([^\\]\\|｜]+(?:\\s*${SEPARATOR}\\s*[^\\]\\|｜]+)*)\\s*${SEPARATOR}\\s*\\.\\.\\.\\s*([^\\]]+)\\]`
     ),
     type: FormatType.BUTTONS_WITH_PLACEHOLDER,
   },
@@ -47,7 +47,7 @@ const MATCH_RULES: MatchRule[] = [
   {
     // Format 2: ?[%{{variable}} button1 | button2]
     regex: new RegExp(
-      `\\?\\[\\%\\{\\{\\s*(\\w+)\\s*\\}\\}\\s*([^\\]\\|｜]+(?:\\s*${SEPARATOR}\\s*[^\\]\\|｜]+)+)\\s*\\]`,
+      `\\?\\[\\%\\{\\{\\s*(\\w+)\\s*\\}\\}\\s*([^\\]\\|｜]+(?:\\s*${SEPARATOR}\\s*[^\\]\\|｜]+)+)\\s*\\]`
     ),
     type: FormatType.BUTTONS_ONLY,
   },
@@ -70,7 +70,7 @@ interface ParsedResult {
  */
 function parseContentByType(
   match: RegExpExecArray,
-  formatType: FormatType,
+  formatType: FormatType
 ): ParsedResult {
   const variableName = match[1].trim();
 
@@ -123,7 +123,7 @@ function parseContentByType(
  * Find the first matching rule
  */
 function findFirstMatch(
-  value: string,
+  value: string
 ): { match: RegExpExecArray; rule: MatchRule } | null {
   for (const rule of MATCH_RULES) {
     rule.regex.lastIndex = 0;
@@ -142,7 +142,7 @@ function createSegments(
   value: string,
   startIndex: number,
   endIndex: number,
-  parsedResult: ParsedResult,
+  parsedResult: ParsedResult
 ): Array<Literal | CustomVariableNode> {
   return [
     {
@@ -190,7 +190,7 @@ export default function remarkCustomButtonInputVariable() {
             value,
             startIndex,
             endIndex,
-            parsedResult,
+            parsedResult
           );
 
           // Replace the original node
@@ -200,7 +200,7 @@ export default function remarkCustomButtonInputVariable() {
           // If parsing fails, keep the original content
           return;
         }
-      },
+      }
     );
   };
 }

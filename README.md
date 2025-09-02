@@ -19,7 +19,7 @@ Unlike standard markdown renderers, Markdown Flow UI is specifically built for *
 
 ## 🎬 See It In Action
 
-*[TODO: Add GIF demonstrations of typewriter effects and interactive components]*
+_[TODO: Add GIF demonstrations of typewriter effects and interactive components]_
 
 ## 🚀 Quick Start
 
@@ -32,14 +32,15 @@ npm install markdown-flow-ui
 ### Basic Streaming Text
 
 ```tsx
-import { MarkdownFlow } from 'markdown-flow-ui';
+import { MarkdownFlow } from "markdown-flow-ui";
 
 function ChatMessage() {
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState("");
 
   // Simulate streaming from AI
   useEffect(() => {
-    const text = "# Hello! 👋\n\nI'm an AI assistant. How can I **help** you today?";
+    const text =
+      "# Hello! 👋\n\nI'm an AI assistant. How can I **help** you today?";
     let i = 0;
     const timer = setInterval(() => {
       setContent(text.slice(0, i++));
@@ -48,10 +49,7 @@ function ChatMessage() {
   }, []);
 
   return (
-    <MarkdownFlow
-      initialContentList={[{ content }]}
-      disableTyping={false}
-    />
+    <MarkdownFlow initialContentList={[{ content }]} disableTyping={false} />
   );
 }
 ```
@@ -61,7 +59,7 @@ function ChatMessage() {
 ### Interactive Components
 
 ```tsx
-import { MarkdownFlow } from 'markdown-flow-ui';
+import { MarkdownFlow } from "markdown-flow-ui";
 
 function InteractiveChat() {
   const content = `
@@ -76,7 +74,7 @@ Click to continue: ?[Let's Go!]
     <MarkdownFlow
       initialContentList={[{ content }]}
       onSend={(data) => {
-        console.log('User selected:', data.buttonText);
+        console.log("User selected:", data.buttonText);
         // Handle user interaction
       }}
     />
@@ -89,19 +87,19 @@ Click to continue: ?[Let's Go!]
 ### Real-time SSE Streaming
 
 ```tsx
-import { ScrollableMarkdownFlow } from 'markdown-flow-ui';
+import { ScrollableMarkdownFlow } from "markdown-flow-ui";
 
 function LiveChat() {
   return (
     <ScrollableMarkdownFlow
       initialContentList={[
-        { content: "## AI Assistant\n\nConnecting to server..." }
+        { content: "## AI Assistant\n\nConnecting to server..." },
       ]}
       onSend={(data) => {
         // Send user input to your AI backend
-        fetch('/api/chat', {
-          method: 'POST',
-          body: JSON.stringify({ message: data.inputText })
+        fetch("/api/chat", {
+          method: "POST",
+          body: JSON.stringify({ message: data.inputText }),
         });
       }}
     />
@@ -114,25 +112,31 @@ function LiveChat() {
 ## 🧩 Core Components
 
 ### MarkdownFlow
+
 The main component for rendering markdown with typewriter effects.
 
 **Key Props:**
+
 - `initialContentList` - Array of message objects
 - `disableTyping` - Toggle typewriter animation
 - `onSend` - Handle user interactions
 
 ### ScrollableMarkdownFlow
+
 Enhanced version with conversation management and auto-scrolling.
 
 **Key Props:**
+
 - `initialContentList` - Conversation history
 - `onSend` - Process user inputs
 - Additional scroll and SSE management
 
 ### MarkdownFlowEditor
+
 Code editor with markdown preview and flow syntax support.
 
 **Key Props:**
+
 - `value` - Editor content
 - `onChange` - Content change handler
 - `readOnly` - Editor mode
@@ -140,6 +144,7 @@ Code editor with markdown preview and flow syntax support.
 ## 🎯 When to Use This Library
 
 **Perfect for:**
+
 - ✅ ChatGPT-style interfaces
 - ✅ AI assistant applications
 - ✅ Real-time chat systems
@@ -147,6 +152,7 @@ Code editor with markdown preview and flow syntax support.
 - ✅ Educational platforms with guided content
 
 **Not ideal for:**
+
 - ❌ Static documentation sites
 - ❌ Simple blog content
 - ❌ Non-interactive markdown display
@@ -156,23 +162,27 @@ Code editor with markdown preview and flow syntax support.
 ### Custom Markdown Syntax
 
 **Interactive Buttons:**
+
 ```markdown
 Click here: ?[Button Text]
 ```
 
 **Variable Inputs:**
+
 ```markdown
 Enter your name: ?[%{{userName}} Type your name here...]
 Choose option: ?[%{{choice}} Option A | Option B | Option C]
 ```
 
 **Mermaid Diagrams:**
-```markdown
+
+````markdown
 ```mermaid
 graph LR
     A[User Input] --> B[AI Processing]
     B --> C[Streaming Response]
 ```
+````
 
 ### Styling & Customization
 
@@ -185,10 +195,12 @@ Full TypeScript support with comprehensive type definitions for all components a
 ## 🛠 Development
 
 ### Prerequisites
+
 - Node.js 18+
 - pnpm (recommended)
 
 ### Setup
+
 ```bash
 git clone https://github.com/ai-shifu/markdown-flow-ui.git
 cd markdown-flow-ui
@@ -199,6 +211,7 @@ pnpm storybook
 Open [http://localhost:6006](http://localhost:6006) to view the interactive documentation.
 
 ### Scripts
+
 - `pnpm dev` - Next.js development server
 - `pnpm storybook` - Component documentation and examples
 - `pnpm build` - Production build

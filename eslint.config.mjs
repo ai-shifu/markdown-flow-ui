@@ -1,5 +1,6 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import storybook from "eslint-plugin-storybook";
+import prettier from "eslint-plugin-prettier/recommended";
 
 import { dirname } from "path";
 import { fileURLToPath } from "url";
@@ -14,7 +15,25 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
-  ...storybook.configs["flat/recommended"]
+  ...storybook.configs["flat/recommended"],
+  prettier,
+  {
+    rules: {
+      "prettier/prettier": "error",
+      "@next/next/no-html-link-for-pages": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+        },
+      ],
+      // Allow 'any' type in specific cases during development
+      "@typescript-eslint/no-explicit-any": "warn",
+      // Make React hook dependencies warnings instead of errors
+      "react-hooks/exhaustive-deps": "warn",
+    },
+  },
 ];
 
 export default eslintConfig;

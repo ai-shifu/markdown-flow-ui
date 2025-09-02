@@ -61,7 +61,7 @@ const useTypewriterStream = ({
 
       return segments;
     },
-    [],
+    []
   );
 
   // Full content parsing - used for initial content or content reset
@@ -128,7 +128,7 @@ const useTypewriterStream = ({
       // Content growth: parse only new parts
       const newSegments = parseIncrementalContent(
         newContent,
-        lastParsedLengthRef.current,
+        lastParsedLengthRef.current
       );
       parsedSegmentsRef.current = [
         ...parsedSegmentsRef.current,

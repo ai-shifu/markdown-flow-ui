@@ -53,7 +53,7 @@ export default function remarkCustomButton() {
 
         // Replace the original node
         parent.children.splice(index, 1, ...segments);
-      },
+      }
     );
   };
 }

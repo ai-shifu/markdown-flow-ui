@@ -29,7 +29,7 @@ type ConnectionState =
 
 const useSSE = <T = any>(
   url: string,
-  options: UseSSEOptions = {},
+  options: UseSSEOptions = {}
 ): UseSSEReturn<T> => {
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -91,12 +91,12 @@ const useSSE = <T = any>(
               acc[key] = String(value);
               return acc;
             },
-            {} as Record<string, string>,
+            {} as Record<string, string>
           ),
         },
         signal: abortController.signal,
         openWhenHidden: true,
-        onopen: async (response) => {
+        onopen: async (_response) => {
           if (isActive()) {
             connectionStateRef.current = "connected";
             setIsLoading(false);
@@ -113,7 +113,7 @@ const useSSE = <T = any>(
               return;
             }
             try {
-              let parsedData: any = event.data;
+              const parsedData: any = event.data;
               finalDataRef.current += parsedData;
               setData(finalDataRef.current as any);
             } catch (err) {

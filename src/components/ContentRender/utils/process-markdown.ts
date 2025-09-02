@@ -24,7 +24,7 @@ const unescapeMarkdown = (markdownText: string): string => {
 
       // Handle other escape sequences
       return escapeMap[match] || match;
-    },
+    }
   );
 };
 

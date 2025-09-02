@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import MarkdownFlow from "./MarkdownFlow";
 import useScrollToBottom from "./useScrollToBottom";
-import { OnSendContentParams, CustomRenderBarProps } from "../types";
+// import type { OnSendContentParams, CustomRenderBarProps } from "../types";
 import { ChevronDown } from "lucide-react";
 import { Button } from "../ui/button";
 import type { MarkdownFlowProps } from "./MarkdownFlow";
@@ -38,7 +38,7 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
       behavior: "smooth",
       autoScrollOnInit: true,
       scrollDelay: 100,
-    },
+    }
   );
 
   return (

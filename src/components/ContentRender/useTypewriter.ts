@@ -82,7 +82,7 @@ const useTypewriter = ({
               ...Array.from(plainText).map((char) => ({
                 content: char,
                 isMarkdown: false,
-              })),
+              }))
             );
             remainingText = remainingText.substring(earliestIndex);
           }
@@ -93,7 +93,7 @@ const useTypewriter = ({
             type: earliestMatch.pattern.type,
           });
           remainingText = remainingText.substring(
-            earliestMatch.match[0].length,
+            earliestMatch.match[0].length
           );
           matched = true;
         }
@@ -109,7 +109,7 @@ const useTypewriter = ({
 
       return segments;
     },
-    [markdownPatterns],
+    [markdownPatterns]
   );
 
   // Typing function

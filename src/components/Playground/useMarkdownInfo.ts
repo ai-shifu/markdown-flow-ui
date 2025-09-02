@@ -23,18 +23,21 @@ const useMarkdownInfo = (content: string) => {
     const fetchMarkdownInfo = async () => {
       try {
         setLoading(true);
-        
+
         // Use Next.js built-in fetch
-        const response = await fetch('https://play.dev.pillowai.cn/api/v1/playground/markdownflow_info', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',        
-          },
-          body: JSON.stringify({ content }),
-          // Next.js fetch caching options
-          cache: 'no-store',
-          // Or use next: { revalidate: 0 } to disable cache
-        });
+        const response = await fetch(
+          'https://play.dev.pillowai.cn/api/v1/playground/markdownflow_info',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ content }),
+            // Next.js fetch caching options
+            cache: 'no-store',
+            // Or use next: { revalidate: 0 } to disable cache
+          }
+        );
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

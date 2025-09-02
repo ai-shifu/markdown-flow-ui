@@ -15,15 +15,10 @@ export default defineConfig({
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'MarkdownFlowUI',
       formats: ['es', 'cjs'],
-      fileName: (format) => `index.${format}.js`,
+      fileName: format => `index.${format}.js`,
     },
     rollupOptions: {
-      external: [
-        'react',
-        'react-dom',
-        'next',
-        'next/router'
-      ],
+      external: ['react', 'react-dom', 'next', 'next/router'],
       output: {
         globals: {
           react: 'React',

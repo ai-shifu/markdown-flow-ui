@@ -62,7 +62,7 @@ export const ContentRenderStory1: Story = {
 console.log('Hello World');
 
   `,
-    disableTyping: false
+    disableTyping: false,
   },
 };
 
@@ -102,7 +102,7 @@ export const ContentRenderStory2: Story = {
 ?[登录](login_url)
 
   `,
-    disableTyping: false
+    disableTyping: false,
   },
 };
 

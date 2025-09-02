@@ -1,16 +1,16 @@
-import React, { useRef } from 'react'
-import MarkdownFlow from './MarkdownFlow'
-import useScrollToBottom from './useScrollToBottom'
-import { OnSendContentParams, CustomRenderBarProps } from '../types'
-import { ChevronDown } from 'lucide-react'
-import { Button } from '../ui/button'
-import type { MarkdownFlowProps } from './MarkdownFlow'
+import React, { useRef } from 'react';
+import MarkdownFlow from './MarkdownFlow';
+import useScrollToBottom from './useScrollToBottom';
+import { OnSendContentParams, CustomRenderBarProps } from '../types';
+import { ChevronDown } from 'lucide-react';
+import { Button } from '../ui/button';
+import type { MarkdownFlowProps } from './MarkdownFlow';
 
-import './markdownFlow.css'
+import './markdownFlow.css';
 
 export interface ScrollableMarkdownFlowProps extends MarkdownFlowProps {
-  height?: string | number
-  className?: string
+  height?: string | number;
+  className?: string;
 }
 
 const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
@@ -24,22 +24,22 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
   className = '',
   ...restProps
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const { showScrollToBottom, handleUserScrollToBottom } = useScrollToBottom(
     containerRef,
     [
       initialContentList?.length >= 1
         ? JSON.stringify(initialContentList[initialContentList?.length - 1])
-        : null
+        : null,
     ],
     {
       // Listen for content count changes
       behavior: 'smooth',
       autoScrollOnInit: true,
-      scrollDelay: 100
+      scrollDelay: 100,
     }
-  )
+  );
 
   return (
     <div
@@ -70,7 +70,7 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
         </Button>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default ScrollableMarkdownFlow
+export default ScrollableMarkdownFlow;

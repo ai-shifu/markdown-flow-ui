@@ -30,12 +30,12 @@ const meta = {
       description: 'Whether the editor is read-only',
     },
   },
-  args: { 
+  args: {
     value: '',
-    onChange: (value) => console.log(value),
+    onChange: value => console.log(value),
     className: '',
     readOnly: false,
-   },
+  },
 } satisfies Meta<typeof MarkdownFlowEditor>;
 
 export default meta;
@@ -75,10 +75,8 @@ export const MarkdownFlowEditorStory: Story = {
 问用户是不是真的是人类？如果是，请登录
 
 ?[登录](login_url)`,
-  onChange: (value) => {
-    console.log(value)
-  },
-
+    onChange: value => {
+      console.log(value);
+    },
   },
 };
-

@@ -1,33 +1,33 @@
-import React from 'react'
-import { Button } from '../../ui/button'
-import { Input } from '../../ui/input'
-import type { Components } from 'react-markdown'
-import { OnSendContentParams } from '../../types'
-import { SendIcon } from 'lucide-react'
+import React from 'react';
+import { Button } from '../../ui/button';
+import { Input } from '../../ui/input';
+import type { Components } from 'react-markdown';
+import { OnSendContentParams } from '../../types';
+import { SendIcon } from 'lucide-react';
 
 // 定义自定义变量节点的类型
 interface CustomVariableNode {
-  tagName: 'custom-variable'
+  tagName: 'custom-variable';
   properties?: {
-    variableName?: string
-    buttonTexts?: string[]
-    buttonValues?: string[]
-    placeholder?: string
-  }
+    variableName?: string;
+    buttonTexts?: string[];
+    buttonValues?: string[];
+    placeholder?: string;
+  };
 }
 
 // 定义自定义变量组件的 Props 类型
 interface CustomVariableProps {
-  node: CustomVariableNode
-  defaultButtonText?: string
-  defaultInputText?: string
-  readonly?: boolean
-  onSend?: (content: OnSendContentParams) => void
-  tooltipMinLength?: number // 控制tooltip显示的最小字符长度，默认10
+  node: CustomVariableNode;
+  defaultButtonText?: string;
+  defaultInputText?: string;
+  readonly?: boolean;
+  onSend?: (content: OnSendContentParams) => void;
+  tooltipMinLength?: number; // 控制tooltip显示的最小字符长度，默认10
 }
 
 interface ComponentsWithCustomVariable extends Components {
-  'custom-variable'?: React.ComponentType<CustomVariableProps>
+  'custom-variable'?: React.ComponentType<CustomVariableProps>;
 }
 
 // 定义自定义变量组件
@@ -37,31 +37,31 @@ const CustomButtonInputVariable = ({
   defaultButtonText,
   defaultInputText,
   onSend,
-  tooltipMinLength = 10
+  tooltipMinLength = 10,
 }: CustomVariableProps) => {
-  const [inputValue, setInputValue] = React.useState(defaultInputText || '')
+  const [inputValue, setInputValue] = React.useState(defaultInputText || '');
 
   const handleButtonClick = (value: string) => {
     onSend?.({
       variableName: node.properties?.variableName || '',
-      buttonText: value
-    })
-  }
+      buttonText: value,
+    });
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value)
-  }
+    setInputValue(e.target.value);
+  };
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      handleSendClick()
+      handleSendClick();
     }
-  }
+  };
   const handleSendClick = () => {
     onSend?.({
       variableName: node.properties?.variableName || '',
-      inputText: inputValue
-    })
-  }
+      inputText: inputValue,
+    });
+  };
 
   return (
     <span className='custom-variable-container inline-flex items-center gap-2 flex-wrap'>
@@ -76,7 +76,7 @@ const CustomButtonInputVariable = ({
           className={`cursor-pointer h-6 text-sm hover:bg-gray-200`}
           style={{
             backgroundColor: defaultButtonText === text ? 'var(--primary, #2563eb)' : undefined,
-            color: defaultButtonText === text ? 'var(--primary-foreground, white)' : undefined
+            color: defaultButtonText === text ? 'var(--primary-foreground, white)' : undefined,
           }}
         >
           {text}
@@ -95,7 +95,7 @@ const CustomButtonInputVariable = ({
             style={{
               border: 'none',
               outline: 'none',
-              boxShadow: 'none'
+              boxShadow: 'none',
             }}
             title={node.properties.placeholder}
           />
@@ -124,12 +124,8 @@ const CustomButtonInputVariable = ({
         </span>
       )}
     </span>
-  )
-}
+  );
+};
 
-export default CustomButtonInputVariable
-export type {
-  CustomVariableProps,
-  CustomVariableNode,
-  ComponentsWithCustomVariable
-}
+export default CustomButtonInputVariable;
+export type { CustomVariableProps, CustomVariableNode, ComponentsWithCustomVariable };

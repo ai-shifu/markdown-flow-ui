@@ -12,7 +12,7 @@ const meta = {
   },
   tags: ['autodocs'],
   argTypes: {
-      defaultContent: {
+    defaultContent: {
       control: 'text',
       description: 'Markdown content to render',
     },
@@ -21,9 +21,9 @@ const meta = {
       description: 'Session ID for the request',
     },
   },
-  args: {   
+  args: {
     defaultContent: '',
-    sessionId: ''
+    sessionId: '',
   },
 } satisfies Meta<typeof Playground>;
 
@@ -65,13 +65,11 @@ export const PlaygroundStory1: Story = {
 问用户是不是真的是人类？如果是，请登录
 
 ?[登录]`,
-styles: {
-    height: '500px',
-    width: '500px',
-    border: '1px solid #ccc',
+    styles: {
+      height: '500px',
+      width: '500px',
+      border: '1px solid #ccc',
+    },
+    disableTyping: false,
   },
-  disableTyping: false
-
-  },
-  
 };

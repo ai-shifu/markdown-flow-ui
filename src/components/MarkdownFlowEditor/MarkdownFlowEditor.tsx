@@ -16,7 +16,7 @@ const MarkdownFlowEditor: React.FC<MarkdownFlowEditorProps> = ({
   onChange,
   className = '',
   readOnly = false,
-  maxWidth = '100%' // Default max width is 100%
+  maxWidth = '100%', // Default max width is 100%
 }) => {
   const [markdownContent, setMarkdownContent] = useState(value);
 
@@ -28,20 +28,15 @@ const MarkdownFlowEditor: React.FC<MarkdownFlowEditorProps> = ({
   };
 
   return (
-    <Card 
-      className={`w-full h-full flex flex-col ${className}`}
-      style={{ maxWidth }}
-    >
-      <CardHeader className="flex-shrink-0">
+    <Card className={`w-full h-full flex flex-col ${className}`} style={{ maxWidth }}>
+      <CardHeader className='flex-shrink-0'>
         <CardTitle>Markdown Flow Editor</CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 px-6">
+      <CardContent className='flex-1 px-6'>
         <CodeMirror
           value={markdownContent}
-          height="100%"
-          extensions={[
-            markdown()
-          ]}
+          height='100%'
+          extensions={[markdown()]}
           onChange={handleChange}
           editable={!readOnly}
           basicSetup={{
@@ -53,7 +48,7 @@ const MarkdownFlowEditor: React.FC<MarkdownFlowEditorProps> = ({
           style={{
             height: '100%',
             width: '100%',
-            overflowWrap: 'break-word' // Auto line wrapping
+            overflowWrap: 'break-word', // Auto line wrapping
           }}
         />
       </CardContent>

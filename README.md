@@ -13,7 +13,7 @@ Unlike standard markdown renderers, Markdown Flow UI is specifically built for *
 
 - 🎭 **Streaming Typewriter Effects** - Text appears character by character, just like ChatGPT
 - 🎯 **Interactive Components** - Buttons and form inputs embedded directly in markdown
-- 🔄 **Server-Sent Events (SSE) Support** - Real-time streaming from your AI backend  
+- 🔄 **Server-Sent Events (SSE) Support** - Real-time streaming from your AI backend
 - 📱 **Conversation Flow Management** - Handle multiple message blocks with auto-scroll
 - 🎨 **Zero Configuration** - Works out of the box with beautiful defaults
 
@@ -36,7 +36,7 @@ import { MarkdownFlow } from 'markdown-flow-ui';
 
 function ChatMessage() {
   const [content, setContent] = useState('');
-  
+
   // Simulate streaming from AI
   useEffect(() => {
     const text = "# Hello! 👋\n\nI'm an AI assistant. How can I **help** you today?";
@@ -48,7 +48,7 @@ function ChatMessage() {
   }, []);
 
   return (
-    <MarkdownFlow 
+    <MarkdownFlow
       initialContentList={[{ content }]}
       disableTyping={false}
     />
@@ -141,7 +141,7 @@ Code editor with markdown preview and flow syntax support.
 
 **Perfect for:**
 - ✅ ChatGPT-style interfaces
-- ✅ AI assistant applications  
+- ✅ AI assistant applications
 - ✅ Real-time chat systems
 - ✅ Interactive documentation
 - ✅ Educational platforms with guided content
@@ -200,7 +200,7 @@ Open [http://localhost:6006](http://localhost:6006) to view the interactive docu
 
 ### Scripts
 - `pnpm dev` - Next.js development server
-- `pnpm storybook` - Component documentation and examples  
+- `pnpm storybook` - Component documentation and examples
 - `pnpm build` - Production build
 - `pnpm lint` - Code linting
 

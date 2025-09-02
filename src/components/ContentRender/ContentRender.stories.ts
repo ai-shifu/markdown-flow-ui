@@ -1,23 +1,23 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 // import { fn } from 'storybook/test';
 
-import ContentRender from './ContentRender';
+import ContentRender from "./ContentRender";
 
 const meta = {
-  title: 'MarkdownFlow/ContentRender',
+  title: "MarkdownFlow/ContentRender",
   component: ContentRender,
   parameters: {
-    layout: 'centered',
+    layout: "centered",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     content: {
-      control: 'text',
-      description: 'Markdown content to render',
+      control: "text",
+      description: "Markdown content to render",
     },
   },
-  args: { content: '' },
+  args: { content: "" },
 } satisfies Meta<typeof ContentRender>;
 
 export default meta;
@@ -27,13 +27,13 @@ export const ContentRenderStory1: Story = {
   args: {
     content: `
   ## 欢迎使用自定义按钮
-  
+
   点击继续: ?[Continue]
 
   点击继续: ?[Continue//cc]
-  
+
   点击继续: ?[Continue//cc|cancel//ccc]
-  
+
   或者尝试: ?[确认提交]
 
   或者尝试: ?[%{{inputVariable}}确认提交]
@@ -62,7 +62,7 @@ export const ContentRenderStory1: Story = {
 console.log('Hello World');
 
   `,
-    disableTyping: false
+    disableTyping: false,
   },
 };
 
@@ -102,7 +102,7 @@ export const ContentRenderStory2: Story = {
 ?[登录](login_url)
 
   `,
-    disableTyping: false
+    disableTyping: false,
   },
 };
 
@@ -201,7 +201,7 @@ export const ContentRenderStory4: Story = {
   args: {
     disableTyping: true,
     content: `# Markdown 语法示例 \n\n ## 基础文本样式
-**粗体文本**、*斜体文本*、~~删除线文本~~、\`行内代码\` 
+**粗体文本**、*斜体文本*、~~删除线文本~~、\`行内代码\`
 
 ?[%{{ sys_user_style }}幽默|大气|二次元｜...能否详细说明你偏好的风格特征]
 

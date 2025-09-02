@@ -1,5 +1,5 @@
 /* Override github-markdown-css to force light mode only */
-@import 'github-markdown-css/github-markdown.css';
+@import "github-markdown-css/github-markdown.css";
 
 /* Force light theme for all markdown content, even in dark mode */
 @media (prefers-color-scheme: dark) {

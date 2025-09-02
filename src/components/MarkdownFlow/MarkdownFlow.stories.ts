@@ -1,21 +1,24 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 // import { fn } from 'storybook/test';
 
-import MarkdownFlow from './MarkdownFlow';
+import MarkdownFlow from "./MarkdownFlow";
 
 const meta = {
-  title: 'MarkdownFlow/MarkdownFlow',
+  title: "MarkdownFlow/MarkdownFlow",
   component: MarkdownFlow,
   parameters: {
-    layout: 'centered',
+    layout: "centered",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     initialContentList: {
-      description: 'MarkdownFlow 内容列表',
+      description: "MarkdownFlow 内容列表",
       table: {
-        type: { summary: '{ content: string; inputText?: string; buttonText?: string; variableName?: string; }[]' },
+        type: {
+          summary:
+            "{ content: string; inputText?: string; buttonText?: string; variableName?: string; }[]",
+        },
       },
     },
   },
@@ -29,11 +32,11 @@ export const MarkdownFlowStory: Story = {
   args: {
     initialContentList: [
       {
-        content: `你好呀！👋 我是孙志岗，很高兴能和你一起探索AI的奇妙世界~ \n\n在开始之前，我想先和你聊聊为什么学习AI这么重要🌟：\n\n- AI正在改变我们的生活、工作和学习方式\n\n- 掌握AI技能可以让你在未来更有竞争力\n\n- 学习AI不仅能解决实际问题，还能培养创新思维\n\n说了这么多，还不知道该怎么称呼你呢？😊 可以告诉我你的名字或你喜欢的称呼吗？`
+        content: `你好呀！👋 我是孙志岗，很高兴能和你一起探索AI的奇妙世界~ \n\n在开始之前，我想先和你聊聊为什么学习AI这么重要🌟：\n\n- AI正在改变我们的生活、工作和学习方式\n\n- 掌握AI技能可以让你在未来更有竞争力\n\n- 学习AI不仅能解决实际问题，还能培养创新思维\n\n说了这么多，还不知道该怎么称呼你呢？😊 可以告诉我你的名字或你喜欢的称呼吗？`,
       },
       {
-        content: '?[%{{ sys_user_nickname }}...希望我怎么称呼你？]',
-        defaultInputText: 'amy',
+        content: "?[%{{ sys_user_nickname }}...希望我怎么称呼你？]",
+        defaultInputText: "amy",
         readonly: true,
       },
       {
@@ -41,7 +44,7 @@ export const MarkdownFlowStory: Story = {
       },
       {
         content: `?[继续]`,
-        defaultButtonText: '继续',
+        defaultButtonText: "继续",
         readonly: true,
       },
       {
@@ -49,7 +52,7 @@ export const MarkdownFlowStory: Story = {
       },
       {
         content: `?[%{{ gender }}男|女]`,
-        defaultButtonText: '男',
+        defaultButtonText: "男",
         readonly: true,
       },
       {
@@ -57,7 +60,7 @@ export const MarkdownFlowStory: Story = {
       },
       {
         content: `?[%{{ sys_user_style }}幽默|大气|二次元｜...具体描述下你喜欢的风格]`,
-        defaultButtonText: '幽默',
+        defaultButtonText: "幽默",
         readonly: true,
       },
     ],

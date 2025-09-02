@@ -1,13 +1,9 @@
 {
-  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "./dist",
+    "declaration": true,
     "noEmit": false,
-    "declaration": true
+    "outDir": "./dist"
   },
-  "include": [
-    "src/**/*"
-  ],
   "exclude": [
     "node_modules",
     "dist",
@@ -15,5 +11,9 @@
     "src/**/*.stories.ts",
     "src/**/*.test.tsx",
     "src/**/*.spec.tsx"
+  ],
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/**/*"
   ]
 }

@@ -1,212 +1,212 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { fetchEventSource } from '@microsoft/fetch-event-source'
+import { useState, useEffect, useRef, useCallback } from "react";
+import { fetchEventSource } from "@microsoft/fetch-event-source";
 
 interface UseSSEReturn<T = any> {
-  data: T | null
-  isLoading: boolean
-  error: Error | null
-  sseIndex: number | null
-  connect: () => Promise<void>
-  close: () => void
+  data: T | null;
+  isLoading: boolean;
+  error: Error | null;
+  sseIndex: number | null;
+  connect: () => Promise<void>;
+  close: () => void;
 }
 
-const FINISHED_MESSAGE = '[DONE]'
+const FINISHED_MESSAGE = "[DONE]";
 
 interface UseSSEOptions extends RequestInit {
-  autoConnect?: boolean
-  onStart?: (index: number) => void
-  onFinish?: (finalData: any, index: number) => void
-  maxRetries?: number
-  retryDelay?: number
+  autoConnect?: boolean;
+  onStart?: (index: number) => void;
+  onFinish?: (finalData: any, index: number) => void;
+  maxRetries?: number;
+  retryDelay?: number;
 }
 
 type ConnectionState =
-  | 'disconnected'
-  | 'connecting'
-  | 'connected'
-  | 'error'
-  | 'closed'
+  | "disconnected"
+  | "connecting"
+  | "connected"
+  | "error"
+  | "closed";
 
 const useSSE = <T = any>(
   url: string,
-  options: UseSSEOptions = {}
+  options: UseSSEOptions = {},
 ): UseSSEReturn<T> => {
-  const [data, setData] = useState<T | null>(null)
-  const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [error, setError] = useState<Error | null>(null)
-  const [sseIndex, setSseIndex] = useState<number | null>(null)
+  const [data, setData] = useState<T | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [sseIndex, setSseIndex] = useState<number | null>(null);
 
-  const abortControllerRef = useRef<AbortController | null>(null)
-  const mountedRef = useRef(true)
-  const connectionStateRef = useRef<ConnectionState>('disconnected')
-  const currentIndexRef = useRef(-1)
-  const finalDataRef = useRef<string>('')
-  const retryCountRef = useRef(0)
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
+  const connectionStateRef = useRef<ConnectionState>("disconnected");
+  const currentIndexRef = useRef(-1);
+  const finalDataRef = useRef<string>("");
+  const retryCountRef = useRef(0);
 
-  const { autoConnect = true, maxRetries = 3, retryDelay = 1000 } = options
+  const { autoConnect = true, maxRetries = 3, retryDelay = 1000 } = options;
 
   const isActive = () =>
-    mountedRef.current && connectionStateRef.current !== 'closed'
+    mountedRef.current && connectionStateRef.current !== "closed";
 
   const retry = useCallback(async () => {
     if (retryCountRef.current < maxRetries && isActive()) {
-      retryCountRef.current++
-      await new Promise(resolve => setTimeout(resolve, retryDelay))
+      retryCountRef.current++;
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
       if (isActive()) {
-        await connect()
+        await connect();
       }
     }
-  }, [maxRetries, retryDelay])
+  }, [maxRetries, retryDelay]);
 
   const connect = useCallback(async () => {
     if (
-      connectionStateRef.current === 'connecting' ||
-      connectionStateRef.current === 'connected' ||
+      connectionStateRef.current === "connecting" ||
+      connectionStateRef.current === "connected" ||
       !isActive()
     ) {
-      return
+      return;
     }
 
     try {
-      connectionStateRef.current = 'connecting'
-      setIsLoading(true)
-      setError(null)
+      connectionStateRef.current = "connecting";
+      setIsLoading(true);
+      setError(null);
 
-      const newIndex = ++currentIndexRef.current
-      setSseIndex(newIndex)
-      finalDataRef.current = ''
+      const newIndex = ++currentIndexRef.current;
+      setSseIndex(newIndex);
+      finalDataRef.current = "";
 
-      const abortController = new AbortController()
-      abortControllerRef.current = abortController
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
 
       await fetchEventSource(url, {
         ...options,
-        method: 'POST',
+        method: "POST",
         headers: {
-          Accept: 'text/event-stream',
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
+          Accept: "text/event-stream",
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
           ...Object.entries(options.headers || {}).reduce(
             (acc, [key, value]) => {
-              acc[key] = String(value)
-              return acc
+              acc[key] = String(value);
+              return acc;
             },
-            {} as Record<string, string>
-          )
+            {} as Record<string, string>,
+          ),
         },
         signal: abortController.signal,
         openWhenHidden: true,
-        onopen: async response => {
+        onopen: async (response) => {
           if (isActive()) {
-            connectionStateRef.current = 'connected'
-            setIsLoading(false)
-            setError(null)
-            retryCountRef.current = 0
-            options.onStart?.(newIndex)
+            connectionStateRef.current = "connected";
+            setIsLoading(false);
+            setError(null);
+            retryCountRef.current = 0;
+            options.onStart?.(newIndex);
           }
         },
-        onmessage: event => {
+        onmessage: (event) => {
           if (isActive()) {
             if (event.data.toUpperCase() === FINISHED_MESSAGE) {
-              options.onFinish?.(finalDataRef.current, newIndex)
-              close()
-              return
+              options.onFinish?.(finalDataRef.current, newIndex);
+              close();
+              return;
             }
             try {
-              let parsedData: any = event.data
-              finalDataRef.current += parsedData
-              setData(finalDataRef.current as any)
+              let parsedData: any = event.data;
+              finalDataRef.current += parsedData;
+              setData(finalDataRef.current as any);
             } catch (err) {
-              console.warn('Failed to process SSE message:', err)
+              console.warn("Failed to process SSE message:", err);
             }
           }
         },
         onclose: () => {
           if (isActive()) {
-            connectionStateRef.current = 'disconnected'
-            setIsLoading(false)
+            connectionStateRef.current = "disconnected";
+            setIsLoading(false);
           }
         },
-        onerror: err => {
+        onerror: (err) => {
           if (isActive()) {
-            connectionStateRef.current = 'error'
-            setError(err)
-            setIsLoading(false)
-            retry()
+            connectionStateRef.current = "error";
+            setError(err);
+            setIsLoading(false);
+            retry();
           }
-          throw err
-        }
-      })
+          throw err;
+        },
+      });
     } catch (err) {
       if (isActive()) {
-        connectionStateRef.current = 'error'
-        setError(err as Error)
-        setIsLoading(false)
-        retry()
+        connectionStateRef.current = "error";
+        setError(err as Error);
+        setIsLoading(false);
+        retry();
       }
     }
-  }, [url, JSON.stringify(options), retry])
+  }, [url, JSON.stringify(options), retry]);
 
   const close = useCallback(() => {
-    connectionStateRef.current = 'closed'
-    retryCountRef.current = 0
+    connectionStateRef.current = "closed";
+    retryCountRef.current = 0;
 
     if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-      abortControllerRef.current = null
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
 
     if (mountedRef.current) {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    mountedRef.current = true
-    connectionStateRef.current = 'disconnected'
-    retryCountRef.current = 0
+    mountedRef.current = true;
+    connectionStateRef.current = "disconnected";
+    retryCountRef.current = 0;
 
     if (autoConnect) {
       const timeoutId = setTimeout(() => {
-        if (connectionStateRef.current === 'disconnected') {
-          connect()
+        if (connectionStateRef.current === "disconnected") {
+          connect();
         }
-      }, 100)
+      }, 100);
 
       return () => {
-        mountedRef.current = false
-        clearTimeout(timeoutId)
-        close()
-      }
+        mountedRef.current = false;
+        clearTimeout(timeoutId);
+        close();
+      };
     } else {
       return () => {
-        mountedRef.current = false
-        close()
-      }
+        mountedRef.current = false;
+        close();
+      };
     }
-  }, [connect, close, autoConnect])
+  }, [connect, close, autoConnect]);
 
   // Listen for url and options changes to reconnect
   useEffect(() => {
-    if (connectionStateRef.current !== 'disconnected') {
-      close()
-      setData(null)
-      setError(null)
-      finalDataRef.current = ''
-      connectionStateRef.current = 'disconnected'
-      retryCountRef.current = 0
+    if (connectionStateRef.current !== "disconnected") {
+      close();
+      setData(null);
+      setError(null);
+      finalDataRef.current = "";
+      connectionStateRef.current = "disconnected";
+      retryCountRef.current = 0;
 
       const timeoutId = setTimeout(() => {
-        if (connectionStateRef.current === 'disconnected' && isActive()) {
-          connect()
+        if (connectionStateRef.current === "disconnected" && isActive()) {
+          connect();
         }
-      }, 100)
+      }, 100);
 
       return () => {
-        clearTimeout(timeoutId)
-      }
+        clearTimeout(timeoutId);
+      };
     }
-  }, [url, JSON.stringify(options), connect, close])
+  }, [url, JSON.stringify(options), connect, close]);
 
   return {
     data,
@@ -214,8 +214,8 @@ const useSSE = <T = any>(
     error,
     sseIndex,
     connect,
-    close
-  }
-}
+    close,
+  };
+};
 
-export default useSSE
+export default useSSE;

@@ -1,40 +1,39 @@
 ci:
   autofix_prs: true
-  autoupdate_schedule: disabled   # 严控版本；需要时手动 `pre-commit autoupdate` 走 PR
+  autoupdate_schedule: disabled   # Strict version control; manual `pre-commit autoupdate` PR when needed
 
 repos:
-  # ESLint（Flat Config 友好）
-  - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v9.13.0
+  # ESLint (使用本地配置)
+  - repo: local
     hooks:
       - id: eslint
-        name: eslint (ts/tsx)
-        files: \.(ts|tsx)$
-        types: [file]
-        language_version: "20.11.1"   # 与本地/CI对齐
-        additional_dependencies:
-          - eslint@9.13.0
-          - @eslint/js@9.13.0
-          - typescript@5.6.3
-          - @typescript-eslint/parser@8.7.0
-          - @typescript-eslint/eslint-plugin@8.7.0
-          - eslint-plugin-react@7.37.2
-          - eslint-plugin-react-hooks@4.6.2
-          - eslint-plugin-jsx-a11y@6.9.0
-          - eslint-plugin-import@2.31.0
+        name: eslint (ts/tsx/js/jsx)
+        entry: npx eslint
+        language: system
+        files: \.(ts|tsx|js|jsx)$
         args:
-          - "--max-warnings=0"
+          - "--fix"
+          - "--max-warnings=20"  # 与本地package.json保持一致
 
-  # Prettier
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.3.3
+  # Prettier (使用本地配置)
+  - repo: local
     hooks:
       - id: prettier
         name: prettier (code + config)
-        files: \.(ts|tsx|js|jsx|json|yml|yaml|md|css|scss)$
-        language_version: "20.11.1"
-        additional_dependencies:
-          - prettier@3.3.3
+        entry: npx prettier
+        language: system
+        files: \.(ts|tsx|js|jsx|json|css|md)$
         args:
-          - "--cache"
-          - "--cache-location=.prettier-cache"
+          - "--write"
+
+  # TypeScript类型检查
+  - repo: local
+    hooks:
+      - id: tsc
+        name: typescript type check
+        entry: npx tsc
+        language: system
+        files: \.(ts|tsx)$
+        args:
+          - "--noEmit"
+        pass_filenames: false

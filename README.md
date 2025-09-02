@@ -1,11 +1,23 @@
-# Markdown Flow UI
+<div align="center">
+  <h1>Markdown Flow UI</h1>
+  <p><strong>A React library designed for conversational AI applications with streaming typewriter effects and interactive components.</strong></p>
+  
+  English | [简体中文](README_ZH-CN.md)
+  
+  [![npm version](https://badge.fury.io/js/markdown-flow-ui.svg)](https://badge.fury.io/js/markdown-flow-ui)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
+  [![Storybook](https://img.shields.io/badge/Storybook-Enabled-ff69b4.svg)](https://storybook.js.org/)
 
-**A React library designed for conversational AI applications with streaming typewriter effects and interactive components.**
+</div>
 
-Perfect for building ChatGPT-like interfaces, AI assistants, and real-time conversation experiences.
+Perfect for building ChatGPT-like interfaces, AI assistants, and real-time conversation experiences. This library powers the conversational UI components used in [AI-Shifu](https://ai-shifu.com), an AI-driven educational platform.
 
-[![npm version](https://badge.fury.io/js/markdown-flow-ui.svg)](https://badge.fury.io/js/markdown-flow-ui)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+## 🤝 Part of the AI-Shifu Ecosystem
+
+Markdown Flow UI is the core UI component library that powers [AI-Shifu](https://github.com/ai-shifu/ai-shifu), an open-source conversational AI platform. While this library can be used standalone, it was specifically designed to create personalized, interactive learning experiences in AI-driven applications.
+
+**🌟 See it in action:** Visit [AI-Shifu.com](https://ai-shifu.com) to experience the library in a real-world educational platform.
 
 ## 📚 Documentation
 
@@ -201,7 +213,7 @@ Full TypeScript support with comprehensive type definitions for all components a
 ### Prerequisites
 
 - Node.js 18+
-- pnpm (recommended)
+- pnpm (recommended) or npm
 
 ### Setup
 
@@ -216,10 +228,28 @@ Open [http://localhost:6006](http://localhost:6006) to view the interactive docu
 
 ### Scripts
 
-- `pnpm dev` - Next.js development server
-- `pnpm storybook` - Component documentation and examples
-- `pnpm build` - Production build
-- `pnpm lint` - Code linting
+| Script | Description |
+|--------|-------------|
+| `pnpm dev` | Next.js development server for testing |
+| `pnpm storybook` | Interactive component documentation |
+| `pnpm build` | Build library for production |
+| `pnpm build-storybook` | Build static Storybook documentation |
+| `pnpm lint` | ESLint code quality checks |
+| `pnpm format` | Prettier code formatting |
+| `pnpm test` | Run test suite |
+
+### Integration with AI-Shifu
+
+This library is actively used in the [AI-Shifu project](https://github.com/ai-shifu/ai-shifu). To see how it integrates with a full conversational AI platform:
+
+```bash
+# Clone and setup AI-Shifu
+git clone https://github.com/ai-shifu/ai-shifu.git
+cd ai-shifu/docker
+cp .env.example.minimal .env
+# Configure your .env file
+docker compose up -d
+```
 
 ## 🤝 Contributing
 

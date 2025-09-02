@@ -7,6 +7,10 @@ Perfect for building ChatGPT-like interfaces, AI assistants, and real-time conve
 [![npm version](https://badge.fury.io/js/markdown-flow-ui.svg)](https://badge.fury.io/js/markdown-flow-ui)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+## 📚 Documentation
+
+- **[AGENTS.md](./AGENTS.md)** - Complete guide for AI agents and development (Claude Code, Codex, etc.)
+
 ## ✨ Why Choose Markdown Flow UI?
 
 Unlike standard markdown renderers, Markdown Flow UI is specifically built for **conversational AI interfaces**:

@@ -206,28 +206,28 @@ import { MarkdownFlow } from './MarkdownFlow';
 describe('MarkdownFlow', () => {
   it('renders with initial content', () => {
     const content = [{ content: '# Hello World' }];
-    
+
     render(<MarkdownFlow initialContentList={content} />);
-    
+
     expect(screen.getByRole('heading', { level: 1 }))
       .toHaveTextContent('Hello World');
   });
 
   it('handles empty content list', () => {
     render(<MarkdownFlow initialContentList={[]} />);
-    
+
     // Should not crash and render empty container
     expect(screen.getByTestId('markdown-flow')).toBeInTheDocument();
   });
 
   it('applies custom className', () => {
     render(
-      <MarkdownFlow 
+      <MarkdownFlow
         initialContentList={[]}
         className="custom-flow"
       />
     );
-    
+
     expect(screen.getByTestId('markdown-flow'))
       .toHaveClass('markdown-flow', 'custom-flow');
   });
@@ -246,7 +246,7 @@ describe('ContentRender - User Interactions', () => {
   it('handles button clicks', async () => {
     const user = userEvent.setup();
     const onSend = vi.fn();
-    
+
     render(
       <ContentRender
         content="Click here: ?[Submit]"
@@ -254,10 +254,10 @@ describe('ContentRender - User Interactions', () => {
         readonly={false}
       />
     );
-    
+
     const button = screen.getByRole('button', { name: 'Submit' });
     await user.click(button);
-    
+
     expect(onSend).toHaveBeenCalledWith({
       buttonText: 'Submit'
     });
@@ -266,7 +266,7 @@ describe('ContentRender - User Interactions', () => {
   it('handles input field changes', async () => {
     const user = userEvent.setup();
     const onSend = vi.fn();
-    
+
     render(
       <ContentRender
         content="Enter name: ?[%{{name}} Your name...]"
@@ -274,11 +274,11 @@ describe('ContentRender - User Interactions', () => {
         readonly={false}
       />
     );
-    
+
     const input = screen.getByPlaceholderText('Your name...');
     await user.type(input, 'John Doe');
     await user.keyboard('{Enter}');
-    
+
     expect(onSend).toHaveBeenCalledWith({
       variableName: 'name',
       inputText: 'John Doe'
@@ -304,7 +304,7 @@ describe('useTypewriter', () => {
   });
 
   it('types text progressively', async () => {
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useTypewriter('Hello World', 10, false)
     );
 
@@ -327,7 +327,7 @@ describe('useTypewriter', () => {
   });
 
   it('can be paused and resumed', () => {
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useTypewriter('Hello', 10, false)
     );
 
@@ -372,7 +372,7 @@ describe('MarkdownFlow', () => {
 
   it('renders multiple content blocks', () => {
     render(<MarkdownFlow initialContentList={mockContentList} />);
-    
+
     expect(screen.getByRole('heading', { level: 1 }))
       .toHaveTextContent('Welcome');
     expect(screen.getByText('This is the first block.'))
@@ -383,13 +383,13 @@ describe('MarkdownFlow', () => {
 
   it('handles typewriter effects correctly', async () => {
     render(
-      <MarkdownFlow 
+      <MarkdownFlow
         initialContentList={[{ content: 'Hello', isFinished: false }]}
         typingSpeed={10}
         disableTyping={false}
       />
     );
-    
+
     // Initially should be empty or show partial content
     await waitFor(() => {
       expect(screen.getByText('Hello')).toBeInTheDocument();
@@ -398,7 +398,7 @@ describe('MarkdownFlow', () => {
 
   it('calls onBlockComplete when typing finishes', async () => {
     const onBlockComplete = vi.fn();
-    
+
     render(
       <MarkdownFlow
         initialContentList={[{ content: 'Test', isFinished: false }]}
@@ -407,7 +407,7 @@ describe('MarkdownFlow', () => {
         disableTyping={false}
       />
     );
-    
+
     await waitFor(() => {
       expect(onBlockComplete).toHaveBeenCalledWith(0);
     });
@@ -416,20 +416,20 @@ describe('MarkdownFlow', () => {
   it('handles user interactions from content blocks', async () => {
     const user = userEvent.setup();
     const onSend = vi.fn();
-    
+
     render(
       <MarkdownFlow
-        initialContentList={[{ 
+        initialContentList={[{
           content: '?[Click Me]',
           isFinished: false
         }]}
         onSend={onSend}
       />
     );
-    
+
     const button = screen.getByRole('button', { name: 'Click Me' });
     await user.click(button);
-    
+
     expect(onSend).toHaveBeenCalledWith({
       buttonText: 'Click Me'
     });
@@ -453,9 +453,9 @@ describe('ContentRender', () => {
 *Italic text*
 [Link](https://example.com)
       `.trim();
-      
+
       render(<ContentRender content={markdown} />);
-      
+
       expect(screen.getByRole('heading', { level: 1 }))
         .toHaveTextContent('Heading');
       expect(screen.getByText('Bold text'))
@@ -474,9 +474,9 @@ function hello() {
 }
 \`\`\`
       `.trim();
-      
+
       render(<ContentRender content={markdown} />);
-      
+
       const codeBlock = screen.getByText('function hello() {');
       expect(codeBlock).toBeInTheDocument();
       expect(codeBlock.closest('code')).toHaveClass('language-javascript');
@@ -489,9 +489,9 @@ function hello() {
 | John | 25  |
 | Jane | 30  |
       `.trim();
-      
+
       render(<ContentRender content={markdown} />);
-      
+
       expect(screen.getByRole('table')).toBeInTheDocument();
       expect(screen.getByRole('cell', { name: 'John' }))
         .toBeInTheDocument();
@@ -501,36 +501,36 @@ function hello() {
   describe('Interactive Elements', () => {
     it('renders custom buttons', () => {
       render(
-        <ContentRender 
+        <ContentRender
           content="Click here: ?[Custom Button]"
           readonly={false}
         />
       );
-      
+
       expect(screen.getByRole('button', { name: 'Custom Button' }))
         .toBeInTheDocument();
     });
 
     it('renders input fields', () => {
       render(
-        <ContentRender 
+        <ContentRender
           content="Enter text: ?[%{{input}} Placeholder text...]"
           readonly={false}
         />
       );
-      
+
       expect(screen.getByPlaceholderText('Placeholder text...'))
         .toBeInTheDocument();
     });
 
     it('renders multiple choice options', () => {
       render(
-        <ContentRender 
+        <ContentRender
           content="Choose: ?[%{{choice}} Option A | Option B | Option C]"
           readonly={false}
         />
       );
-      
+
       expect(screen.getByText('Option A')).toBeInTheDocument();
       expect(screen.getByText('Option B')).toBeInTheDocument();
       expect(screen.getByText('Option C')).toBeInTheDocument();
@@ -546,9 +546,9 @@ graph TD
     B --> C[End]
 \`\`\`
       `.trim();
-      
+
       render(<ContentRender content={markdown} />);
-      
+
       // Mermaid creates SVG elements
       expect(screen.getByRole('img')).toBeInTheDocument();
     });
@@ -557,7 +557,7 @@ graph TD
   describe('Math Rendering', () => {
     it('renders inline math', () => {
       render(<ContentRender content="The equation is $E = mc^2$" />);
-      
+
       // KaTeX adds specific classes for math
       expect(document.querySelector('.katex')).toBeInTheDocument();
     });
@@ -568,9 +568,9 @@ $$
 \\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}
 $$
       `.trim();
-      
+
       render(<ContentRender content={markdown} />);
-      
+
       expect(document.querySelector('.katex-display')).toBeInTheDocument();
     });
   });
@@ -589,7 +589,7 @@ $$
 invalid mermaid syntax
 \`\`\`
       `.trim();
-      
+
       expect(() => {
         render(<ContentRender content={markdown} />);
       }).not.toThrow();
@@ -614,51 +614,51 @@ describe('ScrollableMarkdownFlow', () => {
 
   it('renders with scroll container', () => {
     render(
-      <ScrollableMarkdownFlow 
+      <ScrollableMarkdownFlow
         initialContentList={mockContent}
         height="400px"
       />
     );
-    
+
     const container = screen.getByTestId('scrollable-container');
     expect(container).toHaveStyle('height: 400px');
   });
 
   it('shows scroll-to-bottom button when not at bottom', async () => {
     render(
-      <ScrollableMarkdownFlow 
+      <ScrollableMarkdownFlow
         initialContentList={mockContent}
         height="200px" // Small height to force scrolling
       />
     );
-    
+
     // Simulate scrolling up
     const scrollContainer = screen.getByTestId('scroll-container');
     fireEvent.scroll(scrollContainer, { target: { scrollTop: 0 } });
-    
+
     expect(screen.getByRole('button', { name: /scroll to bottom/i }))
       .toBeInTheDocument();
   });
 
   it('auto-scrolls when new content is added', () => {
     const { rerender } = render(
-      <ScrollableMarkdownFlow 
+      <ScrollableMarkdownFlow
         initialContentList={mockContent}
         height="200px"
       />
     );
-    
+
     const scrollContainer = screen.getByTestId('scroll-container');
     const originalScrollTop = scrollContainer.scrollTop;
-    
+
     // Add new content
     rerender(
-      <ScrollableMarkdownFlow 
+      <ScrollableMarkdownFlow
         initialContentList={[...mockContent, { content: '# New Block' }]}
         height="200px"
       />
     );
-    
+
     // Should scroll down (scrollTop should increase)
     expect(scrollContainer.scrollTop).toBeGreaterThan(originalScrollTop);
   });
@@ -684,7 +684,7 @@ describe('useTypewriter', () => {
   });
 
   it('types text character by character', () => {
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useTypewriter('Hello', 100, false)
     );
 
@@ -703,7 +703,7 @@ describe('useTypewriter', () => {
   });
 
   it('can be disabled', () => {
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useTypewriter('Hello', 100, true)
     );
 
@@ -724,7 +724,7 @@ describe('useTypewriter', () => {
 
     // Change content
     rerender({ content: 'World' });
-    
+
     expect(result.current.displayText).toBe('');
     expect(result.current.isComplete).toBe(false);
 
@@ -735,7 +735,7 @@ describe('useTypewriter', () => {
   });
 
   it('provides control methods', () => {
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useTypewriter('Hello', 100, false)
     );
 
@@ -868,18 +868,18 @@ describe('Integration Tests', () => {
     const user = userEvent.setup();
     const mockMessages: any[] = [];
     const onSend = vi.fn((params) => {
-      mockMessages.push({ 
+      mockMessages.push({
         content: `You selected: ${params.buttonText}`,
-        isFinished: true 
+        isFinished: true
       });
     });
 
     const { rerender } = render(
       <ScrollableMarkdownFlow
         initialContentList={[
-          { 
+          {
             content: 'Choose your favorite color: ?[%{{color}} Red | Blue | Green]',
-            isFinished: false 
+            isFinished: false
           }
         ]}
         onSend={onSend}
@@ -900,9 +900,9 @@ describe('Integration Tests', () => {
     rerender(
       <ScrollableMarkdownFlow
         initialContentList={[
-          { 
+          {
             content: 'Choose your favorite color: ?[%{{color}} Red | Blue | Green]',
-            isFinished: true 
+            isFinished: true
           },
           {
             content: 'You selected: Red',
@@ -921,7 +921,7 @@ describe('Integration Tests', () => {
 
   it('maintains scroll position during typing', async () => {
     const longContent = Array(50).fill('Line of content').join('\n\n');
-    
+
     render(
       <ScrollableMarkdownFlow
         initialContentList={[
@@ -934,7 +934,7 @@ describe('Integration Tests', () => {
     );
 
     const scrollContainer = screen.getByTestId('scroll-container');
-    
+
     // Should auto-scroll as content is typed
     await waitFor(() => {
       expect(scrollContainer.scrollTop).toBeGreaterThan(0);
@@ -975,19 +975,19 @@ export const Interactive: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    
+
     // Test that buttons are rendered
     const buttonA = await canvas.findByText('Option A');
     const buttonB = await canvas.findByText('Option B');
     const buttonC = await canvas.findByText('Option C');
-    
+
     expect(buttonA).toBeInTheDocument();
     expect(buttonB).toBeInTheDocument();
     expect(buttonC).toBeInTheDocument();
-    
+
     // Test button interaction
     await userEvent.click(buttonA);
-    
+
     // Verify button is clickable (doesn't throw error)
     expect(buttonA).toBeInTheDocument();
   }
@@ -1006,10 +1006,10 @@ export const TypewriterEffect: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    
+
     // Initially should show heading immediately
     await canvas.findByRole('heading', { name: 'Typewriter Demo' });
-    
+
     // Text should appear progressively
     // Note: This is a simplified test - in reality, you'd test the progressive appearance
     await expect(async () => {
@@ -1062,7 +1062,7 @@ $$\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}$$
     ]
   },
   parameters: {
-    chromatic: { 
+    chromatic: {
       delay: 1000, // Wait for fonts and images to load
       viewports: [320, 768, 1024] // Test multiple screen sizes
     }
@@ -1108,7 +1108,7 @@ describe('Accessibility Tests', () => {
         ]}
       />
     );
-    
+
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
@@ -1120,7 +1120,7 @@ describe('Accessibility Tests', () => {
         readonly={false}
       />
     );
-    
+
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
@@ -1132,7 +1132,7 @@ describe('Accessibility Tests', () => {
         readonly={false}
       />
     );
-    
+
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
@@ -1151,7 +1151,7 @@ describe('Keyboard Navigation', () => {
   it('supports keyboard navigation for buttons', async () => {
     const user = userEvent.setup();
     const onSend = vi.fn();
-    
+
     render(
       <ContentRender
         content="Actions: ?[Submit] ?[Cancel]"
@@ -1159,17 +1159,17 @@ describe('Keyboard Navigation', () => {
         readonly={false}
       />
     );
-    
+
     const submitButton = screen.getByText('Submit');
     const cancelButton = screen.getByText('Cancel');
-    
+
     // Tab navigation
     await user.tab();
     expect(submitButton).toHaveFocus();
-    
+
     await user.tab();
     expect(cancelButton).toHaveFocus();
-    
+
     // Enter key activation
     await user.keyboard('{Enter}');
     expect(onSend).toHaveBeenCalledWith({ buttonText: 'Cancel' });
@@ -1178,7 +1178,7 @@ describe('Keyboard Navigation', () => {
   it('supports keyboard navigation for inputs', async () => {
     const user = userEvent.setup();
     const onSend = vi.fn();
-    
+
     render(
       <ContentRender
         content="Name: ?[%{{name}} Enter name...] ?[Submit]"
@@ -1186,18 +1186,18 @@ describe('Keyboard Navigation', () => {
         readonly={false}
       />
     );
-    
+
     const input = screen.getByPlaceholderText('Enter name...');
     const button = screen.getByText('Submit');
-    
+
     // Focus input and type
     await user.click(input);
     await user.type(input, 'John Doe');
-    
+
     // Tab to button
     await user.tab();
     expect(button).toHaveFocus();
-    
+
     // Enter on button should trigger submission
     await user.keyboard('{Enter}');
     expect(onSend).toHaveBeenCalledWith({
@@ -1223,14 +1223,14 @@ describe('Performance Tests', () => {
     const largeContent = Array(1000)
       .fill(0)
       .map((_, i) => ({ content: `# Block ${i}\n\nContent for block ${i}` }));
-    
+
     const startTime = performance.now();
-    
+
     render(<MarkdownFlow initialContentList={largeContent} />);
-    
+
     const endTime = performance.now();
     const renderTime = endTime - startTime;
-    
+
     // Should render in less than 1 second
     expect(renderTime).toBeLessThan(1000);
   });
@@ -1239,26 +1239,26 @@ describe('Performance Tests', () => {
     const { rerender } = render(
       <MarkdownFlow initialContentList={[{ content: 'Initial' }]} />
     );
-    
+
     const initialMemory = process.memoryUsage().heapUsed;
-    
+
     // Simulate many updates
     for (let i = 0; i < 100; i++) {
       rerender(
-        <MarkdownFlow 
-          initialContentList={[{ content: `Update ${i}` }]} 
+        <MarkdownFlow
+          initialContentList={[{ content: `Update ${i}` }]}
         />
       );
     }
-    
+
     // Force garbage collection if available
     if (global.gc) {
       global.gc();
     }
-    
+
     const finalMemory = process.memoryUsage().heapUsed;
     const memoryIncrease = finalMemory - initialMemory;
-    
+
     // Memory increase should be reasonable (less than 10MB)
     expect(memoryIncrease).toBeLessThan(10 * 1024 * 1024);
   });
@@ -1282,7 +1282,7 @@ describe('Bundle Size Tests', () => {
   it('main bundle is within size limits', () => {
     const bundlePath = './dist/index.esm.js';
     const bundleStats = statSync(bundlePath);
-    
+
     // Main bundle should be less than 100KB
     expect(bundleStats.size).toBeLessThan(100 * 1024);
   });
@@ -1291,7 +1291,7 @@ describe('Bundle Size Tests', () => {
     const bundlePath = './dist/index.esm.js';
     const bundleContent = readFileSync(bundlePath);
     const gzippedSize = gzipSync(bundleContent).length;
-    
+
     // Gzipped bundle should be less than 30KB
     expect(gzippedSize).toBeLessThan(30 * 1024);
   });
@@ -1299,7 +1299,7 @@ describe('Bundle Size Tests', () => {
   it('type definitions are generated', () => {
     const typeDefsPath = './dist/index.d.ts';
     const typeDefsStats = statSync(typeDefsPath);
-    
+
     expect(typeDefsStats.size).toBeGreaterThan(0);
   });
 });
@@ -1378,14 +1378,14 @@ export const generateMarkdownContent = () => {
     '```',
     faker.lorem.paragraph(),
   ];
-  
+
   return sections.join('\n\n');
 };
 
 export const generateInteractiveContent = () => {
   const variable = faker.word.sample();
   const options = faker.lorem.words(3).split(' ');
-  
+
   return `Choose ${variable}: ?[%{{${variable}}} ${options.join(' | ')}]`;
 };
 
@@ -1417,36 +1417,36 @@ jobs:
     strategy:
       matrix:
         node-version: [18.x, 20.x]
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-    
+
     - name: Install dependencies
       run: npm ci
-    
+
     - name: Run linter
       run: npm run lint
-    
+
     - name: Run type check
       run: npm run type-check
-    
+
     - name: Run tests
       run: npm run test:coverage
-    
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
         files: ./coverage/lcov.info
-    
+
     - name: Build library
       run: npm run build
-    
+
     - name: Run bundle size check
       run: npm run test:bundle-size
 
@@ -1456,16 +1456,16 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0 # Required for Chromatic
-    
+
     - name: Use Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
         cache: 'npm'
-    
+
     - name: Install dependencies
       run: npm ci
-    
+
     - name: Run Chromatic
       uses: chromaui/action@v1
       with:
@@ -1476,19 +1476,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Use Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
         cache: 'npm'
-    
+
     - name: Install dependencies
       run: npm ci
-    
+
     - name: Build Storybook
       run: npm run build-storybook
-    
+
     - name: Run accessibility tests
       run: npm run test:a11y
 ```

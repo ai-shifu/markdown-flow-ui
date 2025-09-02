@@ -67,7 +67,7 @@ Components support both controlled and uncontrolled usage patterns:
 
 ```typescript
 // Controlled: Parent manages state
-<MarkdownFlow 
+<MarkdownFlow
   initialContentList={messages}
   onSend={handleSend}
 />
@@ -179,7 +179,7 @@ const components = {
 };
 
 // Plugin Integration
-<ReactMarkdown 
+<ReactMarkdown
   components={components}
   remarkPlugins={[remarkFlow, ...otherPlugins]}
 >
@@ -193,13 +193,13 @@ const components = {
 interface MarkdownPlugin {
   // Component that renders the plugin
   component: React.ComponentType<any>;
-  
+
   // Remark plugin for parsing
   remarkPlugin?: Plugin;
-  
+
   // Rehype plugin for processing
   rehypePlugin?: Plugin;
-  
+
   // Plugin configuration
   config?: PluginConfig;
 }
@@ -278,7 +278,7 @@ const customComponents = {
   'custom-plugin': CustomPlugin,
 };
 
-<ContentRender 
+<ContentRender
   content={content}
   customComponents={customComponents}
 />
@@ -307,9 +307,9 @@ useSSE()            // Server-sent events
 The typewriter effect is implemented as a state machine:
 
 ```typescript
-type TypewriterState = 
+type TypewriterState =
   | 'idle'
-  | 'typing' 
+  | 'typing'
   | 'paused'
   | 'complete';
 
@@ -431,7 +431,7 @@ const ContentBlock = React.memo(({ content, index }) => {
 // For large content lists
 const VirtualizedFlow = () => {
   const [visibleRange, setVisibleRange] = useState([0, 10]);
-  
+
   return (
     <div>
       {contentList.slice(...visibleRange).map(renderBlock)}
@@ -460,7 +460,7 @@ export { useTypewriter } from './hooks/useTypewriter';
 const MermaidChart = React.lazy(() => import('./MermaidChart'));
 
 // Code splitting for editor
-const MarkdownFlowEditor = React.lazy(() => 
+const MarkdownFlowEditor = React.lazy(() =>
   import('./MarkdownFlowEditor')
 );
 ```
@@ -484,12 +484,12 @@ const animateText = useCallback(() => {
   const frame = () => {
     // Update display text
     setDisplayText(currentText);
-    
+
     if (shouldContinue) {
       animationFrameRef.current = requestAnimationFrame(frame);
     }
   };
-  
+
   frame();
 }, []);
 ```
@@ -517,10 +517,10 @@ useEffect(() => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
-    
+
     // Close SSE connections
     eventSource?.close();
-    
+
     // Clear timers
     clearTimeout(timerId);
   };

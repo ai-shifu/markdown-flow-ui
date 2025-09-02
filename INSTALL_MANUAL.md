@@ -193,7 +193,7 @@ The build process creates:
 ```
 dist/
 ├── index.esm.js        # ES modules build
-├── index.cjs.js        # CommonJS build  
+├── index.cjs.js        # CommonJS build
 ├── index.d.ts          # TypeScript definitions
 ├── components/         # Individual component builds
 └── assets/             # CSS and other assets
@@ -453,9 +453,9 @@ For better performance, lazy load components:
 ```typescript
 import { lazy, Suspense } from 'react';
 
-const MarkdownFlow = lazy(() => 
-  import('markdown-flow-ui').then(module => ({ 
-    default: module.MarkdownFlow 
+const MarkdownFlow = lazy(() =>
+  import('markdown-flow-ui').then(module => ({
+    default: module.MarkdownFlow
   }))
 );
 

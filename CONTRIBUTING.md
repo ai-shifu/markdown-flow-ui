@@ -55,7 +55,7 @@ We follow a friendly and inclusive code of conduct. Please be respectful and con
 ### Branch Naming Convention
 
 - **Features**: `feat/feature-description`
-- **Bug Fixes**: `fix/issue-description`  
+- **Bug Fixes**: `fix/issue-description`
 - **Documentation**: `docs/documentation-update`
 - **Refactoring**: `refactor/code-improvement`
 - **Tests**: `test/test-description`
@@ -250,7 +250,7 @@ describe('useCustomHook', () => {
 
   it('updates state correctly', () => {
     const { result } = renderHook(() => useCustomHook());
-    
+
     act(() => {
       result.current.updateValue('new value');
     });

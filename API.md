@@ -341,7 +341,7 @@ Minimum character length to show tooltips on interactive elements.
 
 **Basic Rendering:**
 ```tsx
-<ContentRender 
+<ContentRender
   content="# Hello\n\nThis is **markdown** content!"
   disableTyping={false}
   typingSpeed={50}
@@ -466,7 +466,7 @@ const [content, setContent] = useState('');
     onChange={setContent}
     maxWidth="50%"
   />
-  <ContentRender 
+  <ContentRender
     content={content}
     disableTyping={true}
   />
@@ -581,7 +581,7 @@ interface ScrollOptions {
 ```tsx
 const ChatContainer = ({ messages }) => {
   const containerRef = useRef(null);
-  
+
   const { showScrollToBottom, handleUserScrollToBottom } = useScrollToBottom(
     containerRef,
     [messages.length], // Scroll when messages change
@@ -644,7 +644,7 @@ interface SSEOptions {
 ```tsx
 const StreamingChat = () => {
   const [messages, setMessages] = useState([]);
-  
+
   const { data, isConnected, error } = useSSE('/api/stream', {
     onMessage: (streamData) => {
       setMessages(prev => [...prev, streamData]);
@@ -814,9 +814,9 @@ const processed = processMarkdownText(rawMarkdown);
 ### Language Support
 
 ```typescript
-import { 
-  highlightLanguages, 
-  subsetLanguages 
+import {
+  highlightLanguages,
+  subsetLanguages
 } from 'markdown-flow-ui/utils';
 
 // Available syntax highlighting languages
@@ -883,12 +883,12 @@ The library provides CSS classes for customization:
 Components accept `className` props for custom styling:
 
 ```tsx
-<MarkdownFlow 
+<MarkdownFlow
   className="my-custom-flow"
   // ... other props
 />
 
-<ScrollableMarkdownFlow 
+<ScrollableMarkdownFlow
   className="chat-interface"
   height="500px"
 />
@@ -912,7 +912,7 @@ import { MarkdownFlow, ContentRender } from 'markdown-flow-ui';
 ```typescript
 import { lazy, Suspense } from 'react';
 
-const MarkdownFlowEditor = lazy(() => 
+const MarkdownFlowEditor = lazy(() =>
   import('markdown-flow-ui/MarkdownFlowEditor')
 );
 
@@ -933,20 +933,20 @@ const MarkdownFlowEditor = lazy(() =>
 ### Custom Render Bar
 
 ```typescript
-const CustomRenderBar: CustomRenderBarProps = ({ 
-  content, 
-  displayContent, 
-  onSend 
+const CustomRenderBar: CustomRenderBarProps = ({
+  content,
+  displayContent,
+  onSend
 }) => {
   return (
     <div className="flex gap-2 mt-4">
-      <button 
+      <button
         onClick={() => onSend({ buttonText: 'Regenerate' })}
         className="px-4 py-2 bg-blue-500 text-white rounded"
       >
         Regenerate Response
       </button>
-      <button 
+      <button
         onClick={() => navigator.clipboard.writeText(displayContent)}
         className="px-4 py-2 bg-gray-500 text-white rounded"
       >
@@ -956,7 +956,7 @@ const CustomRenderBar: CustomRenderBarProps = ({
   );
 };
 
-<MarkdownFlow 
+<MarkdownFlow
   customRenderBar={CustomRenderBar}
   initialContentList={messages}
 />
@@ -967,7 +967,7 @@ const CustomRenderBar: CustomRenderBarProps = ({
 ```typescript
 const StreamingComponent = () => {
   const [content, setContent] = useState('');
-  
+
   const { isConnected, error } = useSSE('/api/stream', {
     onMessage: (data) => {
       setContent(prev => prev + data.chunk);

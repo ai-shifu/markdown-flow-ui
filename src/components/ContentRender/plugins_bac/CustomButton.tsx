@@ -3,7 +3,7 @@ import { Button } from '../../ui/button'
 import type { Components } from 'react-markdown'
 import { OnSendContentParams } from '../../types'
 
-// 定义自定义按钮节点的类型
+// Define custom button node type
 interface CustomButtonNode {
   type: 'element'
   tagName: 'custom-button'
@@ -23,7 +23,7 @@ interface ComponentsWithCustomButton extends Components {
   'custom-button'?: React.ComponentType<CustomButtonProps>
 }
 
-// 定义自定义按钮组件
+// Define custom button component
 const CustomButton = ({
   node,
   readonly,

@@ -12,49 +12,49 @@ interface CustomVariableNode extends Node {
   }
 }
 
-// 定义格式类型枚举
+// Define format type enum
 enum FormatType {
-  BUTTONS_WITH_PLACEHOLDER = 0,  // 按钮+占位符
-  BUTTONS_ONLY = 1,              // 只有按钮
-  SINGLE_BUTTON = 2,             // 单个按钮
-  PLACEHOLDER_ONLY = 3           // 只有占位符
+  BUTTONS_WITH_PLACEHOLDER = 0,  // Buttons with placeholder
+  BUTTONS_ONLY = 1,              // Only buttons
+  SINGLE_BUTTON = 2,             // Single button
+  PLACEHOLDER_ONLY = 3           // Only placeholder
 }
 
-// 定义匹配规则接口
+// Define matching rule interface
 interface MatchRule {
   regex: RegExp
   type: FormatType
 }
 
-// 定义分隔符（支持英文|和中文｜）
+// Define separator (supports English | and Chinese ｜)
 const SEPARATOR = '[|｜]'  // 匹配英文|或中文｜
 const SEPARATOR_GLOBAL = new RegExp(SEPARATOR, 'g')
 
-// 配置化的匹配规则（调整顺序和逻辑，使用统一的分隔符）
+// Configurable matching rules (adjust order and logic, use统一的 separator)
 const MATCH_RULES: MatchRule[] = [
   {
-    // 格式1: ?[%{{variable}} button1 | button2 | ... placeholder] (按钮+占位符，优先级最高)
+    // Format 1: ?[%{{variable}} button1 | button2 | ... placeholder] (buttons with placeholder, highest priority)
     regex: new RegExp(`\\?\\[\\%\\{\\{\\s*(\\w+)\\s*\\}\\}\\s*([^\\]\\|｜]+(?:\\s*${SEPARATOR}\\s*[^\\]\\|｜]+)*)\\s*${SEPARATOR}\\s*\\.\\.\\.\\s*([^\\]]+)\\]`),
     type: FormatType.BUTTONS_WITH_PLACEHOLDER
   },
   {
-    // 格式4: ?[%{{variable}} ... placeholder] (只有占位符，提高优先级)
+    // Format 4: ?[%{{variable}} ... placeholder] (only placeholder, higher priority)
     regex: /\?\[\%\{\{\s*(\w+)\s*\}\}\s*\.\.\.\s*([^\]]+)\]/,
     type: FormatType.PLACEHOLDER_ONLY
   },
   {
-    // 格式2: ?[%{{variable}} button1 | button2]
+    // Format 2: ?[%{{variable}} button1 | button2]
     regex: new RegExp(`\\?\\[\\%\\{\\{\\s*(\\w+)\\s*\\}\\}\\s*([^\\]\\|｜]+(?:\\s*${SEPARATOR}\\s*[^\\]\\|｜]+)+)\\s*\\]`),
     type: FormatType.BUTTONS_ONLY
   },
   {
-    // 格式3: ?[%{{variable}} button]
+    // Format 3: ?[%{{variable}} button]
     regex: /\?\[\%\{\{\s*(\w+)\s*\}\}\s*([^\|\]｜]+)\s*\]/,
     type: FormatType.SINGLE_BUTTON
   }
 ]
 
-// 解析结果接口
+// Parsed result interface
 interface ParsedResult {
   variableName: string
   buttonTexts: string[]
@@ -62,7 +62,7 @@ interface ParsedResult {
 }
 
 /**
- * 解析不同格式的内容
+  * Parse different formats of content
  */
 function parseContentByType(match: RegExpExecArray, formatType: FormatType): ParsedResult {
   const variableName = match[1].trim()
@@ -107,7 +107,7 @@ function parseContentByType(match: RegExpExecArray, formatType: FormatType): Par
 }
 
 /**
- * 查找第一个匹配的规则
+ * Find the first matching rule
  */
 function findFirstMatch(value: string): { match: RegExpExecArray; rule: MatchRule } | null {
   for (const rule of MATCH_RULES) {
@@ -121,7 +121,7 @@ function findFirstMatch(value: string): { match: RegExpExecArray; rule: MatchRul
 }
 
 /**
- * 创建AST节点片段
+ * Create AST node fragment
  */
 function createSegments(
   value: string, 
@@ -154,7 +154,7 @@ export default function remarkCustomButtonInputVariable() {
       tree,
       'text',
       (node: Literal, index: number | null, parent: Parent | null) => {
-        // 输入验证
+        // Input validation
         if (index === null || parent === null) return
         
         const value = node.value as string
@@ -167,18 +167,18 @@ export default function remarkCustomButtonInputVariable() {
         const endIndex = startIndex + match[0].length
 
         try {
-          // 解析匹配结果
+          // Parse matching result
           const parsedResult = parseContentByType(match, rule.type)
           
-          // 创建新的节点片段
+          // Create new node fragment
           const segments = createSegments(value, startIndex, endIndex, parsedResult)
           
-          // 替换原节点
+          // Replace the original node
           parent.children.splice(index, 1, ...segments)
           
         } catch (error) {
           console.warn('Failed to parse custom variable syntax:', error)
-          // 如果解析失败，保持原样不处理
+          // If parsing fails, keep the original content
           return
         }
       }

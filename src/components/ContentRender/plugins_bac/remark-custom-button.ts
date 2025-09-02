@@ -1,7 +1,7 @@
 import { visit } from 'unist-util-visit'
 import type { Node, Parent, Literal } from 'unist'
 
-// 定义自定义按钮节点类型
+// Define custom button node type
 interface CustomButtonNode extends Node {
   type: 'element'
   data?: {
@@ -11,7 +11,7 @@ interface CustomButtonNode extends Node {
   }
 }
 
-// 正则表达式匹配 ?[按钮文本]
+// Regex matching ?[button text]
 const BUTTON_REGEX = /\?\[([^\]]+)\]/
 
 export default function remarkCustomButton () {
@@ -23,16 +23,16 @@ export default function remarkCustomButton () {
         const value = node.value as string
         const match = BUTTON_REGEX.exec(value)
 
-        // 如果没有匹配项或缺少父节点/索引则退出
+        // If there is no match or the parent node/index is missing, exit
         if (!match || index === null || parent === null) return
 
         const startIndex = match.index
         const endIndex = startIndex + match[0].length
 
-        // 显式定义段落的联合类型
+        // Explicitly define the union type of paragraphs
         type Segment = Literal | CustomButtonNode
 
-        // 构建替换段（显式类型声明）
+        // Build replacement segments (explicit type declaration)
         const segments: Segment[] = [
           {
             type: 'text',
@@ -51,7 +51,7 @@ export default function remarkCustomButton () {
           } as Literal
         ]
 
-        // 替换原始节点
+        // Replace the original node
         parent.children.splice(index, 1, ...segments)
       }
     )

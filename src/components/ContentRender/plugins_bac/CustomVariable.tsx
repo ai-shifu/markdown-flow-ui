@@ -5,7 +5,7 @@ import type { Components } from 'react-markdown'
 import { OnSendContentParams } from '../../types'
 import { SendIcon } from 'lucide-react'
 
-// 定义自定义变量节点的类型
+// Define custom variable node type
 interface CustomVariableNode {
   tagName: 'custom-variable'
   properties?: {
@@ -16,21 +16,21 @@ interface CustomVariableNode {
   }
 }
 
-// 定义自定义变量组件的 Props 类型
+// Define custom variable component props type
 interface CustomVariableProps {
   node: CustomVariableNode
   defaultButtonText?: string
   defaultInputText?: string
   readonly?: boolean
   onSend?: (content: OnSendContentParams) => void
-  tooltipMinLength?: number // 控制tooltip显示的最小字符长度，默认10
+  tooltipMinLength?: number // Control tooltip display minimum character length, default 10
 }
 
 interface ComponentsWithCustomVariable extends Components {
   'custom-variable'?: React.ComponentType<CustomVariableProps>
 }
 
-// 定义自定义变量组件
+// Define custom variable component
 const CustomButtonInputVariable = ({
   node,
   readonly,

@@ -301,9 +301,9 @@ export interface CustomPluginProps {
   type?: string;
 }
 
-export const CustomPlugin: React.FC<CustomPluginProps> = ({ 
-  value, 
-  type = 'default' 
+export const CustomPlugin: React.FC<CustomPluginProps> = ({
+  value,
+  type = 'default'
 }) => {
   return (
     <div className="custom-plugin-container">
@@ -356,11 +356,11 @@ Document all public APIs:
 ```typescript
 /**
  * ContentRender component for rendering markdown with typewriter effects
- * 
+ *
  * @example
  * ```tsx
- * <ContentRender 
- *   content="# Hello World" 
+ * <ContentRender
+ *   content="# Hello World"
  *   typewriter={true}
  *   speed={50}
  * />
@@ -383,15 +383,15 @@ export interface ContentRenderProps {
 ```typescript
 /**
  * Hook for managing typewriter effect state and animations
- * 
+ *
  * @param content - The text content to animate
  * @param speed - Animation speed in milliseconds
  * @returns Object with current text, completion status, and control functions
- * 
+ *
  * @example
  * ```tsx
  * const { displayText, isComplete, start, pause } = useTypewriter(
- *   'Hello World', 
+ *   'Hello World',
  *   50
  * );
  * ```
@@ -408,7 +408,7 @@ export function useTypewriter(content: string, speed: number = 50) {
 The library uses Vite for building:
 
 1. **TypeScript compilation**: Generates type definitions
-2. **Bundle creation**: Creates ESM and CJS bundles  
+2. **Bundle creation**: Creates ESM and CJS bundles
 3. **Asset optimization**: Optimizes CSS and other assets
 4. **Type checking**: Ensures TypeScript correctness
 
@@ -417,7 +417,7 @@ The library uses Vite for building:
 ```text
 dist/
 ├── index.esm.js        # ES modules build
-├── index.cjs.js        # CommonJS build  
+├── index.cjs.js        # CommonJS build
 ├── index.d.ts          # TypeScript definitions
 ├── assets/             # Bundled CSS and other assets
 └── components/         # Individual component builds
@@ -517,7 +517,7 @@ Pre-commit hooks automatically run:
 # Manual quality check
 npm run lint && npm run format:check
 
-# Fix formatting issues  
+# Fix formatting issues
 npm run format
 
 # Fix linting issues

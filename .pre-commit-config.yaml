@@ -8,8 +8,8 @@ repos:
     hooks:
       - id: eslint
         name: eslint (ts/tsx/js/jsx)
-        entry: npx eslint
-        language: system
+        entry: eslint
+        language: node
         files: \.(ts|tsx|js|jsx)$
         args:
           - "--fix"
@@ -20,8 +20,8 @@ repos:
     hooks:
       - id: prettier
         name: prettier (code + config)
-        entry: npx prettier
-        language: system
+        entry: prettier
+        language: node
         files: \.(ts|tsx|js|jsx|json|css|md)$
         args:
           - "--write"
@@ -31,8 +31,8 @@ repos:
     hooks:
       - id: tsc
         name: typescript type check
-        entry: npx tsc
-        language: system
+        entry: tsc
+        language: node
         files: \.(ts|tsx)$
         args:
           - "--noEmit"

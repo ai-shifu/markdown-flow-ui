@@ -27,7 +27,7 @@ interface MatchRule {
 }
 
 // Define separator (supports English | and Chinese ｜)
-const SEPARATOR = "[|｜]"; // 匹配英文|或中文｜
+const SEPARATOR = "[|｜]"; // Match English | or Chinese ｜
 const SEPARATOR_GLOBAL = new RegExp(SEPARATOR, "g");
 
 // Configurable matching rules (adjust order and logic, use a unified separator)

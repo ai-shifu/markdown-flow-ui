@@ -1,10 +1,10 @@
 {
   "commitizen": {
+    "major_version_zero": true,
     "name": "cz_conventional_commits",
     "tag_format": "v$version",
-    "version_scheme": "semver",
-    "version": "0.1.0-alpha.26",
     "update_changelog_on_bump": true,
-    "major_version_zero": true
+    "version": "0.1.0-alpha.26",
+    "version_scheme": "semver"
   }
 }

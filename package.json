@@ -3,6 +3,11 @@
   "bugs": {
     "url": "https://github.com/ai-shifu/markdown-flow-ui/issues"
   },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  },
   "dependencies": {
     "@codemirror/lang-markdown": "^6.3.3",
     "@codemirror/language-data": "^6.5.1",
@@ -124,10 +129,5 @@
     "storybook": "storybook dev -p 6006"
   },
   "types": "dist/index.d.ts",
-  "version": "0.1.0-alpha.26",
-  "config": {
-    "commitizen": {
-      "path": "cz-conventional-changelog"
-    }
-  }
+  "version": "0.1.0-alpha.26"
 }

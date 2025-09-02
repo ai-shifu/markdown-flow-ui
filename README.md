@@ -236,7 +236,6 @@ Open [http://localhost:6006](http://localhost:6006) to view the interactive docu
 | `pnpm build-storybook` | Build static Storybook documentation |
 | `pnpm lint` | ESLint code quality checks |
 | `pnpm format` | Prettier code formatting |
-| `pnpm test` | Run test suite |
 
 ### Integration with AI-Shifu
 

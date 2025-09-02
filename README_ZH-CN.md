@@ -236,7 +236,6 @@ pnpm storybook
 | `pnpm build-storybook` | 构建静态Storybook文档 |
 | `pnpm lint` | ESLint代码质量检查 |
 | `pnpm format` | Prettier代码格式化 |
-| `pnpm test` | 运行测试套件 |
 
 ### 与AI师傅的集成
 

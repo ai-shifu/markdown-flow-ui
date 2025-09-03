@@ -1,6 +1,10 @@
-# Markdown Flow UI
+# MarkdownFlow UI Component Library
 
 **React component library for rendering interactive [MarkdownFlow](https://markdownflow.ai) documents with typewriter effects and real-time streaming.**
+
+[MarkdownFlow](https://markdownflow.ai) (also known as MDFlow or markdown-flow) extends standard Markdown with AI intelligence to create personalized, interactive pages. Its tagline is **"Write Once, Deliver Personally"**.
+
+<div align="center">
 
 [![npm version](https://badge.fury.io/js/markdown-flow-ui.svg)](https://badge.fury.io/js/markdown-flow-ui)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -8,6 +12,8 @@
 [![Storybook](https://img.shields.io/badge/Storybook-Enabled-ff69b4.svg)](https://storybook.js.org/)
 
 English | [简体中文](README_ZH-CN.md)
+
+</div>
 
 ## 🚀 Quick Start
 

@@ -1,6 +1,10 @@
-# Markdown Flow UI
+# MarkdownFlow UI 组件库
 
 **用于渲染交互式 [MarkdownFlow](https://markdownflow.ai) 文档的 React 组件库，具有打字机效果和实时流式传输功能。**
+
+MarkdownFlow（也称为 MDFlow 或 markdown-flow）通过 AI 智能技术扩展了标准 Markdown，用于创建个性化的交互式页面。我们的口号是：**“一次创作，千人千面”**。
+
+<div align="center">
 
 [![npm version](https://badge.fury.io/js/markdown-flow-ui.svg)](https://badge.fury.io/js/markdown-flow-ui)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -8,6 +12,8 @@
 [![Storybook](https://img.shields.io/badge/Storybook-Enabled-ff69b4.svg)](https://storybook.js.org/)
 
 [English](README.md) | 简体中文
+
+</div>
 
 ## 🚀 快速开始
 

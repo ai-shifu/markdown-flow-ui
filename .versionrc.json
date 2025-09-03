@@ -1,0 +1,67 @@
+{
+  "bumpFiles": [
+    {
+      "filename": "package.json",
+      "type": "json"
+    }
+  ],
+  "commitUrlFormat": "https://github.com/aiworklab/markdown-flow-ui/commit/{{hash}}",
+  "compareUrlFormat": "https://github.com/aiworklab/markdown-flow-ui/compare/{{previousTag}}...{{currentTag}}",
+  "issueUrlFormat": "https://github.com/aiworklab/markdown-flow-ui/issues/{{id}}",
+  "packageFiles": [
+    {
+      "filename": "package.json",
+      "type": "json"
+    }
+  ],
+  "releaseCommitMessageFormat": "chore(release): {{currentTag}}",
+  "skip": {
+    "bump": false,
+    "changelog": false,
+    "commit": false,
+    "tag": false
+  },
+  "types": [
+    {
+      "section": "Features",
+      "type": "feat"
+    },
+    {
+      "section": "Bug Fixes",
+      "type": "fix"
+    },
+    {
+      "section": "Documentation",
+      "type": "docs"
+    },
+    {
+      "section": "Styles",
+      "type": "style"
+    },
+    {
+      "section": "Code Refactoring",
+      "type": "refactor"
+    },
+    {
+      "section": "Performance Improvements",
+      "type": "perf"
+    },
+    {
+      "section": "Tests",
+      "type": "test"
+    },
+    {
+      "section": "Build System",
+      "type": "build"
+    },
+    {
+      "section": "Continuous Integration",
+      "type": "ci"
+    },
+    {
+      "section": "Chores",
+      "type": "chore"
+    }
+  ],
+  "userUrlFormat": "https://github.com/{{user}}"
+}

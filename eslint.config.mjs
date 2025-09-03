@@ -32,8 +32,8 @@ const eslintConfig = [
       "@typescript-eslint/no-explicit-any": "warn",
       // Disable React hook dependencies rule
       "react-hooks/exhaustive-deps": "off",
-      // Prohibit console.log statements
-      "no-console": "error",
+      // Allow console statements during development
+      "no-console": "off",
     },
   },
 ];

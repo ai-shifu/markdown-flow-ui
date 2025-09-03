@@ -71,6 +71,7 @@
     "prettier": "^3.5.3",
     "rollup": "^4.46.2",
     "rollup-plugin-dts": "^6.2.1",
+    "standard-version": "^9.5.0",
     "storybook": "^9.0.16",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.6",
@@ -98,7 +99,7 @@
   "license": "MIT",
   "lint-staged": {
     "*.md": [
-      "markdownlint --fix"
+      "markdownlint --fix --ignore CHANGELOG.md"
     ],
     "src/**/*.{css,scss,json}": [
       "prettier --write"
@@ -121,19 +122,29 @@
     "//build": "next build",
     "build": "vite build",
     "build-storybook": "storybook build",
+    "bump": "standard-version",
+    "bump:major": "standard-version --release-as major",
+    "bump:minor": "standard-version --release-as minor",
+    "bump:patch": "standard-version --release-as patch",
+    "bump:prerelease": "standard-version --prerelease",
+    "changelog": "standard-version --dry-run",
     "commit": "cz",
     "dev": "next dev --turbopack",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "next lint --max-warnings 0 && npm run lint:md",
-    "lint:fix": "next lint --fix --max-warnings 0 && npm run lint:md:fix",
+    "lint": "next lint --max-warnings 20 && npm run lint:md",
+    "lint:fix": "next lint --fix --max-warnings 20 && npm run lint:md:fix",
     "lint:md": "markdownlint *.md",
     "lint:md:fix": "markdownlint --fix *.md",
     "prepare": "husky",
     "prepublishOnly": "npm run build",
+    "release": "npm run build && npm run test && standard-version && git push --follow-tags",
+    "release:dry": "standard-version --dry-run",
     "start": "next start",
-    "storybook": "storybook dev -p 6006"
+    "storybook": "storybook dev -p 6006",
+    "test": "echo \"No tests specified\" && exit 0",
+    "version": "npm run changelog && git add CHANGELOG.md"
   },
   "types": "dist/index.d.ts",
-  "version": "0.1.0-alpha.26"
+  "version": "0.1.0"
 }

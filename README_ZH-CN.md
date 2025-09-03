@@ -4,7 +4,7 @@
 
 MarkdownFlow（也称为 MDFlow 或 markdown-flow）通过 AI 扩展了标准 Markdown，用于创建个性化的交互式页面。我们的口号是：**“一次创作，千人千面”**。
 
-<div style="text-align:center">
+<div align="center">
 
 [![npm version](https://badge.fury.io/js/markdown-flow-ui.svg)](https://badge.fury.io/js/markdown-flow-ui)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -600,7 +600,7 @@ markdown-flow-ui 是 MarkdownFlow 生态系统的一部分，用于创建个性�
 
 ## 💖 赞助商
 
-<div style="text-align:center">
+<div align="center">
   <a href="https://ai-shifu.com">
     <img src="https://ai-shifu.com/logo.png" alt="AI-Shifu" width="150" />
   </a>

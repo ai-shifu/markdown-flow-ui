@@ -248,7 +248,7 @@ interface ContentRenderProps {
 
 **Custom Syntax:**
 
-````markdown
+`````markdown
 # Buttons
 
 ?[Click me]
@@ -263,14 +263,10 @@ interface ContentRenderProps {
 
 # Mermaid diagrams
 
-```mermaid
+`````mermaid
 graph LR
     A --> B
     B --> C
-```
-````
-
-````
 
 ### Hooks
 
@@ -290,7 +286,7 @@ function useTypewriter(
   pause: () => void;
   reset: () => void;
 }
-````
+```
 
 **Example:**
 
@@ -443,7 +439,8 @@ graph TD
     A[Start] --> B[Process]
     B --> C[End]
 ```
-````
+`````
+`````
 
 #### Creating Custom Plugins
 

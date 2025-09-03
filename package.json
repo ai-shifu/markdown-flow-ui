@@ -66,6 +66,7 @@
     "eslint-plugin-storybook": "^9.0.16",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.6",
+    "markdownlint-cli": "^0.45.0",
     "playwright": "^1.54.1",
     "prettier": "^3.5.3",
     "rollup": "^4.46.2",
@@ -96,7 +97,11 @@
   ],
   "license": "MIT",
   "lint-staged": {
-    "src/**/*.{css,scss,md,json}": [
+    "*.md": [
+      "markdownlint --fix",
+      "prettier --write"
+    ],
+    "src/**/*.{css,scss,json}": [
       "prettier --write"
     ],
     "src/**/*.{js,jsx,ts,tsx,mjs,cjs}": [
@@ -121,8 +126,10 @@
     "dev": "next dev --turbopack",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "next lint --max-warnings 0",
-    "lint:fix": "next lint --fix --max-warnings 0",
+    "lint": "next lint --max-warnings 0 && npm run lint:md",
+    "lint:fix": "next lint --fix --max-warnings 0 && npm run lint:md:fix",
+    "lint:md": "markdownlint *.md",
+    "lint:md:fix": "markdownlint --fix *.md",
     "prepare": "husky",
     "prepublishOnly": "npm run build",
     "start": "next start",

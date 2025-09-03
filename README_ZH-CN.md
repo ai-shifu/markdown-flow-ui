@@ -260,14 +260,10 @@ interface ContentRenderProps {
 
 # Mermaid 图表
 
-```mermaid
+````mermaid
 graph LR
     A --> B
     B --> C
-```
-````
-
-````
 
 ### Hooks
 
@@ -287,6 +283,7 @@ function useTypewriter(
   pause: () => void;
   reset: () => void;
 }
+````
 ````
 
 **示例：**

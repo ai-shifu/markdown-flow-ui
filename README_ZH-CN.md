@@ -245,7 +245,7 @@ interface ContentRenderProps {
 
 **自定义语法：**
 
-````markdown
+`````markdown
 # 按钮
 
 ?[点击我]
@@ -260,10 +260,11 @@ interface ContentRenderProps {
 
 # Mermaid 图表
 
-````mermaid
+```mermaid
 graph LR
     A --> B
     B --> C
+```
 
 ### Hooks
 
@@ -282,9 +283,8 @@ function useTypewriter(
   start: () => void;
   pause: () => void;
   reset: () => void;
-}
-````
-````
+};
+```
 
 **示例：**
 
@@ -438,6 +438,7 @@ graph TD
     B --> C[结束]
 ```
 ````
+`````
 
 #### 创建自定义插件
 

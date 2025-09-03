@@ -248,7 +248,7 @@ interface ContentRenderProps {
 
 **Custom Syntax:**
 
-`````markdown
+````markdown
 # Buttons
 
 ?[Click me]
@@ -268,6 +268,7 @@ graph LR
     A --> B
     B --> C
 ```
+````
 
 ### Hooks
 
@@ -286,7 +287,7 @@ function useTypewriter(
   start: () => void;
   pause: () => void;
   reset: () => void;
-};
+}
 ```
 
 **Example:**
@@ -440,6 +441,7 @@ graph TD
     A[Start] --> B[Process]
     B --> C[End]
 ```
+````
 
 #### Creating Custom Plugins
 
@@ -624,5 +626,3 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - 📖 [Documentation](https://github.com/ai-shifu/markdown-flow-ui#readme)
 - 🐛 [Issue Tracker](https://github.com/ai-shifu/markdown-flow-ui/issues)
 - 💬 [Discussions](https://github.com/ai-shifu/markdown-flow-ui/discussions)
-````
-`````

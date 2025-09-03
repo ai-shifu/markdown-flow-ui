@@ -245,7 +245,7 @@ interface ContentRenderProps {
 
 **自定义语法：**
 
-`````markdown
+````markdown
 # 按钮
 
 ?[点击我]
@@ -265,6 +265,7 @@ graph LR
     A --> B
     B --> C
 ```
+````
 
 ### Hooks
 
@@ -283,7 +284,7 @@ function useTypewriter(
   start: () => void;
   pause: () => void;
   reset: () => void;
-};
+}
 ```
 
 **示例：**
@@ -437,6 +438,7 @@ graph TD
     A[开始] --> B[处理]
     B --> C[结束]
 ```
+````
 
 #### 创建自定义插件
 
@@ -621,5 +623,3 @@ MIT 许可证 - 详见 [LICENSE](LICENSE) 文件。
 - 📖 [文档](https://github.com/ai-shifu/markdown-flow-ui#readme)
 - 🐛 [问题跟踪](https://github.com/ai-shifu/markdown-flow-ui/issues)
 - 💬 [讨论](https://github.com/ai-shifu/markdown-flow-ui/discussions)
-````
-`````

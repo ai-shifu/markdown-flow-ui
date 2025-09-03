@@ -602,7 +602,7 @@ markdown-flow-ui 是 MarkdownFlow 生态系统的一部分，用于创建个性�
 
 <div align="center">
   <a href="https://ai-shifu.cn">
-    <img src="https://raw.githubusercontent.com/ai-shifu/ai-shifu/main/assets/logo_zh.png" alt="AI-Shifu" width="150" />
+    <img src="https://raw.githubusercontent.com/ai-shifu/ai-shifu/main/assets/logo_zh.png" alt="AI 师傅" width="150" />
   </a>
   <p><strong><a href="https://ai-shifu.cn">AI-Shifu.cn</a></strong></p>
   <p>AI 驱动的个性化学习平台</p>

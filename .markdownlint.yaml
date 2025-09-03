@@ -19,9 +19,8 @@ MD004:
 MD029:
   style: "ordered"
 
-# Code block style
-MD046:
-  style: "fenced"
+# Code block style - disable to prevent issues with nested code blocks
+MD046: false
 
 # Emphasis style
 MD049:

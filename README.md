@@ -605,7 +605,7 @@ markdown-flow-ui is part of the MarkdownFlow ecosystem for creating personalized
 
 <div align="center">
   <a href="https://ai-shifu.com">
-    <img src="https://ai-shifu.com/logo.png" alt="AI-Shifu" width="150" />
+    <img src="https://raw.githubusercontent.com/ai-shifu/ai-shifu/main/assets/logo_en.png" alt="AI-Shifu" width="150" />
   </a>
   <p><strong><a href="https://ai-shifu.com">AI-Shifu.com</a></strong></p>
   <p>AI-powered personalized learning platform</p>

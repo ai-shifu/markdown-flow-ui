@@ -150,9 +150,9 @@ type OnSendContentParams = {
 ```tsx
 <MarkdownFlow
   initialContentList={[
-    { 
+    {
       content: "# Welcome\n\nChoose: ?[%{{choice}} A | B | C]",
-      isFinished: false 
+      isFinished: false
     }
   ]}
   typingSpeed={50}
@@ -430,9 +430,9 @@ graph TD
 
 ```typescript
 // Define plugin component
-const CustomPlugin: React.FC<{ value: string; type?: string }> = ({ 
-  value, 
-  type = 'default' 
+const CustomPlugin: React.FC<{ value: string; type?: string }> = ({
+  value,
+  type = 'default'
 }) => {
   return (
     <div className="custom-plugin">
@@ -557,7 +557,7 @@ const Conversation = () => {
       initialContentList={blocks}
       onSend={handleSend}
       onBlockComplete={(index) => {
-        setBlocks(prev => prev.map((b, i) => 
+        setBlocks(prev => prev.map((b, i) =>
           i === index ? { ...b, isFinished: true } : b
         ));
       }}

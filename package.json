@@ -98,8 +98,7 @@
   "license": "MIT",
   "lint-staged": {
     "*.md": [
-      "markdownlint --fix",
-      "prettier --write"
+      "markdownlint --fix"
     ],
     "src/**/*.{css,scss,json}": [
       "prettier --write"

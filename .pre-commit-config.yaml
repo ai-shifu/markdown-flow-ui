@@ -34,7 +34,7 @@ repos:
         name: Prettier
         entry: prettier
         language: node
-        files: ^src/.*\.(js|jsx|ts|tsx|mjs|cjs|css|scss|md|json)$
+        files: ^src/.*\.(js|jsx|ts|tsx|mjs|cjs|css|scss|json)$
         args: ["--write"]
         additional_dependencies: ["prettier@^3.5.3"]
         pass_filenames: true

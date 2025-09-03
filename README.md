@@ -4,7 +4,7 @@
 
 [MarkdownFlow](https://markdownflow.ai) (also known as MDFlow or markdown-flow) extends standard Markdown with AI intelligence to create personalized, interactive pages. Its tagline is **"Write Once, Deliver Personally"**.
 
-<div align="center">
+<div style="text-align:center">
 
 [![npm version](https://badge.fury.io/js/markdown-flow-ui.svg)](https://badge.fury.io/js/markdown-flow-ui)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -603,7 +603,7 @@ markdown-flow-ui is part of the MarkdownFlow ecosystem for creating personalized
 
 ## 💖 Sponsors
 
-<div align="center">
+<div style="text-align:center">
   <a href="https://ai-shifu.com">
     <img src="https://ai-shifu.com/logo.png" alt="AI-Shifu" width="150" />
   </a>

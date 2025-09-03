@@ -24,13 +24,13 @@ pnpm add markdown-flow-ui
 ### 基础用法
 
 ```tsx
-import { MarkdownFlow } from 'markdown-flow-ui';
+import { MarkdownFlow } from "markdown-flow-ui";
 
 function App() {
   return (
     <MarkdownFlow
       initialContentList={[
-        { content: '# Hello World\n\n这是带有打字机效果的 **MarkdownFlow**！' }
+        { content: "# Hello World\n\n这是带有打字机效果的 **MarkdownFlow**！" },
       ]}
       disableTyping={false}
       typingSpeed={30}
@@ -42,7 +42,7 @@ function App() {
 ### 交互式元素
 
 ```tsx
-import { MarkdownFlow } from 'markdown-flow-ui';
+import { MarkdownFlow } from "markdown-flow-ui";
 
 function InteractiveExample() {
   const content = `
@@ -57,7 +57,7 @@ function InteractiveExample() {
     <MarkdownFlow
       initialContentList={[{ content }]}
       onSend={(params) => {
-        console.log('用户交互：', params);
+        console.log("用户交互：", params);
         // 处理按钮点击和输入提交
       }}
     />
@@ -68,22 +68,25 @@ function InteractiveExample() {
 ### SSE 流式传输
 
 ```tsx
-import { ScrollableMarkdownFlow } from 'markdown-flow-ui';
-import { useSSE } from 'markdown-flow-ui';
+import { ScrollableMarkdownFlow } from "markdown-flow-ui";
+import { useSSE } from "markdown-flow-ui";
 
 function StreamingChat() {
   const [messages, setMessages] = useState([]);
 
-  const { data, isConnected } = useSSE('/api/stream', {
+  const { data, isConnected } = useSSE("/api/stream", {
     onMessage: (chunk) => {
-      setMessages(prev => {
+      setMessages((prev) => {
         const last = prev[prev.length - 1];
         if (last && !last.isFinished) {
-          return [...prev.slice(0, -1), { ...last, content: last.content + chunk }];
+          return [
+            ...prev.slice(0, -1),
+            { ...last, content: last.content + chunk },
+          ];
         }
         return [...prev, { content: chunk, isFinished: false }];
       });
-    }
+    },
   });
 
   return (
@@ -92,9 +95,9 @@ function StreamingChat() {
       initialContentList={messages}
       onSend={(params) => {
         // 发送用户输入到后端
-        fetch('/api/chat', {
-          method: 'POST',
-          body: JSON.stringify(params)
+        fetch("/api/chat", {
+          method: "POST",
+          body: JSON.stringify(params),
         });
       }}
     />
@@ -127,13 +130,13 @@ type ContentItem = {
   defaultButtonText?: string;
   readonly?: boolean;
   customRenderBar?: CustomRenderBarProps;
-}
+};
 
 type OnSendContentParams = {
   buttonText?: string;
   variableName?: string;
   inputText?: string;
-}
+};
 ```
 
 **属性：**
@@ -152,13 +155,13 @@ type OnSendContentParams = {
   initialContentList={[
     {
       content: "# 欢迎\n\n选择：?[%{{choice}} A | B | C]",
-      isFinished: false
-    }
+      isFinished: false,
+    },
   ]}
   typingSpeed={50}
   onSend={(params) => {
-    if (params.variableName === 'choice') {
-      console.log('已选择：', params.buttonText);
+    if (params.variableName === "choice") {
+      console.log("已选择：", params.buttonText);
     }
   }}
 />
@@ -236,24 +239,29 @@ interface ContentRenderProps {
 
 **自定义语法：**
 
-```markdown
+````markdown
 # 按钮
+
 ?[点击我]
 
 # 变量输入
+
 ?[%{{userName}} 输入姓名...]
 
 # 多选
+
 ?[%{{color}} 红色 | 蓝色 | 绿色]
 
 # Mermaid 图表
+
 ```mermaid
 graph LR
     A --> B
     B --> C
 ```
+````
 
-```
+````
 
 ### Hooks
 
@@ -273,7 +281,7 @@ function useTypewriter(
   pause: () => void;
   reset: () => void;
 }
-```
+````
 
 **示例：**
 
@@ -301,14 +309,14 @@ function useScrollToBottom(
   containerRef: RefObject<HTMLElement>,
   dependencies: any[],
   options?: {
-    behavior?: 'smooth' | 'auto';
+    behavior?: "smooth" | "auto";
     autoScrollOnInit?: boolean;
     scrollDelay?: number;
   }
 ): {
   showScrollToBottom: boolean;
   handleUserScrollToBottom: () => void;
-}
+};
 ```
 
 **示例：**
@@ -318,12 +326,14 @@ const containerRef = useRef(null);
 const { showScrollToBottom, handleUserScrollToBottom } = useScrollToBottom(
   containerRef,
   [messages.length],
-  { behavior: 'smooth' }
+  { behavior: "smooth" }
 );
 
 return (
   <div ref={containerRef}>
-    {messages.map(msg => <div key={msg.id}>{msg.text}</div>)}
+    {messages.map((msg) => (
+      <div key={msg.id}>{msg.text}</div>
+    ))}
     {showScrollToBottom && (
       <button onClick={handleUserScrollToBottom}>↓</button>
     )}
@@ -350,18 +360,18 @@ function useSSE(
   isConnected: boolean;
   error: Error | null;
   close: () => void;
-}
+};
 ```
 
 **示例：**
 
 ```tsx
-const { data, isConnected, error } = useSSE('/api/stream', {
+const { data, isConnected, error } = useSSE("/api/stream", {
   onMessage: (chunk) => {
-    setContent(prev => prev + chunk);
+    setContent((prev) => prev + chunk);
   },
   reconnect: true,
-  reconnectInterval: 3000
+  reconnectInterval: 3000,
 });
 ```
 
@@ -376,28 +386,28 @@ type ContentItem = {
   defaultButtonText?: string;
   readonly?: boolean;
   customRenderBar?: CustomRenderBarProps;
-}
+};
 
 // 用户交互参数
 type OnSendContentParams = {
   buttonText?: string;
   variableName?: string;
   inputText?: string;
-}
+};
 
 // 自定义渲染栏组件
 type CustomRenderBarProps = React.ComponentType<{
   content?: string;
   onSend?: (content: OnSendContentParams) => void;
   displayContent: string;
-}>
+}>;
 
 // 所有组件属性都已导出
 import type {
   MarkdownFlowProps,
   ScrollableMarkdownFlowProps,
   ContentRenderProps,
-} from 'markdown-flow-ui';
+} from "markdown-flow-ui";
 ```
 
 ### 插件
@@ -409,9 +419,9 @@ import type {
 处理交互式按钮和输入。
 
 ```markdown
-?[按钮文本]                    # 简单按钮
-?[%{{variable}} 占位符...]    # 输入字段
-?[%{{choice}} A | B | C]      # 多选
+?[按钮文本] # 简单按钮
+?[%{{variable}} 占位符...] # 输入字段
+?[%{{choice}} A | B | C] # 多选
 ```
 
 **Mermaid 插件：**
@@ -454,13 +464,20 @@ const components = {
 **CSS 类：**
 
 ```css
-.markdown-flow { }
-.content-render { }
-.content-render-table { }
-.content-render-ol { }
-.content-render-ul { }
-.scrollable-markdown-container { }
-.scroll-to-bottom-btn { }
+.markdown-flow {
+}
+.content-render {
+}
+.content-render-table {
+}
+.content-render-ol {
+}
+.content-render-ul {
+}
+.scrollable-markdown-container {
+}
+.scroll-to-bottom-btn {
+}
 ```
 
 **CSS 变量：**
@@ -491,7 +508,7 @@ const CustomBar: CustomRenderBarProps = ({ displayContent, onSend }) => {
   return (
     <div className="flex gap-2 mt-4">
       <button
-        onClick={() => onSend({ buttonText: '重新生成' })}
+        onClick={() => onSend({ buttonText: "重新生成" })}
         className="px-4 py-2 bg-blue-500 text-white rounded"
       >
         重新生成
@@ -506,22 +523,19 @@ const CustomBar: CustomRenderBarProps = ({ displayContent, onSend }) => {
   );
 };
 
-<MarkdownFlow
-  customRenderBar={CustomBar}
-  initialContentList={messages}
-/>
+<MarkdownFlow customRenderBar={CustomBar} initialContentList={messages} />;
 ```
 
 ### 流式集成
 
 ```tsx
 const StreamingChat = () => {
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState("");
 
-  useSSE('/api/stream', {
+  useSSE("/api/stream", {
     onMessage: (data) => {
-      setContent(prev => prev + data.chunk);
-    }
+      setContent((prev) => prev + data.chunk);
+    },
   });
 
   return (
@@ -540,14 +554,17 @@ const StreamingChat = () => {
 const Conversation = () => {
   const [blocks, setBlocks] = useState([
     { content: "# 助手\n\n你好！我能帮你什么？", isFinished: true },
-    { content: "你想了解什么？\n\n?[%{{topic}} 输入主题...]", isFinished: false }
+    {
+      content: "你想了解什么？\n\n?[%{{topic}} 输入主题...]",
+      isFinished: false,
+    },
   ]);
 
   const handleSend = (params) => {
-    if (params.variableName === 'topic') {
-      setBlocks(prev => [
+    if (params.variableName === "topic") {
+      setBlocks((prev) => [
         ...prev,
-        { content: `你询问了：${params.inputText}`, isFinished: false }
+        { content: `你询问了：${params.inputText}`, isFinished: false },
       ]);
     }
   };
@@ -557,9 +574,9 @@ const Conversation = () => {
       initialContentList={blocks}
       onSend={handleSend}
       onBlockComplete={(index) => {
-        setBlocks(prev => prev.map((b, i) =>
-          i === index ? { ...b, isFinished: true } : b
-        ));
+        setBlocks((prev) =>
+          prev.map((b, i) => (i === index ? { ...b, isFinished: true } : b))
+        );
       }}
     />
   );

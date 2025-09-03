@@ -24,13 +24,16 @@ pnpm add markdown-flow-ui
 ### Basic Usage
 
 ```tsx
-import { MarkdownFlow } from 'markdown-flow-ui';
+import { MarkdownFlow } from "markdown-flow-ui";
 
 function App() {
   return (
     <MarkdownFlow
       initialContentList={[
-        { content: '# Hello World\n\nThis is **MarkdownFlow** with typewriter effect!' }
+        {
+          content:
+            "# Hello World\n\nThis is **MarkdownFlow** with typewriter effect!",
+        },
       ]}
       disableTyping={false}
       typingSpeed={30}
@@ -42,7 +45,7 @@ function App() {
 ### Interactive Elements
 
 ```tsx
-import { MarkdownFlow } from 'markdown-flow-ui';
+import { MarkdownFlow } from "markdown-flow-ui";
 
 function InteractiveExample() {
   const content = `
@@ -57,7 +60,7 @@ Your name: ?[%{{name}} Enter your name...]
     <MarkdownFlow
       initialContentList={[{ content }]}
       onSend={(params) => {
-        console.log('User interaction:', params);
+        console.log("User interaction:", params);
         // Handle button clicks and input submissions
       }}
     />
@@ -68,22 +71,25 @@ Your name: ?[%{{name}} Enter your name...]
 ### Streaming with SSE
 
 ```tsx
-import { ScrollableMarkdownFlow } from 'markdown-flow-ui';
-import { useSSE } from 'markdown-flow-ui';
+import { ScrollableMarkdownFlow } from "markdown-flow-ui";
+import { useSSE } from "markdown-flow-ui";
 
 function StreamingChat() {
   const [messages, setMessages] = useState([]);
 
-  const { data, isConnected } = useSSE('/api/stream', {
+  const { data, isConnected } = useSSE("/api/stream", {
     onMessage: (chunk) => {
-      setMessages(prev => {
+      setMessages((prev) => {
         const last = prev[prev.length - 1];
         if (last && !last.isFinished) {
-          return [...prev.slice(0, -1), { ...last, content: last.content + chunk }];
+          return [
+            ...prev.slice(0, -1),
+            { ...last, content: last.content + chunk },
+          ];
         }
         return [...prev, { content: chunk, isFinished: false }];
       });
-    }
+    },
   });
 
   return (
@@ -92,9 +98,9 @@ function StreamingChat() {
       initialContentList={messages}
       onSend={(params) => {
         // Send user input to backend
-        fetch('/api/chat', {
-          method: 'POST',
-          body: JSON.stringify(params)
+        fetch("/api/chat", {
+          method: "POST",
+          body: JSON.stringify(params),
         });
       }}
     />
@@ -127,13 +133,13 @@ type ContentItem = {
   defaultButtonText?: string;
   readonly?: boolean;
   customRenderBar?: CustomRenderBarProps;
-}
+};
 
 type OnSendContentParams = {
   buttonText?: string;
   variableName?: string;
   inputText?: string;
-}
+};
 ```
 
 **Props:**
@@ -152,13 +158,13 @@ type OnSendContentParams = {
   initialContentList={[
     {
       content: "# Welcome\n\nChoose: ?[%{{choice}} A | B | C]",
-      isFinished: false
-    }
+      isFinished: false,
+    },
   ]}
   typingSpeed={50}
   onSend={(params) => {
-    if (params.variableName === 'choice') {
-      console.log('Selected:', params.buttonText);
+    if (params.variableName === "choice") {
+      console.log("Selected:", params.buttonText);
     }
   }}
 />
@@ -236,24 +242,29 @@ interface ContentRenderProps {
 
 **Custom Syntax:**
 
-```markdown
+````markdown
 # Buttons
+
 ?[Click me]
 
 # Variable inputs
+
 ?[%{{userName}} Enter name...]
 
 # Multiple choice
+
 ?[%{{color}} Red | Blue | Green]
 
 # Mermaid diagrams
+
 ```mermaid
 graph LR
     A --> B
     B --> C
 ```
+````
 
-```
+````
 
 ### Hooks
 
@@ -273,7 +284,7 @@ function useTypewriter(
   pause: () => void;
   reset: () => void;
 }
-```
+````
 
 **Example:**
 
@@ -301,14 +312,14 @@ function useScrollToBottom(
   containerRef: RefObject<HTMLElement>,
   dependencies: any[],
   options?: {
-    behavior?: 'smooth' | 'auto';
+    behavior?: "smooth" | "auto";
     autoScrollOnInit?: boolean;
     scrollDelay?: number;
   }
 ): {
   showScrollToBottom: boolean;
   handleUserScrollToBottom: () => void;
-}
+};
 ```
 
 **Example:**
@@ -318,12 +329,14 @@ const containerRef = useRef(null);
 const { showScrollToBottom, handleUserScrollToBottom } = useScrollToBottom(
   containerRef,
   [messages.length],
-  { behavior: 'smooth' }
+  { behavior: "smooth" }
 );
 
 return (
   <div ref={containerRef}>
-    {messages.map(msg => <div key={msg.id}>{msg.text}</div>)}
+    {messages.map((msg) => (
+      <div key={msg.id}>{msg.text}</div>
+    ))}
     {showScrollToBottom && (
       <button onClick={handleUserScrollToBottom}>↓</button>
     )}
@@ -350,18 +363,18 @@ function useSSE(
   isConnected: boolean;
   error: Error | null;
   close: () => void;
-}
+};
 ```
 
 **Example:**
 
 ```tsx
-const { data, isConnected, error } = useSSE('/api/stream', {
+const { data, isConnected, error } = useSSE("/api/stream", {
   onMessage: (chunk) => {
-    setContent(prev => prev + chunk);
+    setContent((prev) => prev + chunk);
   },
   reconnect: true,
-  reconnectInterval: 3000
+  reconnectInterval: 3000,
 });
 ```
 
@@ -376,28 +389,28 @@ type ContentItem = {
   defaultButtonText?: string;
   readonly?: boolean;
   customRenderBar?: CustomRenderBarProps;
-}
+};
 
 // User interaction parameters
 type OnSendContentParams = {
   buttonText?: string;
   variableName?: string;
   inputText?: string;
-}
+};
 
 // Custom render bar component
 type CustomRenderBarProps = React.ComponentType<{
   content?: string;
   onSend?: (content: OnSendContentParams) => void;
   displayContent: string;
-}>
+}>;
 
 // All component props are exported
 import type {
   MarkdownFlowProps,
   ScrollableMarkdownFlowProps,
   ContentRenderProps,
-} from 'markdown-flow-ui';
+} from "markdown-flow-ui";
 ```
 
 ### Plugins
@@ -409,9 +422,9 @@ import type {
 Handles interactive buttons and inputs.
 
 ```markdown
-?[Button Text]                    # Simple button
-?[%{{variable}} Placeholder...]   # Input field
-?[%{{choice}} A | B | C]         # Multiple choice
+?[Button Text] # Simple button
+?[%{{variable}} Placeholder...] # Input field
+?[%{{choice}} A | B | C] # Multiple choice
 ```
 
 **Mermaid Plugin:**
@@ -454,13 +467,20 @@ The library uses Tailwind CSS and provides customization through:
 **CSS Classes:**
 
 ```css
-.markdown-flow { }
-.content-render { }
-.content-render-table { }
-.content-render-ol { }
-.content-render-ul { }
-.scrollable-markdown-container { }
-.scroll-to-bottom-btn { }
+.markdown-flow {
+}
+.content-render {
+}
+.content-render-table {
+}
+.content-render-ol {
+}
+.content-render-ul {
+}
+.scrollable-markdown-container {
+}
+.scroll-to-bottom-btn {
+}
 ```
 
 **CSS Variables:**
@@ -491,7 +511,7 @@ const CustomBar: CustomRenderBarProps = ({ displayContent, onSend }) => {
   return (
     <div className="flex gap-2 mt-4">
       <button
-        onClick={() => onSend({ buttonText: 'Regenerate' })}
+        onClick={() => onSend({ buttonText: "Regenerate" })}
         className="px-4 py-2 bg-blue-500 text-white rounded"
       >
         Regenerate
@@ -506,22 +526,19 @@ const CustomBar: CustomRenderBarProps = ({ displayContent, onSend }) => {
   );
 };
 
-<MarkdownFlow
-  customRenderBar={CustomBar}
-  initialContentList={messages}
-/>
+<MarkdownFlow customRenderBar={CustomBar} initialContentList={messages} />;
 ```
 
 ### Streaming Integration
 
 ```tsx
 const StreamingChat = () => {
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState("");
 
-  useSSE('/api/stream', {
+  useSSE("/api/stream", {
     onMessage: (data) => {
-      setContent(prev => prev + data.chunk);
-    }
+      setContent((prev) => prev + data.chunk);
+    },
   });
 
   return (
@@ -540,14 +557,17 @@ const StreamingChat = () => {
 const Conversation = () => {
   const [blocks, setBlocks] = useState([
     { content: "# Assistant\n\nHello! How can I help?", isFinished: true },
-    { content: "What would you like to know?\n\n?[%{{topic}} Enter topic...]", isFinished: false }
+    {
+      content: "What would you like to know?\n\n?[%{{topic}} Enter topic...]",
+      isFinished: false,
+    },
   ]);
 
   const handleSend = (params) => {
-    if (params.variableName === 'topic') {
-      setBlocks(prev => [
+    if (params.variableName === "topic") {
+      setBlocks((prev) => [
         ...prev,
-        { content: `You asked about: ${params.inputText}`, isFinished: false }
+        { content: `You asked about: ${params.inputText}`, isFinished: false },
       ]);
     }
   };
@@ -557,9 +577,9 @@ const Conversation = () => {
       initialContentList={blocks}
       onSend={handleSend}
       onBlockComplete={(index) => {
-        setBlocks(prev => prev.map((b, i) =>
-          i === index ? { ...b, isFinished: true } : b
-        ));
+        setBlocks((prev) =>
+          prev.map((b, i) => (i === index ? { ...b, isFinished: true } : b))
+        );
       }}
     />
   );

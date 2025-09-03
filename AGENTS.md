@@ -6,15 +6,15 @@ This file provides guidance to all Coding Agents such as Claude Code (claude.ai/
 
 ### Most Common Tasks
 
-| Task | Command | Location |
-|------|---------|----------|
-| Start development server | `npm run dev` | Root directory |
-| Build library | `npm run build` | Root directory |
-| Run Storybook | `npm run storybook` | Root directory |
-| Run tests | `npm test` | Root directory |
-| Run linting | `npm run lint` | Root directory |
-| Format code | `npm run format` | Root directory |
-| Check code quality | `npm run lint && npm run format:check` | Root directory |
+| Task                     | Command                                | Location       |
+| ------------------------ | -------------------------------------- | -------------- |
+| Start development server | `npm run dev`                          | Root directory |
+| Build library            | `npm run build`                        | Root directory |
+| Run Storybook            | `npm run storybook`                    | Root directory |
+| Run tests                | `npm test`                             | Root directory |
+| Run linting              | `npm run lint`                         | Root directory |
+| Format code              | `npm run format`                       | Root directory |
+| Check code quality       | `npm run lint && npm run format:check` | Root directory |
 
 ### Essential Files and Directories
 
@@ -231,20 +231,20 @@ Create Storybook stories for all components:
 
 ```typescript
 // ComponentName.stories.ts
-import type { Meta, StoryObj } from '@storybook/react';
-import { ComponentName } from './ComponentName';
+import type { Meta, StoryObj } from "@storybook/react";
+import { ComponentName } from "./ComponentName";
 
 const meta: Meta<typeof ComponentName> = {
-  title: 'Components/ComponentName',
+  title: "Components/ComponentName",
   component: ComponentName,
   parameters: {
-    layout: 'centered',
+    layout: "centered",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     variant: {
-      control: { type: 'select' },
-      options: ['default', 'alternative'],
+      control: { type: "select" },
+      options: ["default", "alternative"],
     },
   },
 };
@@ -254,14 +254,14 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    children: 'Default component content',
+    children: "Default component content",
   },
 };
 
 export const Alternative: Story = {
   args: {
-    variant: 'alternative',
-    children: 'Alternative variant content',
+    variant: "alternative",
+    children: "Alternative variant content",
   },
 };
 ```
@@ -353,7 +353,7 @@ describe('ComponentName', () => {
 
 Document all public APIs:
 
-```typescript
+````typescript
 /**
  * ContentRender component for rendering markdown with typewriter effects
  *
@@ -376,11 +376,11 @@ export interface ContentRenderProps {
   /** Custom CSS classes */
   className?: string;
 }
-```
+````
 
 ### Hook Documentation
 
-```typescript
+````typescript
 /**
  * Hook for managing typewriter effect state and animations
  *
@@ -399,7 +399,7 @@ export interface ContentRenderProps {
 export function useTypewriter(content: string, speed: number = 50) {
   // Implementation
 }
-```
+````
 
 ## Build and Distribution
 
@@ -437,14 +437,14 @@ dist/
 
 ### Common Issues and Solutions
 
-| Issue | Solution |
-|-------|----------|
-| Build fails with TypeScript errors | Check `tsconfig.json` and fix type errors |
-| Storybook won't start | Clear `.storybook` cache, reinstall dependencies |
-| Components not rendering | Check imports and exports in `src/index.ts` |
-| Styling not applied | Verify Tailwind configuration and class names |
-| Plugin not working | Check plugin registration in ContentRender |
-| SSE connection fails | Verify server endpoint and CORS settings |
+| Issue                              | Solution                                         |
+| ---------------------------------- | ------------------------------------------------ |
+| Build fails with TypeScript errors | Check `tsconfig.json` and fix type errors        |
+| Storybook won't start              | Clear `.storybook` cache, reinstall dependencies |
+| Components not rendering           | Check imports and exports in `src/index.ts`      |
+| Styling not applied                | Verify Tailwind configuration and class names    |
+| Plugin not working                 | Check plugin registration in ContentRender       |
+| SSE connection fails               | Verify server endpoint and CORS settings         |
 
 ### Debug Commands
 
@@ -489,6 +489,7 @@ npm pack --dry-run
 **Required Format**: `<type>: <description>`
 
 **Common Types**:
+
 - `feat:` - New feature or component
 - `fix:` - Bug fix
 - `docs:` - Documentation changes
@@ -501,6 +502,7 @@ npm pack --dry-run
 - `style:` - Code formatting (no functional changes)
 
 **Examples**:
+
 - `feat: add typewriter effect to ContentRender component`
 - `fix: resolve markdown parsing issue with nested lists`
 - `docs: update component API documentation`
@@ -508,6 +510,7 @@ npm pack --dry-run
 ### Pre-commit Quality Checks
 
 Pre-commit hooks automatically run:
+
 - **ESLint**: Code quality and style checks
 - **Prettier**: Code formatting
 - **TypeScript**: Type checking

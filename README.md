@@ -2,7 +2,7 @@
 
 **React component library for rendering interactive [MarkdownFlow](https://markdownflow.ai) documents with typewriter effects and real-time streaming.**
 
-[MarkdownFlow](https://markdownflow.ai) (also known as MDFlow or markdown-flow) extends standard Markdown with AI intelligence to create personalized, interactive pages. Its tagline is **"Write Once, Deliver Personally"**.
+[MarkdownFlow](https://markdownflow.ai) (also known as MDFlow or markdown-flow) extends standard Markdown with AI to create personalized, interactive pages. Its tagline is **"Write Once, Deliver Personally"**.
 
 <div style="text-align:center">
 

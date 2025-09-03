@@ -2,7 +2,7 @@
 
 **用于渲染交互式 [MarkdownFlow](https://markdownflow.ai) 文档的 React 组件库，具有打字机效果和实时流式传输功能。**
 
-MarkdownFlow（也称为 MDFlow 或 markdown-flow）通过 AI 技术扩展了标准 Markdown，用于创建个性化的交互式页面。我们的口号是：**“一次创作，千人千面”**。
+MarkdownFlow（也称为 MDFlow 或 markdown-flow）通过 AI 扩展了标准 Markdown，用于创建个性化的交互式页面。我们的口号是：**“一次创作，千人千面”**。
 
 <div style="text-align:center">
 

@@ -117,6 +117,7 @@ const useSSE = <T = any>(
               finalDataRef.current += parsedData;
               setData(finalDataRef.current as any);
             } catch (err) {
+              // eslint-disable-next-line no-console
               console.warn("Failed to process SSE message:", err);
             }
           }

@@ -46,7 +46,6 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             onSend={onSend}
             typingSpeed={typingSpeed}
             onTypeFinished={() => {
-              console.log(`Block ${index} typing finished`);
               onBlockComplete?.(index);
             }}
           />

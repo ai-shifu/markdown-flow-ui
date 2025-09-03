@@ -244,6 +244,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
         const updatedList = updateContentListWithSseData(data);
         setContentList(updatedList);
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.error("Error processing SSE message:", error);
       }
     }

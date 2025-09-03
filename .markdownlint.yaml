@@ -59,3 +59,8 @@ exclude:
   - ".storybook/**"
   - "dist/**"
   - ".git/**"
+
+# CHANGELOG.md specific rules
+files:
+  "CHANGELOG.md":
+    MD001: false # Allow heading level increments for standard-version format

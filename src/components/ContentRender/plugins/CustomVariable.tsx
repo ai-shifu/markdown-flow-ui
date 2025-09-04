@@ -23,7 +23,6 @@ interface CustomVariableProps {
   defaultInputText?: string;
   readonly?: boolean;
   onSend?: (content: OnSendContentParams) => void;
-  tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
 
 interface ComponentsWithCustomVariable extends Components {
@@ -37,7 +36,6 @@ const CustomButtonInputVariable = ({
   defaultButtonText,
   defaultInputText,
   onSend,
-  tooltipMinLength = 10,
 }: CustomVariableProps) => {
   const [inputValue, setInputValue] = React.useState(defaultInputText || "");
 

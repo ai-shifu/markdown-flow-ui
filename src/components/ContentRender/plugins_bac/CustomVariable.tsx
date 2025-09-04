@@ -37,7 +37,6 @@ const CustomButtonInputVariable = ({
   defaultButtonText,
   defaultInputText,
   onSend,
-  tooltipMinLength = 10,
 }: CustomVariableProps) => {
   const [inputValue, setInputValue] = React.useState(defaultInputText || "");
 

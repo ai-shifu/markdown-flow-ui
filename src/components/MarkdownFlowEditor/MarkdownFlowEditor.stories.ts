@@ -3,7 +3,6 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 // import { fn } from 'storybook/test';
 
 import MarkdownFlowEditor from "./MarkdownFlowEditor";
-import type { MarkdownFlowEditorProps } from "./MarkdownFlowEditor";
 
 const meta = {
   title: "MarkdownFlow/MarkdownFlowEditor",
@@ -32,7 +31,6 @@ const meta = {
   },
   args: {
     value: "",
-    onChange: (value) => console.log(value),
     className: "",
     readOnly: false,
   },
@@ -75,8 +73,5 @@ export const MarkdownFlowEditorStory: Story = {
 问用户是不是真的是人类？如果是，请登录
 
 ?[登录](login_url)`,
-    onChange: (value) => {
-      console.log(value);
-    },
   },
 };

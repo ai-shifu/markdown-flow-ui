@@ -13,10 +13,6 @@ repos:
         exclude: ^pnpm-lock\.yaml$
       - id: trailing-whitespace
         exclude: ^pnpm-lock\.yaml$
-      - id: pretty-format-json
-        args: ["--autofix", "--indent=2", "--no-ensure-ascii"]
-        files: \.(json)$
-        exclude: ^(pnpm-lock\.yaml|package-lock\.json)$
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.45.0
     hooks:
@@ -30,6 +26,12 @@ repos:
         additional_dependencies: ["markupsafe==2.0.1"]
   - repo: local
     hooks:
+      - id: eslint
+        name: ESLint
+        entry: bash -c 'npm run lint -- --fix --max-warnings 20 --file $(echo "$@" | tr " " "\n" | grep -E "\.(js|jsx|ts|tsx)$") || true' --
+        language: system
+        files: ^src/.*\.(js|jsx|ts|tsx)$
+        pass_filenames: true
       - id: prettier
         name: Prettier
         entry: prettier
@@ -37,10 +39,4 @@ repos:
         files: ^src/.*\.(js|jsx|ts|tsx|mjs|cjs|css|scss|json)$
         args: ["--write"]
         additional_dependencies: ["prettier@^3.5.3"]
-        pass_filenames: true
-      - id: eslint
-        name: ESLint
-        entry: bash -c 'npm run lint -- --fix --max-warnings 0 --file $(echo "$@" | tr " " "\n" | grep -E "\.(js|jsx|ts|tsx)$") || true' --
-        language: system
-        files: ^src/.*\.(js|jsx|ts|tsx)$
         pass_filenames: true

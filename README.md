@@ -287,7 +287,7 @@ function useTypewriter(
   start: () => void;
   pause: () => void;
   reset: () => void;
-}
+};
 ```
 
 **Example:**

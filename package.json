@@ -146,5 +146,5 @@
     "version": "npm run changelog && git add CHANGELOG.md"
   },
   "types": "dist/index.d.ts",
-  "version": "0.1.0"
+  "version": "0.1.1"
 }

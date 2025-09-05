@@ -36,7 +36,8 @@ repos:
         name: Prettier
         entry: prettier
         language: node
-        files: ^src/.*\.(js|jsx|ts|tsx|mjs|cjs|css|scss|json)$
+        files: \.(js|jsx|ts|tsx|mjs|cjs|css|scss|json)$
+        exclude: ^(package-lock\.json|pnpm-lock\.yaml|node_modules/).*$
         args: ["--write"]
         additional_dependencies: ["prettier@^3.5.3"]
         pass_filenames: true

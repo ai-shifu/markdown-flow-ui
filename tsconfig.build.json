@@ -13,5 +13,7 @@
     "src/**/*.spec.tsx"
   ],
   "extends": "./tsconfig.json",
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ]
 }

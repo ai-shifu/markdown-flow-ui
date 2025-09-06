@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import useSSE from "../sse/useSSE";
+import useSSE from "./useSSE";
 import useMarkdownInfo from "./useMarkdownInfo";
 import ScrollableMarkdownFlow from "../MarkdownFlow/ScrollableMarkdownFlow";
 import { ContentRenderProps } from "../ContentRender/ContentRender";
@@ -244,7 +244,6 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
         const updatedList = updateContentListWithSseData(data);
         setContentList(updatedList);
       } catch (error) {
-        // eslint-disable-next-line no-console
         console.error("Error processing SSE message:", error);
       }
     }

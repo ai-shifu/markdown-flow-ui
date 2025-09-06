@@ -171,7 +171,7 @@ jobs:
               local tag_created=false
 
               echo "🏷️ Creating git tag..."
-              
+
               # Check if tag already exists
               if git tag -l | grep -q "^${new_version}$"; then
                 echo "⚠️ Tag ${new_version} already exists, skipping creation"
@@ -179,7 +179,7 @@ jobs:
               else
                 local prev_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo '1.0.0')
                 echo "📝 Creating tag ${new_version} from ${prev_tag}..."
-                
+
                 if git tag "${new_version}" -m "bump: version ${prev_tag} → ${new_version}" 2>/dev/null; then
                   echo "✅ Git tag created successfully: ${new_version}"
                   tag_created=true

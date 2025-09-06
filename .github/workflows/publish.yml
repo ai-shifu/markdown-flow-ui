@@ -72,6 +72,8 @@ jobs:
       - name: Bump version automatically
         id: bump-version
         run: |
+          set -euo pipefail
+          
           echo "🔍 Checking for conventional commits that warrant version bump..."
           echo "📊 Current git status:"
           git status --porcelain
@@ -82,56 +84,122 @@ jobs:
           echo "📝 Recent commits:"
           git log --oneline -5
 
-          # Try commitizen dry-run with error handling
+          # Try commitizen dry-run with improved error handling
+          echo "🧪 Running commitizen dry-run..."
           if DRY_RUN_OUTPUT=$(cz bump --dry-run 2>&1); then
-            echo "🧪 Commitizen dry-run output:"
+            echo "✅ Commitizen dry-run successful"
             echo "$DRY_RUN_OUTPUT"
+            DRY_RUN_EXIT=0
           else
-            echo "⚠️ Commitizen dry-run failed, trying alternative detection..."
+            DRY_RUN_EXIT=$?
+            echo "⚠️ Commitizen dry-run failed with exit code: $DRY_RUN_EXIT" >&2
             DRY_RUN_OUTPUT=$(cz bump --dry-run 2>&1 || true)
-            echo "🧪 Commitizen dry-run output (with errors):"
             echo "$DRY_RUN_OUTPUT"
           fi
 
-          if echo "$DRY_RUN_OUTPUT" | grep -q "bump: version"; then
+          # More robust version detection
+          if echo "$DRY_RUN_OUTPUT" | grep -q "bump: version" || echo "$DRY_RUN_OUTPUT" | grep -qE "tag to create.*v[0-9]"; then
             echo "bump_needed=true" >> $GITHUB_OUTPUT
-            echo "Version bump detected based on conventional commits"
+            echo "✅ Version bump detected based on conventional commits"
 
-            # Get the new version that commitizen would create
-            NEW_VERSION=$(echo "$DRY_RUN_OUTPUT" | grep "bump: version" | sed 's/.*→ //')
-            echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-            echo "New version will be: $NEW_VERSION"
-
-            # Generate changelog content from last tag to current commits (incremental only)
-            LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-            if [ -n "$LAST_TAG" ]; then
-              CHANGELOG_CONTENT=$(cz changelog --start-rev=$LAST_TAG --unreleased-version=$NEW_VERSION --dry-run 2>/dev/null || echo "## What's Changed\n\nThis release includes improvements and bug fixes.")
-            else
-              CHANGELOG_CONTENT=$(cz changelog --unreleased-version=$NEW_VERSION --dry-run 2>/dev/null || echo "## What's Changed\n\nInitial release of markdown-flow-ui library.")
+            # Enhanced version extraction with multiple fallback methods
+            NEW_VERSION=""
+            
+            # Method 1: Extract from "bump: version" line
+            if echo "$DRY_RUN_OUTPUT" | grep -q "bump: version"; then
+              NEW_VERSION=$(echo "$DRY_RUN_OUTPUT" | grep "bump: version" | sed -n 's/.*→ \(.*\)/\1/p' | head -1)
             fi
-            echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
-            echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
+            
+            # Method 2: Extract from "tag to create" line if method 1 fails
+            if [ -z "$NEW_VERSION" ] && echo "$DRY_RUN_OUTPUT" | grep -qE "tag to create.*v[0-9]"; then
+              NEW_VERSION=$(echo "$DRY_RUN_OUTPUT" | grep -oE "v[0-9]+\.[0-9]+\.[0-9]+" | head -1)
+            fi
+            
+            # Method 3: Fallback to commitizen info if still empty
+            if [ -z "$NEW_VERSION" ]; then
+              echo "⚠️ Could not extract version from dry-run, trying commitizen info..." >&2
+              CURRENT_VERSION=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "1.0.0")
+              NEW_VERSION="v$(echo "$CURRENT_VERSION" | awk -F. '{print $1"."$2"."$3+1}')"
+              echo "📝 Fallback version calculated: $NEW_VERSION"
+            fi
+            
+            if [ -z "$NEW_VERSION" ]; then
+              echo "❌ Failed to determine new version" >&2
+              exit 1
+            fi
+            
+            echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            echo "🎯 New version will be: $NEW_VERSION"
 
-            # Create ONLY git tag - no package.json modification needed
-            echo "Creating git tag..."
-            if ! cz bump --yes; then
-              echo "⚠️ Commitizen bump failed, trying manual tag creation..."
-              if git tag -l | grep -q "^v$NEW_VERSION$"; then
-                echo "⚠️ Tag v$NEW_VERSION already exists, skipping tag creation"
+            # Generate changelog with better error handling
+            echo "📝 Generating changelog content..."
+            LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+            CHANGELOG_CONTENT=""
+            
+            if [ -n "$LAST_TAG" ]; then
+              if CHANGELOG_CONTENT=$(cz changelog --start-rev="$LAST_TAG" --unreleased-version="$NEW_VERSION" --dry-run 2>/dev/null); then
+                echo "✅ Changelog generated successfully"
               else
-                git tag "v$NEW_VERSION" -m "bump: version $(git describe --tags --abbrev=0 2>/dev/null || echo '1.0.0') → $NEW_VERSION"
-                echo "✅ Manual tag created: v$NEW_VERSION"
+                echo "⚠️ Changelog generation failed, using fallback" >&2
+                CHANGELOG_CONTENT="## What's Changed\n\nThis release includes improvements and bug fixes since $LAST_TAG."
               fi
             else
+              echo "📝 No previous tags found, generating initial changelog"
+              CHANGELOG_CONTENT="## What's Changed\n\n🎉 Initial release of markdown-flow-ui library with comprehensive features for markdown rendering."
+            fi
+            
+            {
+              echo "changelog_content<<EOF"
+              echo -e "$CHANGELOG_CONTENT"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
+
+            # Create git tag with improved error handling
+            echo "🏷️ Creating git tag..."
+            TAG_CREATED=false
+            
+            if cz bump --yes 2>/dev/null; then
               echo "✅ Commitizen tag created successfully"
+              TAG_CREATED=true
+            else
+              echo "⚠️ Commitizen bump failed, attempting manual tag creation..." >&2
+              
+              # Check if tag already exists
+              if git tag -l | grep -q "^$NEW_VERSION$"; then
+                echo "⚠️ Tag $NEW_VERSION already exists, skipping creation"
+                TAG_CREATED=true
+              else
+                PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo '1.0.0')
+                if git tag "$NEW_VERSION" -m "bump: version $PREV_TAG → $NEW_VERSION" 2>/dev/null; then
+                  echo "✅ Manual tag created: $NEW_VERSION"
+                  TAG_CREATED=true
+                else
+                  echo "❌ Failed to create tag $NEW_VERSION" >&2
+                  exit 1
+                fi
+              fi
             fi
 
-            # Push the tag
-            git push origin --follow-tags
+            # Push tags with retry mechanism
+            if [ "$TAG_CREATED" = true ]; then
+              echo "🚀 Pushing tags to remote..."
+              for i in {1..3}; do
+                if git push origin --follow-tags; then
+                  echo "✅ Tags pushed successfully"
+                  break
+                else
+                  echo "⚠️ Push attempt $i failed, retrying..." >&2
+                  sleep $((i * 2))
+                  if [ $i -eq 3 ]; then
+                    echo "❌ Failed to push tags after 3 attempts" >&2
+                    exit 1
+                  fi
+                fi
+              done
+            fi
           else
             echo "bump_needed=false" >> $GITHUB_OUTPUT
-            echo "No version bump needed based on commit messages"
+            echo "ℹ️ No version bump needed based on commit messages"
           fi
 
       - name: Get version

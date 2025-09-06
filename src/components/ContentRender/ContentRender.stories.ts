@@ -219,44 +219,6 @@ This greatly enhances content expressiveness and interactivity!
 
 `;
 
-const MERMAID_ERROR_HANDLING_TEST = `# Mermaid Error Handling Test
-
-## Valid Mermaid Chart
-\`\`\`mermaid
-graph TD
-    A[Start] --> B[End]
-\`\`\`
-
-## Invalid Mermaid Chart 1 - Missing Arrow
-\`\`\`mermaid
-graph TD
-    A[Start] B[End]
-    C --> D
-\`\`\`
-
-## Invalid Mermaid Chart 2 - Wrong Syntax
-\`\`\`mermaid
-flowchart XYZ
-    A[Start] --> B{Decision}
-    wrongkeyword --> D[End]
-\`\`\`
-
-## Invalid Mermaid Chart 3 - Completely Wrong Content
-\`\`\`mermaid
-This is not mermaid syntax at all
-Just some random text
-With some --> arrows
-And [bracket] content
-\`\`\`
-
-## Invalid Mermaid Chart 4 - Empty Content
-\`\`\`mermaid
-
-\`\`\`
-
-This test demonstrates the new error handling mechanism. Invalid Mermaid charts are now displayed as code blocks with the "mermaid" label instead of showing red error messages.
-`;
-
 // ==============================================================================
 // Story Definitions
 // ==============================================================================
@@ -281,14 +243,6 @@ export const MathAndMermaidDemo: Story = {
   name: "Math Formulas + Mermaid Charts",
   args: {
     content: MATH_AND_MERMAID_CONTENT,
-    enableTypewriter: false,
-  },
-};
-
-export const MermaidErrorHandling: Story = {
-  name: "Mermaid Error Handling Test",
-  args: {
-    content: MERMAID_ERROR_HANDLING_TEST,
     enableTypewriter: false,
   },
 };

@@ -165,49 +165,52 @@ jobs:
               echo "EOF"
             } >> $GITHUB_OUTPUT
 
-            # Create git tag with improved error handling
-            echo "🏷️ Creating git tag..."
-            TAG_CREATED=false
+            # Create and push git tag (extracted function)
+            create_and_push_tag() {
+              local new_version="$1"
+              local tag_created=false
 
-            if cz bump --yes 2>/dev/null; then
-              echo "✅ Commitizen tag created successfully"
-              TAG_CREATED=true
-            else
-              echo "⚠️ Commitizen bump failed, attempting manual tag creation..." >&2
+              echo "🏷️ Creating git tag..."
 
               # Check if tag already exists
-              if git tag -l | grep -q "^$NEW_VERSION$"; then
-                echo "⚠️ Tag $NEW_VERSION already exists, skipping creation"
-                TAG_CREATED=true
+              if git tag -l | grep -q "^${new_version}$"; then
+                echo "⚠️ Tag ${new_version} already exists, skipping creation"
+                tag_created=true
               else
-                PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo '1.0.0')
-                if git tag "$NEW_VERSION" -m "bump: version $PREV_TAG → $NEW_VERSION" 2>/dev/null; then
-                  echo "✅ Manual tag created: $NEW_VERSION"
-                  TAG_CREATED=true
+                local prev_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo '1.0.0')
+                echo "📝 Creating tag ${new_version} from ${prev_tag}..."
+
+                if git tag "${new_version}" -m "bump: version ${prev_tag} → ${new_version}" 2>/dev/null; then
+                  echo "✅ Git tag created successfully: ${new_version}"
+                  tag_created=true
                 else
-                  echo "❌ Failed to create tag $NEW_VERSION" >&2
-                  exit 1
+                  echo "❌ Failed to create tag ${new_version}" >&2
+                  return 1
                 fi
               fi
-            fi
 
-            # Push tags with retry mechanism
-            if [ "$TAG_CREATED" = true ]; then
-              echo "🚀 Pushing tags to remote..."
-              for i in {1..3}; do
-                if git push origin --follow-tags; then
-                  echo "✅ Tags pushed successfully"
-                  break
-                else
-                  echo "⚠️ Push attempt $i failed, retrying..." >&2
-                  sleep $((i * 2))
-                  if [ $i -eq 3 ]; then
-                    echo "❌ Failed to push tags after 3 attempts" >&2
-                    exit 1
+              # Push ONLY the new tag (no branch or file changes)
+              if [ "$tag_created" = true ]; then
+                echo "🚀 Pushing only the new tag to remote..."
+                for i in {1..3}; do
+                  if git push origin "${new_version}"; then
+                    echo "✅ Tag ${new_version} pushed successfully"
+                    return 0
+                  else
+                    echo "⚠️ Tag push attempt $i failed, retrying..." >&2
+                    sleep $((i * 2))
+                    if [ $i -eq 3 ]; then
+                      echo "❌ Failed to push tag after 3 attempts" >&2
+                      return 1
+                    fi
                   fi
-                fi
-              done
-            fi
+                done
+              fi
+              return 0
+            }
+
+            # Call the extracted function with proper quoting
+            create_and_push_tag "$NEW_VERSION"
           else
             echo "bump_needed=false" >> $GITHUB_OUTPUT
             echo "ℹ️ No version bump needed based on commit messages"

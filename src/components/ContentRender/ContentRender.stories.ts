@@ -331,43 +331,45 @@ pie title 编程语言使用统计
 };
 
 export const MermaidErrorHandlingTest: Story = {
+  name: "Mermaid Error Handling Test",
   args: {
     enableTypewriter: false,
-    content: `# Mermaid 错误处理测试
+    content: `# Mermaid Error Handling Test
 
-## 正确的 Mermaid 图表
+## Valid Mermaid Chart
 \`\`\`mermaid
 graph TD
-    A[开始] --> B[结束]
+    A[Start] --> B[End]
 \`\`\`
 
-## 错误的 Mermaid 图表 1 - 缺失箭头
+## Invalid Mermaid Chart 1 - Missing Arrow
 \`\`\`mermaid
 graph TD
-    A[开始] B[结束]
+    A[Start] B[End]
     C --> D
 \`\`\`
 
-## 错误的 Mermaid 图表 2 - 错误语法
+## Invalid Mermaid Chart 2 - Wrong Syntax
 \`\`\`mermaid
 flowchart XYZ
-    A[开始] --> B{决定}
-    wrongkeyword --> D[结束]
+    A[Start] --> B{Decision}
+    wrongkeyword --> D[End]
 \`\`\`
 
-## 错误的 Mermaid 图表 3 - 完全错误的内容
+## Invalid Mermaid Chart 3 - Completely Wrong Content
 \`\`\`mermaid
-这根本不是 mermaid 语法
-只是一些随机文本
-带有一些 --> 箭头
-和 [括号] 内容
+This is not mermaid syntax at all
+Just some random text
+With some --> arrows
+And [bracket] content
 \`\`\`
 
-## 错误的 Mermaid 图表 4 - 空内容
+## Invalid Mermaid Chart 4 - Empty Content
 \`\`\`mermaid
 
 \`\`\`
 
-以上测试展示了新的错误处理机制，现在错误的 Mermaid 图表会显示为带有 "mermaid" 标签的代码块，而不是显示红色错误消息。`,
+This test demonstrates the new error handling mechanism. Invalid Mermaid charts now show friendly error messages with helpful syntax hints instead of crashing or showing confusing error messages.
+`,
   },
 };

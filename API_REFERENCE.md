@@ -108,7 +108,6 @@ interface ContentRenderProps {
   defaultInputText?: string;
   readonly?: boolean;
   onTypeFinished?: () => void;
-  tooltipMinLength?: number;
 }
 ```
 
@@ -119,7 +118,6 @@ interface ContentRenderProps {
 - `enableTypewriter` - Enable animation (default: false)
 - `readonly` - Make interactive elements read-only
 - `onTypeFinished` - Called when typing completes
-- `tooltipMinLength` - Min length for tooltips (default: 10)
 
 **Supported Markdown:**
 
@@ -230,40 +228,6 @@ return (
     )}
   </div>
 );
-```
-
-### useSSE
-
-Server-Sent Events integration.
-
-```typescript
-function useSSE(
-  url: string,
-  options?: {
-    onMessage?: (data: any) => void;
-    onError?: (error: Error) => void;
-    onOpen?: () => void;
-    reconnect?: boolean;
-    reconnectInterval?: number;
-  }
-): {
-  data: any;
-  isConnected: boolean;
-  error: Error | null;
-  close: () => void;
-};
-```
-
-**Example:**
-
-```tsx
-const { data, isConnected, error } = useSSE("/api/stream", {
-  onMessage: (chunk) => {
-    setContent((prev) => prev + chunk);
-  },
-  reconnect: true,
-  reconnectInterval: 3000,
-});
 ```
 
 ## Types
@@ -389,11 +353,4 @@ The library uses Tailwind CSS and provides customization through:
   --markdown-flow-border: #d1d5db;
   --markdown-flow-code-bg: #f3f4f6;
 }
-```
-
-**Component Classes:**
-
-```tsx
-<MarkdownFlow className="my-custom-flow" />
-<ScrollableMarkdownFlow className="chat-interface" />
 ```

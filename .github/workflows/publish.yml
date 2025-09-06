@@ -62,7 +62,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm ci
-          npm install -g commitizen cz-conventional-changelog
+          pip install --upgrade commitizen
 
       - name: Configure Git
         run: |
@@ -86,6 +86,9 @@ jobs:
 
           # Try commitizen dry-run with improved error handling
           echo "🧪 Running commitizen dry-run..."
+          echo "📋 Commitizen version:"
+          cz version || echo "cz version failed"
+
           if DRY_RUN_OUTPUT=$(cz bump --dry-run 2>&1); then
             echo "✅ Commitizen dry-run successful"
             echo "$DRY_RUN_OUTPUT"
@@ -93,8 +96,16 @@ jobs:
           else
             DRY_RUN_EXIT=$?
             echo "⚠️ Commitizen dry-run failed with exit code: $DRY_RUN_EXIT" >&2
+            echo "📋 Commitizen output:"
             DRY_RUN_OUTPUT=$(cz bump --dry-run 2>&1 || true)
             echo "$DRY_RUN_OUTPUT"
+
+            echo "🔍 Debugging info:"
+            echo "Current directory: $(pwd)"
+            echo "Config files:"
+            ls -la .cz* 2>/dev/null || echo "No .cz config files found"
+            echo "Git status:"
+            git status --porcelain
           fi
 
           # More robust version detection

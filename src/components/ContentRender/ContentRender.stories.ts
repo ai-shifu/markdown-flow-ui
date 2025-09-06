@@ -62,7 +62,7 @@ export const ContentRenderStory1: Story = {
 console.log('Hello World');
 
   `,
-    disableTyping: false,
+    enableTypewriter: true,
   },
 };
 
@@ -102,7 +102,7 @@ export const ContentRenderStory2: Story = {
 ?[登录](login_url)
 
   `,
-    disableTyping: false,
+    enableTypewriter: true,
   },
 };
 
@@ -199,7 +199,7 @@ $$
 
 export const ContentRenderStory4: Story = {
   args: {
-    disableTyping: true,
+    enableTypewriter: false,
     content: `# Markdown 语法示例 \n\n ## 基础文本样式
 **粗体文本**、*斜体文本*、~~删除线文本~~、\`行内代码\`
 
@@ -291,7 +291,7 @@ $$
 
 export const ContentRenderMarkdownStyleShow: Story = {
   args: {
-    disableTyping: true,
+    enableTypewriter: false,
     content: `# 完整Markdown语法测试
 
 ## 标题测试
@@ -363,7 +363,7 @@ def hello():
 
 export const ContentRenderMathAndMermaid: Story = {
   args: {
-    disableTyping: true,
+    enableTypewriter: false,
     content: `# 数学公式和图表展示
 
 ## 数学公式
@@ -446,7 +446,7 @@ pie title 编程语言使用统计
 
 export const MermaidErrorHandlingTest: Story = {
   args: {
-    disableTyping: true,
+    enableTypewriter: false,
     content: `# Mermaid 错误处理测试
 
 ## 正确的 Mermaid 图表

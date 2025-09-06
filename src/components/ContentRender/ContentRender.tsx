@@ -28,7 +28,7 @@ export interface ContentRenderProps {
   customRenderBar?: CustomRenderBarProps;
   onSend?: (content: OnSendContentParams) => void;
   typingSpeed?: number;
-  disableTyping?: boolean;
+  enableTypewriter?: boolean;
   defaultButtonText?: string;
   defaultInputText?: string; // Text input by user
   readonly?: boolean;
@@ -44,7 +44,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   customRenderBar,
   onSend,
   typingSpeed = 30,
-  disableTyping = true,
+  enableTypewriter = false,
   defaultButtonText,
   defaultInputText,
   readonly = false,
@@ -55,7 +55,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   const { displayContent, isComplete } = useTypewriterStateMachine({
     content: processMarkdownText(content),
     typingSpeed,
-    disabled: disableTyping,
+    disabled: !enableTypewriter,
   });
 
   const components: CustomComponents = {

@@ -2,9 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [0.1.0](https://github.com/aiworklab/markdown-flow-ui/compare/v0.1.0-alpha.26...v0.1.0) (2025-09-03)
-
-## [0.1.0-alpha.26] - 2025-01-03
+## [1.0.0] - 2025-09-06
 
 ### Added
 
@@ -35,4 +33,4 @@ All notable changes to this project will be documented in this file. See [standa
 - Enhanced component API documentation
 - Formatted codebase with consistent style (#17)
 
-[0.1.0-alpha.26]: https://github.com/ai-shifu/markdown-flow-ui/releases/tag/v0.1.0-alpha.26
+[1.0.0]: https://github.com/ai-shifu/markdown-flow-ui/releases/tag/v1.0.0

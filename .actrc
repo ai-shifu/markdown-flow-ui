@@ -1,7 +1,0 @@
-# act configuration file
-# Use nektos/act-environments-ubuntu for larger runners
--P ubuntu-latest=catthehacker/ubuntu:act-20.04
-# Enable verbose logging
---verbose
-# Set default container architecture to match host
---container-architecture linux/amd64

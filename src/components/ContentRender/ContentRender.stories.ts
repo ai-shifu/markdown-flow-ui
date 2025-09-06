@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-// import { fn } from 'storybook/test';
-
 import ContentRender from "./ContentRender";
 
 const meta = {
@@ -23,314 +21,55 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const ContentRenderStory1: Story = {
-  args: {
-    content: `
-  ## 欢迎使用自定义按钮
+// ==============================================================================
+// Markdown Test Content Constants
+// ==============================================================================
 
-  点击继续: ?[Continue]
+const COMPREHENSIVE_MARKDOWN_SYNTAX = `# Complete Markdown Syntax Test
 
-  点击继续: ?[Continue//cc]
+## Heading Levels
+### H3 Heading
+#### H4 Heading
+##### H5 Heading
+###### H6 Heading
 
-  点击继续: ?[Continue//cc|cancel//ccc]
+## Text Formatting
+**Bold text**, *italic text*, ~~strikethrough text~~, and \`inline code\`
 
-  或者尝试: ?[确认提交]
+## Lists
 
-  或者尝试: ?[%{{inputVariable}}确认提交]
+### Unordered Lists
+- First item
+- Second item
+  - Nested item 1
+  - Nested item 2
+    - Deep nesting
+- Third item
 
-  或者尝试: ?[%{{inputVariable}}...希望我怎么称呼你]
+### Ordered Lists
+1. First item
+2. Second item
+   1. Nested item 1
+   2. Nested item 2
+      1. Deep nested item
+3. Third item
 
-  # 欢迎使用 Markdown
+## Links and Images
 
-这是一个 **粗体** 文本和 *斜体* 文本。
+Link:
 
-- 列表项1
-- 列表项2
+[AI-Shifu Link](https://ai-shifu.cn/)
 
-[Google](https://google.com)
+Image:
 
-![图片](http://gips3.baidu.com/it/u=1821127123,1149655687&fm=3028&app=3028&f=JPEG&fmt=auto?w=720&h=1280)
+![Image Description](https://ai-shifu.cn/imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/height:2000/https:/cdn.gamma.app/51wyzvm6tssdgg1/c8d63919f06741bb8967fa6af3a299f2/original/Cai-Se-logo-Dai-Wen-Zi-Gao-Du-Liu-Bai-h110.png)
 
-~~删除线文本~~
+## Blockquotes
+> This is a blockquote
+> Second line of quote
+> > Nested blockquote
 
----
-
-上面有个分割线
-
-
-\`\`\`javascript
-console.log('Hello World');
-
-  `,
-    disableTyping: false,
-  },
-};
-
-export const ContentRenderStory2: Story = {
-  args: {
-    content: `
-
-用友好的语气讲课：
-- 先问好，介绍自己叫孙志岗，欢迎用户来听 AI 课
-- 描述下 AI 多重要，一定要学好 AI
-- 询问该怎么称呼用户
-
-?[%{{sys_user_nickname}}...希望我怎么称呼你]
-
-用户叫'''{{sys_user_nickname}}'''，称赞下这个名字
-表示非常希望能和用户一起顺利走进 AGI 时代。因为你的个人使命就是===帮助 100 万人顺利走进 AGI 时代===
-解释下什么是 AGI
-
----
-
-表示想知道用户的性别，这样讲课可以更适配
-
-?[%{{gender}}男|女]
-
-询问用户喜欢什么样的讲课风格。可以点击按钮选择，也可以自定义
-
-?[%{{sys_user_style}}幽默|大气|二次元|...具体描述下你喜欢的风格]
-
-用{{sys_user_style}}风格向性别是{{gender}}，名叫{{sys_user_nickname}}的用户讲课：
-反问用户看到下面的图是否会觉得不舒服？
-
-![AI 统治世界图](http://gips3.baidu.com/it/u=1821127123,1149655687&fm=3028&app=3028&f=JPEG&fmt=auto?w=720&h=1280)
-
-用同理心表示，不舒服是正常的，这是人类共同的反应
-问用户是不是真的是人类？如果是，请登录
-
-?[登录](login_url)
-
-  `,
-    disableTyping: false,
-  },
-};
-
-export const ContentRenderStory3: Story = {
-  args: {
-    content: `# Markdown 语法示例
-
-## 基础文本样式
-**粗体文本**、*斜体文本*、~~删除线文本~~、\`行内代码\`
-
-## 列表
-### 无序列表
-- 列表项1
-- 列表项2
-  - 嵌套列表项
-- 列表项3
-
-### 有序列表
-1. 第一项
-2. 第二项
-   1. 嵌套项
-3. 第三项
-
-## 链接与图片
-[普通链接](https://example.com)
-![图片描述](http://gips3.baidu.com/it/u=1821127123,1149655687&fm=3028&app=3028&f=JPEG&fmt=auto?w=720&h=1280)
-
-## 引用块
-> 这是一个引用块
-> 第二行引用
-
-## 代码块
-\`\`\`javascript
-// JavaScript code block
-function hello() {
-  console.log("Hello World!");
-}
-\`\`\`
-
-## 表格
-| 表头1 | 表头2 |
-|-------|-------|
-| 单元格1 | 单元格2 |
-| 单元格3 | 单元格4 |
-
-## 自定义变量语法示例
-
-### 格式1: 多按钮+占位符
-选择你的职业：?[%{{occupation}}战士|法师|盗贼|... 其他职业]
-
-### 格式2: 多按钮（带空格）
-选择颜色：?[%{{ color }} 红色 | 蓝色 | 绿色 ]
-
-### 格式3: 单按钮（带空格）
-确认提交：?[%{{ submit }} 确认 ]
-
-### 格式4: 占位符（带空格）
-输入用户名：?[%{{ username }} ... 请输入用户名 ]
-
-### 混合格式
-1. 无空格：?[%{{quick}}按钮1|按钮2]
-2. 有空格：?[%{{ variable }} 选项A | 选项B | ... 自定义选项]
-3. 复杂组合：?[%{{ complex }} 第一步 | 第二步 | 第三步 | ... 其他步骤]
-
-## 分隔线
----
-
-## HTML 嵌入
-<p style="color: blue;">这是HTML段落</p>
-
-## 任务列表
-- [x] 已完成任务
-- [ ] 未完成任务
-
-## 脚注
-这是一个带脚注的文本[^1]
-[^1]: 脚注内容
-
-## 表情符号
-:smile: :heart: :+1:
-
-## 转义字符
-\*不是斜体\*、\[不是链接\]
-
-## 数学公式（部分Markdown支持）
-$$
-a^2 + b^2 = c^2
-$$
-
-## 结束语
-以上展示了各种Markdown语法元素，包括自定义变量语法。`,
-  },
-};
-
-export const ContentRenderStory4: Story = {
-  args: {
-    disableTyping: true,
-    content: `# Markdown 语法示例 \n\n ## 基础文本样式
-**粗体文本**、*斜体文本*、~~删除线文本~~、\`行内代码\`
-
-?[%{{ sys_user_style }}幽默|大气|二次元｜...能否详细说明你偏好的风格特征]
-
-## 列表
-### 无序列表
-- 列表项1
-- 列表项2
-  - 嵌套列表项
-- 列表项3
-
-### 有序列表
-1. 第一项
-2. 第二项
-   1. 嵌套项
-3. 第三项
-
-## 链接与图片
-[普通链接](https://example.com)
-![图片描述](http://gips3.baidu.com/it/u=1821127123,1149655687&fm=3028&app=3028&f=JPEG&fmt=auto?w=720&h=1280)
-
-## 引用块
-> 这是一个引用块
-> 第二行引用
-
-## 代码块
-\`\`\`javascript
-// JavaScript code block
-function hello() {
-  console.log("Hello World!");
-}
-\`\`\`
-
-## 表格
-| 表头1 | 表头2 |
-|-------|-------|
-| 单元格1 | 单元格2 |
-| 单元格3 | 单元格4 |
-
-## 自定义变量语法示例
-
-### 格式1: 多按钮+占位符
-选择你的职业：?[%{{occupation}}战士|法师|盗贼|... 其他职业]
-
-### 格式2: 多按钮（带空格）
-选择颜色：?[%{{ color }} 红色 | 蓝色 | 绿色 ]
-
-### 格式3: 单按钮（带空格）
-确认提交：?[%{{ submit }} 确认 ]
-
-### 格式4: 占位符（带空格）
-输入用户名：?[%{{ username }} ... 请输入用户名 ]
-
-### 混合格式
-1. 无空格：?[%{{quick}}按钮1|按钮2]
-2. 有空格：?[%{{ variable }} 选项A | 选项B | ... 自定义选项]
-3. 复杂组合：?[%{{ complex }} 第一步 | 第二步 | 第三步 | ... 其他步骤]
-
-## 分隔线
----
-
-## HTML 嵌入
-<p style="color: blue;">这是HTML段落</p>
-
-## 任务列表
-- [x] 已完成任务
-- [ ] 未完成任务
-
-## 脚注
-这是一个带脚注的文本[^1]
-[^1]: 脚注内容
-
-## 表情符号
-:smile: :heart: :+1:
-
-## 转义字符
-\*不是斜体\*、\[不是链接\]
-
-## 数学公式（部分Markdown支持）
-$$
-a^2 + b^2 = c^2
-$$
-
-## 结束语
-以上展示了各种Markdown语法元素，包括自定义变量语法。`,
-  },
-};
-
-export const ContentRenderMarkdownStyleShow: Story = {
-  args: {
-    disableTyping: true,
-    content: `# 完整Markdown语法测试
-
-## 标题测试
-### 三级标题
-#### 四级标题
-##### 五级标题
-###### 六级标题
-
-## 文本样式
-**粗体文本**、*斜体文本*、~~删除线文本~~、\`行内代码\`
-
-## 列表测试
-
-### 无序列表
-- 第一项
-- 第二项
-  - 嵌套项1
-  - 嵌套项2
-    - 深层嵌套
-- 第三项
-
-### 有序列表
-1. 第一项
-2. 第二项
-   1. 嵌套项1
-   2. 嵌套项2
-      1. 深层嵌套
-3. 第三项
-
-## 链接与图片
-[普通链接](https://example.com)
-![图片描述](https://via.placeholder.com/150)
-
-## 引用块
-> 这是一个引用块
-> 第二行引用
-> > 嵌套引用块
-
-## 代码块
+## Code Blocks
 \`\`\`javascript
 // JavaScript code block
 function hello() {
@@ -339,31 +78,178 @@ function hello() {
 \`\`\`
 
 \`\`\`python
-# Python 代码块
+# Python code block
 def hello():
     print("Hello World!")
 \`\`\`
 
-## 表格
-| 表头1 | 表头2 | 表头3 |
-|-------|-------|-------|
-| 单元格1 | 单元格2 | 单元格3 |
-| 单元格4 | 单元格5 | 单元格6 |
+Inline code: \`\`\` console.log("Hello World!"); \`\`\`
 
-## 分隔线
+## Tables
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |
+
+## Custom Variable Syntax Examples
+
+### Format 1: Multiple Buttons + Placeholder
+Choose your profession: ?[%{{occupation}}Warrior|Mage|Rogue|... Other profession]
+
+### Format 2: Multiple Buttons (with spaces)
+Select color: ?[%{{ color }} Red | Blue | Green ]
+
+### Format 3: Single Button (with spaces)
+Confirm submission: ?[%{{ submit }} Confirm ]
+
+### Format 4: Placeholder (with spaces)
+Enter username: ?[%{{ username }} ... Please enter username ]
+
+### Mixed Formats
+1. No spaces: ?[%{{quick}}Option1|Option2]
+2. With spaces: ?[%{{ variable }} Option A | Option B | ... Custom option]
+3. Complex combination: ?[%{{ complex }} Step 1 | Step 2 | Step 3 | ... Other steps]
+
+## Horizontal Rules
 ---
 
-## 任务列表
-- [x] 已完成任务
-- [ ] 未完成任务
-- [ ] 另一个未完成任务
-`,
+## HTML Embedding
+<p style="color: blue;">This is an HTML paragraph</p>
+
+## Task Lists
+- [x] Completed task
+- [ ] Incomplete task
+- [ ] Another incomplete task
+
+## Footnotes
+This is text with a footnote[^1]
+[^1]: Footnote content
+
+## Emoji
+:smile: :heart: :+1:
+
+## Escape Characters
+\\*not italic\\*, \\[not a link\\]
+
+## Math Formulas (partial Markdown support)
+$$
+a^2 + b^2 = c^2
+$$
+
+## Conclusion
+This demonstrates various Markdown syntax elements, including custom variable syntax.`;
+
+const MATH_AND_MERMAID_CONTENT = `# Math Formulas and Mermaid Charts Demo
+
+## Math Formulas
+
+### Inline Formulas
+This is an inline math formula: $E = mc^2$, Einstein's mass-energy equivalence.
+
+When $a \\\\ne 0$, the quadratic equation $ax^2 + bx + c = 0$ has two solutions: $x = \\\\frac{-b \\\\pm \\\\sqrt{b^2-4ac}}{2a}$
+
+### Block Formulas
+
+Pythagorean theorem:
+$$a^2 + b^2 = c^2$$
+
+Newton's second law:
+$$F = ma$$
+
+Integration:
+$$\\\\int_{a}^{b} x^2 dx = \\\\left[\\\\frac{x^3}{3}\\\\right]_{a}^{b} = \\\\frac{b^3 - a^3}{3}$$
+
+## Mermaid Charts
+
+### Flowchart
+\`\`\`mermaid
+flowchart TD
+    A[Start] --> B{Is User?}
+    B -->|Yes| C[Show User Interface]
+    B -->|No| D[Show Error]
+    C --> E[User Operation]
+    E --> F{Operation Success?}
+    F -->|Yes| G[Show Success Message]
+    F -->|No| H[Show Error Message]
+    G --> I[End]
+    H --> I
+    D --> I
+\`\`\`
+
+### Sequence Diagram
+\`\`\`mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant API
+    participant Database
+
+    User->>Frontend: Login Request
+    Frontend->>API: Send Authentication
+    API->>Database: Verify Credentials
+    Database-->>API: Return User Info
+    API-->>Frontend: Return Auth Result
+    Frontend-->>User: Display Login Status
+\`\`\`
+
+### Pie Chart
+\`\`\`mermaid
+pie title Programming Language Usage Statistics
+    "JavaScript" : 42.7
+    "Python" : 31.1
+    "Java" : 16.2
+    "TypeScript" : 6.1
+    "Others" : 3.9
+\`\`\`
+
+## Custom Variable Example
+
+Please select a math concept you'd like to learn: ?[%{{math_concept}}Calculus|Linear Algebra|Probability|...Other concepts]
+
+You selected **{{math_concept}}**, which is a very important mathematical field!
+
+## Conclusion
+
+This example demonstrates that our Markdown renderer now supports:
+- Inline and block math formulas (using KaTeX)
+- Multiple Mermaid chart types
+- Perfect integration with existing custom variable functionality
+
+This greatly enhances content expressiveness and interactivity!
+
+`;
+
+// ==============================================================================
+// Story Definitions
+// ==============================================================================
+
+export const ComprehensiveMarkdownSyntax: Story = {
+  name: "Comprehensive Markdown Syntax",
+  args: {
+    content: COMPREHENSIVE_MARKDOWN_SYNTAX,
+    enableTypewriter: false,
+  },
+};
+
+export const MarkdownSyntaxWithTypewriter: Story = {
+  name: "Markdown Syntax + Typewriter Effect",
+  args: {
+    content: COMPREHENSIVE_MARKDOWN_SYNTAX,
+    enableTypewriter: true,
+  },
+};
+
+export const MathAndMermaidDemo: Story = {
+  name: "Math Formulas + Mermaid Charts",
+  args: {
+    content: MATH_AND_MERMAID_CONTENT,
+    enableTypewriter: false,
   },
 };
 
 export const ContentRenderMathAndMermaid: Story = {
   args: {
-    disableTyping: true,
+    enableTypewriter: false,
     content: `# 数学公式和图表展示
 
 ## 数学公式
@@ -445,43 +331,45 @@ pie title 编程语言使用统计
 };
 
 export const MermaidErrorHandlingTest: Story = {
+  name: "Mermaid Error Handling Test",
   args: {
-    disableTyping: true,
-    content: `# Mermaid 错误处理测试
+    enableTypewriter: false,
+    content: `# Mermaid Error Handling Test
 
-## 正确的 Mermaid 图表
+## Valid Mermaid Chart
 \`\`\`mermaid
 graph TD
-    A[开始] --> B[结束]
+    A[Start] --> B[End]
 \`\`\`
 
-## 错误的 Mermaid 图表 1 - 缺失箭头
+## Invalid Mermaid Chart 1 - Missing Arrow
 \`\`\`mermaid
 graph TD
-    A[开始] B[结束]
+    A[Start] B[End]
     C --> D
 \`\`\`
 
-## 错误的 Mermaid 图表 2 - 错误语法
+## Invalid Mermaid Chart 2 - Wrong Syntax
 \`\`\`mermaid
 flowchart XYZ
-    A[开始] --> B{决定}
-    wrongkeyword --> D[结束]
+    A[Start] --> B{Decision}
+    wrongkeyword --> D[End]
 \`\`\`
 
-## 错误的 Mermaid 图表 3 - 完全错误的内容
+## Invalid Mermaid Chart 3 - Completely Wrong Content
 \`\`\`mermaid
-这根本不是 mermaid 语法
-只是一些随机文本
-带有一些 --> 箭头
-和 [括号] 内容
+This is not mermaid syntax at all
+Just some random text
+With some --> arrows
+And [bracket] content
 \`\`\`
 
-## 错误的 Mermaid 图表 4 - 空内容
+## Invalid Mermaid Chart 4 - Empty Content
 \`\`\`mermaid
 
 \`\`\`
 
-以上测试展示了新的错误处理机制，现在错误的 Mermaid 图表会显示为带有 "mermaid" 标签的代码块，而不是显示红色错误消息。`,
+This test demonstrates the new error handling mechanism. Invalid Mermaid charts now show friendly error messages with helpful syntax hints instead of crashing or showing confusing error messages.
+`,
   },
 };

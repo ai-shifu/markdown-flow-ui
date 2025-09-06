@@ -13,6 +13,14 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart }) => {
   useEffect(() => {
     const renderChart = async () => {
       try {
+        const trimmed = chart.trim();
+
+        if (!trimmed) {
+          setError("Empty chart content");
+          setSvg("");
+          return;
+        }
+
         // Initialize mermaid
         mermaid.initialize({
           startOnLoad: false,
@@ -21,86 +29,62 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart }) => {
           fontFamily: "inherit",
         });
 
+        // use mermaid.parse to check for errors
+        try {
+          await mermaid.parse(trimmed);
+        } catch (parseErr) {
+          const parseErrorMsg = String(parseErr).toLowerCase();
+          setError(parseErrorMsg);
+          setSvg("");
+          return;
+        }
+
         // Generate unique ID for this chart
-        const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const id = `mermaid-${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 11)}`;
 
         // Render the chart
-        const { svg: renderedSvg } = await mermaid.render(id, chart);
+        const { svg: renderedSvg } = await mermaid.render(id, trimmed);
         setSvg(renderedSvg);
         setError("");
       } catch (err) {
-        setError(`Failed to render Mermaid chart: ${err}`);
+        const errorMsg = String(err).toLowerCase();
+        setError(errorMsg);
+        setSvg("");
       }
     };
 
-    if (chart.trim()) {
-      renderChart();
-    }
+    renderChart();
   }, [chart]);
 
   if (error) {
     return (
-      <div
-        className="mermaid-fallback"
-        style={{
-          margin: "1rem 0",
-          position: "relative",
-        }}
-      >
-        <pre
-          style={{
-            padding: "1rem",
-            backgroundColor: "#f6f8fa",
-            border: "1px solid #d1d9e0",
-            borderRadius: "6px",
-            fontSize: "0.9em",
-            overflow: "auto",
-            fontFamily:
-              'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Menlo", monospace',
-            margin: 0,
-          }}
-        >
-          <code>{chart}</code>
-        </pre>
-        <div
-          style={{
-            position: "absolute",
-            top: "0.5rem",
-            right: "0.5rem",
-            fontSize: "0.75em",
-            color: "#656d76",
-            backgroundColor: "#f6f8fa",
-            padding: "0.25rem 0.5rem",
-            borderRadius: "3px",
-            border: "1px solid #d1d9e0",
-          }}
-        >
-          mermaid
+      <div className="my-4 border border-gray-200 rounded-lg bg-gray-50">
+        <div className="px-4 py-3 bg-gray-100 border-b border-gray-200 flex items-center gap-2">
+          <span className="text-yellow-600">⚠️</span>
+          <span className="text-sm text-yellow-700 font-medium whitespace-pre-wrap">
+            {error}
+          </span>
+        </div>
+        <div className="relative">
+          <pre className="p-4 text-sm font-mono text-yellow-800">
+            <code>{chart}</code>
+          </pre>
+          <div className="absolute top-2 right-2 px-2 py-1 text-xs text-yellow-700 bg-white/90 rounded border border-gray-200">
+            mermaid
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      ref={elementRef}
-      className="mermaid-chart-container"
-      style={{
-        margin: "1rem 0",
-        textAlign: "center",
-        overflow: "auto",
-      }}
-    >
+    <div ref={elementRef} className="my-4 text-center overflow-auto">
       {svg ? (
         <div dangerouslySetInnerHTML={{ __html: svg }} />
       ) : (
-        <div
-          style={{
-            padding: "2rem",
-            color: "#666",
-            fontStyle: "italic",
-          }}
-        >
+        <div className="py-8 text-gray-500 italic">
           Loading Mermaid chart...
         </div>
       )}

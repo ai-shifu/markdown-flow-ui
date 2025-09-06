@@ -35,19 +35,18 @@ jobs:
       - name: Build Storybook
         run: npm run build-storybook
 
-  version:
+  release:
     runs-on: ubuntu-latest
     needs: test
     if: "!contains(github.event.head_commit.message, 'chore(release)')"
     permissions:
       contents: write
-      pull-requests: write
       issues: write
-    outputs:
-      new_version: ${{ steps.version.outputs.new_version }}
-      has_changes: ${{ steps.version.outputs.has_changes }}
+      pull-requests: write
+      id-token: write
+
     steps:
-      - name: Checkout code
+      - name: Check out repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -57,168 +56,139 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Check for conventional commits since last release
-        id: check_commits
-        run: |
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -z "$LAST_TAG" ]; then
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-          else
-            COMMITS=$(git log ${LAST_TAG}..HEAD --oneline --grep="^feat" --grep="^fix" --grep="^BREAKING CHANGE" --extended-regexp)
-            if [ -n "$COMMITS" ]; then
-              echo "has_changes=true" >> $GITHUB_OUTPUT
-            else
-              echo "has_changes=false" >> $GITHUB_OUTPUT
-            fi
-          fi
-
-      - name: Bump version and create tag
-        id: version
-        if: steps.check_commits.outputs.has_changes == 'true'
-        run: |
-          npm run bump
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "has_changes=true" >> $GITHUB_OUTPUT
-          git push --follow-tags
-
-  build:
-    runs-on: ubuntu-latest
-    needs: version
-    if: needs.version.outputs.has_changes == 'true'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: v${{ needs.version.outputs.new_version }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build package
-        run: npm run build
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-          retention-days: 1
-
-  publish:
-    runs-on: ubuntu-latest
-    needs: [version, build]
-    if: needs.version.outputs.has_changes == 'true'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: v${{ needs.version.outputs.new_version }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
           registry-url: "https://registry.npmjs.org"
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci
+          npm install -g commitizen cz-conventional-changelog
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Bump version automatically
+        id: bump-version
+        run: |
+          echo "🔍 Checking for conventional commits that warrant version bump..."
+          echo "📊 Current git status:"
+          git status --porcelain
+
+          echo "🏷️ Current tags:"
+          git tag -l --sort=-version:refname | head -5
+
+          echo "📝 Recent commits:"
+          git log --oneline -5
+
+          # Try commitizen dry-run with error handling
+          if DRY_RUN_OUTPUT=$(cz bump --dry-run 2>&1); then
+            echo "🧪 Commitizen dry-run output:"
+            echo "$DRY_RUN_OUTPUT"
+          else
+            echo "⚠️ Commitizen dry-run failed, trying alternative detection..."
+            DRY_RUN_OUTPUT=$(cz bump --dry-run 2>&1 || true)
+            echo "🧪 Commitizen dry-run output (with errors):"
+            echo "$DRY_RUN_OUTPUT"
+          fi
+
+          if echo "$DRY_RUN_OUTPUT" | grep -q "bump: version"; then
+            echo "bump_needed=true" >> $GITHUB_OUTPUT
+            echo "Version bump detected based on conventional commits"
+
+            # Get the new version that commitizen would create
+            NEW_VERSION=$(echo "$DRY_RUN_OUTPUT" | grep "bump: version" | sed 's/.*→ //')
+            echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            echo "New version will be: $NEW_VERSION"
+
+            # Generate changelog content from last tag to current commits (incremental only)
+            LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+            if [ -n "$LAST_TAG" ]; then
+              CHANGELOG_CONTENT=$(cz changelog --start-rev=$LAST_TAG --unreleased-version=$NEW_VERSION --dry-run 2>/dev/null || echo "## What's Changed\n\nThis release includes improvements and bug fixes.")
+            else
+              CHANGELOG_CONTENT=$(cz changelog --unreleased-version=$NEW_VERSION --dry-run 2>/dev/null || echo "## What's Changed\n\nInitial release of markdown-flow-ui library.")
+            fi
+            echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
+            echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+
+            # Create ONLY git tag - no package.json modification needed
+            echo "Creating git tag..."
+            if ! cz bump --yes; then
+              echo "⚠️ Commitizen bump failed, trying manual tag creation..."
+              if git tag -l | grep -q "^v$NEW_VERSION$"; then
+                echo "⚠️ Tag v$NEW_VERSION already exists, skipping tag creation"
+              else
+                git tag "v$NEW_VERSION" -m "bump: version $(git describe --tags --abbrev=0 2>/dev/null || echo '1.0.0') → $NEW_VERSION"
+                echo "✅ Manual tag created: v$NEW_VERSION"
+              fi
+            else
+              echo "✅ Commitizen tag created successfully"
+            fi
+
+            # Push the tag
+            git push origin --follow-tags
+          else
+            echo "bump_needed=false" >> $GITHUB_OUTPUT
+            echo "No version bump needed based on commit messages"
+          fi
+
+      - name: Get version
+        id: version
+        if: steps.bump-version.outputs.bump_needed == 'true'
+        run: |
+          VERSION=$(echo "${{ steps.bump-version.outputs.new_version }}" | sed 's/^v//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build package
+        if: steps.bump-version.outputs.bump_needed == 'true'
+        run: npm run build
 
       - name: Check if version exists on npm
         id: check_version
+        if: steps.bump-version.outputs.bump_needed == 'true'
         run: |
           PACKAGE_NAME=$(node -p "require('./package.json').name")
-          if npm view $PACKAGE_NAME@${{ needs.version.outputs.new_version }} version 2>/dev/null; then
+          if npm view $PACKAGE_NAME@${{ steps.version.outputs.version }} version 2>/dev/null; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Version ${{ needs.version.outputs.new_version }} already exists on npm"
+            echo "Version ${{ steps.version.outputs.version }} already exists on npm"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Version ${{ needs.version.outputs.new_version }} does not exist on npm"
+            echo "Version ${{ steps.version.outputs.version }} does not exist on npm"
           fi
 
       - name: Publish to npm
-        if: steps.check_version.outputs.exists == 'false'
-        run: npm publish
+        if: steps.bump-version.outputs.bump_needed == 'true' && steps.check_version.outputs.exists == 'false'
+        run: |
+          # Update package.json version for npm publish
+          npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+          npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Skip publish if version exists
-        if: steps.check_version.outputs.exists == 'true'
-        run: echo "Skipping npm publish - version ${{ needs.version.outputs.new_version }} already exists"
-
-  release:
-    runs-on: ubuntu-latest
-    needs: [version, publish]
-    if: needs.version.outputs.has_changes == 'true'
-    permissions:
-      contents: write
-      pull-requests: read
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: v${{ needs.version.outputs.new_version }}
-
-      - name: Generate release notes from changelog
-        id: changelog
-        run: |
-          VERSION="${{ needs.version.outputs.new_version }}"
-          if [ -f CHANGELOG.md ]; then
-            # Extract the latest version section from CHANGELOG.md
-            VERSION_SECTION=$(sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | sed '$d')
-            if [ -n "$VERSION_SECTION" ]; then
-              echo "release_notes<<EOF" >> $GITHUB_OUTPUT
-              echo "$VERSION_SECTION" >> $GITHUB_OUTPUT
-              echo "EOF" >> $GITHUB_OUTPUT
-            else
-              echo "release_notes=Release v$VERSION" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "release_notes=Release v$VERSION" >> $GITHUB_OUTPUT
-          fi
+        if: steps.bump-version.outputs.bump_needed == 'true' && steps.check_version.outputs.exists == 'true'
+        run: echo "Skipping npm publish - version ${{ steps.version.outputs.version }} already exists"
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: steps.bump-version.outputs.bump_needed == 'true'
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ needs.version.outputs.new_version }}
-          release_name: Release v${{ needs.version.outputs.new_version }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
           body: |
+            ${{ steps.bump-version.outputs.changelog_content }}
+
             ## 📦 Package Information
             - **Package**: [markdown-flow-ui](https://www.npmjs.com/package/markdown-flow-ui)
-            - **Version**: ${{ needs.version.outputs.new_version }}
-            - **Installation**: `npm install markdown-flow-ui@${{ needs.version.outputs.new_version }}`
-
-            ## 📝 Changes
-            ${{ steps.changelog.outputs.release_notes }}
+            - **Version**: ${{ steps.version.outputs.version }}
+            - **Installation**: `npm install markdown-flow-ui@${{ steps.version.outputs.version }}`
 
             ## 🔗 Links
-            - [NPM Package](https://www.npmjs.com/package/markdown-flow-ui/v/${{ needs.version.outputs.new_version }})
+            - [NPM Package](https://www.npmjs.com/package/markdown-flow-ui/v/${{ steps.version.outputs.version }})
             - [Documentation](https://github.com/${{ github.repository }}#readme)
             - [Issues](https://github.com/${{ github.repository }}/issues)
           draft: false
-          prerelease: ${{ contains(needs.version.outputs.new_version, 'alpha') || contains(needs.version.outputs.new_version, 'beta') || contains(needs.version.outputs.new_version, 'rc') }}
+          prerelease: false

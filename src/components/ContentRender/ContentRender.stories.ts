@@ -247,127 +247,127 @@ export const MathAndMermaidDemo: Story = {
   },
 };
 
-// export const ContentRenderMathAndMermaid: Story = {
-//   args: {
-//     enableTypewriter: false,
-//     content: `# 数学公式和图表展示
+export const ContentRenderMathAndMermaid: Story = {
+  args: {
+    enableTypewriter: false,
+    content: `# 数学公式和图表展示
 
-// ## 数学公式
+## 数学公式
 
-// ### 行内公式
-// 这是一个行内数学公式：$E = mc^2$，爱因斯坦的质能方程。
+### 行内公式
+这是一个行内数学公式：$E = mc^2$，爱因斯坦的质能方程。
 
-// 当 $a \\\\ne 0$ 时，一元二次方程 $ax^2 + bx + c = 0$ 有两个解：$x = \\\\frac{-b \\\\pm \\\\sqrt{b^2-4ac}}{2a}$
+当 $a \\\\ne 0$ 时，一元二次方程 $ax^2 + bx + c = 0$ 有两个解：$x = \\\\frac{-b \\\\pm \\\\sqrt{b^2-4ac}}{2a}$
 
-// ### 块级公式
+### 块级公式
 
-// 勾股定理：
-// $$a^2 + b^2 = c^2$$
+勾股定理：
+$$a^2 + b^2 = c^2$$
 
-// 牛顿第二定律：
-// $$F = ma$$
+牛顿第二定律：
+$$F = ma$$
 
-// 积分：
-// $$\\\\int_{a}^{b} x^2 dx = \\\\left[\\\\frac{x^3}{3}\\\\right]_{a}^{b} = \\\\frac{b^3 - a^3}{3}$$
+积分：
+$$\\\\int_{a}^{b} x^2 dx = \\\\left[\\\\frac{x^3}{3}\\\\right]_{a}^{b} = \\\\frac{b^3 - a^3}{3}$$
 
-// ## Mermaid 图表
+## Mermaid 图表
 
-// ### 流程图
-// \`\`\`mermaid
-// flowchart TD
-//     A[开始] --> B{是否为用户?}
-//     B -->|是| C[显示用户界面]
-//     B -->|否| D[显示错误]
-//     C --> E[用户操作]
-//     E --> F{操作成功?}
-//     F -->|是| G[显示成功信息]
-//     F -->|否| H[显示错误信息]
-//     G --> I[结束]
-//     H --> I
-//     D --> I
-// \`\`\`
+### 流程图
+\`\`\`mermaid
+flowchart TD
+    A[开始] --> B{是否为用户?}
+    B -->|是| C[显示用户界面]
+    B -->|否| D[显示错误]
+    C --> E[用户操作]
+    E --> F{操作成功?}
+    F -->|是| G[显示成功信息]
+    F -->|否| H[显示错误信息]
+    G --> I[结束]
+    H --> I
+    D --> I
+\`\`\`
 
-// ### 时序图
-// \`\`\`mermaid
-// sequenceDiagram
-//     participant 用户
-//     participant 前端
-//     participant API
-//     participant 数据库
+### 时序图
+\`\`\`mermaid
+sequenceDiagram
+    participant 用户
+    participant 前端
+    participant API
+    participant 数据库
 
-//     用户->>前端: 登录请求
-//     前端->>API: 发送认证信息
-//     API->>数据库: 验证用户凭据
-//     数据库-->>API: 返回用户信息
-//     API-->>前端: 返回认证结果
-//     前端-->>用户: 显示登录状态
-// \`\`\`
+    用户->>前端: 登录请求
+    前端->>API: 发送认证信息
+    API->>数据库: 验证用户凭据
+    数据库-->>API: 返回用户信息
+    API-->>前端: 返回认证结果
+    前端-->>用户: 显示登录状态
+\`\`\`
 
-// ### 饼图
-// \`\`\`mermaid
-// pie title 编程语言使用统计
-//     "JavaScript" : 42.7
-//     "Python" : 31.1
-//     "Java" : 16.2
-//     "TypeScript" : 6.1
-//     "其他" : 3.9
-// \`\`\`
+### 饼图
+\`\`\`mermaid
+pie title 编程语言使用统计
+    "JavaScript" : 42.7
+    "Python" : 31.1
+    "Java" : 16.2
+    "TypeScript" : 6.1
+    "其他" : 3.9
+\`\`\`
 
-// ## 自定义变量示例
+## 自定义变量示例
 
-// 请选择你想了解的数学概念：?[%{{math_concept}}微积分|线性代数|概率论|...其他概念]
+请选择你想了解的数学概念：?[%{{math_concept}}微积分|线性代数|概率论|...其他概念]
 
-// 你选择了 **{{math_concept}}**，这是一个非常重要的数学分支！
+你选择了 **{{math_concept}}**，这是一个非常重要的数学分支！
 
-// ## 结论
+## 结论
 
-// 通过以上示例可以看到，我们的 Markdown 渲染器现在支持：
-// - 行内和块级数学公式（使用 KaTeX）
-// - 多种 Mermaid 图表类型
-// - 与现有自定义变量功能的完美结合
+通过以上示例可以看到，我们的 Markdown 渲染器现在支持：
+- 行内和块级数学公式（使用 KaTeX）
+- 多种 Mermaid 图表类型
+- 与现有自定义变量功能的完美结合
 
-// 这大大增强了内容的表现力和交互性！`,
-//   },
-// };
+这大大增强了内容的表现力和交互性！`,
+  },
+};
 
-// export const MermaidErrorHandlingTest: Story = {
-//   args: {
-//     enableTypewriter: false,
-//     content: `# Mermaid 错误处理测试
+export const MermaidErrorHandlingTest: Story = {
+  args: {
+    enableTypewriter: false,
+    content: `# Mermaid 错误处理测试
 
-// ## 正确的 Mermaid 图表
-// \`\`\`mermaid
-// graph TD
-//     A[开始] --> B[结束]
-// \`\`\`
+## 正确的 Mermaid 图表
+\`\`\`mermaid
+graph TD
+    A[开始] --> B[结束]
+\`\`\`
 
-// ## 错误的 Mermaid 图表 1 - 缺失箭头
-// \`\`\`mermaid
-// graph TD
-//     A[开始] B[结束]
-//     C --> D
-// \`\`\`
+## 错误的 Mermaid 图表 1 - 缺失箭头
+\`\`\`mermaid
+graph TD
+    A[开始] B[结束]
+    C --> D
+\`\`\`
 
-// ## 错误的 Mermaid 图表 2 - 错误语法
-// \`\`\`mermaid
-// flowchart XYZ
-//     A[开始] --> B{决定}
-//     wrongkeyword --> D[结束]
-// \`\`\`
+## 错误的 Mermaid 图表 2 - 错误语法
+\`\`\`mermaid
+flowchart XYZ
+    A[开始] --> B{决定}
+    wrongkeyword --> D[结束]
+\`\`\`
 
-// ## 错误的 Mermaid 图表 3 - 完全错误的内容
-// \`\`\`mermaid
-// 这根本不是 mermaid 语法
-// 只是一些随机文本
-// 带有一些 --> 箭头
-// 和 [括号] 内容
-// \`\`\`
+## 错误的 Mermaid 图表 3 - 完全错误的内容
+\`\`\`mermaid
+这根本不是 mermaid 语法
+只是一些随机文本
+带有一些 --> 箭头
+和 [括号] 内容
+\`\`\`
 
-// ## 错误的 Mermaid 图表 4 - 空内容
-// \`\`\`mermaid
+## 错误的 Mermaid 图表 4 - 空内容
+\`\`\`mermaid
 
-// \`\`\`
+\`\`\`
 
-// 以上测试展示了新的错误处理机制，现在错误的 Mermaid 图表会显示为带有 "mermaid" 标签的代码块，而不是显示红色错误消息。`,
-//   },
-// };
+以上测试展示了新的错误处理机制，现在错误的 Mermaid 图表会显示为带有 "mermaid" 标签的代码块，而不是显示红色错误消息。`,
+  },
+};

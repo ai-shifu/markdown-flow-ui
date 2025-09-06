@@ -70,13 +70,12 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       />
     ),
     code: (props) => {
-      const { inline, className, children, ...rest } = props as any;
+      const { className, children, ...rest } = props as any;
       const match = /language-(\w+)/.exec(className || "");
-      const language = match ? match[1] : "";
-
-      // Handle Mermaid diagrams
-      if (!inline && language === "mermaid") {
-        return <MermaidChart chart={String(children).replace(/\n$/, "")} />;
+      const language = match?.[1];
+      if (language === "mermaid") {
+        const chartContent = children?.toString().replace(/\n$/, "") || "";
+        return <MermaidChart chart={chartContent} />;
       }
 
       return (

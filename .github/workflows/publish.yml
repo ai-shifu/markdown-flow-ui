@@ -214,6 +214,10 @@ jobs:
         if: steps.bump-version.outputs.bump_needed == 'true'
         run: npm run build
 
+      - name: Build Storybook
+        if: steps.bump-version.outputs.bump_needed == 'true'
+        run: npm run build-storybook
+
       - name: Check if version exists on npm
         id: check_version
         if: steps.bump-version.outputs.bump_needed == 'true'

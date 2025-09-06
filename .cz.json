@@ -1,0 +1,7 @@
+{
+  "commitizen": {
+    "name": "cz_conventional_commits",
+    "tag_format": "v$major.$minor.$patch",
+    "version": "1.0.0"
+  }
+}

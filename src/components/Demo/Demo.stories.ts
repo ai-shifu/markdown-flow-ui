@@ -2,11 +2,11 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 // import { fn } from 'storybook/test';
 
-import Playground from "./Playground";
+import Demo from "./Demo";
 
 const meta = {
-  title: "Playground",
-  component: Playground,
+  title: "Demo/Demo",
+  component: Demo,
   parameters: {
     layout: "centered",
   },
@@ -25,12 +25,12 @@ const meta = {
     defaultContent: "",
     sessionId: "",
   },
-} satisfies Meta<typeof Playground>;
+} satisfies Meta<typeof Demo>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const PlaygroundStory1: Story = {
+export const DemoStory: Story = {
   args: {
     sessionId: "111",
     defaultContent: `===# 第一章 认识一下===

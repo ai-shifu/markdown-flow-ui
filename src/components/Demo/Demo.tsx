@@ -6,7 +6,7 @@ import { ContentRenderProps } from "../ContentRender/ContentRender";
 import { OnSendContentParams, CustomRenderBarProps } from "../types";
 import { Loader } from "lucide-react";
 
-type PlaygroundComponentProps = {
+type DemoComponentProps = {
   defaultContent: string;
   defaultVariables?: {
     [key: string]: any;
@@ -35,7 +35,7 @@ type SSEParams = {
   model: string | null;
 };
 
-const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
+const Demo: React.FC<DemoComponentProps> = ({
   defaultContent,
   defaultVariables = {},
   defaultDocumentPrompt = "",
@@ -318,4 +318,4 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
   );
 };
 
-export default PlaygroundComponent;
+export default Demo;

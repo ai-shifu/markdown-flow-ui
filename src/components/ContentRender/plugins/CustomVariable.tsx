@@ -23,6 +23,7 @@ interface CustomVariableProps {
   defaultInputText?: string;
   readonly?: boolean;
   onSend?: (content: OnSendContentParams) => void;
+  tooltipMinLength?: number;
 }
 
 interface ComponentsWithCustomVariable extends Components {

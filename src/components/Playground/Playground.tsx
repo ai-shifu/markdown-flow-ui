@@ -10,11 +10,6 @@ import { Loader } from "lucide-react";
 type VariableValue = string | number | boolean | null | undefined;
 
 // Define type for SSE response data
-interface SSEData {
-  content?: string;
-  status?: string;
-  [key: string]: unknown;
-}
 
 type PlaygroundComponentProps = {
   defaultContent: string;
@@ -164,7 +159,16 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
     return newList;
   };
 
-  const handleOnFinish = (data: string) => {
+  const handleOnFinish = (data: unknown, _index: number) => {
+    // Type guard to ensure data is string
+    if (typeof data !== "string") {
+      console.warn(
+        "Expected string data in handleOnFinish, received:",
+        typeof data
+      );
+      return;
+    }
+
     const isCurrentInteractionBlock = interaction_blocks.includes(
       currentBlockIndexRef.current
     );
@@ -233,7 +237,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
     return list;
   };
 
-  const { data, connect } = useSSE<SSEData>(sseUrl, {
+  const { data, connect } = useSSE<string>(sseUrl, {
     method: "POST",
     body: getSSEBody(),
     headers: sessionId ? { "session-id": sessionId } : {},

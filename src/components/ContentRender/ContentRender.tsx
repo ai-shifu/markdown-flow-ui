@@ -24,9 +24,8 @@ import { processMarkdownText } from "./utils/process-markdown";
 
 // Define types for markdown components
 interface CodeProps extends React.HTMLAttributes<HTMLElement> {
+  node?: unknown;
   inline?: boolean;
-  className?: string;
-  children?: React.ReactNode;
 }
 
 // Define component Props type

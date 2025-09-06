@@ -6,10 +6,15 @@ import { ContentRenderProps } from "../ContentRender/ContentRender";
 import { OnSendContentParams, CustomRenderBarProps } from "../types";
 import { Loader } from "lucide-react";
 
+// Define proper types for variables
+type VariableValue = string | number | boolean | null | undefined;
+
+// Define type for SSE response data
+
 type PlaygroundComponentProps = {
   defaultContent: string;
   defaultVariables?: {
-    [key: string]: any;
+    [key: string]: VariableValue;
   };
   defaultDocumentPrompt?: string;
   styles?: React.CSSProperties;
@@ -26,7 +31,7 @@ type SSEParams = {
     content: string;
   }>;
   variables?: {
-    [key: string]: any;
+    [key: string]: VariableValue;
   };
   user_input: string | null;
   document_prompt: string | null;
@@ -154,7 +159,16 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
     return newList;
   };
 
-  const handleOnFinish = (data: string) => {
+  const handleOnFinish = (data: unknown, _index: number) => {
+    // Type guard to ensure data is string
+    if (typeof data !== "string") {
+      console.warn(
+        "Expected string data in handleOnFinish, received:",
+        typeof data
+      );
+      return;
+    }
+
     const isCurrentInteractionBlock = interaction_blocks.includes(
       currentBlockIndexRef.current
     );
@@ -223,7 +237,7 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
     return list;
   };
 
-  const { data, connect } = useSSE<any>(sseUrl, {
+  const { data, connect } = useSSE<string>(sseUrl, {
     method: "POST",
     body: getSSEBody(),
     headers: sessionId ? { "session-id": sessionId } : {},
@@ -244,7 +258,6 @@ const PlaygroundComponent: React.FC<PlaygroundComponentProps> = ({
         const updatedList = updateContentListWithSseData(data);
         setContentList(updatedList);
       } catch (error) {
-        // eslint-disable-next-line no-console
         console.error("Error processing SSE message:", error);
       }
     }

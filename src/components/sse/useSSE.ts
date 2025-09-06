@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 
-interface UseSSEReturn<T = any> {
+interface UseSSEReturn<T = unknown> {
   data: T | null;
   isLoading: boolean;
   error: Error | null;
@@ -15,7 +15,7 @@ const FINISHED_MESSAGE = "[DONE]";
 interface UseSSEOptions extends RequestInit {
   autoConnect?: boolean;
   onStart?: (index: number) => void;
-  onFinish?: (finalData: any, index: number) => void;
+  onFinish?: (finalData: unknown, index: number) => void;
   maxRetries?: number;
   retryDelay?: number;
 }
@@ -27,7 +27,7 @@ type ConnectionState =
   | "error"
   | "closed";
 
-const useSSE = <T = any>(
+const useSSE = <T = unknown>(
   url: string,
   options: UseSSEOptions = {}
 ): UseSSEReturn<T> => {
@@ -113,11 +113,10 @@ const useSSE = <T = any>(
               return;
             }
             try {
-              const parsedData: any = event.data;
+              const parsedData: string = event.data;
               finalDataRef.current += parsedData;
-              setData(finalDataRef.current as any);
+              setData(finalDataRef.current as T);
             } catch (err) {
-              // eslint-disable-next-line no-console
               console.warn("Failed to process SSE message:", err);
             }
           }

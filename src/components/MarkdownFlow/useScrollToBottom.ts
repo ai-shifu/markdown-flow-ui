@@ -17,7 +17,7 @@ interface UseScrollToBottomReturn {
 
 const useScrollToBottom = (
   containerRef: RefObject<HTMLDivElement | null>,
-  dependencies: any[] = [],
+  dependencies: unknown[] = [],
   options: UseScrollToBottomOptions = {}
 ): UseScrollToBottomReturn => {
   const {

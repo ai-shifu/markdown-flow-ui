@@ -79,11 +79,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         return <MermaidChart chart={String(children).replace(/\n$/, "")} />;
       }
 
-      return !inline && match ? (
-        <code className={className} {...rest}>
-          {children}
-        </code>
-      ) : (
+      return (
         <code className={className} {...rest}>
           {children}
         </code>

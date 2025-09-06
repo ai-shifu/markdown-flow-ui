@@ -73,7 +73,7 @@ jobs:
         id: bump-version
         run: |
           set -euo pipefail
-          
+
           echo "🔍 Checking for conventional commits that warrant version bump..."
           echo "📊 Current git status:"
           git status --porcelain
@@ -104,17 +104,17 @@ jobs:
 
             # Enhanced version extraction with multiple fallback methods
             NEW_VERSION=""
-            
+
             # Method 1: Extract from "bump: version" line
             if echo "$DRY_RUN_OUTPUT" | grep -q "bump: version"; then
               NEW_VERSION=$(echo "$DRY_RUN_OUTPUT" | grep "bump: version" | sed -n 's/.*→ \(.*\)/\1/p' | head -1)
             fi
-            
+
             # Method 2: Extract from "tag to create" line if method 1 fails
             if [ -z "$NEW_VERSION" ] && echo "$DRY_RUN_OUTPUT" | grep -qE "tag to create.*v[0-9]"; then
               NEW_VERSION=$(echo "$DRY_RUN_OUTPUT" | grep -oE "v[0-9]+\.[0-9]+\.[0-9]+" | head -1)
             fi
-            
+
             # Method 3: Fallback to commitizen info if still empty
             if [ -z "$NEW_VERSION" ]; then
               echo "⚠️ Could not extract version from dry-run, trying commitizen info..." >&2
@@ -122,12 +122,12 @@ jobs:
               NEW_VERSION="v$(echo "$CURRENT_VERSION" | awk -F. '{print $1"."$2"."$3+1}')"
               echo "📝 Fallback version calculated: $NEW_VERSION"
             fi
-            
+
             if [ -z "$NEW_VERSION" ]; then
               echo "❌ Failed to determine new version" >&2
               exit 1
             fi
-            
+
             echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
             echo "🎯 New version will be: $NEW_VERSION"
 
@@ -135,7 +135,7 @@ jobs:
             echo "📝 Generating changelog content..."
             LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
             CHANGELOG_CONTENT=""
-            
+
             if [ -n "$LAST_TAG" ]; then
               if CHANGELOG_CONTENT=$(cz changelog --start-rev="$LAST_TAG" --unreleased-version="$NEW_VERSION" --dry-run 2>/dev/null); then
                 echo "✅ Changelog generated successfully"
@@ -147,7 +147,7 @@ jobs:
               echo "📝 No previous tags found, generating initial changelog"
               CHANGELOG_CONTENT="## What's Changed\n\n🎉 Initial release of markdown-flow-ui library with comprehensive features for markdown rendering."
             fi
-            
+
             {
               echo "changelog_content<<EOF"
               echo -e "$CHANGELOG_CONTENT"
@@ -157,13 +157,13 @@ jobs:
             # Create git tag with improved error handling
             echo "🏷️ Creating git tag..."
             TAG_CREATED=false
-            
+
             if cz bump --yes 2>/dev/null; then
               echo "✅ Commitizen tag created successfully"
               TAG_CREATED=true
             else
               echo "⚠️ Commitizen bump failed, attempting manual tag creation..." >&2
-              
+
               # Check if tag already exists
               if git tag -l | grep -q "^$NEW_VERSION$"; then
                 echo "⚠️ Tag $NEW_VERSION already exists, skipping creation"

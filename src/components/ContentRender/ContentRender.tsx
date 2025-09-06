@@ -33,7 +33,7 @@ export interface ContentRenderProps {
   defaultInputText?: string; // Text input by user
   readonly?: boolean;
   onTypeFinished?: () => void;
-  tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
+  // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
 
 // Extended component interface
@@ -49,7 +49,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   defaultInputText,
   readonly = false,
   onTypeFinished,
-  tooltipMinLength,
+  // tooltipMinLength,
 }) => {
   // Use custom Hook to handle typewriter effect
   const { displayContent, isComplete } = useTypewriterStateMachine({
@@ -66,7 +66,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         defaultButtonText={defaultButtonText}
         defaultInputText={defaultInputText}
         onSend={onSend}
-        tooltipMinLength={tooltipMinLength}
+        // tooltipMinLength={tooltipMinLength}
       />
     ),
     code: (props) => {

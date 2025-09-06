@@ -6,7 +6,7 @@ interface CustomButtonNode extends Node {
   type: "element";
   data?: {
     hName?: string;
-    hProperties?: Record<string, any>;
+    hProperties?: Record<string, unknown>;
     hChildren?: Array<{ type: string; value: string }>;
   };
 }

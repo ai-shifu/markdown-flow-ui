@@ -196,7 +196,6 @@ export default function remarkCustomButtonInputVariable() {
           // Replace the original node
           parent.children.splice(index, 1, ...segments);
         } catch (error) {
-          // eslint-disable-next-line no-console
           console.warn("Failed to parse custom variable syntax:", error);
           // If parsing fails, keep the original content
           return;

@@ -22,6 +22,13 @@ import { OnSendContentParams, CustomRenderBarProps } from "../types";
 import remarkBreaks from "remark-breaks";
 import { processMarkdownText } from "./utils/process-markdown";
 
+// Define types for markdown components
+interface CodeProps extends React.HTMLAttributes<HTMLElement> {
+  inline?: boolean;
+  className?: string;
+  children?: React.ReactNode;
+}
+
 // Define component Props type
 export interface ContentRenderProps {
   content: string;
@@ -69,8 +76,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         tooltipMinLength={tooltipMinLength}
       />
     ),
-    code: (props) => {
-      const { inline, className, children, ...rest } = props as any;
+    code: (props: CodeProps) => {
+      const { inline, className, children, ...rest } = props;
       const match = /language-(\w+)/.exec(className || "");
       const language = match ? match[1] : "";
 

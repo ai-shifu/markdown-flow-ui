@@ -122,12 +122,6 @@
     "//build": "next build",
     "build": "vite build",
     "build-storybook": "storybook build",
-    "bump": "standard-version",
-    "bump:major": "standard-version --release-as major",
-    "bump:minor": "standard-version --release-as minor",
-    "bump:patch": "standard-version --release-as patch",
-    "bump:prerelease": "standard-version --prerelease",
-    "changelog": "standard-version --dry-run",
     "commit": "cz",
     "dev": "next dev --turbopack",
     "format": "prettier --write .",
@@ -138,12 +132,9 @@
     "lint:md:fix": "markdownlint --fix *.md",
     "prepare": "husky",
     "prepublishOnly": "npm run build",
-    "release": "npm run build && npm run test && standard-version && git push --follow-tags",
-    "release:dry": "standard-version --dry-run",
     "start": "next start",
     "storybook": "storybook dev -p 6006",
-    "test": "echo \"No tests specified\" && exit 0",
-    "version": "npm run changelog && git add CHANGELOG.md"
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "types": "dist/index.d.ts",
   "version": "1.0.0"

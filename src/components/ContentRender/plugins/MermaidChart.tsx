@@ -60,66 +60,18 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart }) => {
 
   if (error) {
     return (
-      <div
-        className="mermaid-error-container"
-        style={{
-          margin: "1rem 0",
-          border: "2px solid #ef4444", // 标红边框
-          borderRadius: "8px",
-          backgroundColor: "#fef2f2", // 淡红色背景
-          position: "relative",
-        }}
-      >
-        {/* 错误提示头部 */}
-        <div
-          style={{
-            padding: "0.75rem 1rem",
-            backgroundColor: "#ef4444",
-            color: "white",
-            fontSize: "0.875rem",
-            fontWeight: "500",
-            borderRadius: "6px 6px 0 0",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            whiteSpace: "pre-wrap",
-          }}
-        >
-          <span>⚠️</span>
-          {error}
+      <div className="my-4 border border-gray-200 rounded-lg bg-gray-50">
+        <div className="px-4 py-3 bg-gray-100 border-b border-gray-200 flex items-center gap-2">
+          <span className="text-yellow-600">⚠️</span>
+          <span className="text-sm text-yellow-700 font-medium whitespace-pre-wrap">
+            {error}
+          </span>
         </div>
-
-        {/* 代码展示区域 */}
-        <div style={{ position: "relative" }}>
-          <pre
-            style={{
-              padding: "1rem",
-              backgroundColor: "#fff1f2",
-              fontSize: "0.875rem",
-              overflow: "auto",
-              fontFamily:
-                'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Menlo", monospace',
-              margin: 0,
-              borderRadius: "0 0 6px 6px",
-              color: "#991b1b",
-            }}
-          >
+        <div className="relative">
+          <pre className="p-4 text-sm font-mono text-yellow-800">
             <code>{chart}</code>
           </pre>
-          <div
-            style={{
-              position: "absolute",
-              top: "0.5rem",
-              right: "0.5rem",
-              fontSize: "0.75rem",
-              color: "#ef4444",
-              backgroundColor: "rgba(255,255,255,0.9)",
-              padding: "0.25rem 0.5rem",
-              borderRadius: "3px",
-              border: "1px solid #ef4444",
-              fontWeight: "500",
-            }}
-          >
+          <div className="absolute top-2 right-2 px-2 py-1 text-xs text-yellow-700 bg-white/90 rounded border border-gray-200">
             mermaid
           </div>
         </div>
@@ -128,25 +80,11 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart }) => {
   }
 
   return (
-    <div
-      ref={elementRef}
-      className="mermaid-chart-container"
-      style={{
-        margin: "1rem 0",
-        textAlign: "center",
-        overflow: "auto",
-      }}
-    >
+    <div ref={elementRef} className="my-4 text-center overflow-auto">
       {svg ? (
         <div dangerouslySetInnerHTML={{ __html: svg }} />
       ) : (
-        <div
-          style={{
-            padding: "2rem",
-            color: "#666",
-            fontStyle: "italic",
-          }}
-        >
+        <div className="py-8 text-gray-500 italic">
           Loading Mermaid chart...
         </div>
       )}

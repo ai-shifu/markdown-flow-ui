@@ -1,11 +1,22 @@
 import React, { useEffect, useRef, useState } from "react";
 import mermaid from "mermaid";
 
-interface MermaidChartProps {
+export interface MermaidChartProps {
   chart: string;
+  messages?: {
+    emptyChart?: string;
+    loading?: string;
+    badge?: string;
+  };
 }
 
-const MermaidChart: React.FC<MermaidChartProps> = ({ chart }) => {
+const DEFAULT_MESSAGES = {
+  emptyChart: "Empty chart content",
+  loading: "Loading Mermaid chart...",
+  badge: "mermaid",
+} as const;
+
+const MermaidChart: React.FC<MermaidChartProps> = ({ chart, messages }) => {
   const [svg, setSvg] = useState("");
   const [error, setError] = useState("");
   const elementRef = useRef<HTMLDivElement>(null);
@@ -16,7 +27,7 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart }) => {
         const trimmed = chart.trim();
 
         if (!trimmed) {
-          setError("Empty chart content");
+          setError(messages?.emptyChart ?? DEFAULT_MESSAGES.emptyChart);
           setSvg("");
           return;
         }
@@ -72,7 +83,7 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart }) => {
             <code>{chart}</code>
           </pre>
           <div className="absolute top-2 right-2 px-2 py-1 text-xs text-yellow-700 bg-white/90 rounded border border-gray-200">
-            mermaid
+            {messages?.badge ?? DEFAULT_MESSAGES.badge}
           </div>
         </div>
       </div>
@@ -85,7 +96,7 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart }) => {
         <div dangerouslySetInnerHTML={{ __html: svg }} />
       ) : (
         <div className="py-8 text-gray-500 italic">
-          Loading Mermaid chart...
+          {messages?.loading ?? DEFAULT_MESSAGES.loading}
         </div>
       )}
     </div>

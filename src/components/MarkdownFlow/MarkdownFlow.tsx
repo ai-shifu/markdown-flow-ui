@@ -15,7 +15,7 @@ export interface MarkdownFlowProps {
   customRenderBar?: CustomRenderBarProps;
   onSend?: (content: OnSendContentParams) => void;
   typingSpeed?: number;
-  disableTyping?: boolean;
+  enableTypewriter?: boolean;
   onBlockComplete?: (blockIndex: number) => void;
 }
 
@@ -24,14 +24,14 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   customRenderBar,
   onSend: onSendProp,
   typingSpeed: typingSpeedProp,
-  disableTyping: disableTypingProp,
+  enableTypewriter = false,
   onBlockComplete,
 }) => {
   return (
     <div className="markdown-flow">
       {initialContentList.map((contentInfo, index) => {
         const isFinished = contentInfo.isFinished ?? false;
-        const disableTyping = isFinished || disableTypingProp;
+        const enableTypewriterForBlock = !isFinished && enableTypewriter;
         const onSend = isFinished ? undefined : onSendProp;
         const typingSpeed = isFinished ? undefined : typingSpeedProp;
         return (
@@ -41,7 +41,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             defaultInputText={contentInfo.defaultInputText}
             defaultButtonText={contentInfo.defaultButtonText}
             readonly={contentInfo.readonly}
-            disableTyping={disableTyping}
+            enableTypewriter={enableTypewriterForBlock}
             customRenderBar={contentInfo.customRenderBar || customRenderBar}
             onSend={onSend}
             typingSpeed={typingSpeed}

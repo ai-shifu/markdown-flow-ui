@@ -28,12 +28,12 @@ export interface ContentRenderProps {
   customRenderBar?: CustomRenderBarProps;
   onSend?: (content: OnSendContentParams) => void;
   typingSpeed?: number;
-  disableTyping?: boolean;
+  enableTypewriter?: boolean;
   defaultButtonText?: string;
   defaultInputText?: string; // Text input by user
   readonly?: boolean;
   onTypeFinished?: () => void;
-  tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
+  // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
 
 // Extended component interface
@@ -44,18 +44,18 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   customRenderBar,
   onSend,
   typingSpeed = 30,
-  disableTyping = true,
+  enableTypewriter = false,
   defaultButtonText,
   defaultInputText,
   readonly = false,
   onTypeFinished,
-  tooltipMinLength,
+  // tooltipMinLength,
 }) => {
   // Use custom Hook to handle typewriter effect
   const { displayContent, isComplete } = useTypewriterStateMachine({
     content: processMarkdownText(content),
     typingSpeed,
-    disabled: disableTyping,
+    disabled: !enableTypewriter,
   });
 
   const components: CustomComponents = {
@@ -66,24 +66,19 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         defaultButtonText={defaultButtonText}
         defaultInputText={defaultInputText}
         onSend={onSend}
-        tooltipMinLength={tooltipMinLength}
+        // tooltipMinLength={tooltipMinLength}
       />
     ),
     code: (props) => {
-      const { inline, className, children, ...rest } = props as any;
+      const { className, children, ...rest } = props as any;
       const match = /language-(\w+)/.exec(className || "");
-      const language = match ? match[1] : "";
-
-      // Handle Mermaid diagrams
-      if (!inline && language === "mermaid") {
-        return <MermaidChart chart={String(children).replace(/\n$/, "")} />;
+      const language = match?.[1];
+      if (language === "mermaid") {
+        const chartContent = children?.toString().replace(/\n$/, "") || "";
+        return <MermaidChart chart={chartContent} />;
       }
 
-      return !inline && match ? (
-        <code className={className} {...rest}>
-          {children}
-        </code>
-      ) : (
+      return (
         <code className={className} {...rest}>
           {children}
         </code>

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import mermaid from "mermaid";
 
 export interface MermaidChartProps {
@@ -19,7 +19,6 @@ const DEFAULT_MESSAGES = {
 const MermaidChart: React.FC<MermaidChartProps> = ({ chart, messages }) => {
   const [svg, setSvg] = useState("");
   const [error, setError] = useState("");
-  const elementRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const renderChart = async () => {
@@ -91,7 +90,7 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart, messages }) => {
   }
 
   return (
-    <div ref={elementRef} className="my-4 text-center overflow-auto">
+    <div className="my-4 text-center overflow-auto">
       {svg ? (
         <div dangerouslySetInnerHTML={{ __html: svg }} />
       ) : (

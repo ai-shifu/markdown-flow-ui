@@ -49,10 +49,7 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart, messages }) => {
           return;
         }
 
-        // Generate unique ID for this chart
-        const id = `mermaid-${Date.now()}-${Math.random()
-          .toString(36)
-          .substring(2, 11)}`;
+        const id = `mermaid-${Date.now()}`;
 
         // Render the chart
         const { svg: renderedSvg } = await mermaid.render(id, trimmed);

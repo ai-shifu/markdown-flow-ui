@@ -35,13 +35,18 @@ const parseContentInfo = (
         resourceUrl: dataset.url,
         resourceTitle: dataset.title,
       };
+    default:
+      return {
+        resourceUrl: dataset.url ?? "",
+        resourceTitle: dataset.title ?? "",
+      };
   }
 };
 
 class PlaceholderWidget extends WidgetType {
   constructor(
     private text: string,
-    private dataset: any,
+    private dataset: { tag: "image" | "video"; title: string; url: string },
     private styleClass: string,
     private type: SelectedOption,
     private view: EditorView
@@ -249,7 +254,10 @@ function createSlashCommands(
 const getEmbedUrl = (url: string) => {
   if (biliVideoUrlRegexp.test(url)) {
     const encoded = encodeURIComponent(url);
-    return `https://if-cdn.com/api/iframe?url=${encoded}&key=a68bac8b6624d46b6d0ba46e5b3f8971`;
+    const key = process.env.NEXT_PUBLIC_IFRAME_KEY ?? "";
+    return key
+      ? `https://if-cdn.com/api/iframe?url=${encoded}&key=${key}`
+      : url;
   }
   return url;
 };

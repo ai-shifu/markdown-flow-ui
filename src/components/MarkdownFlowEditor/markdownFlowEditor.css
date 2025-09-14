@@ -4,10 +4,10 @@
   border-radius: 3px;
   padding: 0 6px;
   background-color: #9090f854;
-
-  &:hover {
-    border: 1px solid #ddd;
-  }
+}
+.tag-image:hover,
+.tag-video:hover {
+  border: 1px solid #ddd;
 }
 .tag-image {
   background-color: #c6e9bb70;

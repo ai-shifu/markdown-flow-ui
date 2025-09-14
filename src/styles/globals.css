@@ -28,10 +28,11 @@
   }
 
   /* Fix abrupt black border in focus state */
-  *:focus {
-    outline: none;
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+  *:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px
+      color-mix(in srgb, var(--color-primary) 10%, transparent);
   }
 
   /* Special handling for focus state of input boxes and text areas */

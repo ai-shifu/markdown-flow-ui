@@ -16,7 +16,7 @@ import "./markdownFlowEditor.css";
 import { biliVideoUrlRegexp } from "./components/VideoInject";
 
 const biliVideoContextRegexp =
-  /<iframe\s+[^>]*data-tag="video"[^>]*data-title="([^"]*)"[^>]*src="([^"]+)"[^>]*>.*?<\/iframe>/gi;
+  /<iframe\s+[^>]*data-tag="video"[^>]*data-title="([^"]*)"[^>]*src="([^"]+)"[^>]*>[^<]*<\/iframe>/gi;
 const agiImgContextRegexp = /!\[([^\]]*)\]\(([^)]+)\)/gi;
 
 const parseContentInfo = (

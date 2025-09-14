@@ -15,10 +15,8 @@ import { SelectedOption } from "./types";
 import "./markdownFlowEditor.css";
 import { biliVideoUrlRegexp } from "./components/VideoInject";
 
-// Ultra-safe regex with strict character limits to prevent ReDoS attacks
-// Matches exactly: <iframe ...attributes... data-tag="video" ...more attributes...></iframe>
 const biliVideoContextRegexp =
-  /<iframe[\s\S]{1,500}?data-tag="video"[\s\S]{1,500}?data-title="([^"]{0,100})"[\s\S]{1,500}?src="([^"]{1,200})"[\s\S]{1,200}?><\/iframe>/gi;
+  /<iframe\s+[^>]*data-tag="video"[^>]*data-title="([^"]*)"[^>]*src="([^"]+)"[^>]*>[^<]*<\/iframe>/gi;
 const agiImgContextRegexp = /!\[([^\]]*)\]\(([^)]+)\)/gi;
 
 const parseContentInfo = (

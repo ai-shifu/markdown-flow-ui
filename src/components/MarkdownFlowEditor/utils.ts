@@ -15,8 +15,9 @@ import { SelectedOption } from "./types";
 import "./markdownFlowEditor.css";
 import { biliVideoUrlRegexp } from "./components/VideoInject";
 
+// Simple and safe regex - breaks down complex pattern into simpler parts
 const biliVideoContextRegexp =
-  /<iframe\s+[^>]*data-tag="video"[^>]*data-title="([^"]*)"[^>]*src="([^"]+)"[^>]*>[^<]*<\/iframe>/gi;
+  /<iframe\s[^>]*data-tag="video"[^>]*data-title="([^"]+)"[^>]*src="([^"]+)"[^>]*><\/iframe>/gi;
 const agiImgContextRegexp = /!\[([^\]]*)\]\(([^)]+)\)/gi;
 
 const parseContentInfo = (

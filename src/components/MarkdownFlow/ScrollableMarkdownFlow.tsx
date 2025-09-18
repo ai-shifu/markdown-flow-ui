@@ -22,6 +22,7 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
   enableTypewriter = false,
   height = "100%",
   className = "",
+  confirmButtonText,
   ...restProps
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,6 +56,7 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
           typingSpeed={typingSpeed}
           enableTypewriter={enableTypewriter}
           onBlockComplete={onBlockComplete}
+          confirmButtonText={confirmButtonText}
         />
       </div>
       {showScrollToBottom && (

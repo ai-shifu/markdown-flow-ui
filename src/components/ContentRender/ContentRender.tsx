@@ -33,6 +33,8 @@ export interface ContentRenderProps {
   defaultInputText?: string; // Text input by user
   readonly?: boolean;
   onTypeFinished?: () => void;
+  // Multi-select confirm button text (i18n support)
+  confirmButtonText?: string;
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
 
@@ -49,6 +51,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   defaultInputText,
   readonly = false,
   onTypeFinished,
+  confirmButtonText,
   // tooltipMinLength,
 }) => {
   // Use custom Hook to handle typewriter effect
@@ -66,6 +69,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         defaultButtonText={defaultButtonText}
         defaultInputText={defaultInputText}
         onSend={onSend}
+        confirmButtonText={confirmButtonText}
         // tooltipMinLength={tooltipMinLength}
       />
     ),

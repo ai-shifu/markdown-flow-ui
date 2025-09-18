@@ -31,20 +31,18 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     },
     ref
   ) => {
-    const [isChecked, setIsChecked] = React.useState(
-      checked ?? defaultChecked ?? false
+    const [internalIsChecked, setInternalIsChecked] = React.useState(
+      defaultChecked ?? false
     );
 
-    // Update internal state when checked prop changes
-    React.useEffect(() => {
-      if (checked !== undefined) {
-        setIsChecked(checked);
-      }
-    }, [checked]);
+    const isControlled = checked !== undefined;
+    const isChecked = isControlled ? checked : internalIsChecked;
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       const newChecked = event.target.checked;
-      setIsChecked(newChecked);
+      if (!isControlled) {
+        setInternalIsChecked(newChecked);
+      }
       onCheckedChange?.(newChecked);
       onChange?.(event);
     };
@@ -57,7 +55,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
           className
         )}
       >
-        <div className="relative">
+        <span className="relative inline-flex items-center justify-center">
           <input
             ref={ref}
             type="checkbox"
@@ -67,20 +65,28 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
             className="sr-only"
             {...props}
           />
-          <div
+          <span
             className={cn(
-              "h-4 w-4 rounded border border-input bg-background ring-offset-background transition-colors",
+              "inline-flex items-center justify-center h-4 w-4 rounded border bg-background transition-colors relative",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               "disabled:cursor-not-allowed disabled:opacity-50",
-              isChecked && "bg-primary border-primary text-primary-foreground",
-              !disabled && "hover:border-primary/50"
+              // 使用具体的颜色值而不是CSS变量，避免被全局样式覆盖
+              isChecked
+                ? "bg-blue-600 border-blue-600 text-white"
+                : "border-gray-300 hover:border-blue-500",
+              !disabled && !isChecked && "hover:border-blue-500"
             )}
+            style={{
+              // 确保边框和背景色不被全局样式覆盖
+              borderColor: isChecked ? "#2563eb" : "#d1d5db",
+              backgroundColor: isChecked ? "#2563eb" : "#ffffff",
+            }}
           >
             {isChecked && (
-              <CheckIcon className="h-3 w-3 text-primary-foreground absolute top-0.5 left-0.5" />
+              <CheckIcon className="h-3 w-3 text-white relative z-10" />
             )}
-          </div>
-        </div>
+          </span>
+        </span>
         {label && (
           <span
             className={cn("select-none", disabled && "text-muted-foreground")}

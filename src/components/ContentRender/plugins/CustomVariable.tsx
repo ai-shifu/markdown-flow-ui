@@ -3,8 +3,8 @@ import React from "react";
 import type { Components } from "react-markdown";
 import { OnSendContentParams } from "../../types";
 import { Button } from "../../ui/button";
-import { Input } from "../../ui/input";
 import { Checkbox } from "../../ui/checkbox";
+import { Input } from "../../ui/input";
 
 // Define custom variable node type
 interface CustomVariableNode {
@@ -23,6 +23,7 @@ interface CustomVariableProps {
   node: CustomVariableNode;
   defaultButtonText?: string;
   defaultInputText?: string;
+  defaultSelectedValues?: string[];
   readonly?: boolean;
   onSend?: (content: OnSendContentParams) => void;
   // Multi-select confirm button text (i18n support)
@@ -39,11 +40,14 @@ const CustomButtonInputVariable = ({
   readonly,
   defaultButtonText,
   defaultInputText,
+  defaultSelectedValues,
   onSend,
   confirmButtonText = "Confirm", // Default to English, can be overridden
 }: CustomVariableProps) => {
   const [inputValue, setInputValue] = React.useState(defaultInputText || "");
-  const [selectedValues, setSelectedValues] = React.useState<string[]>([]);
+  const [selectedValues, setSelectedValues] = React.useState<string[]>(
+    defaultSelectedValues || []
+  );
   const isMultiSelect = node.properties?.isMultiSelect ?? false;
 
   const handleButtonClick = (value: string) => {
@@ -64,10 +68,12 @@ const CustomButtonInputVariable = ({
   };
 
   const handleConfirmClick = () => {
+    const noSelection = selectedValues.length === 0 && !inputValue?.trim();
+    if (readonly || noSelection) return;
     onSend?.({
       variableName: node.properties?.variableName || "",
-      selectedValues: selectedValues,
-      inputText: inputValue || undefined,
+      selectedValues,
+      inputText: inputValue?.trim() || undefined,
     });
   };
 
@@ -77,7 +83,8 @@ const CustomButtonInputVariable = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       if (isMultiSelect) {
-        handleConfirmClick();
+        const noSelection = selectedValues.length === 0 && !inputValue.trim();
+        if (!noSelection) handleConfirmClick();
       } else {
         handleSendClick();
       }
@@ -94,8 +101,8 @@ const CustomButtonInputVariable = ({
     <span className="custom-variable-container inline-flex items-center gap-2 flex-wrap">
       {isMultiSelect ? (
         // Multi-select mode: render checkboxes
-        <div className="flex flex-col gap-2 w-full">
-          <div className="flex flex-wrap gap-2">
+        <span className="inline-flex flex-col gap-2 w-full">
+          <span className="flex flex-wrap gap-2">
             {node.properties?.buttonTexts?.map((text, index) => {
               const value = node.properties?.buttonValues?.[index];
               const buttonValue = value !== undefined ? value : text;
@@ -112,10 +119,10 @@ const CustomButtonInputVariable = ({
                 />
               );
             })}
-          </div>
+          </span>
           {/* Input field for multi-select + text */}
           {node.properties?.placeholder && (
-            <div className="flex rounded-md border relative group">
+            <span className="inline-flex rounded-md border relative group">
               <Input
                 type="text"
                 disabled={readonly}
@@ -124,14 +131,9 @@ const CustomButtonInputVariable = ({
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 className="flex-1 h-8 text-sm border-0 shadow-none outline-none ring-0"
-                style={{
-                  border: "none",
-                  outline: "none",
-                  boxShadow: "none",
-                }}
                 title={node.properties.placeholder}
               />
-            </div>
+            </span>
           )}
           {/* Confirm button for multi-select */}
           <Button
@@ -139,12 +141,14 @@ const CustomButtonInputVariable = ({
             variant="default"
             size="sm"
             onClick={handleConfirmClick}
-            disabled={readonly || (selectedValues.length === 0 && !inputValue)}
+            disabled={
+              readonly || (selectedValues.length === 0 && !inputValue?.trim())
+            }
             className="self-start"
           >
             {confirmButtonText}
           </Button>
-        </div>
+        </span>
       ) : (
         // Single-select mode: render buttons (existing logic)
         node.properties?.buttonTexts?.map((text, index) => {

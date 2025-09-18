@@ -9,6 +9,7 @@ export interface MarkdownFlowProps {
     isFinished?: boolean;
     defaultInputText?: string;
     defaultButtonText?: string;
+    defaultSelectedValues?: string[];
     readonly?: boolean;
     customRenderBar?: CustomRenderBarProps;
   }[];
@@ -43,6 +44,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             content={contentInfo.content}
             defaultInputText={contentInfo.defaultInputText}
             defaultButtonText={contentInfo.defaultButtonText}
+            defaultSelectedValues={contentInfo.defaultSelectedValues}
             readonly={contentInfo.readonly}
             enableTypewriter={enableTypewriterForBlock}
             customRenderBar={contentInfo.customRenderBar || customRenderBar}

@@ -62,11 +62,12 @@ markdown-flow-ui is a React UI library for rendering markdown with interactive f
 
 - Real-time markdown rendering with syntax highlighting
 - Typewriter effect animations
-- Interactive flow components
+- Interactive flow components with single-select and multi-select support
 - Plugin system for custom components
 - Server-Sent Events (SSE) support for streaming content
 - Mermaid diagram rendering
 - Mathematical expressions with KaTeX
+- Internationalization (i18n) support for UI components
 
 ## Architecture
 
@@ -87,11 +88,41 @@ The project follows a component-based architecture with these main parts:
   - Typewriter animation support
   - Plugin system for custom components
   - Stream processing capabilities
+  - Interactive variable system with single-select and multi-select support
+  - Internationalization support for UI elements
 - **Key Files**:
   - `ContentRender.tsx`: Main component implementation
   - `useTypewriter.ts`: Typewriter effect logic
   - `plugins/`: Custom component plugins (MermaidChart, CustomVariable)
   - `utils/`: Processing utilities
+
+##### Interactive Variable System
+
+The CustomVariable plugin supports various interaction modes:
+
+**Single-Select Mode (using `|` separator):**
+
+```markdown
+Choose your role: ?[%{{role}}Developer|Designer|Manager]
+```
+
+**Multi-Select Mode (using `||` separator):**
+
+```markdown
+Select skills: ?[%{{skills}}React||Vue||Angular||Node.js]
+```
+
+**Mixed Mode (Multi-select + Text Input):**
+
+```markdown
+Choose technologies: ?[%{{tech}}Frontend||Backend||Mobile||...Other technologies]
+```
+
+**Props for Multi-Select Support:**
+
+- `confirmButtonText`: Text for the confirm button (supports i18n)
+- `selectedValues`: Array of selected values in callback
+- `isMultiSelect`: Automatically detected from syntax
 
 #### MarkdownFlow (`src/components/MarkdownFlow/`)
 
@@ -279,6 +310,28 @@ export const Alternative: Story = {
 - **CSS Modules**: Use for component-specific styles when needed
 - **Class utility**: Use `cn()` utility for conditional classes
 - **Responsive design**: Consider mobile-first approach
+
+### Multi-Select Component Development
+
+When working with multi-select components:
+
+- **Use `||` separator** for multi-select syntax in markdown: `?[%{{var}}Option1||Option2]`
+- **Provide `confirmButtonText` prop** for internationalization support
+- **Handle `selectedValues` array** in callback functions
+- **Support mixed mode**: Multi-select + text input combination
+- **Consider disabled states**: Disable confirm when no selection
+- **Test both modes**: Ensure single-select (`|`) still works correctly
+
+**Example Multi-Select Implementation:**
+
+```typescript
+interface MultiSelectProps {
+  selectedValues?: string[];
+  onSelectedChange?: (values: string[]) => void;
+  confirmButtonText?: string;
+  isMultiSelect?: boolean;
+}
+```
 
 ## Plugin Development Guidelines
 

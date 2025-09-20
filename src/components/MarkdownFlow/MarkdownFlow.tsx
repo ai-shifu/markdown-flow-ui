@@ -9,6 +9,7 @@ export interface MarkdownFlowProps {
     isFinished?: boolean;
     defaultInputText?: string;
     defaultButtonText?: string;
+    defaultSelectedValues?: string[];
     readonly?: boolean;
     customRenderBar?: CustomRenderBarProps;
   }[];
@@ -17,6 +18,8 @@ export interface MarkdownFlowProps {
   typingSpeed?: number;
   enableTypewriter?: boolean;
   onBlockComplete?: (blockIndex: number) => void;
+  // Multi-select confirm button text (i18n support)
+  confirmButtonText?: string;
 }
 
 const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
@@ -26,6 +29,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   typingSpeed: typingSpeedProp,
   enableTypewriter = false,
   onBlockComplete,
+  confirmButtonText,
 }) => {
   return (
     <div className="markdown-flow">
@@ -40,11 +44,13 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             content={contentInfo.content}
             defaultInputText={contentInfo.defaultInputText}
             defaultButtonText={contentInfo.defaultButtonText}
+            defaultSelectedValues={contentInfo.defaultSelectedValues}
             readonly={contentInfo.readonly}
             enableTypewriter={enableTypewriterForBlock}
             customRenderBar={contentInfo.customRenderBar || customRenderBar}
             onSend={onSend}
             typingSpeed={typingSpeed}
+            confirmButtonText={confirmButtonText}
             onTypeFinished={() => {
               onBlockComplete?.(index);
             }}

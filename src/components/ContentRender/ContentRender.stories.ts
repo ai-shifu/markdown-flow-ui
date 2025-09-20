@@ -219,6 +219,71 @@ This greatly enhances content expressiveness and interactivity!
 
 `;
 
+const MULTI_SELECT_EXAMPLES = `# Multi-Select Feature Examples
+
+## Basic Multi-Select
+
+Choose your favorite programming languages (select multiple):
+?[%{{programming_languages}}JavaScript||Python||TypeScript||Java||Go||Rust]
+
+## Multi-Select with Text Input
+
+Select features you want and describe any additional requirements:
+?[%{{features}}User Authentication||API Integration||Database Support||File Upload||...Additional requirements]
+
+## Mixed Single and Multi-Select Examples
+
+### Single Selection (traditional buttons)
+Choose your experience level: ?[%{{experience}}Beginner|Intermediate|Advanced]
+
+### Multi-Selection (checkboxes + confirm)
+Select technologies you're interested in:
+?[%{{technologies}}React||Vue||Angular||Svelte||Next.js||Nuxt.js]
+
+### Text Only Input
+Enter your project name: ?[%{{project_name}}...Project name]
+
+### Single Button with Text
+Choose action and add comment: ?[%{{action}}Approve|Reject|...Add your comment]
+
+## Complex Multi-Select Scenarios
+
+### Skills Assessment
+Select all skills you have (choose multiple):
+?[%{{skills}}HTML/CSS||JavaScript||TypeScript||React||Vue.js||Node.js||Python||Java||Database Design||API Development]
+
+### Restaurant Order
+Choose your toppings (multiple selections allowed):
+?[%{{toppings}}Cheese||Pepperoni||Mushrooms||Onions||Bell Peppers||Olives||Tomatoes||...Special instructions]
+
+## Comparison: Single vs Multi-Select
+
+**Single Select (radio-style buttons):**
+Pick one main technology: ?[%{{main_tech}}Frontend|Backend|Mobile|DevOps]
+
+**Multi-Select (checkbox-style):**
+Areas of expertise (select all that apply):
+?[%{{expertise}}Frontend Development||Backend Development||Mobile Development||DevOps||UI/UX Design||Data Science]
+
+**Mixed Mode:**
+Choose primary role and additional skills:
+Primary: ?[%{{primary_role}}Developer|Designer|Manager|QA]
+Additional skills: ?[%{{additional_skills}}Leadership||Teaching||Project Management||Technical Writing||...Other skills]
+
+## Interactive Flow Example
+
+1. **First, choose your role:**
+   ?[%{{user_role}}Student|Professional|Freelancer|Entrepreneur]
+
+2. **Then select your interests (multiple):**
+   ?[%{{interests}}Web Development||Mobile Apps||AI/ML||Data Science||Cybersecurity||Game Development||...Other interests]
+
+3. **Finally, tell us about your goals:**
+   ?[%{{goals}}...What do you want to achieve?]
+
+This demonstrates the power of combining single-select, multi-select, and text input modes in a conversational flow!
+`;
+
 // ==============================================================================
 // Story Definitions
 // ==============================================================================
@@ -371,5 +436,140 @@ And [bracket] content
 
 This test demonstrates the new error handling mechanism. Invalid Mermaid charts now show friendly error messages with helpful syntax hints instead of crashing or showing confusing error messages.
 `,
+  },
+};
+
+export const MultiSelectExamples: Story = {
+  name: "Multi-Select Feature Examples",
+  args: {
+    content: MULTI_SELECT_EXAMPLES,
+    enableTypewriter: false,
+    onSend: (params) => {
+      console.log("Multi-select callback received:", params);
+      alert(`Received data:\n${JSON.stringify(params, null, 2)}`);
+    },
+  },
+};
+
+export const MultiSelectWithTypewriter: Story = {
+  name: "Multi-Select + Typewriter Effect",
+  args: {
+    content: MULTI_SELECT_EXAMPLES,
+    enableTypewriter: true,
+    typingSpeed: 20,
+    onSend: (params) => {
+      console.log("Multi-select callback received:", params);
+      alert(`Received data:\n${JSON.stringify(params, null, 2)}`);
+    },
+  },
+};
+
+export const InteractiveMultiSelectDemo: Story = {
+  name: "Interactive Multi-Select Demo",
+  args: {
+    content: `# Interactive Multi-Select Demo
+
+Welcome! Let's test the multi-select functionality.
+
+## Step 1: Choose Your Interests (Multi-Select)
+Select all topics that interest you:
+?[%{{interests}}Web Development||Mobile Development||AI/Machine Learning||Data Science||Cybersecurity||Game Development||DevOps||UI/UX Design]
+
+## Step 2: Primary Focus (Single Select)
+What's your primary focus area?
+?[%{{primary_focus}}Frontend|Backend|Full Stack|Mobile|Data|AI/ML]
+
+## Step 3: Experience Level (Single Select)
+How would you describe your experience level?
+?[%{{experience}}Beginner|Intermediate|Advanced|Expert]
+
+## Step 4: Learning Goals (Multi-Select with Text)
+What would you like to learn or improve? Select options and add custom goals:
+?[%{{learning_goals}}React/Next.js||Vue/Nuxt.js||Node.js||Python||Machine Learning||Cloud Computing||...Other specific goals]
+
+## Step 5: Additional Comments
+Any additional thoughts or questions?
+?[%{{comments}}...Feel free to share your thoughts]
+
+---
+
+Try interacting with the elements above to see how single-select (buttons) and multi-select (checkboxes + confirm button) work differently!`,
+    enableTypewriter: false,
+    confirmButtonText: "Confirm", // English confirm button
+    onSend: (params) => {
+      console.log("Interaction received:", params);
+
+      // Create a more detailed alert message
+      let message = "Form Data Received:\n\n";
+      if (params.variableName) {
+        message += `Variable: ${params.variableName}\n`;
+      }
+      if (params.buttonText) {
+        message += `Button: ${params.buttonText}\n`;
+      }
+      if (params.selectedValues && params.selectedValues.length > 0) {
+        message += `Selected: ${params.selectedValues.join(", ")}\n`;
+      }
+      if (params.inputText) {
+        message += `Input: ${params.inputText}\n`;
+      }
+
+      alert(message);
+    },
+  },
+};
+
+export const ChineseMultiSelectDemo: Story = {
+  name: "Chinese Multi-Select Demo (中文示例)",
+  args: {
+    content: `# 多选功能中文演示
+
+欢迎体验多选功能！
+
+## 第一步：选择你的兴趣（多选）
+选择所有你感兴趣的主题：
+?[%{{interests}}Web开发||移动开发||人工智能||数据科学||网络安全||游戏开发||运维||UI/UX设计]
+
+## 第二步：主要方向（单选）
+你的主要专业方向是？
+?[%{{primary_focus}}前端|后端|全栈|移动端|数据|人工智能]
+
+## 第三步：经验水平（单选）
+你如何描述自己的经验水平？
+?[%{{experience}}初学者|中级|高级|专家]
+
+## 第四步：学习目标（多选+文本）
+你想学习或提升什么？选择选项并添加自定义目标：
+?[%{{learning_goals}}React/Next.js||Vue/Nuxt.js||Node.js||Python||机器学习||云计算||...其他具体目标]
+
+## 第五步：补充说明
+还有什么想法或问题吗？
+?[%{{comments}}...请分享你的想法]
+
+---
+
+尝试与上面的元素交互，体验单选（按钮）和多选（复选框+确认按钮）的不同工作方式！`,
+    enableTypewriter: false,
+    confirmButtonText: "确认", // Chinese confirm button
+    onSend: (params) => {
+      console.log("收到交互数据:", params);
+
+      // Create a more detailed alert message in Chinese
+      let message = "收到的表单数据：\n\n";
+      if (params.variableName) {
+        message += `变量名: ${params.variableName}\n`;
+      }
+      if (params.buttonText) {
+        message += `按钮: ${params.buttonText}\n`;
+      }
+      if (params.selectedValues && params.selectedValues.length > 0) {
+        message += `选择项: ${params.selectedValues.join(", ")}\n`;
+      }
+      if (params.inputText) {
+        message += `输入: ${params.inputText}\n`;
+      }
+
+      alert(message);
+    },
   },
 };

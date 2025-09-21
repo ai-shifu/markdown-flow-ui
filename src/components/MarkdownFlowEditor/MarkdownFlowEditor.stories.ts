@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 // import { fn } from 'storybook/test';
 
 import MarkdownFlowEditor from "./MarkdownFlowEditor";
+import { EditMode } from "./MarkdownFlowEditor";
 
 const meta = {
   title: "MarkdownFlow/MarkdownFlowEditor",
@@ -39,39 +40,135 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const MarkdownFlowEditorStory: Story = {
-  args: {
-    value: `===# 第一章 认识一下===
+const content = `
+# Complete Markdown Syntax Test
 
-用友好的语气讲课：
-- 先问好，介绍自己叫孙志岗，欢迎用户来听 AI 课
-- 描述下 AI 多重要，一定要学好 AI
-- 询问该怎么称呼用户
+## Heading Levels
+### H3 Heading
+#### H4 Heading
+##### H5 Heading
+###### H6 Heading
 
-?[%{{ sys_user_nickname }}...希望我怎么称呼你？]
+## Text Formatting
+**Bold text**, *italic text*, ~~strikethrough text~~, and \`inline code\`
 
-用户叫'''{{sys_user_nickname}}'''，称赞下这个名字
-表示非常希望能和用户一起顺利走进 AGI 时代。因为你的个人使命就是===帮助 100 万人顺利走进 AGI 时代===
-解释下什么是 AGI
+## Lists
 
+### Unordered Lists
+- First item
+- Second item
+  - Nested item 1
+  - Nested item 2
+    - Deep nesting
+- Third item
+
+### Ordered Lists
+1. First item
+2. Second item
+   1. Nested item 1
+   2. Nested item 2
+      1. Deep nested item
+3. Third item
+
+## Links and Images
+
+Link:
+
+[AI-Shifu Link](https://ai-shifu.cn/)
+
+Image:
+
+![Image Description](https://ai-shifu.cn/imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/height:2000/https:/cdn.gamma.app/51wyzvm6tssdgg1/c8d63919f06741bb8967fa6af3a299f2/original/Cai-Se-logo-Dai-Wen-Zi-Gao-Du-Liu-Bai-h110.png)
+
+## Video
+
+<iframe data-tag="video" data-title="bilibili-video" src="https://if-cdn.com/api/iframe?url=https%3A%2F%2Fwww.bilibili.com%2Fvideo%2FBV1b4HezEEdW%2F%3Fspm_id_from%3D888.80997.embed_other.whitelist%26t%3D12.242315%26bvid%3DBV1b4HezEEdW&amp;key=a68bac8b6624d46b6d0ba46e5b3f8971" allowfullscreen="" allow="autoplay; encrypted-media" title="bilibili-video" class="w-full aspect-video rounded-lg border-0"></iframe>
+
+## Blockquotes
+> This is a blockquote
+> Second line of quote
+> > Nested blockquote
+
+## Code Blocks
+\`\`\`javascript
+// JavaScript code block
+function hello() {
+  console.log("Hello World!");
+}
+\`\`\`
+
+\`\`\`python
+# Python code block
+def hello():
+    print("Hello World!")
+\`\`\`
+
+Inline code: \`\`\` console.log("Hello World!"); \`\`\`
+
+## Tables
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |
+
+## Custom Variable Syntax Examples
+
+### Format 1: Multiple Buttons + Placeholder
+Choose your profession: ?[%{{occupation}}Warrior|Mage|Rogue|... Other profession]
+
+### Format 2: Multiple Buttons (with spaces)
+Select color: ?[%{{ color }} Red | Blue | Green ]
+
+### Format 3: Single Button (with spaces)
+Confirm submission: ?[%{{ submit }} Confirm ]
+
+### Format 4: Placeholder (with spaces)
+Enter username: ?[%{{ username }} ... Please enter username ]
+
+### Mixed Formats
+1. No spaces: ?[%{{quick}}Option1|Option2]
+2. With spaces: ?[%{{ variable }} Option A | Option B | ... Custom option]
+3. Complex combination: ?[%{{ complex }} Step 1 | Step 2 | Step 3 | ... Other steps]
+
+## Horizontal Rules
 ---
 
-表示想知道用户的性别，这样讲课可以更适配
+## HTML Embedding
+<p style="color: blue;">This is an HTML paragraph</p>
 
-?[%{{ gender }}男|女]
+## Task Lists
+- [x] Completed task
+- [ ] Incomplete task
+- [ ] Another incomplete task
 
-询问用户喜欢什么样的讲课风格。可以点击按钮选择，也可以自定义
+## Footnotes
+This is text with a footnote[^1]
+[^1]: Footnote content
 
-?[%{{ sys_user_style }}幽默|大气|二次元｜...具体描述下你喜欢的风格]
+## Emoji
+:smile: :heart: :+1:
 
-用{{sys_user_style}}风格向性别是{{gender}}，名叫{{sys_user_nickname}}的用户讲课：
-反问用户看到下面的图是否会觉得不舒服？
+## Escape Characters
+\\*not italic\\*, \\[not a link\\]
 
-![AI 统治世界图](image_url)
+## Math Formulas (partial Markdown support)
+$$
+a^2 + b^2 = c^2
+$$
 
-用同理心表示，不舒服是正常的，这是人类共同的反应
-问用户是不是真的是人类？如果是，请登录
+## Conclusion
+This demonstrates various Markdown syntax elements, including custom variable syntax.
+    `;
 
-?[登录](login_url)`,
+export const MarkdownFlowEditorWithCodeEditStory: Story = {
+  args: {
+    content,
+  },
+};
+
+export const MarkdownFlowEditorWithQuickEditStory: Story = {
+  args: {
+    content,
+    editMode: EditMode.QuickEdit,
   },
 };

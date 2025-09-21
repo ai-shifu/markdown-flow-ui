@@ -1,62 +1,245 @@
-import React, { useState } from "react";
-import CodeMirror from "@uiw/react-codemirror";
-import { markdown } from "@codemirror/lang-markdown";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+"use client";
 
-export interface MarkdownFlowEditorProps {
-  value?: string;
-  onChange?: (value: string) => void;
-  className?: string;
-  readOnly?: boolean;
-  maxWidth?: string;
+import { useState, useCallback, useRef, useEffect } from "react";
+import CodeMirror from "@uiw/react-codemirror";
+import { autocompletion } from "@codemirror/autocomplete";
+import { EditorView } from "@codemirror/view";
+import { markdown } from "@codemirror/lang-markdown";
+import {
+  syntaxHighlighting,
+  defaultHighlightStyle,
+} from "@codemirror/language";
+import CustomDialog from "./components/CustomDialog";
+import EditorContext from "./editor-context";
+import ImageInject from "./components/ImageInject";
+import VideoInject from "./components/VideoInject";
+import { SelectedOption, IEditorContext } from "./types";
+import "./markdownFlowEditor.css";
+
+import {
+  imgPlaceholders,
+  videoPlaceholders,
+  createSlashCommands,
+  parseContentInfo,
+  getVideoContentToInsert,
+} from "./utils";
+
+export enum EditMode {
+  CodeEdit = "codeEdit",
+  QuickEdit = "quickEdit",
 }
 
-const MarkdownFlowEditor: React.FC<MarkdownFlowEditorProps> = ({
-  value = "",
-  onChange,
-  className = "",
-  readOnly = false,
-  maxWidth = "100%", // Default max width is 100%
-}) => {
-  const [markdownContent, setMarkdownContent] = useState(value);
+type EditorProps = {
+  content?: string;
+  editMode?: EditMode;
+  onChange?: (value: string) => void;
+  onBlur?: () => void;
+};
 
-  const handleChange = (value: string) => {
-    setMarkdownContent(value);
-    if (onChange) {
-      onChange(value);
-    }
+const Editor: React.FC<EditorProps> = ({
+  content = "",
+  editMode = EditMode.CodeEdit,
+  onChange,
+  onBlur,
+}) => {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<SelectedOption>(
+    SelectedOption.Empty
+  );
+  const [selectContentInfo, setSelectContentInfo] = useState<any>();
+  const editorViewRef = useRef<EditorView | null>(null);
+
+  const editorContextValue: IEditorContext = {
+    selectedOption: SelectedOption.Empty,
+    setSelectedOption,
+    dialogOpen,
+    setDialogOpen,
   };
 
+  const onSelectedOption = useCallback((selectedOption: SelectedOption) => {
+    setDialogOpen(true);
+    setSelectedOption(selectedOption);
+  }, []);
+
+  const insertText = useCallback(
+    (text: string) => {
+      if (!editorViewRef.current) return;
+
+      const { state, dispatch } = editorViewRef.current;
+      const from = state.selection.main.from;
+
+      dispatch({
+        changes: { from, insert: text },
+        selection: { anchor: from + text.length },
+      });
+    },
+    [editorViewRef]
+  );
+
+  const deleteSelectedContent = useCallback(() => {
+    if (
+      !selectContentInfo ||
+      !editorViewRef.current ||
+      selectContentInfo.from === -1
+    )
+      return;
+
+    const { from, to } = selectContentInfo;
+    const { dispatch } = editorViewRef.current;
+
+    dispatch({
+      changes: { from, to, insert: "" },
+    });
+  }, [selectContentInfo, editorViewRef]);
+
+  const handleSelectImage = useCallback(
+    ({
+      resourceUrl,
+      resourceTitle,
+    }: {
+      resourceUrl?: string;
+      resourceTitle?: string;
+    }) => {
+      const textToInsert = `![${resourceTitle}](${resourceUrl})`;
+      if (selectContentInfo?.type === SelectedOption.Image) {
+        deleteSelectedContent();
+        if (!editorViewRef.current) return;
+        const { dispatch } = editorViewRef.current;
+        dispatch({
+          changes: { from: selectContentInfo.from, insert: textToInsert },
+        });
+      } else {
+        insertText(textToInsert);
+      }
+      setDialogOpen(false);
+    },
+    [insertText, selectedOption]
+  );
+
+  const handleSelectVideo = useCallback(
+    ({
+      resourceUrl,
+      resourceTitle,
+    }: {
+      resourceUrl: string;
+      resourceTitle: string;
+    }) => {
+      const textToInsert = getVideoContentToInsert(resourceUrl, resourceTitle);
+      if (selectContentInfo?.type === SelectedOption.Video) {
+        deleteSelectedContent();
+        if (!editorViewRef.current) return;
+        const { dispatch } = editorViewRef.current;
+        dispatch({
+          changes: { from: selectContentInfo.from, insert: textToInsert },
+        });
+      } else {
+        insertText(textToInsert);
+      }
+      setDialogOpen(false);
+    },
+    [insertText, selectedOption]
+  );
+
+  const slashCommandsExtension = useCallback(() => {
+    return autocompletion({
+      override: [createSlashCommands(onSelectedOption)],
+    });
+  }, [onSelectedOption]);
+
+  const handleEditorUpdate = useCallback((view: EditorView) => {
+    editorViewRef.current = view;
+  }, []);
+
+  const handleTagClick = useCallback((event: any) => {
+    event.stopPropagation();
+    console.log("handleTagClick", event.detail);
+    const { type, from, to, dataset } = event.detail;
+    const value = parseContentInfo(type, dataset);
+    console.log("value", value);
+    setSelectContentInfo({
+      type,
+      value,
+      from,
+      to,
+    });
+    setSelectedOption(type);
+    setDialogOpen(true);
+  }, []);
+
+  useEffect(() => {
+    if (!dialogOpen) {
+      setSelectedOption(SelectedOption.Empty);
+      setSelectContentInfo(null);
+    }
+  }, [dialogOpen]);
+
+  useEffect(() => {
+    const handleWrap = (e: any) => {
+      if (e.detail.view === editorViewRef.current) {
+        handleTagClick(e);
+      }
+    };
+    window.addEventListener("globalTagClick", handleWrap);
+    return () => {
+      window.removeEventListener("globalTagClick", handleWrap);
+    };
+  }, []);
+
   return (
-    <Card
-      className={`w-full h-full flex flex-col ${className}`}
-      style={{ maxWidth }}
-    >
-      <CardHeader className="flex-shrink-0">
-        <CardTitle>Markdown Flow Editor</CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 px-6">
+    <>
+      <EditorContext.Provider value={editorContextValue}>
         <CodeMirror
-          value={markdownContent}
-          height="100%"
-          extensions={[markdown()]}
-          onChange={handleChange}
-          editable={!readOnly}
+          extensions={[
+            EditorView.lineWrapping,
+            markdown(),
+            syntaxHighlighting(defaultHighlightStyle),
+            ...[
+              editMode === EditMode.QuickEdit
+                ? [
+                    slashCommandsExtension(),
+                    imgPlaceholders,
+                    videoPlaceholders,
+                    EditorView.updateListener.of((update) => {
+                      handleEditorUpdate(update.view);
+                    }),
+                  ]
+                : [],
+            ],
+          ]}
           basicSetup={{
             lineNumbers: false,
-            highlightActiveLine: false,
-            highlightSelectionMatches: true,
+            syntaxHighlighting: true,
+            highlightActiveLine: true,
+            highlightActiveLineGutter: true,
             foldGutter: false,
           }}
-          style={{
-            height: "100%",
-            width: "100%",
-            overflowWrap: "break-word", // Auto line wrapping
+          className="rounded-md"
+          placeholder="Type \ to insert content"
+          value={content}
+          theme="light"
+          minHeight="2rem"
+          onChange={(value: string) => {
+            onChange?.(value);
           }}
+          onBlur={onBlur}
         />
-      </CardContent>
-    </Card>
+        <CustomDialog>
+          {selectedOption === SelectedOption.Image && (
+            <ImageInject
+              value={selectContentInfo?.value}
+              onSelect={handleSelectImage}
+            />
+          )}
+          {selectedOption === SelectedOption.Video && (
+            <VideoInject
+              value={selectContentInfo?.value}
+              onSelect={handleSelectVideo}
+            />
+          )}
+        </CustomDialog>
+      </EditorContext.Provider>
+    </>
   );
 };
 
-export default MarkdownFlowEditor;
+export default Editor;

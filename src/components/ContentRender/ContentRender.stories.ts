@@ -219,6 +219,36 @@ This greatly enhances content expressiveness and interactivity!
 
 `;
 
+const NATIVE_HTML_CONTENT = `# Native HTML Showcase
+
+<section>
+  <h2>Classic HTML Elements</h2>
+  <p>
+    <mark>Highlighted text</mark> can sit beside <code>inline code</code> and
+    <em>italic text</em> without losing Markdown capabilities.
+  </p>
+  <details open>
+    <summary>Expandable Details</summary>
+    <p>
+      Native HTML tags now render as expected, so you can mix structured
+      callouts, <strong>emphasis</strong>, and custom layouts.
+    </p>
+  </details>
+  <div style="display: flex; gap: 1rem; align-items: center;">
+    <span style="font-weight: 600;">Progress:</span>
+    <progress value="70" max="100">70%</progress>
+    <meter min="0" max="100" high="80" value="65">65%</meter>
+  </div>
+  <blockquote>
+    <p>
+      You can style content with inline CSS, such as
+      <span style="color: #6366f1;">accent colors</span>, to highlight
+      important information.
+    </p>
+  </blockquote>
+</section>
+`;
+
 // ==============================================================================
 // Story Definitions
 // ==============================================================================
@@ -251,6 +281,10 @@ export const ContentRenderMathAndMermaid: Story = {
   args: {
     enableTypewriter: false,
     content: `# 数学公式和图表展示
+
+## HTML 展示
+
+<a href="https://bolt.new/" target="_blank"> ?点击进入Bolt </a>
 
 ## 数学公式
 
@@ -371,5 +405,13 @@ And [bracket] content
 
 This test demonstrates the new error handling mechanism. Invalid Mermaid charts now show friendly error messages with helpful syntax hints instead of crashing or showing confusing error messages.
 `,
+  },
+};
+
+export const NativeHtmlElements: Story = {
+  name: "Native HTML Elements",
+  args: {
+    enableTypewriter: false,
+    content: NATIVE_HTML_CONTENT,
   },
 };

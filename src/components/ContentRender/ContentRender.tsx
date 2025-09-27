@@ -9,6 +9,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
+import rehypeRaw from "rehype-raw";
 import "highlight.js/styles/github.css";
 import "./github-markdown-light.css";
 import "katex/dist/katex.min.css";
@@ -21,6 +22,10 @@ import "./contentRender.css";
 import { OnSendContentParams, CustomRenderBarProps } from "../types";
 import remarkBreaks from "remark-breaks";
 import { processMarkdownText } from "./utils/process-markdown";
+import {
+  preserveCustomVariableProperties,
+  restoreCustomVariableProperties,
+} from "./utils/custom-variable-props";
 
 // Define component Props type
 export interface ContentRenderProps {
@@ -144,6 +149,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath, remarkFlow, remarkBreaks]}
         rehypePlugins={[
+          preserveCustomVariableProperties, // before rehypeRaw, put button texts and values in properties
+          rehypeRaw, // support html
+          restoreCustomVariableProperties, // after rehypeRaw, restore button texts and values from properties
           [
             rehypeHighlight,
             {

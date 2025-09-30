@@ -29,6 +29,7 @@
     "react-markdown": "^10.1.0",
     "rehype-highlight": "^7.0.2",
     "rehype-katex": "^7.0.1",
+    "rehype-raw": "^7.0.0",
     "remark-breaks": "^4.0.0",
     "remark-flow": "^0.1.5",
     "remark-gfm": "^4.0.1",
@@ -137,5 +138,5 @@
     "test": "echo \"No tests specified\" && exit 0"
   },
   "types": "dist/index.d.ts",
-  "version": "0.1.11"
+  "version": "0.1.12"
 }

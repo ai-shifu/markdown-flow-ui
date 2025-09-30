@@ -281,7 +281,7 @@ Additional skills: ?[%{{additional_skills}}Leadership||Teaching||Project Managem
 3. **Finally, tell us about your goals:**
    ?[%{{goals}}...What do you want to achieve?]
 
-This demonstrates the power of combining single-select, multi-select, and text input modes in a conversational flow!`
+This demonstrates the power of combining single-select, multi-select, and text input modes in a conversational flow!`;
 
 const NATIVE_HTML_CONTENT = `# Native HTML Showcase
 

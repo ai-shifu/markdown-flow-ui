@@ -30,7 +30,7 @@
     "rehype-highlight": "^7.0.2",
     "rehype-katex": "^7.0.1",
     "remark-breaks": "^4.0.0",
-    "remark-flow": "^0.1.3",
+    "remark-flow": "^0.1.5",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "tailwind-merge": "^3.3.1",
@@ -137,5 +137,5 @@
     "test": "echo \"No tests specified\" && exit 0"
   },
   "types": "dist/index.d.ts",
-  "version": "0.1.9"
+  "version": "0.1.11"
 }

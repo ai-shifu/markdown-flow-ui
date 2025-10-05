@@ -161,8 +161,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     hasCompleted.current = false; // Reset completion status when content changes
   }, [content]);
 
-  console.log("customRenderAfterContent", displayContent, onClickAskButton);
-
   return (
     <div className="content-render markdown-body">
       <ReactMarkdown

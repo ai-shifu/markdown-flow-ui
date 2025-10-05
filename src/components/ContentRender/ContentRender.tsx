@@ -31,6 +31,7 @@ import {
 export interface ContentRenderProps {
   content: string;
   customRenderBar?: CustomRenderBarProps;
+  onClickAskButton?: () => void;
   onSend?: (content: OnSendContentParams) => void;
   typingSpeed?: number;
   enableTypewriter?: boolean;
@@ -45,7 +46,11 @@ export interface ContentRenderProps {
 }
 
 // Extended component interface
-type CustomComponents = ComponentsWithCustomVariable;
+type CustomComponents = ComponentsWithCustomVariable & {
+  "ask-button"?: React.ComponentType<{
+    children: React.ReactNode;
+  }>;
+};
 
 const ContentRender: React.FC<ContentRenderProps> = ({
   content,
@@ -59,6 +64,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   readonly = false,
   onTypeFinished,
   confirmButtonText,
+  onClickAskButton,
   // tooltipMinLength,
 }) => {
   // Use custom Hook to handle typewriter effect
@@ -69,6 +75,17 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   });
 
   const components: CustomComponents = {
+    "ask-button": (props) => {
+      const { children } = props as any;
+      return (
+        <button
+          className="content-render-ask-button"
+          onClick={onClickAskButton}
+        >
+          {children}
+        </button>
+      );
+    },
     "custom-variable": (props) => (
       <CustomButtonInputVariable
         {...props}
@@ -143,6 +160,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   useEffect(() => {
     hasCompleted.current = false; // Reset completion status when content changes
   }, [content]);
+
+  console.log("customRenderAfterContent", displayContent, onClickAskButton);
 
   return (
     <div className="content-render markdown-body">

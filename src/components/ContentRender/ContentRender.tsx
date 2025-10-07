@@ -41,6 +41,8 @@ export interface ContentRenderProps {
   onTypeFinished?: () => void;
   // Multi-select confirm button text (i18n support)
   confirmButtonText?: string;
+  // Dynamic interaction format for multi-select support
+  dynamicInteractionFormat?: string;
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
 
@@ -59,6 +61,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   readonly = false,
   onTypeFinished,
   confirmButtonText,
+  _dynamicInteractionFormat,
   // tooltipMinLength,
 }) => {
   // Use custom Hook to handle typewriter effect
@@ -82,7 +85,10 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       />
     ),
     code: (props) => {
-      const { className, children, ...rest } = props as any;
+      const { className, children, ...rest } = props as {
+        className?: string;
+        children?: React.ReactNode;
+      };
       const match = /language-(\w+)/.exec(className || "");
       const language = match?.[1];
       if (language === "mermaid") {

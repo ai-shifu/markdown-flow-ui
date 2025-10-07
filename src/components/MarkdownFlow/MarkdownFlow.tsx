@@ -12,6 +12,7 @@ export interface MarkdownFlowProps {
     defaultSelectedValues?: string[];
     readonly?: boolean;
     customRenderBar?: CustomRenderBarProps;
+    dynamicInteractionFormat?: string;
   }[];
   customRenderBar?: CustomRenderBarProps;
   onSend?: (content: OnSendContentParams) => void;
@@ -51,6 +52,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             onSend={onSend}
             typingSpeed={typingSpeed}
             confirmButtonText={confirmButtonText}
+            dynamicInteractionFormat={contentInfo.dynamicInteractionFormat}
             onTypeFinished={() => {
               onBlockComplete?.(index);
             }}

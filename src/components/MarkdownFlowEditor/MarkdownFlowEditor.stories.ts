@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import MarkdownFlowEditor from "./MarkdownFlowEditor";
 import { EditMode } from "./MarkdownFlowEditor";
+import type { UploadProps } from "./uploadTypes";
 
 const meta = {
   title: "MarkdownFlow/MarkdownFlowEditor",
@@ -173,5 +174,22 @@ export const MarkdownFlowEditorWithQuickEditStory: Story = {
     content,
     editMode: EditMode.QuickEdit,
     locale: "zh-CN",
+  },
+};
+const token =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZDY3YTBlOGIyMGVkNGQ5MjlkMjA3Y2MxMjdhNGQ3M2EiLCJ0aW1lX3N0YW1wIjoxNzYwMDgyODY4Ljg1NjM4NDh9.GzpoT14Z1rh4BDq2ThJqpvQfx0tghVm71B8SSzjBedU";
+const mockUploadProps: UploadProps = {
+  action: "https://web01.dev.pillowai.cn/api/shifu/upfile",
+  headers: {
+    Authorization: `Bearer ${token}`,
+    Token: token,
+  },
+};
+
+export const MarkdownFlowEditorWithCustomUpload: Story = {
+  args: {
+    content,
+    editMode: EditMode.QuickEdit,
+    uploadProps: mockUploadProps,
   },
 };

@@ -27,6 +27,7 @@ import enUS from "./locales/en-US.json";
 import zhCN from "./locales/zh-CN.json";
 import { initReactI18next, useTranslation } from "react-i18next";
 import i18next from "i18next";
+import { UploadProps } from "./uploadTypes";
 
 const resources = {
   "en-US": { translation: enUS },
@@ -63,6 +64,7 @@ type EditorProps = {
   onChange?: (value: string) => void;
   onBlur?: () => void;
   locale?: "en-US" | "zh-CN";
+  uploadProps?: UploadProps;
 };
 
 const Editor: React.FC<EditorProps> = ({
@@ -71,6 +73,7 @@ const Editor: React.FC<EditorProps> = ({
   onChange,
   onBlur,
   locale = "en-US",
+  uploadProps,
 }) => {
   const { t, i18n } = useTranslation();
   useEffect(() => {
@@ -195,10 +198,8 @@ const Editor: React.FC<EditorProps> = ({
 
   const handleTagClick = useCallback((event: any) => {
     event.stopPropagation();
-    console.log("handleTagClick", event.detail);
     const { type, from, to, dataset } = event.detail;
     const value = parseContentInfo(type, dataset);
-    console.log("value", value);
     setSelectContentInfo({
       type,
       value,
@@ -280,6 +281,7 @@ const Editor: React.FC<EditorProps> = ({
             <ImageInject
               value={selectContentInfo?.value}
               onSelect={handleSelectImage}
+              uploadProps={uploadProps}
             />
           )}
           {selectedOption === SelectedOption.Video && (

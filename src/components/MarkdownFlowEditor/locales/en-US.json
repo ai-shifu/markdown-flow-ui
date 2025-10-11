@@ -1,0 +1,16 @@
+{
+  "placeholder": "Type '/' to insert content",
+  "dialogTitle": "Settings",
+  "imageUrlPlaceholder": "Please enter image URL",
+  "imageTitlePlaceholder": "Please enter image title",
+  "imageUseButton": "Use Image",
+  "imageDefaultTitle": "Image name",
+  "videoUrlPlaceholder": "Please enter Bilibili video URL",
+  "videoRunButton": "Run",
+  "videoUseButton": "Use Resource",
+  "videoTitlePlaceholder": "Please enter video title",
+  "videoDefaultTitle": "Video Title",
+  "videoInvalidUrl": "Please enter a valid Bilibili video URL",
+  "slashImage": "Image",
+  "slashVideo": "Video"
+}

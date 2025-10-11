@@ -211,7 +211,8 @@ const videoPlaceholders = ViewPlugin.fromClass(
 );
 
 function createSlashCommands(
-  onSelectOption: (selectedOption: SelectedOption) => void
+  onSelectOption: (selectedOption: SelectedOption) => void,
+  labels?: { image?: string; video?: string }
 ) {
   return (context: CompletionContext): CompletionResult | null => {
     const word = context.matchBefore(/\/(\w*)$/);
@@ -235,13 +236,13 @@ function createSlashCommands(
       to: word.to,
       options: [
         {
-          label: "Image",
+          label: labels?.image ?? "Image",
           apply: (view, _, from, to) => {
             handleSelect(view, _, from, to, SelectedOption.Image);
           },
         },
         {
-          label: "Video",
+          label: labels?.video ?? "Video",
           apply: (view, _, from, to) => {
             handleSelect(view, _, from, to, SelectedOption.Video);
           },

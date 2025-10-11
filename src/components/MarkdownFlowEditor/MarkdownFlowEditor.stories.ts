@@ -170,5 +170,6 @@ export const MarkdownFlowEditorWithQuickEditStory: Story = {
   args: {
     content,
     editMode: EditMode.QuickEdit,
+    locale: "zh-CN",
   },
 };

@@ -1,0 +1,16 @@
+{
+  "placeholder": "输入'/'快速插入内容",
+  "dialogTitle": "设置",
+  "imageUrlPlaceholder": "请输入图片地址",
+  "imageTitlePlaceholder": "请输入图片标题",
+  "imageUseButton": "使用图片",
+  "imageDefaultTitle": "图片名称",
+  "videoUrlPlaceholder": "请输入 B 站视频链接",
+  "videoRunButton": "运行",
+  "videoUseButton": "使用资源",
+  "videoTitlePlaceholder": "请输入视频标题",
+  "videoDefaultTitle": "视频标题",
+  "videoInvalidUrl": "请输入有效的 B 站视频链接",
+  "slashImage": "图片",
+  "slashVideo": "视频"
+}

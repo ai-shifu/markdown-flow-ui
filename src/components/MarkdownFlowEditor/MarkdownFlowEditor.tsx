@@ -23,6 +23,36 @@ import {
   parseContentInfo,
   getVideoContentToInsert,
 } from "./utils";
+import enUS from "./locales/en-US.json";
+import zhCN from "./locales/zh-CN.json";
+import { initReactI18next, useTranslation } from "react-i18next";
+import i18next from "i18next";
+
+const resources = {
+  "en-US": { translation: enUS },
+  "zh-CN": { translation: zhCN },
+};
+
+if (!i18next.isInitialized) {
+  i18next.use(initReactI18next).init({
+    resources,
+    lng: "en-US",
+    fallbackLng: "en-US",
+    interpolation: { escapeValue: false },
+  });
+} else {
+  Object.entries(resources).forEach(([lng, resource]) => {
+    if (!i18next.hasResourceBundle(lng, "translation")) {
+      i18next.addResourceBundle(
+        lng,
+        "translation",
+        resource.translation,
+        true,
+        true
+      );
+    }
+  });
+}
 
 export enum EditMode {
   CodeEdit = "codeEdit",
@@ -34,6 +64,7 @@ type EditorProps = {
   editMode?: EditMode;
   onChange?: (value: string) => void;
   onBlur?: () => void;
+  locale?: "en-US" | "zh-CN";
 };
 
 const Editor: React.FC<EditorProps> = ({
@@ -41,7 +72,16 @@ const Editor: React.FC<EditorProps> = ({
   editMode = EditMode.CodeEdit,
   onChange,
   onBlur,
+  locale = "en-US",
 }) => {
+  const { t, i18n } = useTranslation();
+  useEffect(() => {
+    if (locale && i18n.language !== locale) {
+      i18n.changeLanguage(locale);
+    }
+  }, [i18n, locale]);
+  const activeLocale = (locale || i18n.language) as "en-US" | "zh-CN";
+  const currentStrings = resources[activeLocale]?.translation ?? enUS;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState<SelectedOption>(
     SelectedOption.Empty
@@ -142,9 +182,14 @@ const Editor: React.FC<EditorProps> = ({
 
   const slashCommandsExtension = useCallback(() => {
     return autocompletion({
-      override: [createSlashCommands(onSelectedOption)],
+      override: [
+        createSlashCommands(onSelectedOption, {
+          image: currentStrings.slashImage,
+          video: currentStrings.slashVideo,
+        }),
+      ],
     });
-  }, [onSelectedOption]);
+  }, [currentStrings.slashImage, currentStrings.slashVideo, onSelectedOption]);
 
   const handleEditorUpdate = useCallback((view: EditorView) => {
     editorViewRef.current = view;
@@ -214,7 +259,7 @@ const Editor: React.FC<EditorProps> = ({
             foldGutter: false,
           }}
           className="rounded-md"
-          placeholder="Type \ to insert content"
+          placeholder={t("placeholder")}
           value={content}
           theme="light"
           minHeight="2rem"
@@ -223,7 +268,11 @@ const Editor: React.FC<EditorProps> = ({
           }}
           onBlur={onBlur}
         />
-        <CustomDialog>
+        <CustomDialog
+          labels={{
+            title: t("dialogTitle"),
+          }}
+        >
           {selectedOption === SelectedOption.Image && (
             <ImageInject
               value={selectContentInfo?.value}

@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
+import { useTranslation } from "react-i18next";
 
 export type ImageResource = {
   resourceUrl: string;
@@ -19,6 +20,7 @@ export interface ImageInjectProps {
  */
 const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
   ({ value, onSelect }, ref) => {
+    const { t } = useTranslation();
     const [resource, setResource] = useState<ImageResource>({
       resourceUrl: value?.resourceUrl ?? "",
       resourceTitle: value?.resourceTitle ?? "",
@@ -27,7 +29,8 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
     const handleSelect = () => {
       onSelect({
         ...resource,
-        resourceTitle: resource.resourceTitle || "Image name",
+        resourceTitle:
+          resource.resourceTitle || t("imageDefaultTitle", "Image name"),
       });
     };
 
@@ -49,13 +52,13 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
       <div ref={ref} className="space-y-4">
         <Input
           type="text"
-          placeholder="Please enter image URL"
+          placeholder={t("imageUrlPlaceholder", "Please enter image URL")}
           value={resource.resourceUrl || ""}
           onChange={handleUrlChange}
         />
         <Input
           type="text"
-          placeholder="Please enter image title"
+          placeholder={t("imageTitlePlaceholder", "Please enter image title")}
           value={resource.resourceTitle || ""}
           onChange={handleTitleChange}
         />
@@ -66,7 +69,7 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
             disabled={!resource?.resourceUrl}
             variant="outline"
           >
-            Use Image
+            {t("imageUseButton", "Use Image")}
           </Button>
         </div>
       </div>

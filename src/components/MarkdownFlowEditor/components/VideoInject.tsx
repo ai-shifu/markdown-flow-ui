@@ -1,6 +1,7 @@
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 type VideoInjectProps = {
   value?: {
@@ -20,7 +21,10 @@ const biliVideoUrlRegexp =
   /(https?:\/\/(?:www\.|m\.)?bilibili\.com\/video\/\S+\/?)/i;
 
 const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
-  const [title, setTitle] = useState(value?.resourceTitle || "Video Title");
+  const { t } = useTranslation();
+  const [title, setTitle] = useState(
+    value?.resourceTitle || t("videoDefaultTitle", "Video Title")
+  );
   const [inputUrl, setInputUrl] = useState<string>(value?.resourceUrl || "");
   const [embedUrl, setEmbedUrl] = useState("");
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -39,7 +43,9 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
   const handleRun = () => {
     setErrorTips("");
     if (!isValidBilibiliUrl(inputUrl)) {
-      setErrorTips("Please enter a valid Bilibili video URL");
+      setErrorTips(
+        t("videoInvalidUrl", "Please enter a valid Bilibili video URL")
+      );
       return;
     }
 
@@ -86,7 +92,10 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
           type="text"
           value={inputUrl}
           onChange={(e) => setInputUrl(e.target.value?.trim())}
-          placeholder="Please enter Bilibili video URL"
+          placeholder={t(
+            "videoUrlPlaceholder",
+            "Please enter Bilibili video URL"
+          )}
           autoComplete="off"
         />
         <Button
@@ -95,7 +104,7 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
           type="button"
           onClick={handleRun}
         >
-          Run
+          {t("videoRunButton", "Run")}
         </Button>
         {embedUrl && (
           <Button
@@ -104,7 +113,7 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
             type="button"
             onClick={handleSelect}
           >
-            Use Resource
+            {t("videoUseButton", "Use Resource")}
           </Button>
         )}
       </div>
@@ -114,9 +123,12 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
         <div className="space-y-4">
           <Input
             value={title}
-            aria-placeholder="Please enter video title"
+            aria-placeholder={t(
+              "videoTitlePlaceholder",
+              "Please enter video title"
+            )}
             onChange={(e) => setTitle(e.target.value.slice(0, 100))}
-            placeholder="Video Title"
+            placeholder={t("videoTitlePlaceholder", "Video Title")}
             className="mt-4"
             maxLength={100}
           />

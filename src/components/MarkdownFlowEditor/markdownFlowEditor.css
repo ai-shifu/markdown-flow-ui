@@ -40,3 +40,7 @@
   cursor: pointer;
   width: 140px;
 }
+
+.cm-activeLine .cm-line {
+  background-color: transparent;
+}

@@ -44,3 +44,32 @@
 .cm-activeLine .cm-line {
   background-color: transparent;
 }
+
+.cm-editor:focus {
+  outline: none;
+}
+
+.markdown-flow-editor {
+  color: #0a0a0a;
+  font-family: "PingFang SC";
+  font-size: var(--text-sm-font-size, 14px);
+  font-style: normal;
+  font-weight: 400;
+  line-height: var(--text-sm-line-height, 20px); /* 142.857% */
+  border-radius: var(--border-radius-rounded-lg, 10px);
+  border: var(--border-width-border, 1px) solid var(--base-border, #e5e5e5);
+  background: var(--base-card, #fff);
+  padding: 32px 44px;
+  /* shadow/xs */
+  box-shadow: var(--shadow-xs-offset-x, 0) var(--shadow-xs-offset-y, 1px)
+    var(--shadow-xs-blur-radius, 2px) var(--shadow-xs-spread-radius, 0)
+    var(--shadow-xs-color, rgba(0, 0, 0, 0.05));
+}
+
+.cm-line {
+  color: #0a0a0a;
+  font-family: "PingFang SC";
+  font-size: var(--text-sm-font-size, 14px);
+  font-style: normal;
+  font-weight: 400;
+}

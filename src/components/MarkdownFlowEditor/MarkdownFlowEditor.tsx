@@ -231,7 +231,7 @@ const Editor: React.FC<EditorProps> = ({
   }, []);
 
   return (
-    <>
+    <div className="markdown-flow-editor">
       <EditorContext.Provider value={editorContextValue}>
         <CodeMirror
           extensions={[
@@ -287,7 +287,7 @@ const Editor: React.FC<EditorProps> = ({
           )}
         </CustomDialog>
       </EditorContext.Provider>
-    </>
+    </div>
   );
 };
 

@@ -13,7 +13,10 @@ import {
 } from "@codemirror/view";
 import { SelectedOption } from "./types";
 import "./markdownFlowEditor.css";
-import { biliVideoUrlRegexp } from "./components/VideoInject";
+import {
+  biliVideoUrlRegexp,
+  youtubeVideoUrlRegexp,
+} from "./components/VideoInject";
 
 // Simple and safe regex - breaks down complex pattern into simpler parts
 const biliVideoContextRegexp =
@@ -260,6 +263,13 @@ const getEmbedUrl = (url: string) => {
     return key
       ? `https://if-cdn.com/api/iframe?url=${encoded}&key=${key}`
       : url;
+  }
+  if (youtubeVideoUrlRegexp.test(url)) {
+    const match = url.match(youtubeVideoUrlRegexp);
+    const videoId = match?.[1];
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
   }
   return url;
 };

@@ -42,15 +42,13 @@ if (!i18next.isInitialized) {
   });
 } else {
   Object.entries(resources).forEach(([lng, resource]) => {
-    if (!i18next.hasResourceBundle(lng, "translation")) {
-      i18next.addResourceBundle(
-        lng,
-        "translation",
-        resource.translation,
-        true,
-        true
-      );
-    }
+    i18next.addResourceBundle(
+      lng,
+      "translation",
+      resource.translation,
+      true,
+      true
+    );
   });
 }
 
@@ -270,7 +268,12 @@ const Editor: React.FC<EditorProps> = ({
         />
         <CustomDialog
           labels={{
-            title: t("dialogTitle"),
+            title:
+              selectedOption === SelectedOption.Image
+                ? t("dialogTitleImage")
+                : selectedOption === SelectedOption.Video
+                  ? t("dialogTitleVideo")
+                  : t("dialogTitle"),
           }}
         >
           {selectedOption === SelectedOption.Image && (

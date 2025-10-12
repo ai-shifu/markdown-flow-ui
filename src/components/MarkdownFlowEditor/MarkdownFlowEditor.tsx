@@ -98,7 +98,7 @@ const Editor: React.FC<EditorProps> = ({
     SelectedOption.Empty
   );
   const [selectContentInfo, setSelectContentInfo] =
-    useState<SelectContentInfo>();
+    useState<SelectContentInfo | null>();
   const editorViewRef = useRef<EditorView | null>(null);
 
   const editorContextValue: IEditorContext = {
@@ -216,10 +216,16 @@ const Editor: React.FC<EditorProps> = ({
         createSlashCommands(onSelectedOption, {
           image: currentStrings.slashImage,
           video: currentStrings.slashVideo,
+          variable: currentStrings.slashVariable,
         }),
       ],
     });
-  }, [currentStrings.slashImage, currentStrings.slashVideo, onSelectedOption]);
+  }, [
+    currentStrings.slashImage,
+    currentStrings.slashVideo,
+    currentStrings.slashVideo,
+    onSelectedOption,
+  ]);
 
   const handleEditorUpdate = useCallback((view: EditorView) => {
     editorViewRef.current = view;

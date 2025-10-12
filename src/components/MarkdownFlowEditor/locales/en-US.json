@@ -29,6 +29,7 @@
   "videoPreviewPlaceholder": "Preview will appear here",
   "slashImage": "Image",
   "slashVideo": "Video",
+  "slashVariable": "Variable",
   "dialogTitleVariable": "Select Variable",
   "variableSearchPlaceholder": "Search variable",
   "variableNotFound": "No variables found",

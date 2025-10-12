@@ -304,7 +304,9 @@ const Editor: React.FC<EditorProps> = ({
                 ? t("dialogTitleImage")
                 : selectedOption === SelectedOption.Video
                   ? t("dialogTitleVideo")
-                  : t("dialogTitle"),
+                  : selectedOption === SelectedOption.Variable
+                    ? t("dialogTitleVariable")
+                    : t("dialogTitle"),
           }}
         >
           {selectedOption === SelectedOption.Image && (
@@ -323,7 +325,7 @@ const Editor: React.FC<EditorProps> = ({
           {selectedOption === SelectedOption.Variable && (
             <VariableSelect
               variables={variables}
-              selectedName={selectContentInfo?.value?.resourceTitle}
+              selectedName={selectContentInfo?.value?.variableName}
               onSelect={handleSelectVariable}
               onAddVariable={(variable) => {
                 setVariables((prev) => [...prev, variable]);

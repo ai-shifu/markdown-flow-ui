@@ -28,5 +28,12 @@
   "videoUseVideoButton": "使用视频",
   "videoPreviewPlaceholder": "预览将在这里显示",
   "slashImage": "图片",
-  "slashVideo": "视频"
+  "slashVideo": "视频",
+  "dialogTitleVariable": "选择变量",
+  "variableSearchPlaceholder": "搜索变量",
+  "variableNotFound": "未找到变量",
+  "variableEmpty": "暂无变量",
+  "variableNamePlaceholder": "变量名称",
+  "variableAlreadyExists": "变量已存在",
+  "variableAddNew": "添加新变量"
 }

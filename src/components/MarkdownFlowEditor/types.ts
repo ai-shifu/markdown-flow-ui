@@ -8,8 +8,9 @@ enum SelectedOption {
 interface SelectContentInfo {
   type: SelectedOption;
   value: {
-    resourceTitle: string;
-    resourceUrl: string;
+    resourceTitle?: string;
+    resourceUrl?: string;
+    variableName?: string;
   };
   from: number;
   to: number;

@@ -28,5 +28,12 @@
   "videoUseVideoButton": "Use Video",
   "videoPreviewPlaceholder": "Preview will appear here",
   "slashImage": "Image",
-  "slashVideo": "Video"
+  "slashVideo": "Video",
+  "dialogTitleVariable": "Select Variable",
+  "variableSearchPlaceholder": "Search variable",
+  "variableNotFound": "No variables found",
+  "variableEmpty": "No variables yet",
+  "variableNamePlaceholder": "Variable name",
+  "variableAlreadyExists": "Variable already exists",
+  "variableAddNew": "Add new variable"
 }

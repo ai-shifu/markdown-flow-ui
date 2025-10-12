@@ -5,6 +5,7 @@ import { Input } from "../../ui/input";
 import { Button } from "../../ui/button";
 import { cn } from "../../../lib/utils";
 import { Variable } from "../types";
+import { useTranslation } from "react-i18next";
 
 interface VariableSelectProps {
   variables?: Variable[];
@@ -19,6 +20,7 @@ const VariableSelect = ({
   onSelect,
   onAddVariable,
 }: VariableSelectProps) => {
+  const { t } = useTranslation();
   const [variables, setVariables] = useState<Variable[]>(initialVariables);
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddingNew, setIsAddingNew] = useState(false);
@@ -80,7 +82,7 @@ const VariableSelect = ({
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="搜索变量"
+          placeholder={t("variableSearchPlaceholder", "Search variable")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-8 h-8 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -106,7 +108,9 @@ const VariableSelect = ({
           ))
         ) : (
           <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-            {searchQuery ? "未找到变量" : "暂无变量"}
+            {searchQuery
+              ? t("variableNotFound", "No variables found")
+              : t("variableEmpty", "No variables yet")}
           </div>
         )}
       </div>
@@ -117,7 +121,7 @@ const VariableSelect = ({
             <div className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2">
               <Input
                 type="text"
-                placeholder="变量名称"
+                placeholder={t("variableNamePlaceholder", "Variable name")}
                 value={newVariableName}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
@@ -142,7 +146,9 @@ const VariableSelect = ({
               </Button>
             </div>
             {duplicateError && (
-              <p className="mt-1 px-3 text-xs text-red-500">变量已存在</p>
+              <p className="mt-1 px-3 text-xs text-red-500">
+                {t("variableAlreadyExists", "Variable already exists")}
+              </p>
             )}
           </div>
         ) : (
@@ -153,7 +159,7 @@ const VariableSelect = ({
             className="w-full justify-start text-muted-foreground hover:text-foreground"
           >
             <Plus className="mr-2 h-4 w-4" />
-            添加新变量
+            {t("variableAddNew", "Add new variable")}
           </Button>
         )}
       </div>

@@ -25,6 +25,10 @@ const parseContentInfo = (
         resourceUrl: dataset.url,
         resourceTitle: dataset.title,
       };
+    case SelectedOption.Variable:
+      return {
+        variableName: dataset.title,
+      };
     default:
       return {
         resourceUrl: dataset.url ?? "",

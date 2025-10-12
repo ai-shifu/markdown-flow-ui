@@ -1,6 +1,7 @@
 enum SelectedOption {
   Video = "video",
   Image = "Image",
+  Variable = "variable",
   Empty = "",
 }
 interface IEditorContext {
@@ -10,5 +11,9 @@ interface IEditorContext {
   setDialogOpen: (dialogOpen: boolean) => void;
 }
 
+interface Variable {
+  name: string;
+}
+
 export { SelectedOption };
-export type { IEditorContext };
+export type { IEditorContext, Variable };

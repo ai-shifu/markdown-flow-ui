@@ -13,16 +13,17 @@ import CustomDialog from "./components/CustomDialog";
 import EditorContext from "./editor-context";
 import ImageInject from "./components/ImageInject";
 import VideoInject from "./components/VideoInject";
-import { SelectedOption, IEditorContext } from "./types";
+import VariableSelect from "./components/VariableSelect";
+import { SelectedOption, IEditorContext, Variable } from "./types";
 import "./markdownFlowEditor.css";
 
 import {
-  imgPlaceholders,
-  videoPlaceholders,
   createSlashCommands,
   parseContentInfo,
   getVideoContentToInsert,
 } from "./utils";
+import ImgPlaceholder from "./plugins/ImgPlaceholder";
+import VideoPlaceholder from "./plugins/VideoPlaceholder";
 import enUS from "./locales/en-US.json";
 import zhCN from "./locales/zh-CN.json";
 import { initReactI18next, useTranslation } from "react-i18next";
@@ -61,6 +62,7 @@ export enum EditMode {
 type EditorProps = {
   content?: string;
   editMode?: EditMode;
+  variables?: Variable[];
   onChange?: (value: string) => void;
   onBlur?: () => void;
   locale?: "en-US" | "zh-CN";
@@ -70,6 +72,7 @@ type EditorProps = {
 const Editor: React.FC<EditorProps> = ({
   content = "",
   editMode = EditMode.CodeEdit,
+  variables,
   onChange,
   onBlur,
   locale = "en-US",
@@ -181,6 +184,24 @@ const Editor: React.FC<EditorProps> = ({
     [insertText, selectedOption]
   );
 
+  const handleSelectVariable = useCallback(
+    (variable: Variable) => {
+      const textToInsert = `{{${variable.name}}}`;
+      if (selectContentInfo?.type === SelectedOption.Variable) {
+        deleteSelectedContent();
+        if (!editorViewRef.current) return;
+        const { dispatch } = editorViewRef.current;
+        dispatch({
+          changes: { from: selectContentInfo.from, insert: textToInsert },
+        });
+      } else {
+        insertText(textToInsert);
+      }
+      setDialogOpen(false);
+    },
+    [insertText, selectedOption, deleteSelectedContent, selectContentInfo]
+  );
+
   const slashCommandsExtension = useCallback(() => {
     return autocompletion({
       override: [
@@ -241,8 +262,8 @@ const Editor: React.FC<EditorProps> = ({
               editMode === EditMode.QuickEdit
                 ? [
                     slashCommandsExtension(),
-                    imgPlaceholders,
-                    videoPlaceholders,
+                    ImgPlaceholder,
+                    VideoPlaceholder,
                     EditorView.updateListener.of((update) => {
                       handleEditorUpdate(update.view);
                     }),
@@ -288,6 +309,12 @@ const Editor: React.FC<EditorProps> = ({
             <VideoInject
               value={selectContentInfo?.value}
               onSelect={handleSelectVideo}
+            />
+          )}
+          {selectedOption === SelectedOption.Variable && (
+            <VariableSelect
+              variables={variables}
+              onSelect={handleSelectVariable}
             />
           )}
         </CustomDialog>

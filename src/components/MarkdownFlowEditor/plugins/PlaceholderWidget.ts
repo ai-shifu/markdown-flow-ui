@@ -60,7 +60,7 @@ class PlaceholderWidget extends WidgetType {
     //     });
     //   }
     // });
-    span.addEventListener("click", () => {
+    span.addEventListener("click", (e) => {
       const [from, to] = this.getPosition() ?? [-1, -1];
       const event = new CustomEvent("globalTagClick", {
         detail: {
@@ -70,6 +70,7 @@ class PlaceholderWidget extends WidgetType {
           content: span.textContent,
           from,
           to,
+          target: e.currentTarget,
         },
       });
       window.dispatchEvent(event);

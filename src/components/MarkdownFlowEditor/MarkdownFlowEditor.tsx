@@ -10,6 +10,7 @@ import {
   defaultHighlightStyle,
 } from "@codemirror/language";
 import CustomDialog from "./components/CustomDialog";
+import CustomPopover from "./components/CustomPopover";
 import EditorContext from "./editor-context";
 import ImageInject from "./components/ImageInject";
 import VideoInject from "./components/VideoInject";
@@ -19,6 +20,7 @@ import {
   IEditorContext,
   Variable,
   SelectContentInfo,
+  PopoverPosition,
 } from "./types";
 import "./markdownFlowEditor.css";
 
@@ -93,6 +95,9 @@ const Editor: React.FC<EditorProps> = ({
   const activeLocale = (locale || i18n.language) as "en-US" | "zh-CN";
   const currentStrings = resources[activeLocale]?.translation ?? enUS;
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [popoverPosition, setPopoverPosition] =
+    useState<PopoverPosition | null>(null);
   const [variables, setVariables] = useState<Variable[]>(initialVariables);
   const [selectedOption, setSelectedOption] = useState<SelectedOption>(
     SelectedOption.Empty
@@ -106,11 +111,31 @@ const Editor: React.FC<EditorProps> = ({
     setSelectedOption,
     dialogOpen,
     setDialogOpen,
+    popoverOpen,
+    setPopoverOpen,
+    popoverPosition,
+    setPopoverPosition,
   };
 
   const onSelectedOption = useCallback((selectedOption: SelectedOption) => {
-    setDialogOpen(true);
     setSelectedOption(selectedOption);
+
+    if (selectedOption === SelectedOption.Variable) {
+      if (editorViewRef.current) {
+        const { state } = editorViewRef.current;
+        const pos = state.selection.main.from;
+        const coords = editorViewRef.current.coordsAtPos(pos);
+        if (coords) {
+          setPopoverPosition({
+            x: coords.left,
+            y: coords.bottom,
+          });
+        }
+      }
+      setPopoverOpen(true);
+    } else {
+      setDialogOpen(true);
+    }
   }, []);
 
   const insertText = useCallback(
@@ -205,7 +230,7 @@ const Editor: React.FC<EditorProps> = ({
       } else {
         insertText(textToInsert);
       }
-      setDialogOpen(false);
+      setPopoverOpen(false);
     },
     [insertText, selectedOption, deleteSelectedContent, selectContentInfo]
   );
@@ -233,7 +258,7 @@ const Editor: React.FC<EditorProps> = ({
 
   const handleTagClick = useCallback((event: any) => {
     event.stopPropagation();
-    const { type, from, to, dataset } = event.detail;
+    const { type, from, to, dataset, target } = event.detail;
     const value = parseContentInfo(type, dataset);
     setSelectContentInfo({
       type,
@@ -242,7 +267,19 @@ const Editor: React.FC<EditorProps> = ({
       to,
     });
     setSelectedOption(type);
-    setDialogOpen(true);
+
+    if (type === SelectedOption.Variable) {
+      if (target) {
+        const rect = target.getBoundingClientRect();
+        setPopoverPosition({
+          x: rect.left,
+          y: rect.bottom,
+        });
+      }
+      setPopoverOpen(true);
+    } else {
+      setDialogOpen(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -251,6 +288,13 @@ const Editor: React.FC<EditorProps> = ({
       setSelectContentInfo(null);
     }
   }, [dialogOpen]);
+
+  useEffect(() => {
+    if (!popoverOpen && selectedOption === SelectedOption.Variable) {
+      setSelectedOption(SelectedOption.Empty);
+      setSelectContentInfo(null);
+    }
+  }, [popoverOpen, selectedOption]);
 
   useEffect(() => {
     const handleWrap = (e: any) => {
@@ -328,17 +372,18 @@ const Editor: React.FC<EditorProps> = ({
               onSelect={handleSelectVideo}
             />
           )}
-          {selectedOption === SelectedOption.Variable && (
-            <VariableSelect
-              variables={variables}
-              selectedName={selectContentInfo?.value?.variableName}
-              onSelect={handleSelectVariable}
-              onAddVariable={(variable) => {
-                setVariables((prev) => [...prev, variable]);
-              }}
-            />
-          )}
         </CustomDialog>
+
+        <CustomPopover>
+          <VariableSelect
+            variables={variables}
+            selectedName={selectContentInfo?.value?.variableName}
+            onSelect={handleSelectVariable}
+            onAddVariable={(variable) => {
+              setVariables((prev) => [...prev, variable]);
+            }}
+          />
+        </CustomPopover>
       </EditorContext.Provider>
     </div>
   );

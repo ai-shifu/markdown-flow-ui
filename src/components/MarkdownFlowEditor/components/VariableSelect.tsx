@@ -10,7 +10,7 @@ interface VariableSelectProps {
   variables?: Variable[];
   selectedName?: string;
   onSelect?: (variable: Variable) => void;
-  onAddVariable?: (name: string) => void;
+  onAddVariable?: (variable: Variable) => void;
 }
 
 const VariableSelect = ({
@@ -24,6 +24,7 @@ const VariableSelect = ({
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newVariableName, setNewVariableName] = useState("");
   const [duplicateError, setDuplicateError] = useState(false);
+  console.log("variables", variables, selectedName);
 
   const filteredVariables = variables.filter((variable) =>
     variable.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -44,7 +45,7 @@ const VariableSelect = ({
         name: newVariableName.trim(),
       };
       setVariables([...variables, newVariable]);
-      onAddVariable?.(newVariableName.trim());
+      onAddVariable?.({ name: newVariableName.trim() });
       setNewVariableName("");
       setIsAddingNew(false);
       setSearchQuery("");
@@ -75,21 +76,19 @@ const VariableSelect = ({
 
   return (
     <div className="w-full max-w-sm rounded-lg border border-border bg-popover shadow-lg">
-      <div className="border-b border-border p-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="搜索变量"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-9"
-          />
-        </div>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          type="text"
+          placeholder="搜索变量"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-8 h-8 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+        />
       </div>
 
       <div className="max-h-[300px] overflow-y-auto p-2">
-        {filteredVariables.length > 0 ? (
+        {!!filteredVariables.length ? (
           filteredVariables.map((variable) => (
             <button
               key={variable.name}

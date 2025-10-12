@@ -14,7 +14,12 @@ import EditorContext from "./editor-context";
 import ImageInject from "./components/ImageInject";
 import VideoInject from "./components/VideoInject";
 import VariableSelect from "./components/VariableSelect";
-import { SelectedOption, IEditorContext, Variable } from "./types";
+import {
+  SelectedOption,
+  IEditorContext,
+  Variable,
+  SelectContentInfo,
+} from "./types";
 import "./markdownFlowEditor.css";
 
 import {
@@ -24,6 +29,7 @@ import {
 } from "./utils";
 import ImgPlaceholder from "./plugins/ImgPlaceholder";
 import VideoPlaceholder from "./plugins/VideoPlaceholder";
+import VariablePlaceholder from "./plugins/VariablePlaceholder";
 import enUS from "./locales/en-US.json";
 import zhCN from "./locales/zh-CN.json";
 import { initReactI18next, useTranslation } from "react-i18next";
@@ -72,7 +78,7 @@ type EditorProps = {
 const Editor: React.FC<EditorProps> = ({
   content = "",
   editMode = EditMode.CodeEdit,
-  variables,
+  variables: initialVariables = [],
   onChange,
   onBlur,
   locale = "en-US",
@@ -87,10 +93,12 @@ const Editor: React.FC<EditorProps> = ({
   const activeLocale = (locale || i18n.language) as "en-US" | "zh-CN";
   const currentStrings = resources[activeLocale]?.translation ?? enUS;
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [variables, setVariables] = useState<Variable[]>(initialVariables);
   const [selectedOption, setSelectedOption] = useState<SelectedOption>(
     SelectedOption.Empty
   );
-  const [selectContentInfo, setSelectContentInfo] = useState<any>();
+  const [selectContentInfo, setSelectContentInfo] =
+    useState<SelectContentInfo>();
   const editorViewRef = useRef<EditorView | null>(null);
 
   const editorContextValue: IEditorContext = {
@@ -264,6 +272,7 @@ const Editor: React.FC<EditorProps> = ({
                     slashCommandsExtension(),
                     ImgPlaceholder,
                     VideoPlaceholder,
+                    VariablePlaceholder,
                     EditorView.updateListener.of((update) => {
                       handleEditorUpdate(update.view);
                     }),
@@ -314,7 +323,11 @@ const Editor: React.FC<EditorProps> = ({
           {selectedOption === SelectedOption.Variable && (
             <VariableSelect
               variables={variables}
+              selectedName={selectContentInfo?.value?.resourceTitle}
               onSelect={handleSelectVariable}
+              onAddVariable={(variable) => {
+                setVariables((prev) => [...prev, variable]);
+              }}
             />
           )}
         </CustomDialog>

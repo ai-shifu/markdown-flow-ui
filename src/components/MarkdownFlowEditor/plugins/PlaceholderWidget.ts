@@ -4,7 +4,11 @@ import { SelectedOption } from "../types";
 class PlaceholderWidget extends WidgetType {
   constructor(
     private text: string,
-    private dataset: { tag: "image" | "video"; title: string; url: string },
+    private dataset: {
+      tag: "image" | "video" | "variable";
+      title?: string;
+      url?: string;
+    },
     private styleClass: string,
     private type: SelectedOption,
     private view: EditorView
@@ -44,18 +48,18 @@ class PlaceholderWidget extends WidgetType {
     span.dataset["tag"] = this.dataset.tag || "";
     span.dataset["url"] = this.dataset.url || "";
     span.dataset["title"] = this.dataset.title || "";
-    const icon = document.createElement("span");
-    icon.className = "tag-icon";
-    icon.innerHTML = "✕";
-    icon.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const [from, to] = this.getPosition() ?? [-1, -1];
-      if (from !== -1 && to !== -1) {
-        this.view.dispatch({
-          changes: { from, to, insert: "" },
-        });
-      }
-    });
+    // const icon = document.createElement("span");
+    // icon.className = "tag-icon";
+    // icon.innerHTML = "✕";
+    // icon.addEventListener("click", (e) => {
+    //   e.stopPropagation();
+    //   const [from, to] = this.getPosition() ?? [-1, -1];
+    //   if (from !== -1 && to !== -1) {
+    //     this.view.dispatch({
+    //       changes: { from, to, insert: "" },
+    //     });
+    //   }
+    // });
     span.addEventListener("click", () => {
       const [from, to] = this.getPosition() ?? [-1, -1];
       const event = new CustomEvent("globalTagClick", {
@@ -71,7 +75,7 @@ class PlaceholderWidget extends WidgetType {
       window.dispatchEvent(event);
     });
     container.appendChild(span);
-    container.appendChild(icon);
+    // container.appendChild(icon);
     return container;
   }
 

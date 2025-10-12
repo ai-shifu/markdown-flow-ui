@@ -4,7 +4,6 @@ import {
 } from "@codemirror/autocomplete";
 import { EditorView } from "@codemirror/view";
 import { SelectedOption } from "./types";
-import "./markdownFlowEditor.css";
 import {
   biliVideoUrlRegexp,
   youtubeVideoUrlRegexp,

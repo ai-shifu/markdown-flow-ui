@@ -193,3 +193,17 @@ export const MarkdownFlowEditorWithCustomUpload: Story = {
     uploadProps: mockUploadProps,
   },
 };
+
+export const MarkdownFlowEditorWithVariables: Story = {
+  args: {
+    content: `Here is a variable: {{sys_user_email}}.`,
+    editMode: EditMode.QuickEdit,
+    variables: [
+      { name: "sys_user_nickname" },
+      { name: "sys_user_style" },
+      { name: "sys_user_email" },
+      { name: "custom_var_1" },
+    ],
+    uploadProps: mockUploadProps,
+  },
+};

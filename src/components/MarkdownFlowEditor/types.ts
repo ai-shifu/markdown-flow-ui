@@ -4,6 +4,17 @@ enum SelectedOption {
   Variable = "variable",
   Empty = "",
 }
+
+interface SelectContentInfo {
+  type: SelectedOption;
+  value: {
+    resourceTitle: string;
+    resourceUrl: string;
+  };
+  from: number;
+  to: number;
+}
+
 interface IEditorContext {
   selectedOption: SelectedOption;
   setSelectedOption: (selectedOption: SelectedOption) => void;
@@ -16,4 +27,4 @@ interface Variable {
 }
 
 export { SelectedOption };
-export type { IEditorContext, Variable };
+export type { SelectContentInfo, IEditorContext, Variable };

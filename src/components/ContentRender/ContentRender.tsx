@@ -35,7 +35,7 @@ export interface ContentRenderProps {
 +   * This button is rendered via the `<custom-button-after-content>` tag in markdown content.
 +   * @example
 +   * ```tsx
-+   * <ContentRender 
++   * <ContentRender
 +   *   content="Hello <custom-button-after-content>Ask</custom-button-after-content>"
 +   *   onClickCustomButtonAfterContent={() => console.log('Button clicked')}
 +   * />

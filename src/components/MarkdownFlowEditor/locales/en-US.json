@@ -15,6 +15,7 @@
   "imageUploadSuccess": "Upload complete",
   "fixedTextPlaceholder": "Add fixed text",
   "fixedTextTooltip": "Fixed text",
+  "slashDivider": "Divider",
   "imageTitleLabel": "Image Title",
   "imageScaleLabel": "Scale",
   "imageCancelButton": "Cancel",

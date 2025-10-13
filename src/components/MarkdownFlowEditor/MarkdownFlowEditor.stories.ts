@@ -198,6 +198,21 @@ Markdown image: ![Markdown image](https://ai-shifu.cn/imgproxy.gamma.app/resize/
   },
 };
 
+export const MarkdownFlowEditorWithDivider: Story = {
+  args: {
+    content: `# Divider 示例
+
+在任意位置使用 \`/分割线\` 可以快速插入 Markdown 分割线。
+
+---
+
+上面的分割线为 \`---\`。你可以删除它，再通过 Slash 菜单重新插入以测试新功能。
+`,
+    editMode: EditMode.QuickEdit,
+    locale: "zh-CN",
+  },
+};
+
 export const MarkdownFlowEditorWithVariables: Story = {
   args: {
     content: `Here is a variable: {{sys_user_email}}.`,

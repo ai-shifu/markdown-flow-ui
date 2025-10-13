@@ -41,6 +41,7 @@ const parseContentInfo = (
 function createSlashCommands(
   onSelectOption: (selectedOption: SelectedOption) => void,
   labels?: {
+    divider?: string;
     fixedText?: string;
     image?: string;
     video?: string;
@@ -68,6 +69,12 @@ function createSlashCommands(
       from: word.from,
       to: word.to,
       options: [
+        {
+          label: labels?.divider ?? "Divider",
+          apply: (view, _, from, to) => {
+            handleSelect(view, _, from, to, SelectedOption.Divider);
+          },
+        },
         {
           label: labels?.fixedText ?? "Fixed Text",
           apply: (view, _, from, to) => {

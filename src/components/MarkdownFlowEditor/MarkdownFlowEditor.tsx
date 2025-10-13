@@ -33,6 +33,7 @@ import ImgPlaceholder from "./plugins/ImgPlaceholder";
 import VideoPlaceholder from "./plugins/VideoPlaceholder";
 import VariablePlaceholder from "./plugins/VariablePlaceholder";
 import createFixedTextPlaceholder from "./plugins/FixedTextPlaceholder";
+import DividerPlaceholder from "./plugins/DividerPlaceholder";
 import enUS from "./locales/en-US.json";
 import zhCN from "./locales/zh-CN.json";
 import { initReactI18next, useTranslation } from "react-i18next";
@@ -141,10 +142,40 @@ const Editor: React.FC<EditorProps> = ({
     view.focus();
   }, []);
 
+  const insertDivider = useCallback(() => {
+    if (!editorViewRef.current) return;
+    const view = editorViewRef.current;
+    const { state, dispatch } = view;
+    const selection = state.selection.main;
+    const insertContent = `\n\n---\n\n`;
+
+    dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: insertContent,
+      },
+      selection: {
+        anchor: selection.from + insertContent.length,
+      },
+    });
+    view.focus();
+  }, []);
+
   const onSelectedOption = useCallback(
     (option: SelectedOption) => {
       if (option === SelectedOption.FixedText) {
         insertFixedText();
+        setSelectedOption(SelectedOption.Empty);
+        setDialogOpen(false);
+        setPopoverOpen(false);
+        setSelectContentInfo(null);
+        setPopoverPosition(null);
+        return;
+      }
+
+      if (option === SelectedOption.Divider) {
+        insertDivider();
         setSelectedOption(SelectedOption.Empty);
         setDialogOpen(false);
         setPopoverOpen(false);
@@ -301,6 +332,7 @@ const Editor: React.FC<EditorProps> = ({
     return autocompletion({
       override: [
         createSlashCommands(onSelectedOption, {
+          divider: currentStrings.slashDivider,
           fixedText: currentStrings.slashFixedText,
           image: currentStrings.slashImage,
           video: currentStrings.slashVideo,
@@ -309,6 +341,7 @@ const Editor: React.FC<EditorProps> = ({
       ],
     });
   }, [
+    currentStrings.slashDivider,
     currentStrings.slashFixedText,
     currentStrings.slashImage,
     currentStrings.slashVideo,
@@ -403,6 +436,7 @@ const Editor: React.FC<EditorProps> = ({
                     VideoPlaceholder,
                     VariablePlaceholder,
                     fixedTextPlaceholderExtension,
+                    DividerPlaceholder,
                     EditorView.updateListener.of((update) => {
                       handleEditorUpdate(update.view);
                     }),

@@ -1,5 +1,6 @@
 enum SelectedOption {
   FixedText = "fixedText",
+  Divider = "divider",
   Video = "video",
   Image = "Image",
   Variable = "variable",

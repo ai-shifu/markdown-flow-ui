@@ -15,6 +15,7 @@
   "imageUploadSuccess": "上传完成",
   "fixedTextPlaceholder": "添加固定文本",
   "fixedTextTooltip": "固定文本",
+  "slashDivider": "分割线",
   "imageTitleLabel": "图片标题",
   "imageScaleLabel": "缩放比例",
   "imageCancelButton": "取消",

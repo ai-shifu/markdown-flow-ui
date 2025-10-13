@@ -3,7 +3,7 @@ import React, { useContext, useEffect, useMemo, useState } from "react";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
 import { useTranslation } from "react-i18next";
-import { Upload } from "lucide-react";
+import { Loader2, Upload } from "lucide-react";
 
 import EditorContext from "../editor-context";
 import { isValidImageUrl, sanitizeImageUrl } from "../utils/image";
@@ -37,6 +37,10 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
     const [tempUrl, setTempUrl] = useState<string>(value?.resourceUrl ?? "");
     const [scale, setScale] = useState<number>(value?.scalePercent ?? 100);
     const [errorTip, setErrorTip] = useState<string>("");
+    const [uploadStatus, setUploadStatus] = useState<
+      "idle" | "loading" | "success" | "error"
+    >("idle");
+    const isUploading = uploadStatus === "loading";
 
     useEffect(() => {
       if (value?.resourceUrl) {
@@ -50,9 +54,11 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
         setScale(value.scalePercent ?? 100);
         setPreviewLoaded(true);
       }
+      setUploadStatus("idle");
     }, [value]);
 
     const handleCancel = () => {
+      if (isUploading) return;
       setDialogOpen(false);
     };
 
@@ -69,9 +75,13 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
       setTempUrl(sanitizedUrl);
       setPreviewLoaded(true);
       setErrorTip("");
+      if (uploadStatus === "loading") {
+        setUploadStatus("success");
+      }
     };
 
     const handleSelect = () => {
+      if (isUploading) return;
       if (!resource.resourceUrl) return;
       onSelect({
         resourceUrl: resource.resourceUrl,
@@ -107,6 +117,8 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
     };
 
     const handleRun = () => {
+      if (isUploading) return;
+      setUploadStatus("idle");
       if (!tempUrl) {
         setErrorTip(t("imageUrlRequired", "Please enter image URL"));
         return;
@@ -136,6 +148,7 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
     };
 
     const finalize = (url: string, fileName: string) => {
+      setUploadStatus("success");
       applyImage(url, fileName);
     };
 
@@ -143,6 +156,8 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
       const message =
         error?.message || t("imageUploadError", "Upload failed, please retry");
       setErrorTip(message);
+      setUploadStatus("error");
+      setPreviewLoaded(Boolean(resource.resourceUrl));
       uploadProps?.onError?.(error, currentFile);
     };
 
@@ -223,6 +238,7 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
 
     const triggerUpload = async (file: File) => {
       try {
+        setErrorTip("");
         let candidate: File | Blob | boolean | void = file;
         if (uploadProps?.beforeUpload) {
           candidate = await uploadProps.beforeUpload(file);
@@ -238,6 +254,8 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
         }
 
         const finalFile = candidate instanceof File ? candidate : file;
+        setUploadStatus("loading");
+        setPreviewLoaded(false);
 
         if (uploadProps?.customRequest) {
           await runCustomRequest(finalFile);
@@ -252,6 +270,7 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
         finalize(localUrl, finalFile.name);
         uploadProps?.onSuccess?.({ url: localUrl }, finalFile);
       } catch (error: any) {
+        setUploadStatus("error");
         handleUploadError(error, file);
       }
     };
@@ -312,17 +331,52 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
             {t("imageUploadLabel", "Upload")}
           </label>
           <label
-            className={`flex h-48 w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed ${
+            className={`relative group flex h-48 w-full flex-col items-center justify-center overflow-hidden rounded-lg border border-dashed transition-colors ${
               previewLoaded ? "bg-muted/40" : "bg-muted/10"
+            } ${
+              isUploading
+                ? "cursor-wait opacity-80 pointer-events-none"
+                : "cursor-pointer"
             }`}
           >
+            {isUploading && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-background/80">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="text-sm text-muted-foreground">
+                  {t("imageUploading", "Uploading...")}
+                </span>
+              </div>
+            )}
             {previewLoaded && resource.resourceUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={resource.resourceUrl}
-                alt={resource.resourceTitle || "preview"}
-                className="h-full w-full object-contain"
-              />
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={resource.resourceUrl}
+                  alt={resource.resourceTitle || "preview"}
+                  className="h-full w-full object-contain"
+                />
+                {!isUploading && (
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#D7D7D7] opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                    <Upload
+                      className="h-6 w-6"
+                      style={{
+                        color: "var(--base-muted-foreground, #737373)",
+                      }}
+                    />
+                    <span
+                      className="text-sm"
+                      style={{
+                        color: "var(--base-muted-foreground, #737373)",
+                      }}
+                    >
+                      {t(
+                        "imageUploadPlaceholder",
+                        "Drag files or click to upload"
+                      )}
+                    </span>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
                 <Upload className="h-6 w-6" />
@@ -335,9 +389,15 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
               type="file"
               accept="image/*"
               className="hidden"
+              disabled={isUploading}
               onChange={onFileInputChange}
             />
           </label>
+          {uploadStatus === "success" && (
+            <p className="text-xs text-muted-foreground">
+              {t("imageUploadSuccess", "Upload complete")}
+            </p>
+          )}
         </div>
 
         {previewLoaded && resource.resourceUrl && (
@@ -369,13 +429,18 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
         {!!errorTip && <p className="text-xs text-destructive">{errorTip}</p>}
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={handleCancel}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isUploading}
+          >
             {t("imageCancelButton", "Cancel")}
           </Button>
           <Button
             className="h-8"
             onClick={handleSelect}
-            disabled={!resource?.resourceUrl}
+            disabled={!resource?.resourceUrl || isUploading}
           >
             {t("imageUseButton", "Use Image")}
           </Button>

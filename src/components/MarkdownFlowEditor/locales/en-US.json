@@ -11,6 +11,8 @@
   "imageDefaultTitle": "Image name",
   "imageUploadLabel": "Upload",
   "imageUploadPlaceholder": "Drag files or click to upload",
+  "imageUploading": "Uploading...",
+  "imageUploadSuccess": "Upload complete",
   "imageTitleLabel": "Image Title",
   "imageScaleLabel": "Scale",
   "imageCancelButton": "Cancel",

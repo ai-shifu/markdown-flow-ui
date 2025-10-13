@@ -93,7 +93,11 @@ importers:
         specifier: ^4.0.0
         version: 4.0.0
       remark-flow:
+<<<<<<< HEAD
         specifier: ^0.1.6
+=======
+        specifier: ^0.1.5
+>>>>>>> e7d1b13 (feat: support custom button after content (#39))
         version: 0.1.6
       remark-gfm:
         specifier: ^4.0.1

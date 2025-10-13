@@ -13,7 +13,10 @@ export interface MarkdownFlowProps {
     readonly?: boolean;
     customRenderBar?: CustomRenderBarProps;
     onClickCustomButtonAfterContent?: () => void;
+<<<<<<< HEAD
     dynamicInteractionFormat?: string;
+=======
+>>>>>>> e7d1b13 (feat: support custom button after content (#39))
   }[];
   customRenderBar?: CustomRenderBarProps;
   onSend?: (content: OnSendContentParams) => void;

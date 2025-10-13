@@ -20,6 +20,14 @@
   margin-left: 10px;
 }
 
+.tag-variable {
+  color: #0e46fb;
+  cursor: pointer;
+  &:hover {
+    color: hsl(226, 97%, 40%);
+  }
+}
+
 /* label */
 .cm-tooltip.cm-tooltip-autocomplete {
   border: 1px solid #e5e5e5;

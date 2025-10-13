@@ -2,26 +2,12 @@ import {
   type CompletionContext,
   type CompletionResult,
 } from "@codemirror/autocomplete";
-import {
-  EditorView,
-  Decoration,
-  DecorationSet,
-  ViewPlugin,
-  ViewUpdate,
-  MatchDecorator,
-  WidgetType,
-} from "@codemirror/view";
+import { EditorView } from "@codemirror/view";
 import { SelectedOption } from "./types";
-import "./markdownFlowEditor.css";
 import {
   biliVideoUrlRegexp,
   youtubeVideoUrlRegexp,
 } from "./components/VideoInject";
-
-// Simple and safe regex - breaks down complex pattern into simpler parts
-const biliVideoContextRegexp =
-  /<iframe\s[^>]*data-tag="video"[^>]*data-title="([^"]+)"[^>]*src="([^"]+)"[^>]*><\/iframe>/gi;
-const agiImgContextRegexp = /!\[([^\]]*)\]\(([^)]+)\)/gi;
 
 const parseContentInfo = (
   type: SelectedOption,
@@ -39,6 +25,10 @@ const parseContentInfo = (
         resourceUrl: dataset.url,
         resourceTitle: dataset.title,
       };
+    case SelectedOption.Variable:
+      return {
+        variableName: dataset.title,
+      };
     default:
       return {
         resourceUrl: dataset.url ?? "",
@@ -47,175 +37,9 @@ const parseContentInfo = (
   }
 };
 
-class PlaceholderWidget extends WidgetType {
-  constructor(
-    private text: string,
-    private dataset: { tag: "image" | "video"; title: string; url: string },
-    private styleClass: string,
-    private type: SelectedOption,
-    private view: EditorView
-  ) {
-    super();
-  }
-
-  getPosition() {
-    let from = -1;
-    let to = -1;
-    const decorations = this.view.state.facet(EditorView.decorations);
-    for (const deco of decorations) {
-      const decoSet = typeof deco === "function" ? deco(this.view) : deco;
-      decoSet.between(
-        0,
-        this.view.state.doc.length,
-        (start: number, end: number, decoration: Decoration) => {
-          if (decoration.spec.widget === this) {
-            from = start;
-            to = end;
-            return false;
-          }
-        }
-      );
-      if (from !== -1) break;
-    }
-    if (from !== -1 && to !== -1) {
-      return [from, to];
-    }
-  }
-
-  toDOM() {
-    const container = document.createElement("span");
-    container.className = this.styleClass;
-    const span = document.createElement("span");
-    span.textContent = this.text;
-    span.dataset["tag"] = this.dataset.tag || "";
-    span.dataset["url"] = this.dataset.url || "";
-    span.dataset["title"] = this.dataset.title || "";
-    const icon = document.createElement("span");
-    icon.className = "tag-icon";
-    icon.innerHTML = "✕";
-    icon.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const [from, to] = this.getPosition() ?? [-1, -1];
-      if (from !== -1 && to !== -1) {
-        this.view.dispatch({
-          changes: { from, to, insert: "" },
-        });
-      }
-    });
-    span.addEventListener("click", () => {
-      const [from, to] = this.getPosition() ?? [-1, -1];
-      const event = new CustomEvent("globalTagClick", {
-        detail: {
-          view: this.view,
-          type: this.type,
-          dataset: this.dataset,
-          content: span.textContent,
-          from,
-          to,
-        },
-      });
-      window.dispatchEvent(event);
-    });
-    container.appendChild(span);
-    container.appendChild(icon);
-    return container;
-  }
-
-  ignoreEvent() {
-    return false;
-  }
-}
-
-const imageUrlMatcher = new MatchDecorator({
-  regexp: agiImgContextRegexp,
-  decoration: (match, view) =>
-    Decoration.replace({
-      widget: new PlaceholderWidget(
-        match?.[1],
-        {
-          tag: "image",
-          url: match?.[2],
-          title: match?.[1],
-        },
-        "tag-image",
-        SelectedOption.Image,
-        view
-      ),
-    }),
-});
-
-const biliUrlMatcher = new MatchDecorator({
-  regexp: biliVideoContextRegexp,
-  decoration: (match, view) => {
-    // Extract and decode the original URL from the API endpoint
-    let originalUrl = match?.[2] || "";
-    try {
-      const urlParams = new URLSearchParams(new URL(originalUrl).search);
-      const encodedUrl = urlParams.get("url");
-      if (encodedUrl) {
-        originalUrl = decodeURIComponent(encodedUrl);
-      }
-    } catch (error) {
-      console.warn("Failed to decode video URL:", error);
-    }
-
-    return Decoration.replace({
-      widget: new PlaceholderWidget(
-        match?.[1] || "Video", // Display title from data-title
-        {
-          tag: "video",
-          url: originalUrl, // Decoded original Bilibili URL
-          title: match?.[1], // title from data-title attribute
-        },
-        "tag-video",
-        SelectedOption.Video,
-        view
-      ),
-    });
-  },
-});
-
-const imgPlaceholders = ViewPlugin.fromClass(
-  class {
-    placeholders: DecorationSet;
-    constructor(view: EditorView) {
-      this.placeholders = imageUrlMatcher.createDeco(view);
-    }
-    update(update: ViewUpdate) {
-      this.placeholders = imageUrlMatcher.updateDeco(update, this.placeholders);
-    }
-  },
-  {
-    decorations: (instance) => instance.placeholders,
-    provide: (plugin) =>
-      EditorView.atomicRanges.of((view) => {
-        return view.plugin(plugin)?.placeholders || Decoration.none;
-      }),
-  }
-);
-
-const videoPlaceholders = ViewPlugin.fromClass(
-  class {
-    placeholders: DecorationSet;
-    constructor(view: EditorView) {
-      this.placeholders = biliUrlMatcher.createDeco(view);
-    }
-    update(update: ViewUpdate) {
-      this.placeholders = biliUrlMatcher.updateDeco(update, this.placeholders);
-    }
-  },
-  {
-    decorations: (instance) => instance.placeholders,
-    provide: (plugin) =>
-      EditorView.atomicRanges.of((view) => {
-        return view.plugin(plugin)?.placeholders || Decoration.none;
-      }),
-  }
-);
-
 function createSlashCommands(
   onSelectOption: (selectedOption: SelectedOption) => void,
-  labels?: { image?: string; video?: string }
+  labels?: { image?: string; video?: string; variable?: string }
 ) {
   return (context: CompletionContext): CompletionResult | null => {
     const word = context.matchBefore(/\/(\w*)$/);
@@ -248,6 +72,12 @@ function createSlashCommands(
           label: labels?.video ?? "Video",
           apply: (view, _, from, to) => {
             handleSelect(view, _, from, to, SelectedOption.Video);
+          },
+        },
+        {
+          label: labels?.variable ?? "Variable",
+          apply: (view, _, from, to) => {
+            handleSelect(view, _, from, to, SelectedOption.Variable);
           },
         },
       ],
@@ -284,8 +114,6 @@ const getVideoContentToInsert = (
 
 export {
   biliVideoUrlRegexp,
-  imgPlaceholders,
-  videoPlaceholders,
   createSlashCommands,
   parseContentInfo,
   getEmbedUrl,

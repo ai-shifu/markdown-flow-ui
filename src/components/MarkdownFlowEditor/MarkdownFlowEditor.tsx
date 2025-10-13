@@ -10,19 +10,28 @@ import {
   defaultHighlightStyle,
 } from "@codemirror/language";
 import CustomDialog from "./components/CustomDialog";
+import CustomPopover from "./components/CustomPopover";
 import EditorContext from "./editor-context";
 import ImageInject from "./components/ImageInject";
 import VideoInject from "./components/VideoInject";
-import { SelectedOption, IEditorContext } from "./types";
+import VariableSelect from "./components/VariableSelect";
+import {
+  SelectedOption,
+  IEditorContext,
+  Variable,
+  SelectContentInfo,
+  PopoverPosition,
+} from "./types";
 import "./markdownFlowEditor.css";
 
 import {
-  imgPlaceholders,
-  videoPlaceholders,
   createSlashCommands,
   parseContentInfo,
   getVideoContentToInsert,
 } from "./utils";
+import ImgPlaceholder from "./plugins/ImgPlaceholder";
+import VideoPlaceholder from "./plugins/VideoPlaceholder";
+import VariablePlaceholder from "./plugins/VariablePlaceholder";
 import enUS from "./locales/en-US.json";
 import zhCN from "./locales/zh-CN.json";
 import { initReactI18next, useTranslation } from "react-i18next";
@@ -61,6 +70,7 @@ export enum EditMode {
 type EditorProps = {
   content?: string;
   editMode?: EditMode;
+  variables?: Variable[];
   onChange?: (value: string) => void;
   onBlur?: () => void;
   locale?: "en-US" | "zh-CN";
@@ -70,6 +80,7 @@ type EditorProps = {
 const Editor: React.FC<EditorProps> = ({
   content = "",
   editMode = EditMode.CodeEdit,
+  variables: initialVariables = [],
   onChange,
   onBlur,
   locale = "en-US",
@@ -84,10 +95,15 @@ const Editor: React.FC<EditorProps> = ({
   const activeLocale = (locale || i18n.language) as "en-US" | "zh-CN";
   const currentStrings = resources[activeLocale]?.translation ?? enUS;
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [popoverPosition, setPopoverPosition] =
+    useState<PopoverPosition | null>(null);
+  const [variables, setVariables] = useState<Variable[]>(initialVariables);
   const [selectedOption, setSelectedOption] = useState<SelectedOption>(
     SelectedOption.Empty
   );
-  const [selectContentInfo, setSelectContentInfo] = useState<any>();
+  const [selectContentInfo, setSelectContentInfo] =
+    useState<SelectContentInfo | null>();
   const editorViewRef = useRef<EditorView | null>(null);
 
   const editorContextValue: IEditorContext = {
@@ -95,11 +111,31 @@ const Editor: React.FC<EditorProps> = ({
     setSelectedOption,
     dialogOpen,
     setDialogOpen,
+    popoverOpen,
+    setPopoverOpen,
+    popoverPosition,
+    setPopoverPosition,
   };
 
   const onSelectedOption = useCallback((selectedOption: SelectedOption) => {
-    setDialogOpen(true);
     setSelectedOption(selectedOption);
+
+    if (selectedOption === SelectedOption.Variable) {
+      if (editorViewRef.current) {
+        const { state } = editorViewRef.current;
+        const pos = state.selection.main.from;
+        const coords = editorViewRef.current.coordsAtPos(pos);
+        if (coords) {
+          setPopoverPosition({
+            x: coords.left,
+            y: coords.bottom,
+          });
+        }
+      }
+      setPopoverOpen(true);
+    } else {
+      setDialogOpen(true);
+    }
   }, []);
 
   const insertText = useCallback(
@@ -181,16 +217,40 @@ const Editor: React.FC<EditorProps> = ({
     [insertText, selectedOption]
   );
 
+  const handleSelectVariable = useCallback(
+    (variable: Variable) => {
+      const textToInsert = `{{${variable.name}}}`;
+      if (selectContentInfo?.type === SelectedOption.Variable) {
+        deleteSelectedContent();
+        if (!editorViewRef.current) return;
+        const { dispatch } = editorViewRef.current;
+        dispatch({
+          changes: { from: selectContentInfo.from, insert: textToInsert },
+        });
+      } else {
+        insertText(textToInsert);
+      }
+      setPopoverOpen(false);
+    },
+    [insertText, selectedOption, deleteSelectedContent, selectContentInfo]
+  );
+
   const slashCommandsExtension = useCallback(() => {
     return autocompletion({
       override: [
         createSlashCommands(onSelectedOption, {
           image: currentStrings.slashImage,
           video: currentStrings.slashVideo,
+          variable: currentStrings.slashVariable,
         }),
       ],
     });
-  }, [currentStrings.slashImage, currentStrings.slashVideo, onSelectedOption]);
+  }, [
+    currentStrings.slashImage,
+    currentStrings.slashVideo,
+    currentStrings.slashVideo,
+    onSelectedOption,
+  ]);
 
   const handleEditorUpdate = useCallback((view: EditorView) => {
     editorViewRef.current = view;
@@ -198,7 +258,7 @@ const Editor: React.FC<EditorProps> = ({
 
   const handleTagClick = useCallback((event: any) => {
     event.stopPropagation();
-    const { type, from, to, dataset } = event.detail;
+    const { type, from, to, dataset, target } = event.detail;
     const value = parseContentInfo(type, dataset);
     setSelectContentInfo({
       type,
@@ -207,7 +267,19 @@ const Editor: React.FC<EditorProps> = ({
       to,
     });
     setSelectedOption(type);
-    setDialogOpen(true);
+
+    if (type === SelectedOption.Variable) {
+      if (target) {
+        const rect = target.getBoundingClientRect();
+        setPopoverPosition({
+          x: rect.left,
+          y: rect.bottom,
+        });
+      }
+      setPopoverOpen(true);
+    } else {
+      setDialogOpen(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -216,6 +288,13 @@ const Editor: React.FC<EditorProps> = ({
       setSelectContentInfo(null);
     }
   }, [dialogOpen]);
+
+  useEffect(() => {
+    if (!popoverOpen && selectedOption === SelectedOption.Variable) {
+      setSelectedOption(SelectedOption.Empty);
+      setSelectContentInfo(null);
+    }
+  }, [popoverOpen, selectedOption]);
 
   useEffect(() => {
     const handleWrap = (e: any) => {
@@ -241,8 +320,9 @@ const Editor: React.FC<EditorProps> = ({
               editMode === EditMode.QuickEdit
                 ? [
                     slashCommandsExtension(),
-                    imgPlaceholders,
-                    videoPlaceholders,
+                    ImgPlaceholder,
+                    VideoPlaceholder,
+                    VariablePlaceholder,
                     EditorView.updateListener.of((update) => {
                       handleEditorUpdate(update.view);
                     }),
@@ -274,7 +354,9 @@ const Editor: React.FC<EditorProps> = ({
                 ? t("dialogTitleImage")
                 : selectedOption === SelectedOption.Video
                   ? t("dialogTitleVideo")
-                  : t("dialogTitle"),
+                  : selectedOption === SelectedOption.Variable
+                    ? t("dialogTitleVariable")
+                    : t("dialogTitle"),
           }}
         >
           {selectedOption === SelectedOption.Image && (
@@ -291,6 +373,17 @@ const Editor: React.FC<EditorProps> = ({
             />
           )}
         </CustomDialog>
+
+        <CustomPopover>
+          <VariableSelect
+            variables={variables}
+            selectedName={selectContentInfo?.value?.variableName}
+            onSelect={handleSelectVariable}
+            onAddVariable={(variable) => {
+              setVariables((prev) => [...prev, variable]);
+            }}
+          />
+        </CustomPopover>
       </EditorContext.Provider>
     </div>
   );

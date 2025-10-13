@@ -432,6 +432,25 @@ pie title 编程语言使用统计
   },
 };
 
+export const CustomButtonAfterContentDemo: Story = {
+  name: "Custom Button After Content",
+  args: {
+    content: `## 自定义按钮演示
+
+当内容渲染完成后，我们可以通过 \`<custom-button-after-content>\` 标签渲染一个按钮。
+
+点击下方按钮可以触发 Storybook 控制台中的自定义回调。<custom-button-after-content><span style="color: red;">点击自定义按钮</span></custom-button-after-content>
+
+---
+
+你可以在实际项目中将该回调用于展开追问输入框、重新生成内容等场景。`,
+    onClickCustomButtonAfterContent: () => {
+      console.log("custom-button-after-content clicked");
+    },
+    enableTypewriter: false,
+  },
+};
+
 export const MermaidErrorHandlingTest: Story = {
   name: "Mermaid Error Handling Test",
   args: {

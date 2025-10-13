@@ -56,7 +56,10 @@ export const MarkdownFlowStory: Story = {
         readonly: true,
       },
       {
-        content: `（比如："想要《甄嬛传》宫斗式教学" 或 "用美妆步骤比喻机器学习流程"💄）\n\n期待为你打造独一无二的学习体验！🎯`,
+        content: `（比如："想要《甄嬛传》宫斗式教学" 或 "用美妆步骤比喻机器学习流程"💄）\n\n期待为你打造独一无二的学习体验！🎯<custom-button-after-content><span style="color: red;">这是一个追问按钮</span></custom-button-after-content>`,
+        onClickCustomButtonAfterContent: () => {
+          console.log("ask button clicked");
+        },
       },
       {
         content: `?[%{{ sys_user_style }}幽默|大气|二次元｜...具体描述下你喜欢的风格]`,

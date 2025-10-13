@@ -12,6 +12,7 @@ export interface MarkdownFlowProps {
     defaultSelectedValues?: string[];
     readonly?: boolean;
     customRenderBar?: CustomRenderBarProps;
+    onClickCustomButtonAfterContent?: () => void;
   }[];
   customRenderBar?: CustomRenderBarProps;
   onSend?: (content: OnSendContentParams) => void;
@@ -49,6 +50,9 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             enableTypewriter={enableTypewriterForBlock}
             customRenderBar={contentInfo.customRenderBar || customRenderBar}
             onSend={onSend}
+            onClickCustomButtonAfterContent={
+              contentInfo.onClickCustomButtonAfterContent
+            }
             typingSpeed={typingSpeed}
             confirmButtonText={confirmButtonText}
             onTypeFinished={() => {

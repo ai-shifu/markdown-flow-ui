@@ -30,6 +30,17 @@ import {
 // Define component Props type
 export interface ContentRenderProps {
   content: string;
+  /**
++   * Callback invoked when the custom button after content is clicked.
++   * This button is rendered via the `<custom-button-after-content>` tag in markdown content.
++   * @example
++   * ```tsx
++   * <ContentRender 
++   *   content="Hello <custom-button-after-content>Ask</custom-button-after-content>"
++   *   onClickCustomButtonAfterContent={() => console.log('Button clicked')}
++   * />
++   * ```
++   */
   customRenderBar?: CustomRenderBarProps;
   onClickCustomButtonAfterContent?: () => void;
   onSend?: (content: OnSendContentParams) => void;
@@ -75,8 +86,11 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   });
 
   const components: CustomComponents = {
-    "custom-button-after-content": (props) => {
-      const { children } = props as any;
+    "custom-button-after-content": ({
+      children,
+    }: {
+      children?: React.ReactNode;
+    }) => {
       return (
         <button
           className="content-render-custom-button-after-content"

@@ -30,9 +30,6 @@ type Story = StoryObj<typeof meta>;
 
 export const MarkdownFlowStory: Story = {
   args: {
-    onClickCustomButtonAfterContent: () => {
-      console.log("ask button clicked");
-    },
     initialContentList: [
       {
         content: `你好呀！👋 我是孙志岗，很高兴能和你一起探索AI的奇妙世界~ \n\n在开始之前，我想先和你聊聊为什么学习AI这么重要🌟：\n\n- AI正在改变我们的生活、工作和学习方式\n\n- 掌握AI技能可以让你在未来更有竞争力\n\n- 学习AI不仅能解决实际问题，还能培养创新思维\n\n说了这么多，还不知道该怎么称呼你呢？😊 可以告诉我你的名字或你喜欢的称呼吗？`,
@@ -60,6 +57,9 @@ export const MarkdownFlowStory: Story = {
       },
       {
         content: `（比如："想要《甄嬛传》宫斗式教学" 或 "用美妆步骤比喻机器学习流程"💄）\n\n期待为你打造独一无二的学习体验！🎯<custom-button-after-content><span style="color: red;">这是一个追问按钮</span></custom-button-after-content>`,
+        onClickCustomButtonAfterContent: () => {
+          console.log("ask button clicked");
+        },
       },
       {
         content: `?[%{{ sys_user_style }}幽默|大气|二次元｜...具体描述下你喜欢的风格]`,

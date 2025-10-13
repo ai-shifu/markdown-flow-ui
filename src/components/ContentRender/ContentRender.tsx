@@ -30,7 +30,19 @@ import {
 // Define component Props type
 export interface ContentRenderProps {
   content: string;
+  /**
++   * Callback invoked when the custom button after content is clicked.
++   * This button is rendered via the `<custom-button-after-content>` tag in markdown content.
++   * @example
++   * ```tsx
++   * <ContentRender
++   *   content="Hello <custom-button-after-content>Ask</custom-button-after-content>"
++   *   onClickCustomButtonAfterContent={() => console.log('Button clicked')}
++   * />
++   * ```
++   */
   customRenderBar?: CustomRenderBarProps;
+  onClickCustomButtonAfterContent?: () => void;
   onSend?: (content: OnSendContentParams) => void;
   typingSpeed?: number;
   enableTypewriter?: boolean;
@@ -45,7 +57,11 @@ export interface ContentRenderProps {
 }
 
 // Extended component interface
-type CustomComponents = ComponentsWithCustomVariable;
+type CustomComponents = ComponentsWithCustomVariable & {
+  "custom-button-after-content"?: React.ComponentType<{
+    children: React.ReactNode;
+  }>;
+};
 
 const ContentRender: React.FC<ContentRenderProps> = ({
   content,
@@ -59,6 +75,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   readonly = false,
   onTypeFinished,
   confirmButtonText,
+  onClickCustomButtonAfterContent,
   // tooltipMinLength,
 }) => {
   // Use custom Hook to handle typewriter effect
@@ -69,6 +86,20 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   });
 
   const components: CustomComponents = {
+    "custom-button-after-content": ({
+      children,
+    }: {
+      children: React.ReactNode;
+    }) => {
+      return (
+        <button
+          className="content-render-custom-button-after-content"
+          onClick={onClickCustomButtonAfterContent}
+        >
+          {children}
+        </button>
+      );
+    },
     "custom-variable": (props) => (
       <CustomButtonInputVariable
         {...props}

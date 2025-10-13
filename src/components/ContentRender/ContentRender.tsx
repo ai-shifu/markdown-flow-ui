@@ -89,7 +89,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     "custom-button-after-content": ({
       children,
     }: {
-      children?: React.ReactNode;
+      children: React.ReactNode;
     }) => {
       return (
         <button

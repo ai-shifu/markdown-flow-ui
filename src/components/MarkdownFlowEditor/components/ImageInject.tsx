@@ -291,7 +291,7 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
             type="number"
             value={scale}
             min={1}
-            max={1000}
+            max={100}
             onChange={handleScaleChange}
             className="w-24"
           />

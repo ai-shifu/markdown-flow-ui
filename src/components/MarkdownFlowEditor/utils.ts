@@ -11,13 +11,14 @@ import {
 
 const parseContentInfo = (
   type: SelectedOption,
-  dataset: { title: string; url: string }
+  dataset: { title?: string; url?: string; scalePercent?: number }
 ) => {
   switch (type) {
     case SelectedOption.Image:
       return {
         resourceUrl: dataset.url,
         resourceTitle: dataset.title,
+        scalePercent: dataset.scalePercent,
       };
 
     case SelectedOption.Video:
@@ -39,7 +40,12 @@ const parseContentInfo = (
 
 function createSlashCommands(
   onSelectOption: (selectedOption: SelectedOption) => void,
-  labels?: { image?: string; video?: string; variable?: string }
+  labels?: {
+    fixedText?: string;
+    image?: string;
+    video?: string;
+    variable?: string;
+  }
 ) {
   return (context: CompletionContext): CompletionResult | null => {
     const word = context.matchBefore(/\/(\w*)$/);
@@ -62,6 +68,12 @@ function createSlashCommands(
       from: word.from,
       to: word.to,
       options: [
+        {
+          label: labels?.fixedText ?? "Fixed Text",
+          apply: (view, _, from, to) => {
+            handleSelect(view, _, from, to, SelectedOption.FixedText);
+          },
+        },
         {
           label: labels?.image ?? "Image",
           apply: (view, _, from, to) => {

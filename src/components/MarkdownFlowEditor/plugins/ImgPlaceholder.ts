@@ -9,24 +9,73 @@ import {
 import { SelectedOption } from "../types";
 import PlaceholderWidget from "./PlaceholderWidget";
 
-const agiImgContextRegexp = /!\[([^\]]*)\]\(([^)]+)\)/gi;
+const agiImgContextRegexp = /!\[([^\]]*)\]\(([^)]+)\)|<img\b[^>]*>/gi;
+
+const extractAttributeValue = (tag: string, attribute: string) => {
+  const regexp = new RegExp(
+    `${attribute}\\s*=\\s*("(.*?)"|'(.*?)'|([^\\s"'<>]+))`,
+    "i"
+  );
+  const match = tag.match(regexp);
+  if (!match) return undefined;
+  return match[2] ?? match[3] ?? match[4];
+};
+
+const clampScalePercent = (value: number) =>
+  Math.max(1, Math.min(1000, Math.round(value)));
+
+const getImageMatchInfo = (match: RegExpMatchArray) => {
+  const raw = match?.[0] ?? "";
+  if (/^<img\b/i.test(raw)) {
+    const src = extractAttributeValue(raw, "src") ?? "";
+    const alt =
+      extractAttributeValue(raw, "alt") ??
+      extractAttributeValue(raw, "title") ??
+      "";
+    const widthAttr = extractAttributeValue(raw, "width");
+    let scalePercent: number | undefined;
+    if (widthAttr) {
+      const numeric = Number.parseFloat(widthAttr);
+      if (Number.isFinite(numeric)) {
+        scalePercent = clampScalePercent(numeric);
+      }
+    }
+    return {
+      text: alt || "Image",
+      url: src,
+      title: alt,
+      scalePercent,
+    };
+  }
+  const title = match?.[1] ?? "";
+  const url = match?.[2] ?? "";
+  return {
+    text: title,
+    url,
+    title,
+    scalePercent: undefined,
+  };
+};
 
 const imageUrlMatcher = new MatchDecorator({
   regexp: agiImgContextRegexp,
-  decoration: (match, view) =>
-    Decoration.replace({
+  decoration: (match, view) => {
+    const info = getImageMatchInfo(match);
+    return Decoration.replace({
       widget: new PlaceholderWidget(
-        match?.[1],
+        info.text,
         {
           tag: "image",
-          url: match?.[2],
-          title: match?.[1],
+          url: info.url,
+          title: info.title,
+          scalePercent: info.scalePercent,
         },
         "tag-image",
         SelectedOption.Image,
         view
       ),
-    }),
+    });
+  },
 });
 
 const ImgPlaceholder = ViewPlugin.fromClass(

@@ -1,4 +1,5 @@
 enum SelectedOption {
+  FixedText = "fixedText",
   Video = "video",
   Image = "Image",
   Variable = "variable",
@@ -10,6 +11,7 @@ interface SelectContentInfo {
   value: {
     resourceTitle?: string;
     resourceUrl?: string;
+    scalePercent?: number;
     variableName?: string;
   };
   from: number;

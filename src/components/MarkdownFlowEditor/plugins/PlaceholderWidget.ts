@@ -8,6 +8,7 @@ class PlaceholderWidget extends WidgetType {
       tag: "image" | "video" | "variable";
       title?: string;
       url?: string;
+      scalePercent?: number;
     },
     private styleClass: string,
     private type: SelectedOption,

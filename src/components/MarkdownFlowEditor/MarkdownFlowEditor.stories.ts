@@ -186,11 +186,15 @@ const mockUploadProps: UploadProps = {
   },
 };
 
-export const MarkdownFlowEditorWithCustomUpload: Story = {
+export const MarkdownFlowEditorWithImage: Story = {
   args: {
-    content,
+    content: `Img tag with size: <img src="https://ai-shifu.cn/imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/height:2000/https:/cdn.gamma.app/51wyzvm6tssdgg1/c8d63919f06741bb8967fa6af3a299f2/original/Cai-Se-logo-Dai-Wen-Zi-Gao-Du-Liu-Bai-h110.png" width="50%"/>
+Markdown image: ![Markdown image](https://ai-shifu.cn/imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/height:2000/https:/cdn.gamma.app/51wyzvm6tssdgg1/c8d63919f06741bb8967fa6af3a299f2/original/Cai-Se-logo-Dai-Wen-Zi-Gao-Du-Liu-Bai-h110.png)`,
     editMode: EditMode.QuickEdit,
     uploadProps: mockUploadProps,
+    onChange: (value) => {
+      console.log("value", value);
+    },
   },
 };
 
@@ -204,6 +208,15 @@ export const MarkdownFlowEditorWithVariables: Story = {
       { name: "sys_user_email" },
       { name: "custom_var_1" },
     ],
-    uploadProps: mockUploadProps,
+  },
+};
+
+export const MarkdownFlowEditorWithFixedText: Story = {
+  args: {
+    content: `Fixed text: ===Fixed text===`,
+    editMode: EditMode.QuickEdit,
+    onChange: (value) => {
+      console.log("value", value);
+    },
   },
 };

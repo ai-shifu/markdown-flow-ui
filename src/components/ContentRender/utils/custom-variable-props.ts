@@ -3,6 +3,7 @@ import { visit } from "unist-util-visit";
 
 const DATA_BUTTON_TEXTS = "data-button-texts";
 const DATA_BUTTON_VALUES = "data-button-values";
+const DATA_IS_MULTI_SELECT = "data-is-multi-select";
 
 const preserveArrayProperty = (
   properties: Record<string, unknown>,
@@ -11,6 +12,17 @@ const preserveArrayProperty = (
 ) => {
   const value = properties[sourceKey];
   if (Array.isArray(value)) {
+    properties[targetKey] = JSON.stringify(value);
+  }
+};
+
+const preserveBooleanProperty = (
+  properties: Record<string, unknown>,
+  sourceKey: string,
+  targetKey: string
+) => {
+  const value = properties[sourceKey];
+  if (typeof value === "boolean") {
     properties[targetKey] = JSON.stringify(value);
   }
 };
@@ -52,6 +64,7 @@ export const preserveCustomVariableProperties = () => (tree: Root) => {
     const properties = node.properties as Record<string, unknown>;
     preserveArrayProperty(properties, "buttonTexts", DATA_BUTTON_TEXTS);
     preserveArrayProperty(properties, "buttonValues", DATA_BUTTON_VALUES);
+    preserveBooleanProperty(properties, "isMultiSelect", DATA_IS_MULTI_SELECT);
   });
 };
 
@@ -77,7 +90,24 @@ export const restoreCustomVariableProperties = () => (tree: Root) => {
       properties.buttonValues = buttonValues;
     }
 
+    const isMultiSelectRaw =
+      properties[DATA_IS_MULTI_SELECT] ?? properties.dataIsMultiSelect;
+    if (typeof isMultiSelectRaw === "string") {
+      try {
+        const parsed = JSON.parse(isMultiSelectRaw);
+        if (typeof parsed === "boolean") {
+          properties.isMultiSelect = parsed;
+        }
+      } catch (error) {
+        console.error(
+          "[markdown-flow-ui] Error parsing boolean isMultiSelect:",
+          error
+        );
+      }
+    }
+
     removeDataProperty(properties, DATA_BUTTON_TEXTS, "dataButtonTexts");
     removeDataProperty(properties, DATA_BUTTON_VALUES, "dataButtonValues");
+    removeDataProperty(properties, DATA_IS_MULTI_SELECT, "dataIsMultiSelect");
   });
 };

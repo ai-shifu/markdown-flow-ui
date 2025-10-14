@@ -1,7 +1,7 @@
 import React from "react";
 import ContentRender from "../ContentRender";
+import { CustomRenderBarProps, OnSendContentParams } from "../types";
 import "./markdownFlow.css";
-import { OnSendContentParams, CustomRenderBarProps } from "../types";
 
 export interface MarkdownFlowProps {
   initialContentList?: {
@@ -13,6 +13,7 @@ export interface MarkdownFlowProps {
     readonly?: boolean;
     customRenderBar?: CustomRenderBarProps;
     onClickCustomButtonAfterContent?: () => void;
+    dynamicInteractionFormat?: string;
   }[];
   customRenderBar?: CustomRenderBarProps;
   onSend?: (content: OnSendContentParams) => void;
@@ -55,6 +56,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             }
             typingSpeed={typingSpeed}
             confirmButtonText={confirmButtonText}
+            dynamicInteractionFormat={contentInfo.dynamicInteractionFormat}
             onTypeFinished={() => {
               onBlockComplete?.(index);
             }}

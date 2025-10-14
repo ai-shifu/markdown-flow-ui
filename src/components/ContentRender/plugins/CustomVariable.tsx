@@ -96,7 +96,6 @@ const CustomButtonInputVariable = ({
       inputText: inputValue,
     });
   };
-
   return (
     <span className="custom-variable-container inline-flex items-center gap-2 flex-wrap">
       {isMultiSelect ? (

@@ -1,31 +1,31 @@
+import "highlight.js/styles/github.css";
+import "katex/dist/katex.min.css";
 import React, { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
+import rehypeHighlight from "rehype-highlight";
+import rehypeKatex from "rehype-katex";
+import rehypeRaw from "rehype-raw";
+import remarkBreaks from "remark-breaks";
 import remarkFlow from "remark-flow";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import { CustomRenderBarProps, OnSendContentParams } from "../types";
+import "./contentRender.css";
+import "./github-markdown-light.css";
 import CustomButtonInputVariable, {
   ComponentsWithCustomVariable,
 } from "./plugins/CustomVariable";
 import MermaidChart from "./plugins/MermaidChart";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeHighlight from "rehype-highlight";
-import rehypeKatex from "rehype-katex";
-import rehypeRaw from "rehype-raw";
-import "highlight.js/styles/github.css";
-import "./github-markdown-light.css";
-import "katex/dist/katex.min.css";
-import {
-  highlightLanguages,
-  subsetLanguages,
-} from "./utils/highlight-languages";
 import useTypewriterStateMachine from "./useTypewriterStateMachine";
-import "./contentRender.css";
-import { OnSendContentParams, CustomRenderBarProps } from "../types";
-import remarkBreaks from "remark-breaks";
-import { processMarkdownText } from "./utils/process-markdown";
 import {
   preserveCustomVariableProperties,
   restoreCustomVariableProperties,
 } from "./utils/custom-variable-props";
+import {
+  highlightLanguages,
+  subsetLanguages,
+} from "./utils/highlight-languages";
+import { processMarkdownText } from "./utils/process-markdown";
 
 // Define component Props type
 export interface ContentRenderProps {
@@ -53,6 +53,8 @@ export interface ContentRenderProps {
   onTypeFinished?: () => void;
   // Multi-select confirm button text (i18n support)
   confirmButtonText?: string;
+  // Dynamic interaction format for multi-select support
+  dynamicInteractionFormat?: string;
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
 
@@ -113,7 +115,10 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       />
     ),
     code: (props) => {
-      const { className, children, ...rest } = props as any;
+      const { className, children, ...rest } = props as {
+        className?: string;
+        children?: React.ReactNode;
+      };
       const match = /language-(\w+)/.exec(className || "");
       const language = match?.[1];
       if (language === "mermaid") {

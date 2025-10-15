@@ -167,3 +167,9 @@
   font-style: normal;
   font-weight: 400;
 }
+.cm-editor.cm-focused {
+  outline: none;
+}
+.ͼ2 .cm-activeLine {
+  background-color: transparent;
+}

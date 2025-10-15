@@ -170,6 +170,12 @@
 .cm-editor.cm-focused {
   outline: none;
 }
-.ͼ2 .cm-activeLine {
-  background-color: transparent;
+.cm-activeLine {
+  background-color: transparent !important;
+}
+
+.c6,
+.c7 {
+  text-decoration: auto;
+  font-weight: normal;
 }

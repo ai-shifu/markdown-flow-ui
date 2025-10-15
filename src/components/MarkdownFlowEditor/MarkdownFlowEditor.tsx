@@ -96,6 +96,14 @@ const Editor: React.FC<EditorProps> = ({
   }, [i18n, locale]);
   const activeLocale = (locale || i18n.language) as "en-US" | "zh-CN";
   const currentStrings = resources[activeLocale]?.translation ?? enUS;
+  const placeholderText =
+    editMode === EditMode.QuickEdit
+      ? t("placeholderQuickEdit", {
+          defaultValue: t("placeholderCodeEdit", {
+            defaultValue: t("placeholder"),
+          }),
+        })
+      : t("placeholderCodeEdit", { defaultValue: t("placeholder") });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [popoverPosition, setPopoverPosition] =
@@ -452,7 +460,7 @@ const Editor: React.FC<EditorProps> = ({
             foldGutter: false,
           }}
           className="rounded-md"
-          placeholder={t("placeholder")}
+          placeholder={placeholderText}
           value={content}
           theme="light"
           minHeight="2rem"

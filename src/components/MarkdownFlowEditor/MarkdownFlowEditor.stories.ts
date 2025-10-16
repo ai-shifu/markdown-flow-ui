@@ -257,11 +257,11 @@ export const MarkdownFlowEditorWithVariables: Story = {
   args: {
     content: `Here is a variable: {{sys_user_email}}.`,
     editMode: EditMode.QuickEdit,
-    variables: [
-      { name: "sys_user_nickname" },
-      { name: "sys_user_style" },
-      { name: "sys_user_email" },
-      { name: "custom_var_1" },
+    locale: "zh-CN",
+    variables: [{ name: "sys_user_phone" }, { name: "sys_user_email" }],
+    systemVariables: [
+      { name: "sys_user_nickname", label: "请输入昵称" },
+      { name: "sys_user_style", label: "授课风格" },
     ],
   },
 };

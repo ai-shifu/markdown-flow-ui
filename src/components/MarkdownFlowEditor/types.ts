@@ -37,6 +37,7 @@ interface IEditorContext {
 
 interface Variable {
   name: string;
+  label?: string;
 }
 
 export { SelectedOption };

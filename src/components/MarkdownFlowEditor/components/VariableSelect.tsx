@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 
 interface VariableSelectProps {
   variables?: Variable[];
+  systemVariables?: Variable[];
   selectedName?: string;
   onSelect?: (variable: Variable) => void;
   onAddVariable?: (variable: Variable) => void;
@@ -16,6 +17,7 @@ interface VariableSelectProps {
 
 const VariableSelect = ({
   variables: initialVariables = [],
+  systemVariables = [],
   selectedName,
   onSelect,
   onAddVariable,
@@ -26,16 +28,26 @@ const VariableSelect = ({
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newVariableName, setNewVariableName] = useState("");
   const [duplicateError, setDuplicateError] = useState(false);
-  console.log("variables", variables, selectedName);
+  const normalizedSearch = searchQuery.toLowerCase();
+  const filterPredicate = (variable: Variable) => {
+    const nameMatch = variable.name.toLowerCase().includes(normalizedSearch);
+    const labelMatch = variable.label
+      ? variable.label.toLowerCase().includes(normalizedSearch)
+      : false;
+    return nameMatch || labelMatch;
+  };
 
-  const filteredVariables = variables.filter((variable) =>
-    variable.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredSystemVariables = systemVariables.filter(filterPredicate);
+  const filteredCustomVariables = variables.filter(filterPredicate);
+  const hasAnyResult =
+    filteredSystemVariables.length > 0 || filteredCustomVariables.length > 0;
 
   const handleAddVariable = () => {
     if (newVariableName.trim()) {
-      const isDuplicate = variables.some(
-        (v) => v.name.toLowerCase() === newVariableName.trim().toLowerCase()
+      const trimmed = newVariableName.trim();
+      const lowerName = trimmed.toLowerCase();
+      const isDuplicate = [...variables, ...systemVariables].some(
+        (v) => v.name.toLowerCase() === lowerName
       );
 
       if (isDuplicate) {
@@ -44,10 +56,10 @@ const VariableSelect = ({
       }
 
       const newVariable: Variable = {
-        name: newVariableName.trim(),
+        name: trimmed,
       };
-      setVariables([...variables, newVariable]);
-      onAddVariable?.({ name: newVariableName.trim() });
+      setVariables((prev) => [...prev, newVariable]);
+      onAddVariable?.({ name: trimmed });
       setNewVariableName("");
       setIsAddingNew(false);
       setSearchQuery("");
@@ -90,22 +102,76 @@ const VariableSelect = ({
       </div>
 
       <div className="max-h-[300px] overflow-y-auto p-2">
-        {!!filteredVariables.length ? (
-          filteredVariables.map((variable) => (
-            <button
-              key={variable.name}
-              onClick={() => onSelect?.(variable)}
-              className={cn(
-                "flex w-full items-center justify-between rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent",
-                selectedName === variable.name && "bg-accent"
-              )}
-            >
-              <span className="text-foreground">{variable.name}</span>
-              {selectedName === variable.name && (
-                <Check className="h-4 w-4 text-foreground" />
-              )}
-            </button>
-          ))
+        {hasAnyResult ? (
+          <div className="space-y-4">
+            {filteredSystemVariables.length > 0 && (
+              <div className="space-y-1">
+                <p className="px-3 text-xs font-medium text-muted-foreground">
+                  {t("variableSectionSystem", "System Variables")}
+                </p>
+                <div className="space-y-1">
+                  {filteredSystemVariables.map((variable) => (
+                    <button
+                      key={`system-${variable.name}`}
+                      onClick={() => onSelect?.(variable)}
+                      className={cn(
+                        "flex w-full items-start justify-between rounded-md px-3 py-2 text-left transition-colors hover:bg-accent",
+                        selectedName === variable.name && "bg-accent"
+                      )}
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-foreground">
+                          {variable.name}
+                        </span>
+                        {variable.label && (
+                          <span className="text-xs text-muted-foreground">
+                            {variable.label}
+                          </span>
+                        )}
+                      </div>
+                      {selectedName === variable.name && (
+                        <Check className="mt-1 h-4 w-4 text-foreground" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {filteredCustomVariables.length > 0 && (
+              <div className="space-y-1">
+                <p className="px-3 text-xs font-medium text-muted-foreground">
+                  {t("variableSectionCustom", "Custom Variables")}
+                </p>
+                <div className="space-y-1">
+                  {filteredCustomVariables.map((variable) => (
+                    <button
+                      key={`custom-${variable.name}`}
+                      onClick={() => onSelect?.(variable)}
+                      className={cn(
+                        "flex w-full items-start justify-between rounded-md px-3 py-2 text-left transition-colors hover:bg-accent",
+                        selectedName === variable.name && "bg-accent"
+                      )}
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-foreground">
+                          {variable.name}
+                        </span>
+                        {variable.label && (
+                          <span className="text-xs text-muted-foreground">
+                            {variable.label}
+                          </span>
+                        )}
+                      </div>
+                      {selectedName === variable.name && (
+                        <Check className="mt-1 h-4 w-4 text-foreground" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
           <div className="px-3 py-6 text-center text-sm text-muted-foreground">
             {searchQuery

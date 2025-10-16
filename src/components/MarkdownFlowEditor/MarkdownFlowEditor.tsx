@@ -73,6 +73,7 @@ type EditorProps = {
   content?: string;
   editMode?: EditMode;
   variables?: Variable[];
+  systemVariables?: Variable[];
   onChange?: (value: string) => void;
   onBlur?: () => void;
   locale?: "en-US" | "zh-CN";
@@ -83,6 +84,7 @@ const Editor: React.FC<EditorProps> = ({
   content = "",
   editMode = EditMode.CodeEdit,
   variables: initialVariables = [],
+  systemVariables = [],
   onChange,
   onBlur,
   locale = "en-US",
@@ -500,6 +502,7 @@ const Editor: React.FC<EditorProps> = ({
         <CustomPopover>
           <VariableSelect
             variables={variables}
+            systemVariables={systemVariables}
             selectedName={selectContentInfo?.value?.variableName}
             onSelect={handleSelectVariable}
             onAddVariable={(variable) => {

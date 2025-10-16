@@ -213,6 +213,7 @@ export const MarkdownFlowEditorWithQuickEditStory: Story = {
     content,
     editMode: EditMode.QuickEdit,
     locale: "zh-CN",
+    variables: [{ name: "sys_user_language" }, { name: "plan" }],
   },
 };
 const token =

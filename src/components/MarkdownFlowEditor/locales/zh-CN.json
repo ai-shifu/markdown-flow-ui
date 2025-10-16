@@ -30,6 +30,8 @@
   "videoTitlePlaceholder": "请输入视频标题",
   "videoTitleLabel": "标题",
   "videoDefaultTitle": "视频标题",
+  "videoDefaultTitleBilibili": "哔哩哔哩视频",
+  "videoDefaultTitleYoutube": "YouTube 视频",
   "videoInvalidUrl": "请输入有效的 B 站或 YouTube 视频链接",
   "videoCancelButton": "取消",
   "videoUseVideoButton": "使用视频",

@@ -1,6 +1,12 @@
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
-import React, { useState, useRef, useEffect, useContext } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useContext,
+  useCallback,
+} from "react";
 import { useTranslation } from "react-i18next";
 import EditorContext from "../editor-context";
 
@@ -54,6 +60,19 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
     return url;
   };
 
+  const getDefaultTitleForUrl = useCallback(
+    (url: string) => {
+      if (biliVideoUrlRegexp.test(url)) {
+        return t("videoDefaultTitleBilibili");
+      }
+      if (youtubeVideoUrlRegexp.test(url)) {
+        return t("videoDefaultTitleYoutube");
+      }
+      return t("videoDefaultTitle", "Video Title");
+    },
+    [t]
+  );
+
   const handleRun = () => {
     setErrorTips("");
     if (!isValidVideoUrl(inputUrl)) {
@@ -82,12 +101,14 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
       return;
     }
 
+    const finalTitle = title.trim() || getDefaultTitleForUrl(inputUrl);
+
     try {
       const returnUrlObj = new URL(inputUrl);
       if (biliVideoUrlRegexp.test(inputUrl)) {
         onSelect({
           resourceUrl: returnUrlObj.origin + returnUrlObj.pathname,
-          resourceTitle: title,
+          resourceTitle: finalTitle,
         });
         setDialogOpen(false);
         return;
@@ -96,18 +117,18 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
       if (youtubeId) {
         onSelect({
           resourceUrl: `https://www.youtube.com/watch?v=${youtubeId}`,
-          resourceTitle: title,
+          resourceTitle: finalTitle,
         });
         setDialogOpen(false);
         return;
       }
       onSelect({
         resourceUrl: returnUrlObj.origin + returnUrlObj.pathname,
-        resourceTitle: title,
+        resourceTitle: finalTitle,
       });
     } catch (error) {
       console.log("error", error);
-      onSelect({ resourceUrl: inputUrl, resourceTitle: title });
+      onSelect({ resourceUrl: inputUrl, resourceTitle: finalTitle });
     }
     setDialogOpen(false);
   };

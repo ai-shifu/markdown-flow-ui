@@ -30,6 +30,8 @@
   "videoTitlePlaceholder": "Please enter video title",
   "videoTitleLabel": "Title",
   "videoDefaultTitle": "Video Title",
+  "videoDefaultTitleBilibili": "Bilibili Video",
+  "videoDefaultTitleYoutube": "YouTube Video",
   "videoInvalidUrl": "Please enter a valid Bilibili or YouTube video URL",
   "videoCancelButton": "Cancel",
   "videoUseVideoButton": "Use Video",

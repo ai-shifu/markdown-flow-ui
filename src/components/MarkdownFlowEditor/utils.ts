@@ -69,16 +69,22 @@ function createSlashCommands(
       from: word.from,
       to: word.to,
       options: [
+        // {
+        //   label: labels?.divider ?? "Divider",
+        //   apply: (view, _, from, to) => {
+        //     handleSelect(view, _, from, to, SelectedOption.Divider);
+        //   },
+        // },
+        // {
+        //   label: labels?.fixedText ?? "Fixed Text",
+        //   apply: (view, _, from, to) => {
+        //     handleSelect(view, _, from, to, SelectedOption.FixedText);
+        //   },
+        // },
         {
-          label: labels?.divider ?? "Divider",
+          label: labels?.variable ?? "Variable",
           apply: (view, _, from, to) => {
-            handleSelect(view, _, from, to, SelectedOption.Divider);
-          },
-        },
-        {
-          label: labels?.fixedText ?? "Fixed Text",
-          apply: (view, _, from, to) => {
-            handleSelect(view, _, from, to, SelectedOption.FixedText);
+            handleSelect(view, _, from, to, SelectedOption.Variable);
           },
         },
         {
@@ -91,12 +97,6 @@ function createSlashCommands(
           label: labels?.video ?? "Video",
           apply: (view, _, from, to) => {
             handleSelect(view, _, from, to, SelectedOption.Video);
-          },
-        },
-        {
-          label: labels?.variable ?? "Variable",
-          apply: (view, _, from, to) => {
-            handleSelect(view, _, from, to, SelectedOption.Variable);
           },
         },
       ],

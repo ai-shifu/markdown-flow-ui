@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { autocompletion } from "@codemirror/autocomplete";
 import { EditorView } from "@codemirror/view";
@@ -32,8 +32,8 @@ import {
 import ImgPlaceholder from "./plugins/ImgPlaceholder";
 import VideoPlaceholder from "./plugins/VideoPlaceholder";
 import VariablePlaceholder from "./plugins/VariablePlaceholder";
-import createFixedTextPlaceholder from "./plugins/FixedTextPlaceholder";
-import DividerPlaceholder from "./plugins/DividerPlaceholder";
+// import createFixedTextPlaceholder from "./plugins/FixedTextPlaceholder";
+// import DividerPlaceholder from "./plugins/DividerPlaceholder";
 import enUS from "./locales/en-US.json";
 import zhCN from "./locales/zh-CN.json";
 import { initReactI18next, useTranslation } from "react-i18next";
@@ -127,70 +127,70 @@ const Editor: React.FC<EditorProps> = ({
     setPopoverPosition,
   };
 
-  const insertFixedText = useCallback(() => {
-    if (!editorViewRef.current) return;
-    const view = editorViewRef.current;
-    const { state, dispatch } = view;
-    const selection = state.selection.main;
-    const selectedText = state.sliceDoc(selection.from, selection.to);
-    const startTag = "===";
-    const endTag = "===";
-    const insertContent = `${startTag}${selectedText ?? ""}${endTag}`;
+  // const insertFixedText = useCallback(() => {
+  //   if (!editorViewRef.current) return;
+  //   const view = editorViewRef.current;
+  //   const { state, dispatch } = view;
+  //   const selection = state.selection.main;
+  //   const selectedText = state.sliceDoc(selection.from, selection.to);
+  //   const startTag = "===";
+  //   const endTag = "===";
+  //   const insertContent = `${startTag}${selectedText ?? ""}${endTag}`;
 
-    dispatch({
-      changes: {
-        from: selection.from,
-        to: selection.to,
-        insert: insertContent,
-      },
-      selection: {
-        anchor: selection.from + startTag.length + (selectedText?.length ?? 0),
-      },
-    });
-    view.focus();
-  }, []);
+  //   dispatch({
+  //     changes: {
+  //       from: selection.from,
+  //       to: selection.to,
+  //       insert: insertContent,
+  //     },
+  //     selection: {
+  //       anchor: selection.from + startTag.length + (selectedText?.length ?? 0),
+  //     },
+  //   });
+  //   view.focus();
+  // }, []);
 
-  const insertDivider = useCallback(() => {
-    if (!editorViewRef.current) return;
-    const view = editorViewRef.current;
-    const { state, dispatch } = view;
-    const selection = state.selection.main;
-    const insertContent = `\n\n---\n\n`;
+  // const insertDivider = useCallback(() => {
+  //   if (!editorViewRef.current) return;
+  //   const view = editorViewRef.current;
+  //   const { state, dispatch } = view;
+  //   const selection = state.selection.main;
+  //   const insertContent = `\n\n---\n\n`;
 
-    dispatch({
-      changes: {
-        from: selection.from,
-        to: selection.to,
-        insert: insertContent,
-      },
-      selection: {
-        anchor: selection.from + insertContent.length,
-      },
-    });
-    view.focus();
-  }, []);
+  //   dispatch({
+  //     changes: {
+  //       from: selection.from,
+  //       to: selection.to,
+  //       insert: insertContent,
+  //     },
+  //     selection: {
+  //       anchor: selection.from + insertContent.length,
+  //     },
+  //   });
+  //   view.focus();
+  // }, []);
 
   const onSelectedOption = useCallback(
     (option: SelectedOption) => {
-      if (option === SelectedOption.FixedText) {
-        insertFixedText();
-        setSelectedOption(SelectedOption.Empty);
-        setDialogOpen(false);
-        setPopoverOpen(false);
-        setSelectContentInfo(null);
-        setPopoverPosition(null);
-        return;
-      }
+      // if (option === SelectedOption.FixedText) {
+      //   insertFixedText();
+      //   setSelectedOption(SelectedOption.Empty);
+      //   setDialogOpen(false);
+      //   setPopoverOpen(false);
+      //   setSelectContentInfo(null);
+      //   setPopoverPosition(null);
+      //   return;
+      // }
 
-      if (option === SelectedOption.Divider) {
-        insertDivider();
-        setSelectedOption(SelectedOption.Empty);
-        setDialogOpen(false);
-        setPopoverOpen(false);
-        setSelectContentInfo(null);
-        setPopoverPosition(null);
-        return;
-      }
+      // if (option === SelectedOption.Divider) {
+      //   insertDivider();
+      //   setSelectedOption(SelectedOption.Empty);
+      //   setDialogOpen(false);
+      //   setPopoverOpen(false);
+      //   setSelectContentInfo(null);
+      //   setPopoverPosition(null);
+      //   return;
+      // }
 
       setSelectedOption(option);
 
@@ -211,7 +211,8 @@ const Editor: React.FC<EditorProps> = ({
         setDialogOpen(true);
       }
     },
-    [insertFixedText]
+    // [insertText]
+    []
   );
 
   const insertText = useCallback(
@@ -340,8 +341,8 @@ const Editor: React.FC<EditorProps> = ({
     return autocompletion({
       override: [
         createSlashCommands(onSelectedOption, {
-          divider: currentStrings.slashDivider,
-          fixedText: currentStrings.slashFixedText,
+          // divider: currentStrings.slashDivider,
+          // fixedText: currentStrings.slashFixedText,
           image: currentStrings.slashImage,
           video: currentStrings.slashVideo,
           variable: currentStrings.slashVariable,
@@ -349,28 +350,28 @@ const Editor: React.FC<EditorProps> = ({
       ],
     });
   }, [
-    currentStrings.slashDivider,
-    currentStrings.slashFixedText,
+    // currentStrings.slashDivider,
+    // currentStrings.slashFixedText,
     currentStrings.slashImage,
     currentStrings.slashVideo,
     currentStrings.slashVariable,
     onSelectedOption,
   ]);
 
-  const fixedTextPlaceholderExtension = useMemo(
-    () =>
-      createFixedTextPlaceholder(
-        currentStrings.fixedTextPlaceholder ?? "添加固定文本",
-        currentStrings.fixedTextTooltip ??
-          currentStrings.slashFixedText ??
-          "固定文本"
-      ),
-    [
-      currentStrings.fixedTextPlaceholder,
-      currentStrings.fixedTextTooltip,
-      currentStrings.slashFixedText,
-    ]
-  );
+  // const fixedTextPlaceholderExtension = useMemo(
+  //   () =>
+  //     createFixedTextPlaceholder(
+  //       currentStrings.fixedTextPlaceholder ?? "添加固定文本",
+  //       currentStrings.fixedTextTooltip ??
+  //         currentStrings.slashFixedText ??
+  //         "固定文本"
+  //     ),
+  //   [
+  //     currentStrings.fixedTextPlaceholder,
+  //     currentStrings.fixedTextTooltip,
+  //     currentStrings.slashFixedText,
+  //   ]
+  // );
 
   const handleEditorUpdate = useCallback((view: EditorView) => {
     editorViewRef.current = view;
@@ -443,8 +444,8 @@ const Editor: React.FC<EditorProps> = ({
                     ImgPlaceholder,
                     VideoPlaceholder,
                     VariablePlaceholder,
-                    fixedTextPlaceholderExtension,
-                    DividerPlaceholder,
+                    // fixedTextPlaceholderExtension,
+                    // DividerPlaceholder,
                     EditorView.updateListener.of((update) => {
                       handleEditorUpdate(update.view);
                     }),

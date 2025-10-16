@@ -35,7 +35,12 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
       Boolean(value?.resourceUrl)
     );
     const [tempUrl, setTempUrl] = useState<string>(value?.resourceUrl ?? "");
-    const [scale, setScale] = useState<number>(value?.scalePercent ?? 100);
+    const [scale, setScale] = useState<number | undefined>(
+      value?.scalePercent ?? 100
+    );
+    const [scaleInputValue, setScaleInputValue] = useState<string>(
+      value?.scalePercent !== undefined ? String(value.scalePercent) : "100"
+    );
     const [errorTip, setErrorTip] = useState<string>("");
     const [uploadStatus, setUploadStatus] = useState<
       "idle" | "loading" | "success" | "error"
@@ -51,7 +56,14 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
           scalePercent: value.scalePercent ?? prev.scalePercent ?? 100,
         }));
         setTempUrl(value.resourceUrl ?? "");
-        setScale(value.scalePercent ?? 100);
+        const resolvedScale =
+          value.scalePercent !== undefined ? value.scalePercent : 100;
+        setScale(resolvedScale);
+        setScaleInputValue(
+          value.scalePercent !== undefined
+            ? String(value.scalePercent)
+            : String(resolvedScale)
+        );
         setPreviewLoaded(true);
       }
       setUploadStatus("idle");
@@ -66,10 +78,7 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
       const sanitizedUrl = sanitizeImageUrl(url);
       setResource({
         resourceUrl: sanitizedUrl,
-        resourceTitle:
-          name ||
-          resource.resourceTitle ||
-          t("imageDefaultTitle", "Image name"),
+        resourceTitle: name || resource.resourceTitle || t("imageDefaultTitle"),
         scalePercent: scale,
       });
       setTempUrl(sanitizedUrl);
@@ -107,12 +116,21 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
     };
 
     const handleScaleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value.replace(/[^\d]/g, "");
-      const next = Math.max(1, Math.min(1000, Number(value || 100)));
-      setScale(next);
+      const inputValue = e.target.value.replace(/[^\d]/g, "");
+      setScaleInputValue(inputValue);
+      if (!inputValue) {
+        setScale(undefined);
+        setResource((prev) => ({
+          ...prev,
+          scalePercent: undefined,
+        }));
+        return;
+      }
+      const numeric = Math.max(1, Math.min(1000, Number(inputValue)));
+      setScale(numeric);
       setResource((prev) => ({
         ...prev,
-        scalePercent: next,
+        scalePercent: numeric,
       }));
     };
 
@@ -288,17 +306,17 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
       () => (
         <div className="flex items-center gap-2">
           <Input
-            type="number"
-            value={scale}
-            min={1}
-            max={100}
+            type="text"
+            value={scaleInputValue}
             onChange={handleScaleChange}
             className="w-24"
+            inputMode="numeric"
+            pattern="[0-9]*"
           />
           <span>%</span>
         </div>
       ),
-      [scale]
+      [scaleInputValue]
     );
 
     return (

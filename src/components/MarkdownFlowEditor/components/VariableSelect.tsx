@@ -87,7 +87,6 @@ const VariableSelect = ({
       handleCancelAdd();
     }
   };
-
   return (
     <div className="w-full max-w-sm rounded-lg border bg-white">
       <div className="relative">

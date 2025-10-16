@@ -84,7 +84,7 @@ const Editor: React.FC<EditorProps> = ({
   content = "",
   editMode = EditMode.CodeEdit,
   variables: initialVariables = [],
-  systemVariables = [],
+  systemVariables: initialSystemVariables = [],
   onChange,
   onBlur,
   locale = "en-US",
@@ -111,6 +111,18 @@ const Editor: React.FC<EditorProps> = ({
   const [popoverPosition, setPopoverPosition] =
     useState<PopoverPosition | null>(null);
   const [variables, setVariables] = useState<Variable[]>(initialVariables);
+  const [systemVariables, setSystemVariables] = useState<Variable[]>(
+    initialSystemVariables
+  );
+
+  useEffect(() => {
+    setVariables(initialVariables);
+  }, [initialVariables]);
+
+  useEffect(() => {
+    setSystemVariables(initialSystemVariables);
+  }, [initialSystemVariables]);
+
   const [selectedOption, setSelectedOption] = useState<SelectedOption>(
     SelectedOption.Empty
   );

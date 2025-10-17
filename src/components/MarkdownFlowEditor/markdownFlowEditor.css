@@ -1,19 +1,33 @@
 .tag-image,
 .tag-video {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   cursor: pointer;
-  border-radius: 3px;
-  padding: 0 6px;
-  background-color: #9090f854;
+  color: #0e46fb;
+  font-family: "PingFang SC";
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 20px;
 }
-.tag-image:hover,
-.tag-video:hover {
-  border: 1px solid #ddd;
+.tag-image,
+.tag-video,
+.tag-variable {
+  &:hover {
+    background: #d9d9d9;
+    border-radius: 2px;
+  }
 }
-.tag-image {
-  background-color: #c6e9bb70;
+.tag-placeholder-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
-.tag-video {
-  background-color: #0d71f138;
+
+.tag-placeholder-icon svg {
+  width: 14px;
+  height: 14px;
 }
 
 .tag-fixed-text,
@@ -181,6 +195,7 @@
 .ͼ1b,
 .c1c,
 .ͼ6,
+.ͼ7,
 .ͼ1c,
 .c7 {
   text-decoration: auto;

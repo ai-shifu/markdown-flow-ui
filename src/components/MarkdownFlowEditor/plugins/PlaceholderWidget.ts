@@ -1,4 +1,7 @@
 import { EditorView, Decoration, WidgetType } from "@codemirror/view";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { Image as ImageIcon, SquarePlay } from "lucide-react";
 import { SelectedOption } from "../types";
 
 class PlaceholderWidget extends WidgetType {
@@ -76,6 +79,22 @@ class PlaceholderWidget extends WidgetType {
       });
       window.dispatchEvent(event);
     });
+    if (this.dataset.tag === "image" || this.dataset.tag === "video") {
+      const iconWrapper = document.createElement("span");
+      iconWrapper.className = "tag-placeholder-icon";
+
+      const iconMarkup =
+        this.dataset.tag === "image"
+          ? renderToStaticMarkup(
+              createElement(ImageIcon, { size: 14, strokeWidth: 1.5 })
+            )
+          : renderToStaticMarkup(
+              createElement(SquarePlay, { size: 14, strokeWidth: 1.5 })
+            );
+
+      iconWrapper.innerHTML = iconMarkup;
+      container.appendChild(iconWrapper);
+    }
     container.appendChild(span);
     // container.appendChild(icon);
     return container;

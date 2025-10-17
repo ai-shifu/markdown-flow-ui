@@ -30,8 +30,8 @@
     "lucide-react": "^0.525.0",
     "mermaid": "^11.10.1",
     "next": "15.3.5",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
     "react-i18next": "^15.5.0",
     "react-markdown": "^10.1.0",
     "rehype-highlight": "^7.0.2",
@@ -146,5 +146,5 @@
     "test": "echo \"No tests specified\" && exit 0"
   },
   "types": "dist/index.d.ts",
-  "version": "0.1.17-beta.14"
+  "version": "0.1.17-beta.15"
 }

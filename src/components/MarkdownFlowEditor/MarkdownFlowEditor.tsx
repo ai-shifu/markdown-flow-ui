@@ -80,11 +80,13 @@ type EditorProps = {
   uploadProps?: UploadProps;
 };
 
+const EMPTY_VARIABLES: Variable[] = [];
+
 const Editor: React.FC<EditorProps> = ({
   content = "",
   editMode = EditMode.CodeEdit,
-  variables: initialVariables = [],
-  systemVariables: initialSystemVariables = [],
+  variables: initialVariables,
+  systemVariables: initialSystemVariables,
   onChange,
   onBlur,
   locale = "en-US",
@@ -106,22 +108,25 @@ const Editor: React.FC<EditorProps> = ({
           }),
         })
       : t("placeholderCodeEdit", { defaultValue: t("placeholder") });
+  const safeInitialVariables = initialVariables ?? EMPTY_VARIABLES;
+  const safeInitialSystemVariables = initialSystemVariables ?? EMPTY_VARIABLES;
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [popoverPosition, setPopoverPosition] =
     useState<PopoverPosition | null>(null);
-  const [variables, setVariables] = useState<Variable[]>(initialVariables);
+  const [variables, setVariables] = useState<Variable[]>(safeInitialVariables);
   const [systemVariables, setSystemVariables] = useState<Variable[]>(
-    initialSystemVariables
+    safeInitialSystemVariables
   );
 
   useEffect(() => {
-    setVariables(initialVariables);
-  }, [initialVariables]);
+    setVariables(safeInitialVariables);
+  }, [safeInitialVariables]);
 
   useEffect(() => {
-    setSystemVariables(initialSystemVariables);
-  }, [initialSystemVariables]);
+    setSystemVariables(safeInitialSystemVariables);
+  }, [safeInitialSystemVariables]);
 
   const [selectedOption, setSelectedOption] = useState<SelectedOption>(
     SelectedOption.Empty

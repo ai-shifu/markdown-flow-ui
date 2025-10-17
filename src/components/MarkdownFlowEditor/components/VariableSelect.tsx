@@ -1,5 +1,5 @@
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, Plus, Check, X } from "lucide-react";
 import { Input } from "../../ui/input";
 import { Button } from "../../ui/button";
@@ -15,15 +15,24 @@ interface VariableSelectProps {
   onAddVariable?: (variable: Variable) => void;
 }
 
+const EMPTY_VARIABLES: Variable[] = [];
+
 const VariableSelect = ({
-  variables: initialVariables = [],
-  systemVariables = [],
+  variables: initialVariables,
+  systemVariables: initialSystemVariables,
   selectedName,
   onSelect,
   onAddVariable,
 }: VariableSelectProps) => {
   const { t } = useTranslation();
-  const [variables, setVariables] = useState<Variable[]>(initialVariables);
+  const safeInitialVariables = initialVariables ?? EMPTY_VARIABLES;
+  const safeInitialSystemVariables = initialSystemVariables ?? EMPTY_VARIABLES;
+
+  const [variables, setVariables] = useState<Variable[]>(safeInitialVariables);
+  useEffect(() => {
+    setVariables(safeInitialVariables);
+  }, [safeInitialVariables]);
+  const systemVariables = safeInitialSystemVariables;
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newVariableName, setNewVariableName] = useState("");
@@ -37,8 +46,14 @@ const VariableSelect = ({
     return nameMatch || labelMatch;
   };
 
-  const filteredSystemVariables = systemVariables.filter(filterPredicate);
-  const filteredCustomVariables = variables.filter(filterPredicate);
+  const filteredSystemVariables = useMemo(
+    () => systemVariables.filter(filterPredicate),
+    [systemVariables, normalizedSearch]
+  );
+  const filteredCustomVariables = useMemo(
+    () => variables.filter(filterPredicate),
+    [variables, normalizedSearch]
+  );
   const hasAnyResult =
     filteredSystemVariables.length > 0 || filteredCustomVariables.length > 0;
 

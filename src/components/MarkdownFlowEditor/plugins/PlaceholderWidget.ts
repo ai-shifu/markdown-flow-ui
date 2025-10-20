@@ -1,8 +1,68 @@
 import { EditorView, Decoration, WidgetType } from "@codemirror/view";
-import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-import { Image as ImageIcon, SquarePlay } from "lucide-react";
 import { SelectedOption } from "../types";
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+const createSvgElement = (tag: string) => document.createElementNS(SVG_NS, tag);
+// TODO: if use renderToStaticMarkup & createElement, it will cause react & react-dom version mismatch
+// so we use lucide-react to build the icon
+// lucide-react image icon
+const buildImageIcon = () => {
+  const svg = createSvgElement("svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("width", "14");
+  svg.setAttribute("height", "14");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("stroke", "currentColor");
+  svg.setAttribute("stroke-width", "1.5");
+  svg.setAttribute("stroke-linecap", "round");
+  svg.setAttribute("stroke-linejoin", "round");
+
+  const rect = createSvgElement("rect");
+  rect.setAttribute("width", "18");
+  rect.setAttribute("height", "18");
+  rect.setAttribute("x", "3");
+  rect.setAttribute("y", "3");
+  rect.setAttribute("rx", "2");
+  rect.setAttribute("ry", "2");
+
+  const circle = createSvgElement("circle");
+  circle.setAttribute("cx", "9");
+  circle.setAttribute("cy", "9");
+  circle.setAttribute("r", "2");
+
+  const path = createSvgElement("path");
+  path.setAttribute("d", "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21");
+
+  svg.append(rect, circle, path);
+  return svg;
+};
+
+// lucide-react image icon
+const buildVideoIcon = () => {
+  const svg = createSvgElement("svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("width", "14");
+  svg.setAttribute("height", "14");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("stroke", "currentColor");
+  svg.setAttribute("stroke-width", "1.5");
+  svg.setAttribute("stroke-linecap", "round");
+  svg.setAttribute("stroke-linejoin", "round");
+
+  const rect = createSvgElement("rect");
+  rect.setAttribute("width", "18");
+  rect.setAttribute("height", "18");
+  rect.setAttribute("x", "3");
+  rect.setAttribute("y", "3");
+  rect.setAttribute("rx", "2");
+
+  const path = createSvgElement("path");
+  path.setAttribute("d", "m9 8 6 4-6 4Z");
+
+  svg.append(rect, path);
+  return svg;
+};
 
 class PlaceholderWidget extends WidgetType {
   constructor(
@@ -83,16 +143,9 @@ class PlaceholderWidget extends WidgetType {
       const iconWrapper = document.createElement("span");
       iconWrapper.className = "tag-placeholder-icon";
 
-      const iconMarkup =
-        this.dataset.tag === "image"
-          ? renderToStaticMarkup(
-              createElement(ImageIcon, { size: 14, strokeWidth: 1.5 })
-            )
-          : renderToStaticMarkup(
-              createElement(SquarePlay, { size: 14, strokeWidth: 1.5 })
-            );
-
-      iconWrapper.innerHTML = iconMarkup;
+      const icon =
+        this.dataset.tag === "image" ? buildImageIcon() : buildVideoIcon();
+      iconWrapper.appendChild(icon);
       container.appendChild(iconWrapper);
     }
     container.appendChild(span);

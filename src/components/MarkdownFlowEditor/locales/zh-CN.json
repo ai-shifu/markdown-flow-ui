@@ -1,7 +1,7 @@
 {
   "placeholder": "输入'/'快速插入内容",
-  "placeholderCodeEdit": "默认输入 AI 提示词",
-  "placeholderQuickEdit": "默认输入 AI 提示词，输入 / 唤起更多",
+  "placeholderCodeEdit": "请输入你的内容",
+  "placeholderQuickEdit": "请输入你的内容，输入 / 唤起更多",
   "dialogTitle": "设置",
   "dialogTitleImage": "添加图片",
   "dialogTitleVideo": "添加视频",

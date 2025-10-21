@@ -1,7 +1,7 @@
 {
   "placeholder": "Type '/' to insert content",
-  "placeholderCodeEdit": "Default AI prompt input",
-  "placeholderQuickEdit": "Default AI prompt input, type '/' for more",
+  "placeholderCodeEdit": "Please enter your content",
+  "placeholderQuickEdit": "Please enter your content, type '/' for more",
   "dialogTitle": "Settings",
   "dialogTitleImage": "Add Image",
   "dialogTitleVideo": "Add Video",

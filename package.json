@@ -144,5 +144,5 @@
     "test": "echo \"No tests specified\" && exit 0"
   },
   "types": "dist/index.d.ts",
-  "version": "0.1.17-beta.20"
+  "version": "0.1.18"
 }

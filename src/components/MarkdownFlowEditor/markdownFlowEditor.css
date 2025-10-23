@@ -1,23 +1,131 @@
 .tag-image,
 .tag-video {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   cursor: pointer;
-  border-radius: 3px;
+  color: #0e46fb;
+  font-family: "PingFang SC";
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 20px;
+}
+.tag-image,
+.tag-video,
+.tag-variable {
+  &:hover {
+    background: #d9d9d9;
+    border-radius: 2px;
+  }
+}
+.tag-placeholder-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tag-placeholder-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tag-fixed-text,
+.tag-fixed-text-placeholder {
+  display: inline-block;
+  background-color: #d7d7d7;
+  border-radius: 6px;
   padding: 0 6px;
-  background-color: #9090f854;
+  margin: 0;
+  margin-left: 4px;
+  line-height: 1.6;
+  cursor: text;
+  position: relative;
 }
-.tag-image:hover,
-.tag-video:hover {
-  border: 1px solid #ddd;
+
+.tag-fixed-text {
+  color: inherit;
 }
-.tag-image {
-  background-color: #c6e9bb70;
+
+.tag-fixed-text-placeholder {
+  color: var(--base-muted-foreground, #737373);
+  font-size: 12px;
 }
-.tag-video {
-  background-color: #0d71f138;
+
+.tag-fixed-text-placeholder .tag-fixed-text-inner {
+  color: inherit;
+}
+
+.tag-fixed-text-tag {
+  display: inline-block;
+  width: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tag-fixed-text:hover::after,
+.tag-fixed-text-placeholder:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.tag-fixed-text:hover::before,
+.tag-fixed-text-placeholder:hover::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  border-width: 4px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.75) transparent transparent transparent;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.tag-divider {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 6px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tag-divider img {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.tag-divider-line {
+  flex: 1;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.25);
 }
 
 .tag-icon {
   margin-left: 10px;
+}
+
+.tag-variable {
+  color: #0e46fb;
+  cursor: pointer;
+  &:hover {
+    color: hsl(226, 97%, 40%);
+  }
 }
 
 /* label */
@@ -39,4 +147,57 @@
   background-color: #f9fafb;
   cursor: pointer;
   width: 140px;
+}
+
+.cm-activeLine .cm-line {
+  background-color: transparent;
+}
+
+.cm-editor:focus {
+  outline: none;
+}
+
+.markdown-flow-editor {
+  color: #0a0a0a;
+  font-family: "PingFang SC";
+  font-size: var(--text-sm-font-size, 14px);
+  font-style: normal;
+  font-weight: 400;
+  line-height: var(--text-sm-line-height, 20px); /* 142.857% */
+  border-radius: var(--border-radius-rounded-lg, 10px);
+  border: var(--border-width-border, 1px) solid var(--base-border, #e5e5e5);
+  background: var(--base-card, #fff);
+  padding: 32px 44px;
+  /* shadow/xs */
+  box-shadow: var(--shadow-xs-offset-x, 0) var(--shadow-xs-offset-y, 1px)
+    var(--shadow-xs-blur-radius, 2px) var(--shadow-xs-spread-radius, 0)
+    var(--shadow-xs-color, rgba(0, 0, 0, 0.05));
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+}
+
+.cm-line {
+  color: #0a0a0a;
+  font-family: "PingFang SC";
+  font-size: var(--text-sm-font-size, 14px);
+  font-style: normal;
+  font-weight: 400;
+}
+.cm-editor.cm-focused {
+  outline: none;
+}
+.cm-activeLine {
+  background-color: transparent !important;
+}
+
+.c6,
+.ͼ1b,
+.c1c,
+.ͼ6,
+.ͼ7,
+.ͼ1c,
+.c7 {
+  text-decoration: auto;
+  font-weight: normal;
 }

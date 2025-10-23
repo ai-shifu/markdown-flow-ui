@@ -22,7 +22,7 @@ const CustomDialog = forwardRef<HTMLDivElement, CustomDialogAllProps>(
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen} modal>
         <DialogContent
           ref={ref}
-          className={cn("min-w-[400px]", className)}
+          className={cn("min-w-[300px]", className)}
           onPointerDownOutside={(e) => {
             e.preventDefault();
           }}
@@ -33,7 +33,7 @@ const CustomDialog = forwardRef<HTMLDivElement, CustomDialogAllProps>(
           <DialogTitle className="font-medium mb-4">
             {labels?.title ?? "Settings"}
           </DialogTitle>
-          <div className="space-y-4">{children}</div>
+          <div>{children}</div>
         </DialogContent>
       </Dialog>
     );

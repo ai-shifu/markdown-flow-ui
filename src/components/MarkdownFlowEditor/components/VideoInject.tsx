@@ -182,10 +182,6 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
         </label>
         <Input
           value={title}
-          aria-placeholder={t(
-            "videoTitlePlaceholder",
-            "Please enter video title"
-          )}
           onChange={(e) => setTitle(e.target.value.slice(0, 100))}
           placeholder={t("videoTitlePlaceholder", "Video Title")}
           maxLength={100}

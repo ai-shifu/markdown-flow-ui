@@ -128,7 +128,7 @@
   "scripts": {
     "//build": "next build",
     "build:css": "pnpm exec tailwindcss --input src/styles/library.css --output dist/markdown-flow-ui-lib.css --config tailwind.build.config.ts --minify",
-    "build": "pnpm run build:css && vite build",
+    "build": "vite build && pnpm run build:css",
     "build-storybook": "storybook build",
     "commit": "cz",
     "dev": "next dev --turbopack",
@@ -145,5 +145,5 @@
     "test": "echo \"No tests specified\" && exit 0"
   },
   "types": "dist/index.d.ts",
-  "version": "0.1.20-beta.1"
+  "version": "0.1.20-beta.2"
 }

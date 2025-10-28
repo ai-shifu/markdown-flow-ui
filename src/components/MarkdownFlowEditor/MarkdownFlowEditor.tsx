@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { autocompletion } from "@codemirror/autocomplete";
 import { EditorView } from "@codemirror/view";
@@ -448,30 +448,38 @@ const Editor: React.FC<EditorProps> = ({
     };
   }, []);
 
+  const editorExtensions = useMemo(() => {
+    const extensions = [
+      EditorView.lineWrapping,
+      markdown(),
+      syntaxHighlighting(defaultHighlightStyle),
+      slashCommandsExtension(),
+    ];
+
+    if (editMode === EditMode.QuickEdit) {
+      extensions.push(
+        ImgPlaceholder,
+        VideoPlaceholder,
+        VariablePlaceholder
+        // fixedTextPlaceholderExtension,
+        // DividerPlaceholder,
+      );
+    }
+
+    extensions.push(
+      EditorView.updateListener.of((update) => {
+        handleEditorUpdate(update.view);
+      })
+    );
+
+    return extensions;
+  }, [editMode, slashCommandsExtension, handleEditorUpdate]);
+
   return (
     <div className="markdown-flow-editor">
       <EditorContext.Provider value={editorContextValue}>
         <CodeMirror
-          extensions={[
-            EditorView.lineWrapping,
-            markdown(),
-            syntaxHighlighting(defaultHighlightStyle),
-            ...[
-              editMode === EditMode.QuickEdit
-                ? [
-                    slashCommandsExtension(),
-                    ImgPlaceholder,
-                    VideoPlaceholder,
-                    VariablePlaceholder,
-                    // fixedTextPlaceholderExtension,
-                    // DividerPlaceholder,
-                    EditorView.updateListener.of((update) => {
-                      handleEditorUpdate(update.view);
-                    }),
-                  ]
-                : [],
-            ],
-          ]}
+          extensions={editorExtensions}
           basicSetup={{
             lineNumbers: false,
             syntaxHighlighting: true,

@@ -79,6 +79,7 @@ const VariableSelect = ({
       setIsAddingNew(false);
       setSearchQuery("");
       setDuplicateError(false);
+      onSelect?.(newVariable);
     }
   };
 

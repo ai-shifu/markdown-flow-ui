@@ -31,6 +31,7 @@
     "next": "15.3.5",
     "react": "19.0.0",
     "react-dom": "19.0.0",
+    "react-i18next": "^15.5.1",
     "react-markdown": "^10.1.0",
     "rehype-highlight": "^7.0.2",
     "rehype-katex": "^7.0.1",
@@ -56,6 +57,7 @@
     "@storybook/addon-docs": "^9.0.16",
     "@storybook/addon-vitest": "^9.0.16",
     "@storybook/nextjs-vite": "^9.0.16",
+    "@tailwindcss/cli": "^4.1.11",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -126,7 +128,8 @@
   },
   "scripts": {
     "//build": "next build",
-    "build": "vite build",
+    "build:css": "pnpm exec tailwindcss --input src/styles/library.css --output dist/markdown-flow-ui-lib.css --config tailwind.build.config.ts --minify",
+    "build": "vite build && pnpm run build:css",
     "build-storybook": "storybook build",
     "commit": "cz",
     "dev": "next dev --turbopack",
@@ -143,5 +146,5 @@
     "test": "echo \"No tests specified\" && exit 0"
   },
   "types": "dist/index.d.ts",
-  "version": "0.1.20"
+  "version": "0.1.21"
 }

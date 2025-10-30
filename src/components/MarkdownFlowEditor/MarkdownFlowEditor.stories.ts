@@ -216,8 +216,7 @@ export const MarkdownFlowEditorWithQuickEditStory: Story = {
     variables: [{ name: "sys_user_language" }, { name: "plan" }],
   },
 };
-const token =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZDY3YTBlOGIyMGVkNGQ5MjlkMjA3Y2MxMjdhNGQ3M2EiLCJ0aW1lX3N0YW1wIjoxNzYxNTQ2MTI4LjQ0Mjc5NH0.s4mhPtOWXWw6RhjWlxtLluQOfK75__MbOZOM8-iOB7M";
+const token = "your-token-here";
 
 const mockUploadProps: UploadProps = {
   action: "https://web01.dev.pillowai.cn/api/shifu/upfile",

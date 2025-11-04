@@ -170,7 +170,7 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
             type="button"
             onClick={handleRun}
           >
-            {t("videoRunButton", "Run")}
+            {t("videoRunButton", "Preview")}
           </Button>
         </div>
         {!!errorTips && <p className="text-xs text-destructive">{errorTips}</p>}

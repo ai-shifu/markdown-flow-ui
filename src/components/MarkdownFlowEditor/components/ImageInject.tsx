@@ -339,7 +339,7 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
               type="button"
               onClick={handleRun}
             >
-              {t("imageRunButton", "Run")}
+              {t("imageRunButton", "Preview")}
             </Button>
           </div>
         </div>

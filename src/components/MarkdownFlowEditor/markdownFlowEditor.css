@@ -178,11 +178,11 @@
 }
 
 .cm-line {
-  color: #0a0a0a;
+  /* color: #0a0a0a; */
   font-family: "PingFang SC";
   font-size: var(--text-sm-font-size, 14px);
-  font-style: normal;
-  font-weight: 400;
+  /* font-style: normal; */
+  /* font-weight: 400; */
 }
 .cm-editor.cm-focused {
   outline: none;
@@ -199,5 +199,5 @@
 .ͼ1c,
 .c7 {
   text-decoration: auto;
-  font-weight: normal;
+  /* font-weight: normal; */
 }

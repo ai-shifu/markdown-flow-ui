@@ -73,7 +73,7 @@ const VariableSelect = ({
       const newVariable: Variable = {
         name: trimmed,
       };
-      setVariables((prev) => [...prev, newVariable]);
+      setVariables((prev) => [newVariable, ...prev]);
       onAddVariable?.({ name: trimmed });
       setNewVariableName("");
       setIsAddingNew(false);

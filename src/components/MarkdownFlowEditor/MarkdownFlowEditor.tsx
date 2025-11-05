@@ -45,6 +45,25 @@ const resources = {
   "zh-CN": { translation: zhCN },
 };
 
+const extractVariableNames = (content: string) => {
+  const matches: string[] = [];
+  if (!content) {
+    return matches;
+  }
+
+  const regexp = /\{\{([^}]+)\}\}/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = regexp.exec(content)) !== null) {
+    const name = match[1]?.trim();
+    if (name) {
+      matches.push(name);
+    }
+  }
+
+  return matches;
+};
+
 if (!i18next.isInitialized) {
   i18next.use(initReactI18next).init({
     resources,
@@ -145,6 +164,56 @@ const Editor: React.FC<EditorProps> = ({
     popoverPosition,
     setPopoverPosition,
   };
+
+  const addVariablesFromContent = useCallback(
+    (text: string) => {
+      if (editMode !== EditMode.QuickEdit || !text) {
+        return;
+      }
+
+      const names = extractVariableNames(text);
+      if (!names.length) {
+        return;
+      }
+
+      const systemNameSet = new Set(
+        systemVariables.map((variable) => variable.name.toLowerCase())
+      );
+
+      setVariables((prev) => {
+        const existingNames = new Set(
+          prev.map((variable) => variable.name.toLowerCase())
+        );
+        const addedNames = new Set<string>();
+        const newVariables: Variable[] = [];
+
+        names.forEach((rawName) => {
+          const normalized = rawName.toLowerCase();
+          if (
+            !rawName ||
+            systemNameSet.has(normalized) ||
+            existingNames.has(normalized) ||
+            addedNames.has(normalized)
+          ) {
+            return;
+          }
+          newVariables.push({ name: rawName });
+          addedNames.add(normalized);
+        });
+
+        if (!newVariables.length) {
+          return prev;
+        }
+
+        return [...newVariables, ...prev];
+      });
+    },
+    [editMode, systemVariables]
+  );
+
+  useEffect(() => {
+    addVariablesFromContent(content);
+  }, [content, addVariablesFromContent]);
 
   // const insertFixedText = useCallback(() => {
   //   if (!editorViewRef.current) return;
@@ -475,6 +544,14 @@ const Editor: React.FC<EditorProps> = ({
     return extensions;
   }, [editMode, slashCommandsExtension, handleEditorUpdate]);
 
+  const handleContentChange = useCallback(
+    (value: string) => {
+      addVariablesFromContent(value);
+      onChange?.(value);
+    },
+    [addVariablesFromContent, onChange]
+  );
+
   return (
     <div className="markdown-flow-editor">
       <EditorContext.Provider value={editorContextValue}>
@@ -492,9 +569,7 @@ const Editor: React.FC<EditorProps> = ({
           value={content}
           theme="light"
           minHeight="2rem"
-          onChange={(value: string) => {
-            onChange?.(value);
-          }}
+          onChange={handleContentChange}
           onBlur={onBlur}
         />
         <CustomDialog
@@ -531,7 +606,16 @@ const Editor: React.FC<EditorProps> = ({
             selectedName={selectContentInfo?.value?.variableName}
             onSelect={handleSelectVariable}
             onAddVariable={(variable) => {
-              setVariables((prev) => [...prev, variable]);
+              setVariables((prev) => {
+                const normalized = variable.name.toLowerCase();
+                const exists = prev.some(
+                  (item) => item.name.toLowerCase() === normalized
+                );
+                if (exists) {
+                  return prev;
+                }
+                return [variable, ...prev];
+              });
             }}
           />
         </CustomPopover>

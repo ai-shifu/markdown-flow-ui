@@ -8,6 +8,17 @@ import json from "highlight.js/lib/languages/json";
 import bash from "highlight.js/lib/languages/bash";
 import sql from "highlight.js/lib/languages/sql";
 import markdown from "highlight.js/lib/languages/markdown";
+import c from "highlight.js/lib/languages/c";
+import cpp from "highlight.js/lib/languages/cpp";
+import go from "highlight.js/lib/languages/go";
+import plaintext from "highlight.js/lib/languages/plaintext";
+import rust from "highlight.js/lib/languages/rust";
+import shell from "highlight.js/lib/languages/shell";
+import scss from "highlight.js/lib/languages/scss";
+import xml from "highlight.js/lib/languages/xml";
+import yaml from "highlight.js/lib/languages/yaml";
+import vhdl from "highlight.js/lib/languages/vhdl";
+import latex from "highlight.js/lib/languages/latex";
 
 const highlightLanguages = {
   javascript,
@@ -25,6 +36,17 @@ const highlightLanguages = {
   sql,
   markdown,
   md: markdown,
+  c,
+  cpp,
+  go,
+  plaintext,
+  rust,
+  shell,
+  scss,
+  xml,
+  yaml,
+  vhdl,
+  latex,
 };
 
 const subsetLanguages = [
@@ -38,6 +60,17 @@ const subsetLanguages = [
   "bash",
   "sql",
   "markdown",
+  "c",
+  "cpp",
+  "go",
+  "plaintext",
+  "rust",
+  "shell",
+  "scss",
+  "xml",
+  "yaml",
+  "vhdl",
+  "latex",
 ];
 
 export { highlightLanguages, subsetLanguages };

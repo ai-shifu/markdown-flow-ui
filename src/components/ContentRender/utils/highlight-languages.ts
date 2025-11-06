@@ -19,6 +19,8 @@ import xml from "highlight.js/lib/languages/xml";
 import yaml from "highlight.js/lib/languages/yaml";
 import vhdl from "highlight.js/lib/languages/vhdl";
 import latex from "highlight.js/lib/languages/latex";
+import lua from "highlight.js/lib/languages/lua";
+import php from "highlight.js/lib/languages/php";
 
 const highlightLanguages = {
   javascript,
@@ -47,6 +49,8 @@ const highlightLanguages = {
   yaml,
   vhdl,
   latex,
+  php,
+  lua,
 };
 
 const subsetLanguages = [
@@ -71,6 +75,8 @@ const subsetLanguages = [
   "yaml",
   "vhdl",
   "latex",
+  "lua",
+  "php",
 ];
 
 export { highlightLanguages, subsetLanguages };

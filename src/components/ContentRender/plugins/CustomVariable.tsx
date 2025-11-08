@@ -100,7 +100,7 @@ const CustomButtonInputVariable = ({
     <span className="custom-variable-container inline-flex items-center gap-2 flex-wrap">
       {isMultiSelect ? (
         // Multi-select mode: render checkboxes
-        <span className="inline-flex flex-col gap-2 w-full">
+        <span className="multi-select-container inline-flex flex-col gap-2 w-full">
           <span className="flex flex-wrap gap-2">
             {node.properties?.buttonTexts?.map((text, index) => {
               const value = node.properties?.buttonValues?.[index];

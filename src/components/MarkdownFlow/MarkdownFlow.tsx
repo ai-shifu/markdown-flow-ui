@@ -33,7 +33,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   typingSpeed: typingSpeedProp,
   enableTypewriter = false,
   onBlockComplete,
-  defaultInputMaxLength = 140, // 默认最大输入长度为140个字符
+  defaultInputMaxLength = 140, // Default max input length is 140 characters
   confirmButtonText,
 }) => {
   return (

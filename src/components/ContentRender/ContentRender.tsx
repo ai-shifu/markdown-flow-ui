@@ -74,7 +74,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   enableTypewriter = false,
   defaultButtonText,
   defaultInputText,
-  defaultInputMaxLength = 140, // 默认最大输入长度为140个字符
+  defaultInputMaxLength = 140, // Default max input length is 140 characters
   defaultSelectedValues,
   readonly = false,
   onTypeFinished,

@@ -5,6 +5,7 @@ import { Input } from "../../ui/input";
 import { Button } from "../../ui/button";
 import { cn } from "../../../lib/utils";
 import { Variable } from "../types";
+import { isValidVariableName } from "../utils";
 import { useTranslation } from "react-i18next";
 
 interface VariableSelectProps {
@@ -37,6 +38,11 @@ const VariableSelect = ({
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newVariableName, setNewVariableName] = useState("");
   const [duplicateError, setDuplicateError] = useState(false);
+  const [invalidNameError, setInvalidNameError] = useState(false);
+  const resetErrors = () => {
+    setDuplicateError(false);
+    setInvalidNameError(false);
+  };
   const normalizedSearch = searchQuery.toLowerCase();
   const filterPredicate = (variable: Variable) => {
     const nameMatch = variable.name.toLowerCase().includes(normalizedSearch);
@@ -58,41 +64,46 @@ const VariableSelect = ({
     filteredSystemVariables.length > 0 || filteredCustomVariables.length > 0;
 
   const handleAddVariable = () => {
-    if (newVariableName.trim()) {
-      const trimmed = newVariableName.trim();
-      const lowerName = trimmed.toLowerCase();
-      const isDuplicate = [...variables, ...systemVariables].some(
-        (v) => v.name.toLowerCase() === lowerName
-      );
-
-      if (isDuplicate) {
-        setDuplicateError(true);
-        return;
-      }
-
-      const newVariable: Variable = {
-        name: trimmed,
-      };
-      setVariables((prev) => [newVariable, ...prev]);
-      onAddVariable?.({ name: trimmed });
-      setNewVariableName("");
-      setIsAddingNew(false);
-      setSearchQuery("");
+    const inputValue = newVariableName;
+    if (!inputValue || !isValidVariableName(inputValue)) {
+      setInvalidNameError(true);
       setDuplicateError(false);
-      onSelect?.(newVariable);
+      return;
     }
+
+    const lowerName = inputValue.toLowerCase();
+    const isDuplicate = [...variables, ...systemVariables].some(
+      (v) => v.name.toLowerCase() === lowerName
+    );
+
+    if (isDuplicate) {
+      setDuplicateError(true);
+      setInvalidNameError(false);
+      return;
+    }
+
+    const newVariable: Variable = {
+      name: inputValue,
+    };
+    setVariables((prev) => [newVariable, ...prev]);
+    onAddVariable?.({ name: inputValue });
+    setNewVariableName("");
+    setIsAddingNew(false);
+    setSearchQuery("");
+    resetErrors();
+    onSelect?.(newVariable);
   };
 
   const handleCancelAdd = () => {
     setIsAddingNew(false);
     setNewVariableName("");
-    setDuplicateError(false);
+    resetErrors();
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewVariableName(e.target.value);
-    if (duplicateError) {
-      setDuplicateError(false);
+    if (duplicateError || invalidNameError) {
+      resetErrors();
     }
   };
 
@@ -226,9 +237,14 @@ const VariableSelect = ({
                 <Check className="h-4 w-4" />
               </Button>
             </div>
-            {duplicateError && (
+            {(duplicateError || invalidNameError) && (
               <p className="mt-1 px-3 text-xs text-red-500">
-                {t("variableAlreadyExists", "Variable already exists")}
+                {duplicateError
+                  ? t("variableAlreadyExists", "Variable already exists")
+                  : t(
+                      "variableNameInvalid",
+                      "Use letters, numbers, or underscores without spaces"
+                    )}
               </p>
             )}
           </div>

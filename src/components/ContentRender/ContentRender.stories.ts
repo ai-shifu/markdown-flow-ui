@@ -26,15 +26,6 @@ type Story = StoryObj<typeof meta>;
 // ==============================================================================
 
 const COMPREHENSIVE_MARKDOWN_SYNTAX = `# Complete Markdown Syntax Test
-\`\`\`c
-int maze[5][5] = {
-    {1, 1, 1, 1, 1},
-    {1, 2, 0, 0, 1},
-    {1, 1, 1, 0, 1},
-    {1, 0, 0, 0, 0},
-    {1, 1, 1, 1, 1}
-};
-\`\`\`
 ## Heading Levels
 ### H3 Heading
 #### H4 Heading
@@ -93,6 +84,16 @@ function hello() {
 # Python code block
 def hello():
     print("Hello World!")
+\`\`\`
+
+\`\`\`c
+int maze[5][5] = {
+    {1, 1, 1, 1, 1},
+    {1, 2, 0, 0, 1},
+    {1, 1, 1, 0, 1},
+    {1, 0, 0, 0, 0},
+    {1, 1, 1, 1, 1}
+};
 \`\`\`
 
 Inline code: \`\`\` console.log("Hello World!"); \`\`\`
@@ -470,6 +471,9 @@ export const MermaidErrorHandlingTest: Story = {
 graph TD
     A[Start] --> B[End]
 \`\`\`
+
+\`\`\`mermaid\ngraph TD\n    A[大语言模型] --> B(对话助手)\n    A --> C(AI 写作)\n    A --> D(智能办公)\n    A --> E(编程辅助)\n\`\`\`\n
+
 
 ## Invalid Mermaid Chart 1 - Missing Arrow
 \`\`\`mermaid

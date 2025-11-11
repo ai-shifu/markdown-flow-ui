@@ -46,6 +46,7 @@
   "variableEmpty": "暂无变量",
   "variableNamePlaceholder": "变量名称",
   "variableAlreadyExists": "变量已存在",
+  "variableNameInvalid": "仅可包含字母、数字或下划线，且不能有空格",
   "variableSectionSystem": "系统变量",
   "variableSectionCustom": "自定义变量",
   "variableAddNew": "添加新变量"

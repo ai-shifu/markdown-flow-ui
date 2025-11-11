@@ -255,7 +255,38 @@ export const MarkdownFlowEditorWithDivider: Story = {
 
 export const MarkdownFlowEditorWithVariables: Story = {
   args: {
-    content: `Here is a variable: {{sys_user_email}}.`,
+    content: `Here is a variable: {{sys_user_email}}.
+
+    有效的变量名称：
+    {{name}} ✓ 简单字母
+    {{userName}} ✓ 驼峰命名法
+    {{user_name}} ✓ 下划线命名法
+    {{UserName}} ✓ 帕斯卡命名法
+    {{user123}} ✓ 包含数字
+    {{_private}} ✓ 以下划线开头
+    {{CONSTANT}} ✓ 全大写
+    {{a}} ✓ 单个字符
+    {{123user}} ✓ 以数字开头
+    {{用户名}} ✓ Unicode 字符（中文）
+    {{ユーザー}} ✓ Unicode 字符（日文）
+    {{пользователь}} ✓ Unicode 字符（俄文）
+    {{utilisateur}} ✓ Unicode 字符（法文）
+
+    无效的变量名称：
+    {{user}name}} ✗ 包含 } 字符
+    {{user name}} ✗ 名称内包含空格
+    {{user-name}} ✗ 包含连字符
+    {{user.name}} ✗ 包含点号
+    {{user@email}} ✗ 包含特殊字符
+    {{🚀rocket}} ✗ 包含表情符号
+    {{name[0]}} ✗ 包含方括号
+    {{user+id}} ✗ 包含加号
+    {{}} ✗ 空变量
+    {{   }} ✗ 只有空格
+    {{ name }} ✗ 大括号与名称之间有空格（不会被识别为变量）
+    {{ name}} ✗ 名称前有空格（不会被识别为变量）
+    {{name }} ✗ 名称后有空格（不会被识别为变量）
+    `,
     editMode: EditMode.QuickEdit,
     locale: "zh-CN",
     variables: [{ name: "sys_user_phone" }, { name: "sys_user_email" }],

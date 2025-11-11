@@ -15,6 +15,7 @@ interface CustomVariableNode {
     buttonValues?: string[];
     placeholder?: string;
     isMultiSelect?: boolean;
+    maxLength?: number;
   };
 }
 
@@ -24,6 +25,7 @@ interface CustomVariableProps {
   defaultButtonText?: string;
   defaultInputText?: string;
   defaultSelectedValues?: string[];
+  defaultInputMaxLength?: number;
   readonly?: boolean;
   onSend?: (content: OnSendContentParams) => void;
   // Multi-select confirm button text (i18n support)
@@ -41,6 +43,7 @@ const CustomButtonInputVariable = ({
   defaultButtonText,
   defaultInputText,
   defaultSelectedValues,
+  defaultInputMaxLength,
   onSend,
   confirmButtonText = "Confirm", // Default to English, can be overridden
 }: CustomVariableProps) => {
@@ -78,7 +81,15 @@ const CustomButtonInputVariable = ({
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
+    const value = e.target.value;
+    const maxLength = node.properties?.maxLength || defaultInputMaxLength;
+
+    if (maxLength && value.length > maxLength) {
+      // Truncate to maxLength if exceeded
+      setInputValue(value.substring(0, maxLength));
+    } else {
+      setInputValue(value);
+    }
   };
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -129,6 +140,7 @@ const CustomButtonInputVariable = ({
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
+                maxLength={node.properties?.maxLength || defaultInputMaxLength}
                 className="flex-1 h-8 text-sm border-0 shadow-none outline-none ring-0"
                 title={node.properties.placeholder}
               />
@@ -188,6 +200,7 @@ const CustomButtonInputVariable = ({
             value={inputValue}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
+            maxLength={node.properties?.maxLength || defaultInputMaxLength}
             className="w-50 h-8 text-sm border-0 shadow-none outline-none ring-0"
             style={{
               border: "none",

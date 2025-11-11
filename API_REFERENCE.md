@@ -14,12 +14,14 @@ interface MarkdownFlowProps {
   typingSpeed?: number;
   enableTypewriter?: boolean;
   onBlockComplete?: (blockIndex: number) => void;
+  defaultInputMaxLength?: number; // Default max length for input fields (override with node-specific maxLength), defaults to 140
 }
 
 type ContentItem = {
   content: string;
   isFinished?: boolean;
   defaultInputText?: string;
+  defaultInputTextMaxLength?: number; // Max length for this specific content block (overrides defaultInputMaxLength)
   defaultButtonText?: string;
   readonly?: boolean;
   customRenderBar?: CustomRenderBarProps;
@@ -40,6 +42,7 @@ type OnSendContentParams = {
 - `onSend` - Callback for user interactions
 - `onBlockComplete` - Called when a block finishes typing
 - `customRenderBar` - Custom component for additional UI
+- `defaultInputMaxLength` - Default maximum length for input fields (override with node-specific maxLength), defaults to 140
 
 **Example:**
 
@@ -106,6 +109,7 @@ interface ContentRenderProps {
   enableTypewriter?: boolean;
   defaultButtonText?: string;
   defaultInputText?: string;
+  defaultInputMaxLength?: number; // Default max length for input fields (override with node-specific maxLength), defaults to 140
   readonly?: boolean;
   onTypeFinished?: () => void;
 }
@@ -118,6 +122,7 @@ interface ContentRenderProps {
 - `enableTypewriter` - Enable animation (default: false)
 - `readonly` - Make interactive elements read-only
 - `onTypeFinished` - Called when typing completes
+- `defaultInputMaxLength` - Default maximum length for input fields (override with node-specific maxLength), defaults to 140
 
 **Supported Markdown:**
 
@@ -151,6 +156,44 @@ graph LR
     B --> C
 ```
 ````
+
+**Input Length Limitation:**
+
+When using remark-flow syntax, length limits are controlled through the component properties. By default, all input fields are limited to 140 characters unless overridden. To limit input length for specific content blocks:
+
+1. Use `defaultInputMaxLength` prop on MarkdownFlow or ContentRender components for global limits (default: 140)
+2. Use `defaultInputTextMaxLength` in individual content items for block-specific limits
+3. The node-specific maxLength (if supported by remark-flow) takes highest priority
+4. Then comes content-item specific limit
+5. Finally, the global default
+
+Examples:
+
+```tsx
+<MarkdownFlow
+  defaultInputMaxLength={100} // Global default (overrides the 140 default)
+  initialContentList={[
+    {
+      content: "Limited to 50 chars: ?[%{{input1}} Enter text...]",
+      defaultInputTextMaxLength: 50, // Override global default
+    },
+    {
+      content: "Uses global default: ?[%{{input2}} Enter more text...]",
+      // Will use default of 100 chars (not the 140 default),
+    },
+  ]}
+/>
+
+// With default 140 character limit:
+<MarkdownFlow
+  initialContentList={[
+    {
+      content: "Uses default 140 char limit: ?[%{{input1}} Enter text...]",
+      // Will use default of 140 chars,
+    },
+  ]}
+/>
+```
 
 ## Hooks
 

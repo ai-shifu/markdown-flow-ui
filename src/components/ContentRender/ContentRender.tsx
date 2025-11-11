@@ -49,6 +49,7 @@ export interface ContentRenderProps {
   defaultButtonText?: string;
   defaultInputText?: string; // Text input by user
   defaultSelectedValues?: string[]; // Default selected values for multi-select
+  defaultInputMaxLength?: number; // Default max length for input fields (override with node-specific maxLength), defaults to 140
   readonly?: boolean;
   onTypeFinished?: () => void;
   // Multi-select confirm button text (i18n support)
@@ -73,6 +74,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   enableTypewriter = false,
   defaultButtonText,
   defaultInputText,
+  defaultInputMaxLength = 140, // 默认最大输入长度为140个字符
   defaultSelectedValues,
   readonly = false,
   onTypeFinished,
@@ -109,6 +111,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         defaultButtonText={defaultButtonText}
         defaultInputText={defaultInputText}
         defaultSelectedValues={defaultSelectedValues}
+        defaultInputMaxLength={defaultInputMaxLength}
         onSend={onSend}
         confirmButtonText={confirmButtonText}
         // tooltipMinLength={tooltipMinLength}

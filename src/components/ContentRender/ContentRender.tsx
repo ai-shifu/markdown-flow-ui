@@ -166,6 +166,11 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       }
       return <input {...props} />;
     },
+    a: ({ children, ...props }) => (
+      <a target="_blank" rel="noopener noreferrer" {...props}>
+        {children}
+      </a>
+    ),
   };
 
   const hasCompleted = useRef(false);

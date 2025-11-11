@@ -26,15 +26,6 @@ type Story = StoryObj<typeof meta>;
 // ==============================================================================
 
 const COMPREHENSIVE_MARKDOWN_SYNTAX = `# Complete Markdown Syntax Test
-\`\`\`c
-int maze[5][5] = {
-    {1, 1, 1, 1, 1},
-    {1, 2, 0, 0, 1},
-    {1, 1, 1, 0, 1},
-    {1, 0, 0, 0, 0},
-    {1, 1, 1, 1, 1}
-};
-\`\`\`
 ## Heading Levels
 ### H3 Heading
 #### H4 Heading
@@ -93,6 +84,16 @@ function hello() {
 # Python code block
 def hello():
     print("Hello World!")
+\`\`\`
+
+\`\`\`c
+int maze[5][5] = {
+    {1, 1, 1, 1, 1},
+    {1, 2, 0, 0, 1},
+    {1, 1, 1, 0, 1},
+    {1, 0, 0, 0, 0},
+    {1, 1, 1, 1, 1}
+};
 \`\`\`
 
 Inline code: \`\`\` console.log("Hello World!"); \`\`\`

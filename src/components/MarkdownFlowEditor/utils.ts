@@ -9,6 +9,31 @@ import {
   youtubeVideoUrlRegexp,
 } from "./components/VideoInject";
 
+const VARIABLE_NAME_SOURCE = "[\\p{L}\\p{N}_]+";
+const VARIABLE_NAME_REGEXP = new RegExp(`^${VARIABLE_NAME_SOURCE}$`, "u");
+const VARIABLE_EXPRESSION_PATTERN = `\\{\\{(${VARIABLE_NAME_SOURCE})\\}\\}`;
+
+const createVariableExpressionRegexp = () =>
+  new RegExp(VARIABLE_EXPRESSION_PATTERN, "gu");
+
+const isValidVariableName = (name: string) =>
+  typeof name === "string" && VARIABLE_NAME_REGEXP.test(name);
+
+const extractVariableNames = (content: string) => {
+  if (!content) {
+    return [];
+  }
+  const matches: string[] = [];
+  const regexp = createVariableExpressionRegexp();
+  let match: RegExpExecArray | null;
+
+  while ((match = regexp.exec(content)) !== null) {
+    matches.push(match[1]);
+  }
+
+  return matches;
+};
+
 const parseContentInfo = (
   type: SelectedOption,
   dataset: { title?: string; url?: string; scalePercent?: number }
@@ -137,4 +162,7 @@ export {
   parseContentInfo,
   getEmbedUrl,
   getVideoContentToInsert,
+  isValidVariableName,
+  extractVariableNames,
+  createVariableExpressionRegexp,
 };

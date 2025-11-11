@@ -28,6 +28,7 @@ import {
   createSlashCommands,
   parseContentInfo,
   getVideoContentToInsert,
+  extractVariableNames,
 } from "./utils";
 import ImgPlaceholder from "./plugins/ImgPlaceholder";
 import VideoPlaceholder from "./plugins/VideoPlaceholder";
@@ -43,25 +44,6 @@ import { UploadProps } from "./uploadTypes";
 const resources = {
   "en-US": { translation: enUS },
   "zh-CN": { translation: zhCN },
-};
-
-const extractVariableNames = (content: string) => {
-  const matches: string[] = [];
-  if (!content) {
-    return matches;
-  }
-
-  const regexp = /\{\{([^}]+)\}\}/g;
-  let match: RegExpExecArray | null;
-
-  while ((match = regexp.exec(content)) !== null) {
-    const name = match[1]?.trim();
-    if (name) {
-      matches.push(name);
-    }
-  }
-
-  return matches;
 };
 
 if (!i18next.isInitialized) {

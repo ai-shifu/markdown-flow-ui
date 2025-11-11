@@ -8,8 +8,9 @@ import {
 } from "@codemirror/view";
 import { SelectedOption } from "../types";
 import PlaceholderWidget from "./PlaceholderWidget";
+import { createVariableExpressionRegexp } from "../utils";
 
-const variableContextRegexp = /\{\{([^}]+)\}\}/gi;
+const variableContextRegexp = createVariableExpressionRegexp();
 
 const variableUrlMatcher = new MatchDecorator({
   regexp: variableContextRegexp,

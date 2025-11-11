@@ -46,6 +46,7 @@
   "variableEmpty": "No variables yet",
   "variableNamePlaceholder": "Variable name",
   "variableAlreadyExists": "Variable already exists",
+  "variableNameInvalid": "Use letters, numbers, or underscores without spaces",
   "variableSectionSystem": "System Variables",
   "variableSectionCustom": "Custom Variables",
   "variableAddNew": "Add new variable"

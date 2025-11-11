@@ -16,6 +16,9 @@ const DEFAULT_MESSAGES = {
   badge: "mermaid",
 } as const;
 
+const MERMAID_FONT_STACK =
+  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif';
+
 const MermaidChart: React.FC<MermaidChartProps> = ({ chart, messages }) => {
   const [svg, setSvg] = useState("");
   const [error, setError] = useState("");
@@ -31,12 +34,17 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart, messages }) => {
           return;
         }
 
-        // Initialize mermaid
+        // Initialize mermaid with the same font stack used in markdown content.
+        // Using a concrete stack avoids clipping caused by `inherit` resolving to
+        // Storybook's default font during off-screen rendering.
         mermaid.initialize({
           startOnLoad: false,
           theme: "default",
           securityLevel: "loose",
-          fontFamily: "inherit",
+          fontFamily: MERMAID_FONT_STACK,
+          themeVariables: {
+            fontFamily: MERMAID_FONT_STACK,
+          },
         });
 
         // use mermaid.parse to check for errors

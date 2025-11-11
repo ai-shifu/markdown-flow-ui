@@ -472,6 +472,9 @@ graph TD
     A[Start] --> B[End]
 \`\`\`
 
+\`\`\`mermaid\ngraph TD\n    A[大语言模型] --> B(对话助手)\n    A --> C(AI 写作)\n    A --> D(智能办公)\n    A --> E(编程辅助)\n\`\`\`\n
+
+
 ## Invalid Mermaid Chart 1 - Missing Arrow
 \`\`\`mermaid
 graph TD

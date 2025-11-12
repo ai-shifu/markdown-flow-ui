@@ -28,10 +28,11 @@ repos:
     hooks:
       - id: eslint
         name: ESLint
-        entry: bash -c 'npm run lint -- --fix --max-warnings 20 --file $(echo "$@" | tr " " "\n" | grep -E "\.(js|jsx|ts|tsx)$") || true' --
-        language: system
+        entry: bash -c 'npx next lint --fix --max-warnings 20 --file $(echo "$@" | tr " " "\n" | grep -E "\.(js|jsx|ts|tsx)$") || true' --
+        language: node
         files: ^src/.*\.(js|jsx|ts|tsx)$
         pass_filenames: true
+        additional_dependencies: ["eslint@^9", "next@15.3.5"]
       - id: prettier
         name: Prettier
         entry: prettier

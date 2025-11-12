@@ -8,6 +8,7 @@ export interface MarkdownFlowProps {
     content: string;
     isFinished?: boolean;
     defaultInputText?: string;
+    defaultInputTextMaxLength?: number; // Max length for this specific content block
     defaultButtonText?: string;
     defaultSelectedValues?: string[];
     readonly?: boolean;
@@ -20,6 +21,7 @@ export interface MarkdownFlowProps {
   typingSpeed?: number;
   enableTypewriter?: boolean;
   onBlockComplete?: (blockIndex: number) => void;
+  defaultInputMaxLength?: number; // Default max length for all input fields
   // Multi-select confirm button text (i18n support)
   confirmButtonText?: string;
 }
@@ -31,6 +33,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   typingSpeed: typingSpeedProp,
   enableTypewriter = false,
   onBlockComplete,
+  defaultInputMaxLength = 140, // Default max input length is 140 characters
   confirmButtonText,
 }) => {
   return (
@@ -45,6 +48,9 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             key={index}
             content={contentInfo.content}
             defaultInputText={contentInfo.defaultInputText}
+            defaultInputMaxLength={
+              contentInfo.defaultInputTextMaxLength || defaultInputMaxLength
+            }
             defaultButtonText={contentInfo.defaultButtonText}
             defaultSelectedValues={contentInfo.defaultSelectedValues}
             readonly={contentInfo.readonly}

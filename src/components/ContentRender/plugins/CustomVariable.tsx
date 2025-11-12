@@ -96,6 +96,28 @@ const CustomButtonInputVariable = ({
       inputText: inputValue,
     });
   };
+
+  const resolvedDefaultButtonText = React.useMemo(() => {
+    if (!defaultButtonText) {
+      return undefined;
+    }
+    const buttonTexts = node.properties?.buttonTexts || [];
+    const buttonValues = node.properties?.buttonValues || [];
+    const valueIndex = buttonValues.indexOf(defaultButtonText);
+    if (valueIndex > -1) {
+      return buttonTexts[valueIndex] ?? defaultButtonText;
+    }
+    const textIndex = buttonTexts.indexOf(defaultButtonText);
+    if (textIndex > -1) {
+      return buttonTexts[textIndex];
+    }
+    return undefined;
+  }, [
+    defaultButtonText,
+    node.properties?.buttonTexts,
+    node.properties?.buttonValues,
+  ]);
+
   return (
     <span className="custom-variable-container inline-flex items-center gap-2 flex-wrap">
       {isMultiSelect ? (
@@ -164,11 +186,11 @@ const CustomButtonInputVariable = ({
               className={`cursor-pointer h-8 text-sm hover:bg-gray-200`}
               style={{
                 backgroundColor:
-                  defaultButtonText === text
+                  resolvedDefaultButtonText === text
                     ? "var(--primary, #2563eb)"
                     : undefined,
                 color:
-                  defaultButtonText === text
+                  resolvedDefaultButtonText === text
                     ? "var(--primary-foreground, white)"
                     : undefined,
               }}

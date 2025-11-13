@@ -14,6 +14,7 @@ export interface MarkdownFlowProps {
     customRenderBar?: CustomRenderBarProps;
     onClickCustomButtonAfterContent?: () => void;
     dynamicInteractionFormat?: string;
+    type?: "interaction" | "content";
   }[];
   customRenderBar?: CustomRenderBarProps;
   onSend?: (content: OnSendContentParams) => void;
@@ -43,6 +44,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
         return (
           <ContentRender
             key={index}
+            type={contentInfo.type}
             content={contentInfo.content}
             defaultInputText={contentInfo.defaultInputText}
             defaultButtonText={contentInfo.defaultButtonText}

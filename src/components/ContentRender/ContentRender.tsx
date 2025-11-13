@@ -186,7 +186,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   }, [content]);
 
   return (
-    <div className="content-render markdown-body">
+    <div className={`content-render markdown-body`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath, remarkFlow, remarkBreaks]}
         rehypePlugins={[

@@ -206,7 +206,7 @@ const CustomButtonInputVariable = ({
             style={{
               border: "none",
               outline: "none",
-              boxShadow: "none",
+              boxShadow: "none !important",
             }}
             title={node.properties.placeholder}
           />

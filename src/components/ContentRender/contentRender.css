@@ -163,6 +163,10 @@
   line-height: var(--text-sm-line-height, 20px); /* 125% */
 }
 
+.markdown-body input::selection {
+  background-color: #d6e4ff;
+}
+
 .content-render .single-select-container button {
   margin-right: 8px;
   color: var(--base-foreground, #0a0a0a);

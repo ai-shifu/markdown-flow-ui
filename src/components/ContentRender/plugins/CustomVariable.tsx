@@ -119,7 +119,7 @@ const CustomButtonInputVariable = ({
   ]);
 
   return (
-    <span className="custom-variable-container inline-flex items-center gap-2 flex-wrap">
+    <span className="custom-variable-container inline-flex items-center flex-wrap">
       {isMultiSelect ? (
         // Multi-select mode: render checkboxes
         <span className="multi-select-container inline-flex flex-col gap-2 w-full">
@@ -171,38 +171,30 @@ const CustomButtonInputVariable = ({
           </Button>
         </span>
       ) : (
-        // Single-select mode: render buttons (existing logic)
-        node.properties?.buttonTexts?.map((text, index) => {
-          const value = node.properties?.buttonValues?.[index];
-          const buttonValue = value !== undefined ? value : text;
-          return (
-            <Button
-              key={index}
-              disabled={readonly}
-              variant="outline"
-              type="button"
-              size="sm"
-              onClick={() => handleButtonClick(buttonValue)}
-              className={`cursor-pointer h-8 text-sm hover:bg-gray-200`}
-              style={{
-                backgroundColor:
-                  resolvedDefaultButtonText === text
-                    ? "var(--primary, #2563eb)"
-                    : undefined,
-                color:
-                  resolvedDefaultButtonText === text
-                    ? "var(--primary-foreground, white)"
-                    : undefined,
-              }}
-            >
-              {text}
-            </Button>
-          );
-        })
+        <span className="single-select-container">
+          {/* Single-select mode: render buttons (existing logic) */}
+          {node.properties?.buttonTexts?.map((text, index) => {
+            const value = node.properties?.buttonValues?.[index];
+            const buttonValue = value !== undefined ? value : text;
+            return (
+              <Button
+                key={index}
+                disabled={readonly}
+                variant="outline"
+                type="button"
+                size="sm"
+                onClick={() => handleButtonClick(buttonValue)}
+                className={`cursor-pointer h-8 text-sm hover:bg-gray-200 ${resolvedDefaultButtonText === text ? "select" : ""}`}
+              >
+                {text}
+              </Button>
+            );
+          })}
+        </span>
       )}
       {/* Single-select mode with text input */}
       {!isMultiSelect && node.properties?.placeholder && (
-        <span className="text-sm flex rounded-md border relative group">
+        <span className="text-sm flex rounded-md border relative group input-container">
           <Input
             type="text"
             disabled={readonly}

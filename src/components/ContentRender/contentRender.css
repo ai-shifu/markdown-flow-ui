@@ -136,7 +136,60 @@
 }
 
 .content-render .custom-variable-container {
-  margin-top: 16px;
+  margin-top: 4px;
+}
+
+.content-render .input-container {
+  margin-top: 12px;
+  width: 500px;
+  border-radius: var(--border-radius-rounded-md, 8px);
+  border: var(--border-width-border, 1px) solid var(--base-input, #e5e5e5);
+  background: var(--custom-background-dark-input-30, #fff);
+  box-shadow: var(--shadow-xs-offset-x, 0) var(--shadow-xs-offset-y, 1px)
+    var(--shadow-xs-blur-radius, 2px) var(--shadow-xs-spread-radius, 0)
+    var(--shadow-xs-color, rgba(0, 0, 0, 0.05));
+}
+
+.content-render .input-container input {
+  width: 100%;
+  overflow: hidden;
+  color: #0a0a0a;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-font-sans, Geist);
+  font-size: 16px;
+  font-style: normal;
+  font-weight: var(--font-weight-normal, 400);
+  line-height: var(--text-sm-line-height, 20px); /* 125% */
+}
+
+.content-render .single-select-container button {
+  margin-right: 8px;
+  color: var(--base-foreground, #0a0a0a);
+  font-family: "PingFang SC";
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: var(--text-xs-line-height, 16px); /* 114.286% */
+  margin-top: 12px;
+}
+
+.content-render .single-select-container .select {
+  border-color: var(--primary, #2563eb);
+  font-weight: 600;
+  background-color: var(--primary, #2563eb);
+  color: var(--primary-foreground, white);
+}
+
+.markdown-body p,
+.markdown-body blockquote,
+.markdown-body ul,
+.markdown-body ol,
+.markdown-body dl,
+.markdown-body table,
+.markdown-body pre,
+.markdown-body details {
+  margin-bottom: 12px !important;
 }
 /* Disabled dark mode support for Mermaid charts - always use light theme
 @media (prefers-color-scheme: dark) {

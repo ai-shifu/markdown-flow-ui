@@ -140,6 +140,8 @@
 }
 
 .content-render .input-container {
+  display: flex;
+  align-items: end;
   margin-top: 12px;
   width: 500px;
   border-radius: var(--border-radius-rounded-md, 8px);
@@ -185,6 +187,21 @@
   color: var(--primary-foreground, white);
 }
 
+.content-render .send-icon {
+  width: 12.7px;
+  height: 12.7px;
+}
+
+.custom-variable-container textarea {
+  color: #0a0a0a;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-font-sans, Geist);
+  font-size: 16px;
+  font-style: normal;
+  font-weight: var(--font-weight-normal, 400);
+  line-height: var(--text-sm-line-height, 20px);
+}
 .markdown-body p,
 .markdown-body blockquote,
 .markdown-body ul,

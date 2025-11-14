@@ -8,7 +8,7 @@ import { Textarea } from "./textarea";
 
 function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <div
+    <span
       data-slot="input-group"
       role="group"
       className={cn(

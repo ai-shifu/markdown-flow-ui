@@ -40,12 +40,12 @@
   }
 
   /* Special handling for focus state of input boxes and text areas */
-  input:focus,
+  /* input:focus,
   textarea:focus,
   [contenteditable]:focus {
     border-color: #3b82f6 !important;
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
-  }
+  } */
 
   /* Disable font ligatures for monospace font to show original characters */
   .font-mono {

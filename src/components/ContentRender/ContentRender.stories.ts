@@ -610,9 +610,14 @@ export const ChineseMultiSelectDemo: Story = {
 你想学习或提升什么？选择选项并添加自定义目标：
 ?[%{{learning_goals}}React/Next.js||Vue/Nuxt.js||Node.js||Python||机器学习||云计算||...其他具体目标]
 
-## 第五步：补充说明
+## 第五步：学习意图（单选+文本）
+你主要想学习什么？选择选项并添加自定义目标：
+?[%{{learning_goals}}React/Next.js|Vue/Nuxt.js|Node.js|...其他具体目标]
+
+## 第六步：补充说明（文本）
 还有什么想法或问题吗？
 ?[%{{comments}}...请分享你的想法]
+
 
 ---
 

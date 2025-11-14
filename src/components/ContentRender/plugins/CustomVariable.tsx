@@ -4,7 +4,11 @@ import type { Components } from "react-markdown";
 import { OnSendContentParams } from "../../types";
 import { Button } from "../../ui/button";
 import { Checkbox } from "../../ui/checkbox";
-import { Input } from "../../ui/input";
+import {
+  InputGroup,
+  InputGroupButton,
+  InputGroupTextarea,
+} from "../../ui/inputGroup/input-group";
 
 // Define custom variable node type
 interface CustomVariableNode {
@@ -77,11 +81,12 @@ const CustomButtonInputVariable = ({
     });
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
   };
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
       if (isMultiSelect) {
         const noSelection = selectedValues.length === 0 && !inputValue.trim();
         if (!noSelection) handleConfirmClick();
@@ -119,7 +124,7 @@ const CustomButtonInputVariable = ({
   ]);
 
   return (
-    <span className="custom-variable-container inline-flex items-center gap-2 flex-wrap">
+    <span className="custom-variable-container inline-flex items-center flex-wrap">
       {isMultiSelect ? (
         // Multi-select mode: render checkboxes
         <span className="multi-select-container inline-flex flex-col gap-2 w-full">
@@ -143,18 +148,17 @@ const CustomButtonInputVariable = ({
           </span>
           {/* Input field for multi-select + text */}
           {node.properties?.placeholder && (
-            <span className="inline-flex rounded-md border relative group">
-              <Input
-                type="text"
+            <InputGroup data-disabled={readonly}>
+              <InputGroupTextarea
                 disabled={readonly}
                 placeholder={node.properties?.placeholder}
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                className="flex-1 h-8 text-sm border-0 shadow-none outline-none ring-0"
+                className="text-sm"
                 title={node.properties.placeholder}
               />
-            </span>
+            </InputGroup>
           )}
           {/* Confirm button for multi-select */}
           <Button
@@ -171,76 +175,53 @@ const CustomButtonInputVariable = ({
           </Button>
         </span>
       ) : (
-        // Single-select mode: render buttons (existing logic)
-        node.properties?.buttonTexts?.map((text, index) => {
-          const value = node.properties?.buttonValues?.[index];
-          const buttonValue = value !== undefined ? value : text;
-          return (
-            <Button
-              key={index}
-              disabled={readonly}
-              variant="outline"
-              type="button"
-              size="sm"
-              onClick={() => handleButtonClick(buttonValue)}
-              className={`cursor-pointer h-8 text-sm hover:bg-gray-200`}
-              style={{
-                backgroundColor:
-                  resolvedDefaultButtonText === text
-                    ? "var(--primary, #2563eb)"
-                    : undefined,
-                color:
-                  resolvedDefaultButtonText === text
-                    ? "var(--primary-foreground, white)"
-                    : undefined,
-              }}
-            >
-              {text}
-            </Button>
-          );
-        })
+        <span className="single-select-container">
+          {/* Single-select mode: render buttons (existing logic) */}
+          {node.properties?.buttonTexts?.map((text, index) => {
+            const value = node.properties?.buttonValues?.[index];
+            const buttonValue = value !== undefined ? value : text;
+            return (
+              <Button
+                key={index}
+                disabled={readonly}
+                variant="outline"
+                type="button"
+                size="sm"
+                onClick={() => handleButtonClick(buttonValue)}
+                className={`cursor-pointer h-8 text-sm hover:bg-gray-200 ${resolvedDefaultButtonText === text ? "select" : ""}`}
+              >
+                {text}
+              </Button>
+            );
+          })}
+        </span>
       )}
       {/* Single-select mode with text input */}
       {!isMultiSelect && node.properties?.placeholder && (
-        <span className="text-sm flex rounded-md border relative group">
-          <Input
-            type="text"
+        <InputGroup
+          data-disabled={readonly}
+          className="text-sm input-container has-[textarea]:items-stretch"
+        >
+          <InputGroupTextarea
             disabled={readonly}
             placeholder={node.properties?.placeholder}
             value={inputValue}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            className="w-50 h-8 text-sm border-0 shadow-none outline-none ring-0"
-            style={{
-              border: "none",
-              outline: "none",
-              boxShadow: "none",
-            }}
+            className="text-sm"
             title={node.properties.placeholder}
           />
-          {/* Tooltip */}
-          {/* {node.properties.placeholder.length > tooltipMinLength && (
-            <div
-              className='absolute bottom-full left-0 mb-2 px-2 py-1 text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 whitespace-nowrap max-w-xs'
-              style={{
-                backgroundColor: 'var(--tooltip-bg, #374151)',
-                color: 'var(--tooltip-text, white)'
-              }}
-            >
-              {node.properties.placeholder}
-            </div>
-          )} */}
-          <Button
+          <InputGroupButton
             type="button"
             variant="ghost"
-            size="icon"
+            size="icon-sm"
             onClick={handleSendClick}
             disabled={readonly}
-            className="h-8 w-8 mr-1  "
+            aria-label="send"
           >
-            <SendIcon className="h-8 w-8 " />
-          </Button>
-        </span>
+            <SendIcon className="send-icon" />
+          </InputGroupButton>
+        </InputGroup>
       )}
     </span>
   );

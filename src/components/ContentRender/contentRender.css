@@ -187,11 +187,6 @@
   color: var(--primary-foreground, white);
 }
 
-.content-render .send-icon {
-  width: 12.7px;
-  height: 12.7px;
-}
-
 .custom-variable-container textarea {
   color: #0a0a0a;
   text-overflow: ellipsis;

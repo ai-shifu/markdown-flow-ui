@@ -211,15 +211,31 @@ const CustomButtonInputVariable = ({
             className="text-sm"
             title={node.properties.placeholder}
           />
+          {/*
+            发送按钮：禁用或输入为空时变灰且禁止点击，正常时可 hover 变色
+          */}
           <InputGroupButton
             type="button"
             variant="ghost"
             size="icon-sm"
             onClick={handleSendClick}
-            disabled={readonly}
+            disabled={readonly || !inputValue?.trim()}
             aria-label="send"
+            style={{
+              margin: "0 10px 7px 7px",
+              cursor:
+                readonly || !inputValue?.trim() ? "not-allowed" : "pointer",
+            }}
+            className="size-4 group"
           >
-            <SendIcon className="send-icon" />
+            <SendIcon
+              size={16}
+              className={`send-icon transition-colors ${
+                readonly || !inputValue?.trim()
+                  ? "text-[rgba(85,87,94,0.45)]"
+                  : "group-hover:text-[rgba(85,87,94,0.85)]"
+              }`}
+            />
           </InputGroupButton>
         </InputGroup>
       )}

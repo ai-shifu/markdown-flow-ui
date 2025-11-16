@@ -32,6 +32,7 @@ interface CustomVariableProps {
   onSend?: (content: OnSendContentParams) => void;
   // Multi-select confirm button text (i18n support)
   confirmButtonText?: string;
+  beforeSend?: () => boolean;
 }
 
 interface ComponentsWithCustomVariable extends Components {
@@ -47,6 +48,7 @@ const CustomButtonInputVariable = ({
   defaultSelectedValues,
   onSend,
   confirmButtonText = "Confirm", // Default to English, can be overridden
+  beforeSend = () => true,
 }: CustomVariableProps) => {
   const [inputValue, setInputValue] = React.useState(defaultInputText || "");
   const [selectedValues, setSelectedValues] = React.useState<string[]>(
@@ -55,6 +57,7 @@ const CustomButtonInputVariable = ({
   const isMultiSelect = node.properties?.isMultiSelect ?? false;
 
   const handleButtonClick = (value: string) => {
+    if (!beforeSend?.()) return;
     onSend?.({
       variableName: node.properties?.variableName || "",
       buttonText: value,
@@ -74,6 +77,7 @@ const CustomButtonInputVariable = ({
   const handleConfirmClick = () => {
     const noSelection = selectedValues.length === 0 && !inputValue?.trim();
     if (readonly || noSelection) return;
+    if (!beforeSend?.()) return;
     onSend?.({
       variableName: node.properties?.variableName || "",
       selectedValues,
@@ -96,6 +100,7 @@ const CustomButtonInputVariable = ({
     }
   };
   const handleSendClick = () => {
+    if (!beforeSend?.()) return;
     onSend?.({
       variableName: node.properties?.variableName || "",
       inputText: inputValue,

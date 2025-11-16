@@ -55,6 +55,7 @@ export interface ContentRenderProps {
   confirmButtonText?: string;
   // Dynamic interaction format for multi-select support
   dynamicInteractionFormat?: string;
+  beforeSend?: () => boolean;
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
 
@@ -78,6 +79,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   onTypeFinished,
   confirmButtonText,
   onClickCustomButtonAfterContent,
+  beforeSend,
   // tooltipMinLength,
 }) => {
   // Use custom Hook to handle typewriter effect
@@ -110,6 +112,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         defaultInputText={defaultInputText}
         defaultSelectedValues={defaultSelectedValues}
         onSend={onSend}
+        beforeSend={beforeSend}
         confirmButtonText={confirmButtonText}
         // tooltipMinLength={tooltipMinLength}
       />

@@ -14,7 +14,6 @@ export interface MarkdownFlowProps {
     customRenderBar?: CustomRenderBarProps;
     onClickCustomButtonAfterContent?: () => void;
     dynamicInteractionFormat?: string;
-    type?: "interaction" | "content";
   }[];
   customRenderBar?: CustomRenderBarProps;
   onSend?: (content: OnSendContentParams) => void;
@@ -23,6 +22,7 @@ export interface MarkdownFlowProps {
   onBlockComplete?: (blockIndex: number) => void;
   // Multi-select confirm button text (i18n support)
   confirmButtonText?: string;
+  beforeSend?: () => boolean;
 }
 
 const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
@@ -33,6 +33,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   enableTypewriter = false,
   onBlockComplete,
   confirmButtonText,
+  beforeSend: beforeSendProp,
 }) => {
   return (
     <div className="markdown-flow">
@@ -41,10 +42,10 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
         const enableTypewriterForBlock = !isFinished && enableTypewriter;
         const onSend = isFinished ? undefined : onSendProp;
         const typingSpeed = isFinished ? undefined : typingSpeedProp;
+        const beforeSend = beforeSendProp ?? (() => true);
         return (
           <ContentRender
             key={index}
-            type={contentInfo.type}
             content={contentInfo.content}
             defaultInputText={contentInfo.defaultInputText}
             defaultButtonText={contentInfo.defaultButtonText}
@@ -53,6 +54,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             enableTypewriter={enableTypewriterForBlock}
             customRenderBar={contentInfo.customRenderBar || customRenderBar}
             onSend={onSend}
+            beforeSend={beforeSend}
             onClickCustomButtonAfterContent={
               contentInfo.onClickCustomButtonAfterContent
             }

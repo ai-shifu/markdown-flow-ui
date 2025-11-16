@@ -623,6 +623,7 @@ export const ChineseMultiSelectDemo: Story = {
 
 尝试与上面的元素交互，体验单选（按钮）和多选（复选框+确认按钮）的不同工作方式！`,
     enableTypewriter: false,
+    defaultInputText: `我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超一下超长一下超长长`,
     confirmButtonText: "确认", // Chinese confirm button
     onSend: (params) => {
       console.log("收到交互数据:", params);

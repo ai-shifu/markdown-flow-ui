@@ -55,7 +55,7 @@ export interface ContentRenderProps {
   confirmButtonText?: string;
   // Dynamic interaction format for multi-select support
   dynamicInteractionFormat?: string;
-  beforeSend?: () => boolean;
+  beforeSend?: (param: OnSendContentParams) => boolean;
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
 

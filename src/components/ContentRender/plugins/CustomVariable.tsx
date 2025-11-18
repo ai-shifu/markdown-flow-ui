@@ -32,7 +32,7 @@ interface CustomVariableProps {
   onSend?: (content: OnSendContentParams) => void;
   // Multi-select confirm button text (i18n support)
   confirmButtonText?: string;
-  beforeSend?: () => boolean;
+  beforeSend?: (param: OnSendContentParams) => boolean;
 }
 
 interface ComponentsWithCustomVariable extends Components {
@@ -57,11 +57,12 @@ const CustomButtonInputVariable = ({
   const isMultiSelect = node.properties?.isMultiSelect ?? false;
 
   const handleButtonClick = (value: string) => {
-    if (!beforeSend?.()) return;
-    onSend?.({
+    const param = {
       variableName: node.properties?.variableName || "",
       buttonText: value,
-    });
+    };
+    if (!beforeSend?.(param)) return;
+    onSend?.(param);
   };
 
   const handleCheckboxChange = (value: string, checked: boolean) => {
@@ -76,13 +77,14 @@ const CustomButtonInputVariable = ({
 
   const handleConfirmClick = () => {
     const noSelection = selectedValues.length === 0 && !inputValue?.trim();
-    if (readonly || noSelection) return;
-    if (!beforeSend?.()) return;
-    onSend?.({
+    const param = {
       variableName: node.properties?.variableName || "",
       selectedValues,
       inputText: inputValue?.trim() || undefined,
-    });
+    };
+    if (readonly || noSelection) return;
+    if (!beforeSend?.(param)) return;
+    onSend?.(param);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -100,11 +102,12 @@ const CustomButtonInputVariable = ({
     }
   };
   const handleSendClick = () => {
-    if (!beforeSend?.()) return;
-    onSend?.({
+    const param = {
       variableName: node.properties?.variableName || "",
       inputText: inputValue,
-    });
+    };
+    if (!beforeSend?.(param)) return;
+    onSend?.(param);
   };
 
   const resolvedDefaultButtonText = React.useMemo(() => {

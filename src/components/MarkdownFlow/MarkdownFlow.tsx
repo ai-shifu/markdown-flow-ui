@@ -22,7 +22,7 @@ export interface MarkdownFlowProps {
   onBlockComplete?: (blockIndex: number) => void;
   // Multi-select confirm button text (i18n support)
   confirmButtonText?: string;
-  beforeSend?: () => boolean;
+  beforeSend?: (content: OnSendContentParams) => boolean;
 }
 
 const MarkdownFlow: React.FC<MarkdownFlowProps> = ({

@@ -1,12 +1,11 @@
-import { SendIcon } from "lucide-react";
 import React from "react";
 import type { Components } from "react-markdown";
 import { OnSendContentParams } from "../../types";
 import { Button } from "../../ui/button";
 import { Checkbox } from "../../ui/checkbox";
+import MarkdownFlowInput from "../MarkdownFlowInput";
 import {
   InputGroup,
-  InputGroupButton,
   InputGroupTextarea,
 } from "../../ui/inputGroup/input-group";
 
@@ -206,46 +205,16 @@ const CustomButtonInputVariable = ({
       )}
       {/* Single-select mode with text input */}
       {!isMultiSelect && node.properties?.placeholder && (
-        <InputGroup
-          data-disabled={readonly}
-          className="text-sm input-container has-[textarea]:items-stretch"
-        >
-          <InputGroupTextarea
-            disabled={readonly}
-            placeholder={node.properties?.placeholder}
-            value={inputValue}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            className="text-sm"
-            title={node.properties.placeholder}
-          />
-          {/*
-            发送按钮：禁用或输入为空时变灰且禁止点击，正常时可 hover 变色
-          */}
-          <InputGroupButton
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={handleSendClick}
-            disabled={readonly || !inputValue?.trim()}
-            aria-label="send"
-            style={{
-              margin: "0 10px 7px 7px",
-              cursor:
-                readonly || !inputValue?.trim() ? "not-allowed" : "pointer",
-            }}
-            className="size-4 group"
-          >
-            <SendIcon
-              size={16}
-              className={`send-icon transition-colors ${
-                readonly || !inputValue?.trim()
-                  ? "text-[rgba(85,87,94,0.45)]"
-                  : "group-hover:text-[rgba(85,87,94,0.85)]"
-              }`}
-            />
-          </InputGroupButton>
-        </InputGroup>
+        <MarkdownFlowInput
+          disabled={readonly}
+          placeholder={node.properties?.placeholder}
+          value={inputValue}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onSend={handleSendClick}
+          sendButtonDisabled={readonly || !inputValue?.trim()}
+          title={node.properties.placeholder}
+        />
       )}
     </span>
   );

@@ -1,5 +1,7 @@
 import { SendIcon } from "lucide-react";
 import React from "react";
+import type { TextAreaProps as RcTextAreaProps } from "rc-textarea";
+
 import {
   InputGroup,
   InputGroupButton,
@@ -17,6 +19,7 @@ interface MarkdownFlowInputProps {
   className?: string;
   textareaClassName?: string;
   sendButtonDisabled?: boolean;
+  autoSize?: RcTextAreaProps["autoSize"];
 }
 
 const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
@@ -30,21 +33,23 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   className,
   textareaClassName,
   sendButtonDisabled,
+  autoSize,
 }) => {
   const isSendDisabled = disabled || sendButtonDisabled;
-  const groupClassName = className
-    ? `text-sm input-container has-[textarea]:items-stretch ${className}`
-    : "text-sm input-container has-[textarea]:items-stretch";
 
   return (
-    <InputGroup data-disabled={disabled} className={groupClassName}>
+    <InputGroup
+      data-disabled={disabled}
+      className={`input-container h-auto items-end bg-white border-[#e5e5e5] shadow-[0_1px_2px_rgba(0,0,0,0.05)] ${className || ""}`}
+    >
       <InputGroupTextarea
         disabled={disabled}
         placeholder={placeholder}
         value={value}
         onChange={onChange}
         onKeyDown={onKeyDown}
-        className={`text-sm${textareaClassName ? ` ${textareaClassName}` : ""}`}
+        autoSize={autoSize ?? { minRows: 1 }}
+        className={`text-base leading-5 font-normal text-[#0A0A0A] placeholder:text-[rgba(99,114,128,1)] bg-transparent border-0 shadow-none px-3 py-1.5 min-h-[32px] ${textareaClassName || ""}`}
         title={title}
       />
       <InputGroupButton
@@ -58,7 +63,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
           margin: "0 10px 7px 7px",
           cursor: isSendDisabled ? "not-allowed" : "pointer",
         }}
-        className="size-4 group"
+        className="size-4 group self-end mb-[2px]"
       >
         <SendIcon
           size={16}

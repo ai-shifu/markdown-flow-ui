@@ -625,8 +625,8 @@ export const ChineseMultiSelectDemo: Story = {
     enableTypewriter: false,
     defaultInputText: `我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超一下超长一下超长长`,
     confirmButtonText: "确认", // Chinese confirm button
-    beforeSend: () => {
-      console.log("beforeSend");
+    beforeSend: (params) => {
+      console.log("beforeSend", params);
       return true;
     },
     onSend: (params) => {

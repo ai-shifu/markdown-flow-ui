@@ -8,6 +8,8 @@ import MarkdownFlowEditor from "./components/MarkdownFlowEditor";
 import { OnSendContentParams, CustomRenderBarProps } from "./components/types";
 import ContentRender from "./components/ContentRender";
 import { ContentRenderProps } from "./components/ContentRender/ContentRender";
+import MarkdownFlowInput from "./components/ContentRender/MarkdownFlowInput";
+import type { MarkdownFlowInputProps } from "./components/ContentRender/MarkdownFlowInput";
 import {
   EditMode,
   UploadProps,
@@ -19,6 +21,7 @@ export {
   MarkdownFlowEditor,
   ScrollableMarkdownFlow,
   ContentRender,
+  MarkdownFlowInput,
 };
 export type {
   OnSendContentParams,
@@ -29,4 +32,5 @@ export type {
   EditMode,
   UploadProps,
   ImageResource,
+  MarkdownFlowInputProps,
 };

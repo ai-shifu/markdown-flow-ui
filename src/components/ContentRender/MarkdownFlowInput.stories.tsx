@@ -19,10 +19,6 @@ const meta = {
       control: "boolean",
       description: "Disable input and send button",
     },
-    sendButtonDisabled: {
-      control: "boolean",
-      description: "Disable only the send button while keeping input editable",
-    },
   },
   args: {
     placeholder: "Ask a follow-up question...",

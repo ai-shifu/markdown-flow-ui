@@ -1,6 +1,5 @@
 import { SendIcon } from "lucide-react";
 import React from "react";
-import type { TextAreaProps as RcTextAreaProps } from "rc-textarea";
 
 import {
   InputGroup,
@@ -18,8 +17,6 @@ interface MarkdownFlowInputProps {
   onSend?: () => void;
   className?: string;
   textareaClassName?: string;
-  sendButtonDisabled?: boolean;
-  autoSize?: RcTextAreaProps["autoSize"];
 }
 
 const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
@@ -32,10 +29,8 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   onSend,
   className,
   textareaClassName,
-  sendButtonDisabled,
-  autoSize,
 }) => {
-  const isSendDisabled = disabled || sendButtonDisabled;
+  const isSendDisabled = disabled || !value?.trim();
 
   return (
     <InputGroup
@@ -48,8 +43,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
         value={value}
         onChange={onChange}
         onKeyDown={onKeyDown}
-        autoSize={autoSize ?? { minRows: 1 }}
-        className={`text-base leading-5 font-normal text-[#0A0A0A] placeholder:text-[rgba(99,114,128,1)] bg-transparent border-0 shadow-none px-3 py-1.5 min-h-[32px] ${textareaClassName || ""}`}
+        className={`text-[16px] leading-5 font-normal text-[#0A0A0A] placeholder:text-[rgba(99,114,128,1)] bg-transparent border-0 shadow-none px-3 py-1.5 min-h-[32px] ${textareaClassName || ""}`}
         title={title}
       />
       <InputGroupButton

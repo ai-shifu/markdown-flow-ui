@@ -212,7 +212,6 @@ const CustomButtonInputVariable = ({
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onSend={handleSendClick}
-          sendButtonDisabled={readonly || !inputValue?.trim()}
           title={node.properties.placeholder}
         />
       )}

@@ -89,7 +89,7 @@ const MultiSelectSection = ({
           })}
         </span>
         {placeholder && (
-          <span className="block mt-[9px] mb-1 w-[500px]">
+          <span className="block mt-[9px] mb-1 max-w-[500px] w-full">
             <InputGroup data-disabled={readonly}>
               <InputGroupTextarea
                 disabled={readonly}
@@ -224,7 +224,7 @@ const CustomButtonInputVariable = ({
   defaultInputText,
   defaultSelectedValues,
   onSend,
-  confirmButtonText = "Confirm", // Default to English, can be overridden
+  confirmButtonText = "Submit", // Default to English, can be overridden
   beforeSend = () => true,
 }: CustomVariableProps) => {
   const [inputValue, setInputValue] = React.useState(defaultInputText || "");

@@ -563,7 +563,7 @@ Any additional thoughts or questions?
 
 Try interacting with the elements above to see how single-select (buttons) and multi-select (checkboxes + confirm button) work differently!`,
     enableTypewriter: false,
-    confirmButtonText: "Confirm", // English confirm button
+    confirmButtonText: "Submit", // English confirm button
     onSend: (params) => {
       console.log("Interaction received:", params);
 

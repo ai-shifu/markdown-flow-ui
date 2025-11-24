@@ -147,7 +147,8 @@
   display: flex;
   align-items: end;
   /* margin-top: 12px; */
-  width: 500px;
+  max-width: 500px;
+  width: 100%;
   border-radius: var(--border-radius-rounded-md, 8px);
   border: var(--border-width-border, 1px) solid var(--base-input, #e5e5e5);
   background: var(--custom-background-dark-input-30, #fff);
@@ -200,7 +201,8 @@
   line-height: 100%; /* 14px */
 }
 .custom-variable-container .rc-textarea {
-  width: 500px;
+  width: 100%;
+  max-width: 500px;
 }
 .custom-variable-container textarea {
   color: #0a0a0a;

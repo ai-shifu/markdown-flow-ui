@@ -1,5 +1,7 @@
-import { SendIcon } from "lucide-react";
 import React from "react";
+
+import sendIconDisable from "@/assets/icons/send_disable.svg";
+import sendIconEnable from "@/assets/icons/send_enable.svg";
 
 import {
   InputGroup,
@@ -54,18 +56,15 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
         disabled={isSendDisabled}
         aria-label="send"
         style={{
-          margin: "0 10px 7px 7px",
+          margin: "0px 7px 4px 7px",
           cursor: isSendDisabled ? "not-allowed" : "pointer",
         }}
-        className="size-4 group self-end mb-[2px]"
+        className="size-6 group self-end mb-[2px]"
       >
-        <SendIcon
-          size={16}
-          className={`send-icon transition-colors ${
-            isSendDisabled
-              ? "text-[rgba(85,87,94,0.45)]"
-              : "group-hover:text-[rgba(85,87,94,0.85)]"
-          }`}
+        <img
+          src={isSendDisabled ? sendIconDisable.src : sendIconEnable.src}
+          alt="send"
+          className="size-6"
         />
       </InputGroupButton>
     </InputGroup>

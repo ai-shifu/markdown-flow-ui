@@ -137,12 +137,15 @@
 
 .content-render .custom-variable-container {
   margin-top: 4px;
+  border-radius: 8px;
+  background: #f7f7f7;
+  padding: 8px 12px;
 }
 
 .content-render .input-container {
   display: flex;
   align-items: end;
-  margin-top: 12px;
+  /* margin-top: 12px; */
   width: 500px;
   border-radius: var(--border-radius-rounded-md, 8px);
   border: var(--border-width-border, 1px) solid var(--base-input, #e5e5e5);
@@ -177,7 +180,7 @@
   font-style: normal;
   font-weight: 400;
   line-height: var(--text-xs-line-height, 16px); /* 114.286% */
-  margin-top: 12px;
+  /* margin-top: 12px; */
 }
 
 .content-render .single-select-container .select {
@@ -185,6 +188,16 @@
   font-weight: 600;
   background-color: var(--primary, #2563eb);
   color: var(--primary-foreground, white);
+}
+
+.content-render .multi-select-container label {
+  color: var(--base-foreground, #0a0a0a);
+  /* text-sm/leading-none/medium */
+  font-family: var(--font-font-sans, Geist);
+  font-size: var(--text-sm-font-size, 14px);
+  font-style: normal;
+  font-weight: var(--font-weight-medium, 500);
+  line-height: 100%; /* 14px */
 }
 
 .custom-variable-container textarea {

@@ -606,13 +606,21 @@ export const ChineseMultiSelectDemo: Story = {
 你如何描述自己的经验水平？
 ?[%{{experience}}初学者|中级|高级|专家]
 
-## 第四步：学习目标（多选+文本）
+## 第四步：学习目标（多选+文本，测试多行的情况）
 你想学习或提升什么？选择选项并添加自定义目标：
 ?[%{{learning_goals}}React/Next.js||Vue/Nuxt.js||Node.js||Python||机器学习||云计算||...其他具体目标]
 
-## 第五步：学习意图（单选+文本）
+## 第四步：学习目标（多选+文本，测试一行的情况）
+你想学习或提升什么？选择选项并添加自定义目标：
+?[%{{learning_goals}}React/Next.js||Vue/Nuxt.js||...其他具体目标]
+
+## 第五步：学习意图（单选+文本，测试多行的情况）
 你主要想学习什么？选择选项并添加自定义目标：
 ?[%{{learning_goals}}React/Next.js|Vue/Nuxt.js|Node.js|Python|React Native|Flutter|...其他具体目标]
+
+## 第五步：学习意图（单选+文本， 测试一行的情况）
+你主要想学习什么？选择选项并添加自定义目标：
+?[%{{learning_goals}}React/Next.js|Vue/Nuxt.js|...其他具体目标]
 
 ## 第六步：补充说明（文本）
 还有什么想法或问题吗？

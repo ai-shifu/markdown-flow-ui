@@ -21,6 +21,9 @@ interface MarkdownFlowInputProps {
   textareaClassName?: string;
 }
 
+const resolveAssetSrc = (asset: string | { src: string }) =>
+  typeof asset === "string" ? asset : asset.src;
+
 const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   disabled,
   placeholder,
@@ -62,7 +65,9 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
         className="size-6 group self-end mb-[2px]"
       >
         <img
-          src={isSendDisabled ? sendIconDisable.src : sendIconEnable.src}
+          src={resolveAssetSrc(
+            isSendDisabled ? sendIconDisable : sendIconEnable
+          )}
           alt="send"
           className="size-6"
         />

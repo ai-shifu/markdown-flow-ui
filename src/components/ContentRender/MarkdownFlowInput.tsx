@@ -45,7 +45,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
         value={value}
         onChange={onChange}
         onKeyDown={onKeyDown}
-        className={`text-[16px] leading-5 font-normal text-[#0A0A0A] placeholder:text-[rgba(99,114,128,1)] bg-transparent border-0 shadow-none px-3 py-1.5 min-h-[32px] ${textareaClassName || ""}`}
+        className={`text-[16px] leading-5 font-normal text-[#0A0A0A] placeholder:text-[rgba(99,114,128,1)] bg-transparent border-0 shadow-none pl-3 pr-0 py-1.5 min-h-[32px] ${textareaClassName || ""}`}
         title={title}
       />
       <InputGroupButton

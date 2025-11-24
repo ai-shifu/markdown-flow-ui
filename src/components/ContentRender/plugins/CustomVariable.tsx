@@ -162,7 +162,7 @@ const CustomButtonInputVariable = ({
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                className="text-sm"
+                className="text-sm px-3"
                 title={node.properties.placeholder}
               />
             </InputGroup>

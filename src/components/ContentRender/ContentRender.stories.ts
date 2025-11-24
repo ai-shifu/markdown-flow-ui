@@ -612,7 +612,7 @@ export const ChineseMultiSelectDemo: Story = {
 
 ## 第五步：学习意图（单选+文本）
 你主要想学习什么？选择选项并添加自定义目标：
-?[%{{learning_goals}}React/Next.js|Vue/Nuxt.js|Node.js|...其他具体目标]
+?[%{{learning_goals}}React/Next.js|Vue/Nuxt.js|Node.js|Python|React Native|Flutter|...其他具体目标]
 
 ## 第六步：补充说明（文本）
 还有什么想法或问题吗？
@@ -624,7 +624,7 @@ export const ChineseMultiSelectDemo: Story = {
 尝试与上面的元素交互，体验单选（按钮）和多选（复选框+确认按钮）的不同工作方式！`,
     enableTypewriter: false,
     defaultInputText: `我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超一下超长一下超长长`,
-    confirmButtonText: "确认", // Chinese confirm button
+    confirmButtonText: "提交", // Chinese confirm button
     beforeSend: (params) => {
       console.log("beforeSend", params);
       return true;

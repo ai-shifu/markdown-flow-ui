@@ -8,6 +8,7 @@ import {
   InputGroup,
   InputGroupTextarea,
 } from "../../ui/inputGroup/input-group";
+import { cn } from "../../../lib/utils";
 
 // Define custom variable node type
 interface CustomVariableNode {
@@ -54,6 +55,7 @@ const CustomButtonInputVariable = ({
     defaultSelectedValues || []
   );
   const isMultiSelect = node.properties?.isMultiSelect ?? false;
+  const isSingleSelect = node.properties?.buttonTexts?.length;
 
   const handleButtonClick = (value: string) => {
     const param = {
@@ -155,7 +157,7 @@ const CustomButtonInputVariable = ({
               })}
             </span>
             {node.properties?.placeholder && (
-              <div className="mt-4 mb-1 w-[500px]">
+              <div className="mt-[9px] mb-1 w-[500px]">
                 <InputGroup data-disabled={readonly}>
                   <InputGroupTextarea
                     disabled={readonly}
@@ -170,23 +172,22 @@ const CustomButtonInputVariable = ({
               </div>
             )}
           </div>
-          <div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleConfirmClick}
-              disabled={
-                readonly || (selectedValues.length === 0 && !inputValue?.trim())
-              }
-              className="self-start"
-            >
+          <div
+            className={cn(
+              "flex flex-col items-center pl-4",
+              readonly || (selectedValues.length === 0 && !inputValue?.trim())
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer"
+            )}
+            onClick={handleConfirmClick}
+          >
+            <span className="text-sm text-primary font-medium">
               {confirmButtonText}
-            </Button>
+            </span>
           </div>
         </span>
       ) : (
-        <span className="single-select-container">
+        <span className="single-select-container gap-y-[9px] flex flex-wrap">
           {/* Single-select mode: render buttons (existing logic) */}
           {node.properties?.buttonTexts?.map((text, index) => {
             const value = node.properties?.buttonValues?.[index];
@@ -209,15 +210,17 @@ const CustomButtonInputVariable = ({
       )}
       {/* Single-select mode with text input */}
       {!isMultiSelect && node.properties?.placeholder && (
-        <MarkdownFlowInput
-          disabled={readonly}
-          placeholder={node.properties?.placeholder}
-          value={inputValue}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onSend={handleSendClick}
-          title={node.properties.placeholder}
-        />
+        <div className={cn(isSingleSelect ? "mt-[9px] mb-1 w-[500px]" : "")}>
+          <MarkdownFlowInput
+            disabled={readonly}
+            placeholder={node.properties?.placeholder}
+            value={inputValue}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            onSend={handleSendClick}
+            title={node.properties.placeholder}
+          />
+        </div>
       )}
     </span>
   );

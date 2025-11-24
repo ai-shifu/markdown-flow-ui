@@ -68,9 +68,9 @@ const MultiSelectSection = ({
     readonly || (selectedValues.length === 0 && !inputValue?.trim());
 
   return (
-    <span className="multi-select-container flex flex-row w-full items-center">
-      <div className="flex flex-1 flex-col">
-        <span className="flex flex-wrap gap-y-[9px]">
+    <span className="multi-select-container inline-flex w-full items-center">
+      <span className="flex flex-1 flex-col">
+        <span className="flex flex-wrap gap-y-[9px] gap-x-6">
           {node.properties?.buttonTexts?.map((text, index) => {
             const value = node.properties?.buttonValues?.[index];
             const buttonValue = value !== undefined ? value : text;
@@ -89,7 +89,7 @@ const MultiSelectSection = ({
           })}
         </span>
         {placeholder && (
-          <div className="mt-[9px] mb-1 w-[500px]">
+          <span className="block mt-[9px] mb-1 w-[500px]">
             <InputGroup data-disabled={readonly}>
               <InputGroupTextarea
                 disabled={readonly}
@@ -101,10 +101,10 @@ const MultiSelectSection = ({
                 title={placeholder}
               />
             </InputGroup>
-          </div>
+          </span>
         )}
-      </div>
-      <div
+      </span>
+      <span
         className={cn(
           "flex flex-col items-center pl-4",
           confirmDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
@@ -118,7 +118,7 @@ const MultiSelectSection = ({
         <span className="text-sm text-primary font-medium">
           {confirmButtonText}
         </span>
-      </div>
+      </span>
     </span>
   );
 };
@@ -145,8 +145,8 @@ const SingleSelectSection = ({
   handleKeyDown,
   handleSendClick,
 }: SingleSelectSectionProps) => (
-  <span className="single-select-container">
-    <span className="flex flex-wrap gap-y-[9px]">
+  <span className="single-select-container inline-flex w-full flex-col">
+    <span className="flex flex-wrap gap-y-[9px] gap-x-2">
       {node.properties?.buttonTexts?.map((text, index) => {
         const value = node.properties?.buttonValues?.[index];
         const buttonValue = value !== undefined ? value : text;
@@ -166,7 +166,7 @@ const SingleSelectSection = ({
       })}
     </span>
     {node.properties?.placeholder && (
-      <div className="mt-[9px] mb-1">
+      <span className="mt-[9px] mb-1">
         <MarkdownFlowInput
           disabled={readonly}
           placeholder={node.properties.placeholder}
@@ -176,7 +176,7 @@ const SingleSelectSection = ({
           onSend={handleSendClick}
           title={node.properties.placeholder}
         />
-      </div>
+      </span>
     )}
   </span>
 );

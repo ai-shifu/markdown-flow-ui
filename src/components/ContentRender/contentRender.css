@@ -174,7 +174,6 @@
 }
 
 .content-render .single-select-container button {
-  margin-right: 8px;
   color: var(--base-foreground, #0a0a0a);
   font-family: "PingFang SC";
   font-size: 14px;
@@ -197,12 +196,8 @@
   font-family: var(--font-font-sans, Geist);
   font-size: var(--text-sm-font-size, 14px);
   font-style: normal;
-  font-weight: var(--font-weight-medium, 500);
+  /* font-weight: var(--font-weight-medium, 500); */
   line-height: 100%; /* 14px */
-  margin-right: 32px;
-}
-.content-render .multi-select-container label:last-child {
-  margin-right: 0;
 }
 .custom-variable-container .rc-textarea {
   width: 500px;

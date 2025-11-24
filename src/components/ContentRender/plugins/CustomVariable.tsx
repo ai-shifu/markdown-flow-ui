@@ -134,52 +134,56 @@ const CustomButtonInputVariable = ({
     <span className="custom-variable-container inline-flex items-center flex-wrap">
       {isMultiSelect ? (
         // Multi-select mode: render checkboxes
-        <span className="multi-select-container inline-flex flex-col gap-2 w-full">
-          <span className="flex flex-wrap gap-2">
-            {node.properties?.buttonTexts?.map((text, index) => {
-              const value = node.properties?.buttonValues?.[index];
-              const buttonValue = value !== undefined ? value : text;
-              return (
-                <Checkbox
-                  key={index}
-                  label={text}
-                  disabled={readonly}
-                  checked={selectedValues.includes(buttonValue)}
-                  onCheckedChange={(checked) =>
-                    handleCheckboxChange(buttonValue, checked)
-                  }
-                  className="text-sm"
-                />
-              );
-            })}
-          </span>
-          {/* Input field for multi-select + text */}
-          {node.properties?.placeholder && (
-            <InputGroup data-disabled={readonly}>
-              <InputGroupTextarea
-                disabled={readonly}
-                placeholder={node.properties?.placeholder}
-                value={inputValue}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                className="text-sm px-3"
-                title={node.properties.placeholder}
-              />
-            </InputGroup>
-          )}
-          {/* Confirm button for multi-select */}
-          <Button
-            type="button"
-            variant="default"
-            size="sm"
-            onClick={handleConfirmClick}
-            disabled={
-              readonly || (selectedValues.length === 0 && !inputValue?.trim())
-            }
-            className="self-start"
-          >
-            {confirmButtonText}
-          </Button>
+        <span className="multi-select-container flex flex-row w-full items-center">
+          <div className="flex flex-1 flex-col">
+            <span className="flex flex-wrap gap-y-[9px]">
+              {node.properties?.buttonTexts?.map((text, index) => {
+                const value = node.properties?.buttonValues?.[index];
+                const buttonValue = value !== undefined ? value : text;
+                return (
+                  <Checkbox
+                    key={index}
+                    label={text}
+                    disabled={readonly}
+                    checked={selectedValues.includes(buttonValue)}
+                    onCheckedChange={(checked) =>
+                      handleCheckboxChange(buttonValue, checked)
+                    }
+                    className="text-sm"
+                  />
+                );
+              })}
+            </span>
+            {node.properties?.placeholder && (
+              <div className="mt-4 mb-1 w-[500px]">
+                <InputGroup data-disabled={readonly}>
+                  <InputGroupTextarea
+                    disabled={readonly}
+                    placeholder={node.properties?.placeholder}
+                    value={inputValue}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    className="text-sm px-3"
+                    title={node.properties.placeholder}
+                  />
+                </InputGroup>
+              </div>
+            )}
+          </div>
+          <div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleConfirmClick}
+              disabled={
+                readonly || (selectedValues.length === 0 && !inputValue?.trim())
+              }
+              className="self-start"
+            >
+              {confirmButtonText}
+            </Button>
+          </div>
         </span>
       ) : (
         <span className="single-select-container">

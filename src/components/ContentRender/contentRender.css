@@ -136,10 +136,11 @@
 }
 
 .content-render .custom-variable-container {
-  margin-top: 4px;
+  margin-top: 16px;
   border-radius: 8px;
   background: #f7f7f7;
   padding: 8px 12px;
+  width: 100%;
 }
 
 .content-render .input-container {
@@ -198,8 +199,14 @@
   font-style: normal;
   font-weight: var(--font-weight-medium, 500);
   line-height: 100%; /* 14px */
+  margin-right: 32px;
 }
-
+.content-render .multi-select-container label:last-child {
+  margin-right: 0;
+}
+.custom-variable-container .rc-textarea {
+  width: 500px;
+}
 .custom-variable-container textarea {
   color: #0a0a0a;
   text-overflow: ellipsis;

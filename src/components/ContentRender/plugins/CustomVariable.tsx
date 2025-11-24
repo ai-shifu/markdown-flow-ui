@@ -39,6 +39,183 @@ interface ComponentsWithCustomVariable extends Components {
   "custom-variable"?: React.ComponentType<CustomVariableProps>;
 }
 
+// Multi select section( with checkboxes and input)
+interface MultiSelectSectionProps {
+  node: CustomVariableNode;
+  readonly?: boolean;
+  selectedValues: string[];
+  inputValue: string;
+  confirmButtonText: string;
+  handleCheckboxChange: (value: string, checked: boolean) => void;
+  handleInputChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  handleKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  handleConfirmClick: () => void;
+}
+
+const MultiSelectSection = ({
+  node,
+  readonly,
+  selectedValues,
+  inputValue,
+  confirmButtonText,
+  handleCheckboxChange,
+  handleInputChange,
+  handleKeyDown,
+  handleConfirmClick,
+}: MultiSelectSectionProps) => {
+  const placeholder = node.properties?.placeholder;
+  const confirmDisabled =
+    readonly || (selectedValues.length === 0 && !inputValue?.trim());
+
+  return (
+    <span className="multi-select-container flex flex-row w-full items-center">
+      <div className="flex flex-1 flex-col">
+        <span className="flex flex-wrap gap-y-[9px]">
+          {node.properties?.buttonTexts?.map((text, index) => {
+            const value = node.properties?.buttonValues?.[index];
+            const buttonValue = value !== undefined ? value : text;
+            return (
+              <Checkbox
+                key={index}
+                label={text}
+                disabled={readonly}
+                checked={selectedValues.includes(buttonValue)}
+                onCheckedChange={(checked) =>
+                  handleCheckboxChange(buttonValue, checked)
+                }
+                className="text-sm"
+              />
+            );
+          })}
+        </span>
+        {placeholder && (
+          <div className="mt-[9px] mb-1 w-[500px]">
+            <InputGroup data-disabled={readonly}>
+              <InputGroupTextarea
+                disabled={readonly}
+                placeholder={placeholder}
+                value={inputValue}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                className="text-sm px-3"
+                title={placeholder}
+              />
+            </InputGroup>
+          </div>
+        )}
+      </div>
+      <div
+        className={cn(
+          "flex flex-col items-center pl-4",
+          confirmDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+        )}
+        onClick={() => {
+          if (!confirmDisabled) {
+            handleConfirmClick();
+          }
+        }}
+      >
+        <span className="text-sm text-primary font-medium">
+          {confirmButtonText}
+        </span>
+      </div>
+    </span>
+  );
+};
+
+// Single select section( with buttons and input)
+interface SingleSelectSectionProps {
+  node: CustomVariableNode;
+  readonly?: boolean;
+  resolvedDefaultButtonText?: string;
+  handleButtonClick: (value: string) => void;
+  inputValue: string;
+  handleInputChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  handleKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  handleSendClick: () => void;
+}
+
+const SingleSelectSection = ({
+  node,
+  readonly,
+  resolvedDefaultButtonText,
+  handleButtonClick,
+  inputValue,
+  handleInputChange,
+  handleKeyDown,
+  handleSendClick,
+}: SingleSelectSectionProps) => (
+  <span className="single-select-container">
+    <span className="flex flex-wrap gap-y-[9px]">
+      {node.properties?.buttonTexts?.map((text, index) => {
+        const value = node.properties?.buttonValues?.[index];
+        const buttonValue = value !== undefined ? value : text;
+        return (
+          <Button
+            key={index}
+            disabled={readonly}
+            variant="outline"
+            type="button"
+            size="sm"
+            onClick={() => handleButtonClick(buttonValue)}
+            className={`cursor-pointer h-8 text-sm hover:bg-gray-200 ${resolvedDefaultButtonText === text ? "select" : ""}`}
+          >
+            {text}
+          </Button>
+        );
+      })}
+    </span>
+    {node.properties?.placeholder && (
+      <div className="mt-[9px] mb-1">
+        <MarkdownFlowInput
+          disabled={readonly}
+          placeholder={node.properties.placeholder}
+          value={inputValue}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onSend={handleSendClick}
+          title={node.properties.placeholder}
+        />
+      </div>
+    )}
+  </span>
+);
+
+// Pure input
+interface InputSectionProps {
+  readonly?: boolean;
+  placeholder?: string;
+  value: string;
+  onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  onSend: () => void;
+}
+
+const InputSection = ({
+  readonly,
+  placeholder,
+  value,
+  onChange,
+  onKeyDown,
+  onSend,
+}: InputSectionProps) => {
+  if (!placeholder) {
+    return null;
+  }
+
+  return (
+    <MarkdownFlowInput
+      disabled={readonly}
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      onKeyDown={onKeyDown}
+      onSend={onSend}
+      title={placeholder}
+    />
+  );
+};
+
 // Define custom variable component
 const CustomButtonInputVariable = ({
   node,
@@ -55,7 +232,7 @@ const CustomButtonInputVariable = ({
     defaultSelectedValues || []
   );
   const isMultiSelect = node.properties?.isMultiSelect ?? false;
-  const isSingleSelect = node.properties?.buttonTexts?.length;
+  const isSingleSelect = (node.properties?.buttonTexts || []).length > 0;
 
   const handleButtonClick = (value: string) => {
     const param = {
@@ -134,93 +311,42 @@ const CustomButtonInputVariable = ({
 
   return (
     <span className="custom-variable-container inline-flex items-center flex-wrap">
-      {isMultiSelect ? (
-        // Multi-select mode: render checkboxes
-        <span className="multi-select-container flex flex-row w-full items-center">
-          <div className="flex flex-1 flex-col">
-            <span className="flex flex-wrap gap-y-[9px]">
-              {node.properties?.buttonTexts?.map((text, index) => {
-                const value = node.properties?.buttonValues?.[index];
-                const buttonValue = value !== undefined ? value : text;
-                return (
-                  <Checkbox
-                    key={index}
-                    label={text}
-                    disabled={readonly}
-                    checked={selectedValues.includes(buttonValue)}
-                    onCheckedChange={(checked) =>
-                      handleCheckboxChange(buttonValue, checked)
-                    }
-                    className="text-sm"
-                  />
-                );
-              })}
-            </span>
-            {node.properties?.placeholder && (
-              <div className="mt-[9px] mb-1 w-[500px]">
-                <InputGroup data-disabled={readonly}>
-                  <InputGroupTextarea
-                    disabled={readonly}
-                    placeholder={node.properties?.placeholder}
-                    value={inputValue}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    className="text-sm px-3"
-                    title={node.properties.placeholder}
-                  />
-                </InputGroup>
-              </div>
-            )}
-          </div>
-          <div
-            className={cn(
-              "flex flex-col items-center pl-4",
-              readonly || (selectedValues.length === 0 && !inputValue?.trim())
-                ? "opacity-50 cursor-not-allowed"
-                : "cursor-pointer"
-            )}
-            onClick={handleConfirmClick}
-          >
-            <span className="text-sm text-primary font-medium">
-              {confirmButtonText}
-            </span>
-          </div>
-        </span>
-      ) : (
-        <span className="single-select-container gap-y-[9px] flex flex-wrap">
-          {/* Single-select mode: render buttons (existing logic) */}
-          {node.properties?.buttonTexts?.map((text, index) => {
-            const value = node.properties?.buttonValues?.[index];
-            const buttonValue = value !== undefined ? value : text;
-            return (
-              <Button
-                key={index}
-                disabled={readonly}
-                variant="outline"
-                type="button"
-                size="sm"
-                onClick={() => handleButtonClick(buttonValue)}
-                className={`cursor-pointer h-8 text-sm hover:bg-gray-200 ${resolvedDefaultButtonText === text ? "select" : ""}`}
-              >
-                {text}
-              </Button>
-            );
-          })}
-        </span>
+      {isMultiSelect && (
+        <MultiSelectSection
+          node={node}
+          readonly={readonly}
+          selectedValues={selectedValues}
+          inputValue={inputValue}
+          confirmButtonText={confirmButtonText}
+          handleCheckboxChange={handleCheckboxChange}
+          handleInputChange={handleInputChange}
+          handleKeyDown={handleKeyDown}
+          handleConfirmClick={handleConfirmClick}
+        />
       )}
-      {/* Single-select mode with text input */}
-      {!isMultiSelect && node.properties?.placeholder && (
-        <div className={cn(isSingleSelect ? "mt-[9px] mb-1 w-[500px]" : "")}>
-          <MarkdownFlowInput
-            disabled={readonly}
-            placeholder={node.properties?.placeholder}
-            value={inputValue}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            onSend={handleSendClick}
-            title={node.properties.placeholder}
-          />
-        </div>
+
+      {!isMultiSelect && isSingleSelect && (
+        <SingleSelectSection
+          node={node}
+          readonly={readonly}
+          resolvedDefaultButtonText={resolvedDefaultButtonText}
+          handleButtonClick={handleButtonClick}
+          inputValue={inputValue}
+          handleInputChange={handleInputChange}
+          handleKeyDown={handleKeyDown}
+          handleSendClick={handleSendClick}
+        />
+      )}
+
+      {!isMultiSelect && !isSingleSelect && node.properties?.placeholder && (
+        <InputSection
+          readonly={readonly}
+          placeholder={node.properties.placeholder}
+          value={inputValue}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onSend={handleSendClick}
+        />
       )}
     </span>
   );

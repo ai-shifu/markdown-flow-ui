@@ -15,7 +15,6 @@ interface MarkdownFlowInputProps {
   value?: string;
   title?: string;
   onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  onKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   onSend?: () => void;
   className?: string;
   textareaClassName?: string;
@@ -30,12 +29,25 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   value,
   title,
   onChange,
-  onKeyDown,
   onSend,
   className,
   textareaClassName,
 }) => {
   const isSendDisabled = disabled || !value?.trim();
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!onSend) {
+      return;
+    }
+    if (e.nativeEvent.isComposing || e.keyCode === 229) {
+      return;
+    }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (!isSendDisabled) {
+        onSend();
+      }
+    }
+  };
 
   return (
     <InputGroup
@@ -47,7 +59,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        onKeyDown={onKeyDown}
+        onKeyDown={handleKeyDown}
         className={`text-[16px] leading-5 font-normal text-[#0A0A0A] placeholder:text-[rgba(99,114,128,1)] bg-transparent border-0 shadow-none pl-3 pr-0 py-1.5 min-h-[32px] ${textareaClassName || ""}`}
         title={title}
       />

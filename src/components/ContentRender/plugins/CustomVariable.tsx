@@ -137,7 +137,6 @@ interface SingleSelectSectionProps {
   handleButtonClick: (value: string) => void;
   inputValue: string;
   handleInputChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  handleKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   handleSendClick: () => void;
 }
 
@@ -148,7 +147,6 @@ const SingleSelectSection = ({
   handleButtonClick,
   inputValue,
   handleInputChange,
-  handleKeyDown,
   handleSendClick,
 }: SingleSelectSectionProps) => (
   <span className="single-select-container inline-flex w-full flex-col">
@@ -178,7 +176,6 @@ const SingleSelectSection = ({
           placeholder={node.properties.placeholder}
           value={inputValue}
           onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
           onSend={handleSendClick}
           title={node.properties.placeholder}
         />
@@ -193,7 +190,6 @@ interface InputSectionProps {
   placeholder?: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  onKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   onSend: () => void;
 }
 
@@ -202,7 +198,6 @@ const InputSection = ({
   placeholder,
   value,
   onChange,
-  onKeyDown,
   onSend,
 }: InputSectionProps) => {
   if (!placeholder) {
@@ -215,7 +210,6 @@ const InputSection = ({
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      onKeyDown={onKeyDown}
       onSend={onSend}
       title={placeholder}
     />
@@ -342,7 +336,6 @@ const CustomButtonInputVariable = ({
           handleButtonClick={handleButtonClick}
           inputValue={inputValue}
           handleInputChange={handleInputChange}
-          handleKeyDown={handleKeyDown}
           handleSendClick={handleSendClick}
         />
       )}
@@ -353,7 +346,6 @@ const CustomButtonInputVariable = ({
           placeholder={node.properties.placeholder}
           value={inputValue}
           onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
           onSend={handleSendClick}
         />
       )}

@@ -66,7 +66,13 @@ const MultiSelectSection = ({
   const placeholder = node.properties?.placeholder;
   const confirmDisabled =
     readonly || (selectedValues.length === 0 && !inputValue?.trim());
-
+  console.log(
+    "confirmDisabled",
+    inputValue,
+    selectedValues.length === 0,
+    !inputValue?.trim(),
+    confirmDisabled
+  );
   return (
     <span className="multi-select-container inline-flex w-full items-center">
       <span className="flex flex-1 flex-col">
@@ -106,18 +112,18 @@ const MultiSelectSection = ({
       </span>
       <span
         className={cn(
-          "flex flex-col items-center pl-4",
+          "multi-select-confirm-wrapper flex flex-col items-center pl-4",
           confirmDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
         )}
-        onClick={() => {
-          if (!confirmDisabled) {
-            handleConfirmClick();
-          }
-        }}
       >
-        <span className="text-sm text-primary font-medium">
+        <button
+          type="button"
+          className="multi-select-confirm-button text-sm font-medium text-primary"
+          disabled={confirmDisabled}
+          onClick={handleConfirmClick}
+        >
           {confirmButtonText}
-        </span>
+        </button>
       </span>
     </span>
   );

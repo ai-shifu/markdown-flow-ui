@@ -50,7 +50,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     return (
       <label
         className={cn(
-          "inline-flex items-center gap-2 cursor-pointer text-sm",
+          "inline-flex items-center cursor-pointer text-sm",
           disabled && "cursor-not-allowed opacity-50",
           className
         )}
@@ -89,7 +89,10 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
         </span>
         {label && (
           <span
-            className={cn("select-none", disabled && "text-muted-foreground")}
+            className={cn(
+              "ml-2 select-none",
+              disabled && "text-muted-foreground"
+            )}
           >
             {label}
           </span>

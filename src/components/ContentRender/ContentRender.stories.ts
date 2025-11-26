@@ -563,7 +563,7 @@ Any additional thoughts or questions?
 
 Try interacting with the elements above to see how single-select (buttons) and multi-select (checkboxes + confirm button) work differently!`,
     enableTypewriter: false,
-    confirmButtonText: "Confirm", // English confirm button
+    confirmButtonText: "Submit", // English confirm button
     onSend: (params) => {
       console.log("Interaction received:", params);
 
@@ -606,13 +606,21 @@ export const ChineseMultiSelectDemo: Story = {
 你如何描述自己的经验水平？
 ?[%{{experience}}初学者|中级|高级|专家]
 
-## 第四步：学习目标（多选+文本）
+## 第四步：学习目标（多选+文本，测试多行的情况）
 你想学习或提升什么？选择选项并添加自定义目标：
 ?[%{{learning_goals}}React/Next.js||Vue/Nuxt.js||Node.js||Python||机器学习||云计算||...其他具体目标]
 
-## 第五步：学习意图（单选+文本）
+## 第四步：学习目标（多选+文本，测试一行的情况）
+你想学习或提升什么？选择选项并添加自定义目标：
+?[%{{learning_goals}}React/Next.js||Vue/Nuxt.js||...其他具体目标]
+
+## 第五步：学习意图（单选+文本，测试多行的情况）
 你主要想学习什么？选择选项并添加自定义目标：
-?[%{{learning_goals}}React/Next.js|Vue/Nuxt.js|Node.js|...其他具体目标]
+?[%{{learning_goals}}React/Next.js|Vue/Nuxt.js|Node.js|Python|React Native|Flutter|...其他具体目标]
+
+## 第五步：学习意图（单选+文本， 测试一行的情况）
+你主要想学习什么？选择选项并添加自定义目标：
+?[%{{learning_goals}}React/Next.js|Vue/Nuxt.js|...其他具体目标]
 
 ## 第六步：补充说明（文本）
 还有什么想法或问题吗？
@@ -623,8 +631,8 @@ export const ChineseMultiSelectDemo: Story = {
 
 尝试与上面的元素交互，体验单选（按钮）和多选（复选框+确认按钮）的不同工作方式！`,
     enableTypewriter: false,
-    defaultInputText: `我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超一下超长一下超长长`,
-    confirmButtonText: "确认", // Chinese confirm button
+    // defaultInputText: `我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超一下超长一下超长长`,
+    confirmButtonText: "提交", // Chinese confirm button
     beforeSend: (params) => {
       console.log("beforeSend", params);
       return true;

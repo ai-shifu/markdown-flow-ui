@@ -5,7 +5,8 @@
     "hooks": "@/hooks",
     "lib": "@/lib",
     "ui": "@/components/ui",
-    "utils": "@/lib/utils"
+    "utils": "@/lib/utils",
+    "assets": "@/assets"
   },
   "iconLibrary": "lucide",
   "rsc": false,

@@ -1,9 +1,13 @@
 @import "tailwindcss";
 
+#storybook-root {
+  width: 100%;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --primary: #3b82f6;
+  --primary: #1a68eb;
   --primary-foreground: #ffffff;
   --border: #e2e8f0;
   --muted: #f8fafc;

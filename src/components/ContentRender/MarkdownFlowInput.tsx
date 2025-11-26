@@ -1,5 +1,7 @@
-import { SendIcon } from "lucide-react";
 import React from "react";
+
+import sendIconDisable from "@/assets/icons/send_disable.svg";
+import sendIconEnable from "@/assets/icons/send_enable.svg";
 
 import {
   InputGroup,
@@ -13,11 +15,13 @@ interface MarkdownFlowInputProps {
   value?: string;
   title?: string;
   onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  onKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   onSend?: () => void;
   className?: string;
   textareaClassName?: string;
 }
+
+const resolveAssetSrc = (asset: string | { src: string }) =>
+  typeof asset === "string" ? asset : asset.src;
 
 const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   disabled,
@@ -25,12 +29,25 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   value,
   title,
   onChange,
-  onKeyDown,
   onSend,
   className,
   textareaClassName,
 }) => {
   const isSendDisabled = disabled || !value?.trim();
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!onSend) {
+      return;
+    }
+    if (e.nativeEvent.isComposing || e.keyCode === 229) {
+      return;
+    }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (!isSendDisabled) {
+        onSend();
+      }
+    }
+  };
 
   return (
     <InputGroup
@@ -42,8 +59,8 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        onKeyDown={onKeyDown}
-        className={`text-[16px] leading-5 font-normal text-[#0A0A0A] placeholder:text-[rgba(99,114,128,1)] bg-transparent border-0 shadow-none px-3 py-1.5 min-h-[32px] ${textareaClassName || ""}`}
+        onKeyDown={handleKeyDown}
+        className={`text-[16px] leading-5 font-normal text-[#0A0A0A] placeholder:text-[rgba(99,114,128,1)] bg-transparent border-0 shadow-none pl-3 pr-0 py-1.5 min-h-[32px] ${textareaClassName || ""}`}
         title={title}
       />
       <InputGroupButton
@@ -54,18 +71,17 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
         disabled={isSendDisabled}
         aria-label="send"
         style={{
-          margin: "0 10px 7px 7px",
+          margin: "0px 7px 4px 7px",
           cursor: isSendDisabled ? "not-allowed" : "pointer",
         }}
-        className="size-4 group self-end mb-[2px]"
+        className="size-6 group self-end mb-[2px]"
       >
-        <SendIcon
-          size={16}
-          className={`send-icon transition-colors ${
-            isSendDisabled
-              ? "text-[rgba(85,87,94,0.45)]"
-              : "group-hover:text-[rgba(85,87,94,0.85)]"
-          }`}
+        <img
+          src={resolveAssetSrc(
+            isSendDisabled ? sendIconDisable : sendIconEnable
+          )}
+          alt="send"
+          className="size-6"
         />
       </InputGroupButton>
     </InputGroup>

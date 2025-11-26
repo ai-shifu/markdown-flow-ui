@@ -163,7 +163,6 @@
   font-size: var(--text-md-font-size, 16px);
   font-style: normal;
   font-weight: 400;
-  line-height: var(--text-sm-line-height, 20px); /* 142.857% */
   border-radius: var(--border-radius-rounded-lg, 10px);
   border: var(--border-width-border, 1px) solid var(--base-border, #e5e5e5);
   background: var(--base-card, #fff);
@@ -177,12 +176,10 @@
   overflow: auto;
 }
 
-.ͼ1 .cm-scroller {
-  line-height: var(--text-sm-line-height, 30px); /* 142.857% */
-}
 .cm-line {
   /* color: #0a0a0a; */
   font-family: "PingFang SC";
+  line-height: 30px; /* 142.857% */
   /* font-size: var(--text-sm-font-size, 14px); */
   /* font-style: normal; */
   /* font-weight: 400; */

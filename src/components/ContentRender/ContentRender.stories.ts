@@ -667,3 +667,33 @@ export const NativeHtmlElements: Story = {
     content: NATIVE_HTML_CONTENT,
   },
 };
+
+export const EnglishChineseTypographyPreview: Story = {
+  name: "English + 中文 Typography",
+  args: {
+    enableTypewriter: false,
+    content: `# Typography Preview
+
+## English Section
+Hey there, I’m Zhigang Sun—pleased to meet you. I founded AI Shifu, used to teach at Harbin Institute of Technology as an associate professor, then built products at NetEase and Dedao. My turf has always been the crossroads of internet, AI, and education.
+> English quote: "Great typography lets the story shine."
+
+- Headline sample
+- Body paragraph sample
+- Caption text sample
+
+## 中文部分
+欢迎来到字体测试场景，这里可以检查中文标题、正文和引用的展示效果。默认段落行高需要让多行文字保持舒适的阅读体验。
+
+**中文粗体**、*中文斜体* 与 1234567890 同时出现，确保数字和文字的组合也正常。
+
+> 中文引用：「好排版能帮助读者迅速理解内容。」
+
+- 项目一：中文列表
+- 项目二：强调不同字号
+- 项目三：中英文混排 test
+
+最后一段混排：Design with empathy, 用心打磨体验。
+`,
+  },
+};

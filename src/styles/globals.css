@@ -6,6 +6,10 @@
   width: 100%;
 }
 
+#storybook-root {
+  width: 100%;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

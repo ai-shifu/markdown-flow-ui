@@ -66,13 +66,7 @@ const MultiSelectSection = ({
   const placeholder = node.properties?.placeholder;
   const confirmDisabled =
     readonly || (selectedValues.length === 0 && !inputValue?.trim());
-  console.log(
-    "confirmDisabled",
-    inputValue,
-    selectedValues.length === 0,
-    !inputValue?.trim(),
-    confirmDisabled
-  );
+
   return (
     <span className="multi-select-container inline-flex w-full items-center">
       <span className="flex flex-1 flex-col">

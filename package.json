@@ -147,5 +147,5 @@
     "test": "echo \"No tests specified\" && exit 0"
   },
   "types": "dist/index.d.ts",
-  "version": "0.1.33"
+  "version": "0.1.34"
 }

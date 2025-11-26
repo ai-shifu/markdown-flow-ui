@@ -160,7 +160,7 @@
 .markdown-flow-editor {
   color: #0a0a0a;
   font-family: "PingFang SC";
-  font-size: var(--text-sm-font-size, 14px);
+  font-size: var(--text-md-font-size, 16px);
   font-style: normal;
   font-weight: 400;
   line-height: var(--text-sm-line-height, 20px); /* 142.857% */
@@ -177,10 +177,13 @@
   overflow: auto;
 }
 
+.ͼ1 .cm-scroller {
+  line-height: var(--text-sm-line-height, 30px); /* 142.857% */
+}
 .cm-line {
   /* color: #0a0a0a; */
   font-family: "PingFang SC";
-  font-size: var(--text-sm-font-size, 14px);
+  /* font-size: var(--text-sm-font-size, 14px); */
   /* font-style: normal; */
   /* font-weight: 400; */
 }

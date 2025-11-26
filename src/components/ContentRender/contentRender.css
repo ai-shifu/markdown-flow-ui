@@ -3,6 +3,9 @@
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
     Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   line-height: 1.6;
+  /* Allow responsive rules to react to this container's width */
+  container-type: inline-size;
+  container-name: content-render;
 }
 
 .content-render.markdown-body {
@@ -236,7 +239,14 @@
   line-height: var(--text-sm-line-height, 20px);
 }
 
-@media (max-width: 640px) {
+.content-render .multi-select-container .block {
+  margin-top: 16px;
+}
+/* Responsive when content-render width <= 767px */
+@container (max-width: 767px) {
+  .content-render {
+    max-width: 100%;
+  }
   .content-render .multi-select-container {
     flex-direction: column;
     align-items: stretch;

@@ -678,6 +678,10 @@ export const EnglishChineseTypographyPreview: Story = {
 Hey there, I’m Zhigang Sun—pleased to meet you. I founded AI Shifu, used to teach at Harbin Institute of Technology as an associate professor, then built products at NetEase and Dedao. My turf has always been the crossroads of internet, AI, and education.
 > English quote: "Great typography lets the story shine."
 
+Hello there, I’m Sun Zhigang—delighted to meet you for the first time.
+Its “memory” is a sandbox you can shape, trim, or flood at will.
+
+
 - Headline sample
 - Body paragraph sample
 - Caption text sample

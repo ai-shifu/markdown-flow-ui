@@ -20,6 +20,9 @@ const DEFAULT_MESSAGES = {
 const MERMAID_FONT_STACK =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif';
 
+const preprocessChart = (raw: string) =>
+  raw.trim().replace(/^_streaming\s*/i, "");
+
 const MermaidChart: React.FC<MermaidChartProps> = ({
   chart,
   messages,
@@ -31,9 +34,9 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
 
   const renderChart = async () => {
     try {
-      const trimmed = chart.trim();
+      const cleaned = preprocessChart(chart);
 
-      if (!trimmed) {
+      if (!cleaned) {
         setError(messages?.emptyChart ?? DEFAULT_MESSAGES.emptyChart);
         setSvg("");
         return;
@@ -54,7 +57,7 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
 
       // use mermaid.parse to check for errors
       try {
-        await mermaid.parse(trimmed);
+        await mermaid.parse(cleaned);
       } catch (parseErr) {
         const parseErrorMsg = String(parseErr).toLowerCase();
         setError(parseErrorMsg);
@@ -66,7 +69,7 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
       const id = `mermaid-${Date.now()}`;
 
       // Render the chart
-      const { svg: renderedSvg } = await mermaid.render(id, trimmed);
+      const { svg: renderedSvg } = await mermaid.render(id, cleaned);
       setSvg(renderedSvg);
       setError("");
     } catch (err) {
@@ -78,11 +81,11 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
 
   useEffect(() => {
     if (frozen && hasRendered) return; // 核心：被冻结就不渲染
-    console.log("=======renderChart=======");
     renderChart();
   }, [chart, frozen]);
 
   if (error) {
+    const displayChart = preprocessChart(chart) || chart.trim();
     return (
       <div className="my-4 border border-gray-200 rounded-lg bg-gray-50">
         <div className="px-4 py-3 bg-gray-100 border-b border-gray-200 flex items-center gap-2">
@@ -93,7 +96,7 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
         </div>
         <div className="relative">
           <pre className="p-4 text-sm font-mono text-yellow-800">
-            <code>{chart}</code>
+            <code>{displayChart}</code>
           </pre>
           <div className="absolute top-2 right-2 px-2 py-1 text-xs text-yellow-700 bg-white/90 rounded border border-gray-200">
             {messages?.badge ?? DEFAULT_MESSAGES.badge}

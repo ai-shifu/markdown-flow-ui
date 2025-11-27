@@ -26,140 +26,10 @@ import {
   subsetLanguages,
 } from "./utils/highlight-languages";
 import { processMarkdownText } from "./utils/process-markdown";
-
-export function parseMarkdownSegments(markdown: string) {
-  const segments: Array<
-    | { type: "text"; value: string }
-    | { type: "mermaid"; value: string; complete: boolean }
-  > = [];
-
-  const regex = /```mermaid([\s\S]*?)```/g;
-
-  let lastIndex = 0;
-  let match;
-
-  while ((match = regex.exec(markdown)) !== null) {
-    const start = match.index;
-    const end = regex.lastIndex;
-    const code = match[1].trim();
-
-    // 前面的文本
-    if (start > lastIndex) {
-      segments.push({
-        type: "text",
-        value: markdown.slice(lastIndex, start),
-      });
-    }
-
-    // 完整的 mermaid block
-    segments.push({
-      type: "mermaid",
-      value: code,
-      complete: true,
-    });
-
-    lastIndex = end;
-  }
-
-  // 检查是否含有未闭合的 mermaid
-  const incompleteStart = markdown.lastIndexOf("```mermaid");
-  if (incompleteStart !== -1 && incompleteStart >= lastIndex) {
-    const code = markdown.slice(incompleteStart + 10);
-    segments.push({
-      type: "mermaid",
-      value: code.trim(),
-      complete: false,
-    });
-
-    if (incompleteStart > lastIndex) {
-      segments.unshift({
-        type: "text",
-        value: markdown.slice(lastIndex, incompleteStart),
-      });
-    }
-
-    return segments;
-  }
-
-  // 剩余文本
-  if (lastIndex < markdown.length) {
-    segments.push({
-      type: "text",
-      value: markdown.slice(lastIndex),
-    });
-  }
-
-  return segments;
-}
-
-export function parseMermaidBlocks(fullMarkdown: string) {
-  const blocks = [];
-  const lines: string[] = fullMarkdown.split(/\r?\n/);
-
-  let inside = false;
-  let current: string[] = [];
-  let startLine = 0;
-
-  lines.forEach((line, index) => {
-    if (!inside) {
-      if (line.trim().startsWith("```mermaid")) {
-        inside = true;
-        startLine = index;
-        current = [];
-      }
-      return;
-    }
-
-    // inside mermaid mode
-    if (line.trim() === "```") {
-      // block complete
-      blocks.push({
-        code: current.join("\n").trim(),
-        startLine,
-        endLine: index,
-        complete: true,
-      });
-      inside = false;
-      return;
-    }
-
-    current.push(line);
-  });
-
-  // if still inside → incomplete block
-  if (inside) {
-    blocks.push({
-      code: current.join("\n").trim(),
-      startLine,
-      endLine: null,
-      complete: false,
-    });
-  }
-
-  return blocks;
-}
-
-/**
- * 判断当前 codeString 对应的 mermaid block 是否已完整结束
- * @param fullMarkdown 整个 markdown（流式增长）
- * @param codeString 渲染组件中当前 mermaid block 的代码（children）
- */
-export function mermaidBlockIsComplete(
-  fullMarkdown: string,
-  codeString: string
-) {
-  const cleaned = codeString.trim();
-  const blocks = parseMermaidBlocks(fullMarkdown);
-  console.log("blocks", blocks);
-  // 找出与当前 codeString 对应的 block
-  const block = blocks.find((b) => b.code === cleaned);
-
-  if (!block) return false;
-
-  // 如果这个 block 已存在结束符 → 已完成
-  return block.complete;
-}
-
+import {
+  parseMarkdownSegments,
+  mermaidBlockIsComplete,
+} from "./utils/mermaid-parse";
 // Define component Props type
 export interface ContentRenderProps {
   content: string;
@@ -260,7 +130,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       if (language === "mermaid") {
         const chartContent = children?.toString().replace(/\n$/, "") || "";
         const frozen = mermaidBlockIsComplete(content, chartContent);
-        console.log("frozen", frozen);
         return <MermaidChart chart={chartContent} frozen={frozen} />;
       }
 
@@ -355,7 +224,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
             <MermaidChart
               key={index}
               chart={seg.value}
-              frozen={!seg.complete} // 不完整就不渲染
+              frozen={!seg.complete}
             />
           );
         }

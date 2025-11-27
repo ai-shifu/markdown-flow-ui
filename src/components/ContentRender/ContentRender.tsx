@@ -27,6 +27,68 @@ import {
 } from "./utils/highlight-languages";
 import { processMarkdownText } from "./utils/process-markdown";
 
+/**
+ * 从 markdown 中解析所有 mermaid block
+ * 返回数组：[ { code: string, start: number, end: number, complete: boolean } ]
+ */
+export function parseMermaidBlocks(fullMarkdown: string) {
+  const blocks = [];
+  const startTag = "```mermaid";
+
+  let searchPos = 0;
+
+  while (true) {
+    const start = fullMarkdown.indexOf(startTag, searchPos);
+    if (start === -1) break;
+
+    const contentStart = start + startTag.length;
+
+    // 找结束符 ```
+    const end = fullMarkdown.indexOf("```", contentStart);
+    const hasEnd = end !== -1;
+
+    const rawBlock = hasEnd
+      ? fullMarkdown.slice(contentStart, end)
+      : fullMarkdown.slice(contentStart);
+
+    const code = rawBlock.trim();
+
+    blocks.push({
+      code,
+      start,
+      end: hasEnd ? end : null,
+      complete: hasEnd,
+    });
+
+    // 下次搜索位置
+    searchPos = hasEnd ? end + 3 : fullMarkdown.length;
+  }
+
+  return blocks;
+}
+
+/**
+ * 判断当前 codeString 对应的 mermaid block 是否已完整结束
+ * @param fullMarkdown 整个 markdown（流式增长）
+ * @param codeString 渲染组件中当前 mermaid block 的代码（children）
+ */
+export function mermaidBlockIsComplete(
+  fullMarkdown: string,
+  codeString: string
+) {
+  const cleaned = codeString.trim();
+  const blocks = parseMermaidBlocks(fullMarkdown);
+  console.log("blocks", blocks);
+  // 找出与当前 codeString 对应的 block
+  const matched = blocks.find((b) => b.code === cleaned);
+  console.log("matched", matched);
+  // 如果没有找到对应 block，说明还没输出完（如代码还在流式）
+  if (!matched) return false;
+
+  // 如果这个 block 已存在结束符 → 已完成
+  return matched.complete;
+}
+
 // Define component Props type
 export interface ContentRenderProps {
   content: string;
@@ -126,7 +188,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       const language = match?.[1];
       if (language === "mermaid") {
         const chartContent = children?.toString().replace(/\n$/, "") || "";
-        return <MermaidChart chart={chartContent} />;
+        const frozen = mermaidBlockIsComplete(content, chartContent);
+        console.log("frozen", frozen);
+        return <MermaidChart chart={chartContent} frozen={frozen} />;
       }
 
       return (

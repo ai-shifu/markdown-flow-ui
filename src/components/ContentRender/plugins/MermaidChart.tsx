@@ -8,6 +8,7 @@ export interface MermaidChartProps {
     loading?: string;
     badge?: string;
   };
+  frozen?: boolean;
 }
 
 const DEFAULT_MESSAGES = {
@@ -19,59 +20,67 @@ const DEFAULT_MESSAGES = {
 const MERMAID_FONT_STACK =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif';
 
-const MermaidChart: React.FC<MermaidChartProps> = ({ chart, messages }) => {
+const MermaidChart: React.FC<MermaidChartProps> = ({
+  chart,
+  messages,
+  frozen,
+}) => {
   const [svg, setSvg] = useState("");
   const [error, setError] = useState("");
+  const [hasRendered, setHasRendered] = useState(false); // 新增
+
+  const renderChart = async () => {
+    try {
+      const trimmed = chart.trim();
+
+      if (!trimmed) {
+        setError(messages?.emptyChart ?? DEFAULT_MESSAGES.emptyChart);
+        setSvg("");
+        return;
+      }
+
+      // Initialize mermaid with the same font stack used in markdown content.
+      // Using a concrete stack avoids clipping caused by `inherit` resolving to
+      // Storybook's default font during off-screen rendering.
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: "default",
+        securityLevel: "loose",
+        fontFamily: MERMAID_FONT_STACK,
+        themeVariables: {
+          fontFamily: MERMAID_FONT_STACK,
+        },
+      });
+
+      // use mermaid.parse to check for errors
+      try {
+        await mermaid.parse(trimmed);
+      } catch (parseErr) {
+        const parseErrorMsg = String(parseErr).toLowerCase();
+        setError(parseErrorMsg);
+        setSvg("");
+        setHasRendered(true); // 关键：只要渲染成功过一次，就标记已渲染
+        return;
+      }
+
+      const id = `mermaid-${Date.now()}`;
+
+      // Render the chart
+      const { svg: renderedSvg } = await mermaid.render(id, trimmed);
+      setSvg(renderedSvg);
+      setError("");
+    } catch (err) {
+      const errorMsg = String(err).toLowerCase();
+      setError(errorMsg);
+      setSvg("");
+    }
+  };
 
   useEffect(() => {
-    const renderChart = async () => {
-      try {
-        const trimmed = chart.trim();
-
-        if (!trimmed) {
-          setError(messages?.emptyChart ?? DEFAULT_MESSAGES.emptyChart);
-          setSvg("");
-          return;
-        }
-
-        // Initialize mermaid with the same font stack used in markdown content.
-        // Using a concrete stack avoids clipping caused by `inherit` resolving to
-        // Storybook's default font during off-screen rendering.
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: "default",
-          securityLevel: "loose",
-          fontFamily: MERMAID_FONT_STACK,
-          themeVariables: {
-            fontFamily: MERMAID_FONT_STACK,
-          },
-        });
-
-        // use mermaid.parse to check for errors
-        try {
-          await mermaid.parse(trimmed);
-        } catch (parseErr) {
-          const parseErrorMsg = String(parseErr).toLowerCase();
-          setError(parseErrorMsg);
-          setSvg("");
-          return;
-        }
-
-        const id = `mermaid-${Date.now()}`;
-
-        // Render the chart
-        const { svg: renderedSvg } = await mermaid.render(id, trimmed);
-        setSvg(renderedSvg);
-        setError("");
-      } catch (err) {
-        const errorMsg = String(err).toLowerCase();
-        setError(errorMsg);
-        setSvg("");
-      }
-    };
-
+    if (frozen && hasRendered) return; // 核心：被冻结就不渲染
+    console.log("=======renderChart=======");
     renderChart();
-  }, [chart]);
+  }, [chart, frozen]);
 
   if (error) {
     return (
@@ -107,4 +116,6 @@ const MermaidChart: React.FC<MermaidChartProps> = ({ chart, messages }) => {
   );
 };
 
-export default MermaidChart;
+export default React.memo(MermaidChart, (prev, next) => {
+  return prev.chart === next.chart && prev.frozen === next.frozen;
+});

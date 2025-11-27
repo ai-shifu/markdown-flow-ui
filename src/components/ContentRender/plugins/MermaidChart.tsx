@@ -30,7 +30,7 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
 }) => {
   const [svg, setSvg] = useState("");
   const [error, setError] = useState("");
-  const [hasRendered, setHasRendered] = useState(false); // 新增
+  const [hasRendered, setHasRendered] = useState(false);
 
   const renderChart = async () => {
     try {
@@ -62,7 +62,8 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
         const parseErrorMsg = String(parseErr).toLowerCase();
         setError(parseErrorMsg);
         setSvg("");
-        setHasRendered(true); // 关键：只要渲染成功过一次，就标记已渲染
+        // once render success, setHasRendered flag
+        setHasRendered(true);
         return;
       }
 

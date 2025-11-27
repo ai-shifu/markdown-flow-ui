@@ -27,41 +27,113 @@ import {
 } from "./utils/highlight-languages";
 import { processMarkdownText } from "./utils/process-markdown";
 
-/**
- * 从 markdown 中解析所有 mermaid block
- * 返回数组：[ { code: string, start: number, end: number, complete: boolean } ]
- */
-export function parseMermaidBlocks(fullMarkdown: string) {
-  const blocks = [];
-  const startTag = "```mermaid";
+export function parseMarkdownSegments(markdown: string) {
+  const segments: Array<
+    | { type: "text"; value: string }
+    | { type: "mermaid"; value: string; complete: boolean }
+  > = [];
 
-  let searchPos = 0;
+  const regex = /```mermaid([\s\S]*?)```/g;
 
-  while (true) {
-    const start = fullMarkdown.indexOf(startTag, searchPos);
-    if (start === -1) break;
+  let lastIndex = 0;
+  let match;
 
-    const contentStart = start + startTag.length;
+  while ((match = regex.exec(markdown)) !== null) {
+    const start = match.index;
+    const end = regex.lastIndex;
+    const code = match[1].trim();
 
-    // 找结束符 ```
-    const end = fullMarkdown.indexOf("```", contentStart);
-    const hasEnd = end !== -1;
+    // 前面的文本
+    if (start > lastIndex) {
+      segments.push({
+        type: "text",
+        value: markdown.slice(lastIndex, start),
+      });
+    }
 
-    const rawBlock = hasEnd
-      ? fullMarkdown.slice(contentStart, end)
-      : fullMarkdown.slice(contentStart);
-
-    const code = rawBlock.trim();
-
-    blocks.push({
-      code,
-      start,
-      end: hasEnd ? end : null,
-      complete: hasEnd,
+    // 完整的 mermaid block
+    segments.push({
+      type: "mermaid",
+      value: code,
+      complete: true,
     });
 
-    // 下次搜索位置
-    searchPos = hasEnd ? end + 3 : fullMarkdown.length;
+    lastIndex = end;
+  }
+
+  // 检查是否含有未闭合的 mermaid
+  const incompleteStart = markdown.lastIndexOf("```mermaid");
+  if (incompleteStart !== -1 && incompleteStart >= lastIndex) {
+    const code = markdown.slice(incompleteStart + 10);
+    segments.push({
+      type: "mermaid",
+      value: code.trim(),
+      complete: false,
+    });
+
+    if (incompleteStart > lastIndex) {
+      segments.unshift({
+        type: "text",
+        value: markdown.slice(lastIndex, incompleteStart),
+      });
+    }
+
+    return segments;
+  }
+
+  // 剩余文本
+  if (lastIndex < markdown.length) {
+    segments.push({
+      type: "text",
+      value: markdown.slice(lastIndex),
+    });
+  }
+
+  return segments;
+}
+
+export function parseMermaidBlocks(fullMarkdown: string) {
+  const blocks = [];
+  const lines: string[] = fullMarkdown.split(/\r?\n/);
+
+  let inside = false;
+  let current: string[] = [];
+  let startLine = 0;
+
+  lines.forEach((line, index) => {
+    if (!inside) {
+      if (line.trim().startsWith("```mermaid")) {
+        inside = true;
+        startLine = index;
+        current = [];
+      }
+      return;
+    }
+
+    // inside mermaid mode
+    if (line.trim() === "```") {
+      // block complete
+      blocks.push({
+        code: current.join("\n").trim(),
+        startLine,
+        endLine: index,
+        complete: true,
+      });
+      inside = false;
+      return;
+    }
+
+    current.push(line);
+  });
+
+  // if still inside → incomplete block
+  if (inside) {
+    blocks.push({
+      code: current.join("\n").trim(),
+      startLine,
+      endLine: null,
+      complete: false,
+    });
   }
 
   return blocks;
@@ -80,13 +152,12 @@ export function mermaidBlockIsComplete(
   const blocks = parseMermaidBlocks(fullMarkdown);
   console.log("blocks", blocks);
   // 找出与当前 codeString 对应的 block
-  const matched = blocks.find((b) => b.code === cleaned);
-  console.log("matched", matched);
-  // 如果没有找到对应 block，说明还没输出完（如代码还在流式）
-  if (!matched) return false;
+  const block = blocks.find((b) => b.code === cleaned);
+
+  if (!block) return false;
 
   // 如果这个 block 已存在结束符 → 已完成
-  return matched.complete;
+  return block.complete;
 }
 
 // Define component Props type
@@ -252,34 +323,44 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     hasCompleted.current = false; // Reset completion status when content changes
   }, [content]);
 
+  const segments = parseMarkdownSegments(displayContent);
+
   return (
     <div className={`content-render markdown-body`}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath, remarkFlow, remarkBreaks]}
-        rehypePlugins={[
-          preserveCustomVariableProperties, // before rehypeRaw, put button texts and values in properties
-          rehypeRaw, // support html
-          restoreCustomVariableProperties, // after rehypeRaw, restore button texts and values from properties
-          [
-            rehypeHighlight,
-            {
-              languages: highlightLanguages,
-              subset: subsetLanguages,
-            },
-          ],
-          rehypeKatex,
-        ]}
-        components={components}
-      >
-        {displayContent}
-      </ReactMarkdown>
-      {/* {isTyping && <span className='typing-cursor animate-pulse' style={{
-        display: 'inline',
-        fontSize: '0.25em',
-        lineHeight: 'inherit',
-        marginLeft: '1px',
-        verticalAlign: 'baseline'
-      }}>●</span>} */}
+      {segments.map((seg, index) => {
+        if (seg.type === "text") {
+          return (
+            <ReactMarkdown
+              key={index}
+              remarkPlugins={[remarkGfm, remarkMath, remarkFlow, remarkBreaks]}
+              rehypePlugins={[
+                preserveCustomVariableProperties,
+                rehypeRaw,
+                restoreCustomVariableProperties,
+                [
+                  rehypeHighlight,
+                  { languages: highlightLanguages, subset: subsetLanguages },
+                ],
+                rehypeKatex,
+              ]}
+              components={components}
+            >
+              {seg.value}
+            </ReactMarkdown>
+          );
+        }
+
+        if (seg.type === "mermaid") {
+          return (
+            <MermaidChart
+              key={index}
+              chart={seg.value}
+              frozen={!seg.complete} // 不完整就不渲染
+            />
+          );
+        }
+      })}
+
       {customRenderBar &&
         React.createElement(customRenderBar, {
           content,

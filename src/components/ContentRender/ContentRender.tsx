@@ -26,7 +26,10 @@ import {
   subsetLanguages,
 } from "./utils/highlight-languages";
 import { processMarkdownText } from "./utils/process-markdown";
-
+import {
+  parseMarkdownSegments,
+  mermaidBlockIsComplete,
+} from "./utils/mermaid-parse";
 // Define component Props type
 export interface ContentRenderProps {
   content: string;
@@ -126,7 +129,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       const language = match?.[1];
       if (language === "mermaid") {
         const chartContent = children?.toString().replace(/\n$/, "") || "";
-        return <MermaidChart chart={chartContent} />;
+        const frozen = mermaidBlockIsComplete(content, chartContent);
+        return <MermaidChart chart={chartContent} frozen={frozen} />;
       }
 
       return (
@@ -188,34 +192,44 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     hasCompleted.current = false; // Reset completion status when content changes
   }, [content]);
 
+  const segments = parseMarkdownSegments(displayContent);
+
   return (
     <div className={`content-render markdown-body`}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath, remarkFlow, remarkBreaks]}
-        rehypePlugins={[
-          preserveCustomVariableProperties, // before rehypeRaw, put button texts and values in properties
-          rehypeRaw, // support html
-          restoreCustomVariableProperties, // after rehypeRaw, restore button texts and values from properties
-          [
-            rehypeHighlight,
-            {
-              languages: highlightLanguages,
-              subset: subsetLanguages,
-            },
-          ],
-          rehypeKatex,
-        ]}
-        components={components}
-      >
-        {displayContent}
-      </ReactMarkdown>
-      {/* {isTyping && <span className='typing-cursor animate-pulse' style={{
-        display: 'inline',
-        fontSize: '0.25em',
-        lineHeight: 'inherit',
-        marginLeft: '1px',
-        verticalAlign: 'baseline'
-      }}>●</span>} */}
+      {segments.map((seg, index) => {
+        if (seg.type === "text") {
+          return (
+            <ReactMarkdown
+              key={index}
+              remarkPlugins={[remarkGfm, remarkMath, remarkFlow, remarkBreaks]}
+              rehypePlugins={[
+                preserveCustomVariableProperties,
+                rehypeRaw,
+                restoreCustomVariableProperties,
+                [
+                  rehypeHighlight,
+                  { languages: highlightLanguages, subset: subsetLanguages },
+                ],
+                rehypeKatex,
+              ]}
+              components={components}
+            >
+              {seg.value}
+            </ReactMarkdown>
+          );
+        }
+
+        if (seg.type === "mermaid") {
+          return (
+            <MermaidChart
+              key={index}
+              chart={seg.value}
+              frozen={!seg.complete}
+            />
+          );
+        }
+      })}
+
       {customRenderBar &&
         React.createElement(customRenderBar, {
           content,

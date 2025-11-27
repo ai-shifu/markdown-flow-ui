@@ -354,6 +354,29 @@ export const MathAndMermaidDemo: Story = {
   },
 };
 
+export const MermaidWithTypewriter: Story = {
+  name: "Mermaid Charts + Typewriter Effect",
+  args: {
+    content: `## Streaming Mermaid Demo
+\`\`\`mermaid
+flowchart LR
+  Typing -->|tokens| Mermaid
+  Mermaid -->|partial| Flicker[Flash?]
+  Flicker -->|fix| Stable[[Stable Preview]]
+\`\`\`
+AI 助手正在输出 Mermaid 代码，Typewriter 也会把它分段展示
+\`\`\`mermaid
+graph TD
+    A[硬盘里的空文件] -->|预训练| B[读完 40TB 书报代码]
+    B -->|后训练| C[大语言模型 LLM]
+    C -->|封装| D[ChatGPT/文心一言/通义千问]
+\`\`\`
+AI 助手正在输出 Mermaid 代码，Typewriter 也会把它分段展示
+`,
+    enableTypewriter: true,
+  },
+};
+
 export const ContentRenderMathAndMermaid: Story = {
   args: {
     enableTypewriter: false,

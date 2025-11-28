@@ -30,11 +30,16 @@ const meta = {
       control: "boolean",
       description: "Whether the editor is read-only",
     },
+    disabled: {
+      control: "boolean",
+      description: "Disables user interactions and editing",
+    },
   },
   args: {
     value: "",
     className: "",
     readOnly: false,
+    disabled: false,
   },
 } satisfies Meta<typeof MarkdownFlowEditor>;
 
@@ -304,5 +309,19 @@ export const MarkdownFlowEditorWithFixedText: Story = {
     onChange: (value) => {
       console.log("value", value);
     },
+  },
+};
+
+export const MarkdownFlowEditorDisabled: Story = {
+  args: {
+    content,
+    editMode: EditMode.QuickEdit,
+    locale: "en-US",
+    disabled: true,
+    variables: [
+      { name: "sys_user_language" },
+      { name: "sys_user_email" },
+      { name: "plan" },
+    ],
   },
 };

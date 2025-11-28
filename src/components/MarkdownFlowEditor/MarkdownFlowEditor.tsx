@@ -79,6 +79,7 @@ type EditorProps = {
   onBlur?: () => void;
   locale?: "en-US" | "zh-CN";
   uploadProps?: UploadProps;
+  disabled?: boolean;
 };
 
 const EMPTY_VARIABLES: Variable[] = [];
@@ -92,6 +93,7 @@ const Editor: React.FC<EditorProps> = ({
   onBlur,
   locale = "en-US",
   uploadProps,
+  disabled = false,
 }) => {
   const { t, i18n } = useTranslation();
   useEffect(() => {
@@ -146,6 +148,24 @@ const Editor: React.FC<EditorProps> = ({
     popoverPosition,
     setPopoverPosition,
   };
+
+  useEffect(() => {
+    if (!disabled) {
+      return;
+    }
+    setDialogOpen(false);
+    setPopoverOpen(false);
+    setSelectedOption(SelectedOption.Empty);
+    setSelectContentInfo(null);
+    setPopoverPosition(null);
+  }, [
+    disabled,
+    setDialogOpen,
+    setPopoverOpen,
+    setPopoverPosition,
+    setSelectedOption,
+    setSelectContentInfo,
+  ]);
 
   const addVariablesFromContent = useCallback(
     (text: string) => {
@@ -242,6 +262,9 @@ const Editor: React.FC<EditorProps> = ({
 
   const onSelectedOption = useCallback(
     (option: SelectedOption) => {
+      if (disabled) {
+        return;
+      }
       // if (option === SelectedOption.FixedText) {
       //   insertFixedText();
       //   setSelectedOption(SelectedOption.Empty);
@@ -281,13 +304,12 @@ const Editor: React.FC<EditorProps> = ({
         setDialogOpen(true);
       }
     },
-    // [insertText]
-    []
+    [disabled]
   );
 
   const insertText = useCallback(
     (text: string) => {
-      if (!editorViewRef.current) return;
+      if (disabled || !editorViewRef.current) return;
 
       const { state, dispatch } = editorViewRef.current;
       const from = state.selection.main.from;
@@ -297,10 +319,13 @@ const Editor: React.FC<EditorProps> = ({
         selection: { anchor: from + text.length },
       });
     },
-    [editorViewRef]
+    [editorViewRef, disabled]
   );
 
   const deleteSelectedContent = useCallback(() => {
+    if (disabled) {
+      return;
+    }
     if (
       !selectContentInfo ||
       !editorViewRef.current ||
@@ -314,7 +339,7 @@ const Editor: React.FC<EditorProps> = ({
     dispatch({
       changes: { from, to, insert: "" },
     });
-  }, [selectContentInfo, editorViewRef]);
+  }, [selectContentInfo, editorViewRef, disabled]);
 
   const handleSelectImage = useCallback(
     ({
@@ -326,7 +351,7 @@ const Editor: React.FC<EditorProps> = ({
       resourceTitle?: string;
       scalePercent?: number;
     }) => {
-      if (!resourceUrl) return;
+      if (!resourceUrl || disabled) return;
       const sanitizedHtmlUrl = resourceUrl.replace(/"/g, "&quot;");
       const clampedScale =
         typeof scalePercent === "number"
@@ -362,7 +387,7 @@ const Editor: React.FC<EditorProps> = ({
       }
       setDialogOpen(false);
     },
-    [insertText, selectedOption]
+    [insertText, selectedOption, disabled]
   );
 
   const handleSelectVideo = useCallback(
@@ -373,6 +398,9 @@ const Editor: React.FC<EditorProps> = ({
       resourceUrl: string;
       resourceTitle: string;
     }) => {
+      if (disabled) {
+        return;
+      }
       const textToInsert = getVideoContentToInsert(resourceUrl, resourceTitle);
       if (selectContentInfo?.type === SelectedOption.Video) {
         deleteSelectedContent();
@@ -386,11 +414,14 @@ const Editor: React.FC<EditorProps> = ({
       }
       setDialogOpen(false);
     },
-    [insertText, selectedOption]
+    [insertText, selectedOption, disabled]
   );
 
   const handleSelectVariable = useCallback(
     (variable: Variable) => {
+      if (disabled) {
+        return;
+      }
       const textToInsert = `{{${variable.name}}}`;
       if (selectContentInfo?.type === SelectedOption.Variable) {
         deleteSelectedContent();
@@ -404,7 +435,13 @@ const Editor: React.FC<EditorProps> = ({
       }
       setPopoverOpen(false);
     },
-    [insertText, selectedOption, deleteSelectedContent, selectContentInfo]
+    [
+      insertText,
+      selectedOption,
+      deleteSelectedContent,
+      selectContentInfo,
+      disabled,
+    ]
   );
 
   const slashCommandsExtension = useCallback(() => {
@@ -447,31 +484,37 @@ const Editor: React.FC<EditorProps> = ({
     editorViewRef.current = view;
   }, []);
 
-  const handleTagClick = useCallback((event: any) => {
-    event.stopPropagation();
-    const { type, from, to, dataset, target } = event.detail;
-    const value = parseContentInfo(type, dataset);
-    setSelectContentInfo({
-      type,
-      value,
-      from,
-      to,
-    });
-    setSelectedOption(type);
-
-    if (type === SelectedOption.Variable) {
-      if (target) {
-        const rect = target.getBoundingClientRect();
-        setPopoverPosition({
-          x: rect.left,
-          y: rect.bottom,
-        });
+  const handleTagClick = useCallback(
+    (event: any) => {
+      event.stopPropagation();
+      if (disabled) {
+        return;
       }
-      setPopoverOpen(true);
-    } else {
-      setDialogOpen(true);
-    }
-  }, []);
+      const { type, from, to, dataset, target } = event.detail;
+      const value = parseContentInfo(type, dataset);
+      setSelectContentInfo({
+        type,
+        value,
+        from,
+        to,
+      });
+      setSelectedOption(type);
+
+      if (type === SelectedOption.Variable) {
+        if (target) {
+          const rect = target.getBoundingClientRect();
+          setPopoverPosition({
+            x: rect.left,
+            y: rect.bottom,
+          });
+        }
+        setPopoverOpen(true);
+      } else {
+        setDialogOpen(true);
+      }
+    },
+    [disabled]
+  );
 
   useEffect(() => {
     if (!dialogOpen) {
@@ -497,15 +540,18 @@ const Editor: React.FC<EditorProps> = ({
     return () => {
       window.removeEventListener("globalTagClick", handleWrap);
     };
-  }, []);
+  }, [handleTagClick]);
 
   const editorExtensions = useMemo(() => {
     const extensions = [
       EditorView.lineWrapping,
       markdown(),
       syntaxHighlighting(defaultHighlightStyle),
-      slashCommandsExtension(),
     ];
+
+    if (!disabled) {
+      extensions.push(slashCommandsExtension());
+    }
 
     if (editMode === EditMode.QuickEdit) {
       extensions.push(
@@ -524,18 +570,25 @@ const Editor: React.FC<EditorProps> = ({
     );
 
     return extensions;
-  }, [editMode, slashCommandsExtension, handleEditorUpdate]);
+  }, [disabled, editMode, slashCommandsExtension, handleEditorUpdate]);
 
   const handleContentChange = useCallback(
     (value: string) => {
+      if (disabled) {
+        return;
+      }
       addVariablesFromContent(value);
       onChange?.(value);
     },
-    [addVariablesFromContent, onChange]
+    [addVariablesFromContent, onChange, disabled]
   );
 
   return (
-    <div className="markdown-flow-editor">
+    <div
+      className="markdown-flow-editor"
+      data-disabled={disabled ? "true" : undefined}
+      aria-disabled={disabled}
+    >
       <EditorContext.Provider value={editorContextValue}>
         <CodeMirror
           extensions={editorExtensions}
@@ -551,56 +604,61 @@ const Editor: React.FC<EditorProps> = ({
           value={content}
           theme="light"
           minHeight="2rem"
+          editable={!disabled}
           onChange={handleContentChange}
           onBlur={onBlur}
         />
-        <CustomDialog
-          labels={{
-            title:
-              selectedOption === SelectedOption.Image
-                ? t("dialogTitleImage")
-                : selectedOption === SelectedOption.Video
-                  ? t("dialogTitleVideo")
-                  : selectedOption === SelectedOption.Variable
-                    ? t("dialogTitleVariable")
-                    : t("dialogTitle"),
-          }}
-        >
-          {selectedOption === SelectedOption.Image && (
-            <ImageInject
-              value={selectContentInfo?.value}
-              onSelect={handleSelectImage}
-              uploadProps={uploadProps}
-            />
-          )}
-          {selectedOption === SelectedOption.Video && (
-            <VideoInject
-              value={selectContentInfo?.value}
-              onSelect={handleSelectVideo}
-            />
-          )}
-        </CustomDialog>
-
-        <CustomPopover>
-          <VariableSelect
-            variables={variables}
-            systemVariables={systemVariables}
-            selectedName={selectContentInfo?.value?.variableName}
-            onSelect={handleSelectVariable}
-            onAddVariable={(variable) => {
-              setVariables((prev) => {
-                const normalized = variable.name.toLowerCase();
-                const exists = prev.some(
-                  (item) => item.name.toLowerCase() === normalized
-                );
-                if (exists) {
-                  return prev;
-                }
-                return [variable, ...prev];
-              });
+        {!disabled && (
+          <CustomDialog
+            labels={{
+              title:
+                selectedOption === SelectedOption.Image
+                  ? t("dialogTitleImage")
+                  : selectedOption === SelectedOption.Video
+                    ? t("dialogTitleVideo")
+                    : selectedOption === SelectedOption.Variable
+                      ? t("dialogTitleVariable")
+                      : t("dialogTitle"),
             }}
-          />
-        </CustomPopover>
+          >
+            {selectedOption === SelectedOption.Image && (
+              <ImageInject
+                value={selectContentInfo?.value}
+                onSelect={handleSelectImage}
+                uploadProps={uploadProps}
+              />
+            )}
+            {selectedOption === SelectedOption.Video && (
+              <VideoInject
+                value={selectContentInfo?.value}
+                onSelect={handleSelectVideo}
+              />
+            )}
+          </CustomDialog>
+        )}
+
+        {!disabled && (
+          <CustomPopover>
+            <VariableSelect
+              variables={variables}
+              systemVariables={systemVariables}
+              selectedName={selectContentInfo?.value?.variableName}
+              onSelect={handleSelectVariable}
+              onAddVariable={(variable) => {
+                setVariables((prev) => {
+                  const normalized = variable.name.toLowerCase();
+                  const exists = prev.some(
+                    (item) => item.name.toLowerCase() === normalized
+                  );
+                  if (exists) {
+                    return prev;
+                  }
+                  return [variable, ...prev];
+                });
+              }}
+            />
+          </CustomPopover>
+        )}
       </EditorContext.Provider>
     </div>
   );

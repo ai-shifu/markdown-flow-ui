@@ -239,5 +239,5 @@
 }
 
 .markdown-flow-editor[data-disabled="true"] {
-  background-color: transparent;
+  background-color: #fff;
 }

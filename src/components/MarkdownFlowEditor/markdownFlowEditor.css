@@ -237,3 +237,7 @@
   text-decoration: auto;
   /* font-weight: normal; */
 }
+
+.markdown-flow-editor[data-disabled="true"] {
+  background-color: transparent;
+}

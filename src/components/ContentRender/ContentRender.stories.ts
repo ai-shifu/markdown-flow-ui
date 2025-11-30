@@ -76,7 +76,7 @@ Image:
 \`\`\`javascript
 // JavaScript code block
 function hello() {
-  console.log("Hello World!");
+  console.log("Hello World!\n");
 }
 \`\`\`
 

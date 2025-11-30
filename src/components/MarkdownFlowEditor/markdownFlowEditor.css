@@ -157,6 +157,20 @@
   outline: none;
 }
 
+.markdown-flow-editor[data-disabled="true"] {
+  opacity: 0.8;
+  background: var(--base-muted, #f5f5f5);
+  cursor: not-allowed;
+}
+
+.markdown-flow-editor[data-disabled="true"] .cm-editor {
+  background-color: transparent;
+}
+
+.markdown-flow-editor[data-disabled="true"] .cm-content {
+  cursor: not-allowed;
+}
+
 .markdown-flow-editor {
   color: #0a0a0a;
   font-family:
@@ -222,4 +236,8 @@
 .c7 {
   text-decoration: auto;
   /* font-weight: normal; */
+}
+
+.markdown-flow-editor[data-disabled="true"] {
+  background-color: #fff;
 }

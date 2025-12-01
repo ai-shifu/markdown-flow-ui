@@ -57,7 +57,21 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
     if (disabled || !shouldAutoFocus) {
       return;
     }
-    textareaRef.current?.focus({ preventScroll: true });
+    if (typeof document !== "undefined") {
+      const activeElement = document.activeElement as
+        | HTMLElement
+        | null
+        | undefined;
+      if (
+        activeElement &&
+        activeElement !== textareaRef.current &&
+        typeof activeElement.blur === "function"
+      ) {
+        console.log("blur active element", activeElement);
+        activeElement.blur();
+      }
+    }
+    textareaRef.current?.focus();
   }, [disabled, shouldAutoFocus]);
 
   return (

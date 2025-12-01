@@ -50,6 +50,7 @@ interface MultiSelectSectionProps {
   handleInputChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   handleConfirmClick: () => void;
+  inputAutoFocus?: boolean;
 }
 
 const MultiSelectSection = ({
@@ -62,6 +63,7 @@ const MultiSelectSection = ({
   handleInputChange,
   handleKeyDown,
   handleConfirmClick,
+  inputAutoFocus,
 }: MultiSelectSectionProps) => {
   const placeholder = node.properties?.placeholder;
   const confirmDisabled =
@@ -97,6 +99,7 @@ const MultiSelectSection = ({
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
+                autoFocus={inputAutoFocus}
                 className="text-sm px-3"
                 title={placeholder}
               />
@@ -233,16 +236,6 @@ const CustomButtonInputVariable = ({
   );
   const isMultiSelect = node.properties?.isMultiSelect ?? false;
   const isSingleSelect = (node.properties?.buttonTexts || []).length > 0;
-  const inputAutoFocus = !(
-    (isSingleSelect &&
-      (node.properties?.buttonTexts || []).some((text) => Boolean(text))) ||
-    (isMultiSelect &&
-      (
-        node.properties?.buttonValues ||
-        node.properties?.buttonTexts ||
-        []
-      ).some((value) => Boolean(value)))
-  );
 
   const handleButtonClick = (value: string) => {
     const param = {
@@ -322,6 +315,11 @@ const CustomButtonInputVariable = ({
     node.properties?.buttonValues,
   ]);
 
+  const inputAutoFocus = !(
+    resolvedDefaultButtonText &&
+    (isSingleSelect || isMultiSelect)
+  );
+
   return (
     <span className="custom-variable-container inline-flex items-center flex-wrap">
       {isMultiSelect && (
@@ -335,6 +333,7 @@ const CustomButtonInputVariable = ({
           handleInputChange={handleInputChange}
           handleKeyDown={handleKeyDown}
           handleConfirmClick={handleConfirmClick}
+          inputAutoFocus={inputAutoFocus}
         />
       )}
 
@@ -358,7 +357,7 @@ const CustomButtonInputVariable = ({
           value={inputValue}
           onChange={handleInputChange}
           onSend={handleSendClick}
-          autoFocus={inputAutoFocus}
+          autoFocus={!inputValue}
         />
       )}
     </span>

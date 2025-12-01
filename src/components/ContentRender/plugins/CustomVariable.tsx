@@ -132,6 +132,7 @@ interface SingleSelectSectionProps {
   inputValue: string;
   handleInputChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleSendClick: () => void;
+  inputAutoFocus?: boolean;
 }
 
 const SingleSelectSection = ({
@@ -142,6 +143,7 @@ const SingleSelectSection = ({
   inputValue,
   handleInputChange,
   handleSendClick,
+  inputAutoFocus = true,
 }: SingleSelectSectionProps) => (
   <span className="single-select-container inline-flex w-full flex-col">
     <span className="flex flex-wrap gap-y-[9px] gap-x-2">
@@ -172,6 +174,7 @@ const SingleSelectSection = ({
           onChange={handleInputChange}
           onSend={handleSendClick}
           title={node.properties.placeholder}
+          autoFocus={inputAutoFocus}
         />
       </span>
     )}
@@ -185,6 +188,7 @@ interface InputSectionProps {
   value: string;
   onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onSend: () => void;
+  autoFocus?: boolean;
 }
 
 const InputSection = ({
@@ -193,6 +197,7 @@ const InputSection = ({
   value,
   onChange,
   onSend,
+  autoFocus = true,
 }: InputSectionProps) => {
   if (!placeholder) {
     return null;
@@ -206,6 +211,7 @@ const InputSection = ({
       onChange={onChange}
       onSend={onSend}
       title={placeholder}
+      autoFocus={autoFocus}
     />
   );
 };
@@ -227,6 +233,16 @@ const CustomButtonInputVariable = ({
   );
   const isMultiSelect = node.properties?.isMultiSelect ?? false;
   const isSingleSelect = (node.properties?.buttonTexts || []).length > 0;
+  const inputAutoFocus = !(
+    (isSingleSelect &&
+      (node.properties?.buttonTexts || []).some((text) => Boolean(text))) ||
+    (isMultiSelect &&
+      (
+        node.properties?.buttonValues ||
+        node.properties?.buttonTexts ||
+        []
+      ).some((value) => Boolean(value)))
+  );
 
   const handleButtonClick = (value: string) => {
     const param = {
@@ -331,6 +347,7 @@ const CustomButtonInputVariable = ({
           inputValue={inputValue}
           handleInputChange={handleInputChange}
           handleSendClick={handleSendClick}
+          inputAutoFocus={inputAutoFocus}
         />
       )}
 
@@ -341,6 +358,7 @@ const CustomButtonInputVariable = ({
           value={inputValue}
           onChange={handleInputChange}
           onSend={handleSendClick}
+          autoFocus={inputAutoFocus}
         />
       )}
     </span>

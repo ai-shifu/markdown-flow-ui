@@ -14,6 +14,7 @@ interface MarkdownFlowInputProps {
   placeholder?: string;
   value?: string;
   title?: string;
+  autoFocus?: boolean;
   onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onSend?: () => void;
   className?: string;
@@ -28,11 +29,14 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   placeholder,
   value,
   title,
+  autoFocus = true,
   onChange,
   onSend,
   className,
   textareaClassName,
 }) => {
+  const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
+  const shouldAutoFocus = autoFocus && !value?.trim();
   const isSendDisabled = disabled || !value?.trim();
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (!onSend) {
@@ -49,6 +53,13 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
     }
   };
 
+  React.useEffect(() => {
+    if (disabled || !shouldAutoFocus) {
+      return;
+    }
+    textareaRef.current?.focus();
+  }, [disabled, shouldAutoFocus]);
+
   return (
     <InputGroup
       data-disabled={disabled}
@@ -60,6 +71,8 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
         value={value}
         onChange={onChange}
         onKeyDown={handleKeyDown}
+        autoFocus={shouldAutoFocus}
+        ref={textareaRef}
         className={`text-[16px] leading-5 font-normal text-[#0A0A0A] placeholder:text-[rgba(99,114,128,1)] bg-transparent border-0 shadow-none pl-3 pr-0 py-1.5 min-h-[32px] ${textareaClassName || ""}`}
         title={title}
       />

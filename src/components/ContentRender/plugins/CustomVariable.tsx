@@ -67,30 +67,49 @@ const MultiSelectSection = ({
   const confirmDisabled =
     readonly || (selectedValues.length === 0 && !inputValue?.trim());
 
+  const renderConfirmButton = (extraWrapperClassName?: string) => (
+    <span
+      className={cn(
+        "multi-select-confirm-wrapper flex flex-col items-center",
+        confirmDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
+        extraWrapperClassName
+      )}
+    >
+      <button
+        type="button"
+        className="multi-select-confirm-button text-sm font-medium text-primary"
+        disabled={confirmDisabled}
+        onClick={handleConfirmClick}
+      >
+        {confirmButtonText}
+      </button>
+    </span>
+  );
+
   return (
-    <span className="multi-select-container inline-flex w-full items-center">
-      <span className="flex flex-1 flex-col">
-        <span className="flex flex-wrap gap-y-[9px] gap-x-6">
-          {node.properties?.buttonTexts?.map((text, index) => {
-            const value = node.properties?.buttonValues?.[index];
-            const buttonValue = value !== undefined ? value : text;
-            return (
-              <Checkbox
-                key={index}
-                label={text}
-                disabled={readonly}
-                checked={selectedValues.includes(buttonValue)}
-                onCheckedChange={(checked) =>
-                  handleCheckboxChange(buttonValue, checked)
-                }
-                className="text-sm"
-              />
-            );
-          })}
-        </span>
-        {placeholder && (
-          <span className="block mt-[9px] mb-1 max-w-[500px] w-full">
-            <InputGroup data-disabled={readonly}>
+    <span className="multi-select-container flex w-full flex-col">
+      <span className="flex flex-wrap gap-y-[9px] gap-x-6">
+        {node.properties?.buttonTexts?.map((text, index) => {
+          const value = node.properties?.buttonValues?.[index];
+          const buttonValue = value !== undefined ? value : text;
+          return (
+            <Checkbox
+              key={index}
+              label={text}
+              disabled={readonly}
+              checked={selectedValues.includes(buttonValue)}
+              onCheckedChange={(checked) =>
+                handleCheckboxChange(buttonValue, checked)
+              }
+              className="text-sm"
+            />
+          );
+        })}
+      </span>
+      {placeholder ? (
+        <span className="block mb-1 w-full max-w-[500px]">
+          <span className="multi-select-input-row flex w-full items-end gap-3">
+            <InputGroup data-disabled={readonly} className="flex-1">
               <InputGroupTextarea
                 disabled={readonly}
                 placeholder={placeholder}
@@ -101,24 +120,12 @@ const MultiSelectSection = ({
                 title={placeholder}
               />
             </InputGroup>
+            {renderConfirmButton("shrink-0")}
           </span>
-        )}
-      </span>
-      <span
-        className={cn(
-          "multi-select-confirm-wrapper flex flex-col items-center pl-4",
-          confirmDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-        )}
-      >
-        <button
-          type="button"
-          className="multi-select-confirm-button text-sm font-medium text-primary"
-          disabled={confirmDisabled}
-          onClick={handleConfirmClick}
-        >
-          {confirmButtonText}
-        </button>
-      </span>
+        </span>
+      ) : (
+        renderConfirmButton("self-start multi-select-confirm-wrapper--stacked")
+      )}
     </span>
   );
 };

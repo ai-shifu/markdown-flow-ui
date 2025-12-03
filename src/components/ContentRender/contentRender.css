@@ -222,7 +222,7 @@
   font-style: normal;
   font-weight: var(--font-weight-semibold, 600);
   line-height: var(--text-xs-line-height, 16px);
-  padding: 7px 15px;
+  padding: 8px 15px;
   cursor: pointer;
 }
 

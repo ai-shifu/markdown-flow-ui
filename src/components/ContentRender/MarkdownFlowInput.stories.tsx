@@ -19,9 +19,14 @@ const meta = {
       control: "boolean",
       description: "Disable input and send button",
     },
+    autoFocus: {
+      control: "boolean",
+      description: "Automatically focus the textarea on mount",
+    },
   },
   args: {
     placeholder: "Ask a follow-up question...",
+    autoFocus: true,
   },
 } satisfies Meta<typeof MarkdownFlowInput>;
 

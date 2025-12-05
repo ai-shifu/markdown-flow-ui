@@ -3,10 +3,8 @@
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  cursor: pointer;
   color: #0e46fb;
   font-family: inherit;
-  font-size: 14px;
   font-style: normal;
   font-weight: 400;
   line-height: 20px;
@@ -17,7 +15,18 @@
   &:hover {
     background: #d9d9d9;
     border-radius: 2px;
+    cursor: pointer;
   }
+}
+.markdown-flow-editor[data-disabled="true"] .tag-image,
+.markdown-flow-editor[data-disabled="true"] .tag-video,
+.markdown-flow-editor[data-disabled="true"] .tag-variable {
+  cursor: not-allowed;
+}
+.markdown-flow-editor[data-disabled="true"] .tag-image:hover,
+.markdown-flow-editor[data-disabled="true"] .tag-video:hover,
+.markdown-flow-editor[data-disabled="true"] .tag-variable:hover {
+  cursor: not-allowed;
 }
 .tag-placeholder-icon {
   display: inline-flex;

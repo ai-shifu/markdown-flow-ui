@@ -50,6 +50,7 @@ interface MultiSelectSectionProps {
   handleInputChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   handleConfirmClick: () => void;
+  inputAutoFocus?: boolean;
 }
 
 const MultiSelectSection = ({
@@ -62,6 +63,7 @@ const MultiSelectSection = ({
   handleInputChange,
   handleKeyDown,
   handleConfirmClick,
+  inputAutoFocus,
 }: MultiSelectSectionProps) => {
   const placeholder = node.properties?.placeholder;
   const confirmDisabled =
@@ -116,6 +118,7 @@ const MultiSelectSection = ({
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
+                autoFocus={inputAutoFocus}
                 className="text-sm px-3"
                 title={placeholder}
               />
@@ -139,6 +142,7 @@ interface SingleSelectSectionProps {
   inputValue: string;
   handleInputChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleSendClick: () => void;
+  inputAutoFocus?: boolean;
 }
 
 const SingleSelectSection = ({
@@ -149,6 +153,7 @@ const SingleSelectSection = ({
   inputValue,
   handleInputChange,
   handleSendClick,
+  inputAutoFocus = true,
 }: SingleSelectSectionProps) => (
   <span className="single-select-container inline-flex w-full flex-col">
     <span className="flex flex-wrap gap-y-[9px] gap-x-2">
@@ -179,6 +184,7 @@ const SingleSelectSection = ({
           onChange={handleInputChange}
           onSend={handleSendClick}
           title={node.properties.placeholder}
+          autoFocus={inputAutoFocus}
         />
       </span>
     )}
@@ -192,6 +198,7 @@ interface InputSectionProps {
   value: string;
   onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onSend: () => void;
+  autoFocus?: boolean;
 }
 
 const InputSection = ({
@@ -200,6 +207,7 @@ const InputSection = ({
   value,
   onChange,
   onSend,
+  autoFocus = true,
 }: InputSectionProps) => {
   if (!placeholder) {
     return null;
@@ -213,6 +221,7 @@ const InputSection = ({
       onChange={onChange}
       onSend={onSend}
       title={placeholder}
+      autoFocus={autoFocus}
     />
   );
 };
@@ -313,6 +322,11 @@ const CustomButtonInputVariable = ({
     node.properties?.buttonValues,
   ]);
 
+  const inputAutoFocus = !(
+    resolvedDefaultButtonText &&
+    (isSingleSelect || isMultiSelect)
+  );
+
   return (
     <span className="custom-variable-container inline-flex items-center flex-wrap">
       {isMultiSelect && (
@@ -326,6 +340,7 @@ const CustomButtonInputVariable = ({
           handleInputChange={handleInputChange}
           handleKeyDown={handleKeyDown}
           handleConfirmClick={handleConfirmClick}
+          inputAutoFocus={inputAutoFocus}
         />
       )}
 
@@ -338,6 +353,7 @@ const CustomButtonInputVariable = ({
           inputValue={inputValue}
           handleInputChange={handleInputChange}
           handleSendClick={handleSendClick}
+          inputAutoFocus={inputAutoFocus}
         />
       )}
 
@@ -348,6 +364,7 @@ const CustomButtonInputVariable = ({
           value={inputValue}
           onChange={handleInputChange}
           onSend={handleSendClick}
+          autoFocus={!inputValue}
         />
       )}
     </span>

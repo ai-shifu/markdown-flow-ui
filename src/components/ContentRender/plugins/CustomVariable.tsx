@@ -233,7 +233,33 @@ const CustomButtonInputVariable = ({
     defaultSelectedValues || []
   );
   const isMultiSelect = node.properties?.isMultiSelect ?? false;
-  const isSingleSelect = (node.properties?.buttonTexts || []).length > 0;
+  const baseButtonTexts = node.properties?.buttonTexts || [];
+  const shouldUseFallbackButton =
+    !isMultiSelect &&
+    baseButtonTexts.length === 0 &&
+    !node.properties?.placeholder;
+  const fallbackButtonLabel =
+    node.properties?.variableName?.trim() || defaultButtonText || "Submit";
+
+  const singleSelectNode = React.useMemo<CustomVariableNode>(() => {
+    if (!shouldUseFallbackButton) {
+      return node;
+    }
+    return {
+      ...node,
+      properties: {
+        ...(node.properties || {}),
+        buttonTexts: [fallbackButtonLabel],
+        buttonValues: [fallbackButtonLabel],
+      },
+    };
+  }, [fallbackButtonLabel, node, shouldUseFallbackButton]);
+
+  const singleSelectButtonTexts =
+    singleSelectNode.properties?.buttonTexts || [];
+  const singleSelectButtonValues =
+    singleSelectNode.properties?.buttonValues || [];
+  const isSingleSelect = !isMultiSelect && singleSelectButtonTexts.length > 0;
 
   const handleButtonClick = (value: string) => {
     const param = {
@@ -296,22 +322,16 @@ const CustomButtonInputVariable = ({
     if (!defaultButtonText) {
       return undefined;
     }
-    const buttonTexts = node.properties?.buttonTexts || [];
-    const buttonValues = node.properties?.buttonValues || [];
-    const valueIndex = buttonValues.indexOf(defaultButtonText);
+    const valueIndex = singleSelectButtonValues.indexOf(defaultButtonText);
     if (valueIndex > -1) {
-      return buttonTexts[valueIndex] ?? defaultButtonText;
+      return singleSelectButtonTexts[valueIndex] ?? defaultButtonText;
     }
-    const textIndex = buttonTexts.indexOf(defaultButtonText);
+    const textIndex = singleSelectButtonTexts.indexOf(defaultButtonText);
     if (textIndex > -1) {
-      return buttonTexts[textIndex];
+      return singleSelectButtonTexts[textIndex];
     }
     return undefined;
-  }, [
-    defaultButtonText,
-    node.properties?.buttonTexts,
-    node.properties?.buttonValues,
-  ]);
+  }, [defaultButtonText, singleSelectButtonTexts, singleSelectButtonValues]);
 
   return (
     <span className="custom-variable-container inline-flex items-center flex-wrap">
@@ -331,7 +351,7 @@ const CustomButtonInputVariable = ({
 
       {!isMultiSelect && isSingleSelect && (
         <SingleSelectSection
-          node={node}
+          node={singleSelectNode}
           readonly={readonly}
           resolvedDefaultButtonText={resolvedDefaultButtonText}
           handleButtonClick={handleButtonClick}

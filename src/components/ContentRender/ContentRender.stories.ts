@@ -616,6 +616,19 @@ export const ChineseMultiSelectDemo: Story = {
     content: `# 多选功能中文演示
 
 欢迎体验多选功能！
+## 全面测试（单选）
+单选没有选项
+?[%{{answer}}]
+?[%{{answer}}...]
+?[继续]
+
+单选有选项
+?[%{{answer}}选项A|选项B|选项C]
+单选有选项和输入框
+?[%{{answer}}选项A|选项B|选项C|...其他选项]
+单选有输入框
+?[%{{answer}}...其他选项]
+
 
 ## 第一步：选择你的兴趣（多选）
 选择所有你感兴趣的主题：
@@ -654,6 +667,7 @@ export const ChineseMultiSelectDemo: Story = {
 
 尝试与上面的元素交互，体验单选（按钮）和多选（复选框+确认按钮）的不同工作方式！`,
     enableTypewriter: false,
+    // defaultButtonText: '继续',
     // defaultInputText: `我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超一下超长一下超长长`,
     confirmButtonText: "提交", // Chinese confirm button
     beforeSend: (params) => {

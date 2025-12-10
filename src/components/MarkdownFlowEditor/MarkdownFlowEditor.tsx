@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { autocompletion } from "@codemirror/autocomplete";
-import { EditorView } from "@codemirror/view";
+import { EditorView, ViewUpdate } from "@codemirror/view";
 import { markdown } from "@codemirror/lang-markdown";
 import {
   syntaxHighlighting,
@@ -29,6 +29,7 @@ import {
   parseContentInfo,
   getVideoContentToInsert,
   extractVariableNames,
+  createVariableExpressionRegexp,
 } from "./utils";
 import ImgPlaceholder from "./plugins/ImgPlaceholder";
 import VideoPlaceholder from "./plugins/VideoPlaceholder";
@@ -84,6 +85,33 @@ type EditorProps = {
 
 const EMPTY_VARIABLES: Variable[] = [];
 
+// Detect whether cursor is still inside a {{variable}} expression
+const isCursorInsideVariableExpression = (
+  content: string,
+  cursorPosition: number
+) => {
+  if (!content || cursorPosition < 0) {
+    return false;
+  }
+  const regexp = createVariableExpressionRegexp();
+  let match: RegExpExecArray | null;
+
+  while ((match = regexp.exec(content)) !== null) {
+    const matchStart = match.index ?? 0;
+    const matchEnd = matchStart + match[0].length;
+    const innerStart = matchStart + 2;
+    const innerEnd = matchEnd - 2;
+    if (cursorPosition >= innerStart && cursorPosition <= innerEnd) {
+      return true;
+    }
+    if (regexp.lastIndex === match.index) {
+      regexp.lastIndex++;
+    }
+  }
+
+  return false;
+};
+
 const Editor: React.FC<EditorProps> = ({
   content = "",
   editMode = EditMode.CodeEdit,
@@ -137,6 +165,7 @@ const Editor: React.FC<EditorProps> = ({
   const [selectContentInfo, setSelectContentInfo] =
     useState<SelectContentInfo | null>();
   const editorViewRef = useRef<EditorView | null>(null);
+  const pendingVariableContentRef = useRef<string | null>(null);
 
   const editorContextValue: IEditorContext = {
     selectedOption,
@@ -480,9 +509,28 @@ const Editor: React.FC<EditorProps> = ({
   //   ]
   // );
 
-  const handleEditorUpdate = useCallback((view: EditorView) => {
-    editorViewRef.current = view;
-  }, []);
+  const handleEditorUpdate = useCallback(
+    (update: ViewUpdate) => {
+      editorViewRef.current = update.view;
+      if (
+        editMode === EditMode.QuickEdit &&
+        pendingVariableContentRef.current &&
+        update.selectionSet
+      ) {
+        const cursorPosition = update.state.selection.main.head;
+        const docText = update.state.doc.toString();
+        const stillInside = isCursorInsideVariableExpression(
+          docText,
+          cursorPosition
+        );
+        if (!stillInside) {
+          addVariablesFromContent(docText);
+          pendingVariableContentRef.current = null;
+        }
+      }
+    },
+    [addVariablesFromContent, editMode]
+  );
 
   const handleTagClick = useCallback(
     (event: any) => {
@@ -565,7 +613,7 @@ const Editor: React.FC<EditorProps> = ({
 
     extensions.push(
       EditorView.updateListener.of((update) => {
-        handleEditorUpdate(update.view);
+        handleEditorUpdate(update);
       })
     );
 
@@ -577,7 +625,18 @@ const Editor: React.FC<EditorProps> = ({
       if (disabled) {
         return;
       }
-      addVariablesFromContent(value);
+      const cursorPosition =
+        editorViewRef.current?.state.selection.main.head ?? -1;
+      const skipAddition = isCursorInsideVariableExpression(
+        value,
+        cursorPosition
+      );
+      if (skipAddition) {
+        pendingVariableContentRef.current = value;
+      } else {
+        pendingVariableContentRef.current = null;
+        addVariablesFromContent(value);
+      }
       onChange?.(value);
     },
     [addVariablesFromContent, onChange, disabled]

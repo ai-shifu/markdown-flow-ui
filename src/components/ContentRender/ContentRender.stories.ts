@@ -325,6 +325,11 @@ const NATIVE_HTML_CONTENT = `# Native HTML Showcase
   </blockquote>
 </section>
 `;
+const CODE_BLOCK_SHOWCASE = String.raw`...
+console.log("Highlight.js \n keeps syntax styling consistent");
+...
+printf("You win!\\n");
+...`;
 
 // ==============================================================================
 // Story Definitions
@@ -702,6 +707,14 @@ export const NativeHtmlElements: Story = {
   args: {
     enableTypewriter: false,
     content: NATIVE_HTML_CONTENT,
+  },
+};
+
+export const CodeBlockShowcase: Story = {
+  name: "Code Block Showcase",
+  args: {
+    enableTypewriter: false,
+    content: CODE_BLOCK_SHOWCASE,
   },
 };
 

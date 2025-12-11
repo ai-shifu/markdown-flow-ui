@@ -25,7 +25,7 @@ import {
   highlightLanguages,
   subsetLanguages,
 } from "./utils/highlight-languages";
-import { processMarkdownText } from "./utils/process-markdown";
+// import { processMarkdownText } from "./utils/process-markdown";
 import {
   parseMarkdownSegments,
   mermaidBlockIsComplete,
@@ -87,7 +87,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 }) => {
   // Use custom Hook to handle typewriter effect
   const { displayContent, isComplete } = useTypewriterStateMachine({
-    content: processMarkdownText(content),
+    // processMarkdownText will let code block printf("You win!\n") become printf("You win!<br/>");
+    // content: processMarkdownText(content),
+    content: content,
     typingSpeed,
     disabled: !enableTypewriter,
   });

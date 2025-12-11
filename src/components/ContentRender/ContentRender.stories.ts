@@ -325,51 +325,11 @@ const NATIVE_HTML_CONTENT = `# Native HTML Showcase
   </blockquote>
 </section>
 `;
-
-const CODE_BLOCK_SHOWCASE = `# Code Block Playground
-
-## JavaScript Utility
-\`\`\`javascript
+const CODE_BLOCK_SHOWCASE = String.raw`...
 console.log("Highlight.js \n keeps syntax styling consistent");
-\`\`\`
-
-## TypeScript with Generics
-\`\`\`ts
-type RequestResult<T> = {
-  data: T;
-  meta?: { fetchedAt: string };
-};
-
-const fetchWidget = async <T>(mock: T): Promise<RequestResult<T>> => ({
-  data: mock,
-  meta: { fetchedAt: new Date().toISOString() },
-});
-
-await fetchWidget({ id: "widget", status: "ready" });
-\`\`\`
-
-## Shell Commands
-\`\`\`bash
-pnpm install
-pnpm run lint
-\`\`\`
-
-## Diff Preview
-\`\`\`diff
--const formatDate = (value) => new Date(value).toLocaleDateString();
-+const formatDate = (value: string | number | Date) =>
-+  new Date(value).toLocaleDateString("en-US");
-\`\`\`
-
-## JSON Payload
-\`\`\`json
-{
-  "feature": "CodeBlock",
-  "description": "Story focused on code highlighting",
-  "supported": ["javascript", "typescript", "bash", "diff", "json"]
-}
-\`\`\`
-`;
+...
+printf("You win!\\n");
+...`;
 
 // ==============================================================================
 // Story Definitions

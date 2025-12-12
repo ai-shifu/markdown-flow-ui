@@ -2,47 +2,52 @@
   border-radius: 8px;
   overflow: hidden;
   margin: 1em 0;
-  background-color: #f7f7f7;
+  background-color: #f8f9fa; /* Lighter, more modern background */
 }
 
 .code-block-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
-  background-color: #f0f0f0;
-  border-bottom: 1px solid #e0e0e0;
+  padding: 0px 16px;
+  background-color: transparent; /* Seamless header */
+  /* border-bottom removed for seamless look, or make it very subtle if needed */
 }
 
 .language-name {
-  font-size: 14px;
-  color: #333;
+  font-size: 12px;
+  color: #6c757d; /* Muted text color */
+  font-weight: 500;
+  text-transform: lowercase; /* Often looks cleaner for langs like 'ts', 'js' */
 }
 
 .copy-button {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   border: none;
   background: transparent;
-  color: #666;
+  color: #6c757d;
   cursor: pointer;
-  padding: 4px;
+  padding: 2px 4px;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 12px;
+  transition: color 0.2s ease;
 }
 
 .copy-button:hover {
-  color: #000;
+  color: #212529;
 }
 
 .copy-icon {
-  width: 16px;
-  height: 16px;
+  width: 14px; /* Smaller icon */
+  height: 14px;
 }
 
 .code-block-container pre {
   margin: 0 !important;
-  padding: 16px;
+  padding: 12px 16px 16px 16px; /* Adjust padding to balance header */
   overflow-x: auto;
+  font-size: 13px; /* Slightly smaller font for the code itself if desired, or keep inherited */
+  background-color: transparent !important; /* Ensure pre doesn't have its own background */
 }

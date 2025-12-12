@@ -12,6 +12,8 @@ import remarkMath from "remark-math";
 import { CustomRenderBarProps, OnSendContentParams } from "../types";
 import "./contentRender.css";
 import "./github-markdown-light.css";
+import CodeBlock from "./CodeBlock";
+import "./CodeBlock.css";
 import CustomButtonInputVariable, {
   ComponentsWithCustomVariable,
 } from "./plugins/CustomVariable";
@@ -180,6 +182,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         {children}
       </a>
     ),
+    pre: (props) => <CodeBlock {...props} />,
   };
 
   const hasCompleted = useRef(false);

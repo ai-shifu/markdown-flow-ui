@@ -27,8 +27,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
   let codeClassName = "";
   React.Children.forEach(children, (child) => {
-    if (React.isValidElement(child) && child.type === "code") {
-      codeClassName = child.props.className || "";
+    if (React.isValidElement(child)) {
+      const childProps = child.props as { className?: string };
+      if (childProps.className) {
+        codeClassName = childProps.className;
+      }
     }
   });
 

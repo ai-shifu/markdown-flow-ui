@@ -58,6 +58,10 @@ export interface ContentRenderProps {
   onTypeFinished?: () => void;
   // Multi-select confirm button text (i18n support)
   confirmButtonText?: string;
+  // Copy button text (i18n support)
+  copyButtonText?: string;
+  // Copied state text (i18n support)
+  copiedButtonText?: string;
   // Dynamic interaction format for multi-select support
   dynamicInteractionFormat?: string;
   beforeSend?: (param: OnSendContentParams) => boolean;
@@ -83,6 +87,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   readonly = false,
   onTypeFinished,
   confirmButtonText,
+  copyButtonText,
+  copiedButtonText,
   onClickCustomButtonAfterContent,
   beforeSend,
   // tooltipMinLength,
@@ -182,7 +188,13 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         {children}
       </a>
     ),
-    pre: (props) => <CodeBlock {...props} />,
+    pre: (props) => (
+      <CodeBlock
+        {...props}
+        copyButtonText={copyButtonText}
+        copiedButtonText={copiedButtonText}
+      />
+    ),
   };
 
   const hasCompleted = useRef(false);

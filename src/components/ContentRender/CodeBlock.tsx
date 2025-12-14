@@ -5,6 +5,8 @@ import { Copy, Check } from "lucide-react";
 interface CodeBlockProps {
   children: React.ReactNode;
   className?: string;
+  copyButtonText?: string;
+  copiedButtonText?: string;
 }
 
 const getCodeString = (children: ReactNode): string => {
@@ -22,6 +24,8 @@ const getCodeString = (children: ReactNode): string => {
 const CodeBlock: React.FC<CodeBlockProps> = ({
   children,
   className: preClassName,
+  copyButtonText = "复制代码",
+  copiedButtonText = "已复制",
 }) => {
   const [isCopied, setIsCopied] = useState(false);
 
@@ -59,7 +63,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
           ) : (
             <Copy className="copy-icon" />
           )}
-          {isCopied ? "已复制" : "复制源码"}
+          {isCopied ? copiedButtonText : copyButtonText}
         </button>
       </div>
       <pre className={preClassName}>{children}</pre>

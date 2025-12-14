@@ -22,6 +22,10 @@ export interface MarkdownFlowProps {
   onBlockComplete?: (blockIndex: number) => void;
   // Multi-select confirm button text (i18n support)
   confirmButtonText?: string;
+  // Copy button text for code blocks
+  copyButtonText?: string;
+  // Copied state text for code blocks
+  copiedButtonText?: string;
   beforeSend?: (content: OnSendContentParams) => boolean;
 }
 
@@ -33,6 +37,8 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   enableTypewriter = false,
   onBlockComplete,
   confirmButtonText,
+  copyButtonText,
+  copiedButtonText,
   beforeSend: beforeSendProp,
 }) => {
   return (
@@ -60,6 +66,8 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             }
             typingSpeed={typingSpeed}
             confirmButtonText={confirmButtonText}
+            copyButtonText={copyButtonText}
+            copiedButtonText={copiedButtonText}
             dynamicInteractionFormat={contentInfo.dynamicInteractionFormat}
             onTypeFinished={() => {
               onBlockComplete?.(index);

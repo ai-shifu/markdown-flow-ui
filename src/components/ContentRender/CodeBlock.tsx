@@ -2,10 +2,17 @@ import React, { useState, ReactNode } from "react";
 import "./CodeBlock.css";
 import { Copy, Check } from "lucide-react";
 
-interface CodeBlockProps {
+/**
+ * Props for the CodeBlock component.
+ */
+export interface CodeBlockProps {
+  /** The code content and nested elements to render.*/
   children: React.ReactNode;
+  /** Optional CSS class name for the pre element. */
   className?: string;
+  /** Text to display on the copy button (i18n support). */
   copyButtonText?: string;
+  /** Text to display when code is copied (i18n support). */
   copiedButtonText?: string;
 }
 
@@ -14,8 +21,11 @@ const getCodeString = (children: ReactNode): string => {
   React.Children.forEach(children, (child) => {
     if (typeof child === "string") {
       text += child;
-    } else if (React.isValidElement(child) && child.props.children) {
-      text += getCodeString(child.props.children);
+    } else if (
+      React.isValidElement(child) &&
+      (child?.props as { children?: ReactNode })?.children
+    ) {
+      text += getCodeString((child.props as { children: ReactNode }).children);
     }
   });
   return text;
@@ -24,10 +34,20 @@ const getCodeString = (children: ReactNode): string => {
 const CodeBlock: React.FC<CodeBlockProps> = ({
   children,
   className: preClassName,
-  copyButtonText = "复制代码",
-  copiedButtonText = "已复制",
+  copyButtonText = "Copy",
+  copiedButtonText = "Copied",
 }) => {
   const [isCopied, setIsCopied] = useState(false);
+  const timeoutRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    // Cleanup timeout on component unmount
+    return () => {
+      if (timeoutRef.current) {
+        window.clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   let codeClassName = "";
   React.Children.forEach(children, (child) => {
@@ -47,7 +67,13 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     try {
       await navigator.clipboard.writeText(codeString);
       setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
+
+      if (timeoutRef.current) {
+        window.clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = window.setTimeout(() => {
+        setIsCopied(false);
+      }, 2000);
     } catch (err) {
       console.error("Failed to copy text: ", err);
     }
@@ -71,4 +97,5 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   );
 };
 
+CodeBlock.displayName = "CodeBlock";
 export default CodeBlock;

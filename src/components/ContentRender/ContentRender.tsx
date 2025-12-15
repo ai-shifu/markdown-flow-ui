@@ -12,6 +12,7 @@ import remarkMath from "remark-math";
 import { CustomRenderBarProps, OnSendContentParams } from "../types";
 import "./contentRender.css";
 import "./github-markdown-light.css";
+import CodeBlock from "./CodeBlock";
 import CustomButtonInputVariable, {
   ComponentsWithCustomVariable,
 } from "./plugins/CustomVariable";
@@ -56,6 +57,10 @@ export interface ContentRenderProps {
   onTypeFinished?: () => void;
   // Multi-select confirm button text (i18n support)
   confirmButtonText?: string;
+  // Copy button text (i18n support)
+  copyButtonText?: string;
+  // Copied state text (i18n support)
+  copiedButtonText?: string;
   // Dynamic interaction format for multi-select support
   dynamicInteractionFormat?: string;
   beforeSend?: (param: OnSendContentParams) => boolean;
@@ -81,6 +86,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   readonly = false,
   onTypeFinished,
   confirmButtonText,
+  copyButtonText,
+  copiedButtonText,
   onClickCustomButtonAfterContent,
   beforeSend,
   // tooltipMinLength,
@@ -179,6 +186,13 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       <a target="_blank" rel="noopener noreferrer" {...props}>
         {children}
       </a>
+    ),
+    pre: (props) => (
+      <CodeBlock
+        {...props}
+        copyButtonText={copyButtonText}
+        copiedButtonText={copiedButtonText}
+      />
     ),
   };
 

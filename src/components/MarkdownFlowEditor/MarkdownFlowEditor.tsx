@@ -383,6 +383,28 @@ const Editor: React.FC<EditorProps> = ({
     });
   }, [selectContentInfo, editorViewRef, disabled]);
 
+  const insertVariableTemplate = useCallback(() => {
+    if (disabled || !editorViewRef.current) {
+      return;
+    }
+    const view = editorViewRef.current;
+    const { state, dispatch } = view;
+    const selection = state.selection.main;
+    const template = "{{}}";
+    // Place caret inside braces to let user type the variable name immediately.
+    dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: template,
+      },
+      selection: {
+        anchor: selection.from + 2,
+      },
+    });
+    view.focus();
+  }, [disabled]);
+
   const handleSelectImage = useCallback(
     ({
       resourceUrl,
@@ -665,6 +687,7 @@ const Editor: React.FC<EditorProps> = ({
         disabled={disabled}
         labels={toolbarLabels}
         onSelect={onSelectedOption}
+        onInsertVariablePlaceholder={insertVariableTemplate}
       />
       <EditorContext.Provider value={editorContextValue}>
         <CodeMirror

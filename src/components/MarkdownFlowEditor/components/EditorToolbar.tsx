@@ -12,6 +12,7 @@ interface EditorToolbarProps {
   disabled?: boolean;
   labels: ToolbarLabels;
   onSelect: (selectedOption: SelectedOption) => void;
+  onInsertVariablePlaceholder?: () => void;
 }
 
 const toolbarButtons: Array<{
@@ -31,6 +32,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   disabled = false,
   labels,
   onSelect,
+  onInsertVariablePlaceholder,
 }) => {
   return (
     <div className="markdown-flow-editor-toolbar" aria-disabled={disabled}>
@@ -39,7 +41,16 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           key={option}
           type="button"
           disabled={disabled}
-          onClick={() => onSelect(option)}
+          onClick={() => {
+            if (
+              option === SelectedOption.Variable &&
+              typeof onInsertVariablePlaceholder === "function"
+            ) {
+              onInsertVariablePlaceholder();
+              return;
+            }
+            onSelect(option);
+          }}
           aria-label={labels[key]}
           title={labels[key]}
         >

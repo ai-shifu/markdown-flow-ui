@@ -81,7 +81,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         aria-label={labels.search}
         title={labels.search}
       >
-        <SearchBracesIcon strokeWidth={1.75} size={20} />
+        <SearchBracesIcon strokeWidth={1.75} size={ICON_SIZE} />
       </button>
       {toolbarButtons.map(({ option, Icon, key }) => (
         <button

@@ -734,6 +734,7 @@ const Editor: React.FC<EditorProps> = ({
         onSelect={onSelectedOption}
         onInsertVariablePlaceholder={insertVariableTemplate}
         onVariableSearchToggle={handleVariableSearchToggle}
+        onVariableSearchClose={closeVariableSearch}
         variableSearchActive={!disabled && variableSearchOpen}
       />
       <VariableSearchDropdown

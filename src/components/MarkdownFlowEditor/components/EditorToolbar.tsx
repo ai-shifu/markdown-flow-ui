@@ -17,6 +17,7 @@ interface EditorToolbarProps {
   onSelect: (selectedOption: SelectedOption) => void;
   onInsertVariablePlaceholder?: () => void;
   onVariableSearchToggle?: (button: HTMLButtonElement) => void;
+  onVariableSearchClose?: () => void;
   variableSearchActive?: boolean;
 }
 
@@ -38,6 +39,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onSelect,
   onInsertVariablePlaceholder,
   onVariableSearchToggle,
+  onVariableSearchClose,
   variableSearchActive = false,
 }) => {
   const [variableMenuOpen, setVariableMenuOpen] = useState(false);
@@ -82,7 +84,15 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
   return (
     <div className="markdown-flow-editor-toolbar" aria-disabled={disabled}>
-      <Popover open={variableMenuOpen} onOpenChange={handleVariableMenu}>
+      <Popover
+        open={variableMenuOpen}
+        onOpenChange={(next) => {
+          if (next) {
+            onVariableSearchClose?.();
+          }
+          handleVariableMenu(next);
+        }}
+      >
         <PopoverTrigger asChild>
           <button
             ref={variableButtonRef}

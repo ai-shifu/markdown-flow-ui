@@ -189,53 +189,6 @@
   background: rgba(0, 0, 0, 0.05);
 }
 
-.markdown-flow-editor-toolbar .toolbar-variable-trigger {
-  width: auto;
-  min-width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 0 6px;
-  outline: none;
-}
-
-.markdown-flow-editor-toolbar .toolbar-variable-trigger:focus-visible {
-  outline: none;
-  box-shadow: none;
-}
-
-.toolbar-variable-popover {
-  width: 180px;
-  padding: 4px 0;
-  border-radius: 8px;
-  border: 1px solid var(--base-border, #e5e5e5);
-  background: #fff;
-  box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
-
-.toolbar-variable-menu {
-  display: flex;
-  flex-direction: column;
-}
-
-.toolbar-variable-menu-item {
-  width: 100%;
-  padding: 8px 14px;
-  border: none;
-  background: transparent;
-  text-align: left;
-  font-size: 14px;
-  color: #0a0a0a;
-}
-
-.toolbar-variable-menu-item:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-
 .markdown-flow-editor-toolbar button[data-active="true"] {
   background: rgba(0, 0, 0, 0.08);
 }

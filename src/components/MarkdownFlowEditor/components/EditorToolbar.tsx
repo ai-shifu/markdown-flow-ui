@@ -1,7 +1,7 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Braces, Image, SquarePlay, ChevronDown } from "lucide-react";
+import { memo, useCallback } from "react";
+import { Braces, Image, SquarePlay } from "lucide-react";
 import { SelectedOption } from "../types";
-import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
+import SearchBracesIcon from "./icons/SearchBracesIcon";
 
 type ToolbarLabels = {
   variable: string;
@@ -33,6 +33,8 @@ const toolbarButtons: Array<{
 /**
  * EditorToolbar renders quick action buttons that mirror the slash commands.
  */
+const ICON_SIZE = 20;
+
 const EditorToolbar: React.FC<EditorToolbarProps> = ({
   disabled = false,
   labels,
@@ -42,95 +44,45 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onVariableSearchClose,
   variableSearchActive = false,
 }) => {
-  const [variableMenuOpen, setVariableMenuOpen] = useState(false);
-  const variableButtonRef = useRef<HTMLButtonElement | null>(null);
-
-  useEffect(() => {
+  const handleAddVariable = useCallback(() => {
     if (disabled) {
-      setVariableMenuOpen(false);
+      return;
     }
-  }, [disabled]);
+    onVariableSearchClose?.();
+    onInsertVariablePlaceholder?.();
+  }, [disabled, onInsertVariablePlaceholder, onVariableSearchClose]);
 
-  const handleVariableMenu = useCallback(
-    (open: boolean) => {
+  const handleSearchToggle = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
       if (disabled) {
         return;
       }
-      setVariableMenuOpen(open);
+      onVariableSearchToggle?.(event.currentTarget);
     },
-    [disabled]
-  );
-
-  const handleVariableAction = useCallback(
-    (action: "insert" | "search") => {
-      if (action === "insert") {
-        onInsertVariablePlaceholder?.();
-      } else if (
-        action === "search" &&
-        variableButtonRef.current &&
-        onVariableSearchToggle
-      ) {
-        onVariableSearchToggle(variableButtonRef.current);
-      }
-      setVariableMenuOpen(false);
-    },
-    [onInsertVariablePlaceholder, onVariableSearchToggle]
-  );
-
-  const triggerActive = useMemo(
-    () => variableMenuOpen || variableSearchActive,
-    [variableMenuOpen, variableSearchActive]
+    [disabled, onVariableSearchToggle]
   );
 
   return (
     <div className="markdown-flow-editor-toolbar" aria-disabled={disabled}>
-      <Popover
-        open={variableMenuOpen}
-        onOpenChange={(next) => {
-          if (next) {
-            onVariableSearchClose?.();
-          }
-          handleVariableMenu(next);
-        }}
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={handleAddVariable}
+        aria-label={labels.addVariable}
+        title={labels.addVariable}
       >
-        <PopoverTrigger asChild>
-          <button
-            ref={variableButtonRef}
-            type="button"
-            disabled={disabled}
-            aria-expanded={variableMenuOpen}
-            aria-haspopup="menu"
-            aria-label={labels.variable}
-            className="toolbar-variable-trigger"
-            data-active={triggerActive ? "true" : undefined}
-          >
-            <Braces strokeWidth={1.75} size={18} />
-            <ChevronDown size={14} strokeWidth={1.5} />
-          </button>
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          sideOffset={8}
-          className="toolbar-variable-popover"
-        >
-          <div className="toolbar-variable-menu" role="menu">
-            <button
-              type="button"
-              onClick={() => handleVariableAction("insert")}
-              className="toolbar-variable-menu-item"
-            >
-              {labels.addVariable}
-            </button>
-            <button
-              type="button"
-              onClick={() => handleVariableAction("search")}
-              className="toolbar-variable-menu-item"
-            >
-              {labels.search}
-            </button>
-          </div>
-        </PopoverContent>
-      </Popover>
+        <Braces strokeWidth={1.75} size={ICON_SIZE} />
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={handleSearchToggle}
+        data-active={!disabled && variableSearchActive ? "true" : undefined}
+        aria-label={labels.search}
+        title={labels.search}
+      >
+        <SearchBracesIcon strokeWidth={1.75} size={ICON_SIZE} />
+      </button>
       {toolbarButtons.map(({ option, Icon, key }) => (
         <button
           key={option}
@@ -140,7 +92,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           aria-label={labels[key]}
           title={labels[key]}
         >
-          <Icon strokeWidth={1.75} size={18} />
+          <Icon strokeWidth={1.75} size={ICON_SIZE} />
         </button>
       ))}
     </div>

@@ -172,8 +172,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
   border-radius: 4px;
   border: none;
   background: transparent;
@@ -188,9 +186,135 @@
   background: rgba(0, 0, 0, 0.05);
 }
 
+.markdown-flow-editor-toolbar .toolbar-variable-trigger {
+  width: auto;
+  min-width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 6px;
+}
+
+.toolbar-variable-popover {
+  width: 180px;
+  padding: 4px 0;
+  border-radius: 8px;
+  border: 1px solid var(--base-border, #e5e5e5);
+  background: #fff;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.toolbar-variable-menu {
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar-variable-menu-item {
+  width: 100%;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 14px;
+  color: #0a0a0a;
+}
+
+.toolbar-variable-menu-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.markdown-flow-editor-toolbar button[data-active="true"] {
+  background: rgba(0, 0, 0, 0.08);
+}
+
 .markdown-flow-editor-toolbar button:disabled {
   color: rgba(10, 10, 10, 0.4);
   cursor: not-allowed;
+}
+
+.markdown-flow-editor-variable-search {
+  width: 260px;
+  border-radius: 8px;
+  border: 1px solid var(--base-border, #e5e5e5);
+  background: #fff;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  padding: 10px;
+  z-index: 50;
+}
+
+.variable-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--base-muted-foreground, #737373);
+}
+
+.variable-search-input {
+  padding-left: 32px;
+  height: 36px;
+  border-radius: 8px;
+}
+
+.variable-search-list {
+  max-height: 320px;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+
+.variable-search-section + .variable-search-section {
+  margin-top: 12px;
+}
+
+.variable-search-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--base-muted-foreground, #737373);
+  margin: 4px 0;
+}
+
+.variable-search-item {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.variable-search-item:not(:disabled):hover,
+.variable-search-item-active {
+  background: rgba(14, 70, 251, 0.08);
+}
+
+.variable-search-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
+.variable-search-item-label {
+  font-size: 12px;
+  color: var(--base-muted-foreground, #737373);
+}
+
+.variable-search-empty {
+  font-size: 13px;
+  color: var(--base-muted-foreground, #737373);
+  text-align: center;
+  padding: 24px 8px 8px;
 }
 
 .markdown-flow-editor[data-disabled="true"] {

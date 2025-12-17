@@ -198,6 +198,12 @@
   justify-content: center;
   gap: 4px;
   padding: 0 6px;
+  outline: none;
+}
+
+.markdown-flow-editor-toolbar .toolbar-variable-trigger:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .toolbar-variable-popover {

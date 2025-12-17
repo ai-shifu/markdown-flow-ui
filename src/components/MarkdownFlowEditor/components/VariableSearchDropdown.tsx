@@ -123,12 +123,10 @@ const VariableSearchDropdown: React.FC<VariableSearchDropdownProps> = ({
   }, [orderedItems]);
 
   useEffect(() => {
-    if (orderedItems.length && open) {
-      setHighlightIndex(0);
-    } else if (!orderedItems.length) {
+    if (!open || !orderedItems.length) {
       setHighlightIndex(-1);
     }
-  }, [orderedItems.length, normalizedQuery, open]);
+  }, [open, orderedItems.length]);
 
   const handleSelect = useCallback(
     (variable: Variable) => {

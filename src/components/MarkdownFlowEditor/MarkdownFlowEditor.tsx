@@ -135,8 +135,12 @@ const Editor: React.FC<EditorProps> = ({
   const currentStrings = resources[activeLocale]?.translation ?? enUS;
   const toolbarLabels = useMemo(
     () => ({
-      image: currentStrings.slashImage ?? "Image",
-      video: currentStrings.slashVideo ?? "Video",
+      image: t("toolbarInsertImage", {
+        defaultValue: "Insert image",
+      }),
+      video: t("toolbarInsertVideo", {
+        defaultValue: "Insert video",
+      }),
       variable: currentStrings.slashVariable ?? "Variable",
       addVariable: t("toolbarInsertNewVariable", {
         defaultValue: "Insert new variable",

@@ -52,6 +52,8 @@
   "variableAddNew": "Add variable",
   "toolbarInsertNewVariable": "Insert new variable",
   "toolbarInsertExistingVariable": "Insert existing variable",
-  "toolbarConfirmOutput": "Confirm output",
-  "toolbarInsertLink": "Insert link"
+  "toolbarConfirmOutput": "Insert confirm output",
+  "toolbarInsertLink": "Insert link",
+  "toolbarInsertImage": "Insert image",
+  "toolbarInsertVideo": "Insert video"
 }

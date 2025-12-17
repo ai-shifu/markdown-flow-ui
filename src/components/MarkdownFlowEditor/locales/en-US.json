@@ -54,6 +54,7 @@
   "toolbarInsertExistingVariable": "Insert existing variable",
   "toolbarConfirmOutput": "Insert confirm output",
   "toolbarInsertLink": "Insert link",
+  "toolbarInsertButton": "Insert button",
   "toolbarInsertImage": "Insert image",
   "toolbarInsertVideo": "Insert video"
 }

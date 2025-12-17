@@ -154,6 +154,9 @@ const Editor: React.FC<EditorProps> = ({
       insertLink: t("toolbarInsertLink", {
         defaultValue: "Insert link",
       }),
+      insertButton: t("toolbarInsertButton", {
+        defaultValue: "Insert button",
+      }),
     }),
     [
       currentStrings.slashImage,
@@ -499,6 +502,27 @@ const Editor: React.FC<EditorProps> = ({
     view.focus();
   }, [disabled]);
 
+  const insertButtonTemplate = useCallback(() => {
+    if (disabled || !editorViewRef.current) {
+      return;
+    }
+    const view = editorViewRef.current;
+    const { state, dispatch } = view;
+    const selection = state.selection.main;
+    const template = "?[]";
+    dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: template,
+      },
+      selection: {
+        anchor: selection.from + 2,
+      },
+    });
+    view.focus();
+  }, [disabled]);
+
   const handleSelectImage = useCallback(
     ({
       resourceUrl,
@@ -788,6 +812,7 @@ const Editor: React.FC<EditorProps> = ({
         onVariableSearchClose={closeVariableSearch}
         onInsertConfirmOutput={insertConfirmOutputMarker}
         onInsertLink={insertLinkTemplate}
+        onInsertButton={insertButtonTemplate}
         variableSearchActive={!disabled && variableSearchOpen}
       />
       <VariableSearchDropdown

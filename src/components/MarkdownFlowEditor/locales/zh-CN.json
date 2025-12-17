@@ -54,6 +54,7 @@
   "toolbarInsertExistingVariable": "插入已有变量",
   "toolbarConfirmOutput": "插入确定内容",
   "toolbarInsertLink": "插入链接",
+  "toolbarInsertButton": "插入按钮",
   "toolbarInsertImage": "插入图片",
   "toolbarInsertVideo": "插入视频"
 }

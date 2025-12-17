@@ -55,6 +55,9 @@
   "toolbarConfirmOutput": "插入确定内容",
   "toolbarInsertLink": "插入链接",
   "toolbarInsertButton": "插入按钮",
+  "toolbarInsertSingleChoice": "插入单选",
+  "toolbarChoiceOption1": "选项1",
+  "toolbarChoiceOption2": "选项2",
   "toolbarInsertImage": "插入图片",
   "toolbarInsertVideo": "插入视频"
 }

@@ -1,5 +1,12 @@
 import { memo, useCallback } from "react";
-import { Braces, FileType, Image, Link, SquarePlay } from "lucide-react";
+import {
+  Braces,
+  CircleDot,
+  FileType,
+  Image,
+  Link,
+  SquarePlay,
+} from "lucide-react";
 import { SelectedOption } from "../types";
 import SearchBracesIcon from "./icons/SearchBracesIcon";
 import ButtonIcon from "./icons/ButtonIcon";
@@ -8,6 +15,7 @@ type ToolbarLabels = {
   confirmOutput: string | undefined;
   insertLink: string | undefined;
   insertButton: string | undefined;
+  insertSingleChoice: string | undefined;
   variable: string;
   image: string;
   video: string;
@@ -25,6 +33,7 @@ interface EditorToolbarProps {
   onInsertConfirmOutput?: () => void;
   onInsertLink?: () => void;
   onInsertButton?: () => void;
+  onInsertSingleChoice?: () => void;
   variableSearchActive?: boolean;
 }
 
@@ -43,6 +52,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onInsertConfirmOutput,
   onInsertLink,
   onInsertButton,
+  onInsertSingleChoice,
   variableSearchActive = false,
 }) => {
   const handleAddVariable = useCallback(() => {
@@ -83,6 +93,13 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     }
     onInsertButton?.();
   }, [disabled, onInsertButton]);
+
+  const handleInsertSingleChoice = useCallback(() => {
+    if (disabled) {
+      return;
+    }
+    onInsertSingleChoice?.();
+  }, [disabled, onInsertSingleChoice]);
 
   return (
     <div className="markdown-flow-editor-toolbar" aria-disabled={disabled}>
@@ -140,6 +157,15 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         title={labels.insertButton}
       >
         <ButtonIcon strokeWidth={1.75} size={ICON_SIZE} />
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={handleInsertSingleChoice}
+        aria-label={labels.insertSingleChoice}
+        title={labels.insertSingleChoice}
+      >
+        <CircleDot strokeWidth={1.75} size={ICON_SIZE} />
       </button>
       <button
         type="button"

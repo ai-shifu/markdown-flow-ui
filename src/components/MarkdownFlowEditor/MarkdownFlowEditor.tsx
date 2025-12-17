@@ -157,6 +157,15 @@ const Editor: React.FC<EditorProps> = ({
       insertButton: t("toolbarInsertButton", {
         defaultValue: "Insert button",
       }),
+      insertSingleChoice: t("toolbarInsertSingleChoice", {
+        defaultValue: "Insert single choice",
+      }),
+      singleChoiceOption1: t("toolbarChoiceOption1", {
+        defaultValue: "Option 1",
+      }),
+      singleChoiceOption2: t("toolbarChoiceOption2", {
+        defaultValue: "Option 2",
+      }),
     }),
     [
       currentStrings.slashImage,
@@ -523,6 +532,33 @@ const Editor: React.FC<EditorProps> = ({
     view.focus();
   }, [disabled]);
 
+  const insertSingleChoiceTemplate = useCallback(() => {
+    if (disabled || !editorViewRef.current) {
+      return;
+    }
+    const view = editorViewRef.current;
+    const { state, dispatch } = view;
+    const selection = state.selection.main;
+    const optionLabel1 = toolbarLabels.singleChoiceOption1 ?? "选项1";
+    const optionLabel2 = toolbarLabels.singleChoiceOption2 ?? "选项2";
+    const template = `?[%{{}}${optionLabel1}|${optionLabel2}]`;
+    dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: template,
+      },
+      selection: {
+        anchor: selection.from + 5,
+      },
+    });
+    view.focus();
+  }, [
+    disabled,
+    toolbarLabels.singleChoiceOption1,
+    toolbarLabels.singleChoiceOption2,
+  ]);
+
   const handleSelectImage = useCallback(
     ({
       resourceUrl,
@@ -813,6 +849,7 @@ const Editor: React.FC<EditorProps> = ({
         onInsertConfirmOutput={insertConfirmOutputMarker}
         onInsertLink={insertLinkTemplate}
         onInsertButton={insertButtonTemplate}
+        onInsertSingleChoice={insertSingleChoiceTemplate}
         variableSearchActive={!disabled && variableSearchOpen}
       />
       <VariableSearchDropdown

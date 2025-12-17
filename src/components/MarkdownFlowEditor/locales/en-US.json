@@ -55,6 +55,9 @@
   "toolbarConfirmOutput": "Insert confirm output",
   "toolbarInsertLink": "Insert link",
   "toolbarInsertButton": "Insert button",
+  "toolbarInsertSingleChoice": "Insert single choice",
+  "toolbarChoiceOption1": "Option 1",
+  "toolbarChoiceOption2": "Option 2",
   "toolbarInsertImage": "Insert image",
   "toolbarInsertVideo": "Insert video"
 }

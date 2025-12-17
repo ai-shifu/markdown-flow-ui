@@ -1,10 +1,11 @@
 import { memo, useCallback } from "react";
 import {
   Braces,
-  CircleDot,
+  CircleCheck,
   FileType,
   Image,
   Link,
+  SquareCheck,
   SquarePlay,
 } from "lucide-react";
 import { SelectedOption } from "../types";
@@ -16,6 +17,7 @@ type ToolbarLabels = {
   insertLink: string | undefined;
   insertButton: string | undefined;
   insertSingleChoice: string | undefined;
+  insertMultiChoice: string | undefined;
   variable: string;
   image: string;
   video: string;
@@ -34,6 +36,7 @@ interface EditorToolbarProps {
   onInsertLink?: () => void;
   onInsertButton?: () => void;
   onInsertSingleChoice?: () => void;
+  onInsertMultiChoice?: () => void;
   variableSearchActive?: boolean;
 }
 
@@ -53,6 +56,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onInsertLink,
   onInsertButton,
   onInsertSingleChoice,
+  onInsertMultiChoice,
   variableSearchActive = false,
 }) => {
   const handleAddVariable = useCallback(() => {
@@ -100,6 +104,13 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     }
     onInsertSingleChoice?.();
   }, [disabled, onInsertSingleChoice]);
+
+  const handleInsertMultiChoice = useCallback(() => {
+    if (disabled) {
+      return;
+    }
+    onInsertMultiChoice?.();
+  }, [disabled, onInsertMultiChoice]);
 
   return (
     <div className="markdown-flow-editor-toolbar" aria-disabled={disabled}>
@@ -165,7 +176,16 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         aria-label={labels.insertSingleChoice}
         title={labels.insertSingleChoice}
       >
-        <CircleDot strokeWidth={1.75} size={ICON_SIZE} />
+        <CircleCheck strokeWidth={1.75} size={ICON_SIZE} />
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={handleInsertMultiChoice}
+        aria-label={labels.insertMultiChoice}
+        title={labels.insertMultiChoice}
+      >
+        <SquareCheck strokeWidth={1.75} size={ICON_SIZE} />
       </button>
       <button
         type="button"

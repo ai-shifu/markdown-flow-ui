@@ -163,11 +163,17 @@ const Editor: React.FC<EditorProps> = ({
       insertMultiChoice: t("toolbarInsertMultiChoice", {
         defaultValue: "Insert multi choice",
       }),
+      insertInput: t("toolbarInsertInput", {
+        defaultValue: "Insert input",
+      }),
       singleChoiceOption1: t("toolbarChoiceOption1", {
         defaultValue: "Option 1",
       }),
       singleChoiceOption2: t("toolbarChoiceOption2", {
         defaultValue: "Option 2",
+      }),
+      inputPlaceholder: t("toolbarInputPlaceholder", {
+        defaultValue: "Please enter",
       }),
     }),
     [
@@ -589,6 +595,28 @@ const Editor: React.FC<EditorProps> = ({
     toolbarLabels.singleChoiceOption2,
   ]);
 
+  const insertInputFieldTemplate = useCallback(() => {
+    if (disabled || !editorViewRef.current) {
+      return;
+    }
+    const view = editorViewRef.current;
+    const { state, dispatch } = view;
+    const selection = state.selection.main;
+    const placeholder = toolbarLabels.inputPlaceholder ?? "请输入";
+    const template = `?[%{{}}...${placeholder}]`;
+    dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: template,
+      },
+      selection: {
+        anchor: selection.from + 5,
+      },
+    });
+    view.focus();
+  }, [disabled, toolbarLabels.inputPlaceholder]);
+
   const handleSelectImage = useCallback(
     ({
       resourceUrl,
@@ -881,6 +909,7 @@ const Editor: React.FC<EditorProps> = ({
         onInsertButton={insertButtonTemplate}
         onInsertSingleChoice={insertSingleChoiceTemplate}
         onInsertMultiChoice={insertMultiChoiceTemplate}
+        onInsertInputField={insertInputFieldTemplate}
         variableSearchActive={!disabled && variableSearchOpen}
       />
       <VariableSearchDropdown

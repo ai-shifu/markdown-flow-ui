@@ -1,9 +1,10 @@
 import { memo, useCallback } from "react";
 import {
   Braces,
-  CircleCheck,
+  CircleDot,
   FileType,
   Image,
+  TextCursorInput,
   Link,
   SquareCheck,
   SquarePlay,
@@ -18,6 +19,7 @@ type ToolbarLabels = {
   insertButton: string | undefined;
   insertSingleChoice: string | undefined;
   insertMultiChoice: string | undefined;
+  insertInput: string | undefined;
   variable: string;
   image: string;
   video: string;
@@ -37,6 +39,7 @@ interface EditorToolbarProps {
   onInsertButton?: () => void;
   onInsertSingleChoice?: () => void;
   onInsertMultiChoice?: () => void;
+  onInsertInputField?: () => void;
   variableSearchActive?: boolean;
 }
 
@@ -57,6 +60,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onInsertButton,
   onInsertSingleChoice,
   onInsertMultiChoice,
+  onInsertInputField,
   variableSearchActive = false,
 }) => {
   const handleAddVariable = useCallback(() => {
@@ -112,6 +116,13 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     onInsertMultiChoice?.();
   }, [disabled, onInsertMultiChoice]);
 
+  const handleInsertInputField = useCallback(() => {
+    if (disabled) {
+      return;
+    }
+    onInsertInputField?.();
+  }, [disabled, onInsertInputField]);
+
   return (
     <div className="markdown-flow-editor-toolbar" aria-disabled={disabled}>
       <button
@@ -145,6 +156,42 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <button
         type="button"
         disabled={disabled}
+        onClick={handleInsertButton}
+        aria-label={labels.insertButton}
+        title={labels.insertButton}
+      >
+        <ButtonIcon strokeWidth={1.75} size={ICON_SIZE} />
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={handleInsertSingleChoice}
+        aria-label={labels.insertSingleChoice}
+        title={labels.insertSingleChoice}
+      >
+        <CircleDot strokeWidth={1.75} size={ICON_SIZE} />
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={handleInsertMultiChoice}
+        aria-label={labels.insertMultiChoice}
+        title={labels.insertMultiChoice}
+      >
+        <SquareCheck strokeWidth={1.75} size={ICON_SIZE} />
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={handleInsertInputField}
+        aria-label={labels.insertInput}
+        title={labels.insertInput}
+      >
+        <TextCursorInput strokeWidth={1.75} size={ICON_SIZE} />
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
         onClick={() => onSelect(SelectedOption.Image)}
         aria-label={labels.image}
         title={labels.image}
@@ -159,33 +206,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         title={labels.video}
       >
         <SquarePlay strokeWidth={1.75} size={ICON_SIZE} />
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={handleInsertButton}
-        aria-label={labels.insertButton}
-        title={labels.insertButton}
-      >
-        <ButtonIcon strokeWidth={1.75} size={ICON_SIZE} />
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={handleInsertSingleChoice}
-        aria-label={labels.insertSingleChoice}
-        title={labels.insertSingleChoice}
-      >
-        <CircleCheck strokeWidth={1.75} size={ICON_SIZE} />
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={handleInsertMultiChoice}
-        aria-label={labels.insertMultiChoice}
-        title={labels.insertMultiChoice}
-      >
-        <SquareCheck strokeWidth={1.75} size={ICON_SIZE} />
       </button>
       <button
         type="button"

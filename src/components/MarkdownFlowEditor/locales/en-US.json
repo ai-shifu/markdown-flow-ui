@@ -59,6 +59,8 @@
   "toolbarChoiceOption1": "Option 1",
   "toolbarChoiceOption2": "Option 2",
   "toolbarInsertMultiChoice": "Insert multi choice",
+  "toolbarInsertInput": "Insert input",
+  "toolbarInputPlaceholder": "Please enter",
   "toolbarInsertImage": "Insert image",
   "toolbarInsertVideo": "Insert video"
 }

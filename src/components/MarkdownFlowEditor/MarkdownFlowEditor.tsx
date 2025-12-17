@@ -11,6 +11,7 @@ import {
 } from "@codemirror/language";
 import CustomDialog from "./components/CustomDialog";
 import CustomPopover from "./components/CustomPopover";
+import EditorToolbar from "./components/EditorToolbar";
 import EditorContext from "./editor-context";
 import ImageInject from "./components/ImageInject";
 import VideoInject from "./components/VideoInject";
@@ -131,6 +132,18 @@ const Editor: React.FC<EditorProps> = ({
   }, [i18n, locale]);
   const activeLocale = (locale || i18n.language) as "en-US" | "zh-CN";
   const currentStrings = resources[activeLocale]?.translation ?? enUS;
+  const toolbarLabels = useMemo(
+    () => ({
+      image: currentStrings.slashImage ?? "Image",
+      video: currentStrings.slashVideo ?? "Video",
+      variable: currentStrings.slashVariable ?? "Variable",
+    }),
+    [
+      currentStrings.slashImage,
+      currentStrings.slashVideo,
+      currentStrings.slashVariable,
+    ]
+  );
   const placeholderText =
     editMode === EditMode.QuickEdit
       ? t("placeholderQuickEdit", {
@@ -648,6 +661,11 @@ const Editor: React.FC<EditorProps> = ({
       data-disabled={disabled ? "true" : undefined}
       aria-disabled={disabled}
     >
+      <EditorToolbar
+        disabled={disabled}
+        labels={toolbarLabels}
+        onSelect={onSelectedOption}
+      />
       <EditorContext.Provider value={editorContextValue}>
         <CodeMirror
           extensions={editorExtensions}

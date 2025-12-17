@@ -52,5 +52,6 @@
   "variableAddNew": "添加变量",
   "toolbarInsertNewVariable": "插入新变量",
   "toolbarInsertExistingVariable": "插入已有变量",
-  "toolbarConfirmOutput": "确定输出"
+  "toolbarConfirmOutput": "确定输出",
+  "toolbarInsertLink": "插入链接"
 }

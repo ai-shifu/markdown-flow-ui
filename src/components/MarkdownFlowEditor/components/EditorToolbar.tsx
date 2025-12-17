@@ -1,9 +1,11 @@
 import { memo, useCallback } from "react";
-import { Braces, FileType, Image, SquarePlay } from "lucide-react";
+import { Braces, FileType, Image, Link, SquarePlay } from "lucide-react";
 import { SelectedOption } from "../types";
 import SearchBracesIcon from "./icons/SearchBracesIcon";
 
 type ToolbarLabels = {
+  confirmOutput: string | undefined;
+  insertLink: string | undefined;
   variable: string;
   image: string;
   video: string;
@@ -19,17 +21,9 @@ interface EditorToolbarProps {
   onVariableSearchToggle?: (button: HTMLButtonElement) => void;
   onVariableSearchClose?: () => void;
   onInsertConfirmOutput?: () => void;
+  onInsertLink?: () => void;
   variableSearchActive?: boolean;
 }
-
-const toolbarButtons: Array<{
-  option: SelectedOption;
-  Icon: typeof Braces;
-  key: keyof ToolbarLabels;
-}> = [
-  { option: SelectedOption.Image, Icon: Image, key: "image" },
-  { option: SelectedOption.Video, Icon: SquarePlay, key: "video" },
-];
 
 /**
  * EditorToolbar renders quick action buttons that mirror the slash commands.
@@ -44,6 +38,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onVariableSearchToggle,
   onVariableSearchClose,
   onInsertConfirmOutput,
+  onInsertLink,
   variableSearchActive = false,
 }) => {
   const handleAddVariable = useCallback(() => {
@@ -70,6 +65,13 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     }
     onInsertConfirmOutput?.();
   }, [disabled, onInsertConfirmOutput]);
+
+  const handleInsertLink = useCallback(() => {
+    if (disabled) {
+      return;
+    }
+    onInsertLink?.();
+  }, [disabled, onInsertLink]);
 
   return (
     <div className="markdown-flow-editor-toolbar" aria-disabled={disabled}>
@@ -101,18 +103,33 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       >
         <FileType strokeWidth={1.75} size={ICON_SIZE} />
       </button>
-      {toolbarButtons.map(({ option, Icon, key }) => (
-        <button
-          key={option}
-          type="button"
-          disabled={disabled}
-          onClick={() => onSelect(option)}
-          aria-label={labels[key]}
-          title={labels[key]}
-        >
-          <Icon strokeWidth={1.75} size={ICON_SIZE} />
-        </button>
-      ))}
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onSelect(SelectedOption.Image)}
+        aria-label={labels.image}
+        title={labels.image}
+      >
+        <Image strokeWidth={1.75} size={ICON_SIZE} />
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onSelect(SelectedOption.Video)}
+        aria-label={labels.video}
+        title={labels.video}
+      >
+        <SquarePlay strokeWidth={1.75} size={ICON_SIZE} />
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={handleInsertLink}
+        aria-label={labels.insertLink}
+        title={labels.insertLink}
+      >
+        <Link strokeWidth={1.75} size={ICON_SIZE} />
+      </button>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { memo, useCallback } from "react";
-import { Braces, Image, SquarePlay } from "lucide-react";
+import { Braces, FileType, Image, SquarePlay } from "lucide-react";
 import { SelectedOption } from "../types";
 import SearchBracesIcon from "./icons/SearchBracesIcon";
 
@@ -18,6 +18,7 @@ interface EditorToolbarProps {
   onInsertVariablePlaceholder?: () => void;
   onVariableSearchToggle?: (button: HTMLButtonElement) => void;
   onVariableSearchClose?: () => void;
+  onInsertConfirmOutput?: () => void;
   variableSearchActive?: boolean;
 }
 
@@ -42,6 +43,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onInsertVariablePlaceholder,
   onVariableSearchToggle,
   onVariableSearchClose,
+  onInsertConfirmOutput,
   variableSearchActive = false,
 }) => {
   const handleAddVariable = useCallback(() => {
@@ -61,6 +63,13 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     },
     [disabled, onVariableSearchToggle]
   );
+
+  const handleConfirmOutput = useCallback(() => {
+    if (disabled) {
+      return;
+    }
+    onInsertConfirmOutput?.();
+  }, [disabled, onInsertConfirmOutput]);
 
   return (
     <div className="markdown-flow-editor-toolbar" aria-disabled={disabled}>
@@ -82,6 +91,15 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         title={labels.search}
       >
         <SearchBracesIcon strokeWidth={1.75} size={ICON_SIZE} />
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={handleConfirmOutput}
+        aria-label={labels.confirmOutput}
+        title={labels.confirmOutput}
+      >
+        <FileType strokeWidth={1.75} size={ICON_SIZE} />
       </button>
       {toolbarButtons.map(({ option, Icon, key }) => (
         <button

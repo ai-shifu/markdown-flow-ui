@@ -144,6 +144,9 @@ const Editor: React.FC<EditorProps> = ({
       search: t("toolbarInsertExistingVariable", {
         defaultValue: "Insert existing variable",
       }),
+      confirmOutput: t("toolbarConfirmOutput", {
+        defaultValue: "Confirm output",
+      }),
     }),
     [
       currentStrings.slashImage,
@@ -434,7 +437,6 @@ const Editor: React.FC<EditorProps> = ({
     const { state, dispatch } = view;
     const selection = state.selection.main;
     const template = "{{}}";
-    // Place caret inside braces to let user type the variable name immediately.
     dispatch({
       changes: {
         from: selection.from,
@@ -447,6 +449,27 @@ const Editor: React.FC<EditorProps> = ({
     });
     view.focus();
   }, [closeVariableSearch, disabled]);
+
+  const insertConfirmOutputMarker = useCallback(() => {
+    if (disabled || !editorViewRef.current) {
+      return;
+    }
+    const view = editorViewRef.current;
+    const { state, dispatch } = view;
+    const selection = state.selection.main;
+    const template = "======";
+    dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: template,
+      },
+      selection: {
+        anchor: selection.from + 3,
+      },
+    });
+    view.focus();
+  }, [disabled]);
 
   const handleSelectImage = useCallback(
     ({
@@ -735,6 +758,7 @@ const Editor: React.FC<EditorProps> = ({
         onInsertVariablePlaceholder={insertVariableTemplate}
         onVariableSearchToggle={handleVariableSearchToggle}
         onVariableSearchClose={closeVariableSearch}
+        onInsertConfirmOutput={insertConfirmOutputMarker}
         variableSearchActive={!disabled && variableSearchOpen}
       />
       <VariableSearchDropdown

@@ -51,5 +51,6 @@
   "variableSectionCustom": "Custom Variables",
   "variableAddNew": "Add variable",
   "toolbarInsertNewVariable": "Insert new variable",
-  "toolbarInsertExistingVariable": "Insert existing variable"
+  "toolbarInsertExistingVariable": "Insert existing variable",
+  "toolbarConfirmOutput": "Confirm output"
 }

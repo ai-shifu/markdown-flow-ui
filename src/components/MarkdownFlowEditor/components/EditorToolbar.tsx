@@ -4,7 +4,7 @@ import {
   FileType,
   Image,
   TextCursorInput,
-  Link,
+  // Link,
   SquareCheck,
   SquarePlay,
   CircleCheck,
@@ -56,7 +56,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onVariableSearchToggle,
   onVariableSearchClose,
   onInsertConfirmOutput,
-  onInsertLink,
+  // onInsertLink,
   onInsertButton,
   onInsertSingleChoice,
   onInsertMultiChoice,
@@ -88,12 +88,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     onInsertConfirmOutput?.();
   }, [disabled, onInsertConfirmOutput]);
 
-  const handleInsertLink = useCallback(() => {
-    if (disabled) {
-      return;
-    }
-    onInsertLink?.();
-  }, [disabled, onInsertLink]);
+  // const handleInsertLink = useCallback(() => {
+  //   if (disabled) {
+  //     return;
+  //   }
+  //   onInsertLink?.();
+  // }, [disabled, onInsertLink]);
 
   const handleInsertButton = useCallback(() => {
     if (disabled) {
@@ -147,24 +147,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <button
         type="button"
         disabled={disabled}
-        onClick={handleConfirmOutput}
-        aria-label={labels.confirmOutput}
-        title={labels.confirmOutput}
-      >
-        <FileType strokeWidth={1.75} size={ICON_SIZE} />
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={handleInsertButton}
-        aria-label={labels.insertButton}
-        title={labels.insertButton}
-      >
-        <ButtonIcon strokeWidth={1.75} size={ICON_SIZE} />
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
         onClick={handleInsertSingleChoice}
         aria-label={labels.insertSingleChoice}
         title={labels.insertSingleChoice}
@@ -192,6 +174,24 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <button
         type="button"
         disabled={disabled}
+        onClick={handleInsertButton}
+        aria-label={labels.insertButton}
+        title={labels.insertButton}
+      >
+        <ButtonIcon strokeWidth={1.75} size={ICON_SIZE} />
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={handleConfirmOutput}
+        aria-label={labels.confirmOutput}
+        title={labels.confirmOutput}
+      >
+        <FileType strokeWidth={1.75} size={ICON_SIZE} />
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
         onClick={() => onSelect(SelectedOption.Image)}
         aria-label={labels.image}
         title={labels.image}
@@ -207,7 +207,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       >
         <SquarePlay strokeWidth={1.75} size={ICON_SIZE} />
       </button>
-      <button
+      {/* <button
         type="button"
         disabled={disabled}
         onClick={handleInsertLink}
@@ -215,7 +215,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         title={labels.insertLink}
       >
         <Link strokeWidth={1.75} size={ICON_SIZE} />
-      </button>
+      </button> */}
     </div>
   );
 };

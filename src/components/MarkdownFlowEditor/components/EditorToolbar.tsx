@@ -1,13 +1,13 @@
 import { memo, useCallback } from "react";
 import {
   Braces,
-  CircleDot,
   FileType,
   Image,
   TextCursorInput,
   Link,
   SquareCheck,
   SquarePlay,
+  CircleCheck,
 } from "lucide-react";
 import { SelectedOption } from "../types";
 import SearchBracesIcon from "./icons/SearchBracesIcon";
@@ -169,7 +169,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         aria-label={labels.insertSingleChoice}
         title={labels.insertSingleChoice}
       >
-        <CircleDot strokeWidth={1.75} size={ICON_SIZE} />
+        <CircleCheck strokeWidth={1.75} size={ICON_SIZE} />
       </button>
       <button
         type="button"

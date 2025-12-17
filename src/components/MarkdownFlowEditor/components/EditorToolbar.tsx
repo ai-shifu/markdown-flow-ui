@@ -33,7 +33,7 @@ const toolbarButtons: Array<{
 /**
  * EditorToolbar renders quick action buttons that mirror the slash commands.
  */
-const ICON_SIZE = 20;
+const ICON_SIZE = 18;
 
 const EditorToolbar: React.FC<EditorToolbarProps> = ({
   disabled = false,
@@ -81,7 +81,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         aria-label={labels.search}
         title={labels.search}
       >
-        <SearchBracesIcon strokeWidth={1.75} size={ICON_SIZE} />
+        <SearchBracesIcon strokeWidth={1.75} size={20} />
       </button>
       {toolbarButtons.map(({ option, Icon, key }) => (
         <button

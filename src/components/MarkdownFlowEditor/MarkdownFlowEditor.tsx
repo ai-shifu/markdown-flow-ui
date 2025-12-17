@@ -138,11 +138,11 @@ const Editor: React.FC<EditorProps> = ({
       image: currentStrings.slashImage ?? "Image",
       video: currentStrings.slashVideo ?? "Video",
       variable: currentStrings.slashVariable ?? "Variable",
-      addVariable: t("variableAddNew", {
-        defaultValue: "Add variable",
+      addVariable: t("toolbarInsertNewVariable", {
+        defaultValue: "Insert new variable",
       }),
-      search: t("variableSearchPlaceholder", {
-        defaultValue: "Search variable",
+      search: t("toolbarInsertExistingVariable", {
+        defaultValue: "Insert existing variable",
       }),
     }),
     [

@@ -163,7 +163,7 @@
 .markdown-flow-editor-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0;
   border-bottom: 1px solid var(--base-border, #e5e5e5);
   border-radius: var(--border-radius-rounded-lg, 10px)
     var(--border-radius-rounded-lg, 10px) 0 0;
@@ -180,9 +180,14 @@
   background: transparent;
   color: #0a0a0a;
   cursor: pointer;
+  padding: 6px;
   transition:
     background 0.2s ease,
     color 0.2s ease;
+}
+
+.markdown-flow-editor-toolbar button:last-child {
+  margin-right: 0;
 }
 
 .markdown-flow-editor-toolbar button:not(:disabled):hover {

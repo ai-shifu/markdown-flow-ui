@@ -49,5 +49,7 @@
   "variableNameInvalid": "Use letters, numbers, or underscores without spaces",
   "variableSectionSystem": "System Variables",
   "variableSectionCustom": "Custom Variables",
-  "variableAddNew": "Add variable"
+  "variableAddNew": "Add variable",
+  "toolbarInsertNewVariable": "Insert new variable",
+  "toolbarInsertExistingVariable": "Insert existing variable"
 }

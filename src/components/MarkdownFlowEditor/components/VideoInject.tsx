@@ -9,6 +9,11 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import EditorContext from "../editor-context";
+import {
+  biliVideoUrlRegexp,
+  youtubeVideoUrlRegexp,
+  getVideoEmbedUrl,
+} from "../utils/video";
 
 type VideoInjectProps = {
   value?: {
@@ -24,11 +29,6 @@ type VideoInjectProps = {
   }) => void;
 };
 
-const biliVideoUrlRegexp =
-  /(https?:\/\/(?:www\.|m\.)?bilibili\.com\/video\/\S+\/?)/i;
-const youtubeVideoUrlRegexp =
-  /^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/watch\?v=|youtube\.com\/embed\/|youtu\.be\/)([A-Za-z0-9_-]{11})(?:[?&].*)?$/i;
-
 const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
   const { t } = useTranslation();
   const { setDialogOpen } = useContext(EditorContext);
@@ -43,21 +43,8 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
     return biliVideoUrlRegexp.test(url) || youtubeVideoUrlRegexp.test(url);
   };
 
-  const extractYoutubeId = (url: string) => {
-    const match = url.match(youtubeVideoUrlRegexp);
-    return match ? match[1] : null;
-  };
-
   const generateEmbedUrl = (url: string) => {
-    if (biliVideoUrlRegexp.test(url)) {
-      const encoded = encodeURIComponent(url);
-      return `https://if-cdn.com/api/iframe?url=${encoded}&key=a68bac8b6624d46b6d0ba46e5b3f8971`;
-    }
-    const videoId = extractYoutubeId(url);
-    if (videoId) {
-      return `https://www.youtube.com/embed/${videoId}`;
-    }
-    return url;
+    return getVideoEmbedUrl(url);
   };
 
   const getDefaultTitleForUrl = useCallback(
@@ -104,26 +91,9 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
     const finalTitle = title.trim() || getDefaultTitleForUrl(inputUrl);
 
     try {
-      const returnUrlObj = new URL(inputUrl);
-      if (biliVideoUrlRegexp.test(inputUrl)) {
-        onSelect({
-          resourceUrl: returnUrlObj.origin + returnUrlObj.pathname,
-          resourceTitle: finalTitle,
-        });
-        setDialogOpen(false);
-        return;
-      }
-      const youtubeId = extractYoutubeId(inputUrl);
-      if (youtubeId) {
-        onSelect({
-          resourceUrl: `https://www.youtube.com/watch?v=${youtubeId}`,
-          resourceTitle: finalTitle,
-        });
-        setDialogOpen(false);
-        return;
-      }
+      const normalizedUrl = new URL(inputUrl).toString();
       onSelect({
-        resourceUrl: returnUrlObj.origin + returnUrlObj.pathname,
+        resourceUrl: normalizedUrl,
         resourceTitle: finalTitle,
       });
     } catch (error) {
@@ -225,5 +195,4 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
     </div>
   );
 };
-export { biliVideoUrlRegexp, youtubeVideoUrlRegexp };
 export default VideoInject;

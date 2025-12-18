@@ -9,20 +9,40 @@ import {
 import { SelectedOption } from "../types";
 import PlaceholderWidget from "./PlaceholderWidget";
 
-// Simple and safe regex - breaks down complex pattern into simpler parts
 const biliVideoContextRegexp =
-  /<iframe\s[^>]*data-tag="video"[^>]*data-title="([^"]+)"[^>]*src="([^"]+)"[^>]*><\/iframe>/gi;
+  /<iframe\s[^>]*data-tag="video"[^>]*><\/iframe>/gi;
+
+const extractAttrValue = (markup: string, attr: string) => {
+  const escapedAttr = attr.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regexp = new RegExp(`${escapedAttr}="([^"]*)"`, "i");
+  const match = markup.match(regexp);
+  return match ? match[1] : "";
+};
+
+const decodeHtmlEntities = (value: string) =>
+  value.replace(/&quot;/g, '"').replace(/&amp;/g, "&");
 
 const biliUrlMatcher = new MatchDecorator({
   regexp: biliVideoContextRegexp,
   decoration: (match, view) => {
-    // Extract and decode the original URL from the API endpoint
-    let originalUrl = match?.[2] || "";
+    const iframeMarkup = match?.[0] || "";
+    const srcValueRaw = extractAttrValue(iframeMarkup, "src");
+    const titleAttrRaw = extractAttrValue(iframeMarkup, "data-title");
+    const dataUrlAttrRaw = extractAttrValue(iframeMarkup, "data-url");
+    const titleAttr = titleAttrRaw ? decodeHtmlEntities(titleAttrRaw) : "";
+    const decodedSrcValue = srcValueRaw ? decodeHtmlEntities(srcValueRaw) : "";
+    const storedDataUrl = dataUrlAttrRaw
+      ? decodeHtmlEntities(dataUrlAttrRaw)
+      : "";
+    // Extract and decode the original URL from stored attributes or API endpoint
+    let originalUrl = storedDataUrl || decodedSrcValue;
     try {
-      const urlParams = new URLSearchParams(new URL(originalUrl).search);
-      const encodedUrl = urlParams.get("url");
-      if (encodedUrl) {
-        originalUrl = decodeURIComponent(encodedUrl);
+      if (!storedDataUrl && decodedSrcValue) {
+        const urlParams = new URLSearchParams(new URL(decodedSrcValue).search);
+        const encodedUrl = urlParams.get("url");
+        if (encodedUrl) {
+          originalUrl = decodeURIComponent(encodedUrl);
+        }
       }
     } catch (error) {
       console.warn("Failed to decode video URL:", error);
@@ -30,11 +50,11 @@ const biliUrlMatcher = new MatchDecorator({
 
     return Decoration.replace({
       widget: new PlaceholderWidget(
-        match?.[1] || "Video", // Display title from data-title
+        titleAttr || "Video", // Display title from data-title
         {
           tag: "video",
           url: originalUrl, // Decoded original Bilibili URL
-          title: match?.[1], // title from data-title attribute
+          title: titleAttr, // title from data-title attribute
         },
         "tag-video",
         SelectedOption.Video,

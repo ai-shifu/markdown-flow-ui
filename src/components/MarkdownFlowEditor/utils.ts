@@ -4,10 +4,7 @@ import {
 } from "@codemirror/autocomplete";
 import { EditorView } from "@codemirror/view";
 import { SelectedOption } from "./types";
-import {
-  biliVideoUrlRegexp,
-  youtubeVideoUrlRegexp,
-} from "./components/VideoInject";
+import { getVideoEmbedUrl } from "./utils/video";
 
 const VARIABLE_NAME_SOURCE = "[\\p{L}\\p{N}_]+";
 const VARIABLE_NAME_REGEXP = new RegExp(`^${VARIABLE_NAME_SOURCE}$`, "u");
@@ -131,21 +128,8 @@ function createSlashCommands(
 }
 
 const getEmbedUrl = (url: string) => {
-  if (biliVideoUrlRegexp.test(url)) {
-    const encoded = encodeURIComponent(url);
-    const key = process.env.NEXT_PUBLIC_IFRAME_KEY ?? "";
-    return key
-      ? `https://if-cdn.com/api/iframe?url=${encoded}&key=${key}`
-      : url;
-  }
-  if (youtubeVideoUrlRegexp.test(url)) {
-    const match = url.match(youtubeVideoUrlRegexp);
-    const videoId = match?.[1];
-    if (videoId) {
-      return `https://www.youtube.com/embed/${videoId}`;
-    }
-  }
-  return url;
+  const key = process.env.NEXT_PUBLIC_IFRAME_KEY || undefined;
+  return getVideoEmbedUrl(url, key);
 };
 
 const getVideoContentToInsert = (
@@ -153,11 +137,15 @@ const getVideoContentToInsert = (
   resourceTitle: string
 ) => {
   const embedUrl = getEmbedUrl(resourceUrl);
-  return `<iframe data-tag="video" data-title="${resourceTitle}" class="w-full aspect-video rounded-lg border-0" src="${embedUrl}" allowfullscreen="" allow="autoplay; encrypted-media"></iframe>`;
+  const escapeAttr = (value: string) =>
+    value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+  const sanitizedTitle = resourceTitle ? escapeAttr(resourceTitle) : "";
+  const sanitizedResourceUrl = escapeAttr(resourceUrl);
+  const sanitizedEmbedUrl = escapeAttr(embedUrl);
+  return `<iframe data-tag="video" data-title="${sanitizedTitle}" data-url="${sanitizedResourceUrl}" class="w-full aspect-video rounded-lg border-0" src="${sanitizedEmbedUrl}" allowfullscreen="" allow="autoplay; encrypted-media"></iframe>`;
 };
 
 export {
-  biliVideoUrlRegexp,
   createSlashCommands,
   parseContentInfo,
   getEmbedUrl,

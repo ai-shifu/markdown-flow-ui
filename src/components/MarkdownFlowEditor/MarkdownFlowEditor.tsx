@@ -141,7 +141,6 @@ const Editor: React.FC<EditorProps> = ({
       video: t("toolbarInsertVideo", {
         defaultValue: "Insert video",
       }),
-      variable: currentStrings.slashVariable ?? "Variable",
       addVariable: t("toolbarInsertNewVariable", {
         defaultValue: "Insert new variable",
       }),
@@ -176,12 +175,7 @@ const Editor: React.FC<EditorProps> = ({
         defaultValue: "Please enter",
       }),
     }),
-    [
-      currentStrings.slashImage,
-      currentStrings.slashVideo,
-      currentStrings.slashVariable,
-      t,
-    ]
+    [t]
   );
   const variableSearchLabels = useMemo(
     () => ({
@@ -548,8 +542,8 @@ const Editor: React.FC<EditorProps> = ({
     const view = editorViewRef.current;
     const { state, dispatch } = view;
     const selection = state.selection.main;
-    const optionLabel1 = toolbarLabels.singleChoiceOption1 ?? "选项1";
-    const optionLabel2 = toolbarLabels.singleChoiceOption2 ?? "选项2";
+    const optionLabel1 = toolbarLabels.singleChoiceOption1;
+    const optionLabel2 = toolbarLabels.singleChoiceOption2;
     const template = `?[%{{}}${optionLabel1}|${optionLabel2}]`;
     dispatch({
       changes: {
@@ -575,8 +569,8 @@ const Editor: React.FC<EditorProps> = ({
     const view = editorViewRef.current;
     const { state, dispatch } = view;
     const selection = state.selection.main;
-    const optionLabel1 = toolbarLabels.singleChoiceOption1 ?? "选项1";
-    const optionLabel2 = toolbarLabels.singleChoiceOption2 ?? "选项2";
+    const optionLabel1 = toolbarLabels.singleChoiceOption1;
+    const optionLabel2 = toolbarLabels.singleChoiceOption2;
     const template = `?[%{{}}${optionLabel1}||${optionLabel2}]`;
     dispatch({
       changes: {
@@ -891,6 +885,8 @@ const Editor: React.FC<EditorProps> = ({
     [addVariablesFromContent, onChange, disabled]
   );
 
+  const isVariableSearchOpen = !disabled && variableSearchOpen;
+
   return (
     <div
       className="markdown-flow-editor"
@@ -910,10 +906,10 @@ const Editor: React.FC<EditorProps> = ({
         onInsertSingleChoice={insertSingleChoiceTemplate}
         onInsertMultiChoice={insertMultiChoiceTemplate}
         onInsertInputField={insertInputFieldTemplate}
-        variableSearchActive={!disabled && variableSearchOpen}
+        variableSearchActive={isVariableSearchOpen}
       />
       <VariableSearchDropdown
-        open={!disabled && variableSearchOpen}
+        open={isVariableSearchOpen}
         anchorElement={variableSearchAnchorRef.current}
         onClose={closeVariableSearch}
         onSelect={handleSelectVariable}

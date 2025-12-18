@@ -144,9 +144,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               <Braces strokeWidth={1.75} size={ICON_SIZE} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {labels.addVariable ?? ""}
-          </TooltipContent>
+          <TooltipContent side="top">{labels.addVariable ?? ""}</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -163,7 +161,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               <SearchBracesIcon strokeWidth={1.75} size={ICON_SIZE} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">{labels.search ?? ""}</TooltipContent>
+          <TooltipContent side="top">{labels.search ?? ""}</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -177,7 +175,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               <CircleCheck strokeWidth={1.75} size={ICON_SIZE} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">
+          <TooltipContent side="top">
             {labels.insertSingleChoice ?? ""}
           </TooltipContent>
         </Tooltip>
@@ -193,7 +191,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               <SquareCheck strokeWidth={1.75} size={ICON_SIZE} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">
+          <TooltipContent side="top">
             {labels.insertMultiChoice ?? ""}
           </TooltipContent>
         </Tooltip>
@@ -209,9 +207,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               <TextCursorInput strokeWidth={1.75} size={ICON_SIZE} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {labels.insertInput ?? ""}
-          </TooltipContent>
+          <TooltipContent side="top">{labels.insertInput ?? ""}</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -225,7 +221,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               <ButtonIcon strokeWidth={1.75} size={ICON_SIZE} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">
+          <TooltipContent side="top">
             {labels.insertButton ?? ""}
           </TooltipContent>
         </Tooltip>
@@ -241,7 +237,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               <FileType strokeWidth={1.75} size={ICON_SIZE} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">
+          <TooltipContent side="top">
             {labels.confirmOutput ?? ""}
           </TooltipContent>
         </Tooltip>
@@ -257,7 +253,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               <Image strokeWidth={1.75} size={ICON_SIZE} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">{labels.image ?? ""}</TooltipContent>
+          <TooltipContent side="top">{labels.image ?? ""}</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -271,7 +267,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               <SquarePlay strokeWidth={1.75} size={ICON_SIZE} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">{labels.video ?? ""}</TooltipContent>
+          <TooltipContent side="top">{labels.video ?? ""}</TooltipContent>
         </Tooltip>
         {/* <Tooltip>
           <TooltipTrigger asChild>
@@ -285,7 +281,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               <Link strokeWidth={1.75} size={ICON_SIZE} />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">
+          <TooltipContent side="top">
             {labels.insertLink ?? ""}
           </TooltipContent>
         </Tooltip> */}

@@ -917,77 +917,79 @@ const Editor: React.FC<EditorProps> = ({
         systemVariables={systemVariables}
         labels={variableSearchLabels}
       />
-      <EditorContext.Provider value={editorContextValue}>
-        <CodeMirror
-          extensions={editorExtensions}
-          basicSetup={{
-            lineNumbers: false,
-            syntaxHighlighting: true,
-            highlightActiveLine: true,
-            highlightActiveLineGutter: true,
-            foldGutter: false,
-          }}
-          className="rounded-md"
-          placeholder={placeholderText}
-          value={content}
-          theme="light"
-          minHeight="2rem"
-          editable={!disabled}
-          onChange={handleContentChange}
-          onBlur={onBlur}
-        />
-        {!disabled && (
-          <CustomDialog
-            labels={{
-              title:
-                selectedOption === SelectedOption.Image
-                  ? t("dialogTitleImage")
-                  : selectedOption === SelectedOption.Video
-                    ? t("dialogTitleVideo")
-                    : selectedOption === SelectedOption.Variable
-                      ? t("dialogTitleVariable")
-                      : t("dialogTitle"),
+      <div className="markdown-flow-editor-body relative overflow-auto">
+        <EditorContext.Provider value={editorContextValue}>
+          <CodeMirror
+            extensions={editorExtensions}
+            basicSetup={{
+              lineNumbers: false,
+              syntaxHighlighting: true,
+              highlightActiveLine: true,
+              highlightActiveLineGutter: true,
+              foldGutter: false,
             }}
-          >
-            {selectedOption === SelectedOption.Image && (
-              <ImageInject
-                value={selectContentInfo?.value}
-                onSelect={handleSelectImage}
-                uploadProps={uploadProps}
-              />
-            )}
-            {selectedOption === SelectedOption.Video && (
-              <VideoInject
-                value={selectContentInfo?.value}
-                onSelect={handleSelectVideo}
-              />
-            )}
-          </CustomDialog>
-        )}
-
-        {!disabled && (
-          <CustomPopover>
-            <VariableSelect
-              variables={variables}
-              systemVariables={systemVariables}
-              selectedName={selectContentInfo?.value?.variableName}
-              onSelect={handleSelectVariable}
-              onAddVariable={(variable) => {
-                setVariables((prev) => {
-                  const normalized = variable.name.toLowerCase();
-                  const exists = prev.some(
-                    (item) => item.name.toLowerCase() === normalized
-                  );
-                  if (exists) {
-                    return prev;
-                  }
-                  return [variable, ...prev];
-                });
+            className="rounded-md"
+            placeholder={placeholderText}
+            value={content}
+            theme="light"
+            minHeight="2rem"
+            editable={!disabled}
+            onChange={handleContentChange}
+            onBlur={onBlur}
+          />
+          {!disabled && (
+            <CustomDialog
+              labels={{
+                title:
+                  selectedOption === SelectedOption.Image
+                    ? t("dialogTitleImage")
+                    : selectedOption === SelectedOption.Video
+                      ? t("dialogTitleVideo")
+                      : selectedOption === SelectedOption.Variable
+                        ? t("dialogTitleVariable")
+                        : t("dialogTitle"),
               }}
-            />
-          </CustomPopover>
-        )}
-      </EditorContext.Provider>
+            >
+              {selectedOption === SelectedOption.Image && (
+                <ImageInject
+                  value={selectContentInfo?.value}
+                  onSelect={handleSelectImage}
+                  uploadProps={uploadProps}
+                />
+              )}
+              {selectedOption === SelectedOption.Video && (
+                <VideoInject
+                  value={selectContentInfo?.value}
+                  onSelect={handleSelectVideo}
+                />
+              )}
+            </CustomDialog>
+          )}
+
+          {!disabled && (
+            <CustomPopover>
+              <VariableSelect
+                variables={variables}
+                systemVariables={systemVariables}
+                selectedName={selectContentInfo?.value?.variableName}
+                onSelect={handleSelectVariable}
+                onAddVariable={(variable) => {
+                  setVariables((prev) => {
+                    const normalized = variable.name.toLowerCase();
+                    const exists = prev.some(
+                      (item) => item.name.toLowerCase() === normalized
+                    );
+                    if (exists) {
+                      return prev;
+                    }
+                    return [variable, ...prev];
+                  });
+                }}
+              />
+            </CustomPopover>
+          )}
+        </EditorContext.Provider>
+      </div>
     </div>
   );
 };

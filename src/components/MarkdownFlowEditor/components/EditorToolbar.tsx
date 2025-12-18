@@ -138,8 +138,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               type="button"
               disabled={disabled}
               onClick={handleAddVariable}
-              aria-label={labels.addVariable}
-              title={labels.addVariable}
             >
               <Braces strokeWidth={1.75} size={ICON_SIZE} />
             </button>

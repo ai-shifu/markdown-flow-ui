@@ -161,6 +161,11 @@
 }
 
 .markdown-flow-editor-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   gap: 0;
@@ -312,6 +317,7 @@
     Helvetica,
     Arial,
     sans-serif;
+  position: relative;
   font-size: var(--text-md-font-size, 16px);
   font-style: normal;
   font-weight: 400;

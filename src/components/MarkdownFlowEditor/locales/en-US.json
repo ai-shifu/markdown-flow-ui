@@ -49,5 +49,18 @@
   "variableNameInvalid": "Use letters, numbers, or underscores without spaces",
   "variableSectionSystem": "System Variables",
   "variableSectionCustom": "Custom Variables",
-  "variableAddNew": "Add new variable"
+  "variableAddNew": "Add variable",
+  "toolbarInsertNewVariable": "Insert new variable",
+  "toolbarInsertExistingVariable": "Insert existing variable",
+  "toolbarConfirmOutput": "Insert confirm output",
+  "toolbarInsertLink": "Insert link",
+  "toolbarInsertButton": "Insert button",
+  "toolbarInsertSingleChoice": "Insert single choice",
+  "toolbarChoiceOption1": "Option 1",
+  "toolbarChoiceOption2": "Option 2",
+  "toolbarInsertMultiChoice": "Insert multi choice",
+  "toolbarInsertInput": "Insert input",
+  "toolbarInputPlaceholder": "Please enter",
+  "toolbarInsertImage": "Insert image",
+  "toolbarInsertVideo": "Insert video"
 }

@@ -49,5 +49,18 @@
   "variableNameInvalid": "仅可包含字母、数字或下划线，且不能有空格",
   "variableSectionSystem": "系统变量",
   "variableSectionCustom": "自定义变量",
-  "variableAddNew": "添加新变量"
+  "variableAddNew": "添加变量",
+  "toolbarInsertNewVariable": "插入新变量",
+  "toolbarInsertExistingVariable": "插入已有变量",
+  "toolbarConfirmOutput": "插入确定内容",
+  "toolbarInsertLink": "插入链接",
+  "toolbarInsertButton": "插入按钮",
+  "toolbarInsertSingleChoice": "插入单选",
+  "toolbarChoiceOption1": "选项1",
+  "toolbarChoiceOption2": "选项2",
+  "toolbarInsertMultiChoice": "插入多选",
+  "toolbarInsertInput": "插入输入框",
+  "toolbarInputPlaceholder": "请输入",
+  "toolbarInsertImage": "插入图片",
+  "toolbarInsertVideo": "插入视频"
 }

@@ -11,6 +11,8 @@ import {
 } from "@codemirror/language";
 import CustomDialog from "./components/CustomDialog";
 import CustomPopover from "./components/CustomPopover";
+import EditorToolbar from "./components/EditorToolbar";
+import VariableSearchDropdown from "./components/VariableSearchDropdown";
 import EditorContext from "./editor-context";
 import ImageInject from "./components/ImageInject";
 import VideoInject from "./components/VideoInject";
@@ -131,6 +133,61 @@ const Editor: React.FC<EditorProps> = ({
   }, [i18n, locale]);
   const activeLocale = (locale || i18n.language) as "en-US" | "zh-CN";
   const currentStrings = resources[activeLocale]?.translation ?? enUS;
+  const toolbarLabels = useMemo(
+    () => ({
+      image: t("toolbarInsertImage", {
+        defaultValue: "Insert image",
+      }),
+      video: t("toolbarInsertVideo", {
+        defaultValue: "Insert video",
+      }),
+      addVariable: t("toolbarInsertNewVariable", {
+        defaultValue: "Insert new variable",
+      }),
+      search: t("toolbarInsertExistingVariable", {
+        defaultValue: "Insert existing variable",
+      }),
+      confirmOutput: t("toolbarConfirmOutput", {
+        defaultValue: "Confirm output",
+      }),
+      insertLink: t("toolbarInsertLink", {
+        defaultValue: "Insert link",
+      }),
+      insertButton: t("toolbarInsertButton", {
+        defaultValue: "Insert button",
+      }),
+      insertSingleChoice: t("toolbarInsertSingleChoice", {
+        defaultValue: "Insert single choice",
+      }),
+      insertMultiChoice: t("toolbarInsertMultiChoice", {
+        defaultValue: "Insert multi choice",
+      }),
+      insertInput: t("toolbarInsertInput", {
+        defaultValue: "Insert input",
+      }),
+      singleChoiceOption1: t("toolbarChoiceOption1", {
+        defaultValue: "Option 1",
+      }),
+      singleChoiceOption2: t("toolbarChoiceOption2", {
+        defaultValue: "Option 2",
+      }),
+      inputPlaceholder: t("toolbarInputPlaceholder", {
+        defaultValue: "Please enter",
+      }),
+    }),
+    [t]
+  );
+  const variableSearchLabels = useMemo(
+    () => ({
+      searchPlaceholder: t("variableSearchPlaceholder", {
+        defaultValue: "Search variable",
+      }),
+      systemLabel: t("variableSectionSystem", "System Variables"),
+      customLabel: t("variableSectionCustom", "Custom Variables"),
+      emptyLabel: t("variableNotFound", "No variables found"),
+    }),
+    [t]
+  );
   const placeholderText =
     editMode === EditMode.QuickEdit
       ? t("placeholderQuickEdit", {
@@ -166,6 +223,26 @@ const Editor: React.FC<EditorProps> = ({
     useState<SelectContentInfo | null>();
   const editorViewRef = useRef<EditorView | null>(null);
   const pendingVariableContentRef = useRef<string | null>(null);
+  const variableSearchAnchorRef = useRef<HTMLButtonElement | null>(null);
+  const [variableSearchOpen, setVariableSearchOpen] = useState(false);
+  const closeVariableSearch = useCallback(() => {
+    setVariableSearchOpen(false);
+    variableSearchAnchorRef.current = null;
+  }, []);
+  const handleVariableSearchToggle = useCallback(
+    (button: HTMLButtonElement) => {
+      if (disabled) {
+        return;
+      }
+      if (variableSearchOpen && variableSearchAnchorRef.current === button) {
+        closeVariableSearch();
+        return;
+      }
+      variableSearchAnchorRef.current = button;
+      setVariableSearchOpen(true);
+    },
+    [closeVariableSearch, disabled, variableSearchOpen]
+  );
 
   const editorContextValue: IEditorContext = {
     selectedOption,
@@ -187,7 +264,9 @@ const Editor: React.FC<EditorProps> = ({
     setSelectedOption(SelectedOption.Empty);
     setSelectContentInfo(null);
     setPopoverPosition(null);
+    closeVariableSearch();
   }, [
+    closeVariableSearch,
     disabled,
     setDialogOpen,
     setPopoverOpen,
@@ -294,6 +373,7 @@ const Editor: React.FC<EditorProps> = ({
       if (disabled) {
         return;
       }
+      closeVariableSearch();
       // if (option === SelectedOption.FixedText) {
       //   insertFixedText();
       //   setSelectedOption(SelectedOption.Empty);
@@ -333,7 +413,7 @@ const Editor: React.FC<EditorProps> = ({
         setDialogOpen(true);
       }
     },
-    [disabled]
+    [closeVariableSearch, disabled]
   );
 
   const insertText = useCallback(
@@ -369,6 +449,167 @@ const Editor: React.FC<EditorProps> = ({
       changes: { from, to, insert: "" },
     });
   }, [selectContentInfo, editorViewRef, disabled]);
+
+  const insertVariableTemplate = useCallback(() => {
+    if (disabled || !editorViewRef.current) {
+      return;
+    }
+    closeVariableSearch();
+    const view = editorViewRef.current;
+    const { state, dispatch } = view;
+    const selection = state.selection.main;
+    const template = "{{}}";
+    dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: template,
+      },
+      selection: {
+        anchor: selection.from + 2,
+      },
+    });
+    view.focus();
+  }, [closeVariableSearch, disabled]);
+
+  const insertConfirmOutputMarker = useCallback(() => {
+    if (disabled || !editorViewRef.current) {
+      return;
+    }
+    const view = editorViewRef.current;
+    const { state, dispatch } = view;
+    const selection = state.selection.main;
+    const template = "======";
+    dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: template,
+      },
+      selection: {
+        anchor: selection.from + 3,
+      },
+    });
+    view.focus();
+  }, [disabled]);
+
+  const insertLinkTemplate = useCallback(() => {
+    if (disabled || !editorViewRef.current) {
+      return;
+    }
+    const view = editorViewRef.current;
+    const { state, dispatch } = view;
+    const selection = state.selection.main;
+    const template = "[]()";
+    dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: template,
+      },
+      selection: {
+        anchor: selection.from + 1,
+      },
+    });
+    view.focus();
+  }, [disabled]);
+
+  const insertButtonTemplate = useCallback(() => {
+    if (disabled || !editorViewRef.current) {
+      return;
+    }
+    const view = editorViewRef.current;
+    const { state, dispatch } = view;
+    const selection = state.selection.main;
+    const template = "?[]";
+    dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: template,
+      },
+      selection: {
+        anchor: selection.from + 2,
+      },
+    });
+    view.focus();
+  }, [disabled]);
+
+  const insertSingleChoiceTemplate = useCallback(() => {
+    if (disabled || !editorViewRef.current) {
+      return;
+    }
+    const view = editorViewRef.current;
+    const { state, dispatch } = view;
+    const selection = state.selection.main;
+    const optionLabel1 = toolbarLabels.singleChoiceOption1;
+    const optionLabel2 = toolbarLabels.singleChoiceOption2;
+    const template = `?[%{{}}${optionLabel1}|${optionLabel2}]`;
+    dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: template,
+      },
+      selection: {
+        anchor: selection.from + 5,
+      },
+    });
+    view.focus();
+  }, [
+    disabled,
+    toolbarLabels.singleChoiceOption1,
+    toolbarLabels.singleChoiceOption2,
+  ]);
+
+  const insertMultiChoiceTemplate = useCallback(() => {
+    if (disabled || !editorViewRef.current) {
+      return;
+    }
+    const view = editorViewRef.current;
+    const { state, dispatch } = view;
+    const selection = state.selection.main;
+    const optionLabel1 = toolbarLabels.singleChoiceOption1;
+    const optionLabel2 = toolbarLabels.singleChoiceOption2;
+    const template = `?[%{{}}${optionLabel1}||${optionLabel2}]`;
+    dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: template,
+      },
+      selection: {
+        anchor: selection.from + 5,
+      },
+    });
+    view.focus();
+  }, [
+    disabled,
+    toolbarLabels.singleChoiceOption1,
+    toolbarLabels.singleChoiceOption2,
+  ]);
+
+  const insertInputFieldTemplate = useCallback(() => {
+    if (disabled || !editorViewRef.current) {
+      return;
+    }
+    const view = editorViewRef.current;
+    const { state, dispatch } = view;
+    const selection = state.selection.main;
+    const placeholder = toolbarLabels.inputPlaceholder ?? "请输入";
+    const template = `?[%{{}}...${placeholder}]`;
+    dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: template,
+      },
+      selection: {
+        anchor: selection.from + 5,
+      },
+    });
+    view.focus();
+  }, [disabled, toolbarLabels.inputPlaceholder]);
 
   const handleSelectImage = useCallback(
     ({
@@ -463,6 +704,7 @@ const Editor: React.FC<EditorProps> = ({
         insertText(textToInsert);
       }
       setPopoverOpen(false);
+      closeVariableSearch();
     },
     [
       insertText,
@@ -470,6 +712,7 @@ const Editor: React.FC<EditorProps> = ({
       deleteSelectedContent,
       selectContentInfo,
       disabled,
+      closeVariableSearch,
     ]
   );
 
@@ -642,83 +885,111 @@ const Editor: React.FC<EditorProps> = ({
     [addVariablesFromContent, onChange, disabled]
   );
 
+  const isVariableSearchOpen = !disabled && variableSearchOpen;
+
   return (
     <div
       className="markdown-flow-editor"
       data-disabled={disabled ? "true" : undefined}
       aria-disabled={disabled}
     >
-      <EditorContext.Provider value={editorContextValue}>
-        <CodeMirror
-          extensions={editorExtensions}
-          basicSetup={{
-            lineNumbers: false,
-            syntaxHighlighting: true,
-            highlightActiveLine: true,
-            highlightActiveLineGutter: true,
-            foldGutter: false,
-          }}
-          className="rounded-md"
-          placeholder={placeholderText}
-          value={content}
-          theme="light"
-          minHeight="2rem"
-          editable={!disabled}
-          onChange={handleContentChange}
-          onBlur={onBlur}
-        />
-        {!disabled && (
-          <CustomDialog
-            labels={{
-              title:
-                selectedOption === SelectedOption.Image
-                  ? t("dialogTitleImage")
-                  : selectedOption === SelectedOption.Video
-                    ? t("dialogTitleVideo")
-                    : selectedOption === SelectedOption.Variable
-                      ? t("dialogTitleVariable")
-                      : t("dialogTitle"),
+      <EditorToolbar
+        disabled={disabled}
+        labels={toolbarLabels}
+        onSelect={onSelectedOption}
+        onInsertVariablePlaceholder={insertVariableTemplate}
+        onVariableSearchToggle={handleVariableSearchToggle}
+        onVariableSearchClose={closeVariableSearch}
+        onInsertConfirmOutput={insertConfirmOutputMarker}
+        onInsertLink={insertLinkTemplate}
+        onInsertButton={insertButtonTemplate}
+        onInsertSingleChoice={insertSingleChoiceTemplate}
+        onInsertMultiChoice={insertMultiChoiceTemplate}
+        onInsertInputField={insertInputFieldTemplate}
+        variableSearchActive={isVariableSearchOpen}
+      />
+      <VariableSearchDropdown
+        open={isVariableSearchOpen}
+        anchorElement={variableSearchAnchorRef.current}
+        onClose={closeVariableSearch}
+        onSelect={handleSelectVariable}
+        variables={variables}
+        systemVariables={systemVariables}
+        labels={variableSearchLabels}
+      />
+      <div className="markdown-flow-editor-body relative overflow-auto">
+        <EditorContext.Provider value={editorContextValue}>
+          <CodeMirror
+            extensions={editorExtensions}
+            basicSetup={{
+              lineNumbers: false,
+              syntaxHighlighting: true,
+              highlightActiveLine: true,
+              highlightActiveLineGutter: true,
+              foldGutter: false,
             }}
-          >
-            {selectedOption === SelectedOption.Image && (
-              <ImageInject
-                value={selectContentInfo?.value}
-                onSelect={handleSelectImage}
-                uploadProps={uploadProps}
-              />
-            )}
-            {selectedOption === SelectedOption.Video && (
-              <VideoInject
-                value={selectContentInfo?.value}
-                onSelect={handleSelectVideo}
-              />
-            )}
-          </CustomDialog>
-        )}
-
-        {!disabled && (
-          <CustomPopover>
-            <VariableSelect
-              variables={variables}
-              systemVariables={systemVariables}
-              selectedName={selectContentInfo?.value?.variableName}
-              onSelect={handleSelectVariable}
-              onAddVariable={(variable) => {
-                setVariables((prev) => {
-                  const normalized = variable.name.toLowerCase();
-                  const exists = prev.some(
-                    (item) => item.name.toLowerCase() === normalized
-                  );
-                  if (exists) {
-                    return prev;
-                  }
-                  return [variable, ...prev];
-                });
+            className="rounded-md"
+            placeholder={placeholderText}
+            value={content}
+            theme="light"
+            minHeight="2rem"
+            editable={!disabled}
+            onChange={handleContentChange}
+            onBlur={onBlur}
+          />
+          {!disabled && (
+            <CustomDialog
+              labels={{
+                title:
+                  selectedOption === SelectedOption.Image
+                    ? t("dialogTitleImage")
+                    : selectedOption === SelectedOption.Video
+                      ? t("dialogTitleVideo")
+                      : selectedOption === SelectedOption.Variable
+                        ? t("dialogTitleVariable")
+                        : t("dialogTitle"),
               }}
-            />
-          </CustomPopover>
-        )}
-      </EditorContext.Provider>
+            >
+              {selectedOption === SelectedOption.Image && (
+                <ImageInject
+                  value={selectContentInfo?.value}
+                  onSelect={handleSelectImage}
+                  uploadProps={uploadProps}
+                />
+              )}
+              {selectedOption === SelectedOption.Video && (
+                <VideoInject
+                  value={selectContentInfo?.value}
+                  onSelect={handleSelectVideo}
+                />
+              )}
+            </CustomDialog>
+          )}
+
+          {!disabled && (
+            <CustomPopover>
+              <VariableSelect
+                variables={variables}
+                systemVariables={systemVariables}
+                selectedName={selectContentInfo?.value?.variableName}
+                onSelect={handleSelectVariable}
+                onAddVariable={(variable) => {
+                  setVariables((prev) => {
+                    const normalized = variable.name.toLowerCase();
+                    const exists = prev.some(
+                      (item) => item.name.toLowerCase() === normalized
+                    );
+                    if (exists) {
+                      return prev;
+                    }
+                    return [variable, ...prev];
+                  });
+                }}
+              />
+            </CustomPopover>
+          )}
+        </EditorContext.Provider>
+      </div>
     </div>
   );
 };

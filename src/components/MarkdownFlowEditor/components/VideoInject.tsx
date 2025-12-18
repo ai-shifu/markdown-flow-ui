@@ -44,10 +44,7 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
   };
 
   const generateEmbedUrl = (url: string) => {
-    return getVideoEmbedUrl(
-      url,
-      process.env.NEXT_PUBLIC_IFRAME_KEY || undefined
-    );
+    return getVideoEmbedUrl(url);
   };
 
   const getDefaultTitleForUrl = useCallback(

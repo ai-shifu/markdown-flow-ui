@@ -25,14 +25,10 @@ const extractYoutubeId = (url: string) => {
   return match ? match[1] : null;
 };
 
-const buildBilibiliEmbedUrl = (url: string, iframeKey?: string) => {
+const buildBilibiliEmbedUrl = (url: string) => {
   const biliVideoId = extractBiliVideoId(url);
   if (biliVideoId) {
     return `${BILI_PLAYER_BASE}?bvid=${biliVideoId}`;
-  }
-  const encoded = encodeURIComponent(url);
-  if (iframeKey) {
-    return `https://if-cdn.com/api/iframe?url=${encoded}&key=${iframeKey}`;
   }
   return url;
 };
@@ -45,9 +41,9 @@ const buildYoutubeEmbedUrl = (url: string) => {
   return url;
 };
 
-const getVideoEmbedUrl = (url: string, iframeKey?: string) => {
+const getVideoEmbedUrl = (url: string) => {
   if (biliVideoUrlRegexp.test(url)) {
-    return buildBilibiliEmbedUrl(url, iframeKey);
+    return buildBilibiliEmbedUrl(url);
   }
   if (youtubeVideoUrlRegexp.test(url)) {
     return buildYoutubeEmbedUrl(url);

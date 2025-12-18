@@ -128,8 +128,7 @@ function createSlashCommands(
 }
 
 const getEmbedUrl = (url: string) => {
-  const key = process.env.NEXT_PUBLIC_IFRAME_KEY || undefined;
-  return getVideoEmbedUrl(url, key);
+  return getVideoEmbedUrl(url);
 };
 
 const getVideoContentToInsert = (

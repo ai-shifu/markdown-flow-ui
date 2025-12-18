@@ -12,6 +12,12 @@ import {
 import { SelectedOption } from "../types";
 import SearchBracesIcon from "./icons/SearchBracesIcon";
 import ButtonIcon from "./icons/ButtonIcon";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../../ui/tooltip";
 
 type ToolbarLabels = {
   confirmOutput: string | undefined;
@@ -124,99 +130,167 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   }, [disabled, onInsertInputField]);
 
   return (
-    <div className="markdown-flow-editor-toolbar" aria-disabled={disabled}>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={handleAddVariable}
-        aria-label={labels.addVariable}
-        title={labels.addVariable}
-      >
-        <Braces strokeWidth={1.75} size={ICON_SIZE} />
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={handleSearchToggle}
-        data-active={!disabled && variableSearchActive ? "true" : undefined}
-        aria-label={labels.search}
-        title={labels.search}
-      >
-        <SearchBracesIcon strokeWidth={1.75} size={ICON_SIZE} />
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={handleInsertSingleChoice}
-        aria-label={labels.insertSingleChoice}
-        title={labels.insertSingleChoice}
-      >
-        <CircleCheck strokeWidth={1.75} size={ICON_SIZE} />
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={handleInsertMultiChoice}
-        aria-label={labels.insertMultiChoice}
-        title={labels.insertMultiChoice}
-      >
-        <SquareCheck strokeWidth={1.75} size={ICON_SIZE} />
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={handleInsertInputField}
-        aria-label={labels.insertInput}
-        title={labels.insertInput}
-      >
-        <TextCursorInput strokeWidth={1.75} size={ICON_SIZE} />
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={handleInsertButton}
-        aria-label={labels.insertButton}
-        title={labels.insertButton}
-      >
-        <ButtonIcon strokeWidth={1.75} size={ICON_SIZE} />
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={handleConfirmOutput}
-        aria-label={labels.confirmOutput}
-        title={labels.confirmOutput}
-      >
-        <FileType strokeWidth={1.75} size={ICON_SIZE} />
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onSelect(SelectedOption.Image)}
-        aria-label={labels.image}
-        title={labels.image}
-      >
-        <Image strokeWidth={1.75} size={ICON_SIZE} />
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onSelect(SelectedOption.Video)}
-        aria-label={labels.video}
-        title={labels.video}
-      >
-        <SquarePlay strokeWidth={1.75} size={ICON_SIZE} />
-      </button>
-      {/* <button
-        type="button"
-        disabled={disabled}
-        onClick={handleInsertLink}
-        aria-label={labels.insertLink}
-        title={labels.insertLink}
-      >
-        <Link strokeWidth={1.75} size={ICON_SIZE} />
-      </button> */}
-    </div>
+    <TooltipProvider delayDuration={150}>
+      <div className="markdown-flow-editor-toolbar" aria-disabled={disabled}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={handleAddVariable}
+              aria-label={labels.addVariable}
+              title={labels.addVariable}
+            >
+              <Braces strokeWidth={1.75} size={ICON_SIZE} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {labels.addVariable ?? ""}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={handleSearchToggle}
+              data-active={
+                !disabled && variableSearchActive ? "true" : undefined
+              }
+              aria-label={labels.search}
+              title={labels.search}
+            >
+              <SearchBracesIcon strokeWidth={1.75} size={ICON_SIZE} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{labels.search ?? ""}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={handleInsertSingleChoice}
+              aria-label={labels.insertSingleChoice}
+              title={labels.insertSingleChoice}
+            >
+              <CircleCheck strokeWidth={1.75} size={ICON_SIZE} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {labels.insertSingleChoice ?? ""}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={handleInsertMultiChoice}
+              aria-label={labels.insertMultiChoice}
+              title={labels.insertMultiChoice}
+            >
+              <SquareCheck strokeWidth={1.75} size={ICON_SIZE} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {labels.insertMultiChoice ?? ""}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={handleInsertInputField}
+              aria-label={labels.insertInput}
+              title={labels.insertInput}
+            >
+              <TextCursorInput strokeWidth={1.75} size={ICON_SIZE} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {labels.insertInput ?? ""}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={handleInsertButton}
+              aria-label={labels.insertButton}
+              title={labels.insertButton}
+            >
+              <ButtonIcon strokeWidth={1.75} size={ICON_SIZE} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {labels.insertButton ?? ""}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={handleConfirmOutput}
+              aria-label={labels.confirmOutput}
+              title={labels.confirmOutput}
+            >
+              <FileType strokeWidth={1.75} size={ICON_SIZE} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {labels.confirmOutput ?? ""}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onSelect(SelectedOption.Image)}
+              aria-label={labels.image}
+              title={labels.image}
+            >
+              <Image strokeWidth={1.75} size={ICON_SIZE} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{labels.image ?? ""}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onSelect(SelectedOption.Video)}
+              aria-label={labels.video}
+              title={labels.video}
+            >
+              <SquarePlay strokeWidth={1.75} size={ICON_SIZE} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{labels.video ?? ""}</TooltipContent>
+        </Tooltip>
+        {/* <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={handleInsertLink}
+              aria-label={labels.insertLink}
+              title={labels.insertLink}
+            >
+              <Link strokeWidth={1.75} size={ICON_SIZE} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {labels.insertLink ?? ""}
+          </TooltipContent>
+        </Tooltip> */}
+      </div>
+    </TooltipProvider>
   );
 };
 

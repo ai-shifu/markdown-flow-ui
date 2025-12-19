@@ -5,7 +5,10 @@ export function parseMarkdownSegments(markdown: string) {
     | { type: "svg"; value: string; complete: boolean }
   > = [];
 
-  const regex = /```mermaid[\s\S]*?```|<svg[\s\S]*?<\/svg>/g;
+  // Match:
+  // 1. Generic code blocks (including mermaid): ``` ... ```
+  // 2. SVG blocks: <svg ... </svg>
+  const regex = /```[\s\S]*?```|<svg[\s\S]*?<\/svg>/g;
 
   let lastIndex = 0;
   let match;
@@ -23,7 +26,7 @@ export function parseMarkdownSegments(markdown: string) {
       });
     }
 
-    // Complete mermaid block or svg block
+    // Complete mermaid block, generic code block, or svg block
     if (rawMatch.startsWith("```mermaid")) {
       const code = rawMatch
         .replace(/^```mermaid/, "")
@@ -34,7 +37,14 @@ export function parseMarkdownSegments(markdown: string) {
         value: code,
         complete: true,
       });
+    } else if (rawMatch.startsWith("```")) {
+      // Generic code block - treat as text so ReactMarkdown renders it
+      segments.push({
+        type: "text",
+        value: rawMatch,
+      });
     } else {
+      // SVG block
       segments.push({
         type: "svg",
         value: rawMatch,
@@ -62,7 +72,16 @@ export function parseMarkdownSegments(markdown: string) {
     }
   }
 
+  // Check if we are inside an unclosed code block
+  // If an unclosed code block starts AFTER the last complete segment (lastIndex),
+  // and BEFORE the potential SVG start, then the SVG is inside the code block.
+  const incompleteCodeBlockStart = markdown.indexOf("```", lastIndex);
+  const isInsideCodeBlock =
+    incompleteCodeBlockStart !== -1 &&
+    incompleteCodeBlockStart < incompleteSvgStart;
+
   const hasIncompleteSvg =
+    !isInsideCodeBlock &&
     incompleteSvgStart !== -1 &&
     (lastSvgClose === -1 || lastSvgClose < incompleteSvgStart) &&
     incompleteSvgStart >= lastIndex;
@@ -84,8 +103,19 @@ export function parseMarkdownSegments(markdown: string) {
   }
 
   // Check whether there is an unfinished mermaid block
+  // Only if we are NOT inside a generic incomplete code block that started earlier
+  // Actually, standard mermaid block starts with ```mermaid, so it IS a code block start.
+  // We just need to check if it's specifically mermaid.
   const incompleteStart = markdown.lastIndexOf("```mermaid");
-  if (incompleteStart !== -1 && incompleteStart >= lastIndex) {
+  if (
+    incompleteStart !== -1 &&
+    incompleteStart >= lastIndex &&
+    // Ensure this mermaid block isn't inside another code block (unlikely but safe to check)
+    // Actually, incompleteCodeBlockStart would capture this "```mermaid" as just "```"
+    // so we need to be careful.
+    // If incompleteCodeBlockStart points to THIS mermaid block, we process it as mermaid.
+    incompleteStart === incompleteCodeBlockStart
+  ) {
     const code = markdown.slice(incompleteStart + 10);
     segments.push({
       type: "mermaid",

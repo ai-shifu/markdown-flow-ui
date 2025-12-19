@@ -751,3 +751,82 @@ Its “memory” is a sandbox you can shape, trim, or flood at will.
 `,
   },
 };
+
+export const SVGDemo: Story = {
+  name: "SVG 展示",
+  args: {
+    content: `咱们今天就从 AI 最原始的样子说起。虽然这种形态现在看来已经落伍了，但了解它，反而能帮你更清醒地认识到——哪些问题其实根本用不着 AI，避免陷入对技术的盲目崇拜。
+
+说起来有点遗憾，人工智能这个概念，早在 20 世纪 50 年代就有人开始研究了。最初的梦想很宏大：让机器能像人一样思考。可惜，现实中的进展一直磕磕绊绊。不过，这倒激发了人类无穷的想象力，你在很多科幻作品里看到的那些智能机器，源头就在这儿。
+
+但转折发生在 1997 年，那一年确实让人兴奋！IBM 研发的“深蓝”电脑，在国际象棋比赛中，击败了人类世界冠军卡斯帕罗夫。这可是历史上**第一次有机器在智力游戏上堂堂正正地超越了人类**！
+
+不过，有意思的事儿来了。话锋一转，深蓝背后的核心人物——许峰雄博士，他却不认为深蓝是人工智能。你有没有好奇过，这是怎么回事？
+
+我恰好和许博士有过一面之缘，他当年到访哈工大，我有幸和他面对面单独交流。他亲口对我说，那四个英文字母（指 AI）是“胡说八道”。他进一步解释说，深蓝本质上是一台**为下棋量身定做的超级机器**，它只会干一件事：生成棋步。这个过程，其实就是模仿人类棋手“多想几步，找出最优解”的那个动作。
+
+关键点在这儿！我情绪得提高一点说：因为机器的速度实在太快了，**它一秒钟能分析两亿个棋步**，在这种绝对的数量优势面前，人类棋手当然毫无胜算。
+
+咱们用理性的态度来看，深蓝用的方法，在术语上叫做“穷举”。**它就是靠机器速度快、不知疲倦的特点，用海量的重复计算来取胜**，这里面根本谈不上思考、推理这些智能活动。而且，这台机器除了下棋，别的什么都不会。这就像你雇佣一大群童工去挖矿，他们只需要会挥镐头就行，不需要任何其他能力。
+
+这时候你可能会灵光一现：那能不能用“穷举法”解决所有问题呢？如果能，我们是不是只需要造出更快的计算机，就能实现真正的人工智能了？
+
+事情还真没这么简单。咱们得耐心想想，**计算机的速度再快，也一定有物理上的极限**，它只能解决那些“计算量有限”的问题。比如国际象棋，棋盘就那么大，棋子和走法都有限，所以在一定时间内能穷尽所有可能。但像围棋、天气预报这种变量极多的问题，**就算耗尽整个地球的资源，也不可能在有限时间内穷举完所有未来的可能性**。
+
+所以，最后的结论很明确：**人类面对的现实世界中的绝大多数问题，都是无法靠穷举来解决的**。
+
+下面这张图总结了咱们刚才聊的全部要点：
+
+<svg width="600" height="400" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="0" width="600" height="400" fill="#f5f5f5"/>
+  
+  <!-- 标题 -->
+  <text x="300" y="40" text-anchor="middle" font-family="Arial" font-size="20" font-weight="bold">AI 早期形态：穷举法的局限</text>
+  
+  <!-- 时间线 -->
+  <line x1="50" y1="80" x2="550" y2="80" stroke="#333" stroke-width="2"/>
+  <text x="50" y="75" text-anchor="middle" font-family="Arial" font-size="12">1950s</text>
+  <text x="300" y="75" text-anchor="middle" font-family="Arial" font-size="12">1997</text>
+  <text x="550" y="75" text-anchor="middle" font-family="Arial" font-size="12">Now</text>
+  
+  <!-- 早期AI -->
+  <circle cx="50" cy="150" r="30" fill="#ff9999"/>
+  <text x="50" y="150" text-anchor="middle" font-family="Arial" font-size="10" fill="white">早期AI</text>
+  <text x="50" y="190" text-anchor="middle" font-family="Arial" font-size="10">让机器像人一样思考</text>
+  
+  <!-- 深蓝 -->
+  <circle cx="300" cy="150" r="40" fill="#99ccff"/>
+  <text x="300" y="150" text-anchor="middle" font-family="Arial" font-size="12" fill="white">深蓝</text>
+  <text x="300" y="200" text-anchor="middle" font-family="Arial" font-size="10">击败国际象棋冠军</text>
+  
+  <!-- 箭头连接 -->
+  <line x1="80" y1="150" x2="260" y2="150" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  
+  <!-- 穷举法原理 -->
+  <rect x="100" y="250" width="200" height="60" fill="#ccffcc" stroke="#333"/>
+  <text x="200" y="270" text-anchor="middle" font-family="Arial" font-size="12">穷举法原理</text>
+  <text x="200" y="290" text-anchor="middle" font-family="Arial" font-size="10">速度优势 · 重复计算</text>
+  
+  <!-- 局限性 -->
+  <rect x="350" y="250" width="200" height="60" fill="#ffcc99" stroke="#333"/>
+  <text x="450" y="270" text-anchor="middle" font-family="Arial" font-size="12">核心局限性</text>
+  <text x="450" y="290" text-anchor="middle" font-family="Arial" font-size="10">只能解决有限计算量问题</text>
+  
+  <!-- 连接线 -->
+  <line x1="300" y1="190" x2="300" y2="240" stroke="#333" stroke-width="1"/>
+  <line x1="300" y1="240" x2="200" y2="240" stroke="#333" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="300" y1="240" x2="400" y2="240" stroke="#333" stroke-width="1" marker-end="url(#arrow)"/>
+  
+  <!-- 底部结论 -->
+  <text x="300" y="350" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold">绝大多数现实问题无法用穷举解决</text>
+  
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#333"/>
+    </marker>
+  </defs>
+</svg>
+    `,
+    enableTypewriter: false,
+  },
+};

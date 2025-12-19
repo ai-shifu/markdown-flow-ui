@@ -101,6 +101,18 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     disabled: !enableTypewriter,
   });
 
+  function SvgInShadow({ svg }: { svg: string }) {
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      if (!ref.current) return;
+      const shadow = ref.current.attachShadow({ mode: "open" });
+      shadow.innerHTML = svg;
+    }, [svg]);
+
+    return <div ref={ref} />;
+  }
+
   const components: CustomComponents = {
     "custom-button-after-content": ({
       children,
@@ -194,6 +206,10 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         copiedButtonText={copiedButtonText}
       />
     ),
+    svg: ({ children }) => {
+      console.log("svg", children);
+      return <SvgInShadow svg={children?.toString() || ""} />;
+    },
   };
 
   const hasCompleted = useRef(false);

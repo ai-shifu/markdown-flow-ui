@@ -2,7 +2,6 @@ import "highlight.js/styles/github.css";
 import "katex/dist/katex.min.css";
 import React, { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import { Loader2 } from "lucide-react";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
@@ -72,6 +71,20 @@ export interface ContentRenderProps {
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
 
+// Render svg string via Shadow DOM to avoid markdown wrapping
+const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
+  const hostRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const shadowRoot = host.shadowRoot ?? host.attachShadow({ mode: "open" });
+    shadowRoot.innerHTML = svg;
+  }, [svg]);
+
+  return <div className="content-render-svg" ref={hostRef} />;
+};
+
 // Extended component interface
 type CustomComponents = ComponentsWithCustomVariable & {
   "custom-button-after-content"?: React.ComponentType<{
@@ -95,7 +108,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   copiedButtonText,
   onClickCustomButtonAfterContent,
   beforeSend,
-  svgLoadingText,
   // tooltipMinLength,
 }) => {
   // Use custom Hook to handle typewriter effect
@@ -106,33 +118,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     typingSpeed,
     disabled: !enableTypewriter,
   });
-
-  // Render svg string via Shadow DOM to avoid markdown wrapping
-  const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
-    const hostRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-      const host = hostRef.current;
-      if (!host) return;
-      const shadowRoot = host.shadowRoot ?? host.attachShadow({ mode: "open" });
-      shadowRoot.innerHTML = svg;
-    }, [svg]);
-
-    return <div className="content-render-svg" ref={hostRef} />;
-  };
-
-  const extractSvgSize = (svgContent: string) => {
-    const widthMatch = svgContent.match(
-      /<svg[^>]*\bwidth=["']?([^"'>\s]+)["']?/i
-    );
-    const heightMatch = svgContent.match(
-      /<svg[^>]*\bheight=["']?([^"'>\s]+)["']?/i
-    );
-    return {
-      width: widthMatch?.[1] ?? "100%",
-      height: heightMatch?.[1] ?? "200",
-    };
-  };
 
   const components: CustomComponents = {
     "custom-button-after-content": ({
@@ -279,21 +264,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         }
 
         if (seg.type === "svg") {
-          const { width, height } = extractSvgSize(seg.value);
-          if (!seg.complete) {
-            return (
-              <div
-                key={index}
-                className="content-render-svg-loading"
-                style={{ width: width + "px", height: height + "px" }}
-              >
-                <Loader2 className="content-render-svg-spinner" />
-                <span className="content-render-svg-text">
-                  {svgLoadingText ?? "Loading..."}
-                </span>
-              </div>
-            );
-          }
           return <SvgBlockInShadow key={index} svg={seg.value} />;
         }
       })}

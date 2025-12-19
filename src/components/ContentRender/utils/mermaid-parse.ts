@@ -46,8 +46,22 @@ export function parseMarkdownSegments(markdown: string) {
   }
 
   // Handle unfinished svg block to avoid leaking raw tags while streaming
-  const incompleteSvgStart = markdown.lastIndexOf("<svg");
+  let incompleteSvgStart = markdown.lastIndexOf("<svg");
   const lastSvgClose = markdown.lastIndexOf("</svg>");
+
+  // If we haven't found an open <svg tag (or the last one is closed),
+  // check if the string ends with a partial <svg tag (<s, <sv).
+  if (
+    incompleteSvgStart === -1 ||
+    (lastSvgClose !== -1 && lastSvgClose > incompleteSvgStart)
+  ) {
+    if (markdown.endsWith("<sv")) {
+      incompleteSvgStart = markdown.length - 3;
+    } else if (markdown.endsWith("<s")) {
+      incompleteSvgStart = markdown.length - 2;
+    }
+  }
+
   const hasIncompleteSvg =
     incompleteSvgStart !== -1 &&
     (lastSvgClose === -1 || lastSvgClose < incompleteSvgStart) &&

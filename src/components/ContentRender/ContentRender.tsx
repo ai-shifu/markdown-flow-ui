@@ -2,6 +2,7 @@ import "highlight.js/styles/github.css";
 import "katex/dist/katex.min.css";
 import React, { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
+import { Loader2 } from "lucide-react";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
@@ -64,6 +65,10 @@ export interface ContentRenderProps {
   // Dynamic interaction format for multi-select support
   dynamicInteractionFormat?: string;
   beforeSend?: (param: OnSendContentParams) => boolean;
+  /**
+   * Custom label shown while streaming SVG is still incomplete.
+   */
+  svgLoadingText?: string;
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
 
@@ -90,6 +95,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   copiedButtonText,
   onClickCustomButtonAfterContent,
   beforeSend,
+  svgLoadingText,
   // tooltipMinLength,
 }) => {
   // Use custom Hook to handle typewriter effect
@@ -113,6 +119,19 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     }, [svg]);
 
     return <div className="content-render-svg" ref={hostRef} />;
+  };
+
+  const extractSvgSize = (svgContent: string) => {
+    const widthMatch = svgContent.match(
+      /<svg[^>]*\bwidth=["']?([^"'>\s]+)["']?/i
+    );
+    const heightMatch = svgContent.match(
+      /<svg[^>]*\bheight=["']?([^"'>\s]+)["']?/i
+    );
+    return {
+      width: widthMatch?.[1] ?? "100%",
+      height: heightMatch?.[1] ?? "200",
+    };
   };
 
   const components: CustomComponents = {
@@ -260,9 +279,21 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         }
 
         if (seg.type === "svg") {
-          // if (!seg.complete) {
-          //   return <div key={index} >正在生成svg</div>;
-          // }
+          const { width, height } = extractSvgSize(seg.value);
+          if (!seg.complete) {
+            return (
+              <div
+                key={index}
+                className="content-render-svg-loading"
+                style={{ width: width + "px", height: height + "px" }}
+              >
+                <Loader2 className="content-render-svg-spinner" />
+                <span className="content-render-svg-text">
+                  {svgLoadingText ?? "Loading..."}
+                </span>
+              </div>
+            );
+          }
           return <SvgBlockInShadow key={index} svg={seg.value} />;
         }
       })}

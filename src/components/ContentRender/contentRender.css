@@ -152,6 +152,40 @@
   display: block;
 }
 
+.content-render .content-render-svg-loading {
+  max-width: 100%;
+  display: block;
+  margin: 1rem 0;
+  background: #f7f7f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 6px;
+  color: var(--primary, #2563eb);
+  overflow: hidden;
+}
+
+.content-render .content-render-svg-spinner {
+  width: 28px;
+  height: 28px;
+  animation: content-render-spin 1s linear infinite;
+}
+
+.content-render .content-render-svg-text {
+  font-size: 16px;
+  color: #4a5568;
+}
+
+@keyframes content-render-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .content-render .custom-variable-container {
   margin-top: 16px;
   border-radius: 8px;

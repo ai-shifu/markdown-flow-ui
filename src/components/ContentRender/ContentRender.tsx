@@ -1,6 +1,7 @@
 import "highlight.js/styles/github.css";
 import "katex/dist/katex.min.css";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
@@ -101,17 +102,51 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     disabled: !enableTypewriter,
   });
 
-  function SvgInShadow({ svg }: { svg: string }) {
-    const ref = useRef<HTMLDivElement>(null);
+  function SvgInShadow({
+    children,
+    ...props
+  }: React.ComponentPropsWithoutRef<"svg"> & { node?: any }) {
+    const hostRef = useRef<HTMLDivElement>(null);
+    const [shadowRoot, setShadowRoot] = useState<ShadowRoot | null>(null);
 
     useEffect(() => {
-      if (!ref.current) return;
-      const shadow = ref.current.attachShadow({ mode: "open" });
-      shadow.innerHTML = svg;
+      if (hostRef.current && !shadowRoot) {
+        if (!hostRef.current.shadowRoot) {
+          const root = hostRef.current.attachShadow({ mode: "open" });
+          setShadowRoot(root);
+        } else {
+          setShadowRoot(hostRef.current.shadowRoot);
+        }
+      }
+    }, [shadowRoot]);
+
+    useEffect(() => {
+      if (shadowRoot) {
+        const html = renderToStaticMarkup(
+          <svg {...props} style={{ ...props.style, display: "block" }}>
+            {children}
+          </svg>
+        );
+        shadowRoot.innerHTML = html;
+      }
+    }, [shadowRoot, children, props]);
+
+    return <div ref={hostRef} style={{ display: "inline-block" }} />;
+  }
+
+  // Render svg string via Shadow DOM to avoid markdown wrapping
+  const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
+    const hostRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      const host = hostRef.current;
+      if (!host) return;
+      const shadowRoot = host.shadowRoot ?? host.attachShadow({ mode: "open" });
+      shadowRoot.innerHTML = svg;
     }, [svg]);
 
-    return <div ref={ref} />;
-  }
+    return <div className="content-render-svg" ref={hostRef} />;
+  };
 
   const components: CustomComponents = {
     "custom-button-after-content": ({
@@ -206,10 +241,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         copiedButtonText={copiedButtonText}
       />
     ),
-    svg: ({ children }) => {
-      console.log("svg", children);
-      return <SvgInShadow svg={children?.toString() || ""} />;
-    },
+    svg: (props) => <SvgInShadow {...props} />,
   };
 
   const hasCompleted = useRef(false);
@@ -259,6 +291,10 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               frozen={!seg.complete}
             />
           );
+        }
+
+        if (seg.type === "svg") {
+          return <SvgBlockInShadow key={index} svg={seg.value} />;
         }
       })}
 

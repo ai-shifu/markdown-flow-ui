@@ -139,6 +139,19 @@
   word-wrap: break-word;
 }
 
+.content-render .content-render-svg {
+  width: 100%;
+  display: block;
+  margin: 1rem 0;
+  overflow: auto;
+}
+
+.content-render .content-render-svg svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
 .content-render .custom-variable-container {
   margin-top: 16px;
   border-radius: 8px;

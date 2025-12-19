@@ -2,9 +2,10 @@ export function parseMarkdownSegments(markdown: string) {
   const segments: Array<
     | { type: "text"; value: string }
     | { type: "mermaid"; value: string; complete: boolean }
+    | { type: "svg"; value: string }
   > = [];
 
-  const regex = /```mermaid([\s\S]*?)```/g;
+  const regex = /```mermaid[\s\S]*?```|<svg[\s\S]*?<\/svg>/g;
 
   let lastIndex = 0;
   let match;
@@ -12,7 +13,7 @@ export function parseMarkdownSegments(markdown: string) {
   while ((match = regex.exec(markdown)) !== null) {
     const start = match.index;
     const end = regex.lastIndex;
-    const code = match[1].trim();
+    const rawMatch = match[0];
 
     // Preceding plain text
     if (start > lastIndex) {
@@ -22,12 +23,23 @@ export function parseMarkdownSegments(markdown: string) {
       });
     }
 
-    // Complete mermaid block
-    segments.push({
-      type: "mermaid",
-      value: code,
-      complete: true,
-    });
+    // Complete mermaid block or svg block
+    if (rawMatch.startsWith("```mermaid")) {
+      const code = rawMatch
+        .replace(/^```mermaid/, "")
+        .replace(/```$/, "")
+        .trim();
+      segments.push({
+        type: "mermaid",
+        value: code,
+        complete: true,
+      });
+    } else {
+      segments.push({
+        type: "svg",
+        value: rawMatch,
+      });
+    }
 
     lastIndex = end;
   }
@@ -43,7 +55,7 @@ export function parseMarkdownSegments(markdown: string) {
     });
 
     if (incompleteStart > lastIndex) {
-      segments.unshift({
+      segments.push({
         type: "text",
         value: markdown.slice(lastIndex, incompleteStart),
       });

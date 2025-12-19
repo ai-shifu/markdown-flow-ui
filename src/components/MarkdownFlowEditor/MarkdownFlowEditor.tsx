@@ -114,6 +114,9 @@ const isCursorInsideVariableExpression = (
   return false;
 };
 
+const buildQuotedVariableTemplate = (variableName = "") =>
+  `"""{{${variableName}}}"""`;
+
 const Editor: React.FC<EditorProps> = ({
   content = "",
   editMode = EditMode.CodeEdit,
@@ -450,27 +453,39 @@ const Editor: React.FC<EditorProps> = ({
     });
   }, [selectContentInfo, editorViewRef, disabled]);
 
+  const insertVariableContent = useCallback(
+    (variableName: string, range?: { from: number; to: number }) => {
+      if (disabled || !editorViewRef.current) {
+        return;
+      }
+      const view = editorViewRef.current;
+      const { state, dispatch } = view;
+      const selection = range ?? state.selection.main;
+      const template = buildQuotedVariableTemplate(variableName);
+      const cursorOffset = 5 + variableName.length; // 3 quotes + 2 braces before variable content
+
+      dispatch({
+        changes: {
+          from: selection.from,
+          to: selection.to,
+          insert: template,
+        },
+        selection: {
+          anchor: selection.from + cursorOffset,
+        },
+      });
+      view.focus();
+    },
+    [disabled]
+  );
+
   const insertVariableTemplate = useCallback(() => {
-    if (disabled || !editorViewRef.current) {
+    if (disabled) {
       return;
     }
     closeVariableSearch();
-    const view = editorViewRef.current;
-    const { state, dispatch } = view;
-    const selection = state.selection.main;
-    const template = "{{}}";
-    dispatch({
-      changes: {
-        from: selection.from,
-        to: selection.to,
-        insert: template,
-      },
-      selection: {
-        anchor: selection.from + 2,
-      },
-    });
-    view.focus();
-  }, [closeVariableSearch, disabled]);
+    insertVariableContent("");
+  }, [closeVariableSearch, disabled, insertVariableContent]);
 
   const insertConfirmOutputMarker = useCallback(() => {
     if (disabled || !editorViewRef.current) {
@@ -544,7 +559,7 @@ const Editor: React.FC<EditorProps> = ({
     const selection = state.selection.main;
     const optionLabel1 = toolbarLabels.singleChoiceOption1;
     const optionLabel2 = toolbarLabels.singleChoiceOption2;
-    const template = `?[%{{}}${optionLabel1}|${optionLabel2}]`;
+    const template = `?[%{{}} ${optionLabel1} | ${optionLabel2}]`;
     dispatch({
       changes: {
         from: selection.from,
@@ -571,7 +586,7 @@ const Editor: React.FC<EditorProps> = ({
     const selection = state.selection.main;
     const optionLabel1 = toolbarLabels.singleChoiceOption1;
     const optionLabel2 = toolbarLabels.singleChoiceOption2;
-    const template = `?[%{{}}${optionLabel1}||${optionLabel2}]`;
+    const template = `?[%{{}} ${optionLabel1} || ${optionLabel2}]`;
     dispatch({
       changes: {
         from: selection.from,
@@ -692,28 +707,15 @@ const Editor: React.FC<EditorProps> = ({
       if (disabled) {
         return;
       }
-      const textToInsert = `{{${variable.name}}}`;
-      if (selectContentInfo?.type === SelectedOption.Variable) {
-        deleteSelectedContent();
-        if (!editorViewRef.current) return;
-        const { dispatch } = editorViewRef.current;
-        dispatch({
-          changes: { from: selectContentInfo.from, insert: textToInsert },
-        });
-      } else {
-        insertText(textToInsert);
-      }
+      const selectionRange =
+        selectContentInfo?.type === SelectedOption.Variable
+          ? { from: selectContentInfo.from, to: selectContentInfo.to }
+          : undefined;
+      insertVariableContent(variable.name, selectionRange);
       setPopoverOpen(false);
       closeVariableSearch();
     },
-    [
-      insertText,
-      selectedOption,
-      deleteSelectedContent,
-      selectContentInfo,
-      disabled,
-      closeVariableSearch,
-    ]
+    [disabled, insertVariableContent, selectContentInfo, closeVariableSearch]
   );
 
   const slashCommandsExtension = useCallback(() => {

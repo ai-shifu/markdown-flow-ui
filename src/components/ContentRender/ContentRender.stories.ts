@@ -326,11 +326,65 @@ const NATIVE_HTML_CONTENT = `# Native HTML Showcase
 </section>
 `;
 const CODE_BLOCK_SHOWCASE = String.raw`
-\
+\`\`\`js
 console.log("Highlight.js \n keeps syntax styling consistent");
-...
+\`\`\`
+\`\`\`c
 printf("You win!\\n");
-...`;
+\`\`\`
+\`\`\`svg
+<svg width="600" height="400" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="0" width="600" height="400" fill="#f5f5f5"/>
+  
+  <!-- 标题 -->
+  <text x="300" y="40" text-anchor="middle" font-family="Arial" font-size="20" font-weight="bold">AI 早期形态：穷举法的局限</text>
+  
+  <!-- 时间线 -->
+  <line x1="50" y1="80" x2="550" y2="80" stroke="#333" stroke-width="2"/>
+  <text x="50" y="75" text-anchor="middle" font-family="Arial" font-size="12">1950s</text>
+  <text x="300" y="75" text-anchor="middle" font-family="Arial" font-size="12">1997</text>
+  <text x="550" y="75" text-anchor="middle" font-family="Arial" font-size="12">Now</text>
+  
+  <!-- 早期AI -->
+  <circle cx="50" cy="150" r="30" fill="#ff9999"/>
+  <text x="50" y="150" text-anchor="middle" font-family="Arial" font-size="10" fill="white">早期AI</text>
+  <text x="50" y="190" text-anchor="middle" font-family="Arial" font-size="10">让机器像人一样思考</text>
+  
+  <!-- 深蓝 -->
+  <circle cx="300" cy="150" r="40" fill="#99ccff"/>
+  <text x="300" y="150" text-anchor="middle" font-family="Arial" font-size="12" fill="white">深蓝</text>
+  <text x="300" y="200" text-anchor="middle" font-family="Arial" font-size="10">击败国际象棋冠军</text>
+  
+  <!-- 箭头连接 -->
+  <line x1="80" y1="150" x2="260" y2="150" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  
+  <!-- 穷举法原理 -->
+  <rect x="100" y="250" width="200" height="60" fill="#ccffcc" stroke="#333"/>
+  <text x="200" y="270" text-anchor="middle" font-family="Arial" font-size="12">穷举法原理</text>
+  <text x="200" y="290" text-anchor="middle" font-family="Arial" font-size="10">速度优势 · 重复计算</text>
+  
+  <!-- 局限性 -->
+  <rect x="350" y="250" width="200" height="60" fill="#ffcc99" stroke="#333"/>
+  <text x="450" y="270" text-anchor="middle" font-family="Arial" font-size="12">核心局限性</text>
+  <text x="450" y="290" text-anchor="middle" font-family="Arial" font-size="10">只能解决有限计算量问题</text>
+  
+  <!-- 连接线 -->
+  <line x1="300" y1="190" x2="300" y2="240" stroke="#333" stroke-width="1"/>
+  <line x1="300" y1="240" x2="200" y2="240" stroke="#333" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="300" y1="240" x2="400" y2="240" stroke="#333" stroke-width="1" marker-end="url(#arrow)"/>
+  
+  <!-- 底部结论 -->
+  <text x="300" y="350" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold">绝大多数现实问题无法用穷举解决</text>
+  
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#333"/>
+    </marker>
+  </defs>
+</svg>
+\`\`\`
+
+`;
 
 // ==============================================================================
 // Story Definitions
@@ -827,60 +881,7 @@ export const SVGDemo: Story = {
     </marker>
   </defs>
 </svg>
-
-\`\`\`text
-<svg width="600" height="400" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0" y="0" width="600" height="400" fill="#f5f5f5"/>
-  
-  <!-- 标题 -->
-  <text x="300" y="40" text-anchor="middle" font-family="Arial" font-size="20" font-weight="bold">AI 早期形态：穷举法的局限</text>
-  
-  <!-- 时间线 -->
-  <line x1="50" y1="80" x2="550" y2="80" stroke="#333" stroke-width="2"/>
-  <text x="50" y="75" text-anchor="middle" font-family="Arial" font-size="12">1950s</text>
-  <text x="300" y="75" text-anchor="middle" font-family="Arial" font-size="12">1997</text>
-  <text x="550" y="75" text-anchor="middle" font-family="Arial" font-size="12">Now</text>
-  
-  <!-- 早期AI -->
-  <circle cx="50" cy="150" r="30" fill="#ff9999"/>
-  <text x="50" y="150" text-anchor="middle" font-family="Arial" font-size="10" fill="white">早期AI</text>
-  <text x="50" y="190" text-anchor="middle" font-family="Arial" font-size="10">让机器像人一样思考</text>
-  
-  <!-- 深蓝 -->
-  <circle cx="300" cy="150" r="40" fill="#99ccff"/>
-  <text x="300" y="150" text-anchor="middle" font-family="Arial" font-size="12" fill="white">深蓝</text>
-  <text x="300" y="200" text-anchor="middle" font-family="Arial" font-size="10">击败国际象棋冠军</text>
-  
-  <!-- 箭头连接 -->
-  <line x1="80" y1="150" x2="260" y2="150" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
-  
-  <!-- 穷举法原理 -->
-  <rect x="100" y="250" width="200" height="60" fill="#ccffcc" stroke="#333"/>
-  <text x="200" y="270" text-anchor="middle" font-family="Arial" font-size="12">穷举法原理</text>
-  <text x="200" y="290" text-anchor="middle" font-family="Arial" font-size="10">速度优势 · 重复计算</text>
-  
-  <!-- 局限性 -->
-  <rect x="350" y="250" width="200" height="60" fill="#ffcc99" stroke="#333"/>
-  <text x="450" y="270" text-anchor="middle" font-family="Arial" font-size="12">核心局限性</text>
-  <text x="450" y="290" text-anchor="middle" font-family="Arial" font-size="10">只能解决有限计算量问题</text>
-  
-  <!-- 连接线 -->
-  <line x1="300" y1="190" x2="300" y2="240" stroke="#333" stroke-width="1"/>
-  <line x1="300" y1="240" x2="200" y2="240" stroke="#333" stroke-width="1" marker-end="url(#arrow)"/>
-  <line x1="300" y1="240" x2="400" y2="240" stroke="#333" stroke-width="1" marker-end="url(#arrow)"/>
-  
-  <!-- 底部结论 -->
-  <text x="300" y="350" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold">绝大多数现实问题无法用穷举解决</text>
-  
-  <defs>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L9,3 z" fill="#333"/>
-    </marker>
-  </defs>
-</svg>
-\`\`\`
-
-    `,
+`,
     enableTypewriter: false,
   },
 };

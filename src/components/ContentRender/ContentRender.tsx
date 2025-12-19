@@ -1,7 +1,6 @@
 import "highlight.js/styles/github.css";
 import "katex/dist/katex.min.css";
-import React, { useEffect, useRef, useState } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import React, { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
@@ -101,38 +100,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     typingSpeed,
     disabled: !enableTypewriter,
   });
-
-  function SvgInShadow({
-    children,
-    ...props
-  }: React.ComponentPropsWithoutRef<"svg"> & { node?: any }) {
-    const hostRef = useRef<HTMLDivElement>(null);
-    const [shadowRoot, setShadowRoot] = useState<ShadowRoot | null>(null);
-
-    useEffect(() => {
-      if (hostRef.current && !shadowRoot) {
-        if (!hostRef.current.shadowRoot) {
-          const root = hostRef.current.attachShadow({ mode: "open" });
-          setShadowRoot(root);
-        } else {
-          setShadowRoot(hostRef.current.shadowRoot);
-        }
-      }
-    }, [shadowRoot]);
-
-    useEffect(() => {
-      if (shadowRoot) {
-        const html = renderToStaticMarkup(
-          <svg {...props} style={{ ...props.style, display: "block" }}>
-            {children}
-          </svg>
-        );
-        shadowRoot.innerHTML = html;
-      }
-    }, [shadowRoot, children, props]);
-
-    return <div ref={hostRef} style={{ display: "inline-block" }} />;
-  }
 
   // Render svg string via Shadow DOM to avoid markdown wrapping
   const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
@@ -241,7 +208,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         copiedButtonText={copiedButtonText}
       />
     ),
-    svg: (props) => <SvgInShadow {...props} />,
   };
 
   const hasCompleted = useRef(false);

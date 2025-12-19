@@ -454,7 +454,11 @@ const Editor: React.FC<EditorProps> = ({
   }, [selectContentInfo, editorViewRef, disabled]);
 
   const insertVariableContent = useCallback(
-    (variableName: string, range?: { from: number; to: number }) => {
+    (
+      variableName: string,
+      range?: { from: number; to: number },
+      placeCursorAtEnd = false
+    ) => {
       if (disabled || !editorViewRef.current) {
         return;
       }
@@ -462,7 +466,9 @@ const Editor: React.FC<EditorProps> = ({
       const { state, dispatch } = view;
       const selection = range ?? state.selection.main;
       const template = buildQuotedVariableTemplate(variableName);
-      const cursorOffset = 5 + variableName.length; // 3 quotes + 2 braces before variable content
+      const cursorOffset = placeCursorAtEnd
+        ? template.length
+        : 5 + variableName.length; // 3 quotes + 2 braces before variable content
 
       dispatch({
         changes: {
@@ -711,7 +717,7 @@ const Editor: React.FC<EditorProps> = ({
         selectContentInfo?.type === SelectedOption.Variable
           ? { from: selectContentInfo.from, to: selectContentInfo.to }
           : undefined;
-      insertVariableContent(variable.name, selectionRange);
+      insertVariableContent(variable.name, selectionRange, true);
       setPopoverOpen(false);
       closeVariableSearch();
     },

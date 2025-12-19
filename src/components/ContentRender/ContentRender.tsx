@@ -260,6 +260,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         }
 
         if (seg.type === "svg") {
+          // if (!seg.complete) {
+          //   return <div key={index} >正在生成svg</div>;
+          // }
           return <SvgBlockInShadow key={index} svg={seg.value} />;
         }
       })}

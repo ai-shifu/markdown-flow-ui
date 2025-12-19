@@ -2,7 +2,7 @@ export function parseMarkdownSegments(markdown: string) {
   const segments: Array<
     | { type: "text"; value: string }
     | { type: "mermaid"; value: string; complete: boolean }
-    | { type: "svg"; value: string }
+    | { type: "svg"; value: string; complete: boolean }
   > = [];
 
   const regex = /```mermaid[\s\S]*?```|<svg[\s\S]*?<\/svg>/g;
@@ -38,10 +38,35 @@ export function parseMarkdownSegments(markdown: string) {
       segments.push({
         type: "svg",
         value: rawMatch,
+        complete: true,
       });
     }
 
     lastIndex = end;
+  }
+
+  // Handle unfinished svg block to avoid leaking raw tags while streaming
+  const incompleteSvgStart = markdown.lastIndexOf("<svg");
+  const lastSvgClose = markdown.lastIndexOf("</svg>");
+  const hasIncompleteSvg =
+    incompleteSvgStart !== -1 &&
+    (lastSvgClose === -1 || lastSvgClose < incompleteSvgStart) &&
+    incompleteSvgStart >= lastIndex;
+
+  if (hasIncompleteSvg) {
+    if (incompleteSvgStart > lastIndex) {
+      segments.push({
+        type: "text",
+        value: markdown.slice(lastIndex, incompleteSvgStart),
+      });
+    }
+
+    segments.push({
+      type: "svg",
+      value: markdown.slice(incompleteSvgStart),
+      complete: false,
+    });
+    return segments;
   }
 
   // Check whether there is an unfinished mermaid block

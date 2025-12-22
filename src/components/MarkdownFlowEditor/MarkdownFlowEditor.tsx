@@ -114,8 +114,7 @@ const isCursorInsideVariableExpression = (
   return false;
 };
 
-const buildQuotedVariableTemplate = (variableName = "") =>
-  `"""{{${variableName}}}"""`;
+const buildVariableTemplate = (variableName = "") => `{{${variableName}}}`;
 
 const Editor: React.FC<EditorProps> = ({
   content = "",
@@ -465,10 +464,10 @@ const Editor: React.FC<EditorProps> = ({
       const view = editorViewRef.current;
       const { state, dispatch } = view;
       const selection = range ?? state.selection.main;
-      const template = buildQuotedVariableTemplate(variableName);
+      const template = buildVariableTemplate(variableName);
       const cursorOffset = placeCursorAtEnd
         ? template.length
-        : 5 + variableName.length; // 3 quotes + 2 braces before variable content
+        : 2 + variableName.length; // 2 braces before variable content
 
       dispatch({
         changes: {

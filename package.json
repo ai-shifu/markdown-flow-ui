@@ -133,7 +133,7 @@
     "//build": "next build",
     "build:css": "pnpm exec tailwindcss --input src/styles/library.css --output dist/markdown-flow-ui-lib.css --config tailwind.build.config.ts --minify",
     "build:fonts": "node scripts/copy-fonts.mjs",
-    "build": "vite build && pnpm run build:css && pnpm run build:fonts",
+    "build": "vite build && pnpm run build:css",
     "build-storybook": "storybook build",
     "commit": "cz",
     "dev": "next dev --turbopack",
@@ -150,5 +150,5 @@
     "test": "echo \"No tests specified\" && exit 0"
   },
   "types": "dist/index.d.ts",
-  "version": "0.1.57"
+  "version": "0.1.57-beta.0"
 }

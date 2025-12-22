@@ -114,8 +114,7 @@ const isCursorInsideVariableExpression = (
   return false;
 };
 
-const buildQuotedVariableTemplate = (variableName = "") =>
-  `"""{{${variableName}}}"""`;
+const buildVariableTemplate = (variableName = "") => `{{${variableName}}}`;
 
 const Editor: React.FC<EditorProps> = ({
   content = "",
@@ -199,25 +198,58 @@ const Editor: React.FC<EditorProps> = ({
           }),
         })
       : t("placeholderCodeEdit", { defaultValue: t("placeholder") });
-  const safeInitialVariables = initialVariables ?? EMPTY_VARIABLES;
-  const safeInitialSystemVariables = initialSystemVariables ?? EMPTY_VARIABLES;
+  // Normalize variables to avoid duplicating system variables in the custom list
+  const normalizedSystemVariables = useMemo(() => {
+    const seen = new Set<string>();
+    return (initialSystemVariables ?? EMPTY_VARIABLES).filter((variable) => {
+      const normalized =
+        typeof variable?.name === "string" ? variable.name.toLowerCase() : "";
+      if (!normalized || seen.has(normalized)) {
+        return false;
+      }
+      seen.add(normalized);
+      return true;
+    });
+  }, [initialSystemVariables]);
+
+  const normalizedCustomVariables = useMemo(() => {
+    const systemNameSet = new Set(
+      normalizedSystemVariables.map((variable) => variable.name.toLowerCase())
+    );
+    const seen = new Set<string>();
+    return (initialVariables ?? EMPTY_VARIABLES).filter((variable) => {
+      const normalized =
+        typeof variable?.name === "string" ? variable.name.toLowerCase() : "";
+      if (
+        !normalized ||
+        systemNameSet.has(normalized) ||
+        seen.has(normalized)
+      ) {
+        return false;
+      }
+      seen.add(normalized);
+      return true;
+    });
+  }, [initialVariables, normalizedSystemVariables]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [popoverPosition, setPopoverPosition] =
     useState<PopoverPosition | null>(null);
-  const [variables, setVariables] = useState<Variable[]>(safeInitialVariables);
+  const [variables, setVariables] = useState<Variable[]>(
+    normalizedCustomVariables
+  );
   const [systemVariables, setSystemVariables] = useState<Variable[]>(
-    safeInitialSystemVariables
+    normalizedSystemVariables
   );
 
   useEffect(() => {
-    setVariables(safeInitialVariables);
-  }, [safeInitialVariables]);
+    setVariables(normalizedCustomVariables);
+  }, [normalizedCustomVariables]);
 
   useEffect(() => {
-    setSystemVariables(safeInitialSystemVariables);
-  }, [safeInitialSystemVariables]);
+    setSystemVariables(normalizedSystemVariables);
+  }, [normalizedSystemVariables]);
 
   const [selectedOption, setSelectedOption] = useState<SelectedOption>(
     SelectedOption.Empty
@@ -465,10 +497,10 @@ const Editor: React.FC<EditorProps> = ({
       const view = editorViewRef.current;
       const { state, dispatch } = view;
       const selection = range ?? state.selection.main;
-      const template = buildQuotedVariableTemplate(variableName);
+      const template = buildVariableTemplate(variableName);
       const cursorOffset = placeCursorAtEnd
         ? template.length
-        : 5 + variableName.length; // 3 quotes + 2 braces before variable content
+        : 2 + variableName.length; // 2 braces before variable content
 
       dispatch({
         changes: {

@@ -1,6 +1,4 @@
 @import "tailwindcss";
-@import "@fontsource/inter/400.css";
-@import "@fontsource/inter/600.css";
 
 #storybook-root {
   width: 100%;
@@ -30,7 +28,7 @@
   --color-border: var(--border);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --font-sans: "Inter", system-ui, sans-serif;
+  --font-sans: "PingFang SC", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
@@ -116,8 +114,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family:
-    Inter,
-    /* 英文 */ "PingFang SC",
+    "PingFang SC",
     "Microsoft YaHei",
     "Source Han Sans SC",
     /* 中文 */ -apple-system,

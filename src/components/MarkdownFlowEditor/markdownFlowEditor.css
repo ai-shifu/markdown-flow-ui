@@ -154,10 +154,24 @@
 }
 
 .cm-editor {
-  padding: 24px;
+  padding: 0;
 }
 .cm-editor:focus {
   outline: none;
+}
+
+.cm-editor .cm-content:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.cm-editor .cm-scroller {
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.cm-editor .cm-content {
+  caret-color: var(--base-foreground, #0a0a0a);
 }
 
 .markdown-flow-editor-toolbar {

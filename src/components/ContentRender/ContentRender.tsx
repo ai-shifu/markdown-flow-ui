@@ -67,6 +67,20 @@ export interface ContentRenderProps {
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
 
+// Render svg string via Shadow DOM to avoid markdown wrapping
+const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
+  const hostRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const shadowRoot = host.shadowRoot ?? host.attachShadow({ mode: "open" });
+    shadowRoot.innerHTML = svg;
+  }, [svg]);
+
+  return <div className="content-render-svg" ref={hostRef} />;
+};
+
 // Extended component interface
 type CustomComponents = ComponentsWithCustomVariable & {
   "custom-button-after-content"?: React.ComponentType<{
@@ -243,6 +257,10 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               frozen={!seg.complete}
             />
           );
+        }
+
+        if (seg.type === "svg") {
+          return <SvgBlockInShadow key={index} svg={seg.value} />;
         }
       })}
 

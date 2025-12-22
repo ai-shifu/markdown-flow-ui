@@ -64,10 +64,6 @@ export interface ContentRenderProps {
   // Dynamic interaction format for multi-select support
   dynamicInteractionFormat?: string;
   beforeSend?: (param: OnSendContentParams) => boolean;
-  /**
-   * Custom label shown while streaming SVG is still incomplete.
-   */
-  svgLoadingText?: string;
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
 

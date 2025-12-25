@@ -150,5 +150,5 @@
     "test": "echo \"No tests specified\" && exit 0"
   },
   "types": "dist/index.d.ts",
-  "version": "0.1.61-beat.1"
+  "version": "0.1.62"
 }

@@ -6,8 +6,10 @@ import {
   ViewUpdate,
 } from "@codemirror/view";
 import { RangeSetBuilder } from "@codemirror/state";
+import { createVariableExpressionRegexp } from "../utils";
 
-const variableRegex = /\{\{.*?\}\}/g;
+const broadVariableRegex = /\{\{.*?\}\}/g;
+const strictVariableRegex = createVariableExpressionRegexp();
 const commentRegex = /<!--[\s\S]*?-->/g;
 const fixedOutputRegex = /===.*?===/g;
 const multilineFixedOutputRegex = /!===[ \t]*\r?\n[\s\S]*?\r?\n[ \t]*!===/g;
@@ -23,6 +25,12 @@ function buildDecorations(view: EditorView): DecorationSet {
   // Prevent overlapping decorations so styling stays deterministic
   const isOverlapping = (from: number, to: number) =>
     occupied.some((range) => !(to <= range.from || from >= range.to));
+
+  const isCursorInside = (from: number, to: number) => {
+    return view.state.selection.ranges.some((range) => {
+      return range.from >= from && range.to <= to;
+    });
+  };
 
   const addMatch = (from: number, to: number, className: string) => {
     if (from >= to) return false;
@@ -87,8 +95,14 @@ function buildDecorations(view: EditorView): DecorationSet {
 
       // Variables inside control block content
       let innerVariableMatch;
-      const innerVariableRegex = /\{\{.*?\}\}/g;
-      while ((innerVariableMatch = innerVariableRegex.exec(content)) !== null) {
+      // Reset lastIndex for local reuse
+      strictVariableRegex.lastIndex = 0;
+      // We need to find variables inside the content string.
+      // strictVariableRegex is global, so we can use it directly on 'content'.
+      // Note: strictVariableRegex matches {{valid_name}}. Invalid ones won't match.
+      while (
+        (innerVariableMatch = strictVariableRegex.exec(content)) !== null
+      ) {
         variableRanges.push({
           from: contentStart + innerVariableMatch.index,
           to:
@@ -97,6 +111,8 @@ function buildDecorations(view: EditorView): DecorationSet {
             innerVariableMatch[0].length,
         });
       }
+      // Reset for next use
+      strictVariableRegex.lastIndex = 0;
 
       const allTokens = [
         ...operatorRanges.map((range) => ({
@@ -140,9 +156,12 @@ function buildDecorations(view: EditorView): DecorationSet {
       // Button ?[text]
       const variableRanges: { from: number; to: number }[] = [];
       const appliedVariableRanges: { from: number; to: number }[] = [];
+
       let innerVariableMatch;
-      const innerVariableRegex = /\{\{.*?\}\}/g;
-      while ((innerVariableMatch = innerVariableRegex.exec(content)) !== null) {
+      strictVariableRegex.lastIndex = 0;
+      while (
+        (innerVariableMatch = strictVariableRegex.exec(content)) !== null
+      ) {
         variableRanges.push({
           from: contentStart + innerVariableMatch.index,
           to:
@@ -151,6 +170,7 @@ function buildDecorations(view: EditorView): DecorationSet {
             innerVariableMatch[0].length,
         });
       }
+      strictVariableRegex.lastIndex = 0;
 
       const sortedVariables = variableRanges.sort((a, b) => {
         if (a.from !== b.from) return a.from - b.from;
@@ -179,9 +199,40 @@ function buildDecorations(view: EditorView): DecorationSet {
     }
   }
 
-  // 5. Variables (only if not already decorated)
-  while ((match = variableRegex.exec(docText)) !== null) {
-    addMatch(match.index, match.index + match[0].length, "syntax-variable");
+  // 5. Variables (only if not already decorated and VALID)
+  // Use broad regex to find all {{...}}, then validate them.
+  // If we used strictRegex directly, we might miss cases where {{ invalid }} is partially matched or ignored.
+  // Actually, we can just use strictRegex directly?
+  // If text is "{{invalid name}}", strictRegex won't match it.
+  // broadRegex will match it. We check strictness. If invalid, we do nothing (black).
+  // If valid, we color it.
+
+  while ((match = broadVariableRegex.exec(docText)) !== null) {
+    const text = match[0];
+    // Check if this specific match is a valid variable
+    // We use a fresh regex test or match against strict
+    // strictVariableRegex is global, so be careful.
+    // Let's create a local non-global check or reset lastIndex.
+    // Actually simpler: strictVariableRegex matches the whole `{{...}}` block if valid.
+    // So we can just test the string `text`.
+    // BUT strictVariableRegex might have boundaries.
+    // Let's rely on the utility's logic.
+    // The utility `createVariableExpressionRegexp` returns a RegExp that matches `{{ valid_name }}`.
+    // If `text` matches that regex exactly, it's valid.
+
+    // Resetting global regex before test just in case, though test() on a string with ^$ would work better if we had one.
+    // The `strictVariableRegex` is likely `/\{\{([\p{L}\p{N}_]+)\}\}/gu` or similar.
+    // We can just run exec on the specific text snippet.
+
+    const isValid = createVariableExpressionRegexp().test(text);
+
+    if (
+      isValid &&
+      !isCursorInside(match.index, match.index + match[0].length)
+    ) {
+      addMatch(match.index, match.index + match[0].length, "syntax-variable");
+    }
+    // If not valid, we do nothing, so it remains default color (black).
   }
 
   // Sort matches by 'from' asc, then 'to' desc (longest first)
@@ -212,7 +263,7 @@ const SyntaxHighlighter = ViewPlugin.fromClass(
     }
 
     update(update: ViewUpdate) {
-      if (update.docChanged || update.viewportChanged) {
+      if (update.docChanged || update.viewportChanged || update.selectionSet) {
         this.decorations = buildDecorations(update.view);
       }
     }

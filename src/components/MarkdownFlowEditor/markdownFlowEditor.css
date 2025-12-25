@@ -139,10 +139,13 @@
   color: #0e46fb !important;
 }
 .syntax-comment,
-.syntax-comment .ͼm {
+.syntax-comment * {
   color: #008000 !important;
 }
 .syntax-fixed {
+  color: #800080 !important;
+}
+.syntax-fixed * {
   color: #800080 !important;
 }
 .syntax-button-text {

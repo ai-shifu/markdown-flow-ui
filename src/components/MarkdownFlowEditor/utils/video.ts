@@ -28,7 +28,7 @@ const extractYoutubeId = (url: string) => {
 const buildBilibiliEmbedUrl = (url: string) => {
   const biliVideoId = extractBiliVideoId(url);
   if (biliVideoId) {
-    return `${BILI_PLAYER_BASE}?bvid=${biliVideoId}`;
+    return `${BILI_PLAYER_BASE}?bvid=${biliVideoId}&autoplay=0`;
   }
   return url;
 };

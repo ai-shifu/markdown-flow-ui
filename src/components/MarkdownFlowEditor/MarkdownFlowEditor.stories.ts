@@ -47,6 +47,26 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const content = `
+{{quick}}
+
+?[%{{单选}} 选项1 | 选项2]
+
+?[%{{多选}} 选项1 || 选项2]
+
+?[%{{输入框}}...请输入]
+
+?[继续]
+
+<!-- 这是注释内容，不会被输出 -->
+
+=== 单行固定输出 ===
+
+!===
+多行固定输出
+!===
+
+
+
 # Complete Markdown Syntax Test
 
 ## Heading Levels

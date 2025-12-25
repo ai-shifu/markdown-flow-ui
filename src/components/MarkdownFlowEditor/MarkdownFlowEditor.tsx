@@ -36,6 +36,7 @@ import {
 import ImgPlaceholder from "./plugins/ImgPlaceholder";
 import VideoPlaceholder from "./plugins/VideoPlaceholder";
 import VariablePlaceholder from "./plugins/VariablePlaceholder";
+import SyntaxHighlighter from "./plugins/SyntaxHighlighter";
 // import createFixedTextPlaceholder from "./plugins/FixedTextPlaceholder";
 // import DividerPlaceholder from "./plugins/DividerPlaceholder";
 import enUS from "./locales/en-US.json";
@@ -878,6 +879,7 @@ const Editor: React.FC<EditorProps> = ({
       EditorView.lineWrapping,
       markdown(),
       syntaxHighlighting(defaultHighlightStyle),
+      SyntaxHighlighter,
     ];
 
     if (!disabled) {

@@ -39,13 +39,13 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
   const lastUrlRef = useRef("");
   const [errorTips, setErrorTips] = useState("");
 
-  const isValidVideoUrl = (url: string) => {
+  const isValidVideoUrl = useCallback((url: string) => {
     return biliVideoUrlRegexp.test(url) || youtubeVideoUrlRegexp.test(url);
-  };
+  }, []);
 
-  const generateEmbedUrl = (url: string) => {
+  const generateEmbedUrl = useCallback((url: string) => {
     return getVideoEmbedUrl(url);
-  };
+  }, []);
 
   const getDefaultTitleForUrl = useCallback(
     (url: string) => {

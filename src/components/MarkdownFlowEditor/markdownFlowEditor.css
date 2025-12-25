@@ -135,8 +135,9 @@
 .syntax-keyword {
   color: #00008b !important;
 }
+/* Variables - Blue (when valid and cursor outside) */
 .syntax-variable {
-  color: #0e46fb !important;
+  color: #8b0000 !important;
 }
 .syntax-comment,
 .syntax-comment * {

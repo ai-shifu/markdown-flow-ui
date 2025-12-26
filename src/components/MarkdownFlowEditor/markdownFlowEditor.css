@@ -133,10 +133,23 @@
   color: #8b0000 !important;
 }
 .syntax-keyword {
-  color: #00008b !important;
+  color: #800080 !important;
+}
+.syntax-bracket,
+.syntax-bracket * {
+  color: #800080 !important;
 }
 /* Variables - Blue (when valid and cursor outside) */
 .syntax-variable {
+  color: #0e46fb !important;
+}
+.syntax-variable-invalid {
+  color: #8b0000 !important;
+}
+.syntax-percent-valid {
+  color: #0e46fb !important;
+}
+.syntax-percent-invalid {
   color: #8b0000 !important;
 }
 .syntax-comment,

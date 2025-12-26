@@ -49,9 +49,13 @@ type Story = StoryObj<typeof meta>;
 const content = `
 {{quick}}
 
+{{ quick}}
+ 
 ?[%{{单选}} 选项1 | 选项2]
 
 ?[%{{多选}} 选项1 || 选项2]
+
+?[%{{多选  }} 选项1 || 选项2]
 
 ?[%{{输入框}}...请输入]
 

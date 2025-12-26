@@ -12,7 +12,6 @@ const broadVariableRegex = /\{\{.*?\}\}/g;
 const strictVariableRegex = createVariableExpressionRegexp();
 const commentRegex = /<!--[\s\S]*?-->/g;
 const fixedOutputRegex = /===.*?===/g;
-const multilineFixedOutputRegex = /!===[ \t]*\r?\n[\s\S]*?\r?\n[ \t]*!===/g;
 const controlBlockRegex = /\?\[(.*?)\]/g;
 
 function buildDecorations(view: EditorView): DecorationSet {
@@ -46,9 +45,22 @@ function buildDecorations(view: EditorView): DecorationSet {
     addMatch(match.index, match.index + match[0].length, "syntax-comment");
   }
 
-  // 2. Fixed Output (Multiline)
-  while ((match = multilineFixedOutputRegex.exec(docText)) !== null) {
-    addMatch(match.index, match.index + match[0].length, "syntax-fixed");
+  // 2. Fixed Output (Multiline) - only when both markers are alone on their lines
+  const lineCount = view.state.doc.lines;
+  let pendingStart: { from: number; line: number } | null = null;
+  for (let i = 1; i <= lineCount; i++) {
+    const lineInfo = view.state.doc.line(i);
+    const trimmed = lineInfo.text.trim();
+    if (trimmed === "!===") {
+      if (!pendingStart) {
+        pendingStart = { from: lineInfo.from, line: i };
+        continue;
+      }
+      const startFrom = pendingStart.from;
+      const endTo = lineInfo.to;
+      addMatch(startFrom, endTo, "syntax-fixed");
+      pendingStart = null;
+    }
   }
 
   // 3. Fixed Output (Single line, skip "!===...!===")

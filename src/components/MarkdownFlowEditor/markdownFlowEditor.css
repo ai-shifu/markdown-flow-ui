@@ -130,7 +130,7 @@
 
 /* Syntax Highlighting */
 .syntax-string {
-  color: #8b0000 !important;
+  color: #d4631c !important;
 }
 .syntax-keyword {
   color: #800080 !important;
@@ -144,13 +144,13 @@
   color: #0e46fb !important;
 }
 .syntax-variable-invalid {
-  color: #8b0000 !important;
+  color: #d4631c !important;
 }
 .syntax-percent-valid {
   color: #0e46fb !important;
 }
 .syntax-percent-invalid {
-  color: #8b0000 !important;
+  color: #d4631c !important;
 }
 .syntax-comment,
 .syntax-comment * {
@@ -163,7 +163,7 @@
   color: #800080 !important;
 }
 .syntax-button-text {
-  color: #8b0000 !important;
+  color: #d4631c !important;
 }
 
 /* label */

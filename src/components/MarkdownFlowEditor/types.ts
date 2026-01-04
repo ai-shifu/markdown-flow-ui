@@ -1,3 +1,5 @@
+import React from "react";
+
 enum SelectedOption {
   FixedText = "fixedText",
   Divider = "divider",
@@ -40,5 +42,35 @@ interface Variable {
   label?: string;
 }
 
+type EditorAction =
+  | {
+      key: string;
+      label: string;
+      icon?: React.ReactNode;
+      disabled?: boolean;
+      onClick?: (api: EditorApi) => void;
+      tooltip?: string;
+    }
+  | {
+      key: string;
+      render: (api: EditorApi) => React.ReactNode;
+      disabled?: boolean;
+    };
+
+interface EditorApi {
+  insertTextAtCursor: (text: string) => void;
+  replaceSelection: (text: string) => void;
+  focus: () => void;
+  getContent: () => string;
+  setContent: (text: string) => void;
+}
+
 export { SelectedOption };
-export type { SelectContentInfo, IEditorContext, Variable, PopoverPosition };
+export type {
+  SelectContentInfo,
+  IEditorContext,
+  Variable,
+  PopoverPosition,
+  EditorAction,
+  EditorApi,
+};

@@ -1,9 +1,12 @@
+import React, { useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { Sparkles } from "lucide-react";
 
 // import { fn } from 'storybook/test';
 
 import MarkdownFlowEditor from "./MarkdownFlowEditor";
 import { EditMode } from "./MarkdownFlowEditor";
+import type { EditorApi, EditorAction } from "./types";
 import type { UploadProps } from "./uploadTypes";
 
 const meta = {
@@ -347,5 +350,109 @@ export const MarkdownFlowEditorDisabled: Story = {
       { name: "sys_user_email" },
       { name: "plan" },
     ],
+  },
+};
+
+export const MarkdownFlowEditorWithToolbarRight: Story = {
+  render: (args) => {
+    const apiRef = useRef<EditorApi | null>(null);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalText, setModalText] = useState("插槽输入的文本");
+    const toolbarActions: EditorAction[] = [
+      {
+        key: "insertTemplate",
+        label: "插入模板",
+        onClick: (api: EditorApi) => {
+          api.focus();
+          // 会用传入文本替换当前选区（无选区时等同插入），并把光标放到新文本末尾。
+          api.replaceSelection("{{slot_variable}}");
+        },
+      },
+      {
+        key: "insertGreeting",
+        label: "插入问候",
+        onClick: (api: EditorApi) => {
+          api.focus();
+          // 会在当前光标处插入文本，并把光标移到插入内容之后，原有选中文本不变；
+          api.insertTextAtCursor("Hello from toolbar slot! ");
+        },
+      },
+      {
+        key: "insertIconSnippet",
+        label: "",
+        icon: <Sparkles size={14} />,
+        tooltip: "插入短语",
+        onClick: (api: EditorApi) => {
+          api.focus();
+          // 一次性替换全部文本，会把当前编辑器内的所有内容替换为传入的文本
+          api.setContent("✨ Powered by toolbar slot");
+        },
+      },
+      {
+        key: "modalInsert",
+        label: "弹窗插入",
+        tooltip: "打开弹窗输入文本",
+        onClick: () => {
+          setModalOpen(true);
+        },
+      },
+    ];
+    // 弹窗插入文本
+    const handleModalConfirm = () => {
+      if (!modalText.trim()) {
+        return;
+      }
+      apiRef.current?.focus();
+      apiRef.current?.insertTextAtCursor(`${modalText}`);
+      setModalOpen(false);
+    };
+
+    return (
+      <div className="flex w-[1024px] flex-col gap-3">
+        <MarkdownFlowEditor
+          {...args}
+          toolbarActionsRight={toolbarActions}
+          onReady={(api) => {
+            apiRef.current = api;
+          }}
+        />
+        {modalOpen ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="w-[360px] rounded-lg bg-white p-4 shadow-lg">
+              <h4 className="text-base font-semibold text-neutral-900">
+                请输入要插入的文本
+              </h4>
+              <textarea
+                className="mt-3 w-full rounded border border-neutral-200 p-2 text-sm"
+                rows={3}
+                value={modalText}
+                onChange={(e) => setModalText(e.target.value)}
+              />
+              <div className="mt-3 flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="rounded border border-neutral-200 px-3 py-1 text-sm"
+                  onClick={() => setModalOpen(false)}
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  className="rounded bg-black px-3 py-1 text-sm text-white"
+                  onClick={handleModalConfirm}
+                >
+                  插入
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  },
+  args: {
+    content: "点击右侧按钮或外部按钮快速插入内容。\n",
+    editMode: EditMode.QuickEdit,
+    locale: "zh-CN",
   },
 };

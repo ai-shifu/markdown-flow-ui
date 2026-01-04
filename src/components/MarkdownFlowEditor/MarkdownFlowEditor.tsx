@@ -23,6 +23,8 @@ import {
   Variable,
   SelectContentInfo,
   PopoverPosition,
+  EditorAction,
+  EditorApi,
 } from "./types";
 import "./markdownFlowEditor.css";
 
@@ -84,6 +86,8 @@ type EditorProps = {
   locale?: "en-US" | "zh-CN";
   uploadProps?: UploadProps;
   disabled?: boolean;
+  toolbarActionsRight?: EditorAction[];
+  onReady?: (api: EditorApi) => void;
 };
 
 const EMPTY_VARIABLES: Variable[] = [];
@@ -127,6 +131,8 @@ const Editor: React.FC<EditorProps> = ({
   locale = "en-US",
   uploadProps,
   disabled = false,
+  toolbarActionsRight,
+  onReady,
 }) => {
   const { t, i18n } = useTranslation();
   useEffect(() => {
@@ -465,6 +471,48 @@ const Editor: React.FC<EditorProps> = ({
       });
     },
     [editorViewRef, disabled]
+  );
+
+  const replaceSelection = useCallback(
+    (text: string) => {
+      if (disabled || !editorViewRef.current) {
+        return;
+      }
+      const { state, dispatch } = editorViewRef.current;
+      const selection = state.selection.main;
+      dispatch({
+        changes: { from: selection.from, to: selection.to, insert: text },
+        selection: { anchor: selection.from + text.length },
+      });
+    },
+    [disabled]
+  );
+
+  const focusEditor = useCallback(() => {
+    editorViewRef.current?.focus();
+  }, []);
+
+  const getContent = useCallback(() => {
+    return editorViewRef.current?.state.doc.toString() ?? "";
+  }, []);
+
+  const setContent = useCallback(
+    (text: string) => {
+      if (disabled) {
+        return;
+      }
+      if (!editorViewRef.current) {
+        onChange?.(text);
+        return;
+      }
+      const view = editorViewRef.current;
+      const { state, dispatch } = view;
+      dispatch({
+        changes: { from: 0, to: state.doc.length, insert: text },
+        selection: { anchor: text.length },
+      });
+    },
+    [disabled, onChange]
   );
 
   const deleteSelectedContent = useCallback(() => {
@@ -928,6 +976,68 @@ const Editor: React.FC<EditorProps> = ({
   );
 
   const isVariableSearchOpen = !disabled && variableSearchOpen;
+  const editorApi = useMemo(
+    () => ({
+      insertTextAtCursor: insertText,
+      replaceSelection,
+      focus: focusEditor,
+      getContent,
+      setContent,
+    }),
+    [focusEditor, getContent, insertText, replaceSelection, setContent]
+  );
+
+  const handleToolbarActionClick = useCallback(
+    (action: EditorAction) => {
+      if (disabled || "render" in action) {
+        return;
+      }
+      action.onClick?.(editorApi);
+    },
+    [disabled, editorApi]
+  );
+
+  const toolbarRightSlot = useMemo(() => {
+    if (!toolbarActionsRight?.length) {
+      return null;
+    }
+    return (
+      <div className="markdown-flow-editor-toolbar-right">
+        {toolbarActionsRight.map((action) => {
+          if ("render" in action) {
+            return (
+              <div
+                className="markdown-flow-editor-toolbar-right-item"
+                key={action.key}
+              >
+                {action.render(editorApi)}
+              </div>
+            );
+          }
+          return (
+            <button
+              type="button"
+              key={action.key}
+              disabled={disabled || action.disabled}
+              onClick={() => handleToolbarActionClick(action)}
+              className="markdown-flow-editor-toolbar-right-button"
+              aria-label={action.label}
+              title={action.label}
+            >
+              {action.icon ? (
+                <span className="toolbar-right-icon">{action.icon}</span>
+              ) : null}
+              <span>{action.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }, [disabled, editorApi, handleToolbarActionClick, toolbarActionsRight]);
+
+  useEffect(() => {
+    onReady?.(editorApi);
+  }, [editorApi, onReady]);
 
   return (
     <div
@@ -949,6 +1059,7 @@ const Editor: React.FC<EditorProps> = ({
         onInsertMultiChoice={insertMultiChoiceTemplate}
         onInsertInputField={insertInputFieldTemplate}
         variableSearchActive={isVariableSearchOpen}
+        rightSlot={toolbarRightSlot}
       />
       <VariableSearchDropdown
         open={isVariableSearchOpen}

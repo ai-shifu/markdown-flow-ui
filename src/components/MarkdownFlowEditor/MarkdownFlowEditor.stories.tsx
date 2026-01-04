@@ -1,9 +1,11 @@
+import React, { useRef } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 // import { fn } from 'storybook/test';
 
 import MarkdownFlowEditor from "./MarkdownFlowEditor";
 import { EditMode } from "./MarkdownFlowEditor";
+import type { EditorApi, EditorAction } from "./types";
 import type { UploadProps } from "./uploadTypes";
 
 const meta = {
@@ -347,5 +349,54 @@ export const MarkdownFlowEditorDisabled: Story = {
       { name: "sys_user_email" },
       { name: "plan" },
     ],
+  },
+};
+
+export const MarkdownFlowEditorWithToolbarRight: Story = {
+  render: (args) => {
+    const apiRef = useRef<EditorApi | null>(null);
+    const toolbarActions: EditorAction[] = [
+      {
+        key: "insertTemplate",
+        label: "插入模板",
+        onClick: (api) => {
+          api.focus();
+          api.replaceSelection("{{slot_variable}}");
+        },
+      },
+      {
+        key: "insertGreeting",
+        label: "插入问候",
+        onClick: (api) => {
+          api.focus();
+          api.insertTextAtCursor("Hello from toolbar slot! ");
+        },
+      },
+    ];
+    return (
+      <div className="flex w-[1024px] flex-col gap-3">
+        <div className="flex gap-3">
+          <button
+            type="button"
+            className="rounded border px-3 py-1 text-sm"
+            onClick={() => apiRef.current?.setContent("外部重置的内容\n")}
+          >
+            外部重置内容
+          </button>
+        </div>
+        <MarkdownFlowEditor
+          {...args}
+          toolbarActionsRight={toolbarActions}
+          onReady={(api) => {
+            apiRef.current = api;
+          }}
+        />
+      </div>
+    );
+  },
+  args: {
+    content: "点击右侧按钮或外部按钮快速插入内容。\n",
+    editMode: EditMode.QuickEdit,
+    locale: "zh-CN",
   },
 };

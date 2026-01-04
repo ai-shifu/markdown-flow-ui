@@ -1,5 +1,8 @@
 .content-render {
-  font-family: inherit;
+  --content-render-font-family:
+    "Charter", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC",
+    sans-serif;
+  font-family: var(--content-render-font-family);
   line-height: 30px;
   word-break: break-word;
   overflow-wrap: break-word;
@@ -13,7 +16,7 @@
   background-color: transparent;
   color: rgba(0, 0, 0, 0.8);
   text-align: justify;
-  font-family: inherit;
+  font-family: var(--content-render-font-family);
   font-size: 16px;
   font-style: normal;
   font-weight: var(--font-weight-normal, 400);

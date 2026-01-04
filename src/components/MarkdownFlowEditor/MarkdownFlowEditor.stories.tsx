@@ -1,5 +1,6 @@
-import React, { useRef } from "react";
+import React from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { Sparkles } from "lucide-react";
 
 // import { fn } from 'storybook/test';
 
@@ -354,43 +355,39 @@ export const MarkdownFlowEditorDisabled: Story = {
 
 export const MarkdownFlowEditorWithToolbarRight: Story = {
   render: (args) => {
-    const apiRef = useRef<EditorApi | null>(null);
     const toolbarActions: EditorAction[] = [
       {
         key: "insertTemplate",
         label: "插入模板",
-        onClick: (api) => {
+        onClick: (api: EditorApi) => {
           api.focus();
+          // 会用传入文本替换当前选区（无选区时等同插入），并把光标放到新文本末尾。
           api.replaceSelection("{{slot_variable}}");
         },
       },
       {
         key: "insertGreeting",
         label: "插入问候",
-        onClick: (api) => {
+        onClick: (api: EditorApi) => {
           api.focus();
+          // 会在当前光标处插入文本，并把光标移到插入内容之后，原有选中文本不变；
           api.insertTextAtCursor("Hello from toolbar slot! ");
+        },
+      },
+      {
+        key: "insertIconSnippet",
+        label: "",
+        icon: <Sparkles size={14} />,
+        onClick: (api: EditorApi) => {
+          api.focus();
+          // 一次性替换全部文本，会把当前编辑器内的所有内容替换为传入的文本
+          api.setContent("✨ Powered by toolbar slot");
         },
       },
     ];
     return (
       <div className="flex w-[1024px] flex-col gap-3">
-        <div className="flex gap-3">
-          <button
-            type="button"
-            className="rounded border px-3 py-1 text-sm"
-            onClick={() => apiRef.current?.setContent("外部重置的内容\n")}
-          >
-            外部重置内容
-          </button>
-        </div>
-        <MarkdownFlowEditor
-          {...args}
-          toolbarActionsRight={toolbarActions}
-          onReady={(api) => {
-            apiRef.current = api;
-          }}
-        />
+        <MarkdownFlowEditor {...args} toolbarActionsRight={toolbarActions} />
       </div>
     );
   },

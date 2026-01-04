@@ -247,6 +247,10 @@
   gap: 8px;
 }
 
+.markdown-flow-editor-toolbar-right-item {
+  display: inline-flex;
+}
+
 .markdown-flow-editor-toolbar button {
   display: inline-flex;
   align-items: center;
@@ -286,6 +290,9 @@
   border-radius: 6px;
   font-size: 13px;
   gap: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .markdown-flow-editor-toolbar-right-button:not(:disabled):hover {
@@ -295,7 +302,6 @@
 .toolbar-right-icon {
   display: inline-flex;
   align-items: center;
-  margin-right: 6px;
 }
 
 .markdown-flow-editor-variable-search {

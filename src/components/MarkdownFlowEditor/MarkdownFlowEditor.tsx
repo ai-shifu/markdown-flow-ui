@@ -9,6 +9,7 @@ import {
   syntaxHighlighting,
   defaultHighlightStyle,
 } from "@codemirror/language";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import CustomDialog from "./components/CustomDialog";
 import CustomPopover from "./components/CustomPopover";
 import EditorToolbar from "./components/EditorToolbar";
@@ -1014,21 +1015,40 @@ const Editor: React.FC<EditorProps> = ({
               </div>
             );
           }
-          return (
+          const ariaLabel = action.label || action.tooltip || undefined;
+          const button = (
             <button
               type="button"
               key={action.key}
               disabled={disabled || action.disabled}
               onClick={() => handleToolbarActionClick(action)}
               className="markdown-flow-editor-toolbar-right-button"
-              aria-label={action.label}
-              title={action.label}
+              aria-label={ariaLabel}
+              title={action.label || action.tooltip}
             >
               {action.icon ? (
                 <span className="toolbar-right-icon">{action.icon}</span>
               ) : null}
-              <span>{action.label}</span>
+              {action.label ? (
+                <span className="toolbar-right-label">{action.label}</span>
+              ) : null}
             </button>
+          );
+          const wrapped = action.tooltip ? (
+            <Tooltip>
+              <TooltipTrigger asChild>{button}</TooltipTrigger>
+              <TooltipContent side="top">{action.tooltip}</TooltipContent>
+            </Tooltip>
+          ) : (
+            button
+          );
+          return (
+            <div
+              className="markdown-flow-editor-toolbar-right-item"
+              key={action.key}
+            >
+              {wrapped}
+            </div>
           );
         })}
       </div>

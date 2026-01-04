@@ -378,6 +378,7 @@ export const MarkdownFlowEditorWithToolbarRight: Story = {
         key: "insertIconSnippet",
         label: "",
         icon: <Sparkles size={14} />,
+        tooltip: "插入短语",
         onClick: (api: EditorApi) => {
           api.focus();
           // 一次性替换全部文本，会把当前编辑器内的所有内容替换为传入的文本

@@ -49,6 +49,7 @@ type EditorAction =
       icon?: React.ReactNode;
       disabled?: boolean;
       onClick?: (api: EditorApi) => void;
+      tooltip?: string;
     }
   | {
       key: string;

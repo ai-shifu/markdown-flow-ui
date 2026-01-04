@@ -1057,7 +1057,7 @@ const Editor: React.FC<EditorProps> = ({
 
   useEffect(() => {
     onReady?.(editorApi);
-  }, [editorApi, onReady]);
+  }, [editorApi]);
 
   return (
     <div

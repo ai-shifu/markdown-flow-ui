@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { Sparkles } from "lucide-react";
 
@@ -355,6 +355,9 @@ export const MarkdownFlowEditorDisabled: Story = {
 
 export const MarkdownFlowEditorWithToolbarRight: Story = {
   render: (args) => {
+    const apiRef = useRef<EditorApi | null>(null);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalText, setModalText] = useState("插槽输入的文本");
     const toolbarActions: EditorAction[] = [
       {
         key: "insertTemplate",
@@ -385,10 +388,65 @@ export const MarkdownFlowEditorWithToolbarRight: Story = {
           api.setContent("✨ Powered by toolbar slot");
         },
       },
+      {
+        key: "modalInsert",
+        label: "弹窗插入",
+        tooltip: "打开弹窗输入文本",
+        onClick: () => {
+          setModalOpen(true);
+        },
+      },
     ];
+    // 弹窗插入文本
+    const handleModalConfirm = () => {
+      if (!modalText.trim()) {
+        return;
+      }
+      apiRef.current?.focus();
+      apiRef.current?.insertTextAtCursor(`${modalText}`);
+      setModalOpen(false);
+    };
+
     return (
       <div className="flex w-[1024px] flex-col gap-3">
-        <MarkdownFlowEditor {...args} toolbarActionsRight={toolbarActions} />
+        <MarkdownFlowEditor
+          {...args}
+          toolbarActionsRight={toolbarActions}
+          onReady={(api) => {
+            apiRef.current = api;
+          }}
+        />
+        {modalOpen ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="w-[360px] rounded-lg bg-white p-4 shadow-lg">
+              <h4 className="text-base font-semibold text-neutral-900">
+                请输入要插入的文本
+              </h4>
+              <textarea
+                className="mt-3 w-full rounded border border-neutral-200 p-2 text-sm"
+                rows={3}
+                value={modalText}
+                onChange={(e) => setModalText(e.target.value)}
+              />
+              <div className="mt-3 flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="rounded border border-neutral-200 px-3 py-1 text-sm"
+                  onClick={() => setModalOpen(false)}
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  className="rounded bg-black px-3 py-1 text-sm text-white"
+                  onClick={handleModalConfirm}
+                >
+                  插入
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   },

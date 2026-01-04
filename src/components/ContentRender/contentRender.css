@@ -1,5 +1,7 @@
 .content-render {
-  --content-render-font-family: "Source Serif 4", serif;
+  --content-render-font-family:
+    "Charter", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC",
+    sans-serif;
   font-family: var(--content-render-font-family);
   line-height: 30px;
   word-break: break-word;

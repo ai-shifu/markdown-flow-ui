@@ -121,7 +121,7 @@
     ]
   },
   "main": "dist/index.cjs.js",
-  "module": "dist/index.esm.js",
+  "module": "dist/index.es.js",
   "name": "markdown-flow-ui",
   "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748",
   "private": false,
@@ -149,23 +149,34 @@
     "storybook": "storybook dev -p 6006",
     "test": "echo \"No tests specified\" && exit 0"
   },
-  "version": "0.1.69-beta.4",
+  "version": "0.1.69-beta.7",
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.cjs.js"
     },
-    "./editor": {
-      "types": "./dist/editor.d.ts",
-      "import": "./dist/editor.js"
+    "./render": {
+      "types": "./dist/renderer.d.ts",
+      "import": "./dist/renderer.js",
+      "require": "./dist/renderer.js"
     },
     "./renderer": {
       "types": "./dist/renderer.d.ts",
-      "import": "./dist/renderer.js"
+      "import": "./dist/renderer.js",
+      "require": "./dist/renderer.js"
     },
-    "./style.css": {
+    "./editor": {
+      "types": "./dist/editor.d.ts",
+      "import": "./dist/editor.js",
+      "require": "./dist/editor.js"
+    },
+    "./dist/markdown-flow-ui.css": {
       "default": "./dist/markdown-flow-ui.css"
+    },
+    "./dist/markdown-flow-ui-lib.css": {
+      "default": "./dist/markdown-flow-ui-lib.css"
     }
   }
 }

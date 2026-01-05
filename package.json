@@ -149,6 +149,20 @@
     "storybook": "storybook dev -p 6006",
     "test": "echo \"No tests specified\" && exit 0"
   },
-  "types": "dist/index.d.ts",
-  "version": "0.1.69"
+  "version": "0.1.69-beta.3",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./editor": {
+      "types": "./dist/editor.d.ts",
+      "import": "./dist/editor.js"
+    },
+    "./renderer": {
+      "types": "./dist/renderer.d.ts",
+      "import": "./dist/renderer.js"
+    }
+  }
 }

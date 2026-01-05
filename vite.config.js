@@ -8,29 +8,39 @@ export default defineConfig({
     react(),
     dts({
       insertTypesEntry: true,
+      entryRoot: "src",
     }),
   ],
+
   resolve: {
     alias: {
       "@": resolve(__dirname, "src"),
     },
   },
+
   build: {
     lib: {
-      entry: resolve(__dirname, "src/index.ts"),
-      name: "MarkdownFlowUI",
-      formats: ["es", "cjs"],
-      fileName: (format) => `index.${format}.js`,
+      entry: {
+        index: resolve(__dirname, "src/index.ts"),
+        editor: resolve(__dirname, "src/editor.ts"),
+        renderer: resolve(__dirname, "src/renderer.ts"),
+      },
+      formats: ["es"],
     },
+
     rollupOptions: {
       external: ["react", "react-dom", "next", "next/router"],
+
       output: {
-        globals: {
-          react: "React",
-          "react-dom": "ReactDOM",
-        },
+        preserveModules: true,
+        preserveModulesRoot: "src",
+
+        entryFileNames: "[name].js",
+        chunkFileNames: "chunks/[name]-[hash].js",
+        assetFileNames: "assets/[name][extname]",
       },
     },
+
     sourcemap: true,
     emptyOutDir: true,
   },

@@ -108,9 +108,12 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
   }
 
   return (
-    <div className="my-4 text-center overflow-auto">
+    <div className="my-4 text-center overflow-auto content-render-mermaid">
       {svg ? (
-        <div dangerouslySetInnerHTML={{ __html: svg }} />
+        <div
+          className="content-render-mermaid-inner"
+          dangerouslySetInnerHTML={{ __html: svg }}
+        />
       ) : (
         <div className="py-8 text-gray-500 italic">
           {messages?.loading ?? DEFAULT_MESSAGES.loading}

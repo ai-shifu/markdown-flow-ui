@@ -264,12 +264,15 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         }
       })}
 
-      {customRenderBar &&
-        React.createElement(customRenderBar, {
-          content,
-          displayContent,
-          onSend,
-        })}
+      {customRenderBar && (
+        <div className="content-render-custom-bar">
+          {React.createElement(customRenderBar, {
+            content,
+            displayContent,
+            onSend,
+          })}
+        </div>
+      )}
     </div>
   );
 };

@@ -864,6 +864,8 @@ export const SVGDemo: Story = {
   name: "SVG 展示",
   args: {
     content: `
+<img src="https://resource.ai-shifu.cn/7b007ca873b14edeb4d3e6817f520550" />
+
 下面这张图总结了咱们刚才聊的全部要点：
 
 <svg width="600" height="400" xmlns="http://www.w3.org/2000/svg">

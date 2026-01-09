@@ -60,7 +60,8 @@
   margin: 1rem 0;
 }
 
-.content-render-table {
+.content-render.markdown-body .content-render-table {
+  display: table;
   width: 100%;
   border-collapse: collapse;
   border: 1px solid #d1d5db;

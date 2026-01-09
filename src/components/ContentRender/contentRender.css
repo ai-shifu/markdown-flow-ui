@@ -24,6 +24,16 @@
   width: 100%;
 }
 
+.content-render .content-render-custom-bar {
+  /* Keep custom render bar left aligned regardless of surrounding text alignment */
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  text-align: left;
+  align-self: flex-start;
+}
+
 .content-render.markdown-body img,
 .content-render.markdown-body svg {
   display: block;

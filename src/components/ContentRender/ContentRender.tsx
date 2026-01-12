@@ -126,7 +126,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
           className="content-render-custom-button-after-content"
           onClick={onClickCustomButtonAfterContent}
         >
-          {children}
+          <span className="content-render-custom-button-after-content-inner">
+            {children}
+          </span>
         </button>
       );
     },

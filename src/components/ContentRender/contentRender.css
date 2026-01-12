@@ -159,6 +159,12 @@
   align-items: center;
 }
 
+.content-render .content-render-custom-button-after-content-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .content-render .content-render-mermaid-inner {
   display: flex;
   justify-content: center;

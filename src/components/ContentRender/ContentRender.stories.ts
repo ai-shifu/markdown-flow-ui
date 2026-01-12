@@ -584,7 +584,7 @@ export const CustomButtonAfterContentDemo: Story = {
 
 当内容渲染完成后，我们可以通过 \`<custom-button-after-content>\` 标签渲染一个按钮。
 
-点击下方按钮可以触发 Storybook 控制台中的自定义回调。<custom-button-after-content><span style="color: red;">点击自定义按钮</span></custom-button-after-content>
+点击下方按钮可以触发 Storybook 控制台中的自定义回调。<custom-button-after-content><span style="color: red; display: inline-flex; align-items: center; gap: 6px;"><img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f680.svg" alt="icon" width="16" height="16" style="display: inline-block;" loading="lazy" /><span>点击自定义按钮</span></span></custom-button-after-content>
 
 ---
 

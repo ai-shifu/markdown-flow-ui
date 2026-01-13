@@ -197,6 +197,7 @@
   display: inline-block;
   vertical-align: top;
   margin: 0;
+  width: 100%;
 }
 
 .content-render .content-render-svg-scroll {

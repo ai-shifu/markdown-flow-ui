@@ -194,17 +194,16 @@
 }
 
 .content-render .content-render-svg {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  margin: 1rem 0;
-  overflow: auto;
+  display: inline-block;
+  vertical-align: top;
+  margin: 0;
 }
 
-.content-render .content-render-svg svg {
-  max-width: 100%;
-  height: auto;
-  display: block;
+.content-render .content-render-svg-scroll {
+  width: 100%;
+  overflow-x: auto;
+  margin: 0;
+  line-height: 0;
 }
 
 .content-render .custom-variable-container {

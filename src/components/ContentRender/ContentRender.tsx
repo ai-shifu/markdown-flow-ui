@@ -78,7 +78,11 @@ const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
     shadowRoot.innerHTML = svg;
   }, [svg]);
 
-  return <div className="content-render-svg" ref={hostRef} />;
+  return (
+    <div className="content-render-svg-scroll">
+      <div className="content-render-svg" ref={hostRef} />
+    </div>
+  );
 };
 
 // Extended component interface

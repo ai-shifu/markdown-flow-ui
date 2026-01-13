@@ -203,6 +203,8 @@
   width: 100%;
   overflow-x: auto;
   margin: 0;
+  display: flex;
+  justify-content: center;
   line-height: 0;
 }
 

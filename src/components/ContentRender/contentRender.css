@@ -196,16 +196,17 @@
 .content-render .content-render-svg {
   display: inline-block;
   vertical-align: top;
-  margin: 0;
-  width: 100%;
+  margin: 0 auto;
+  width: auto;
+  max-width: 100%;
 }
 
 .content-render .content-render-svg-scroll {
   width: 100%;
   overflow-x: auto;
   margin: 0 0 12px 0;
-  display: flex;
-  justify-content: center;
+  display: block;
+  text-align: center;
   line-height: 0;
 }
 

@@ -1,6 +1,6 @@
 import "highlight.js/styles/github.css";
 import "katex/dist/katex.min.css";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
@@ -31,6 +31,7 @@ import {
   parseMarkdownSegments,
   mermaidBlockIsComplete,
 } from "./utils/mermaid-parse";
+import { normalizeInlineHtml } from "./utils/normalize-inline-html";
 // Define component Props type
 export interface ContentRenderProps {
   content: string;
@@ -166,11 +167,16 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   beforeSend,
   // tooltipMinLength,
 }) => {
+  const normalizedContent = useMemo(
+    () => normalizeInlineHtml(content),
+    [content]
+  );
+
   // Use custom Hook to handle typewriter effect
   const { displayContent, isComplete } = useTypewriterStateMachine({
     // processMarkdownText will let code block printf("You win!\n") become printf("You win!<br/>");
     // content: processMarkdownText(content),
-    content: content,
+    content: normalizedContent,
     typingSpeed,
     disabled: !enableTypewriter,
   });

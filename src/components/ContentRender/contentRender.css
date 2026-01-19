@@ -194,11 +194,11 @@
 }
 
 .content-render .content-render-svg {
-  display: inline-block;
-  vertical-align: top;
-  margin: 0 auto;
-  width: auto;
+  display: block;
+  width: 100%;
   max-width: 100%;
+  margin: 0 auto;
+  vertical-align: top;
 }
 
 .content-render .content-render-svg-scroll {

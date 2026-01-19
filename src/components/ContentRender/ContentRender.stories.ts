@@ -350,6 +350,35 @@ Additional skills: ?[%{{additional_skills}}Leadership||Teaching||Project Managem
 This demonstrates the power of combining single-select, multi-select, and text input modes in a conversational flow!`;
 
 const NATIVE_HTML_CONTENT = `# Native HTML Showcase
+<div style="font-family: sans-serif; padding: 20px; background-color: #f0f4ff; border-radius: 12px; color: #333;">
+  <div style="margin-bottom: 20px; border-left: 5px solid #0F63EE; padding-left: 15px;">
+    <p style="font-weight: bold; color: #0F63EE; margin: 0;">AI 正在思考下一个字...</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 15px;">
+    <!-- Step 1 -->
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="background: #fff; padding: 8px 12px; border-radius: 6px; border: 1px solid #0F63EE; min-width: 100px;">床前明月光,</div>
+      <div style="color: #0F63EE;">→</div>
+      <div style="display: flex; gap: 5px;">
+        <div style="background: #0F63EE; color: white; padding: 5px 10px; border-radius: 4px; font-size: 14px;">疑 (99%)</div>
+        <div style="background: #e0e0e0; padding: 5px 10px; border-radius: 4px; font-size: 14px;">看 (0.5%)</div>
+        <div style="background: #e0e0e0; padding: 5px 10px; border-radius: 4px; font-size: 14px;">有 (0.2%)</div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="background: #fff; padding: 8px 12px; border-radius: 6px; border: 1px solid #0F63EE; min-width: 100px;">床前明月光，</div>
+      <div style="color: #0F63EE;">→</div>
+      <div style="display: flex; gap: 5px;">
+        <div style="background: #0F63EE; color: white; padding: 5px 10px; border-radius: 4px; font-size: 14px;">疑 (99%)</div>
+        <div style="background: #e0e0e0; padding: 5px 10px; border-radius: 4px; font-size: 14px;">看 (0.5%)</div>
+        <div style="background: #e0e0e0; padding: 5px 10px; border-radius: 4px; font-size: 14px;">有 (0.2%)</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <section>
   <h2>Classic HTML Elements</h2>

@@ -75,7 +75,63 @@ const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
     const host = hostRef.current;
     if (!host) return;
     const shadowRoot = host.shadowRoot ?? host.attachShadow({ mode: "open" });
-    shadowRoot.innerHTML = svg;
+    const styleId = "content-render-svg-style";
+    let styleEl = shadowRoot.getElementById(styleId) as HTMLStyleElement | null;
+
+    if (!styleEl) {
+      styleEl = document.createElement("style");
+      styleEl.id = styleId;
+      styleEl.textContent = `
+        :host { display: block; width: 100%; max-width: 100%; text-align: center; }
+        svg { max-width: 100%; height: auto; display: inline-block; }
+      `;
+      shadowRoot.appendChild(styleEl);
+    }
+
+    const nodesToRemove = Array.from(shadowRoot.childNodes).filter(
+      (node) => node !== styleEl
+    );
+    nodesToRemove.forEach((node) => shadowRoot.removeChild(node));
+
+    const template = document.createElement("template");
+    template.innerHTML = svg;
+    shadowRoot.append(template.content.cloneNode(true));
+
+    shadowRoot.querySelectorAll("svg").forEach((svgEl) => {
+      // Derive responsive sizing from viewBox so pure viewBox SVGs stay visible and fluid
+      const viewBox = svgEl.getAttribute("viewBox");
+      if (!viewBox) return;
+
+      const dimensions = viewBox
+        .trim()
+        .split(/[\s,]+/)
+        .map((value) => Number(value));
+
+      if (dimensions.length !== 4 || dimensions.some(Number.isNaN)) return;
+
+      const [, , viewBoxWidth, viewBoxHeight] = dimensions;
+      const widthAttr = svgEl.getAttribute("width");
+      const heightAttr = svgEl.getAttribute("height");
+      const hasWidth = !!widthAttr && widthAttr !== "0";
+      const hasHeight = !!heightAttr && heightAttr !== "0";
+      const shouldUseResponsiveSize = !hasWidth && !hasHeight;
+
+      if (shouldUseResponsiveSize) {
+        svgEl.style.width = "100%";
+        svgEl.style.height = "auto";
+        if (!svgEl.style.aspectRatio && viewBoxHeight > 0) {
+          svgEl.style.aspectRatio = `${viewBoxWidth} / ${viewBoxHeight}`;
+        }
+        return;
+      }
+
+      if (!hasWidth && viewBoxWidth > 0) {
+        svgEl.setAttribute("width", `${viewBoxWidth}`);
+      }
+      if (!hasHeight && viewBoxHeight > 0) {
+        svgEl.setAttribute("height", `${viewBoxHeight}`);
+      }
+    });
   }, [svg]);
 
   return (

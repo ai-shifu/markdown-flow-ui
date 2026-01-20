@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot, Root } from "react-dom/client";
 import SandboxApp from "./SandboxApp";
 
@@ -13,6 +13,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const rootRef = useRef<Root | null>(null);
+  const [height, setHeight] = useState(480);
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -26,6 +27,9 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 <html>
   <head>
     <meta charset="utf-8" />
+    <style>
+      html, body { margin: 0; padding: 0; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
@@ -44,7 +48,27 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     rootRef.current = root;
     root.render(<SandboxApp html={content} />);
 
+    const updateHeight = () => {
+      if (!iframeRef.current || !doc.body) return;
+      const bodyRect = doc.body.getBoundingClientRect();
+      const htmlRect = doc.documentElement?.getBoundingClientRect();
+      const bodyHeight = bodyRect.height;
+      const htmlHeight = htmlRect?.height || 0;
+      const contentHeight = Math.max(bodyHeight, htmlHeight);
+      const nextHeight = Math.max(200, Math.ceil(contentHeight));
+      setHeight(nextHeight);
+    };
+
+    updateHeight();
+
+    const resizeObserver = new ResizeObserver(() => updateHeight());
+    resizeObserver.observe(doc.body);
+    if (rootEl) {
+      resizeObserver.observe(rootEl);
+    }
+
     return () => {
+      resizeObserver.disconnect();
       root.unmount();
       rootRef.current = null;
     };
@@ -57,7 +81,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       className={className}
       style={{
         width: "100%",
-        minHeight: "600px",
+        height: `${height}px`,
+        margin: "16px 0",
       }}
       title="HTML Sandbox"
     />

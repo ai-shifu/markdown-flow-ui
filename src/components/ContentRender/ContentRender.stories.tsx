@@ -997,7 +997,42 @@ export const HTMLDemo: Story = {
   name: "HTML Demo",
   args: {
     content: `
-    好的，咱们用一个你熟悉的场景来画这个图。假设你让 AI 帮你写一段简单的 JavaScript 代码注释。
+“为了装得更像人”，这个猜想很有意思，也很有洞察力！很多人的第一反应确实是这样。但真相可能更本质：**这不是 AI 在“装”，这就是它“生”来的样子。**
+
+
+咱们可以把 AI 想象成一个顶尖的即兴演奏家。它并不是从乐谱库里直接抽出一首完整的曲子给你，而是**根据你给的前几个音符，现场一个音符一个音符地即兴创作下去**。那个“一个字一个字”输出的过程，恰恰是它**思考与创造的核心现场**。
+
+
+要理解这个“创作现场”，咱们得先搞懂一个最基础、也最重要的专业名词：**Token**。
+
+
+你可以把 Token 理解为 AI 眼中的“基础积木块”。对中文大模型来说，一个 Token 通常不是一个完整的汉字，而可能是一个字的一部分、一个词，或者一个常见的字符组合。
+
+下面这个图能帮你直观地理解 Token 是如何“切割”一句话的：
+
+<div style=\"background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #0F63EE; font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; line-height: 2;\">
+<div><strong>原句：</strong>跟AI学AI通识</div>
+  <div style=\"margin-top: 10px;\"><strong>Token化后：</strong></div>
+    <div style=\"display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;\">
+        <span style=\"background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;\">跟</span>
+            <span style=\"background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;\">AI</span>
+                <span style=\"background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;\">学</span>
+                    <span style=\"background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;\">AI</span>
+                        <span style=\"background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;\">通</span>
+                            <span style=\"background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;\">识</span>
+                              </div>\n  <div style=\"margin-top: 15px; font-size: 0.9em; color: #64748b;\">
+                                  * 注意：“AI”被视作一个整体Token，而“通识”被拆成了两个Token。模型就是这样以Token为单位来“阅读”和“思考”的。
+                                </div>
+                                </div>
+**任何你看到的文章、代码，在 AI 眼里，都是一串特定顺序的 Token 组合。**\n\n这个逻辑可以推广到更广阔的领域：
+*   **文生图模型**（比如 Midjourney）：它眼中的“Token”可能是图像的一块小色块、一种纹理模式，或者一个视觉概念。
+* *   **文生视频模型**（比如 Sora）：它的“Token”可能是一帧画面中的动态片段，或者几帧之间的变化规律。
+
+虽然在文字以外的领域，工程师们可能不直接叫它“Token”，但**万变不离其宗，核心思想都是用更基础的“积木块”去组合、生成复杂内容**。
+ 
+所以，下次你看到 AI 一个字一个字地“蹦”答案时，其实正是在目睹它**拿起一块又一块“Token积木”，为你现场搭建答案大厦**。它的智慧与局限，都藏在这个搭建过程里。
+
+好的，咱们用一个你熟悉的场景来画这个图。假设你让 AI 帮你写一段简单的 JavaScript 代码注释。
 
 **提示词是：** \`// 这个函数用于\`
 

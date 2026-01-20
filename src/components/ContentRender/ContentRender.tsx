@@ -47,18 +47,17 @@ const splitContentSegments = (raw: string): RenderSegment[] => {
     return [{ type: "markdown", value: raw }];
   }
 
-  // Find the next markdown boundary (heading/list/blockquote/horizontal rule) to end the HTML block
-  const boundaryRegex = /(^|\n)[ \t]{0,3}(#{1,6}\s|---|\*\s|[-+]\s|>\s)/gm;
-  let boundaryIndex = raw.length;
+  // Find the end of the HTML block: stop at the first closing tag whose
+  // following line does not start with another HTML tag.
+  const closingBoundary = /<\/[a-z][^>]*>\s*\n(?=[^\s<])/gi;
+  let blockEnd = raw.length;
   let match: RegExpExecArray | null;
-  while ((match = boundaryRegex.exec(raw))) {
-    if (match.index > startIndex) {
-      boundaryIndex = match.index;
-      break;
-    }
-  }
 
-  const blockEnd = boundaryIndex;
+  while ((match = closingBoundary.exec(raw))) {
+    if (match.index <= startIndex) continue;
+    blockEnd = match.index + match[0].length - 1; // end before the newline
+    break;
+  }
 
   const segments: RenderSegment[] = [];
   const before = raw.slice(0, startIndex);

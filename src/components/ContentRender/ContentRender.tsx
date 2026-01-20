@@ -32,6 +32,51 @@ import {
   mermaidBlockIsComplete,
 } from "./utils/mermaid-parse";
 import { normalizeInlineHtml } from "./utils/normalize-inline-html";
+import IframeSandbox from "./IframeSandbox";
+
+type RenderSegment =
+  | { type: "markdown"; value: string }
+  | { type: "sandbox"; value: string };
+
+const splitContentSegments = (raw: string): RenderSegment[] => {
+  const startPattern =
+    /<(script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)[\s>]/i;
+
+  const startIndex = raw.search(startPattern);
+  if (startIndex === -1) {
+    return [{ type: "markdown", value: raw }];
+  }
+
+  // Find the next markdown boundary (heading/list/blockquote/horizontal rule) to end the HTML block
+  const boundaryRegex = /(^|\n)[ \t]{0,3}(#{1,6}\s|---|\*\s|[-+]\s|>\s)/gm;
+  let boundaryIndex = raw.length;
+  let match: RegExpExecArray | null;
+  while ((match = boundaryRegex.exec(raw))) {
+    if (match.index > startIndex) {
+      boundaryIndex = match.index;
+      break;
+    }
+  }
+
+  const blockEnd = boundaryIndex;
+
+  const segments: RenderSegment[] = [];
+  const before = raw.slice(0, startIndex);
+  const htmlBlock = raw.slice(startIndex, blockEnd);
+  const after = raw.slice(blockEnd);
+
+  if (before.trim()) {
+    segments.push({ type: "markdown", value: before });
+  }
+
+  segments.push({ type: "sandbox", value: htmlBlock });
+
+  if (after.trim()) {
+    segments.push(...splitContentSegments(after));
+  }
+
+  return segments;
+};
 // Define component Props type
 export interface ContentRenderProps {
   content: string;
@@ -173,14 +218,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   );
 
   // Use custom Hook to handle typewriter effect
-  const { displayContent, isComplete } = useTypewriterStateMachine({
-    // processMarkdownText will let code block printf("You win!\n") become printf("You win!<br/>");
-    // content: processMarkdownText(content),
-    content: normalizedContent,
-    typingSpeed,
-    disabled: !enableTypewriter,
-  });
-
   const components: CustomComponents = {
     "custom-button-after-content": ({
       children,
@@ -278,42 +315,112 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     ),
   };
 
+  const { displayContent, isComplete } = useTypewriterStateMachine({
+    // processMarkdownText will let code block printf("You win!\n") become printf("You win!<br/>");
+    // content: processMarkdownText(content),
+    content: normalizedContent,
+    typingSpeed,
+    disabled: !enableTypewriter,
+  });
+
+  const renderSegments = useMemo(
+    () => splitContentSegments(content),
+    [content]
+  );
+  const hasSandbox = renderSegments.some(
+    (segment) => segment.type === "sandbox"
+  );
+
+  const segments = useMemo(
+    () => parseMarkdownSegments(displayContent),
+    [displayContent]
+  );
+
   const hasCompleted = useRef(false);
 
   useEffect(() => {
+    if (hasSandbox) return;
     if (isComplete && !hasCompleted.current) {
       hasCompleted.current = true; // Mark as completed
       onTypeFinished?.(); // Call the passed callback
     }
-  }, [isComplete, onTypeFinished]);
-  useEffect(() => {
-    hasCompleted.current = false; // Reset completion status when content changes
-  }, [content]);
+  }, [hasSandbox, isComplete, onTypeFinished]);
 
-  const segments = parseMarkdownSegments(displayContent);
+  useEffect(() => {
+    if (hasSandbox) return;
+    hasCompleted.current = false; // Reset completion status when content changes
+  }, [hasSandbox, content]);
+
+  if (hasSandbox) {
+    return (
+      <div className="content-render">
+        {renderSegments.map((segment, idx) =>
+          segment.type === "sandbox" ? (
+            <IframeSandbox
+              key={`sandbox-${idx}`}
+              content={segment.value}
+              className="content-render-iframe"
+            />
+          ) : (
+            <div key={`md-${idx}`} className="markdown-body">
+              <ReactMarkdown
+                remarkPlugins={[
+                  remarkGfm,
+                  remarkMath,
+                  remarkFlow,
+                  [remarkBreaks, { omit: ["table", "code", "listItem"] }],
+                ]}
+                rehypePlugins={[
+                  rehypeRaw,
+                  rehypeKatex,
+                  [
+                    rehypeHighlight,
+                    {
+                      detect: true,
+                      subset: subsetLanguages,
+                      languages: highlightLanguages,
+                    },
+                  ],
+                ]}
+                components={components}
+              >
+                {normalizeInlineHtml(segment.value)}
+              </ReactMarkdown>
+            </div>
+          )
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div className={`content-render markdown-body`}>
+    <div className="content-render">
       {segments.map((seg, index) => {
         if (seg.type === "text") {
           return (
-            <ReactMarkdown
-              key={index}
-              remarkPlugins={[remarkGfm, remarkMath, remarkFlow, remarkBreaks]}
-              rehypePlugins={[
-                preserveCustomVariableProperties,
-                rehypeRaw,
-                restoreCustomVariableProperties,
-                [
-                  rehypeHighlight,
-                  { languages: highlightLanguages, subset: subsetLanguages },
-                ],
-                rehypeKatex,
-              ]}
-              components={components}
-            >
-              {seg.value}
-            </ReactMarkdown>
+            <div key={index} className="markdown-body">
+              <ReactMarkdown
+                remarkPlugins={[
+                  remarkGfm,
+                  remarkMath,
+                  remarkFlow,
+                  remarkBreaks,
+                ]}
+                rehypePlugins={[
+                  preserveCustomVariableProperties,
+                  rehypeRaw,
+                  restoreCustomVariableProperties,
+                  [
+                    rehypeHighlight,
+                    { languages: highlightLanguages, subset: subsetLanguages },
+                  ],
+                  rehypeKatex,
+                ]}
+                components={components}
+              >
+                {seg.value}
+              </ReactMarkdown>
+            </div>
           );
         }
 

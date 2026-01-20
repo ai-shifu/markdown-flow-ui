@@ -1,6 +1,13 @@
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { Search, Plus, Check, X } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Check,
+  X,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import { Input } from "../../ui/input";
 import { Button } from "../../ui/button";
 import { cn } from "../../../lib/utils";
@@ -11,9 +18,13 @@ import { useTranslation } from "react-i18next";
 interface VariableSelectProps {
   variables?: Variable[];
   systemVariables?: Variable[];
+  hiddenVariables?: Variable[];
+  enableVariableHiding?: boolean;
   selectedName?: string;
   onSelect?: (variable: Variable) => void;
   onAddVariable?: (variable: Variable) => void;
+  onBulkHide?: () => void;
+  onBulkRestore?: () => void;
 }
 
 const EMPTY_VARIABLES: Variable[] = [];
@@ -21,13 +32,18 @@ const EMPTY_VARIABLES: Variable[] = [];
 const VariableSelect = ({
   variables: initialVariables,
   systemVariables: initialSystemVariables,
+  hiddenVariables: initialHiddenVariables,
+  enableVariableHiding = false,
   selectedName,
   onSelect,
   onAddVariable,
+  onBulkHide,
+  onBulkRestore,
 }: VariableSelectProps) => {
   const { t } = useTranslation();
   const safeInitialVariables = initialVariables ?? EMPTY_VARIABLES;
   const safeInitialSystemVariables = initialSystemVariables ?? EMPTY_VARIABLES;
+  const hiddenVariables = initialHiddenVariables ?? EMPTY_VARIABLES;
 
   const [variables, setVariables] = useState<Variable[]>(safeInitialVariables);
   useEffect(() => {
@@ -60,8 +76,14 @@ const VariableSelect = ({
     () => variables.filter(filterPredicate),
     [variables, normalizedSearch]
   );
+  const filteredHiddenVariables = useMemo(
+    () => hiddenVariables.filter(filterPredicate),
+    [hiddenVariables, normalizedSearch]
+  );
   const hasAnyResult =
-    filteredSystemVariables.length > 0 || filteredCustomVariables.length > 0;
+    filteredSystemVariables.length > 0 ||
+    filteredCustomVariables.length > 0 ||
+    (enableVariableHiding && filteredHiddenVariables.length > 0);
 
   const handleAddVariable = () => {
     const inputValue = newVariableName;
@@ -166,9 +188,19 @@ const VariableSelect = ({
 
             {filteredCustomVariables.length > 0 && (
               <div className="space-y-1">
-                <p className="px-3 text-xs font-medium text-muted-foreground">
-                  {t("variableSectionCustom", "Custom Variables")}
-                </p>
+                <div className="flex items-center justify-between px-3 text-xs font-medium text-muted-foreground">
+                  <p>{t("variableSectionCustom", "Custom Variables")}</p>
+                  {enableVariableHiding && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                      onClick={onBulkHide}
+                    >
+                      {t("variableHideUnused", "Hide")}
+                    </Button>
+                  )}
+                </div>
                 <div className="space-y-1">
                   {filteredCustomVariables.map((variable) => (
                     <button
@@ -196,6 +228,15 @@ const VariableSelect = ({
                   ))}
                 </div>
               </div>
+            )}
+
+            {enableVariableHiding && (
+              <HiddenVariableSection
+                hiddenVariables={filteredHiddenVariables}
+                onSelect={onSelect}
+                onBulkRestore={onBulkRestore}
+                selectedName={selectedName}
+              />
             )}
           </div>
         ) : (
@@ -264,3 +305,84 @@ const VariableSelect = ({
   );
 };
 export default VariableSelect;
+
+interface HiddenVariableSectionProps {
+  hiddenVariables: Variable[];
+  selectedName?: string;
+  onSelect?: (variable: Variable) => void;
+  onBulkRestore?: () => void;
+}
+
+const HiddenVariableSection: React.FC<HiddenVariableSectionProps> = ({
+  hiddenVariables,
+  onSelect,
+  onBulkRestore,
+  selectedName,
+}) => {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+
+  if (!hiddenVariables.length) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-1 border-t border-border pt-2">
+      <div className="flex items-center justify-between px-3 text-xs font-medium text-muted-foreground">
+        <button
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+          className="flex items-center gap-1 text-muted-foreground transition hover:text-foreground"
+        >
+          {open ? (
+            <ChevronDown className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5" />
+          )}
+          <span>
+            {t("variableHiddenSection", "Hidden variables")} (
+            {hiddenVariables.length})
+          </span>
+        </button>
+        {open && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+            onClick={onBulkRestore}
+          >
+            {t("variableRestoreAll", "Restore")}
+          </Button>
+        )}
+      </div>
+      {open && (
+        <div className="space-y-1">
+          {hiddenVariables.map((variable) => (
+            <button
+              key={`hidden-${variable.name}`}
+              onClick={() => onSelect?.(variable)}
+              className={cn(
+                "flex w-full items-start justify-between rounded-md px-3 py-2 text-left transition-colors hover:bg-accent",
+                selectedName === variable.name && "bg-accent"
+              )}
+            >
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-foreground">
+                  {variable.name}
+                </span>
+                {variable.label && (
+                  <span className="text-xs text-muted-foreground">
+                    {variable.label}
+                  </span>
+                )}
+              </div>
+              {selectedName === variable.name && (
+                <Check className="mt-1 h-4 w-4 text-foreground" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};

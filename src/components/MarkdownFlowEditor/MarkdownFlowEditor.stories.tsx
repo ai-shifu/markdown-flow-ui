@@ -326,6 +326,10 @@ export const MarkdownFlowEditorWithVariables: Story = {
       { name: "sys_user_nickname", label: "请输入昵称" },
       { name: "sys_user_style", label: "授课风格" },
     ],
+    enableVariableHiding: true,
+    hiddenVariables: [{ name: "hidden_var_1", label: "隐藏示例" }],
+    onBulkHideVariables: () => console.log("bulk hide"),
+    onBulkRestoreHiddenVariables: () => console.log("bulk restore"),
   },
 };
 

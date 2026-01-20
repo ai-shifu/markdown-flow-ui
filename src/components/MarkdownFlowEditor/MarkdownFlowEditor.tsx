@@ -82,6 +82,10 @@ type EditorProps = {
   editMode?: EditMode;
   variables?: Variable[];
   systemVariables?: Variable[];
+  hiddenVariables?: Variable[];
+  enableVariableHiding?: boolean;
+  onBulkHideVariables?: () => void;
+  onBulkRestoreHiddenVariables?: () => void;
   onChange?: (value: string) => void;
   onBlur?: () => void;
   locale?: "en-US" | "zh-CN";
@@ -127,6 +131,10 @@ const Editor: React.FC<EditorProps> = ({
   editMode = EditMode.CodeEdit,
   variables: initialVariables,
   systemVariables: initialSystemVariables,
+  hiddenVariables = EMPTY_VARIABLES,
+  enableVariableHiding = false,
+  onBulkHideVariables,
+  onBulkRestoreHiddenVariables,
   onChange,
   onBlur,
   locale = "en-US",
@@ -231,14 +239,15 @@ const Editor: React.FC<EditorProps> = ({
       if (
         !normalized ||
         systemNameSet.has(normalized) ||
-        seen.has(normalized)
+        seen.has(normalized) ||
+        (enableVariableHiding && variable.isHidden)
       ) {
         return false;
       }
       seen.add(normalized);
       return true;
     });
-  }, [initialVariables, normalizedSystemVariables]);
+  }, [initialVariables, normalizedSystemVariables, enableVariableHiding]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -866,7 +875,16 @@ const Editor: React.FC<EditorProps> = ({
   );
 
   const handleTagClick = useCallback(
-    (event: any) => {
+    (
+      event: CustomEvent<{
+        type: SelectedOption;
+        from: number;
+        to: number;
+        dataset: Record<string, unknown>;
+        target?: HTMLElement;
+        view?: EditorView;
+      }>
+    ) => {
       event.stopPropagation();
       if (disabled) {
         return;
@@ -912,14 +930,22 @@ const Editor: React.FC<EditorProps> = ({
   }, [popoverOpen, selectedOption]);
 
   useEffect(() => {
-    const handleWrap = (e: any) => {
-      if (e.detail.view === editorViewRef.current) {
-        handleTagClick(e);
+    const handleWrap = (e: Event) => {
+      const customEvent = e as CustomEvent<{
+        type: SelectedOption;
+        from: number;
+        to: number;
+        dataset: Record<string, unknown>;
+        target?: HTMLElement;
+        view?: EditorView;
+      }>;
+      if (customEvent.detail?.view === editorViewRef.current) {
+        handleTagClick(customEvent);
       }
     };
-    window.addEventListener("globalTagClick", handleWrap);
+    window.addEventListener("globalTagClick", handleWrap as EventListener);
     return () => {
-      window.removeEventListener("globalTagClick", handleWrap);
+      window.removeEventListener("globalTagClick", handleWrap as EventListener);
     };
   }, [handleTagClick]);
 
@@ -1144,6 +1170,8 @@ const Editor: React.FC<EditorProps> = ({
               <VariableSelect
                 variables={variables}
                 systemVariables={systemVariables}
+                hiddenVariables={hiddenVariables}
+                enableVariableHiding={enableVariableHiding}
                 selectedName={selectContentInfo?.value?.variableName}
                 onSelect={handleSelectVariable}
                 onAddVariable={(variable) => {
@@ -1158,6 +1186,8 @@ const Editor: React.FC<EditorProps> = ({
                     return [variable, ...prev];
                   });
                 }}
+                onBulkHide={onBulkHideVariables}
+                onBulkRestore={onBulkRestoreHiddenVariables}
               />
             </CustomPopover>
           )}

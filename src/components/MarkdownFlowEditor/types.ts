@@ -40,6 +40,8 @@ interface IEditorContext {
 interface Variable {
   name: string;
   label?: string;
+  isHidden?: boolean;
+  isSystem?: boolean;
 }
 
 type EditorAction =

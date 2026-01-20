@@ -159,28 +159,12 @@ const VariableSelect = ({
                 </p>
                 <div className="space-y-1">
                   {filteredSystemVariables.map((variable) => (
-                    <button
+                    <VariableListItem
                       key={`system-${variable.name}`}
-                      onClick={() => onSelect?.(variable)}
-                      className={cn(
-                        "flex w-full items-start justify-between rounded-md px-3 py-2 text-left transition-colors hover:bg-accent",
-                        selectedName === variable.name && "bg-accent"
-                      )}
-                    >
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-foreground">
-                          {variable.name}
-                        </span>
-                        {variable.label && (
-                          <span className="text-xs text-muted-foreground">
-                            {variable.label}
-                          </span>
-                        )}
-                      </div>
-                      {selectedName === variable.name && (
-                        <Check className="mt-1 h-4 w-4 text-foreground" />
-                      )}
-                    </button>
+                      variable={variable}
+                      selectedName={selectedName}
+                      onSelect={onSelect}
+                    />
                   ))}
                 </div>
               </div>
@@ -203,28 +187,12 @@ const VariableSelect = ({
                 </div>
                 <div className="space-y-1">
                   {filteredCustomVariables.map((variable) => (
-                    <button
+                    <VariableListItem
                       key={`custom-${variable.name}`}
-                      onClick={() => onSelect?.(variable)}
-                      className={cn(
-                        "flex w-full items-start justify-between rounded-md px-3 py-2 text-left transition-colors hover:bg-accent",
-                        selectedName === variable.name && "bg-accent"
-                      )}
-                    >
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-foreground">
-                          {variable.name}
-                        </span>
-                        {variable.label && (
-                          <span className="text-xs text-muted-foreground">
-                            {variable.label}
-                          </span>
-                        )}
-                      </div>
-                      {selectedName === variable.name && (
-                        <Check className="mt-1 h-4 w-4 text-foreground" />
-                      )}
-                    </button>
+                      variable={variable}
+                      selectedName={selectedName}
+                      onSelect={onSelect}
+                    />
                   ))}
                 </div>
               </div>
@@ -358,31 +326,51 @@ const HiddenVariableSection: React.FC<HiddenVariableSectionProps> = ({
       {open && (
         <div className="space-y-1">
           {hiddenVariables.map((variable) => (
-            <button
+            <VariableListItem
               key={`hidden-${variable.name}`}
-              onClick={() => onSelect?.(variable)}
-              className={cn(
-                "flex w-full items-start justify-between rounded-md px-3 py-2 text-left transition-colors hover:bg-accent",
-                selectedName === variable.name && "bg-accent"
-              )}
-            >
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-foreground">
-                  {variable.name}
-                </span>
-                {variable.label && (
-                  <span className="text-xs text-muted-foreground">
-                    {variable.label}
-                  </span>
-                )}
-              </div>
-              {selectedName === variable.name && (
-                <Check className="mt-1 h-4 w-4 text-foreground" />
-              )}
-            </button>
+              variable={variable}
+              selectedName={selectedName}
+              onSelect={onSelect}
+            />
           ))}
         </div>
       )}
     </div>
+  );
+};
+
+interface VariableListItemProps {
+  variable: Variable;
+  selectedName?: string;
+  onSelect?: (variable: Variable) => void;
+}
+
+const VariableListItem: React.FC<VariableListItemProps> = ({
+  variable,
+  selectedName,
+  onSelect,
+}) => {
+  const isSelected = selectedName === variable.name;
+
+  return (
+    <button
+      onClick={() => onSelect?.(variable)}
+      className={cn(
+        "flex w-full items-start justify-between rounded-md px-3 py-2 text-left transition-colors hover:bg-accent",
+        isSelected && "bg-accent"
+      )}
+    >
+      <div className="flex flex-col">
+        <span className="text-sm font-medium text-foreground">
+          {variable.name}
+        </span>
+        {variable.label && (
+          <span className="text-xs text-muted-foreground">
+            {variable.label}
+          </span>
+        )}
+      </div>
+      {isSelected && <Check className="mt-1 h-4 w-4 text-foreground" />}
+    </button>
   );
 };

@@ -26,6 +26,7 @@ import {
   PopoverPosition,
   EditorAction,
   EditorApi,
+  VariableTagClickEventDetail,
 } from "./types";
 import "./markdownFlowEditor.css";
 
@@ -875,16 +876,7 @@ const Editor: React.FC<EditorProps> = ({
   );
 
   const handleTagClick = useCallback(
-    (
-      event: CustomEvent<{
-        type: SelectedOption;
-        from: number;
-        to: number;
-        dataset: Record<string, unknown>;
-        target?: HTMLElement;
-        view?: EditorView;
-      }>
-    ) => {
+    (event: CustomEvent<VariableTagClickEventDetail>) => {
       event.stopPropagation();
       if (disabled) {
         return;
@@ -931,14 +923,7 @@ const Editor: React.FC<EditorProps> = ({
 
   useEffect(() => {
     const handleWrap = (e: Event) => {
-      const customEvent = e as CustomEvent<{
-        type: SelectedOption;
-        from: number;
-        to: number;
-        dataset: Record<string, unknown>;
-        target?: HTMLElement;
-        view?: EditorView;
-      }>;
+      const customEvent = e as CustomEvent<VariableTagClickEventDetail>;
       if (customEvent.detail?.view === editorViewRef.current) {
         handleTagClick(customEvent);
       }

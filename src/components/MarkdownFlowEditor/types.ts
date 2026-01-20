@@ -44,6 +44,15 @@ interface Variable {
   isSystem?: boolean;
 }
 
+type VariableTagClickEventDetail = {
+  type: SelectedOption;
+  from: number;
+  to: number;
+  dataset: Record<string, unknown>;
+  target?: HTMLElement;
+  view?: unknown;
+};
+
 type EditorAction =
   | {
       key: string;
@@ -75,4 +84,5 @@ export type {
   PopoverPosition,
   EditorAction,
   EditorApi,
+  VariableTagClickEventDetail,
 };

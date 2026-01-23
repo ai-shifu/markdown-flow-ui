@@ -1,11 +1,13 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export interface SandboxAppProps {
   html: string;
+  loadingText?: string;
 }
 
-const SandboxApp: React.FC<SandboxAppProps> = ({ html }) => {
+const SandboxApp: React.FC<SandboxAppProps> = ({ html, loadingText }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isWaitingFirstDiv, setIsWaitingFirstDiv] = useState(true);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -25,10 +27,35 @@ const SandboxApp: React.FC<SandboxAppProps> = ({ html }) => {
       script.replaceWith(replacement);
     });
 
+    const hasFirstDiv = !!wrapper.querySelector("div");
+    setIsWaitingFirstDiv(!hasFirstDiv);
+
     container.append(...Array.from(wrapper.childNodes));
   }, [html]);
 
-  return <div ref={containerRef} />;
+  return (
+    <div style={{ position: "relative", minHeight: 120 }}>
+      <div ref={containerRef} />
+      {isWaitingFirstDiv && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background:
+              "linear-gradient(180deg, rgba(148,163,184,0.08), rgba(148,163,184,0.02))",
+            color: "#475569",
+            fontSize: 14,
+            fontWeight: 600,
+          }}
+        >
+          {loadingText || "Loading..."}
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default SandboxApp;

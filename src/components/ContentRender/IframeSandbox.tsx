@@ -5,11 +5,13 @@ import SandboxApp from "./SandboxApp";
 export interface IframeSandboxProps {
   content: string;
   className?: string;
+  loadingText?: string;
 }
 
 const IframeSandbox: React.FC<IframeSandboxProps> = ({
   content,
   className,
+  loadingText,
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const rootRef = useRef<Root | null>(null);
@@ -79,9 +81,9 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     const root = rootRef.current;
     if (!root) return;
 
-    root.render(<SandboxApp html={content} />);
+    root.render(<SandboxApp html={content} loadingText={loadingText} />);
     requestAnimationFrame(() => updateHeightRef.current?.());
-  }, [content]);
+  }, [content, loadingText]);
 
   return (
     <iframe

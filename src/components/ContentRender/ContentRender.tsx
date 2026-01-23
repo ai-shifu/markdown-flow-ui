@@ -108,6 +108,8 @@ export interface ContentRenderProps {
   copiedButtonText?: string;
   // Dynamic interaction format for multi-select support
   dynamicInteractionFormat?: string;
+  // Loading text before first HTML block renders inside iframe (i18n support)
+  sandboxLoadingText?: string;
   beforeSend?: (param: OnSendContentParams) => boolean;
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
@@ -232,6 +234,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   confirmButtonText,
   copyButtonText,
   copiedButtonText,
+  sandboxLoadingText,
   onClickCustomButtonAfterContent,
   beforeSend,
   // tooltipMinLength,
@@ -384,6 +387,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               key={`sandbox-${idx}`}
               content={segment.value}
               className="content-render-iframe"
+              loadingText={sandboxLoadingText}
             />
           ) : (
             <MarkdownRenderer

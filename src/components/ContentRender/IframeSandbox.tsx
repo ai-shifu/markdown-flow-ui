@@ -13,6 +13,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const rootRef = useRef<Root | null>(null);
+  const docRef = useRef<Document | null>(null);
+  const updateHeightRef = useRef<() => void>(() => {});
   const [height, setHeight] = useState(480);
 
   useEffect(() => {
@@ -36,17 +38,13 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   </body>
 </html>`);
     doc.close();
+    docRef.current = doc;
 
     const rootEl = doc.getElementById("root");
     if (!rootEl) return undefined;
 
-    if (rootRef.current) {
-      rootRef.current.unmount();
-    }
-
     const root = createRoot(rootEl);
     rootRef.current = root;
-    root.render(<SandboxApp html={content} />);
 
     const updateHeight = () => {
       if (!iframeRef.current || !doc.body) return;
@@ -58,6 +56,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       const nextHeight = Math.max(200, Math.ceil(contentHeight));
       setHeight(nextHeight);
     };
+    updateHeightRef.current = updateHeight;
 
     updateHeight();
 
@@ -71,7 +70,17 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       resizeObserver.disconnect();
       root.unmount();
       rootRef.current = null;
+      docRef.current = null;
+      updateHeightRef.current = () => {};
     };
+  }, []);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    root.render(<SandboxApp html={content} />);
+    requestAnimationFrame(() => updateHeightRef.current?.());
   }, [content]);
 
   return (

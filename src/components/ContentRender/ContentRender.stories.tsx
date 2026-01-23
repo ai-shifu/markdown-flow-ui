@@ -1385,7 +1385,7 @@ export const HTMLDemo: Story = {
           return;
         }
 
-        const chunkSize = Math.floor(Math.random() * 3) + 1;
+        const chunkSize = Math.floor(Math.random() * 30) + 1;
         const nextIndex = Math.min(
           HTML_DEMO_STREAM_SOURCE.length,
           currentIndex + chunkSize
@@ -1409,6 +1409,7 @@ export const HTMLDemo: Story = {
         }
       };
     }, []);
+    console.log("streamContent", streamContent);
 
     return <ContentRender {...args} content={streamContent} />;
   },

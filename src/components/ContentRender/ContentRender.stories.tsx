@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import ContentRender from "./ContentRender";
@@ -993,10 +994,7 @@ export const SVGDemo: Story = {
   },
 };
 
-export const HTMLDemo: Story = {
-  name: "HTML Demo",
-  args: {
-    content: `
+const HTML_DEMO_STREAM_SOURCE = `
 “为了装得更像人”，这个猜想很有意思，也很有洞察力！很多人的第一反应确实是这样。但真相可能更本质：**这不是 AI 在“装”，这就是它“生”来的样子。**
 
 
@@ -1010,17 +1008,17 @@ export const HTMLDemo: Story = {
 
 下面这个图能帮你直观地理解 Token 是如何“切割”一句话的：
 
-<div style=\"background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #0F63EE; font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; line-height: 2;\">
+<div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #0F63EE; font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; line-height: 2;">
 <div><strong>原句：</strong>跟AI学AI通识</div>
-  <div style=\"margin-top: 10px;\"><strong>Token化后：</strong></div>
-    <div style=\"display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;\">
-        <span style=\"background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;\">跟</span>
-            <span style=\"background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;\">AI</span>
-                <span style=\"background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;\">学</span>
-                    <span style=\"background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;\">AI</span>
-                        <span style=\"background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;\">通</span>
-                            <span style=\"background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;\">识</span>
-                              </div>\n  <div style=\"margin-top: 15px; font-size: 0.9em; color: #64748b;\">
+  <div style="margin-top: 10px;"><strong>Token化后：</strong></div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+        <span style="background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;">跟</span>
+            <span style="background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;">AI</span>
+                <span style="background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;">学</span>
+                    <span style="background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;">AI</span>
+                        <span style="background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;">通</span>
+                            <span style="background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;">识</span>
+                              </div>\n  <div style="margin-top: 15px; font-size: 0.9em; color: #64748b;">
                                   * 注意：“AI”被视作一个整体Token，而“通识”被拆成了两个Token。模型就是这样以Token为单位来“阅读”和“思考”的。
                                 </div>
                                 </div>
@@ -1376,8 +1374,52 @@ export const HTMLDemo: Story = {
 *   **它不是在“执行”逻辑**，而是在“模仿”模式。
 *   **它完全是用“猜”的**，只不过是在数十亿文本上训练后，猜得比较有根据。
 
-理解这一点，是你**摆脱对 AI 盲目恐惧或崇拜的关键第一步**。它既不是神，也不是鬼，它是一个极其复杂的**概率机器**。知道了它怎么“猜”，你才能明白它为何会“对”，更会明白它为何会“错”。`,
+理解这一点，是你**摆脱对 AI 盲目恐惧或崇拜的关键第一步**。它既不是神，也不是鬼，它是一个极其复杂的**概率机器**。知道了它怎么“猜”，你才能明白它为何会“对”，更会明白它为何会“错”。`;
+
+export const HTMLDemo: Story = {
+  name: "HTML Demo",
+  args: {
     enableTypewriter: false,
     typingSpeed: 10,
+  },
+  render: (args) => {
+    const [streamContent, setStreamContent] = useState("");
+
+    useEffect(() => {
+      let currentIndex = 0;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+      const streamNext = () => {
+        if (currentIndex >= HTML_DEMO_STREAM_SOURCE.length) {
+          timeoutId = null;
+          return;
+        }
+
+        const chunkSize = Math.floor(Math.random() * 3) + 1;
+        const nextIndex = Math.min(
+          HTML_DEMO_STREAM_SOURCE.length,
+          currentIndex + chunkSize
+        );
+        const nextChunk = HTML_DEMO_STREAM_SOURCE.slice(
+          currentIndex,
+          nextIndex
+        );
+        currentIndex = nextIndex;
+        setStreamContent((prev) => `${prev}${nextChunk}`);
+
+        timeoutId = setTimeout(streamNext, 80);
+      };
+
+      // Simulate SSE-like streaming by appending 1-3 characters per tick
+      timeoutId = setTimeout(streamNext, 120);
+
+      return () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      };
+    }, []);
+
+    return <ContentRender {...args} content={streamContent} />;
   },
 };

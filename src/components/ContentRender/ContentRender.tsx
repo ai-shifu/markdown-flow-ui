@@ -74,6 +74,8 @@ export interface ContentRenderProps {
   sandboxScriptLoadingText?: string;
   // Fullscreen button text for iframe sandbox
   sandboxFullscreenButtonText?: string;
+  // Sandbox render mode
+  sandboxMode?: "content" | "blackboard";
   beforeSend?: (param: OnSendContentParams) => boolean;
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
@@ -202,6 +204,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   sandboxStyleLoadingText,
   sandboxScriptLoadingText,
   sandboxFullscreenButtonText,
+  sandboxMode = "content",
   onClickCustomButtonAfterContent,
   beforeSend,
   // tooltipMinLength,
@@ -358,6 +361,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               styleLoadingText={sandboxStyleLoadingText}
               scriptLoadingText={sandboxScriptLoadingText}
               fullScreenButtonText={sandboxFullscreenButtonText}
+              mode={sandboxMode}
             />
           ) : (
             <MarkdownRenderer

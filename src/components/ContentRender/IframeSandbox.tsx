@@ -10,6 +10,7 @@ export interface IframeSandboxProps {
   styleLoadingText?: string;
   scriptLoadingText?: string;
   fullScreenButtonText?: string;
+  mode?: "content" | "blackboard";
 }
 
 const IframeSandbox: React.FC<IframeSandboxProps> = ({
@@ -19,20 +20,37 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   styleLoadingText,
   scriptLoadingText,
   fullScreenButtonText,
+  mode = "content",
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const rootRef = useRef<Root | null>(null);
   const docRef = useRef<Document | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
   const [height, setHeight] = useState(480);
+  const [resetToken, setResetToken] = useState(0);
+  const prevHtmlRef = useRef<string>("");
   const htmlContent = React.useMemo(() => {
     const segments = splitContentSegments(content);
-    const sandboxContent = segments
-      .filter((seg) => seg.type === "sandbox")
-      .map((seg) => seg.value)
-      .join("\n");
+    const sandboxSegments = segments.filter((seg) => seg.type === "sandbox");
+    const sandboxContent =
+      mode === "blackboard"
+        ? sandboxSegments[sandboxSegments.length - 1]?.value || ""
+        : sandboxSegments.map((seg) => seg.value).join("\n");
     return sandboxContent || "";
-  }, [content]);
+  }, [content, mode]);
+
+  useEffect(() => {
+    if (mode !== "blackboard") {
+      prevHtmlRef.current = htmlContent;
+      return;
+    }
+    const prev = prevHtmlRef.current;
+    const isContinuation = prev && htmlContent.startsWith(prev);
+    if (!isContinuation && prev) {
+      setResetToken((token) => token + 1);
+    }
+    prevHtmlRef.current = htmlContent;
+  }, [htmlContent, mode]);
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -103,6 +121,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         styleLoadingText={styleLoadingText}
         scriptLoadingText={scriptLoadingText}
         fullScreenButtonText={fullScreenButtonText}
+        resetToken={resetToken}
       />
     );
     requestAnimationFrame(() => updateHeightRef.current?.());
@@ -113,6 +132,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     styleLoadingText,
     scriptLoadingText,
     fullScreenButtonText,
+    resetToken,
   ]);
 
   return (

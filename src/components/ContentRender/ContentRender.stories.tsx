@@ -1437,6 +1437,7 @@ export const HTMLDemoIframeOnly: Story = {
     sandboxStyleLoadingText: "正在生成样式...",
     sandboxScriptLoadingText: "正在生成脚本...",
     sandboxFullscreenButtonText: "全屏浏览",
+    sandboxMode: "blackboard",
   },
   render: (args) => {
     const [streamContent, setStreamContent] = useState("");
@@ -1484,6 +1485,7 @@ export const HTMLDemoIframeOnly: Story = {
         styleLoadingText={args.sandboxStyleLoadingText}
         scriptLoadingText={args.sandboxScriptLoadingText}
         fullScreenButtonText={args.sandboxFullscreenButtonText}
+        mode={args.sandboxMode}
       />
     );
   },

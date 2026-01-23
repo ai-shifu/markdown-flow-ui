@@ -7,6 +7,7 @@ export interface SandboxAppProps {
   styleLoadingText?: string;
   scriptLoadingText?: string;
   fullScreenButtonText?: string;
+  resetToken?: number;
 }
 
 const SandboxApp: React.FC<SandboxAppProps> = ({
@@ -15,6 +16,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   styleLoadingText,
   scriptLoadingText,
   fullScreenButtonText,
+  resetToken = 0,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -30,6 +32,8 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   const scriptTimerRef = useRef<number | null>(null);
   const hasStylesRef = useRef(false);
   const hasScriptsRef = useRef(false);
+  const hasRenderedContentRef = useRef(false);
+  const prevResetTokenRef = useRef(resetToken);
   const MIN_LOADING_MS = 200;
 
   const clearTimer = (timerRef: React.MutableRefObject<number | null>) => {
@@ -66,13 +70,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   }, []);
 
   useEffect(() => {
-    clearTimer(styleTimerRef);
-    clearTimer(scriptTimerRef);
-    hasStylesRef.current = false;
-    hasScriptsRef.current = false;
-  }, [html]);
-
-  useEffect(() => {
     const doc = containerRef.current?.ownerDocument;
     if (!doc) return;
     const styleId = "sandbox-spinner-style";
@@ -87,6 +84,15 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   }, []);
 
   useEffect(() => {
+    if (resetToken !== prevResetTokenRef.current) {
+      hasRenderedContentRef.current = false;
+      prevResetTokenRef.current = resetToken;
+    }
+    clearTimer(styleTimerRef);
+    clearTimer(scriptTimerRef);
+    hasStylesRef.current = false;
+    hasScriptsRef.current = false;
+
     const container = containerRef.current;
     if (!container) return;
     const doc = container.ownerDocument;
@@ -98,7 +104,8 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     appendedScriptsRef.current.forEach((node) => node.remove());
     appendedScriptsRef.current = [];
 
-    setIsWaitingFirstDiv(true);
+    const hasRenderedBefore = hasRenderedContentRef.current;
+    setIsWaitingFirstDiv(!hasRenderedBefore);
     setIsGeneratingStyles(false);
     setIsGeneratingScripts(false);
     container.innerHTML = "";
@@ -151,7 +158,10 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     }
 
     const hasFirstElement = !!wrapper.firstElementChild;
-    setIsWaitingFirstDiv(!hasFirstElement);
+    setIsWaitingFirstDiv(!hasFirstElement && !hasRenderedBefore);
+    if (hasFirstElement) {
+      hasRenderedContentRef.current = true;
+    }
 
     const contentNodes = Array.from(wrapper.childNodes);
     container.append(...contentNodes);
@@ -212,7 +222,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
         );
       }
     });
-  }, [html]);
+  }, [html, resetToken]);
 
   useEffect(
     () => () => {

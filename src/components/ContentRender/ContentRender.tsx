@@ -33,49 +33,7 @@ import {
 } from "./utils/mermaid-parse";
 import { normalizeInlineHtml } from "./utils/normalize-inline-html";
 import IframeSandbox from "./IframeSandbox";
-
-type RenderSegment =
-  | { type: "markdown"; value: string }
-  | { type: "sandbox"; value: string };
-
-const splitContentSegments = (raw: string): RenderSegment[] => {
-  const startPattern =
-    /<(script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)[\s>]/i;
-
-  const startIndex = raw.search(startPattern);
-  if (startIndex === -1) {
-    return [{ type: "markdown", value: raw }];
-  }
-
-  // Find the end of the HTML block: stop at the first closing tag whose
-  // following line does not start with another HTML tag.
-  const closingBoundary = /<\/[a-z][^>]*>\s*\n(?=[^\s<])/gi;
-  let blockEnd = raw.length;
-  let match: RegExpExecArray | null;
-
-  while ((match = closingBoundary.exec(raw))) {
-    if (match.index <= startIndex) continue;
-    blockEnd = match.index + match[0].length - 1; // end before the newline
-    break;
-  }
-
-  const segments: RenderSegment[] = [];
-  const before = raw.slice(0, startIndex);
-  const htmlBlock = raw.slice(startIndex, blockEnd);
-  const after = raw.slice(blockEnd);
-
-  if (before.trim()) {
-    segments.push({ type: "markdown", value: before });
-  }
-
-  segments.push({ type: "sandbox", value: htmlBlock });
-
-  if (after.trim()) {
-    segments.push(...splitContentSegments(after));
-  }
-
-  return segments;
-};
+import { splitContentSegments } from "./utils/split-content";
 // Define component Props type
 export interface ContentRenderProps {
   content: string;

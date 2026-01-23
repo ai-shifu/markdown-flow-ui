@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import ContentRender from "./ContentRender";
+import IframeSandbox from "./IframeSandbox";
 
 const meta = {
   title: "MarkdownFlow/ContentRender",
@@ -997,6 +998,17 @@ export const SVGDemo: Story = {
 const HTML_DEMO_STREAM_SOURCE = `
 **提示词是：** \`// 这个函数用于\`
 
+### 图解说明
+
+这个过程就像一场精心设计的“**概率接龙**”：
+
+1.  **起点**：你给出了提示词 \`// 这个函数用于\`。AI 把它拆成 Token：\`//\`、\`这个\`、\`函数\`、\`用于\`。
+2.  **第一次“猜”**：AI 看着这个序列，开始计算后面接哪个 Token 概率最高。它“脑”中浮现出几个候选：\`计算\`（35%）、\`处理\`（28%）、\`验证\`（15%）…… **它选择了概率最高的 \`计算\`**。
+3.  **循环往复**：现在，提示词变成了 \`// 这个函数用于 计算\`。AI 再次基于**这个新的、更长的序列**，预测下一个 Token。候选可能是 \`用户\`、\`数据\`、\`数组\`…… 它再次选择概率最高的。
+4.  **步步为营**：每猜对一个 Token，就把它加到提示词后面，作为预测**下一个** Token 的上下文。如此循环，直到生成一个完整的句子（比如遇到句号\`.\`的概率足够高）。
+5.  **核心秘密**：**注意，AI 每次“猜”的时候，看的都是当前完整的上下文（即“提示词 + 已生成的所有 Token”）**。它没有在数据库里“搜索”标准答案，也没有进行“逻辑匹配”。它做的唯一一件事，就是基于海量数据训练出的“感觉”，计算**下一个词出现的概率**。
+
+**整个过程，没有“查找”，没有“搜索”，没有“匹配”。有的，只是一次又一次的“猜测”。**
 下面这张图会动态展示 AI 是如何像“猜谜”一样，一个 Token 一个 Token 地“猜”出完整句子的：
 
 <div id="token-demo" style="background: #f8fafc; padding: 25px; border-radius: 16px; border: 2px solid #e2e8f0; font-family: 'Segoe UI', system-ui, monospace; max-width: 800px; margin: 0 auto;">
@@ -1415,5 +1427,64 @@ export const HTMLDemo: Story = {
     console.log("streamContent", streamContent);
 
     return <ContentRender {...args} content={streamContent} />;
+  },
+};
+
+export const HTMLDemoIframeOnly: Story = {
+  name: "HTML Demo (Iframe Only)",
+  args: {
+    sandboxLoadingText: "正在生成动画...",
+    sandboxStyleLoadingText: "正在生成样式...",
+    sandboxScriptLoadingText: "正在生成脚本...",
+    sandboxFullscreenButtonText: "全屏浏览",
+  },
+  render: (args) => {
+    const [streamContent, setStreamContent] = useState("");
+
+    useEffect(() => {
+      let currentIndex = 0;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+      const streamNext = () => {
+        if (currentIndex >= HTML_DEMO_STREAM_SOURCE.length) {
+          timeoutId = null;
+          return;
+        }
+
+        const chunkSize = Math.floor(Math.random() * 30) + 1;
+        const nextIndex = Math.min(
+          HTML_DEMO_STREAM_SOURCE.length,
+          currentIndex + chunkSize
+        );
+        const nextChunk = HTML_DEMO_STREAM_SOURCE.slice(
+          currentIndex,
+          nextIndex
+        );
+        currentIndex = nextIndex;
+        setStreamContent((prev) => `${prev}${nextChunk}`);
+
+        timeoutId = setTimeout(streamNext, 80);
+      };
+
+      timeoutId = setTimeout(streamNext, 120);
+
+      return () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      };
+    }, []);
+    console.log("iframe streamContent", streamContent);
+
+    return (
+      <IframeSandbox
+        content={streamContent}
+        className="content-render-iframe"
+        loadingText={args.sandboxLoadingText}
+        styleLoadingText={args.sandboxStyleLoadingText}
+        scriptLoadingText={args.sandboxScriptLoadingText}
+        fullScreenButtonText={args.sandboxFullscreenButtonText}
+      />
+    );
   },
 };

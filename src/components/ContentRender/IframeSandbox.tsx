@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot, Root } from "react-dom/client";
 import SandboxApp from "./SandboxApp";
+import { splitContentSegments } from "./utils/split-content";
 
 export interface IframeSandboxProps {
   content: string;
@@ -24,6 +25,14 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const docRef = useRef<Document | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
   const [height, setHeight] = useState(480);
+  const htmlContent = React.useMemo(() => {
+    const segments = splitContentSegments(content);
+    const sandboxContent = segments
+      .filter((seg) => seg.type === "sandbox")
+      .map((seg) => seg.value)
+      .join("\n");
+    return sandboxContent || "";
+  }, [content]);
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -89,7 +98,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
     root.render(
       <SandboxApp
-        html={content}
+        html={htmlContent}
         loadingText={loadingText}
         styleLoadingText={styleLoadingText}
         scriptLoadingText={scriptLoadingText}
@@ -99,6 +108,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     requestAnimationFrame(() => updateHeightRef.current?.());
   }, [
     content,
+    htmlContent,
     loadingText,
     styleLoadingText,
     scriptLoadingText,

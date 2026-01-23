@@ -193,6 +193,31 @@ type CustomComponents = ComponentsWithCustomVariable & {
   }>;
 };
 
+const remarkPlugins = [remarkGfm, remarkMath, remarkFlow, remarkBreaks];
+
+const rehypePlugins = [
+  preserveCustomVariableProperties,
+  rehypeRaw,
+  restoreCustomVariableProperties,
+  [rehypeHighlight, { languages: highlightLanguages, subset: subsetLanguages }],
+  rehypeKatex,
+];
+
+const MarkdownRenderer: React.FC<{
+  content: string;
+  components: CustomComponents;
+}> = ({ content: markdownContent, components }) => (
+  <div className="markdown-body">
+    <ReactMarkdown
+      remarkPlugins={remarkPlugins}
+      rehypePlugins={rehypePlugins}
+      components={components}
+    >
+      {markdownContent}
+    </ReactMarkdown>
+  </div>
+);
+
 const ContentRender: React.FC<ContentRenderProps> = ({
   content,
   customRenderBar,
@@ -361,31 +386,11 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               className="content-render-iframe"
             />
           ) : (
-            <div key={`md-${idx}`} className="markdown-body">
-              <ReactMarkdown
-                remarkPlugins={[
-                  remarkGfm,
-                  remarkMath,
-                  remarkFlow,
-                  [remarkBreaks, { omit: ["table", "code", "listItem"] }],
-                ]}
-                rehypePlugins={[
-                  rehypeRaw,
-                  rehypeKatex,
-                  [
-                    rehypeHighlight,
-                    {
-                      detect: true,
-                      subset: subsetLanguages,
-                      languages: highlightLanguages,
-                    },
-                  ],
-                ]}
-                components={components}
-              >
-                {normalizeInlineHtml(segment.value)}
-              </ReactMarkdown>
-            </div>
+            <MarkdownRenderer
+              key={`md-${idx}`}
+              components={components}
+              content={normalizeInlineHtml(segment.value)}
+            />
           )
         )}
       </div>
@@ -397,29 +402,11 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       {segments.map((seg, index) => {
         if (seg.type === "text") {
           return (
-            <div key={index} className="markdown-body">
-              <ReactMarkdown
-                remarkPlugins={[
-                  remarkGfm,
-                  remarkMath,
-                  remarkFlow,
-                  remarkBreaks,
-                ]}
-                rehypePlugins={[
-                  preserveCustomVariableProperties,
-                  rehypeRaw,
-                  restoreCustomVariableProperties,
-                  [
-                    rehypeHighlight,
-                    { languages: highlightLanguages, subset: subsetLanguages },
-                  ],
-                  rehypeKatex,
-                ]}
-                components={components}
-              >
-                {seg.value}
-              </ReactMarkdown>
-            </div>
+            <MarkdownRenderer
+              key={index}
+              components={components}
+              content={seg.value}
+            />
           );
         }
 

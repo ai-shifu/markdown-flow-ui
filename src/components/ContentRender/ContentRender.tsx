@@ -175,7 +175,7 @@ const MarkdownRenderer: React.FC<{
   content: string;
   components: CustomComponents;
 }> = ({ content: markdownContent, components }) => (
-  <div className="markdown-body">
+  <div className="markdown-renderer">
     <ReactMarkdown
       remarkPlugins={remarkPlugins}
       rehypePlugins={rehypePlugins}
@@ -350,7 +350,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
   if (hasSandbox) {
     return (
-      <div className="content-render">
+      <div className="content-render markdown-body">
         {renderSegments.map((segment, idx) =>
           segment.type === "sandbox" ? (
             <IframeSandbox
@@ -376,7 +376,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   }
 
   return (
-    <div className="content-render">
+    <div className="content-render markdown-body">
       {segments.map((seg, index) => {
         if (seg.type === "text") {
           return (

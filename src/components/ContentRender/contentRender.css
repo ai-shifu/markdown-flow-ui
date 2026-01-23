@@ -12,7 +12,7 @@
   container-name: content-render; */
 }
 
-.content-render .markdown-body {
+.content-render.markdown-body {
   background-color: transparent;
   color: rgba(0, 0, 0, 0.8);
   text-align: justify;

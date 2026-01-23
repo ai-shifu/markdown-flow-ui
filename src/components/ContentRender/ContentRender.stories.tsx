@@ -1371,6 +1371,9 @@ export const HTMLDemo: Story = {
     enableTypewriter: false,
     typingSpeed: 10,
     sandboxLoadingText: "正在生成动画...",
+    sandboxStyleLoadingText: "正在生成样式...",
+    sandboxScriptLoadingText: "正在生成脚本...",
+    sandboxFullscreenButtonText: "全屏浏览",
   },
   render: (args) => {
     const [streamContent, setStreamContent] = useState("");

@@ -1,15 +1,90 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export interface SandboxAppProps {
   html: string;
   loadingText?: string;
+  styleLoadingText?: string;
+  scriptLoadingText?: string;
+  fullScreenButtonText?: string;
 }
 
-const SandboxApp: React.FC<SandboxAppProps> = ({ html, loadingText }) => {
+const SandboxApp: React.FC<SandboxAppProps> = ({
+  html,
+  loadingText,
+  styleLoadingText,
+  scriptLoadingText,
+  fullScreenButtonText,
+}) => {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isWaitingFirstDiv, setIsWaitingFirstDiv] = useState(true);
+  const [isGeneratingStyles, setIsGeneratingStyles] = useState(false);
+  const [isGeneratingScripts, setIsGeneratingScripts] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const appendedStylesRef = useRef<HTMLStyleElement[]>([]);
   const appendedScriptsRef = useRef<HTMLScriptElement[]>([]);
+  const styleStartRef = useRef(0);
+  const scriptStartRef = useRef(0);
+  const styleTimerRef = useRef<number | null>(null);
+  const scriptTimerRef = useRef<number | null>(null);
+  const hasStylesRef = useRef(false);
+  const hasScriptsRef = useRef(false);
+  const MIN_LOADING_MS = 200;
+
+  const clearTimer = (timerRef: React.MutableRefObject<number | null>) => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const settleStateWithMinimumDelay = (
+    setter: React.Dispatch<React.SetStateAction<boolean>>,
+    timerRef: React.MutableRefObject<number | null>,
+    startRef: React.MutableRefObject<number>,
+    onDone?: () => void
+  ) => {
+    const elapsed = performance.now() - startRef.current;
+    const delay = Math.max(0, MIN_LOADING_MS - elapsed);
+    clearTimer(timerRef);
+    timerRef.current = window.setTimeout(() => {
+      setter(false);
+      onDone?.();
+      timerRef.current = null;
+    }, delay);
+  };
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    clearTimer(styleTimerRef);
+    clearTimer(scriptTimerRef);
+    hasStylesRef.current = false;
+    hasScriptsRef.current = false;
+  }, [html]);
+
+  useEffect(() => {
+    const doc = containerRef.current?.ownerDocument;
+    if (!doc) return;
+    const styleId = "sandbox-spinner-style";
+    let styleEl = doc.getElementById(styleId) as HTMLStyleElement | null;
+    if (!styleEl) {
+      styleEl = doc.createElement("style");
+      styleEl.id = styleId;
+      styleEl.textContent =
+        "@keyframes sandbox-spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }";
+      doc.head?.appendChild(styleEl);
+    }
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -23,6 +98,9 @@ const SandboxApp: React.FC<SandboxAppProps> = ({ html, loadingText }) => {
     appendedScriptsRef.current.forEach((node) => node.remove());
     appendedScriptsRef.current = [];
 
+    setIsWaitingFirstDiv(true);
+    setIsGeneratingStyles(false);
+    setIsGeneratingScripts(false);
     container.innerHTML = "";
     const wrapper = document.createElement("div");
     wrapper.innerHTML = html;
@@ -52,6 +130,25 @@ const SandboxApp: React.FC<SandboxAppProps> = ({ html, loadingText }) => {
       }
       node.remove();
     });
+
+    const hasStyles = resourceQueue.some(
+      (node) => node.tagName.toLowerCase() === "style"
+    );
+    const hasScripts = resourceQueue.some(
+      (node) => node.tagName.toLowerCase() === "script"
+    );
+    if (hasStyles) {
+      hasStylesRef.current = true;
+      styleStartRef.current = performance.now();
+      clearTimer(styleTimerRef);
+      setIsGeneratingStyles(true);
+    }
+    if (hasScripts) {
+      hasScriptsRef.current = true;
+      scriptStartRef.current = performance.now();
+      clearTimer(scriptTimerRef);
+      setIsGeneratingScripts(true);
+    }
 
     const hasFirstElement = !!wrapper.firstElementChild;
     setIsWaitingFirstDiv(!hasFirstElement);
@@ -93,12 +190,93 @@ const SandboxApp: React.FC<SandboxAppProps> = ({ html, loadingText }) => {
         node.remove();
       }
     });
+    requestAnimationFrame(() => {
+      if (hasStyles) {
+        settleStateWithMinimumDelay(
+          setIsGeneratingStyles,
+          styleTimerRef,
+          styleStartRef,
+          () => {
+            hasStylesRef.current = false;
+          }
+        );
+      }
+      if (hasScripts) {
+        settleStateWithMinimumDelay(
+          setIsGeneratingScripts,
+          scriptTimerRef,
+          scriptStartRef,
+          () => {
+            hasScriptsRef.current = false;
+          }
+        );
+      }
+    });
   }, [html]);
 
+  useEffect(
+    () => () => {
+      clearTimer(styleTimerRef);
+      clearTimer(scriptTimerRef);
+    },
+    []
+  );
+
+  const overlayMessage = (() => {
+    if (isGeneratingScripts || hasScriptsRef.current)
+      return scriptLoadingText || "Building scripts cache...";
+    if (isGeneratingStyles || hasStylesRef.current)
+      return styleLoadingText || "Building styles...";
+    if (isWaitingFirstDiv) return loadingText || "Loading...";
+    return null;
+  })();
+
+  const handleToggleFullscreen = () => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+    if (!document.fullscreenElement) {
+      wrapper.requestFullscreen?.().catch(() => {});
+      return;
+    }
+    document.exitFullscreen?.();
+  };
+
   return (
-    <div style={{ position: "relative", minHeight: 120 }}>
-      <div ref={containerRef} />
-      {isWaitingFirstDiv && (
+    <div
+      ref={wrapperRef}
+      style={{ position: "relative", minHeight: 120 }}
+      aria-busy={!!overlayMessage}
+    >
+      <div
+        ref={containerRef}
+        style={{
+          pointerEvents: overlayMessage ? "none" : undefined,
+        }}
+      />
+      <button
+        type="button"
+        onClick={handleToggleFullscreen}
+        style={{
+          position: "absolute",
+          top: 8,
+          right: 8,
+          zIndex: 30,
+          padding: "6px 10px",
+          borderRadius: 6,
+          border: "1px solid #cbd5e1",
+          background: "#ffffffcc",
+          color: "#0f172a",
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: "pointer",
+          boxShadow: "0 4px 10px rgba(15, 23, 42, 0.08)",
+        }}
+      >
+        {isFullscreen
+          ? fullScreenButtonText || "Exit Fullscreen"
+          : fullScreenButtonText || "Fullscreen"}
+      </button>
+      {overlayMessage && (
         <div
           style={{
             position: "absolute",
@@ -106,14 +284,21 @@ const SandboxApp: React.FC<SandboxAppProps> = ({ html, loadingText }) => {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background:
-              "linear-gradient(180deg, rgba(148,163,184,0.08), rgba(148,163,184,0.02))",
-            color: "#475569",
-            fontSize: 14,
-            fontWeight: 600,
+            background: "rgba(51, 51, 51, 0.80)",
+            color: "#ffffff",
+            fontSize: 16,
+            fontWeight: 700,
+            gap: 10,
+            pointerEvents: "auto",
+            zIndex: 20,
           }}
         >
-          {loadingText || "Loading..."}
+          <Loader2
+            aria-hidden
+            size={20}
+            style={{ animation: "sandbox-spin 1s linear infinite" }}
+          />
+          {overlayMessage}
         </div>
       )}
     </div>

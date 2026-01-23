@@ -6,12 +6,18 @@ export interface IframeSandboxProps {
   content: string;
   className?: string;
   loadingText?: string;
+  styleLoadingText?: string;
+  scriptLoadingText?: string;
+  fullScreenButtonText?: string;
 }
 
 const IframeSandbox: React.FC<IframeSandboxProps> = ({
   content,
   className,
   loadingText,
+  styleLoadingText,
+  scriptLoadingText,
+  fullScreenButtonText,
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const rootRef = useRef<Root | null>(null);
@@ -81,14 +87,30 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     const root = rootRef.current;
     if (!root) return;
 
-    root.render(<SandboxApp html={content} loadingText={loadingText} />);
+    root.render(
+      <SandboxApp
+        html={content}
+        loadingText={loadingText}
+        styleLoadingText={styleLoadingText}
+        scriptLoadingText={scriptLoadingText}
+        fullScreenButtonText={fullScreenButtonText}
+      />
+    );
     requestAnimationFrame(() => updateHeightRef.current?.());
-  }, [content, loadingText]);
+  }, [
+    content,
+    loadingText,
+    styleLoadingText,
+    scriptLoadingText,
+    fullScreenButtonText,
+  ]);
 
   return (
     <iframe
       ref={iframeRef}
       sandbox="allow-scripts allow-same-origin"
+      allow="fullscreen"
+      allowFullScreen
       className={className}
       style={{
         width: "100%",

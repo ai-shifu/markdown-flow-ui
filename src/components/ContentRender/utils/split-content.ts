@@ -53,7 +53,7 @@ export const splitContentSegments = (raw: string): RenderSegment[] => {
   const inlineMatch = findInlineSandboxMatch(raw);
 
   if (sandboxStartIndex === -1 && !inlineMatch) {
-    return [{ type: "markdown", value: raw }];
+    return [];
   }
 
   const shouldUseInline =
@@ -66,22 +66,17 @@ export const splitContentSegments = (raw: string): RenderSegment[] => {
     : findHtmlBlockEnd(raw, startIndex);
 
   const segments: RenderSegment[] = [];
-  const before = raw.slice(0, startIndex);
-  const htmlBlock = raw.slice(startIndex, blockEnd);
+  const matchedBlock = raw.slice(startIndex, blockEnd);
   const after = raw.slice(blockEnd);
-
-  if (before.trim()) {
-    segments.push({ type: "markdown", value: before });
-  }
 
   segments.push({
     type: shouldUseInline ? "markdown" : "sandbox",
-    value: htmlBlock,
+    value: matchedBlock,
   });
 
   if (after.trim()) {
     segments.push(...splitContentSegments(after));
   }
-  console.log("segments", segments);
+
   return segments;
 };

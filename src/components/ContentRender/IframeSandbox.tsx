@@ -33,6 +33,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const prevHtmlRef = useRef<string>("");
   const htmlContent = React.useMemo(() => {
     const segments = splitContentSegments(content);
+    // console.log('segments=====', segments);
     const sandboxSegments = segments.filter((seg) => seg.type === "sandbox");
     const sandboxContent =
       mode === "blackboard"

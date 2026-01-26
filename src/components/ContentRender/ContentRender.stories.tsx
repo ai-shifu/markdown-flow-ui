@@ -1555,6 +1555,21 @@ export const HTMLDemoIframeOnly: Story = {
 
     return (
       <>
+        <div style={{ width: "100%", height: "700px", background: "#e0e0e0" }}>
+          Text不渲染
+          <IframeSandbox
+            type="markdown"
+            content={
+              "```mermaid\ngraph TD\n    subgraph 大语言模型的诞生\n        A[初始模型<br>空白的“大脑”] --> B[预训练<br>海量数据“上学”]\n        B --> C[后训练<br>对齐与微调]\n        C --> D[大语言模型<br>具备语言与知识]\n    end\n```\n\n你有没有想过，为什么一夜之间，好像全世界都在谈论“大模型”？\n\n伴随 ChatGPT 一起爆火的，AI 真的和人很像。"
+            }
+            className="content-render-iframe"
+            loadingText={args.sandboxLoadingText}
+            styleLoadingText={args.sandboxStyleLoadingText}
+            scriptLoadingText={args.sandboxScriptLoadingText}
+            fullScreenButtonText={args.sandboxFullscreenButtonText}
+            mode={args.sandboxMode}
+          />
+        </div>
         Code
         <div style={{ width: "100%", height: "700px", background: "#e0e0e0" }}>
           <IframeSandbox

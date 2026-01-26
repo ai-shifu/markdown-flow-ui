@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createRoot, Root } from "react-dom/client";
 import SandboxApp from "./SandboxApp";
 import { splitContentSegments } from "./utils/split-content";
-
+import ContentRender from "./ContentRender";
 export interface IframeSandboxProps {
   content: string;
   className?: string;
@@ -11,10 +11,12 @@ export interface IframeSandboxProps {
   scriptLoadingText?: string;
   fullScreenButtonText?: string;
   mode?: "content" | "blackboard";
+  type: "sandbox" | "markdown";
 }
 
 const IframeSandbox: React.FC<IframeSandboxProps> = ({
   content,
+  type,
   className,
   loadingText,
   styleLoadingText,
@@ -137,19 +139,23 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
   return (
     <div style={{ width: "100%", height: "100%", overflow: "auto" }}>
-      <iframe
-        ref={iframeRef}
-        sandbox="allow-scripts allow-same-origin"
-        allow="fullscreen"
-        allowFullScreen
-        className={className}
-        style={{
-          width: "100%",
-          height: `${height}px`,
-          // margin: "16px 0",
-        }}
-        title="HTML Sandbox"
-      />
+      {mode === "blackboard" && type === "markdown" ? (
+        <ContentRender content={content} />
+      ) : (
+        <iframe
+          ref={iframeRef}
+          sandbox="allow-scripts allow-same-origin"
+          allow="fullscreen"
+          allowFullScreen
+          className={className}
+          style={{
+            width: "100%",
+            height: `${height}px`,
+            // margin: "16px 0",
+          }}
+          title="HTML Sandbox"
+        />
+      )}
     </div>
   );
 };

@@ -186,7 +186,7 @@ const rehypePlugins = [
   rehypeKatex,
 ];
 
-const MarkdownRenderer: React.FC<{
+export const MarkdownRenderer: React.FC<{
   content: string;
   components: CustomComponents;
 }> = ({ content: markdownContent, components }) => (

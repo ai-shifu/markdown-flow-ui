@@ -3,6 +3,7 @@
     "Charter", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC",
     sans-serif;
   font-family: var(--content-render-font-family);
+  min-width: 0;
   line-height: 30px;
   word-break: break-word;
   overflow-wrap: break-word;
@@ -197,6 +198,7 @@
   width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
+  min-width: 0;
   margin: 0 0 12px 0;
   display: block;
   line-height: 0;
@@ -205,6 +207,7 @@
 
 .content-render .content-render-svg {
   display: block;
+  min-width: 0;
   margin: 0 auto;
   vertical-align: top;
 }

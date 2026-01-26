@@ -146,7 +146,6 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         loadingText={loadingText}
         styleLoadingText={styleLoadingText}
         scriptLoadingText={scriptLoadingText}
-        fullScreenButtonText={fullScreenButtonText}
         resetToken={resetToken}
       />
     );

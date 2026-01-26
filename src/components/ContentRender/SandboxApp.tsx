@@ -6,7 +6,6 @@ export interface SandboxAppProps {
   loadingText?: string;
   styleLoadingText?: string;
   scriptLoadingText?: string;
-  fullScreenButtonText?: string;
   resetToken?: number;
 }
 

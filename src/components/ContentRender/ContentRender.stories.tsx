@@ -1446,7 +1446,7 @@ export const HTMLDemo: Story = {
     // sandboxLoadingText: "正在生成动画...",
     // sandboxStyleLoadingText: "正在生成样式...",
     // sandboxScriptLoadingText: "正在生成脚本...",
-    // sandboxFullscreenButtonText: "全屏浏览",
+    sandboxFullscreenButtonText: "全屏浏览",
   },
   render: (args) => {
     const [streamContent, setStreamContent] = useState("");
@@ -1555,8 +1555,8 @@ export const HTMLDemoIframeOnly: Story = {
 
     return (
       <>
+        Text不渲染
         <div style={{ width: "100%", height: "700px", background: "#e0e0e0" }}>
-          Text不渲染
           <IframeSandbox
             type="markdown"
             content={

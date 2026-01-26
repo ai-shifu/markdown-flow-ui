@@ -24,12 +24,14 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   fullScreenButtonText,
   mode = "content",
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const rootRef = useRef<Root | null>(null);
   const docRef = useRef<Document | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
   const [height, setHeight] = useState(480);
   const [resetToken, setResetToken] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const prevHtmlRef = useRef<string>("");
   const htmlContent = React.useMemo(() => {
     const segments = splitContentSegments(content);
@@ -114,6 +116,27 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   }, []);
 
   useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    const target = containerRef.current || iframeRef.current;
+    if (!target) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+      return;
+    }
+    if (target.requestFullscreen) {
+      target.requestFullscreen().catch(() => {});
+    }
+  };
+
+  useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
 
@@ -123,7 +146,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         loadingText={loadingText}
         styleLoadingText={styleLoadingText}
         scriptLoadingText={scriptLoadingText}
-        // fullScreenButtonText={fullScreenButtonText}
+        fullScreenButtonText={fullScreenButtonText}
         resetToken={resetToken}
       />
     );
@@ -139,7 +162,33 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   ]);
 
   return (
-    <div style={{ width: "100%", height: "100%", overflow: "auto" }}>
+    <div
+      ref={containerRef}
+      style={{
+        width: "100%",
+        height: "100%",
+        overflow: "auto",
+        position: "relative",
+      }}
+    >
+      <button
+        type="button"
+        onClick={toggleFullscreen}
+        style={{
+          position: "absolute",
+          top: 8,
+          right: 8,
+          zIndex: 5,
+          padding: "6px 10px",
+          background: "rgba(0, 0, 0, 0.75)",
+          color: "#fff",
+          border: "none",
+          borderRadius: 6,
+          cursor: "pointer",
+        }}
+      >
+        {isFullscreen ? "退出全屏" : fullScreenButtonText || "全屏浏览"}
+      </button>
       {mode === "blackboard" && type === "markdown" ? (
         <ContentRender content={content} />
       ) : (

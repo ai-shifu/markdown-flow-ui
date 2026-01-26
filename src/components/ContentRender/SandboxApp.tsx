@@ -15,7 +15,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   loadingText,
   styleLoadingText,
   scriptLoadingText,
-  fullScreenButtonText,
   resetToken = 0,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -23,7 +22,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   const [isWaitingFirstDiv, setIsWaitingFirstDiv] = useState(true);
   const [isGeneratingStyles, setIsGeneratingStyles] = useState(false);
   const [isGeneratingScripts, setIsGeneratingScripts] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const appendedStylesRef = useRef<HTMLStyleElement[]>([]);
   const appendedScriptsRef = useRef<HTMLScriptElement[]>([]);
   const styleStartRef = useRef(0);
@@ -58,16 +56,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       timerRef.current = null;
     }, delay);
   };
-
-  useEffect(() => {
-    const onFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener("fullscreenchange", onFullscreenChange);
-    return () => {
-      document.removeEventListener("fullscreenchange", onFullscreenChange);
-    };
-  }, []);
 
   useEffect(() => {
     const doc = containerRef.current?.ownerDocument;
@@ -241,16 +229,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     return null;
   })();
 
-  const handleToggleFullscreen = () => {
-    const wrapper = wrapperRef.current;
-    if (!wrapper) return;
-    if (!document.fullscreenElement) {
-      wrapper.requestFullscreen?.().catch(() => {});
-      return;
-    }
-    document.exitFullscreen?.();
-  };
-
   return (
     <div
       ref={wrapperRef}
@@ -263,29 +241,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
           pointerEvents: overlayMessage ? "none" : undefined,
         }}
       />
-      <button
-        type="button"
-        onClick={handleToggleFullscreen}
-        style={{
-          position: "absolute",
-          top: 8,
-          right: 8,
-          zIndex: 30,
-          padding: "6px 10px",
-          borderRadius: 6,
-          border: "1px solid #cbd5e1",
-          background: "#ffffffcc",
-          color: "#0f172a",
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: "pointer",
-          boxShadow: "0 4px 10px rgba(15, 23, 42, 0.08)",
-        }}
-      >
-        {isFullscreen
-          ? fullScreenButtonText || "Exit Fullscreen"
-          : fullScreenButtonText || "Fullscreen"}
-      </button>
       {overlayMessage && (
         <div
           style={{

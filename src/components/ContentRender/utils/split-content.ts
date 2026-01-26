@@ -2,25 +2,68 @@ export type RenderSegment =
   | { type: "markdown"; value: string }
   | { type: "sandbox"; value: string };
 
-// Split incoming markdown content into markdown and sandbox HTML segments
-export const splitContentSegments = (raw: string): RenderSegment[] => {
-  const startPattern =
-    /<(script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)[\s>]/i;
+const SANDBOX_START_PATTERN =
+  /<(script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)[\s>]/i;
 
-  const startIndex = raw.search(startPattern);
-  if (startIndex === -1) {
-    return [{ type: "markdown", value: raw }];
-  }
+const INLINE_SANDBOX_PATTERNS: RegExp[] = [
+  /<svg[\s\S]*?<\/svg>/i,
+  /<img\b[^>]*?>/i,
+  /```mermaid[\s\S]*?```/i,
+  /```[a-zA-Z0-9]+[\s\S]*?```/i,
+];
 
-  const closingBoundary = /<\/[a-z][^>]*>\s*\n(?=[^\s<])/gi;
+const closingBoundary = /<\/[a-z][^>]*>\s*\n(?=[^\s<])/gi;
+
+type MatchResult = { start: number; end: number };
+
+const findHtmlBlockEnd = (raw: string, startIndex: number) => {
   let blockEnd = raw.length;
   let match: RegExpExecArray | null;
+  closingBoundary.lastIndex = 0;
 
   while ((match = closingBoundary.exec(raw))) {
     if (match.index <= startIndex) continue;
-    blockEnd = match.index + match[0].length - 1;
+    blockEnd = match.index + match[0].length;
     break;
   }
+
+  return blockEnd;
+};
+
+const findInlineSandboxMatch = (raw: string): MatchResult | null => {
+  let earliest: MatchResult | null = null;
+
+  INLINE_SANDBOX_PATTERNS.forEach((pattern) => {
+    const match = pattern.exec(raw);
+    if (!match || typeof match.index !== "number") return;
+    const start = match.index;
+    const end = match.index + match[0].length;
+
+    if (!earliest || start < earliest.start) {
+      earliest = { start, end };
+    }
+  });
+
+  return earliest;
+};
+
+// Split incoming markdown content into markdown and sandbox HTML segments
+export const splitContentSegments = (raw: string): RenderSegment[] => {
+  const sandboxStartIndex = raw.search(SANDBOX_START_PATTERN);
+  const inlineMatch = findInlineSandboxMatch(raw);
+
+  if (sandboxStartIndex === -1 && !inlineMatch) {
+    return [{ type: "markdown", value: raw }];
+  }
+
+  const shouldUseInline =
+    !!inlineMatch &&
+    (sandboxStartIndex === -1 || inlineMatch.start < sandboxStartIndex);
+
+  const startIndex = shouldUseInline ? inlineMatch!.start : sandboxStartIndex;
+  const blockEnd = shouldUseInline
+    ? inlineMatch!.end
+    : findHtmlBlockEnd(raw, startIndex);
 
   const segments: RenderSegment[] = [];
   const before = raw.slice(0, startIndex);
@@ -31,11 +74,14 @@ export const splitContentSegments = (raw: string): RenderSegment[] => {
     segments.push({ type: "markdown", value: before });
   }
 
-  segments.push({ type: "sandbox", value: htmlBlock });
+  segments.push({
+    type: shouldUseInline ? "markdown" : "sandbox",
+    value: htmlBlock,
+  });
 
   if (after.trim()) {
     segments.push(...splitContentSegments(after));
   }
-
+  console.log("segments", segments);
   return segments;
 };

@@ -120,7 +120,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         loadingText={loadingText}
         styleLoadingText={styleLoadingText}
         scriptLoadingText={scriptLoadingText}
-        fullScreenButtonText={fullScreenButtonText}
+        // fullScreenButtonText={fullScreenButtonText}
         resetToken={resetToken}
       />
     );
@@ -136,19 +136,21 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   ]);
 
   return (
-    <iframe
-      ref={iframeRef}
-      sandbox="allow-scripts allow-same-origin"
-      allow="fullscreen"
-      allowFullScreen
-      className={className}
-      style={{
-        width: "100%",
-        height: `${height}px`,
-        margin: "16px 0",
-      }}
-      title="HTML Sandbox"
-    />
+    <div style={{ width: "100%", height: "100%", overflow: "auto" }}>
+      <iframe
+        ref={iframeRef}
+        sandbox="allow-scripts allow-same-origin"
+        allow="fullscreen"
+        allowFullScreen
+        className={className}
+        style={{
+          width: "100%",
+          height: `${height}px`,
+          // margin: "16px 0",
+        }}
+        title="HTML Sandbox"
+      />
+    </div>
   );
 };
 

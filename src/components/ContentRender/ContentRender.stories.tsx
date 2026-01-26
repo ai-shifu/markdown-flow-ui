@@ -1352,20 +1352,7 @@ const HTML_DEMO_STREAM_SOURCE = `
 
 理解这一点，是你**摆脱对 AI 盲目恐惧或崇拜的关键第一步**。它既不是神，也不是鬼，它是一个极其复杂的**概率机器**。知道了它怎么“猜”，你才能明白它为何会“对”，更会明白它为何会“错”。
 
-<div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #0F63EE; font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; line-height: 2;">
-<div><strong>原句：</strong>跟AI学AI通识</div>
-  <div style="margin-top: 10px;"><strong>Token化后：</strong></div>
-    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
-        <span style="background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;">跟</span>
-            <span style="background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;">AI</span>
-                <span style="background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;">学</span>
-                    <span style="background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;">AI</span>
-                        <span style="background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;">通</span>
-                            <span style="background: #e3f2fd; color: #0F63EE; padding: 4px 12px; border-radius: 4px; border: 1px dashed #0F63EE;">识</span>
-                              </div>\n  <div style="margin-top: 15px; font-size: 0.9em; color: #64748b;">
-                                  * 注意：“AI”被视作一个整体Token，而“通识”被拆成了两个Token。模型就是这样以Token为单位来“阅读”和“思考”的。
-                                </div>
-                                </div>
+
 **任何你看到的文章、代码，在 AI 眼里，都是一串特定顺序的 Token 组合。**\n\n这个逻辑可以推广到更广阔的领域：
 *   **文生图模型**（比如 Midjourney）：它眼中的“Token”可能是图像的一块小色块、一种纹理模式，或者一个视觉概念。
 * *   **文生视频模型**（比如 Sora）：它的“Token”可能是一帧画面中的动态片段，或者几帧之间的变化规律。
@@ -1383,10 +1370,10 @@ export const HTMLDemo: Story = {
   args: {
     enableTypewriter: false,
     typingSpeed: 10,
-    sandboxLoadingText: "正在生成动画...",
-    sandboxStyleLoadingText: "正在生成样式...",
-    sandboxScriptLoadingText: "正在生成脚本...",
-    sandboxFullscreenButtonText: "全屏浏览",
+    // sandboxLoadingText: "正在生成动画...",
+    // sandboxStyleLoadingText: "正在生成样式...",
+    // sandboxScriptLoadingText: "正在生成脚本...",
+    // sandboxFullscreenButtonText: "全屏浏览",
   },
   render: (args) => {
     const [streamContent, setStreamContent] = useState("");
@@ -1441,53 +1428,55 @@ export const HTMLDemoIframeOnly: Story = {
     sandboxMode: "blackboard",
   },
   render: (args) => {
-    const [streamContent, setStreamContent] = useState("");
+    // const [streamContent, setStreamContent] = useState("");
 
-    useEffect(() => {
-      let currentIndex = 0;
-      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    // useEffect(() => {
+    //   let currentIndex = 0;
+    //   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-      const streamNext = () => {
-        if (currentIndex >= HTML_DEMO_STREAM_SOURCE.length) {
-          timeoutId = null;
-          return;
-        }
+    //   const streamNext = () => {
+    //     if (currentIndex >= HTML_DEMO_STREAM_SOURCE.length) {
+    //       timeoutId = null;
+    //       return;
+    //     }
 
-        const chunkSize = Math.floor(Math.random() * 30) + 1;
-        const nextIndex = Math.min(
-          HTML_DEMO_STREAM_SOURCE.length,
-          currentIndex + chunkSize
-        );
-        const nextChunk = HTML_DEMO_STREAM_SOURCE.slice(
-          currentIndex,
-          nextIndex
-        );
-        currentIndex = nextIndex;
-        setStreamContent((prev) => `${prev}${nextChunk}`);
+    //     const chunkSize = Math.floor(Math.random() * 30) + 1;
+    //     const nextIndex = Math.min(
+    //       HTML_DEMO_STREAM_SOURCE.length,
+    //       currentIndex + chunkSize
+    //     );
+    //     const nextChunk = HTML_DEMO_STREAM_SOURCE.slice(
+    //       currentIndex,
+    //       nextIndex
+    //     );
+    //     currentIndex = nextIndex;
+    //     setStreamContent((prev) => `${prev}${nextChunk}`);
 
-        timeoutId = setTimeout(streamNext, 80);
-      };
+    //     timeoutId = setTimeout(streamNext, 80);
+    //   };
 
-      timeoutId = setTimeout(streamNext, 120);
+    //   timeoutId = setTimeout(streamNext, 120);
 
-      return () => {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-      };
-    }, []);
-    console.log("iframe streamContent", streamContent);
+    //   return () => {
+    //     if (timeoutId) {
+    //       clearTimeout(timeoutId);
+    //     }
+    //   };
+    // }, []);
+    // console.log("iframe streamContent", streamContent);
 
     return (
-      <IframeSandbox
-        content={streamContent}
-        className="content-render-iframe"
-        loadingText={args.sandboxLoadingText}
-        styleLoadingText={args.sandboxStyleLoadingText}
-        scriptLoadingText={args.sandboxScriptLoadingText}
-        fullScreenButtonText={args.sandboxFullscreenButtonText}
-        mode={args.sandboxMode}
-      />
+      <div style={{ width: "100%", height: "700px", background: "#e0e0e0" }}>
+        <IframeSandbox
+          content={HTML_DEMO_STREAM_SOURCE}
+          className="content-render-iframe"
+          loadingText={args.sandboxLoadingText}
+          styleLoadingText={args.sandboxStyleLoadingText}
+          scriptLoadingText={args.sandboxScriptLoadingText}
+          fullScreenButtonText={args.sandboxFullscreenButtonText}
+          mode={args.sandboxMode}
+        />
+      </div>
     );
   },
 };

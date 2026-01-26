@@ -251,6 +251,13 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     document.exitFullscreen?.();
   };
 
+  console.log(
+    "fullScreenButtonText",
+    fullScreenButtonText,
+    isFullscreen,
+    handleToggleFullscreen
+  );
+
   return (
     <div
       ref={wrapperRef}
@@ -263,7 +270,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
           pointerEvents: overlayMessage ? "none" : undefined,
         }}
       />
-      <button
+      {/* <button
         type="button"
         onClick={handleToggleFullscreen}
         style={{
@@ -285,7 +292,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
         {isFullscreen
           ? fullScreenButtonText || "Exit Fullscreen"
           : fullScreenButtonText || "Fullscreen"}
-      </button>
+      </button> */}
       {overlayMessage && (
         <div
           style={{

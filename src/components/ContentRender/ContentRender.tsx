@@ -218,7 +218,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   sandboxLoadingText,
   sandboxStyleLoadingText,
   sandboxScriptLoadingText,
-  sandboxFullscreenButtonText,
+  // sandboxFullscreenButtonText,
   sandboxMode = "content",
   onClickCustomButtonAfterContent,
   beforeSend,
@@ -375,7 +375,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               loadingText={sandboxLoadingText}
               styleLoadingText={sandboxStyleLoadingText}
               scriptLoadingText={sandboxScriptLoadingText}
-              fullScreenButtonText={sandboxFullscreenButtonText}
+              // fullScreenButtonText={sandboxFullscreenButtonText}
               mode={sandboxMode}
             />
           ) : (

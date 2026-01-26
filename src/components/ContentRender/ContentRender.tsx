@@ -94,9 +94,11 @@ const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
     if (!styleEl) {
       styleEl = document.createElement("style");
       styleEl.id = styleId;
+      // Keep intrinsic SVG width so the wrapper can scroll horizontally when needed
       styleEl.textContent = `
-        :host { display: block; width: 100%; max-width: 100%; text-align: center; }
-        svg { max-width: 100%; height: auto; display: inline-block; }
+        svg { height: auto; display: inline-block; }
+        svg.content-render-svg-el--responsive { width: 100%; max-width: 100%; }
+        svg.content-render-svg-el--fixed { max-width: none; }
       `;
       shadowRoot.appendChild(styleEl);
     }
@@ -109,6 +111,9 @@ const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
     const template = document.createElement("template");
     template.innerHTML = svg;
     shadowRoot.append(template.content.cloneNode(true));
+
+    let hasResponsiveSvg = false;
+    let hasFixedSvg = false;
 
     shadowRoot.querySelectorAll("svg").forEach((svgEl) => {
       // Derive responsive sizing from viewBox so pure viewBox SVGs stay visible and fluid
@@ -130,6 +135,9 @@ const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
       const shouldUseResponsiveSize = !hasWidth && !hasHeight;
 
       if (shouldUseResponsiveSize) {
+        hasResponsiveSvg = true;
+        svgEl.classList.add("content-render-svg-el--responsive");
+        svgEl.classList.remove("content-render-svg-el--fixed");
         svgEl.style.width = "100%";
         svgEl.style.height = "auto";
         if (!svgEl.style.aspectRatio && viewBoxHeight > 0) {
@@ -138,6 +146,9 @@ const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
         return;
       }
 
+      hasFixedSvg = true;
+      svgEl.classList.add("content-render-svg-el--fixed");
+      svgEl.classList.remove("content-render-svg-el--responsive");
       if (!hasWidth && viewBoxWidth > 0) {
         svgEl.setAttribute("width", `${viewBoxWidth}`);
       }
@@ -145,6 +156,10 @@ const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
         svgEl.setAttribute("height", `${viewBoxHeight}`);
       }
     });
+
+    const hostResponsive = hasResponsiveSvg && !hasFixedSvg;
+    host.classList.toggle("content-render-svg--responsive", hostResponsive);
+    host.classList.toggle("content-render-svg--fixed", !hostResponsive);
   }, [svg]);
 
   return (

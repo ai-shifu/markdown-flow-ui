@@ -897,49 +897,7 @@ export const SVGDemo: Story = {
     content: `
 <img src="https://resource.ai-shifu.cn/7b007ca873b14edeb4d3e6817f520550" />
 
-下面这张图总结了咱们刚才聊的全部要点：
-<svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
-  <!-- 背景 -->
-  <rect width="800" height="400" fill="#f8f9fa" rx="10"/>
-
-  <!-- 图书馆背景线条 -->
-  <path d="M50 350 L750 350" stroke="#dee2e6" stroke-width="2"/>
-
-  <!-- 人类侧 -->
-  <g transform="translate(150, 200)">
-    <!-- 书堆 -->
-    <rect x="-60" y="80" width="120" height="70" fill="#e9ecef" stroke="#adb5bd"/>
-    <text x="0" y="115" font-family="sans-serif" font-size="14" text-anchor="middle" fill="#495057">有限的阅读量</text>
-    <!-- 人物 -->
-    <circle cx="0" cy="0" r="30" fill="#adb5bd"/>
-    <path d="M-15 10 Q0 20 15 10" stroke="#fff" fill="none" stroke-width="2"/>
-    <text x="0" y="50" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#000">人类：精力有限</text>
-    <text x="0" y="70" font-family="sans-serif" font-size="12" text-anchor="middle" fill="#6c757d">（会疲劳、会遗忘、选择性阅读）</text>
-  </g>
-
-  <!-- 分隔线 -->
-  <line x1="400" y1="50" x2="400" y2="350" stroke="#dee2e6" stroke-dasharray="5,5"/>
-
-  <!-- AI 侧 -->
-  <g transform="translate(600, 200)">
-    <!-- 浩瀚数据流 -->
-    <path d="M-100 80 L100 80 L100 150 L-100 150 Z" fill="#0F63EE" opacity="0.1"/>
-    <text x="0" y="115" font-family="sans-serif" font-size="14" text-anchor="middle" fill="#0F63EE" font-weight="bold">全量数据吞噬 (自监督)</text>
-    <!-- AI 核心 -->
-    <rect x="-40" y="-40" width="80" height="80" rx="10" fill="#0F63EE"/>
-    <path d="M-20 0 L20 0 M0 -20 L0 20" stroke="#fff" stroke-width="4"/>
-    <circle cx="0" cy="0" r="10" fill="none" stroke="#fff" stroke-width="2">
-      <animate attributeName="r" values="10;15;10" dur="2s" repeatCount="indefinite" />
-    </circle>
-    <text x="0" y="60" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#0F63EE">AI：全量吸收</text>
-    <text x="0" y="80" font-family="sans-serif" font-size="12" text-anchor="middle" fill="#6c757d">（24/7 运行、无损记忆、真读真学）</text>
-  </g>
-
-  <!-- 标题 -->
-  <text x="400" y="30" font-family="sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#333">图书馆里的“自监督学习”：人 vs AI</text>
-</svg>
-
-啊啊啊
+啊啊啊下面这张图总结了咱们刚才聊的全部要点下面这张图总结了咱们刚才聊的全部要点下面这张图总结了咱们刚才聊的全部要点下面这张图总结了咱们刚才聊的全部要点下面这张图总结了咱们刚才聊的全部要点下面这张图总结了咱们刚才聊的全部要点
 <svg width="600" height="400" xmlns="http://www.w3.org/2000/svg">
   <rect x="0" y="0" width="600" height="400" fill="#f5f5f5"/>
 
@@ -989,6 +947,49 @@ export const SVGDemo: Story = {
     </marker>
   </defs>
 </svg>
+
+下面这张图总结了咱们刚才聊的全部要点：
+<svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="800" height="400" fill="#f8f9fa" rx="10"/>
+
+  <!-- 图书馆背景线条 -->
+  <path d="M50 350 L750 350" stroke="#dee2e6" stroke-width="2"/>
+
+  <!-- 人类侧 -->
+  <g transform="translate(150, 200)">
+    <!-- 书堆 -->
+    <rect x="-60" y="80" width="120" height="70" fill="#e9ecef" stroke="#adb5bd"/>
+    <text x="0" y="115" font-family="sans-serif" font-size="14" text-anchor="middle" fill="#495057">有限的阅读量</text>
+    <!-- 人物 -->
+    <circle cx="0" cy="0" r="30" fill="#adb5bd"/>
+    <path d="M-15 10 Q0 20 15 10" stroke="#fff" fill="none" stroke-width="2"/>
+    <text x="0" y="50" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#000">人类：精力有限</text>
+    <text x="0" y="70" font-family="sans-serif" font-size="12" text-anchor="middle" fill="#6c757d">（会疲劳、会遗忘、选择性阅读）</text>
+  </g>
+
+  <!-- 分隔线 -->
+  <line x1="400" y1="50" x2="400" y2="350" stroke="#dee2e6" stroke-dasharray="5,5"/>
+
+  <!-- AI 侧 -->
+  <g transform="translate(600, 200)">
+    <!-- 浩瀚数据流 -->
+    <path d="M-100 80 L100 80 L100 150 L-100 150 Z" fill="#0F63EE" opacity="0.1"/>
+    <text x="0" y="115" font-family="sans-serif" font-size="14" text-anchor="middle" fill="#0F63EE" font-weight="bold">全量数据吞噬 (自监督)</text>
+    <!-- AI 核心 -->
+    <rect x="-40" y="-40" width="80" height="80" rx="10" fill="#0F63EE"/>
+    <path d="M-20 0 L20 0 M0 -20 L0 20" stroke="#fff" stroke-width="4"/>
+    <circle cx="0" cy="0" r="10" fill="none" stroke="#fff" stroke-width="2">
+      <animate attributeName="r" values="10;15;10" dur="2s" repeatCount="indefinite" />
+    </circle>
+    <text x="0" y="60" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#0F63EE">AI：全量吸收</text>
+    <text x="0" y="80" font-family="sans-serif" font-size="12" text-anchor="middle" fill="#6c757d">（24/7 运行、无损记忆、真读真学）</text>
+  </g>
+
+  <!-- 标题 -->
+  <text x="400" y="30" font-family="sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#333">图书馆里的“自监督学习”：人 vs AI</text>
+</svg>
+
 `,
     enableTypewriter: true,
     typingSpeed: 10,

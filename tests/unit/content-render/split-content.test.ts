@@ -72,9 +72,29 @@ describe("splitContentSegments", () => {
     const raw = "```c\n  int a[N][N] = {\n      {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},\n      {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},\n      {1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1},\n      {1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1},\n      {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, ";
 
     const segments = splitContentSegments(raw, true);
-    console.log('segments=====', segments);
+   
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toContain("```c");
+  });
+
+  it("keeps markdown table as markdown segment", () => {
+    const raw = `## Tables
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |`;
+
+    const segments = splitContentSegments(raw, true);
+    expect(segments).toHaveLength(2);
+    expect(segments[0].type).toBe("text");
+    expect(segments[0].value).toContain("Tables");
+    expect(segments[1].type).toBe("markdown");
+    expect(segments[1].value).toContain("Header 1");
+
+    const segments2 = splitContentSegments(raw);
+    expect(segments2).toHaveLength(1);
+    expect(segments2[0].type).toBe("markdown");
+    expect(segments2[0].value).toContain("Header 1");
   });
 });

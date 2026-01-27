@@ -48,18 +48,62 @@ const findInlineSandboxMatch = (raw: string): MatchResult | null => {
   return earliest;
 };
 
+const extractTableBlock = (
+  raw: string
+): { start: number; block: string; end: number } | null => {
+  const tableStart = raw.search(/^\s*\|.*\|\s*$/m);
+  if (tableStart === -1) return null;
+
+  const lines = raw.slice(tableStart).split("\n");
+  let endIndex = tableStart;
+  const tableLines: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("|")) break;
+    tableLines.push(line);
+    endIndex += line.length + 1; // include newline
+  }
+
+  const block = tableLines.join("\n");
+  return { start: tableStart, block, end: endIndex - 1 };
+};
+
 // Split incoming markdown content into markdown and sandbox HTML segments
 export const splitContentSegments = (
   raw: string,
   keepText = false
 ): RenderSegment[] => {
-  if (keepText && raw.trim().startsWith("```") && !raw.includes("\n```")) {
-    return [{ type: "markdown", value: raw }];
+  const fenceStart = raw.indexOf("```");
+  if (keepText && fenceStart !== -1) {
+    const closingFence = raw.indexOf("```", fenceStart + 3);
+    if (closingFence === -1) {
+      return [{ type: "markdown", value: raw }];
+    }
   }
 
   const svgOpenIndex = raw.search(/<svg\b/i);
   if (svgOpenIndex !== -1 && raw.indexOf("</svg>", svgOpenIndex) === -1) {
     return [{ type: "markdown", value: raw }];
+  }
+
+  const tableBlock = extractTableBlock(raw);
+  if (tableBlock) {
+    const segments: RenderSegment[] = [];
+    const before = raw.slice(0, tableBlock.start);
+    if (keepText && before.trim()) {
+      segments.push({ type: "text", value: before.trim() });
+    }
+    segments.push({ type: "markdown", value: tableBlock.block });
+    const after = raw.slice(tableBlock.end);
+    if (after.trim()) {
+      segments.push(
+        ...(keepText
+          ? splitContentSegments(after, true)
+          : splitContentSegments(after))
+      );
+    }
+    return segments;
   }
 
   const completeSvgMatch = raw.match(/<svg[\s\S]*?<\/svg>/i);

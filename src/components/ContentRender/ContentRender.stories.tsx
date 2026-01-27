@@ -1438,6 +1438,12 @@ graph TD
 const STREAM_IMAGE_IFRAME_CONTENT =
   '<img src="https://resource.ai-shifu.cn/7b007ca873b14edeb4d3e6817f520550" />';
 
+const STREAM_TABLE_IFRAME_CONTENT = `## Tables
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |`;
+
 export const HTMLDemo: Story = {
   name: "HTML Demo",
   args: {
@@ -1505,6 +1511,7 @@ export const HTMLDemoIframeOnly: Story = {
     const [svgContent, setSvgContent] = useState("");
     const [mermaidContent, setMermaidContent] = useState("");
     const [imageContent, setImageContent] = useState("");
+    const [tableContent, setTableContent] = useState("");
     const [htmlContent, setHtmlContent] = useState("");
 
     useEffect(() => {
@@ -1545,6 +1552,7 @@ export const HTMLDemoIframeOnly: Story = {
         startStreaming(STREAM_SVG_IFRAME_CONTENT, setSvgContent),
         startStreaming(STREAM_MERMAID_IFRAME_CONTENT, setMermaidContent),
         startStreaming(STREAM_IMAGE_IFRAME_CONTENT, setImageContent),
+        startStreaming(STREAM_TABLE_IFRAME_CONTENT, setTableContent),
         startStreaming(HTML_DEMO_STREAM_SOURCE, setHtmlContent),
       ];
 
@@ -1615,6 +1623,19 @@ export const HTMLDemoIframeOnly: Story = {
           <IframeSandbox
             type="markdown"
             content={imageContent}
+            className="content-render-iframe"
+            loadingText={args.sandboxLoadingText}
+            styleLoadingText={args.sandboxStyleLoadingText}
+            scriptLoadingText={args.sandboxScriptLoadingText}
+            fullScreenButtonText={args.sandboxFullscreenButtonText}
+            mode={args.sandboxMode}
+          />
+        </div>
+        Table
+        <div style={{ width: "100%", height: "700px", background: "#e0e0e0" }}>
+          <IframeSandbox
+            type="markdown"
+            content={tableContent}
             className="content-render-iframe"
             loadingText={args.sandboxLoadingText}
             styleLoadingText={args.sandboxStyleLoadingText}

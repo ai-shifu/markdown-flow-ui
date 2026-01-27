@@ -336,9 +336,10 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   });
 
   const renderSegments = useMemo(
-    () => splitContentSegments(content),
+    () => splitContentSegments(content, true),
     [content]
   );
+  console.log("renderSegments=====", content, renderSegments);
   const hasSandbox = renderSegments.some(
     (segment) => segment.type === "sandbox"
   );
@@ -370,6 +371,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
           segment.type === "sandbox" ? (
             <IframeSandbox
               key={`sandbox-${idx}`}
+              hideFullScreen
               content={segment.value}
               className="content-render-iframe"
               loadingText={sandboxLoadingText}

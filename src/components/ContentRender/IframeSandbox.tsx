@@ -31,7 +31,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const rootRef = useRef<Root | null>(null);
   const docRef = useRef<Document | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
-  const [, setHeight] = useState(480);
+  const [height, setHeight] = useState(480);
   const [resetToken, setResetToken] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const prevHtmlRef = useRef<string>("");
@@ -193,13 +193,12 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
           sandbox="allow-scripts allow-same-origin"
           allow="fullscreen"
           allowFullScreen
-          className={(className, "w-full h-full")}
-          style={
-            {
-              // height: `${height}px`,
-              // margin: "16px 0",
-            }
-          }
+          className={(className, "w-full")}
+          style={{
+            height: mode === "blackboard" ? "100%" : `${height}px`,
+            // height: `${height}px`,
+            // margin: "16px 0",
+          }}
         />
       )}
     </div>

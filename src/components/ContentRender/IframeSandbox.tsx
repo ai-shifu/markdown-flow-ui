@@ -168,12 +168,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   ]);
 
   return (
-    <div
-      ref={containerRef}
-      className={
-        "w-full h-full overflow-auto relative flex flex-col justify-center"
-      }
-    >
+    <div ref={containerRef} className={"w-full h-full overflow-auto"}>
       {!hideFullScreen && (
         <button
           type="button"

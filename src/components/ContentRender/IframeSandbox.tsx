@@ -170,29 +170,17 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   return (
     <div
       ref={containerRef}
-      style={{
-        width: "100%",
-        height: "100%",
-        overflow: "auto",
-        position: "relative",
-      }}
+      className={
+        "w-full h-full overflow-auto relative flex flex-col justify-center"
+      }
     >
       {!hideFullScreen && (
         <button
           type="button"
           onClick={toggleFullscreen}
-          style={{
-            position: "absolute",
-            top: 8,
-            right: 8,
-            zIndex: 5,
-            padding: "6px 10px",
-            background: "rgba(0, 0, 0, 0.75)",
-            color: "#fff",
-            border: "none",
-            borderRadius: 6,
-            cursor: "pointer",
-          }}
+          className={
+            "absolute top-2 right-2 z-50 p-1.5 bg-black/75 text-white rounded-md cursor-pointer"
+          }
         >
           {isFullscreen ? "退出全屏" : fullScreenButtonText || "全屏浏览"}
         </button>
@@ -205,14 +193,13 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
           sandbox="allow-scripts allow-same-origin"
           allow="fullscreen"
           allowFullScreen
-          className={className}
-          style={{
-            width: "100%",
-            height: "100%",
-            // height: `${height}px`,
-            // margin: "16px 0",
-          }}
-          title="HTML Sandbox"
+          className={(className, "w-full h-full")}
+          style={
+            {
+              // height: `${height}px`,
+              // margin: "16px 0",
+            }
+          }
         />
       )}
     </div>

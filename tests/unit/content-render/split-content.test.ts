@@ -61,10 +61,20 @@ describe("splitContentSegments", () => {
       '<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="#f5f5f5"/></svg>不是一个技术名词，而是一种工作方式：不追求完全理解每一行代码，更关注“整体是否跑通”“功能是否达成';
 
     const segments = splitContentSegments(raw, true);
-    console.log('segments=====', segments);
+   
 
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toContain("</svg>");
+  });
+
+  it("keeps long fenced code block as single markdown segment", () => {
+    const raw = "```c\n  int a[N][N] = {\n      {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},\n      {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},\n      {1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1},\n      {1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1},\n      {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, ";
+
+    const segments = splitContentSegments(raw, true);
+    console.log('segments=====', segments);
+    expect(segments).toHaveLength(1);
+    expect(segments[0].type).toBe("markdown");
+    expect(segments[0].value).toContain("```c");
   });
 });

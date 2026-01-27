@@ -53,6 +53,10 @@ export const splitContentSegments = (
   raw: string,
   keepText = false
 ): RenderSegment[] => {
+  if (keepText && raw.trim().startsWith("```") && !raw.includes("\n```")) {
+    return [{ type: "markdown", value: raw }];
+  }
+
   const svgOpenIndex = raw.search(/<svg\b/i);
   if (svgOpenIndex !== -1 && raw.indexOf("</svg>", svgOpenIndex) === -1) {
     return [{ type: "markdown", value: raw }];

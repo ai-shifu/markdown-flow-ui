@@ -7,6 +7,7 @@ export interface SandboxAppProps {
   styleLoadingText?: string;
   scriptLoadingText?: string;
   resetToken?: number;
+  mode?: "content" | "blackboard";
 }
 
 const SandboxApp: React.FC<SandboxAppProps> = ({
@@ -15,6 +16,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   styleLoadingText,
   scriptLoadingText,
   resetToken = 0,
+  mode = "content",
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -228,15 +230,18 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     return null;
   })();
 
+  const isBlackboard = mode === "blackboard";
+
   return (
     <div
       ref={wrapperRef}
       style={{
         position: "relative",
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
+        width: "100%",
+        height: isBlackboard ? "100vh" : undefined,
+        display: isBlackboard ? "flex" : undefined,
+        flexDirection: isBlackboard ? "column" : undefined,
+        justifyContent: isBlackboard ? "center" : undefined,
       }}
       aria-busy={!!overlayMessage}
     >

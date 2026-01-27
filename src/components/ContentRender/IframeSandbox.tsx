@@ -89,11 +89,25 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     rootRef.current = root;
 
     const updateHeight = () => {
-      if (!iframeRef.current || !doc.body) return;
-      const bodyRect = doc.body.getBoundingClientRect();
-      const htmlRect = doc.documentElement?.getBoundingClientRect();
-      const bodyHeight = bodyRect.height;
-      const htmlHeight = htmlRect?.height || 0;
+      if (mode === "blackboard") return;
+      const docNode = docRef.current;
+      if (!iframeRef.current || !docNode) return;
+
+      const { body, documentElement } = docNode;
+      const bodyHeight = body
+        ? Math.max(
+            body.scrollHeight,
+            body.offsetHeight,
+            body.getBoundingClientRect().height
+          )
+        : 0;
+      const htmlHeight = documentElement
+        ? Math.max(
+            documentElement.scrollHeight,
+            documentElement.offsetHeight,
+            documentElement.getBoundingClientRect().height
+          )
+        : 0;
       const contentHeight = Math.max(bodyHeight, htmlHeight);
       const nextHeight = Math.max(200, Math.ceil(contentHeight));
       setHeight(nextHeight);
@@ -154,6 +168,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         fullScreenButtonText={fullScreenButtonText}
         hideFullScreen={hideFullScreen}
         resetToken={resetToken}
+        mode={mode}
       />
     );
     requestAnimationFrame(() => updateHeightRef.current?.());
@@ -165,6 +180,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     scriptLoadingText,
     fullScreenButtonText,
     resetToken,
+    mode,
   ]);
 
   return (

@@ -1,6 +1,7 @@
 export type RenderSegment =
   | { type: "markdown"; value: string }
-  | { type: "sandbox"; value: string };
+  | { type: "sandbox"; value: string }
+  | { type: "text"; value: string };
 
 const SANDBOX_START_PATTERN =
   /<(script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)[\s>]/i;
@@ -48,11 +49,17 @@ const findInlineSandboxMatch = (raw: string): MatchResult | null => {
 };
 
 // Split incoming markdown content into markdown and sandbox HTML segments
-export const splitContentSegments = (raw: string): RenderSegment[] => {
+export const splitContentSegments = (
+  raw: string,
+  keepText = false
+): RenderSegment[] => {
   const sandboxStartIndex = raw.search(SANDBOX_START_PATTERN);
   const inlineMatch = findInlineSandboxMatch(raw);
 
   if (sandboxStartIndex === -1 && !inlineMatch) {
+    if (keepText && raw.trim()) {
+      return [{ type: "text", value: raw }];
+    }
     return [];
   }
 
@@ -66,8 +73,13 @@ export const splitContentSegments = (raw: string): RenderSegment[] => {
     : findHtmlBlockEnd(raw, startIndex);
 
   const segments: RenderSegment[] = [];
+  const before = raw.slice(0, startIndex);
   const matchedBlock = raw.slice(startIndex, blockEnd);
   const after = raw.slice(blockEnd);
+
+  if (keepText && before.trim()) {
+    segments.push({ type: "text", value: before });
+  }
 
   segments.push({
     type: shouldUseInline ? "markdown" : "sandbox",
@@ -75,7 +87,7 @@ export const splitContentSegments = (raw: string): RenderSegment[] => {
   });
 
   if (after.trim()) {
-    segments.push(...splitContentSegments(after));
+    segments.push(...splitContentSegments(after, keepText));
   }
 
   return segments;

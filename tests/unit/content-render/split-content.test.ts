@@ -22,4 +22,27 @@ describe("splitContentSegments", () => {
     expect(segments[0].type).toBe("sandbox");
     expect(segments[0].value).toContain("<div><p>real html</p></div>");
   });
+
+  it("keeps text segments when enabled (mermaid + text)", () => {
+    const raw = "```mermaid\ngraph TD\n    subgraph 大语言模型的诞生\n        A[初始模型<br>空白的“大脑”] --> B[预训练<br>海量数据“上学”]\n        B --> C[后训练<br>对齐与微调]\n        C --> D[大语言模型<br>具备语言与知识]\n    end\n```\n\n你有没有想过，为什么一夜之间，好像全世界都在谈论“大模型”？";
+
+    const segments = splitContentSegments(raw, true);
+
+    expect(segments).toHaveLength(2);
+    expect(segments[0].type).toBe("markdown");
+    expect(segments[1].type).toBe("text");
+    expect(segments[1].value).toContain("你有没有想过，为什么一夜之间，好像全世界都在谈论“大模型”？");
+  });
+
+  it("keeps text segments when enabled (html + text)", () => {
+    const raw = ["Intro", "<div><p>real html</p></div>", "Outro"].join("\n");
+
+    const segments = splitContentSegments(raw, true);
+
+    expect(segments).toHaveLength(3);
+    expect(segments[0].type).toBe("text");
+    expect(segments[1].type).toBe("sandbox");
+    expect(segments[2].type).toBe("text");
+    expect(segments[2].value).toContain("Outro");
+  });
 });

@@ -110,10 +110,13 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
     return () => {
       resizeObserver.disconnect();
-      root.unmount();
-      rootRef.current = null;
-      docRef.current = null;
-      updateHeightRef.current = () => {};
+      // Defer unmount to avoid React warning when parent is mid-render
+      setTimeout(() => {
+        root.unmount();
+        rootRef.current = null;
+        docRef.current = null;
+        updateHeightRef.current = () => {};
+      }, 0);
     };
   }, []);
 

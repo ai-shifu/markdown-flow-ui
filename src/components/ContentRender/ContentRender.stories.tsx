@@ -998,18 +998,8 @@ export const SVGDemo: Story = {
 
 const HTML_DEMO_STREAM_SOURCE = `
 **提示词是：** \`// 这个函数用于\`
+“为了装得更像人”，这个猜想特别有意思！它触及了咱们对人机交互的一种直觉期待。不过，真相可能更底层、更本质：**这其实就是生成式 AI 本来的样子**，并非刻意模仿，也无关网络延迟。\n\n这种“一个字一个字”的生成方式，恰恰是 AI 智慧的源头活水。要理解它，咱们得先搞懂一个核心概念：**Token**。\n\n你可以把 Token 想象成 AI 理解世界的基本积木。对文字模型来说，一个 Token 通常不是一个完整的汉字或英文单词，而是一个更小的语义片段。\n\n下面这张图展示了同一句话，在不同语言里是如何被“切”成 Token 的：\n\n<div style=\"background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #0F63EE; margin: 20px 0;\">\n  <div style=\"display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;\">\n    <!-- 中文示例 -->\n    <div style=\"flex: 1; min-width: 250px;\">\n      <div style=\"font-weight: 600; color: #0F63EE; margin-bottom: 8px;\">中文例子</div>\n      <div style=\"background: white; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;\">\n        <div style=\"color: #64748b; font-size: 0.9em; margin-bottom: 5px;\">原句：人工智能很强大</div>\n        <div style=\"display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;\">\n          <span style=\"background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">人工</span>\n          <span style=\"background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">智能</span>\n          <span style=\"background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">很</span>\n          <span style=\"background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">强大</span>\n        </div>\n        <div style=\"color: #64748b; font-size: 0.85em; margin-top: 8px;\">被切分成 4 个 Token</div>\n      </div>\n    </div>\n\n    <!-- 英文示例 -->\n    <div style=\"flex: 1; min-width: 250px;\">\n      <div style=\"font-weight: 600; color: #0F63EE; margin-bottom: 8px;\">英文例子</div>\n      <div style=\"background: white; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;\">\n        <div style=\"color: #64748b; font-size: 0.9em; margin-bottom: 5px;\">原句：Artificial intelligence is powerful</div>\n        <div style=\"display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;\">\n          <span style=\"background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">Artificial</span>\n          <span style=\"background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\"> intelligence</span>\n          <span style=\"background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\"> is</span>\n          <span style=\"background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\"> powerful</span>\n        </div>\n        <div style=\"color: #64748b; font-size: 0.85em; margin-top: 8px;\">被切分成 4 个 Token</div>\n      </div>\n    </div>\n  </div>\n</div>\n\n你看，无论是中文还是英文，任何文章在 AI 眼里，都是由这样一块块 **Token 积木**组合而成的。它写作时，就是在玩一个超级复杂的“下一块积木猜猜看”游戏。\n\n这个逻辑可以推广。文生图模型，比如 Midjourney，它眼中的“Token”可能是图像的一个色块、一条线条；文生视频模型，它的“Token”可能就是视频的一帧画面或一个动作片段。**虽然在这些领域可能不直接叫“Token”，但核心理念相通：把复杂内容拆解成基础单元，再学习如何组合它们。**\n\n所以，AI 逐字输出，是因为它必须在生成当前 Token 后，才能基于它去预测下一个最可能的 Token。**这看似缓慢的“思考”过程，正是它创造力的来源。**
 
-### 图解说明
-
-这个过程就像一场精心设计的“**概率接龙**”：
-
-1.  **起点**：你给出了提示词 \`// 这个函数用于\`。AI 把它拆成 Token：\`//\`、\`这个\`、\`函数\`、\`用于\`。
-2.  **第一次“猜”**：AI 看着这个序列，开始计算后面接哪个 Token 概率最高。它“脑”中浮现出几个候选：\`计算\`（35%）、\`处理\`（28%）、\`验证\`（15%）…… **它选择了概率最高的 \`计算\`**。
-3.  **循环往复**：现在，提示词变成了 \`// 这个函数用于 计算\`。AI 再次基于**这个新的、更长的序列**，预测下一个 Token。候选可能是 \`用户\`、\`数据\`、\`数组\`…… 它再次选择概率最高的。
-4.  **步步为营**：每猜对一个 Token，就把它加到提示词后面，作为预测**下一个** Token 的上下文。如此循环，直到生成一个完整的句子（比如遇到句号\`.\`的概率足够高）。
-5.  **核心秘密**：**注意，AI 每次“猜”的时候，看的都是当前完整的上下文（即“提示词 + 已生成的所有 Token”）**。它没有在数据库里“搜索”标准答案，也没有进行“逻辑匹配”。它做的唯一一件事，就是基于海量数据训练出的“感觉”，计算**下一个词出现的概率**。
-
-**整个过程，没有“查找”，没有“搜索”，没有“匹配”。有的，只是一次又一次的“猜测”。**
 下面这张图会动态展示 AI 是如何像“猜谜”一样，一个 Token 一个 Token 地“猜”出完整句子的：
 
 <div id="token-demo" style="background: #f8fafc; padding: 25px; border-radius: 16px; border: 2px solid #e2e8f0; font-family: 'Segoe UI', system-ui, monospace; max-width: 800px; margin: 0 auto;">
@@ -1455,45 +1445,45 @@ export const HTMLDemo: Story = {
     sandboxFullscreenButtonText: "全屏浏览",
   },
   render: (args) => {
-    const [streamContent, setStreamContent] = useState("");
+    // const [streamContent, setStreamContent] = useState("");
 
-    useEffect(() => {
-      let currentIndex = 0;
-      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    // useEffect(() => {
+    //   let currentIndex = 0;
+    //   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-      const streamNext = () => {
-        if (currentIndex >= HTML_DEMO_STREAM_SOURCE.length) {
-          timeoutId = null;
-          return;
-        }
+    //   const streamNext = () => {
+    //     if (currentIndex >= HTML_DEMO_STREAM_SOURCE.length) {
+    //       timeoutId = null;
+    //       return;
+    //     }
 
-        const chunkSize = Math.floor(Math.random() * 30) + 1;
-        const nextIndex = Math.min(
-          HTML_DEMO_STREAM_SOURCE.length,
-          currentIndex + chunkSize
-        );
-        const nextChunk = HTML_DEMO_STREAM_SOURCE.slice(
-          currentIndex,
-          nextIndex
-        );
-        currentIndex = nextIndex;
-        setStreamContent((prev) => `${prev}${nextChunk}`);
+    //     const chunkSize = Math.floor(Math.random() * 30) + 1;
+    //     const nextIndex = Math.min(
+    //       HTML_DEMO_STREAM_SOURCE.length,
+    //       currentIndex + chunkSize
+    //     );
+    //     const nextChunk = HTML_DEMO_STREAM_SOURCE.slice(
+    //       currentIndex,
+    //       nextIndex
+    //     );
+    //     currentIndex = nextIndex;
+    //     setStreamContent((prev) => `${prev}${nextChunk}`);
 
-        timeoutId = setTimeout(streamNext, 80);
-      };
+    //     timeoutId = setTimeout(streamNext, 80);
+    //   };
 
-      // Simulate SSE-like streaming by appending 1-3 characters per tick
-      timeoutId = setTimeout(streamNext, 120);
+    //   // Simulate SSE-like streaming by appending 1-3 characters per tick
+    //   timeoutId = setTimeout(streamNext, 120);
 
-      return () => {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-      };
-    }, []);
-    console.log("streamContent", streamContent);
+    //   return () => {
+    //     if (timeoutId) {
+    //       clearTimeout(timeoutId);
+    //     }
+    //   };
+    // }, []);
+    // console.log("streamContent", streamContent);
 
-    return <ContentRender {...args} content={streamContent} />;
+    return <ContentRender {...args} content={HTML_DEMO_STREAM_SOURCE} />;
   },
 };
 

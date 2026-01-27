@@ -10,6 +10,7 @@ export interface IframeSandboxProps {
   styleLoadingText?: string;
   scriptLoadingText?: string;
   fullScreenButtonText?: string;
+  hideFullScreen?: boolean;
   mode?: "content" | "blackboard";
   type: "sandbox" | "markdown";
 }
@@ -22,6 +23,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   styleLoadingText,
   scriptLoadingText,
   fullScreenButtonText,
+  hideFullScreen = false,
   mode = "content",
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -146,6 +148,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         loadingText={loadingText}
         styleLoadingText={styleLoadingText}
         scriptLoadingText={scriptLoadingText}
+        fullScreenButtonText={fullScreenButtonText}
+        hideFullScreen={hideFullScreen}
         resetToken={resetToken}
       />
     );
@@ -170,24 +174,26 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         position: "relative",
       }}
     >
-      <button
-        type="button"
-        onClick={toggleFullscreen}
-        style={{
-          position: "absolute",
-          top: 8,
-          right: 8,
-          zIndex: 5,
-          padding: "6px 10px",
-          background: "rgba(0, 0, 0, 0.75)",
-          color: "#fff",
-          border: "none",
-          borderRadius: 6,
-          cursor: "pointer",
-        }}
-      >
-        {isFullscreen ? "退出全屏" : fullScreenButtonText || "全屏浏览"}
-      </button>
+      {!hideFullScreen && (
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            zIndex: 5,
+            padding: "6px 10px",
+            background: "rgba(0, 0, 0, 0.75)",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            cursor: "pointer",
+          }}
+        >
+          {isFullscreen ? "退出全屏" : fullScreenButtonText || "全屏浏览"}
+        </button>
+      )}
       {mode === "blackboard" && type === "markdown" ? (
         <ContentRender content={content} />
       ) : (

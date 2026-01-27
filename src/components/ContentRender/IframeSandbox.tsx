@@ -31,7 +31,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const rootRef = useRef<Root | null>(null);
   const docRef = useRef<Document | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
-  const [height, setHeight] = useState(480);
+  const [, setHeight] = useState(480);
   const [resetToken, setResetToken] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const prevHtmlRef = useRef<string>("");
@@ -208,7 +208,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
           className={className}
           style={{
             width: "100%",
-            height: `${height}px`,
+            height: "100%",
+            // height: `${height}px`,
             // margin: "16px 0",
           }}
           title="HTML Sandbox"

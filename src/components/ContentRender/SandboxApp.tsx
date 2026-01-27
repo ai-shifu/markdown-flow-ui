@@ -231,7 +231,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   return (
     <div
       ref={wrapperRef}
-      style={{ position: "relative", minHeight: 120 }}
+      style={{ position: "relative", height: "100vh" }}
       aria-busy={!!overlayMessage}
     >
       <div

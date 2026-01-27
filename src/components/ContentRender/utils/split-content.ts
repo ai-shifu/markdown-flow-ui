@@ -53,6 +53,19 @@ export const splitContentSegments = (
   raw: string,
   keepText = false
 ): RenderSegment[] => {
+  const svgOpenIndex = raw.search(/<svg\b/i);
+  if (svgOpenIndex !== -1 && raw.indexOf("</svg>", svgOpenIndex) === -1) {
+    return [{ type: "markdown", value: raw }];
+  }
+
+  const completeSvgMatch = raw.match(/<svg[\s\S]*?<\/svg>/i);
+  if (completeSvgMatch && keepText) {
+    if (!raw.trim().toLowerCase().endsWith("</svg>")) {
+      return [{ type: "markdown", value: `${raw}</svg>` }];
+    }
+    return [{ type: "markdown", value: raw }];
+  }
+
   const sandboxStartIndex = raw.search(SANDBOX_START_PATTERN);
   const inlineMatch = findInlineSandboxMatch(raw);
 

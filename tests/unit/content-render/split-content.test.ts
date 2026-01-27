@@ -45,4 +45,26 @@ describe("splitContentSegments", () => {
     expect(segments[2].type).toBe("text");
     expect(segments[2].value).toContain("Outro");
   });
+
+  it("treats streamed svg plus trailing text as markdown", () => {
+    const raw =
+      '<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="#f5f5f5"/></svg>不是一个技术名词，而是一种工作方式：不追求完全理解每一行代码，更关注“整体是否跑通”“功能是否达成';
+
+    const segments = splitContentSegments(raw);
+    expect(segments).toHaveLength(1);
+    expect(segments[0].type).toBe("markdown");
+    expect(segments[0].value).toContain("<svg");
+  });
+
+  it("keeps streamed svg as a single markdown block when keepText is true", () => {
+    const raw =
+      '<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="#f5f5f5"/></svg>不是一个技术名词，而是一种工作方式：不追求完全理解每一行代码，更关注“整体是否跑通”“功能是否达成';
+
+    const segments = splitContentSegments(raw, true);
+    console.log('segments=====', segments);
+
+    expect(segments).toHaveLength(1);
+    expect(segments[0].type).toBe("markdown");
+    expect(segments[0].value).toContain("</svg>");
+  });
 });

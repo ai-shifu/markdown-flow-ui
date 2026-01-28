@@ -168,7 +168,7 @@ graph TD
 
   it("treats streamed svg plus trailing text as markdown", () => {
     const raw =
-      '<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="#f5f5f5"/></svg>不是一个技术名词，而是一种工作方式：不追求完全理解每一行代码，更关注“整体是否跑通”“功能是否达成';
+        '这门课，核心就是讲如何调教 AI 的，目标是帮你成为 AI 的主人。而且，调教的思路非常符合人的直觉，最核心的只需要理解三件事：<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="#f5f5f5"/></svg>不是一个技术名词，而是一种工作方式：不追求完全理解每一行代码，更关注“整体是否跑通”“功能是否达成';
 
     const segments = splitContentSegments(raw);
     expect(segments).toHaveLength(1);
@@ -178,14 +178,14 @@ graph TD
 
   it("keeps streamed svg as a single markdown block when keepText is true", () => {
     const raw =
-      '<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="#f5f5f5"/></svg>不是一个技术名词，而是一种工作方式：不追求完全理解每一行代码，更关注“整体是否跑通”“功能是否达成';
+    '这门课，核心就是讲如何调教 AI 的，目标是帮你成为 AI 的主人。而且，调教的思路非常符合人的直觉，最核心的只需要理解三件事：<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="#f5';
 
     const segments = splitContentSegments(raw, true);
    
-
-    expect(segments).toHaveLength(1);
-    expect(segments[0].type).toBe("markdown");
-    expect(segments[0].value).toContain("</svg>");
+    console.log('segments=====', segments);
+    expect(segments).toHaveLength(2);
+    expect(segments[1].type).toBe("markdown");
+    expect(segments[1].value).toContain("</svg>");
   });
 
   it("keeps long fenced code block as single markdown segment", () => {

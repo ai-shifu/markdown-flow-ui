@@ -84,6 +84,25 @@ export const splitContentSegments = (
   }
 
   const svgOpenIndex = raw.search(/<svg\b/i);
+  if (keepText && svgOpenIndex !== -1) {
+    const before = raw.slice(0, svgOpenIndex);
+    const closeIdx = raw.indexOf("</svg>", svgOpenIndex);
+    const svgBlock =
+      closeIdx === -1
+        ? `${raw.slice(svgOpenIndex)}</svg>`
+        : raw.slice(svgOpenIndex, closeIdx + "</svg>".length);
+    const after = closeIdx === -1 ? "" : raw.slice(closeIdx + "</svg>".length);
+
+    const segments: RenderSegment[] = [];
+    if (before.trim()) {
+      segments.push({ type: "text", value: before });
+    }
+    segments.push({ type: "markdown", value: svgBlock });
+    if (after.trim()) {
+      segments.push(...splitContentSegments(after, true));
+    }
+    return segments;
+  }
   if (svgOpenIndex !== -1 && raw.indexOf("</svg>", svgOpenIndex) === -1) {
     return [{ type: "markdown", value: raw }];
   }
@@ -110,14 +129,10 @@ export const splitContentSegments = (
 
   const completeSvgMatch = raw.match(/<svg[\s\S]*?<\/svg>/i);
   if (completeSvgMatch && keepText) {
-    const hasLeadingContent =
-      svgOpenIndex > -1 && raw.slice(0, svgOpenIndex).trim().length > 0;
-    if (!hasLeadingContent) {
-      if (!raw.trim().toLowerCase().endsWith("</svg>")) {
-        return [{ type: "markdown", value: `${raw}</svg>` }];
-      }
-      return [{ type: "markdown", value: raw }];
+    if (!raw.trim().toLowerCase().endsWith("</svg>")) {
+      return [{ type: "markdown", value: `${raw}</svg>` }];
     }
+    return [{ type: "markdown", value: raw }];
   }
 
   const sandboxStartIndex = raw.search(SANDBOX_START_PATTERN);

@@ -181,15 +181,6 @@ export const splitContentSegments = (
     !!inlineMatch &&
     (sandboxStartIndex === -1 || inlineMatch.start < sandboxStartIndex);
 
-  if (!keepText) {
-    return [
-      {
-        type: shouldUseInline ? "markdown" : "sandbox",
-        value: raw,
-      },
-    ];
-  }
-
   const startIndex = shouldUseInline ? inlineMatch!.start : sandboxStartIndex;
   const tagName = shouldUseInline
     ? undefined
@@ -201,6 +192,18 @@ export const splitContentSegments = (
   const blockEnd = shouldUseInline
     ? inlineMatch!.end
     : findHtmlBlockEnd(raw, startIndex, tagName);
+
+  if (!keepText) {
+    const segmentValue = shouldUseInline
+      ? raw
+      : raw.slice(startIndex, blockEnd);
+    return [
+      {
+        type: shouldUseInline ? "markdown" : "sandbox",
+        value: segmentValue,
+      },
+    ];
+  }
 
   const segments: RenderSegment[] = [];
   const before = raw.slice(0, startIndex);

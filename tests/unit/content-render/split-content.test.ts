@@ -97,10 +97,12 @@ describe("splitContentSegments", () => {
 整个过程充分利用了平台的**用户互动、输出给 AI、AI 判断、AI 输出**这些核心能力，为你提供即时、个性化的学习效果检验。`
 
     const segments = splitContentSegments(raw);
-
+    console.log('segments', segments);
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("sandbox");
     expect(segments[0].value).toContain("<div style=\"width: 100%; overflow-x: auto;\">");
+    expect(segments[0].value).not.toContain("前面内容介绍了如何用 AI 师傅平台进行教学，本小节我们重点介绍如何用 AI 师傅平台进行测评。");
+    expect(segments[0].value).not.toContain("在 AI 师傅平台上进行测评");
   });
 
   it("keeps text segments when enabled (mermaid + text)", () => {

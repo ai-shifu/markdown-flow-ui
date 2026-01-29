@@ -76,18 +76,21 @@ export const splitContentSegments = (
   keepText = false
 ): RenderSegment[] => {
   const fenceStart = raw.indexOf("```");
-  if (keepText && fenceStart !== -1) {
+  if (fenceStart !== -1) {
     const closingFence = raw.indexOf("```", fenceStart + 3);
     if (closingFence === -1) {
-      const before = raw.slice(0, fenceStart);
-      const beforeText = before.trimEnd();
-      const fenceBlock = raw.slice(fenceStart);
-      const segments: RenderSegment[] = [];
-      if (beforeText) {
-        segments.push({ type: "text", value: beforeText });
+      if (keepText) {
+        const before = raw.slice(0, fenceStart);
+        const beforeText = before.trimEnd();
+        const fenceBlock = raw.slice(fenceStart);
+        const segments: RenderSegment[] = [];
+        if (beforeText) {
+          segments.push({ type: "text", value: beforeText });
+        }
+        segments.push({ type: "markdown", value: fenceBlock });
+        return segments;
       }
-      segments.push({ type: "markdown", value: fenceBlock });
-      return segments;
+      return [{ type: "markdown", value: raw }];
     }
   }
 
@@ -112,7 +115,7 @@ export const splitContentSegments = (
     return segments;
   }
   if (svgOpenIndex !== -1 && raw.indexOf("</svg>", svgOpenIndex) === -1) {
-    return [{ type: "markdown", value: raw }];
+    return [{ type: "markdown", value: `${raw}</svg>` }];
   }
 
   const tableBlock = extractTableBlock(raw);
@@ -156,6 +159,15 @@ export const splitContentSegments = (
   const shouldUseInline =
     !!inlineMatch &&
     (sandboxStartIndex === -1 || inlineMatch.start < sandboxStartIndex);
+
+  if (!keepText) {
+    return [
+      {
+        type: shouldUseInline ? "markdown" : "sandbox",
+        value: raw,
+      },
+    ];
+  }
 
   const startIndex = shouldUseInline ? inlineMatch!.start : sandboxStartIndex;
   const blockEnd = shouldUseInline

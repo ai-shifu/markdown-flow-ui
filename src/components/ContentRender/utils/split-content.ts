@@ -79,7 +79,15 @@ export const splitContentSegments = (
   if (keepText && fenceStart !== -1) {
     const closingFence = raw.indexOf("```", fenceStart + 3);
     if (closingFence === -1) {
-      return [{ type: "markdown", value: raw }];
+      const before = raw.slice(0, fenceStart);
+      const beforeText = before.trimEnd();
+      const fenceBlock = raw.slice(fenceStart);
+      const segments: RenderSegment[] = [];
+      if (beforeText) {
+        segments.push({ type: "text", value: beforeText });
+      }
+      segments.push({ type: "markdown", value: fenceBlock });
+      return segments;
     }
   }
 

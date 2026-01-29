@@ -339,7 +339,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     () => splitContentSegments(content, true),
     [content]
   );
-  console.log("renderSegments=====", content, renderSegments);
+
   const hasSandbox = renderSegments.some(
     (segment) => segment.type === "sandbox"
   );

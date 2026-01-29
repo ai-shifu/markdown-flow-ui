@@ -89,6 +89,25 @@ describe("splitContentSegments", () => {
     expect(segments[2].value).toContain("AI 是一种工具");
   });
 
+  it("splits text and partial mermaid fenced block when keepText is true", () => {
+    const raw = `简单说，AI 的发展历程可以浓缩为四个阶段：
+
+\`\`\`mermaid
+timeline
+    title AI 发展四阶段
+    section 第一阶段
+        穷举法
+    : 基于规则与计算`;
+    console.log('splits text and partial mermaid fenced block when keepText is true', splitContentSegments(raw, true));
+    const segments = splitContentSegments(raw, true);
+    expect(segments).toHaveLength(2);
+    expect(segments[0].type).toBe("text");
+    expect(segments[0].value).toBe("简单说，AI 的发展历程可以浓缩为四个阶段：");
+    expect(segments[1].type).toBe("markdown");
+    expect(segments[1].value).toContain("```mermaid");
+    expect(segments[1].value).toContain("timeline");
+  });
+
   it("splits leading text, img, and trailing text when keepText is true", () => {
     const raw = `你好，我是孙志岗，初次见面，很高兴认识你。
 
@@ -152,7 +171,7 @@ graph TD
 3.  打造 AI 产品是技术高手的事情`;
 
     const segments = splitContentSegments(raw, true);
-    console.log('segments=====', segments);
+    // console.log('splits leading text, table, and trailing text when keepText is true', segments);
     expect(segments).toHaveLength(3);
     expect(segments[0].type).toBe("text");
     expect(segments[0].value).toBe("你好，我是孙志岗，初次见面，很高兴认识你。\n\n");
@@ -182,7 +201,7 @@ graph TD
 
     const segments = splitContentSegments(raw, true);
    
-    console.log('segments=====', segments);
+    // console.log('keeps streamed svg as a single markdown block when keepText is true', segments);
     expect(segments).toHaveLength(2);
     expect(segments[1].type).toBe("markdown");
     expect(segments[1].value).toContain("</svg>");

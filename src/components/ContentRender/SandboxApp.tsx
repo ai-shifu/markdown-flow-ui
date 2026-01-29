@@ -243,6 +243,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
         flexDirection: isBlackboard ? "column" : undefined,
         // if use center, too long iframe wont see header
         justifyContent: isBlackboard ? "space-around" : undefined,
+        alignItems: isBlackboard ? "center" : undefined,
       }}
       aria-busy={!!overlayMessage}
     >

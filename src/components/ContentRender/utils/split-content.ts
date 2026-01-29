@@ -13,11 +13,28 @@ const INLINE_SANDBOX_PATTERNS: RegExp[] = [
   /```[a-zA-Z0-9]+[\s\S]*?```/i,
 ];
 
-const closingBoundary = /<\/[a-z][^>]*>\s*\n(?=[^\s<])/gi;
+const closingBoundary = /<\/[a-z][^>]*>/gi;
 
 type MatchResult = { start: number; end: number };
 
-const findHtmlBlockEnd = (raw: string, startIndex: number) => {
+const findHtmlBlockEnd = (
+  raw: string,
+  startIndex: number,
+  tagName?: string
+) => {
+  if (tagName) {
+    const lower = raw.toLowerCase();
+    const endTag = `</${tagName.toLowerCase()}>`;
+    const closeIdx = lower.indexOf(endTag, startIndex);
+    if (closeIdx !== -1) {
+      let blockEnd = closeIdx + endTag.length;
+      while (blockEnd < raw.length && /\s/.test(raw[blockEnd])) {
+        blockEnd += 1;
+      }
+      return blockEnd;
+    }
+  }
+
   let blockEnd = raw.length;
   let match: RegExpExecArray | null;
   closingBoundary.lastIndex = 0;
@@ -75,6 +92,7 @@ export const splitContentSegments = (
   raw: string,
   keepText = false
 ): RenderSegment[] => {
+  const sandboxStartIndex = raw.search(SANDBOX_START_PATTERN);
   const fenceStart = raw.indexOf("```");
   if (fenceStart !== -1) {
     const closingFence = raw.indexOf("```", fenceStart + 3);
@@ -95,7 +113,11 @@ export const splitContentSegments = (
   }
 
   const svgOpenIndex = raw.search(/<svg\b/i);
-  if (keepText && svgOpenIndex !== -1) {
+  const canHandleInlineSvg =
+    svgOpenIndex !== -1 &&
+    (sandboxStartIndex === -1 || svgOpenIndex <= sandboxStartIndex);
+
+  if (keepText && canHandleInlineSvg) {
     const before = raw.slice(0, svgOpenIndex);
     const closeIdx = raw.indexOf("</svg>", svgOpenIndex);
     const svgBlock =
@@ -114,39 +136,38 @@ export const splitContentSegments = (
     }
     return segments;
   }
-  if (svgOpenIndex !== -1 && raw.indexOf("</svg>", svgOpenIndex) === -1) {
+  if (canHandleInlineSvg && raw.indexOf("</svg>", svgOpenIndex) === -1) {
     return [{ type: "markdown", value: `${raw}</svg>` }];
   }
 
   const tableBlock = extractTableBlock(raw);
   if (tableBlock) {
+    if (!keepText) {
+      return [{ type: "markdown", value: tableBlock.block }];
+    }
+
     const segments: RenderSegment[] = [];
     const before = raw.slice(0, tableBlock.start);
-    if (keepText && before.trim()) {
+    if (before.trim()) {
       segments.push({ type: "text", value: before });
     }
     segments.push({ type: "markdown", value: tableBlock.block });
     const after = raw.slice(tableBlock.end);
     const hasProgress = after.length < raw.length;
     if (after.trim() && hasProgress) {
-      segments.push(
-        ...(keepText
-          ? splitContentSegments(after, true)
-          : splitContentSegments(after))
-      );
+      segments.push(...splitContentSegments(after, true));
     }
     return segments;
   }
 
   const completeSvgMatch = raw.match(/<svg[\s\S]*?<\/svg>/i);
-  if (completeSvgMatch && keepText) {
+  if (completeSvgMatch && keepText && sandboxStartIndex === -1) {
     if (!raw.trim().toLowerCase().endsWith("</svg>")) {
       return [{ type: "markdown", value: `${raw}</svg>` }];
     }
     return [{ type: "markdown", value: raw }];
   }
 
-  const sandboxStartIndex = raw.search(SANDBOX_START_PATTERN);
   const inlineMatch = findInlineSandboxMatch(raw);
 
   if (sandboxStartIndex === -1 && !inlineMatch) {
@@ -170,9 +191,16 @@ export const splitContentSegments = (
   }
 
   const startIndex = shouldUseInline ? inlineMatch!.start : sandboxStartIndex;
+  const tagName = shouldUseInline
+    ? undefined
+    : raw
+        .slice(startIndex)
+        .match(
+          /^<(script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)[\s>]/i
+        )?.[1];
   const blockEnd = shouldUseInline
     ? inlineMatch!.end
-    : findHtmlBlockEnd(raw, startIndex);
+    : findHtmlBlockEnd(raw, startIndex, tagName);
 
   const segments: RenderSegment[] = [];
   const before = raw.slice(0, startIndex);

@@ -13,14 +13,94 @@ describe("splitContentSegments", () => {
     expect(segments[0].value).toContain("```mermaid");
   });
 
-  it("splits true html blocks into sandbox", () => {
-    const raw = ["Intro", "<div><p>real html</p></div>", "Outro"].join("\n");
+  it("splits true html blocks into sandbox when keepText is true", () => {
+    const raw = `<div style="width: 100%; overflow-x: auto;">
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="800" height="400" fill="#F8FAFC" rx="8"/>
+    <rect x="100" y="280" width="600" height="80" fill="#0F63EE" rx="8"/>
+    <text x="400" y="320" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="16" font-weight="bold">AI师傅平台基础能力</text>
+    <rect x="150" y="240" width="100" height="30" fill="#E6F0FF" stroke="#0F63EE" stroke-width="2" rx="4"/>
+    <text x="200" y="260" text-anchor="middle" fill="#0F63EE" font-family="Arial, sans-serif" font-size="12">用户互动</text>
+    <rect x="275" y="240" width="100" height="30" fill="#E6F0FF" stroke="#0F63EE" stroke-width="2" rx="4"/>
+    <text x="325" y="260" text-anchor="middle" fill="#0F63EE" font-family="Arial, sans-serif" font-size="12">输出给AI</text>
+    <rect x="400" y="240" width="100" height="30" fill="#E6F0FF" stroke="#0F63EE" stroke-width="2" rx="4"/>
+    <text x="450" y="260" text-anchor="middle" fill="#0F63EE" font-family="Arial, sans-serif" font-size="12">AI判断</text>
+    <rect x="525" y="240" width="100" height="30" fill="#E6F0FF" stroke="#0F63EE" stroke-width="2" rx="4"/>
+    <text x="575" y="260" text-anchor="middle" fill="#0F63EE" font-family="Arial, sans-serif" font-size="12">AI输出</text>
+    <line x1="200" y1="280" x2="200" y2="240" stroke="#0F63EE" stroke-width="2"/>
+    <line x1="325" y1="280" x2="325" y2="240" stroke="#0F63EE" stroke-width="2"/>
+    <line x1="450" y1="280" x2="450" y2="240" stroke="#0F63EE" stroke-width="2"/>
+    <line x1="575" y1="280" x2="575" y2="240" stroke="#0F63EE" stroke-width="2"/>
+    <rect x="250" y="120" width="120" height="60" fill="#0F63EE" rx="8"/>
+    <text x="310" y="150" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14" font-weight="bold">教学</text>
+    <rect x="430" y="120" width="120" height="60" fill="#0F63EE" rx="8"/>
+    <text x="490" y="150" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14" font-weight="bold">测评</text>
+    <line x1="310" y1="180" x2="310" y2="240" stroke="#0F63EE" stroke-width="2" stroke-dasharray="5,5"/>
+    <line x1="490" y1="180" x2="490" y2="240" stroke="#0F63EE" stroke-width="2" stroke-dasharray="5,5"/>
+</svg>
+</div>
+
+前面内容介绍了如何用 AI 师傅平台进行教学，本小节我们重点介绍如何用 AI 师傅平台进行测评。
+
+在 AI 师傅平台上进行测评，核心依然是结合平台本身的基础能力。聚焦到**随堂测验**这个场景，流程可以概括为：
+
+1.  **大模型出题**：基于课程内容和你的背景（虽然你不告诉我具体是什么，但系统会基于你设定的背景来生成题目），AI 会生成个性化的测验题目。
+2.  **学员互动答题**：kk，你会通过互动的方式（如选择题、填空题、问答题等）来回答问题。
+3.  **大模型判题**：AI 会分析你的答案，进行判断，并给出反馈。
+
+整个过程充分利用了平台的**用户互动、输出给 AI、AI 判断、AI 输出**这些核心能力，为你提供即时、个性化的学习效果检验。`;
+
+    const segments = splitContentSegments(raw, true);
+
+    expect(segments).toHaveLength(2);
+    expect(segments[0].type).toBe("sandbox");
+    expect(segments[0].value).toContain("<div style=\"width: 100%; overflow-x: auto;\">");
+    expect(segments[1].type).toBe("text");
+    expect(segments[1].value).toContain("前面内容介绍了如何用 AI 师傅平台进行教学，本小节我们重点介绍如何用 AI 师傅平台进行测评。");
+  });
+
+  it("splits true html blocks into sandbox when keepText is false", () => {
+    const raw = `<div style="width: 100%; overflow-x: auto;">
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="800" height="400" fill="#F8FAFC" rx="8"/>
+    <rect x="100" y="280" width="600" height="80" fill="#0F63EE" rx="8"/>
+    <text x="400" y="320" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="16" font-weight="bold">AI师傅平台基础能力</text>
+    <rect x="150" y="240" width="100" height="30" fill="#E6F0FF" stroke="#0F63EE" stroke-width="2" rx="4"/>
+    <text x="200" y="260" text-anchor="middle" fill="#0F63EE" font-family="Arial, sans-serif" font-size="12">用户互动</text>
+    <rect x="275" y="240" width="100" height="30" fill="#E6F0FF" stroke="#0F63EE" stroke-width="2" rx="4"/>
+    <text x="325" y="260" text-anchor="middle" fill="#0F63EE" font-family="Arial, sans-serif" font-size="12">输出给AI</text>
+    <rect x="400" y="240" width="100" height="30" fill="#E6F0FF" stroke="#0F63EE" stroke-width="2" rx="4"/>
+    <text x="450" y="260" text-anchor="middle" fill="#0F63EE" font-family="Arial, sans-serif" font-size="12">AI判断</text>
+    <rect x="525" y="240" width="100" height="30" fill="#E6F0FF" stroke="#0F63EE" stroke-width="2" rx="4"/>
+    <text x="575" y="260" text-anchor="middle" fill="#0F63EE" font-family="Arial, sans-serif" font-size="12">AI输出</text>
+    <line x1="200" y1="280" x2="200" y2="240" stroke="#0F63EE" stroke-width="2"/>
+    <line x1="325" y1="280" x2="325" y2="240" stroke="#0F63EE" stroke-width="2"/>
+    <line x1="450" y1="280" x2="450" y2="240" stroke="#0F63EE" stroke-width="2"/>
+    <line x1="575" y1="280" x2="575" y2="240" stroke="#0F63EE" stroke-width="2"/>
+    <rect x="250" y="120" width="120" height="60" fill="#0F63EE" rx="8"/>
+    <text x="310" y="150" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14" font-weight="bold">教学</text>
+    <rect x="430" y="120" width="120" height="60" fill="#0F63EE" rx="8"/>
+    <text x="490" y="150" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14" font-weight="bold">测评</text>
+    <line x1="310" y1="180" x2="310" y2="240" stroke="#0F63EE" stroke-width="2" stroke-dasharray="5,5"/>
+    <line x1="490" y1="180" x2="490" y2="240" stroke="#0F63EE" stroke-width="2" stroke-dasharray="5,5"/>
+</svg>
+</div>
+
+前面内容介绍了如何用 AI 师傅平台进行教学，本小节我们重点介绍如何用 AI 师傅平台进行测评。
+
+在 AI 师傅平台上进行测评，核心依然是结合平台本身的基础能力。聚焦到**随堂测验**这个场景，流程可以概括为：
+
+1.  **大模型出题**：基于课程内容和你的背景（虽然你不告诉我具体是什么，但系统会基于你设定的背景来生成题目），AI 会生成个性化的测验题目。
+2.  **学员互动答题**：kk，你会通过互动的方式（如选择题、填空题、问答题等）来回答问题。
+3.  **大模型判题**：AI 会分析你的答案，进行判断，并给出反馈。
+
+整个过程充分利用了平台的**用户互动、输出给 AI、AI 判断、AI 输出**这些核心能力，为你提供即时、个性化的学习效果检验。`
 
     const segments = splitContentSegments(raw);
 
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("sandbox");
-    expect(segments[0].value).toContain("<div><p>real html</p></div>");
+    expect(segments[0].value).toContain("<div style=\"width: 100%; overflow-x: auto;\">");
   });
 
   it("keeps text segments when enabled (mermaid + text)", () => {

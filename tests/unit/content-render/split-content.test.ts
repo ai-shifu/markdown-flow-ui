@@ -11,6 +11,7 @@ describe("splitContentSegments", () => {
     expect(segments).toHaveLength(1);
     segments.forEach((segment) => expect(segment.type).toBe("markdown"));
     expect(segments[0].value).toContain("```mermaid");
+    expect(segments[0].value).not.toContain("你有没有想过，为什么一夜之间，好像全世界都在谈论“大模型”？");
   });
 
   it("splits true html blocks into sandbox when keepText is true", () => {
@@ -207,6 +208,8 @@ describe("splitContentSegments", () => {
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toContain("<svg");
     expect(segments[0].value).toContain("</svg>");
+    expect(segments[0].value).not.toContain("为了判断咱们这门课是否真的适合你，我想先了解一下你的基本看法。下面几个观点，你同意吗？");
+
   });
 
 
@@ -244,6 +247,8 @@ timeline
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toContain("```mermaid");
     expect(segments[0].value).toContain("timeline");
+    expect(segments[0].value).not.toContain("的发展历程可以浓缩为四个阶段：");
+
   });
 
 
@@ -287,6 +292,8 @@ timeline
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toContain("<img");
+    expect(segments[0].value).not.toContain("为了判断咱们这门课是否真的适合你，我想先了解一下你的基本看法。下面几个观点，你同意吗？");
+
   });
 
   it("splits leading text, mermaid, and trailing text when keepText is true", () => {
@@ -334,6 +341,8 @@ graph TD
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toContain("```mermaid");
+    expect(segments[0].value).not.toContain("为了判断咱们这门课是否真的适合你，我想先了解一下你的基本看法。下面几个观点，你同意吗？");
+
   });
 
   it("splits leading text, table, and trailing text when keepText is true", () => {
@@ -384,6 +393,8 @@ graph TD
     expect(segments[0].value).toBe(`| Header 1 | Header 2 |
 |----------|----------|
 | Cell 1   | Cell 2   |`);
+    expect(segments[0].value).not.toContain("你好，我是孙志岗，初次见面，很高兴认识你。");
+    expect(segments[0].value).not.toContain("为了判断咱们这门课是否真的适合你，我想先了解一下你的基本看法。下面几个观点，你同意吗？");
   });
 
   it("treats streamed svg plus trailing text as markdown", () => {
@@ -394,6 +405,8 @@ graph TD
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toContain("<svg");
+    expect(segments[0].value).not.toContain("这门课，核心就是讲如何调教 AI 的，目标是帮你成为 AI 的主人。而且，调教的思路非常符合人的直觉，最核心的只需要理解三件事：");
+    expect(segments[0].value).not.toContain("不追求完全理解每一行代码，更关注“整体是否跑通”“功能是否达成");
   });
 
   it("keeps streamed svg as a single markdown block when keepText is true", () => {
@@ -418,6 +431,7 @@ graph TD
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toContain("</svg>");
+    expect(segments[0].value).not.toContain("这门课，核心就是讲如何调教 AI 的，目标是帮你成为 AI 的主人。而且，调教的思路非常符合人的直觉，最核心的只需要理解三件事：");
   });
 
 

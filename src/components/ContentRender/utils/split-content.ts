@@ -108,7 +108,7 @@ export const splitContentSegments = (
         segments.push({ type: "markdown", value: fenceBlock });
         return segments;
       }
-      return [{ type: "markdown", value: raw }];
+      return [{ type: "markdown", value: raw.slice(fenceStart) }];
     }
   }
 
@@ -137,7 +137,8 @@ export const splitContentSegments = (
     return segments;
   }
   if (canHandleInlineSvg && raw.indexOf("</svg>", svgOpenIndex) === -1) {
-    return [{ type: "markdown", value: `${raw}</svg>` }];
+    const svgOnly = raw.slice(svgOpenIndex);
+    return [{ type: "markdown", value: `${svgOnly}</svg>` }];
   }
 
   const tableBlock = extractTableBlock(raw);
@@ -194,9 +195,7 @@ export const splitContentSegments = (
     : findHtmlBlockEnd(raw, startIndex, tagName);
 
   if (!keepText) {
-    const segmentValue = shouldUseInline
-      ? raw
-      : raw.slice(startIndex, blockEnd);
+    const segmentValue = raw.slice(startIndex, blockEnd);
     return [
       {
         type: shouldUseInline ? "markdown" : "sandbox",

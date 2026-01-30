@@ -14,6 +14,8 @@ const INLINE_SANDBOX_PATTERNS: RegExp[] = [
 ];
 
 const closingBoundary = /<\/[a-z][^>]*>\s*\n(?=[^\s<])/gi;
+const CUSTOM_BUTTON_PATTERN =
+  /<custom-button-after-content\b[\s\S]*?<\/custom-button-after-content>/gi;
 
 type MatchResult = { start: number; end: number };
 
@@ -29,6 +31,38 @@ const findHtmlBlockEnd = (raw: string, startIndex: number) => {
   }
 
   return blockEnd;
+};
+
+const splitCustomButtonsFromSandbox = (segments: RenderSegment[]) => {
+  if (!segments.length) return segments;
+  const output: RenderSegment[] = [];
+
+  segments.forEach((segment) => {
+    if (segment.type !== "sandbox") {
+      output.push(segment);
+      return;
+    }
+
+    CUSTOM_BUTTON_PATTERN.lastIndex = 0;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = CUSTOM_BUTTON_PATTERN.exec(segment.value)) !== null) {
+      const before = segment.value.slice(lastIndex, match.index);
+      if (before.trim()) {
+        output.push({ type: "sandbox", value: before });
+      }
+      output.push({ type: "markdown", value: match[0] });
+      lastIndex = match.index + match[0].length;
+    }
+
+    const rest = segment.value.slice(lastIndex);
+    if (rest.trim()) {
+      output.push({ type: "sandbox", value: rest });
+    }
+  });
+
+  return output;
 };
 
 const findInlineSandboxMatch = (raw: string): MatchResult | null => {
@@ -75,11 +109,14 @@ export const splitContentSegments = (
   raw: string,
   keepText = false
 ): RenderSegment[] => {
+  const finalizeSegments = (segments: RenderSegment[]) =>
+    splitCustomButtonsFromSandbox(segments);
+
   const fenceStart = raw.indexOf("```");
   if (keepText && fenceStart !== -1) {
     const closingFence = raw.indexOf("```", fenceStart + 3);
     if (closingFence === -1) {
-      return [{ type: "markdown", value: raw }];
+      return finalizeSegments([{ type: "markdown", value: raw }]);
     }
   }
 
@@ -107,11 +144,11 @@ export const splitContentSegments = (
       if (after.trim()) {
         segments.push(...splitContentSegments(after, true));
       }
-      return segments;
+      return finalizeSegments(segments);
     }
 
     if (closeIdx === -1) {
-      return [{ type: "markdown", value: svgBlock }];
+      return finalizeSegments([{ type: "markdown", value: svgBlock }]);
     }
   }
 
@@ -132,14 +169,14 @@ export const splitContentSegments = (
           : splitContentSegments(after))
       );
     }
-    return segments;
+    return finalizeSegments(segments);
   }
 
   const inlineMatch = findInlineSandboxMatch(raw);
 
   if (sandboxStartIndex === -1 && !inlineMatch) {
     if (keepText && raw.trim()) {
-      return [{ type: "text", value: raw }];
+      return finalizeSegments([{ type: "text", value: raw }]);
     }
     return [];
   }
@@ -171,5 +208,5 @@ export const splitContentSegments = (
     segments.push(...splitContentSegments(after, keepText));
   }
 
-  return segments;
+  return finalizeSegments(segments);
 };

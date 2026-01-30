@@ -1315,6 +1315,7 @@ const HTML_DEMO_STREAM_SOURCE = `
   renderCandidates();
 })();
 </script>
+<custom-button-after-content><img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f680.svg" alt="icon" width="16" height="16" loading="lazy" /><span>点击自定义按钮</span></custom-button-after-content>
 
 ---
 

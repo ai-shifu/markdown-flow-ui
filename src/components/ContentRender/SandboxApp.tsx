@@ -3,7 +3,6 @@ import { Loader2 } from "lucide-react";
 
 export interface SandboxAppProps {
   html: string;
-  loadingText?: string;
   styleLoadingText?: string;
   scriptLoadingText?: string;
   resetToken?: number;
@@ -12,7 +11,6 @@ export interface SandboxAppProps {
 
 const SandboxApp: React.FC<SandboxAppProps> = ({
   html,
-  loadingText,
   styleLoadingText,
   scriptLoadingText,
   resetToken = 0,
@@ -20,7 +18,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isWaitingFirstDiv, setIsWaitingFirstDiv] = useState(true);
+  const [, setIsWaitingFirstDiv] = useState(true);
   const [isGeneratingStyles, setIsGeneratingStyles] = useState(false);
   const [isGeneratingScripts, setIsGeneratingScripts] = useState(false);
   const appendedStylesRef = useRef<HTMLStyleElement[]>([]);
@@ -226,7 +224,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       return scriptLoadingText || "Building scripts cache...";
     if (isGeneratingStyles || hasStylesRef.current)
       return styleLoadingText || "Building styles...";
-    if (isWaitingFirstDiv) return loadingText || "Loading...";
     return null;
   })();
 

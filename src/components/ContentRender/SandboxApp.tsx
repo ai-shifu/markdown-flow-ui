@@ -64,10 +64,15 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     if (!styleEl) {
       styleEl = doc.createElement("style");
       styleEl.id = styleId;
-      styleEl.textContent =
-        "@keyframes sandbox-spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }";
       doc.head?.appendChild(styleEl);
     }
+    styleEl.textContent = `
+      @keyframes sandbox-spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+      .sandbox-wrapper { align-items: center; }
+      @media (max-width: 640px) {
+        .sandbox-wrapper { align-items: stretch; }
+      }
+    `;
   }, []);
 
   useEffect(() => {
@@ -232,6 +237,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   return (
     <div
       ref={wrapperRef}
+      className="sandbox-wrapper"
       style={{
         position: "relative",
         width: "100%",
@@ -240,7 +246,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
         flexDirection: "column",
         // if use center, too long iframe wont see header
         justifyContent: "space-around",
-        alignItems: "center",
       }}
       aria-busy={!!overlayMessage}
     >

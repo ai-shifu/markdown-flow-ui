@@ -73,6 +73,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     <meta charset="utf-8" />
     <style>
       html, body { margin: 0; padding: 0; }
+      *, *::before, *::after { box-sizing: border-box; }
     </style>
   </head>
   <body>

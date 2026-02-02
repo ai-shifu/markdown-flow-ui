@@ -18,6 +18,48 @@ const CUSTOM_BUTTON_PATTERN =
   /<custom-button-after-content\b[\s\S]*?<\/custom-button-after-content>/gi;
 
 type MatchResult = { start: number; end: number };
+type FenceRange = { start: number; end: number };
+
+const getFenceRanges = (raw: string): FenceRange[] => {
+  const ranges: FenceRange[] = [];
+  const fencePattern = /```/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = fencePattern.exec(raw)) !== null) {
+    const start = match.index;
+    const closeMatch = fencePattern.exec(raw);
+    if (!closeMatch) {
+      ranges.push({ start, end: raw.length });
+      break;
+    }
+    ranges.push({ start, end: closeMatch.index + 3 });
+  }
+
+  return ranges;
+};
+
+const isIndexInRanges = (index: number, ranges: FenceRange[]) =>
+  ranges.some(({ start, end }) => index >= start && index < end);
+
+const findFirstMatchOutsideFence = (
+  raw: string,
+  pattern: RegExp,
+  fenceRanges: FenceRange[]
+) => {
+  const flags = pattern.flags.includes("g")
+    ? pattern.flags
+    : `${pattern.flags}g`;
+  const matcher = new RegExp(pattern.source, flags);
+  let match: RegExpExecArray | null;
+
+  while ((match = matcher.exec(raw)) !== null) {
+    if (!isIndexInRanges(match.index, fenceRanges)) {
+      return match.index;
+    }
+  }
+
+  return -1;
+};
 
 const findHtmlBlockEnd = (raw: string, startIndex: number) => {
   let blockEnd = raw.length;
@@ -120,8 +162,14 @@ export const splitContentSegments = (
     }
   }
 
-  const sandboxStartIndex = raw.search(SANDBOX_START_PATTERN);
-  const svgOpenIndex = raw.search(/<svg\b/i);
+  const fenceRanges = getFenceRanges(raw);
+  // Avoid treating fenced code blocks as sandbox content.
+  const sandboxStartIndex = findFirstMatchOutsideFence(
+    raw,
+    SANDBOX_START_PATTERN,
+    fenceRanges
+  );
+  const svgOpenIndex = findFirstMatchOutsideFence(raw, /<svg\b/i, fenceRanges);
   const hasSandboxBeforeSvg =
     sandboxStartIndex !== -1 &&
     svgOpenIndex !== -1 &&

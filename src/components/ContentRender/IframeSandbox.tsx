@@ -170,6 +170,12 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     mode,
   ]);
 
+  console.log(
+    "htmlContent=====",
+    mode === "blackboard",
+    type === "markdown",
+    content
+  );
   return (
     <div
       ref={containerRef}

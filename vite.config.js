@@ -25,20 +25,36 @@ export default defineConfig({
         editor: resolve(__dirname, "src/editor.ts"),
         renderer: resolve(__dirname, "src/renderer.ts"),
       },
-      formats: ["es"],
     },
 
     rollupOptions: {
-      external: ["react", "react-dom", "next", "next/router"],
+      external: [
+        "react",
+        "react-dom",
+        "next",
+        "next/router",
+        "react-dom/client",
+      ],
 
-      output: {
-        preserveModules: true,
-        preserveModulesRoot: "src",
-
-        entryFileNames: "[name].js",
-        chunkFileNames: "chunks/[name]-[hash].js",
-        assetFileNames: "assets/[name][extname]",
-      },
+      output: [
+        {
+          format: "es",
+          preserveModules: true,
+          preserveModulesRoot: "src",
+          entryFileNames: "[name].es.js",
+          chunkFileNames: "chunks/[name]-[hash].js",
+          assetFileNames: "assets/[name][extname]",
+        },
+        {
+          format: "cjs",
+          exports: "named",
+          preserveModules: true,
+          preserveModulesRoot: "src",
+          entryFileNames: "[name].cjs.js",
+          chunkFileNames: "chunks/[name]-[hash].cjs.js",
+          assetFileNames: "assets/[name][extname]",
+        },
+      ],
     },
 
     sourcemap: true,

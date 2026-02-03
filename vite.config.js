@@ -28,7 +28,13 @@ export default defineConfig({
     },
 
     rollupOptions: {
-      external: ["react", "react-dom", "next", "next/router", "react-dom/client"],
+      external: [
+        "react",
+        "react-dom",
+        "next",
+        "next/router",
+        "react-dom/client",
+      ],
 
       output: [
         {

@@ -170,17 +170,11 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     mode,
   ]);
 
-  console.log(
-    "htmlContent=====",
-    mode === "blackboard",
-    type === "markdown",
-    content
-  );
   return (
     <div
       ref={containerRef}
       className={
-        "w-full h-full overflow-auto relative flex flex-col justify-center"
+        "w-full h-full overflow-auto relative flex flex-col justify-center content-render-iframe-sandbox"
       }
     >
       {!hideFullScreen && (

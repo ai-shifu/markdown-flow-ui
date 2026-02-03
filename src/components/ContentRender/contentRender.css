@@ -391,6 +391,10 @@
       transparent
     );
   }
+
+  .content-render-iframe-sandbox {
+    justify-content: space-around;
+  }
 }
 .markdown-body p,
 .markdown-body blockquote,

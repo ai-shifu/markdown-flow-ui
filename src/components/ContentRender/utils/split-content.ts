@@ -12,6 +12,7 @@ const INLINE_SANDBOX_PATTERNS: RegExp[] = [
   /```mermaid[\s\S]*?```/i,
   /```[a-zA-Z0-9]+[\s\S]*?```/i,
 ];
+const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*]\([^\s)\n]+(?:\s+"[^"]*")?\)/i;
 
 const closingBoundary = /<\/[a-z][^>]*>\s*\n(?=[^\s<])/gi;
 const CUSTOM_BUTTON_PATTERN =
@@ -124,6 +125,23 @@ const findInlineSandboxMatch = (raw: string): MatchResult | null => {
   return earliest;
 };
 
+const findMarkdownImageMatch = (
+  raw: string,
+  fenceRanges: FenceRange[]
+): MatchResult | null => {
+  const start = findFirstMatchOutsideFence(
+    raw,
+    MARKDOWN_IMAGE_PATTERN,
+    fenceRanges
+  );
+
+  if (start === -1) return null;
+  const match = raw.slice(start).match(MARKDOWN_IMAGE_PATTERN);
+  if (!match) return null;
+
+  return { start, end: start + match[0].length };
+};
+
 const extractTableBlock = (
   raw: string
 ): { start: number; block: string; end: number } | null => {
@@ -221,8 +239,15 @@ export const splitContentSegments = (
   }
 
   const inlineMatch = findInlineSandboxMatch(raw);
+  const markdownImageMatch = findMarkdownImageMatch(raw, fenceRanges);
+  const inlineCandidate =
+    inlineMatch && markdownImageMatch
+      ? inlineMatch.start <= markdownImageMatch.start
+        ? inlineMatch
+        : markdownImageMatch
+      : (inlineMatch ?? markdownImageMatch);
 
-  if (sandboxStartIndex === -1 && !inlineMatch) {
+  if (sandboxStartIndex === -1 && !inlineCandidate) {
     if (keepText && raw.trim()) {
       return finalizeSegments([{ type: "text", value: raw }]);
     }
@@ -230,12 +255,14 @@ export const splitContentSegments = (
   }
 
   const shouldUseInline =
-    !!inlineMatch &&
-    (sandboxStartIndex === -1 || inlineMatch.start < sandboxStartIndex);
+    !!inlineCandidate &&
+    (sandboxStartIndex === -1 || inlineCandidate.start < sandboxStartIndex);
 
-  const startIndex = shouldUseInline ? inlineMatch!.start : sandboxStartIndex;
+  const startIndex = shouldUseInline
+    ? inlineCandidate!.start
+    : sandboxStartIndex;
   const blockEnd = shouldUseInline
-    ? inlineMatch!.end
+    ? inlineCandidate!.end
     : findHtmlBlockEnd(raw, startIndex);
 
   const segments: RenderSegment[] = [];

@@ -30,10 +30,7 @@
     "katex": "^0.16.22",
     "lucide-react": "^0.525.0",
     "mermaid": "^11.10.1",
-    "next": "15.3.6",
     "rc-textarea": "^1.10.2",
-    "react": "19.0.1",
-    "react-dom": "19.0.1",
     "react-i18next": "^15.5.1",
     "react-markdown": "^10.1.0",
     "rehype-highlight": "^7.0.2",
@@ -78,8 +75,11 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.1.6",
     "markdownlint-cli": "^0.45.0",
+    "next": "15.3.6",
     "playwright": "^1.54.1",
     "prettier": "^3.5.3",
+    "react": "19.0.1",
+    "react-dom": "19.0.1",
     "rollup": "^4.46.2",
     "rollup-plugin-dts": "^6.2.1",
     "standard-version": "^9.5.0",
@@ -124,6 +124,11 @@
   "module": "dist/index.es.js",
   "name": "markdown-flow-ui",
   "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748",
+  "peerDependencies": {
+    "next": "^15.3.6",
+    "react": "^18.3.1 || ^19.0.0",
+    "react-dom": "^18.3.1 || ^19.0.0"
+  },
   "private": false,
   "repository": {
     "type": "git",
@@ -159,18 +164,18 @@
     },
     "./render": {
       "types": "./dist/renderer.d.ts",
-      "import": "./dist/renderer.js",
-      "require": "./dist/renderer.js"
+      "import": "./dist/renderer.es.js",
+      "require": "./dist/renderer.cjs.js"
     },
     "./renderer": {
       "types": "./dist/renderer.d.ts",
-      "import": "./dist/renderer.js",
-      "require": "./dist/renderer.js"
+      "import": "./dist/renderer.es.js",
+      "require": "./dist/renderer.cjs.js"
     },
     "./editor": {
       "types": "./dist/editor.d.ts",
-      "import": "./dist/editor.js",
-      "require": "./dist/editor.js"
+      "import": "./dist/editor.es.js",
+      "require": "./dist/editor.cjs.js"
     },
     "./dist/markdown-flow-ui.css": {
       "default": "./dist/assets/markdown-flow-ui.css"

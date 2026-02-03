@@ -393,7 +393,7 @@
   }
 
   .content-render-iframe-sandbox {
-    justify-content: space-around;
+    justify-content: space-around !important;
   }
 }
 .markdown-body p,

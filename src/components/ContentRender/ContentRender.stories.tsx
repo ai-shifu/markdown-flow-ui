@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import ContentRender from "./ContentRender";
+import IframeSandbox from "./IframeSandbox";
 
 const meta = {
   title: "MarkdownFlow/ContentRender",
@@ -991,5 +993,661 @@ export const SVGDemo: Story = {
 `,
     enableTypewriter: true,
     typingSpeed: 10,
+  },
+};
+
+const HTML_DEMO_STREAM_SOURCE = `
+**提示词是：** \`// 这个函数用于\`
+“为了装得更像人”，这个猜想特别有意思！它触及了咱们对人机交互的一种直觉期待。不过，真相可能更底层、更本质：**这其实就是生成式 AI 本来的样子**，并非刻意模仿，也无关网络延迟。\n\n这种“一个字一个字”的生成方式，恰恰是 AI 智慧的源头活水。要理解它，咱们得先搞懂一个核心概念：**Token**。\n\n你可以把 Token 想象成 AI 理解世界的基本积木。对文字模型来说，一个 Token 通常不是一个完整的汉字或英文单词，而是一个更小的语义片段。\n\n下面这张图展示了同一句话，在不同语言里是如何被“切”成 Token 的：\n\n<div style=\"background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #0F63EE; margin: 20px 0;\">\n  <div style=\"display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;\">\n    <!-- 中文示例 -->\n    <div style=\"flex: 1; min-width: 250px;\">\n      <div style=\"font-weight: 600; color: #0F63EE; margin-bottom: 8px;\">中文例子</div>\n      <div style=\"background: white; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;\">\n        <div style=\"color: #64748b; font-size: 0.9em; margin-bottom: 5px;\">原句：人工智能很强大</div>\n        <div style=\"display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;\">\n          <span style=\"background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">人工</span>\n          <span style=\"background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">智能</span>\n          <span style=\"background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">很</span>\n          <span style=\"background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">强大</span>\n        </div>\n        <div style=\"color: #64748b; font-size: 0.85em; margin-top: 8px;\">被切分成 4 个 Token</div>\n      </div>\n    </div>\n\n    <!-- 英文示例 -->\n    <div style=\"flex: 1; min-width: 250px;\">\n      <div style=\"font-weight: 600; color: #0F63EE; margin-bottom: 8px;\">英文例子</div>\n      <div style=\"background: white; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;\">\n        <div style=\"color: #64748b; font-size: 0.9em; margin-bottom: 5px;\">原句：Artificial intelligence is powerful</div>\n        <div style=\"display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;\">\n          <span style=\"background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">Artificial</span>\n          <span style=\"background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\"> intelligence</span>\n          <span style=\"background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\"> is</span>\n          <span style=\"background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\"> powerful</span>\n        </div>\n        <div style=\"color: #64748b; font-size: 0.85em; margin-top: 8px;\">被切分成 4 个 Token</div>\n      </div>\n    </div>\n  </div>\n</div>\n\n你看，无论是中文还是英文，任何文章在 AI 眼里，都是由这样一块块 **Token 积木**组合而成的。它写作时，就是在玩一个超级复杂的“下一块积木猜猜看”游戏。\n\n这个逻辑可以推广。文生图模型，比如 Midjourney，它眼中的“Token”可能是图像的一个色块、一条线条；文生视频模型，它的“Token”可能就是视频的一帧画面或一个动作片段。**虽然在这些领域可能不直接叫“Token”，但核心理念相通：把复杂内容拆解成基础单元，再学习如何组合它们。**\n\n所以，AI 逐字输出，是因为它必须在生成当前 Token 后，才能基于它去预测下一个最可能的 Token。**这看似缓慢的“思考”过程，正是它创造力的来源。**
+
+下面这张图会动态展示 AI 是如何像“猜谜”一样，一个 Token 一个 Token 地“猜”出完整句子的：
+
+<div id="token-demo" style="background: #f8fafc; padding: 25px; border-radius: 16px; border: 2px solid #e2e8f0; font-family: 'Segoe UI', system-ui, monospace; max-width: 800px; margin: 0 auto;">
+  <div style="color: #0F63EE; font-weight: 700; margin-bottom: 20px; font-size: 1.2em; text-align: center;">🧠 AI 的“猜词”生成过程（基于概率的 Token 预测）</div>
+
+  <!-- 提示词区域 -->
+  <div style="margin-bottom: 30px;">
+    <div style="color: #64748b; font-size: 0.95em; margin-bottom: 8px;">📝 初始提示词：</div>
+    <div style="background: white; padding: 15px; border-radius: 10px; border-left: 5px solid #94a3b8; font-size: 1.1em; color: #334155;">
+      <span id="current-prompt" style="color: #0F63EE; font-weight: 600;">// 这个函数用于</span>
+      <span id="generated-text" style="color: #10b981; font-weight: 600;"></span>
+      <span id="cursor" style="display: inline-block; width: 2px; height: 1.2em; background-color: #0F63EE; margin-left: 2px; vertical-align: middle; animation: blink 1s infinite;"></span>
+    </div>
+  </div>
+
+  <!-- 预测选择区域 -->
+  <div style="margin-bottom: 30px;">
+    <div style="color: #64748b; font-size: 0.95em; margin-bottom: 12px;">🎯 预测下一个 Token（猜哪个词接上去最合理？）：</div>
+    <div id="candidate-tokens" style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(15, 99, 238, 0.08);">
+      <!-- 候选Token将由JS动态生成 -->
+    </div>
+    <div id="selection-status" style="text-align: center; margin-top: 15px; color: #0F63EE; font-weight: 600; min-height: 24px;"></div>
+  </div>
+
+  <!-- 已生成序列区域 -->
+  <div>
+    <div style="color: #64748b; font-size: 0.95em; margin-bottom: 12px;">📜 已生成的 Token 序列：</div>
+    <div id="token-sequence" style="display: flex; flex-wrap: wrap; gap: 8px; padding: 18px; background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border-radius: 12px; border: 1px dashed #0F63EE; min-height: 60px; align-items: center; justify-content: center;">
+      <!-- 已生成的Token块将由JS动态添加 -->
+      <div class="token-tag" style="padding: 8px 14px; background: #0F63EE; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(15, 99, 238, 0.3);">//</div>
+      <div class="token-tag" style="padding: 8px 14px; background: #0F63EE; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(15, 99, 238, 0.3);">这个</div>
+      <div class="token-tag" style="padding: 8px 14px; background: #0F63EE; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(15, 99, 238, 0.3);">函数</div>
+      <div class="token-tag" style="padding: 8px 14px; background: #0F63EE; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(15, 99, 238, 0.3);">用于</div>
+    </div>
+  </div>
+
+  <!-- 控制按钮 -->
+  <div style="text-align: center; margin-top: 25px;">
+    <button id="next-step-btn" style="background: linear-gradient(135deg, #0F63EE, #3B82F6); color: white; border: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 1em; cursor: pointer; box-shadow: 0 4px 6px rgba(15, 99, 238, 0.3); transition: all 0.2s;">下一步：让 AI 猜下一个词</button>
+    <button id="reset-btn" style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 1em; cursor: pointer; margin-left: 15px; transition: all 0.2s;">重置演示</button>
+  </div>
+
+  <!-- 最终答案（初始隐藏） -->
+  <div id="final-result" style="display: none; margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 12px; border: 2px solid #0F63EE; text-align: center;">
+    <div style="color: #0F63EE; font-weight: 700; font-size: 1.1em; margin-bottom: 10px;">🎉 生成完毕！AI “猜”出的完整句子是：</div>
+    <div id="final-sentence" style="font-size: 1.3em; color: #1e293b; font-weight: 600; font-family: monospace; padding: 15px; background: white; border-radius: 8px; border-left: 5px solid #10b981;"></div>
+  </div>
+</div>
+
+<style>
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.token-candidate {
+  padding: 10px 18px;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+  text-align: center;
+}
+.token-candidate:hover {
+  background: #e2e8f0;
+  transform: translateY(-2px);
+}
+.token-candidate.selected {
+  background: linear-gradient(135deg, #10b981, #34d399) !important;
+  color: white !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3) !important;
+}
+.token-candidate.high-prob {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 2px solid #93c5fd;
+}
+</style>
+
+<script>
+(function() {
+  // 演示数据：每一步的候选Token及其（模拟的）概率
+  const generationSteps = [
+    {
+      candidates: [
+        { text: '计算', prob: 0.35 },
+        { text: '处理', prob: 0.28 },
+        { text: '验证', prob: 0.15 },
+        { text: '获取', prob: 0.12 },
+        { text: '生成', prob: 0.10 }
+      ],
+      selected: '计算'
+    },
+    {
+      candidates: [
+        { text: '用户', prob: 0.40 },
+        { text: '数据', prob: 0.25 },
+        { text: '数组', prob: 0.18 },
+        { text: '输入', prob: 0.12 },
+        { text: '两个', prob: 0.05 }
+      ],
+      selected: '用户'
+    },
+    {
+      candidates: [
+        { text: '输入', prob: 0.55 },
+        { text: '的', prob: 0.20 },
+        { text: '信息', prob: 0.15 },
+        { text: 'ID', prob: 0.07 },
+        { text: '名', prob: 0.03 }
+      ],
+      selected: '输入'
+    },
+    {
+      candidates: [
+        { text: '的', prob: 0.60 },
+        { text: '。', prob: 0.25 },
+        { text: '，', prob: 0.10 },
+        { text: '并', prob: 0.04 },
+        { text: '然后', prob: 0.01 }
+      ],
+      selected: '的'
+    },
+    {
+      candidates: [
+        { text: '和', prob: 0.45 },
+        { text: '平均值', prob: 0.30 },
+        { text: '总和', prob: 0.15 },
+        { text: '有效性', prob: 0.07 },
+        { text: '长度', prob: 0.03 }
+      ],
+      selected: '和'
+    },
+    {
+      candidates: [
+        { text: '返回', prob: 0.50 },
+        { text: '输出', prob: 0.25 },
+        { text: '打印', prob: 0.15 },
+        { text: '保存', prob: 0.07 },
+        { text: '比较', prob: 0.03 }
+      ],
+      selected: '返回'
+    },
+    {
+      candidates: [
+        { text: '结果', prob: 0.65 },
+        { text: '它', prob: 0.20 },
+        { text: '。', prob: 0.10 },
+        { text: '值', prob: 0.04 },
+        { text: '状态', prob: 0.01 }
+      ],
+      selected: '结果'
+    },
+    {
+      candidates: [
+        { text: '。', prob: 0.90 },
+        { text: '，', prob: 0.05 },
+        { text: '；', prob: 0.03 },
+        { text: '并', prob: 0.01 },
+        { text: '然后', prob: 0.01 }
+      ],
+      selected: '。'
+    }
+  ];
+
+  let currentStep = 0;
+  const generatedTokens = ['//', '这个', '函数', '用于'];
+  const promptElement = document.getElementById('current-prompt');
+  const generatedTextElement = document.getElementById('generated-text');
+  const candidateContainer = document.getElementById('candidate-tokens');
+  const selectionStatusElement = document.getElementById('selection-status');
+  const tokenSequenceContainer = document.getElementById('token-sequence');
+  const nextStepBtn = document.getElementById('next-step-btn');
+  const resetBtn = document.getElementById('reset-btn');
+  const finalResultElement = document.getElementById('final-result');
+  const finalSentenceElement = document.getElementById('final-sentence');
+
+  function renderCandidates() {
+    if (currentStep >= generationSteps.length) {
+      completeGeneration();
+      return;
+    }
+
+    const step = generationSteps[currentStep];
+    candidateContainer.innerHTML = '';
+    selectionStatusElement.textContent = '';
+
+    // 找出概率最高的候选词
+    const maxProb = Math.max(...step.candidates.map(c => c.prob));
+    const highProbCandidates = step.candidates.filter(c => c.prob === maxProb);
+
+    step.candidates.forEach(candidate => {
+      const isHighProb = candidate.prob === maxProb;
+      const div = document.createElement('div');
+      div.className = \`token-candidate \${isHighProb ? 'high-prob' : ''}\`;
+      div.innerHTML = \`
+        <div>\${candidate.text}</div>
+        <div style="font-size: 0.85em; margin-top: 4px; color: \${isHighProb ? '#1e40af' : '#64748b'};">概率: \${(candidate.prob * 100).toFixed(1)}%</div>
+      \`;
+
+      // 如果当前候选词是概率最高的之一，添加特殊标记
+      if (isHighProb) {
+        const badge = document.createElement('div');
+        badge.style = 'position: absolute; top: -8px; right: -8px; background: #f59e0b; color: white; font-size: 0.7em; padding: 2px 6px; border-radius: 10px; font-weight: bold;';
+        badge.textContent = '最高';
+        div.style.position = 'relative';
+        div.appendChild(badge);
+      }
+
+      div.addEventListener('click', () => selectCandidate(candidate.text, candidate.prob));
+      candidateContainer.appendChild(div);
+    });
+
+    // 自动高亮并“选择”概率最高的候选词（模拟AI的选择）
+    setTimeout(() => {
+      autoSelectHighestProb(highProbCandidates[0].text);
+    }, 500);
+  }
+
+  function autoSelectHighestProb(candidateText) {
+    const candidates = document.querySelectorAll('.token-candidate');
+    candidates.forEach(cand => {
+      if (cand.textContent.includes(\`\${candidateText}\`\)) {
+        cand.classList.add('selected');
+        // 更新状态显示
+        selectionStatusElement.textContent = \`✅ AI 选择了概率最高的 Token：“\${candidateText}”\`;
+        selectionStatusElement.style.color = '#10b981';
+      }
+    });
+  }
+
+  function selectCandidate(text, prob) {
+    // 添加到已生成序列
+    generatedTokens.push(text);
+    generatedTextElement.textContent = generatedTokens.slice(4).join(''); // 跳过前4个初始token
+
+    // 更新Token序列显示
+    const tokenTag = document.createElement('div');
+    tokenTag.className = 'token-tag';
+    tokenTag.style = 'padding: 8px 14px; background: #10b981; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);';
+    tokenTag.textContent = text;
+    tokenSequenceContainer.appendChild(tokenTag);
+
+    // 滚动到最新token
+    tokenTag.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+
+    currentStep++;
+    if (currentStep < generationSteps.length) {
+      setTimeout(renderCandidates, 800);
+    } else {
+      setTimeout(completeGeneration, 800);
+    }
+  }
+
+  function completeGeneration() {
+    const fullSentence = '// 这个函数用于计算用户输入的和返回结果。';
+    generatedTextElement.textContent = generatedTokens.slice(4).join('');
+    candidateContainer.innerHTML = '<div style="padding: 20px; color: #0F63EE; font-weight: 600;">🎯 生成完成！AI 已基于概率“猜”出了整句话。</div>';
+    selectionStatusElement.textContent = '✅ 任务完成！整个过程没有“查找”或“匹配”，全是“预测”和“猜测”。';
+    nextStepBtn.disabled = true;
+    nextStepBtn.style.opacity = '0.6';
+    nextStepBtn.textContent = '演示完成';
+
+    // 显示最终结果
+    finalSentenceElement.textContent = fullSentence;
+    finalResultElement.style.display = 'block';
+    finalResultElement.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function resetDemo() {
+    currentStep = 0;
+    generatedTokens.length = 4; // 重置为初始4个token
+    generatedTextElement.textContent = '';
+    selectionStatusElement.textContent = '';
+    nextStepBtn.disabled = false;
+    nextStepBtn.style.opacity = '1';
+    nextStepBtn.textContent = '下一步：让 AI 猜下一个词';
+
+    // 重置Token序列显示（只保留前4个）
+    tokenSequenceContainer.innerHTML = '';
+    ['//', '这个', '函数', '用于'].forEach(token => {
+      const tokenTag = document.createElement('div');
+      tokenTag.className = 'token-tag';
+      tokenTag.style = 'padding: 8px 14px; background: #0F63EE; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(15, 99, 238, 0.3);';
+      tokenTag.textContent = token;
+      tokenSequenceContainer.appendChild(tokenTag);
+    });
+
+    // 隐藏最终结果
+    finalResultElement.style.display = 'none';
+
+    // 重新开始
+    renderCandidates();
+  }
+
+  // 初始化
+  nextStepBtn.addEventListener('click', () => {
+    if (currentStep < generationSteps.length) {
+      const step = generationSteps[currentStep];
+      selectCandidate(step.selected, step.candidates.find(c => c.text === step.selected).prob);
+    }
+  });
+
+  resetBtn.addEventListener('click', resetDemo);
+
+  // 开始演示
+  renderCandidates();
+})();
+</script>
+
+---
+
+### 图解说明
+
+这个过程就像一场精心设计的“**概率接龙**”：
+
+1.  **起点**：你给出了提示词 \`// 这个函数用于\`。AI 把它拆成 Token：\`//\`、\`这个\`、\`函数\`、\`用于\`。
+2.  **第一次“猜”**：AI 看着这个序列，开始计算后面接哪个 Token 概率最高。它“脑”中浮现出几个候选：\`计算\`（35%）、\`处理\`（28%）、\`验证\`（15%）…… **它选择了概率最高的 \`计算\`**。
+3.  **循环往复**：现在，提示词变成了 \`// 这个函数用于 计算\`。AI 再次基于**这个新的、更长的序列**，预测下一个 Token。候选可能是 \`用户\`、\`数据\`、\`数组\`…… 它再次选择概率最高的。
+4.  **步步为营**：每猜对一个 Token，就把它加到提示词后面，作为预测**下一个** Token 的上下文。如此循环，直到生成一个完整的句子（比如遇到句号\`.\`的概率足够高）。
+5.  **核心秘密**：**注意，AI 每次“猜”的时候，看的都是当前完整的上下文（即“提示词 + 已生成的所有 Token”）**。它没有在数据库里“搜索”标准答案，也没有进行“逻辑匹配”。它做的唯一一件事，就是基于海量数据训练出的“感觉”，计算**下一个词出现的概率**。
+
+**整个过程，没有“查找”，没有“搜索”，没有“匹配”。有的，只是一次又一次的“猜测”。**
+
+---
+
+### 总结
+
+所以，咱们可以得出一个既简单又震撼的结论：
+
+**AI 最基础、最核心的工作过程，就是基于概率预测下一个 Token。**
+
+它所有的“智慧”、所有的“胡言乱语”、所有的“惊人表现”和“低级错误”，都源于这个根本机制：
+*   **它不是在“检索”知识**，而是在“联想”概率。
+*   **它不是在“执行”逻辑**，而是在“模仿”模式。
+*   **它完全是用“猜”的**，只不过是在数十亿文本上训练后，猜得比较有根据。
+
+理解这一点，是你**摆脱对 AI 盲目恐惧或崇拜的关键第一步**。它既不是神，也不是鬼，它是一个极其复杂的**概率机器**。知道了它怎么“猜”，你才能明白它为何会“对”，更会明白它为何会“错”。
+
+
+**任何你看到的文章、代码，在 AI 眼里，都是一串特定顺序的 Token 组合。**\n\n这个逻辑可以推广到更广阔的领域：
+*   **文生图模型**（比如 Midjourney）：它眼中的“Token”可能是图像的一块小色块、一种纹理模式，或者一个视觉概念。
+* *   **文生视频模型**（比如 Sora）：它的“Token”可能是一帧画面中的动态片段，或者几帧之间的变化规律。
+
+虽然在文字以外的领域，工程师们可能不直接叫它“Token”，但**万变不离其宗，核心思想都是用更基础的“积木块”去组合、生成复杂内容**。
+
+所以，下次你看到 AI 一个字一个字地“蹦”答案时，其实正是在目睹它**拿起一块又一块“Token积木”，为你现场搭建答案大厦**。它的智慧与局限，都藏在这个搭建过程里。
+
+好的，咱们用一个你熟悉的场景来画这个图。假设你让 AI 帮你写一段简单的 JavaScript 代码注释。
+
+`;
+
+const STREAM_CODE_IFRAME_CONTENT = `\`\`\`c
+int maze[5][5] = {
+    {1, 1, 1, 1, 1},
+    {1, 2, 0, 0, 1},
+    {1, 1, 1, 0, 1},
+    {1, 0, 0, 0, 0},
+    {1, 1, 1, 1, 1}
+};
+\`\`\``;
+
+const STREAM_SVG_IFRAME_CONTENT = `<svg width="600" height="400" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="0" width="600" height="400" fill="#f5f5f5"/>
+
+  <!-- 标题 -->
+  <text x="300" y="40" text-anchor="middle" font-family="Arial" font-size="20" font-weight="bold">AI 早期形态：穷举法的局限</text>
+
+  <!-- 时间线 -->
+  <line x1="50" y1="80" x2="550" y2="80" stroke="#333" stroke-width="2"/>
+  <text x="50" y="75" text-anchor="middle" font-family="Arial" font-size="12">1950s</text>
+  <text x="300" y="75" text-anchor="middle" font-family="Arial" font-size="12">1997</text>
+  <text x="550" y="75" text-anchor="middle" font-family="Arial" font-size="12">Now</text>
+
+  <!-- 早期AI -->
+  <circle cx="50" cy="150" r="30" fill="#ff9999"/>
+  <text x="50" y="150" text-anchor="middle" font-family="Arial" font-size="10" fill="white">早期AI</text>
+  <text x="50" y="190" text-anchor="middle" font-family="Arial" font-size="10">让机器像人一样思考</text>
+
+  <!-- 深蓝 -->
+  <circle cx="300" cy="150" r="40" fill="#99ccff"/>
+  <text x="300" y="150" text-anchor="middle" font-family="Arial" font-size="12" fill="white">深蓝</text>
+  <text x="300" y="200" text-anchor="middle" font-family="Arial" font-size="10">击败国际象棋冠军</text>
+
+  <!-- 箭头连接 -->
+  <line x1="80" y1="150" x2="260" y2="150" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 穷举法原理 -->
+  <rect x="100" y="250" width="200" height="60" fill="#ccffcc" stroke="#333"/>
+  <text x="200" y="270" text-anchor="middle" font-family="Arial" font-size="12">穷举法原理</text>
+  <text x="200" y="290" text-anchor="middle" font-family="Arial" font-size="10">速度优势 · 重复计算</text>
+
+  <!-- 局限性 -->
+  <rect x="350" y="250" width="200" height="60" fill="#ffcc99" stroke="#333"/>
+  <text x="450" y="270" text-anchor="middle" font-family="Arial" font-size="12">核心局限性</text>
+  <text x="450" y="290" text-anchor="middle" font-family="Arial" font-size="10">只能解决有限计算量问题</text>
+
+  <!-- 连接线 -->
+  <line x1="300" y1="190" x2="300" y2="240" stroke="#333" stroke-width="1"/>
+  <line x1="300" y1="240" x2="200" y2="240" stroke="#333" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="300" y1="240" x2="400" y2="240" stroke="#333" stroke-width="1" marker-end="url(#arrow)"/>
+
+  <!-- 底部结论 -->
+  <text x="300" y="350" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold">绝大多数现实问题无法用穷举解决</text>
+
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#333"/>
+    </marker>
+  </defs>
+</svg>
+`;
+
+const STREAM_MERMAID_IFRAME_CONTENT = `\`\`\`mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Success]
+    B -->|No| D[Try Again]
+    D --> B
+    C --> E[End]
+\`\`\``;
+
+const STREAM_IMAGE_IFRAME_CONTENT =
+  '<img src="https://resource.ai-shifu.cn/7b007ca873b14edeb4d3e6817f520550" />';
+
+const STREAM_TABLE_IFRAME_CONTENT = `## Tables
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |`;
+
+export const HTMLDemo: Story = {
+  name: "HTML Demo",
+  args: {
+    enableTypewriter: false,
+    typingSpeed: 10,
+    // sandboxLoadingText: "正在生成动画...",
+    // sandboxStyleLoadingText: "正在生成样式...",
+    // sandboxScriptLoadingText: "正在生成脚本...",
+    sandboxFullscreenButtonText: "全屏浏览",
+  },
+  render: (args) => {
+    // const [streamContent, setStreamContent] = useState("");
+
+    // useEffect(() => {
+    //   let currentIndex = 0;
+    //   let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    //   const streamNext = () => {
+    //     if (currentIndex >= HTML_DEMO_STREAM_SOURCE.length) {
+    //       timeoutId = null;
+    //       return;
+    //     }
+
+    //     const chunkSize = Math.floor(Math.random() * 30) + 1;
+    //     const nextIndex = Math.min(
+    //       HTML_DEMO_STREAM_SOURCE.length,
+    //       currentIndex + chunkSize
+    //     );
+    //     const nextChunk = HTML_DEMO_STREAM_SOURCE.slice(
+    //       currentIndex,
+    //       nextIndex
+    //     );
+    //     currentIndex = nextIndex;
+    //     setStreamContent((prev) => `${prev}${nextChunk}`);
+
+    //     timeoutId = setTimeout(streamNext, 80);
+    //   };
+
+    //   // Simulate SSE-like streaming by appending 1-3 characters per tick
+    //   timeoutId = setTimeout(streamNext, 120);
+
+    //   return () => {
+    //     if (timeoutId) {
+    //       clearTimeout(timeoutId);
+    //     }
+    //   };
+    // }, []);
+    // console.log("streamContent", streamContent);
+
+    return <ContentRender {...args} content={HTML_DEMO_STREAM_SOURCE} />;
+  },
+};
+
+export const HTMLDemoIframeOnly: Story = {
+  name: "HTML Demo (Iframe Only)",
+  args: {
+    sandboxLoadingText: "正在生成动画...",
+    sandboxStyleLoadingText: "正在生成样式...",
+    sandboxScriptLoadingText: "正在生成脚本...",
+    sandboxFullscreenButtonText: "全屏浏览",
+    sandboxMode: "blackboard",
+  },
+  render: (args) => {
+    const [codeContent, setCodeContent] = useState("");
+    const [svgContent, setSvgContent] = useState("");
+    const [mermaidContent, setMermaidContent] = useState("");
+    const [imageContent, setImageContent] = useState("");
+    const [tableContent, setTableContent] = useState("");
+    const [htmlContent, setHtmlContent] = useState("");
+
+    useEffect(() => {
+      // Simulate SSE-style streaming for each iframe content block
+      const startStreaming = (
+        source: string,
+        setter: typeof setCodeContent
+      ) => {
+        let currentIndex = 0;
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+        const streamNext = () => {
+          if (currentIndex >= source.length) {
+            timeoutId = null;
+            return;
+          }
+
+          const chunkSize = Math.floor(Math.random() * 30) + 1;
+          const nextIndex = Math.min(source.length, currentIndex + chunkSize);
+          const nextChunk = source.slice(currentIndex, nextIndex);
+          currentIndex = nextIndex;
+          setter((prev) => `${prev}${nextChunk}`);
+
+          timeoutId = setTimeout(streamNext, 80);
+        };
+
+        timeoutId = setTimeout(streamNext, 120);
+
+        return () => {
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+        };
+      };
+
+      const cleanups = [
+        startStreaming(STREAM_CODE_IFRAME_CONTENT, setCodeContent),
+        startStreaming(STREAM_SVG_IFRAME_CONTENT, setSvgContent),
+        startStreaming(STREAM_MERMAID_IFRAME_CONTENT, setMermaidContent),
+        startStreaming(STREAM_IMAGE_IFRAME_CONTENT, setImageContent),
+        startStreaming(STREAM_TABLE_IFRAME_CONTENT, setTableContent),
+        startStreaming(HTML_DEMO_STREAM_SOURCE, setHtmlContent),
+      ];
+
+      return () => {
+        cleanups.forEach((cleanup) => cleanup());
+      };
+    }, []);
+
+    return (
+      <>
+        Text不渲染
+        <div style={{ width: "100%", height: "700px", background: "#e0e0e0" }}>
+          <IframeSandbox
+            hideFullScreen
+            type="markdown"
+            content={
+              "```mermaid\ngraph TD\n    subgraph 大语言模型的诞生\n        A[初始模型<br>空白的“大脑”] --> B[预训练<br>海量数据“上学”]\n        B --> C[后训练<br>对齐与微调]\n        C --> D[大语言模型<br>具备语言与知识]\n    end\n```\n\n你有没有想过，为什么一夜之间，好像全世界都在谈论“大模型”？\n\n伴随 ChatGPT 一起爆火的，AI 真的和人很像。"
+            }
+            className="content-render-iframe"
+            loadingText={args.sandboxLoadingText}
+            styleLoadingText={args.sandboxStyleLoadingText}
+            scriptLoadingText={args.sandboxScriptLoadingText}
+            fullScreenButtonText={args.sandboxFullscreenButtonText}
+            mode={args.sandboxMode}
+          />
+        </div>
+        Code
+        <div style={{ width: "100%", height: "700px", background: "#e0e0e0" }}>
+          <IframeSandbox
+            type="markdown"
+            content={codeContent}
+            className="content-render-iframe"
+            loadingText={args.sandboxLoadingText}
+            styleLoadingText={args.sandboxStyleLoadingText}
+            scriptLoadingText={args.sandboxScriptLoadingText}
+            fullScreenButtonText={args.sandboxFullscreenButtonText}
+            mode={args.sandboxMode}
+          />
+        </div>
+        SVG
+        <div style={{ width: "100%", height: "700px", background: "#e0e0e0" }}>
+          <IframeSandbox
+            type="markdown"
+            content={svgContent}
+            className="content-render-iframe"
+            loadingText={args.sandboxLoadingText}
+            styleLoadingText={args.sandboxStyleLoadingText}
+            scriptLoadingText={args.sandboxScriptLoadingText}
+            fullScreenButtonText={args.sandboxFullscreenButtonText}
+            mode={args.sandboxMode}
+          />
+        </div>
+        Mermaid
+        <div style={{ width: "100%", height: "700px", background: "#e0e0e0" }}>
+          <IframeSandbox
+            type="markdown"
+            content={mermaidContent}
+            className="content-render-iframe"
+            loadingText={args.sandboxLoadingText}
+            styleLoadingText={args.sandboxStyleLoadingText}
+            scriptLoadingText={args.sandboxScriptLoadingText}
+            fullScreenButtonText={args.sandboxFullscreenButtonText}
+            mode={args.sandboxMode}
+          />
+        </div>
+        IMG
+        <div style={{ width: "100%", height: "700px", background: "#e0e0e0" }}>
+          <IframeSandbox
+            type="markdown"
+            content={imageContent}
+            className="content-render-iframe"
+            loadingText={args.sandboxLoadingText}
+            styleLoadingText={args.sandboxStyleLoadingText}
+            scriptLoadingText={args.sandboxScriptLoadingText}
+            fullScreenButtonText={args.sandboxFullscreenButtonText}
+            mode={args.sandboxMode}
+          />
+        </div>
+        Table
+        <div style={{ width: "100%", height: "700px", background: "#e0e0e0" }}>
+          <IframeSandbox
+            type="markdown"
+            content={tableContent}
+            className="content-render-iframe"
+            loadingText={args.sandboxLoadingText}
+            styleLoadingText={args.sandboxStyleLoadingText}
+            scriptLoadingText={args.sandboxScriptLoadingText}
+            fullScreenButtonText={args.sandboxFullscreenButtonText}
+            mode={args.sandboxMode}
+          />
+        </div>
+        HTML
+        <div style={{ width: "100%", height: "700px", background: "#e0e0e0" }}>
+          <IframeSandbox
+            type="sandbox"
+            content={htmlContent}
+            className="content-render-iframe"
+            loadingText={args.sandboxLoadingText}
+            styleLoadingText={args.sandboxStyleLoadingText}
+            scriptLoadingText={args.sandboxScriptLoadingText}
+            fullScreenButtonText={args.sandboxFullscreenButtonText}
+            mode={args.sandboxMode}
+          />
+        </div>
+      </>
+    );
   },
 };

@@ -32,6 +32,8 @@ import {
   mermaidBlockIsComplete,
 } from "./utils/mermaid-parse";
 import { normalizeInlineHtml } from "./utils/normalize-inline-html";
+import IframeSandbox from "./IframeSandbox";
+import { splitContentSegments } from "./utils/split-content";
 // Define component Props type
 export interface ContentRenderProps {
   content: string;
@@ -64,6 +66,16 @@ export interface ContentRenderProps {
   copiedButtonText?: string;
   // Dynamic interaction format for multi-select support
   dynamicInteractionFormat?: string;
+  // Loading text before first HTML block renders inside iframe (i18n support)
+  sandboxLoadingText?: string;
+  // Loading text while styles are being generated inside iframe
+  sandboxStyleLoadingText?: string;
+  // Loading text while scripts are being cached/executed inside iframe
+  sandboxScriptLoadingText?: string;
+  // Fullscreen button text for iframe sandbox
+  sandboxFullscreenButtonText?: string;
+  // Sandbox render mode
+  sandboxMode?: "content" | "blackboard";
   beforeSend?: (param: OnSendContentParams) => boolean;
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
@@ -164,6 +176,31 @@ type CustomComponents = ComponentsWithCustomVariable & {
   }>;
 };
 
+const remarkPlugins = [remarkGfm, remarkMath, remarkFlow, remarkBreaks];
+
+const rehypePlugins = [
+  preserveCustomVariableProperties,
+  rehypeRaw,
+  restoreCustomVariableProperties,
+  [rehypeHighlight, { languages: highlightLanguages, subset: subsetLanguages }],
+  rehypeKatex,
+];
+
+export const MarkdownRenderer: React.FC<{
+  content: string;
+  components: CustomComponents;
+}> = ({ content: markdownContent, components }) => (
+  <div className="markdown-renderer">
+    <ReactMarkdown
+      remarkPlugins={remarkPlugins}
+      rehypePlugins={rehypePlugins}
+      components={components}
+    >
+      {markdownContent}
+    </ReactMarkdown>
+  </div>
+);
+
 const ContentRender: React.FC<ContentRenderProps> = ({
   content,
   customRenderBar,
@@ -178,6 +215,11 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   confirmButtonText,
   copyButtonText,
   copiedButtonText,
+  sandboxLoadingText,
+  sandboxStyleLoadingText,
+  sandboxScriptLoadingText,
+  sandboxFullscreenButtonText,
+  sandboxMode = "content",
   onClickCustomButtonAfterContent,
   beforeSend,
   // tooltipMinLength,
@@ -188,14 +230,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   );
 
   // Use custom Hook to handle typewriter effect
-  const { displayContent, isComplete } = useTypewriterStateMachine({
-    // processMarkdownText will let code block printf("You win!\n") become printf("You win!<br/>");
-    // content: processMarkdownText(content),
-    content: normalizedContent,
-    typingSpeed,
-    disabled: !enableTypewriter,
-  });
-
   const components: CustomComponents = {
     "custom-button-after-content": ({
       children,
@@ -293,42 +327,81 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     ),
   };
 
+  const { displayContent, isComplete } = useTypewriterStateMachine({
+    // processMarkdownText will let code block printf("You win!\n") become printf("You win!<br/>");
+    // content: processMarkdownText(content),
+    content: normalizedContent,
+    typingSpeed,
+    disabled: !enableTypewriter,
+  });
+
+  const renderSegments = useMemo(
+    () => splitContentSegments(content, true),
+    [content]
+  );
+  console.log("renderSegments=====", content, renderSegments);
+  const hasSandbox = renderSegments.some(
+    (segment) => segment.type === "sandbox"
+  );
+
+  const segments = useMemo(
+    () => parseMarkdownSegments(displayContent),
+    [displayContent]
+  );
+
   const hasCompleted = useRef(false);
 
   useEffect(() => {
+    if (hasSandbox) return;
     if (isComplete && !hasCompleted.current) {
       hasCompleted.current = true; // Mark as completed
       onTypeFinished?.(); // Call the passed callback
     }
-  }, [isComplete, onTypeFinished]);
-  useEffect(() => {
-    hasCompleted.current = false; // Reset completion status when content changes
-  }, [content]);
+  }, [hasSandbox, isComplete, onTypeFinished]);
 
-  const segments = parseMarkdownSegments(displayContent);
+  useEffect(() => {
+    if (hasSandbox) return;
+    hasCompleted.current = false; // Reset completion status when content changes
+  }, [hasSandbox, content]);
+
+  if (hasSandbox) {
+    return (
+      <div className="content-render markdown-body">
+        {renderSegments.map((segment, idx) =>
+          segment.type === "sandbox" ? (
+            <IframeSandbox
+              key={`sandbox-${idx}`}
+              hideFullScreen
+              content={segment.value}
+              className="content-render-iframe"
+              loadingText={sandboxLoadingText}
+              styleLoadingText={sandboxStyleLoadingText}
+              scriptLoadingText={sandboxScriptLoadingText}
+              fullScreenButtonText={sandboxFullscreenButtonText}
+              mode={sandboxMode}
+            />
+          ) : (
+            <MarkdownRenderer
+              key={`md-${idx}`}
+              components={components}
+              content={normalizeInlineHtml(segment.value)}
+            />
+          )
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div className={`content-render markdown-body`}>
+    <div className="content-render markdown-body">
       {segments.map((seg, index) => {
         if (seg.type === "text") {
           return (
-            <ReactMarkdown
+            <MarkdownRenderer
               key={index}
-              remarkPlugins={[remarkGfm, remarkMath, remarkFlow, remarkBreaks]}
-              rehypePlugins={[
-                preserveCustomVariableProperties,
-                rehypeRaw,
-                restoreCustomVariableProperties,
-                [
-                  rehypeHighlight,
-                  { languages: highlightLanguages, subset: subsetLanguages },
-                ],
-                rehypeKatex,
-              ]}
               components={components}
-            >
-              {seg.value}
-            </ReactMarkdown>
+              content={seg.value}
+            />
           );
         }
 

@@ -1,0 +1,25 @@
+import { describe, expect, it } from "vitest";
+
+import { splitContentSegments } from "./split-content";
+
+describe("splitContentSegments", () => {
+  it("keeps inline svg and fenced code as markdown segments", () => {
+    const raw =
+      "```mermaid\ngraph TD\n    subgraph 大语言模型的诞生\n        A[初始模型<br>空白的“大脑”] --> B[预训练<br>海量数据“上学”]\n        B --> C[后训练<br>对齐与微调]\n        C --> D[大语言模型<br>具备语言与知识]\n    end\n```\n\n你有没有想过，为什么一夜之间，好像全世界都在谈论“大模型”？\n\n伴随 ChatGPT 一起爆火的，AI 真的和人很像。";
+
+    const segments = splitContentSegments(raw);
+
+    expect(segments).toHaveLength(1);
+    segments.forEach((segment) => expect(segment.type).toBe("markdown"));
+    expect(segments[0].value).toContain("```mermaid");
+  });
+
+  it("splits true html blocks into sandbox", () => {
+    const raw = ["Intro", "<div><p>real html</p></div>", "Outro"].join("\n");
+
+    const segments = splitContentSegments(raw);
+
+    expect(segments).toHaveLength(1);
+    expect(segments[0].type).toBe("sandbox");
+  });
+});

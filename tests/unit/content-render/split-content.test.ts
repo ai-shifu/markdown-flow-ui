@@ -4,14 +4,17 @@ import { splitContentSegments } from "../../../src/components/ContentRender/util
 
 describe("splitContentSegments", () => {
   it("keeps inline svg and fenced code as markdown segments", () => {
-    const raw = "```mermaid\ngraph TD\n    subgraph 大语言模型的诞生\n        A[初始模型<br>空白的“大脑”] --> B[预训练<br>海量数据“上学”]\n        B --> C[后训练<br>对齐与微调]\n        C --> D[大语言模型<br>具备语言与知识]\n    end\n```\n\n你有没有想过，为什么一夜之间，好像全世界都在谈论“大模型”？\n\n伴随 ChatGPT 一起爆火的，AI 真的和人很像。";
+    const raw =
+      "```mermaid\ngraph TD\n    subgraph 大语言模型的诞生\n        A[初始模型<br>空白的“大脑”] --> B[预训练<br>海量数据“上学”]\n        B --> C[后训练<br>对齐与微调]\n        C --> D[大语言模型<br>具备语言与知识]\n    end\n```\n\n你有没有想过，为什么一夜之间，好像全世界都在谈论“大模型”？\n\n伴随 ChatGPT 一起爆火的，AI 真的和人很像。";
 
     const segments = splitContentSegments(raw);
 
     expect(segments).toHaveLength(1);
     segments.forEach((segment) => expect(segment.type).toBe("markdown"));
     expect(segments[0].value).toContain("```mermaid");
-    expect(segments[0].value).not.toContain("你有没有想过，为什么一夜之间，好像全世界都在谈论“大模型”？");
+    expect(segments[0].value).not.toContain(
+      "你有没有想过，为什么一夜之间，好像全世界都在谈论“大模型”？"
+    );
   });
 
   it("splits true html blocks into sandbox when keepText is true", () => {
@@ -55,9 +58,13 @@ describe("splitContentSegments", () => {
 
     expect(segments).toHaveLength(2);
     expect(segments[0].type).toBe("sandbox");
-    expect(segments[0].value).toContain("<div style=\"width: 100%; overflow-x: auto;\">");
+    expect(segments[0].value).toContain(
+      '<div style="width: 100%; overflow-x: auto;">'
+    );
     expect(segments[1].type).toBe("text");
-    expect(segments[1].value).toContain("前面内容介绍了如何用 AI 师傅平台进行教学，本小节我们重点介绍如何用 AI 师傅平台进行测评。");
+    expect(segments[1].value).toContain(
+      "前面内容介绍了如何用 AI 师傅平台进行教学，本小节我们重点介绍如何用 AI 师傅平台进行测评。"
+    );
   });
 
   it("splits true html blocks into sandbox when keepText is false", () => {
@@ -95,26 +102,33 @@ describe("splitContentSegments", () => {
 2.  **学员互动答题**：kk，你会通过互动的方式（如选择题、填空题、问答题等）来回答问题。
 3.  **大模型判题**：AI 会分析你的答案，进行判断，并给出反馈。
 
-整个过程充分利用了平台的**用户互动、输出给 AI、AI 判断、AI 输出**这些核心能力，为你提供即时、个性化的学习效果检验。`
+整个过程充分利用了平台的**用户互动、输出给 AI、AI 判断、AI 输出**这些核心能力，为你提供即时、个性化的学习效果检验。`;
 
     const segments = splitContentSegments(raw);
-    console.log('segments', segments);
+    console.log("segments", segments);
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("sandbox");
-    expect(segments[0].value).toContain("<div style=\"width: 100%; overflow-x: auto;\">");
-    expect(segments[0].value).not.toContain("前面内容介绍了如何用 AI 师傅平台进行教学，本小节我们重点介绍如何用 AI 师傅平台进行测评。");
+    expect(segments[0].value).toContain(
+      '<div style="width: 100%; overflow-x: auto;">'
+    );
+    expect(segments[0].value).not.toContain(
+      "前面内容介绍了如何用 AI 师傅平台进行教学，本小节我们重点介绍如何用 AI 师傅平台进行测评。"
+    );
     expect(segments[0].value).not.toContain("在 AI 师傅平台上进行测评");
   });
 
   it("keeps text segments when enabled (mermaid + text)", () => {
-    const raw = "```mermaid\ngraph TD\n    subgraph 大语言模型的诞生\n        A[初始模型<br>空白的“大脑”] --> B[预训练<br>海量数据“上学”]\n        B --> C[后训练<br>对齐与微调]\n        C --> D[大语言模型<br>具备语言与知识]\n    end\n```\n\n你有没有想过，为什么一夜之间，好像全世界都在谈论“大模型”？";
+    const raw =
+      "```mermaid\ngraph TD\n    subgraph 大语言模型的诞生\n        A[初始模型<br>空白的“大脑”] --> B[预训练<br>海量数据“上学”]\n        B --> C[后训练<br>对齐与微调]\n        C --> D[大语言模型<br>具备语言与知识]\n    end\n```\n\n你有没有想过，为什么一夜之间，好像全世界都在谈论“大模型”？";
 
     const segments = splitContentSegments(raw, true);
 
     expect(segments).toHaveLength(2);
     expect(segments[0].type).toBe("markdown");
     expect(segments[1].type).toBe("text");
-    expect(segments[1].value).toContain("你有没有想过，为什么一夜之间，好像全世界都在谈论“大模型”？");
+    expect(segments[1].value).toContain(
+      "你有没有想过，为什么一夜之间，好像全世界都在谈论“大模型”？"
+    );
   });
 
   it("keeps text segments when enabled (html + text)", () => {
@@ -163,7 +177,9 @@ describe("splitContentSegments", () => {
 
     expect(segments).toHaveLength(3);
     expect(segments[0].type).toBe("text");
-    expect(segments[0].value).toBe("你好，我是孙志岗，初次见面，很高兴认识你。\n\n");
+    expect(segments[0].value).toBe(
+      "你好，我是孙志岗，初次见面，很高兴认识你。\n\n"
+    );
     expect(segments[1].type).toBe("markdown");
     expect(segments[1].value).toContain("<svg");
     expect(segments[1].value).toContain("</svg>");
@@ -208,49 +224,48 @@ describe("splitContentSegments", () => {
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toContain("<svg");
     expect(segments[0].value).toContain("</svg>");
-    expect(segments[0].value).not.toContain("为了判断咱们这门课是否真的适合你，我想先了解一下你的基本看法。下面几个观点，你同意吗？");
-
+    expect(segments[0].value).not.toContain(
+      "为了判断咱们这门课是否真的适合你，我想先了解一下你的基本看法。下面几个观点，你同意吗？"
+    );
   });
 
+  //   it("splits text and partial mermaid fenced block when keepText is true", () => {
+  //     const raw = `简单说，AI 的发展历程可以浓缩为四个阶段：
 
-//   it("splits text and partial mermaid fenced block when keepText is true", () => {
-//     const raw = `简单说，AI 的发展历程可以浓缩为四个阶段：
+  // \`\`\`mermaid
+  // timeline
+  //     title AI 发展四阶段
+  //     section 第一阶段
+  //         穷举法
+  //     : 基于规则与计算`;
+  //     // console.log('splits text and partial mermaid fenced block when keepText is true', splitContentSegments(raw, true));
+  //     const segments = splitContentSegments(raw, true);
+  //     expect(segments).toHaveLength(2);
+  //     expect(segments[0].type).toBe("text");
+  //     expect(segments[0].value).toBe("简单说，AI 的发展历程可以浓缩为四个阶段：");
+  //     expect(segments[1].type).toBe("markdown");
+  //     expect(segments[1].value).toContain("```mermaid");
+  //     expect(segments[1].value).toContain("timeline");
+  //   });
 
-// \`\`\`mermaid
-// timeline
-//     title AI 发展四阶段
-//     section 第一阶段
-//         穷举法
-//     : 基于规则与计算`;
-//     // console.log('splits text and partial mermaid fenced block when keepText is true', splitContentSegments(raw, true));
-//     const segments = splitContentSegments(raw, true);
-//     expect(segments).toHaveLength(2);
-//     expect(segments[0].type).toBe("text");
-//     expect(segments[0].value).toBe("简单说，AI 的发展历程可以浓缩为四个阶段：");
-//     expect(segments[1].type).toBe("markdown");
-//     expect(segments[1].value).toContain("```mermaid");
-//     expect(segments[1].value).toContain("timeline");
-//   });
+  //   it("splits text and partial mermaid fenced block when keepText is false", () => {
+  //     const raw = `简单说，AI 的发展历程可以浓缩为四个阶段：
 
-//   it("splits text and partial mermaid fenced block when keepText is false", () => {
-//     const raw = `简单说，AI 的发展历程可以浓缩为四个阶段：
+  // \`\`\`mermaid
+  // timeline
+  //     title AI 发展四阶段
+  //     section 第一阶段
+  //         穷举法
+  //     : 基于规则与计算`;
+  //     // console.log('splits text and partial mermaid fenced block when keepText is false', splitContentSegments(raw));
+  //     const segments = splitContentSegments(raw);
+  //     expect(segments).toHaveLength(1);
+  //     expect(segments[0].type).toBe("markdown");
+  //     expect(segments[0].value).toContain("```mermaid");
+  //     expect(segments[0].value).toContain("timeline");
+  //     expect(segments[0].value).not.toContain("的发展历程可以浓缩为四个阶段：");
 
-// \`\`\`mermaid
-// timeline
-//     title AI 发展四阶段
-//     section 第一阶段
-//         穷举法
-//     : 基于规则与计算`;
-//     // console.log('splits text and partial mermaid fenced block when keepText is false', splitContentSegments(raw));
-//     const segments = splitContentSegments(raw);
-//     expect(segments).toHaveLength(1);
-//     expect(segments[0].type).toBe("markdown");
-//     expect(segments[0].value).toContain("```mermaid");
-//     expect(segments[0].value).toContain("timeline");
-//     expect(segments[0].value).not.toContain("的发展历程可以浓缩为四个阶段：");
-
-//   });
-
+  //   });
 
   it("splits leading text, img, and trailing text when keepText is true", () => {
     const raw = `你好，我是孙志岗，初次见面，很高兴认识你。
@@ -267,14 +282,15 @@ describe("splitContentSegments", () => {
 
     expect(segments).toHaveLength(3);
     expect(segments[0].type).toBe("text");
-    expect(segments[0].value).toBe("你好，我是孙志岗，初次见面，很高兴认识你。\n\n");
+    expect(segments[0].value).toBe(
+      "你好，我是孙志岗，初次见面，很高兴认识你。\n\n"
+    );
     expect(segments[1].type).toBe("markdown");
     expect(segments[1].value).toContain("<img");
     expect(segments[2].type).toBe("text");
     expect(segments[2].value).toContain("为了判断咱们这门课是否真的适合你");
     expect(segments[2].value).toContain("AI 是一种工具");
   });
-
 
   it("splits markdown image when keepText is true", () => {
     const raw =
@@ -294,7 +310,6 @@ describe("splitContentSegments", () => {
     });
   });
 
-
   it("splits leading text, img, and trailing text when keepText is false", () => {
     const raw = `你好，我是孙志岗，初次见面，很高兴认识你。
 
@@ -311,8 +326,9 @@ describe("splitContentSegments", () => {
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toContain("<img");
-    expect(segments[0].value).not.toContain("为了判断咱们这门课是否真的适合你，我想先了解一下你的基本看法。下面几个观点，你同意吗？");
-
+    expect(segments[0].value).not.toContain(
+      "为了判断咱们这门课是否真的适合你，我想先了解一下你的基本看法。下面几个观点，你同意吗？"
+    );
   });
 
   it("splits leading text, mermaid, and trailing text when keepText is true", () => {
@@ -333,7 +349,9 @@ graph TD
 
     expect(segments).toHaveLength(3);
     expect(segments[0].type).toBe("text");
-    expect(segments[0].value).toBe("你好，我是孙志岗，初次见面，很高兴认识你。\n\n");
+    expect(segments[0].value).toBe(
+      "你好，我是孙志岗，初次见面，很高兴认识你。\n\n"
+    );
     expect(segments[1].type).toBe("markdown");
     expect(segments[1].value).toContain("```mermaid");
     expect(segments[2].type).toBe("text");
@@ -360,8 +378,9 @@ graph TD
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toContain("```mermaid");
-    expect(segments[0].value).not.toContain("为了判断咱们这门课是否真的适合你，我想先了解一下你的基本看法。下面几个观点，你同意吗？");
-
+    expect(segments[0].value).not.toContain(
+      "为了判断咱们这门课是否真的适合你，我想先了解一下你的基本看法。下面几个观点，你同意吗？"
+    );
   });
 
   it("splits leading text, table, and trailing text when keepText is true", () => {
@@ -381,7 +400,9 @@ graph TD
     // console.log('splits leading text, table, and trailing text when keepText is true', segments);
     expect(segments).toHaveLength(3);
     expect(segments[0].type).toBe("text");
-    expect(segments[0].value).toBe("你好，我是孙志岗，初次见面，很高兴认识你。\n\n");
+    expect(segments[0].value).toBe(
+      "你好，我是孙志岗，初次见面，很高兴认识你。\n\n"
+    );
     expect(segments[1].type).toBe("markdown");
     expect(segments[1].value).toBe(`| Header 1 | Header 2 |
 |----------|----------|
@@ -412,28 +433,36 @@ graph TD
     expect(segments[0].value).toBe(`| Header 1 | Header 2 |
 |----------|----------|
 | Cell 1   | Cell 2   |`);
-    expect(segments[0].value).not.toContain("你好，我是孙志岗，初次见面，很高兴认识你。");
-    expect(segments[0].value).not.toContain("为了判断咱们这门课是否真的适合你，我想先了解一下你的基本看法。下面几个观点，你同意吗？");
+    expect(segments[0].value).not.toContain(
+      "你好，我是孙志岗，初次见面，很高兴认识你。"
+    );
+    expect(segments[0].value).not.toContain(
+      "为了判断咱们这门课是否真的适合你，我想先了解一下你的基本看法。下面几个观点，你同意吗？"
+    );
   });
 
   it("treats streamed svg plus trailing text as markdown", () => {
     const raw =
-        '这门课，核心就是讲如何调教 AI 的，目标是帮你成为 AI 的主人。而且，调教的思路非常符合人的直觉，最核心的只需要理解三件事：<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="#f5f5f5"/></svg>不是一个技术名词，而是一种工作方式：不追求完全理解每一行代码，更关注“整体是否跑通”“功能是否达成';
+      '这门课，核心就是讲如何调教 AI 的，目标是帮你成为 AI 的主人。而且，调教的思路非常符合人的直觉，最核心的只需要理解三件事：<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="#f5f5f5"/></svg>不是一个技术名词，而是一种工作方式：不追求完全理解每一行代码，更关注“整体是否跑通”“功能是否达成';
 
     const segments = splitContentSegments(raw);
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toContain("<svg");
-    expect(segments[0].value).not.toContain("这门课，核心就是讲如何调教 AI 的，目标是帮你成为 AI 的主人。而且，调教的思路非常符合人的直觉，最核心的只需要理解三件事：");
-    expect(segments[0].value).not.toContain("不追求完全理解每一行代码，更关注“整体是否跑通”“功能是否达成");
+    expect(segments[0].value).not.toContain(
+      "这门课，核心就是讲如何调教 AI 的，目标是帮你成为 AI 的主人。而且，调教的思路非常符合人的直觉，最核心的只需要理解三件事："
+    );
+    expect(segments[0].value).not.toContain(
+      "不追求完全理解每一行代码，更关注“整体是否跑通”“功能是否达成"
+    );
   });
 
   it("keeps streamed svg as a single markdown block when keepText is true", () => {
     const raw =
-    '这门课，核心就是讲如何调教 AI 的，目标是帮你成为 AI 的主人。而且，调教的思路非常符合人的直觉，最核心的只需要理解三件事：<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="#f5';
+      '这门课，核心就是讲如何调教 AI 的，目标是帮你成为 AI 的主人。而且，调教的思路非常符合人的直觉，最核心的只需要理解三件事：<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="#f5';
 
     const segments = splitContentSegments(raw, true);
-   
+
     // console.log('keeps streamed svg as a single markdown block when keepText is true', segments);
     expect(segments).toHaveLength(2);
     expect(segments[1].type).toBe("markdown");
@@ -442,34 +471,35 @@ graph TD
 
   it("keeps streamed svg as a single markdown block when keepText is false", () => {
     const raw =
-    '这门课，核心就是讲如何调教 AI 的，目标是帮你成为 AI 的主人。而且，调教的思路非常符合人的直觉，最核心的只需要理解三件事：<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="#f5';
+      '这门课，核心就是讲如何调教 AI 的，目标是帮你成为 AI 的主人。而且，调教的思路非常符合人的直觉，最核心的只需要理解三件事：<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="#f5';
 
     const segments = splitContentSegments(raw);
-   
+
     // console.log('keeps streamed svg as a single markdown block when keepText is true', segments);
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toContain("</svg>");
-    expect(segments[0].value).not.toContain("这门课，核心就是讲如何调教 AI 的，目标是帮你成为 AI 的主人。而且，调教的思路非常符合人的直觉，最核心的只需要理解三件事：");
+    expect(segments[0].value).not.toContain(
+      "这门课，核心就是讲如何调教 AI 的，目标是帮你成为 AI 的主人。而且，调教的思路非常符合人的直觉，最核心的只需要理解三件事："
+    );
   });
 
-
   it("keeps long fenced code block as single markdown segment when keepText is true", () => {
-    const raw = "```c\n  int a[N][N] = {\n      {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},\n      {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},\n      {1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1},\n      {1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1},\n      {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, ";
+    const raw =
+      "```c\n  int a[N][N] = {\n      {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},\n      {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},\n      {1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1},\n      {1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1},\n      {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, ";
 
     const segments = splitContentSegments(raw, true);
-   
+
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toContain("```c");
   });
 
-
   // it("keeps long fenced code block as single markdown segment when keepText is false", () => {
   //   const raw = "```c\n  int a[N][N] = {\n      {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},\n      {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},\n      {1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1},\n      {1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1},\n      {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, ";
 
   //   const segments = splitContentSegments(raw);
-   
+
   //   expect(segments).toHaveLength(1);
   //   expect(segments[0].type).toBe("markdown");
   //   expect(segments[0].value).toContain("```c");
@@ -494,6 +524,4 @@ graph TD
     expect(segments2[0].type).toBe("markdown");
     expect(segments2[0].value).toContain("Header 1");
   });
-
-  
 });

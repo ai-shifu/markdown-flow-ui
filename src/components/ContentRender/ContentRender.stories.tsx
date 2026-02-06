@@ -895,6 +895,11 @@ export const SVGDemo: Story = {
   name: "SVG 展示",
   args: {
     content: `
+你好 K，我是孙志岗，初次见面，很高兴认识你！
+
+<svg width=\"100%\" height=\"auto\" viewBox=\"0 0 800 400\" xmlns=\"http://www.w3.org/2000/svg\">\n  <defs>\n    <linearGradient id=\"bgGradient\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\">\n      <stop offset=\"0%\" style=\"stop-color:#0F63EE;stop-opacity:0.1\" />\n      <stop offset=\"100%\" style=\"stop-color:#0F63EE;stop-opacity:0.3\" />\n    </linearGradient>\n    <clipPath id=\"imageClip\">\n      <circle cx=\"600\" cy=\"150\" r=\"80\"/>\n    </clipPath>\n  </defs>\n  <rect width=\"800\" height=\"400\" fill=\"url(#bgGradient)\"/>\n  <rect x=\"50\" y=\"50\" width=\"500\" height=\"300\" rx=\"20\" fill=\"white\" stroke=\"#0F63EE\" stroke-width=\"4\"/>\n  <text x=\"80\" y=\"120\" font-family=\"Arial, sans-serif\" font-size=\"48\" font-weight=\"bold\" fill=\"#0F63EE\">跟 AI 学 AI 通识</text>\n  <text x=\"80\" y=\"180\" font-family=\"Arial, sans-serif\" font-size=\"24\" fill=\"#666\">孙志岗 · AI 大模型应用专家</text>\n  <line x1=\"80\" y1=\"200\" x2=\"480\" y2=\"200\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n  <text x=\"80\" y=\"250\" font-family=\"Arial, sans-serif\" font-size=\"20\" fill=\"#333\">探索大语言模型，开启职业新篇章</text>\n  <image href=\"https://resource.ai-shifu.com/ac186b833d0e417fb02737910b3a5ae0\" x=\"520\" y=\"70\" height=\"160\" width=\"160\" clip-path=\"url(#imageClip)\"/>\n</svg>
+
+为了判断这门《跟 AI 学 AI 通识》课是不是你的“菜”，我想先听听你对下面几个观点的看法。咱们不绕弯子，直接上观点：\n\n1.  **AI 是一种工具**，你同意吗？\n2.  **每种 AI 产品都需要学习使用方法**，你觉得呢？\n3.  **打造 AI 产品是技术高手的事情**，你怎么看？
 <img src="https://resource.ai-shifu.cn/7b007ca873b14edeb4d3e6817f520550" />
 
 啊啊啊下面这张图总结了咱们刚才聊的全部要点下面这张图总结了咱们刚才聊的全部要点下面这张图总结了咱们刚才聊的全部要点下面这张图总结了咱们刚才聊的全部要点下面这张图总结了咱们刚才聊的全部要点下面这张图总结了咱们刚才聊的全部要点
@@ -991,7 +996,7 @@ export const SVGDemo: Story = {
 </svg>
 
 `,
-    enableTypewriter: true,
+    enableTypewriter: false,
     typingSpeed: 10,
   },
 };

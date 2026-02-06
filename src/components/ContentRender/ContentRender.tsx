@@ -133,8 +133,17 @@ const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
       const [, , viewBoxWidth, viewBoxHeight] = dimensions;
       const widthAttr = svgEl.getAttribute("width");
       const heightAttr = svgEl.getAttribute("height");
-      const hasWidth = !!widthAttr && widthAttr !== "0";
-      const hasHeight = !!heightAttr && heightAttr !== "0";
+      const isRelativeLength = (value?: string | null) => {
+        if (!value) return false;
+        const normalized = value.trim().toLowerCase();
+        return normalized === "auto" || normalized.endsWith("%");
+      };
+      // Treat percentage/auto sizing as responsive so viewBox drives the layout
+      const hasWidth =
+        !!widthAttr && widthAttr !== "0" && !isRelativeLength(widthAttr);
+      const hasHeight =
+        !!heightAttr && heightAttr !== "0" && !isRelativeLength(heightAttr);
+
       const shouldUseResponsiveSize = !hasWidth && !hasHeight;
 
       if (shouldUseResponsiveSize) {

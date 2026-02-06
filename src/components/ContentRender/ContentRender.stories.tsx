@@ -991,7 +991,7 @@ export const SVGDemo: Story = {
 </svg>
 
 `,
-    enableTypewriter: true,
+    enableTypewriter: false,
     typingSpeed: 10,
   },
 };

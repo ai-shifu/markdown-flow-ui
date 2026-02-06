@@ -12,10 +12,55 @@ const INLINE_SANDBOX_PATTERNS: RegExp[] = [
   /```mermaid[\s\S]*?```/i,
   /```[a-zA-Z0-9]+[\s\S]*?```/i,
 ];
+const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*]\([^\s)\n]+(?:\s+"[^"]*")?\)/i;
 
 const closingBoundary = /<\/[a-z][^>]*>\s*\n(?=[^\s<])/gi;
+const CUSTOM_BUTTON_PATTERN =
+  /<custom-button-after-content\b[\s\S]*?<\/custom-button-after-content>/gi;
 
 type MatchResult = { start: number; end: number };
+type FenceRange = { start: number; end: number };
+
+const getFenceRanges = (raw: string): FenceRange[] => {
+  const ranges: FenceRange[] = [];
+  const fencePattern = /```/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = fencePattern.exec(raw)) !== null) {
+    const start = match.index;
+    const closeMatch = fencePattern.exec(raw);
+    if (!closeMatch) {
+      ranges.push({ start, end: raw.length });
+      break;
+    }
+    ranges.push({ start, end: closeMatch.index + 3 });
+  }
+
+  return ranges;
+};
+
+const isIndexInRanges = (index: number, ranges: FenceRange[]) =>
+  ranges.some(({ start, end }) => index >= start && index < end);
+
+const findFirstMatchOutsideFence = (
+  raw: string,
+  pattern: RegExp,
+  fenceRanges: FenceRange[]
+) => {
+  const flags = pattern.flags.includes("g")
+    ? pattern.flags
+    : `${pattern.flags}g`;
+  const matcher = new RegExp(pattern.source, flags);
+  let match: RegExpExecArray | null;
+
+  while ((match = matcher.exec(raw)) !== null) {
+    if (!isIndexInRanges(match.index, fenceRanges)) {
+      return match.index;
+    }
+  }
+
+  return -1;
+};
 
 const findHtmlBlockEnd = (raw: string, startIndex: number) => {
   let blockEnd = raw.length;
@@ -29,6 +74,38 @@ const findHtmlBlockEnd = (raw: string, startIndex: number) => {
   }
 
   return blockEnd;
+};
+
+const splitCustomButtonsFromSandbox = (segments: RenderSegment[]) => {
+  if (!segments.length) return segments;
+  const output: RenderSegment[] = [];
+
+  segments.forEach((segment) => {
+    if (segment.type !== "sandbox") {
+      output.push(segment);
+      return;
+    }
+
+    CUSTOM_BUTTON_PATTERN.lastIndex = 0;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = CUSTOM_BUTTON_PATTERN.exec(segment.value)) !== null) {
+      const before = segment.value.slice(lastIndex, match.index);
+      if (before.trim()) {
+        output.push({ type: "sandbox", value: before });
+      }
+      output.push({ type: "markdown", value: match[0] });
+      lastIndex = match.index + match[0].length;
+    }
+
+    const rest = segment.value.slice(lastIndex);
+    if (rest.trim()) {
+      output.push({ type: "sandbox", value: rest });
+    }
+  });
+
+  return output;
 };
 
 const findInlineSandboxMatch = (raw: string): MatchResult | null => {
@@ -46,6 +123,23 @@ const findInlineSandboxMatch = (raw: string): MatchResult | null => {
   });
 
   return earliest;
+};
+
+const findMarkdownImageMatch = (
+  raw: string,
+  fenceRanges: FenceRange[]
+): MatchResult | null => {
+  const start = findFirstMatchOutsideFence(
+    raw,
+    MARKDOWN_IMAGE_PATTERN,
+    fenceRanges
+  );
+
+  if (start === -1) return null;
+  const match = raw.slice(start).match(MARKDOWN_IMAGE_PATTERN);
+  if (!match) return null;
+
+  return { start, end: start + match[0].length };
 };
 
 const extractTableBlock = (
@@ -75,17 +169,53 @@ export const splitContentSegments = (
   raw: string,
   keepText = false
 ): RenderSegment[] => {
+  const finalizeSegments = (segments: RenderSegment[]) =>
+    splitCustomButtonsFromSandbox(segments);
+
   const fenceStart = raw.indexOf("```");
   if (keepText && fenceStart !== -1) {
     const closingFence = raw.indexOf("```", fenceStart + 3);
     if (closingFence === -1) {
-      return [{ type: "markdown", value: raw }];
+      return finalizeSegments([{ type: "markdown", value: raw }]);
     }
   }
 
-  const svgOpenIndex = raw.search(/<svg\b/i);
-  if (svgOpenIndex !== -1 && raw.indexOf("</svg>", svgOpenIndex) === -1) {
-    return [{ type: "markdown", value: raw }];
+  const fenceRanges = getFenceRanges(raw);
+  // Avoid treating fenced code blocks as sandbox content.
+  const sandboxStartIndex = findFirstMatchOutsideFence(
+    raw,
+    SANDBOX_START_PATTERN,
+    fenceRanges
+  );
+  const svgOpenIndex = findFirstMatchOutsideFence(raw, /<svg\b/i, fenceRanges);
+  const hasSandboxBeforeSvg =
+    sandboxStartIndex !== -1 &&
+    svgOpenIndex !== -1 &&
+    sandboxStartIndex < svgOpenIndex;
+  if (svgOpenIndex !== -1 && !hasSandboxBeforeSvg) {
+    const before = raw.slice(0, svgOpenIndex);
+    const closeIdx = raw.indexOf("</svg>", svgOpenIndex);
+    const svgBlock =
+      closeIdx === -1
+        ? `${raw.slice(svgOpenIndex)}</svg>`
+        : raw.slice(svgOpenIndex, closeIdx + "</svg>".length);
+    const after = closeIdx === -1 ? "" : raw.slice(closeIdx + "</svg>".length);
+
+    if (keepText) {
+      const segments: RenderSegment[] = [];
+      if (before.trim()) {
+        segments.push({ type: "text", value: before });
+      }
+      segments.push({ type: "markdown", value: svgBlock });
+      if (after.trim()) {
+        segments.push(...splitContentSegments(after, true));
+      }
+      return finalizeSegments(segments);
+    }
+
+    if (closeIdx === -1) {
+      return finalizeSegments([{ type: "markdown", value: svgBlock }]);
+    }
   }
 
   const tableBlock = extractTableBlock(raw);
@@ -105,38 +235,34 @@ export const splitContentSegments = (
           : splitContentSegments(after))
       );
     }
-    return segments;
+    return finalizeSegments(segments);
   }
 
-  const completeSvgMatch = raw.match(/<svg[\s\S]*?<\/svg>/i);
-  if (completeSvgMatch && keepText) {
-    const hasLeadingContent =
-      svgOpenIndex > -1 && raw.slice(0, svgOpenIndex).trim().length > 0;
-    if (!hasLeadingContent) {
-      if (!raw.trim().toLowerCase().endsWith("</svg>")) {
-        return [{ type: "markdown", value: `${raw}</svg>` }];
-      }
-      return [{ type: "markdown", value: raw }];
-    }
-  }
-
-  const sandboxStartIndex = raw.search(SANDBOX_START_PATTERN);
   const inlineMatch = findInlineSandboxMatch(raw);
+  const markdownImageMatch = findMarkdownImageMatch(raw, fenceRanges);
+  const inlineCandidate =
+    inlineMatch && markdownImageMatch
+      ? inlineMatch.start <= markdownImageMatch.start
+        ? inlineMatch
+        : markdownImageMatch
+      : (inlineMatch ?? markdownImageMatch);
 
-  if (sandboxStartIndex === -1 && !inlineMatch) {
+  if (sandboxStartIndex === -1 && !inlineCandidate) {
     if (keepText && raw.trim()) {
-      return [{ type: "text", value: raw }];
+      return finalizeSegments([{ type: "text", value: raw }]);
     }
     return [];
   }
 
   const shouldUseInline =
-    !!inlineMatch &&
-    (sandboxStartIndex === -1 || inlineMatch.start < sandboxStartIndex);
+    !!inlineCandidate &&
+    (sandboxStartIndex === -1 || inlineCandidate.start < sandboxStartIndex);
 
-  const startIndex = shouldUseInline ? inlineMatch!.start : sandboxStartIndex;
+  const startIndex = shouldUseInline
+    ? inlineCandidate!.start
+    : sandboxStartIndex;
   const blockEnd = shouldUseInline
-    ? inlineMatch!.end
+    ? inlineCandidate!.end
     : findHtmlBlockEnd(raw, startIndex);
 
   const segments: RenderSegment[] = [];
@@ -157,5 +283,5 @@ export const splitContentSegments = (
     segments.push(...splitContentSegments(after, keepText));
   }
 
-  return segments;
+  return finalizeSegments(segments);
 };

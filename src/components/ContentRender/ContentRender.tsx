@@ -33,7 +33,10 @@ import {
 } from "./utils/mermaid-parse";
 import { normalizeInlineHtml } from "./utils/normalize-inline-html";
 import IframeSandbox from "./IframeSandbox";
-import { splitContentSegments } from "./utils/split-content";
+import {
+  splitContentSegments,
+  type RenderSegment,
+} from "./utils/split-content";
 // Define component Props type
 export interface ContentRenderProps {
   content: string;
@@ -210,6 +213,31 @@ export const MarkdownRenderer: React.FC<{
   </div>
 );
 
+const mergeNonSandboxSegments = (segments: RenderSegment[]) => {
+  if (segments.length <= 1) return segments;
+  const merged: RenderSegment[] = [];
+
+  segments.forEach((segment) => {
+    if (segment.type === "sandbox") {
+      merged.push(segment);
+      return;
+    }
+
+    const last = merged[merged.length - 1];
+    if (last && last.type !== "sandbox") {
+      merged[merged.length - 1] = {
+        type: "markdown",
+        value: `${last.value}${segment.value}`,
+      };
+      return;
+    }
+
+    merged.push({ type: "markdown", value: segment.value });
+  });
+
+  return merged;
+};
+
 const ContentRender: React.FC<ContentRenderProps> = ({
   content,
   customRenderBar,
@@ -348,9 +376,13 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     () => splitContentSegments(content, true),
     [content]
   );
-  console.log("renderSegments=====", content, renderSegments);
+
   const hasSandbox = renderSegments.some(
     (segment) => segment.type === "sandbox"
+  );
+  const mergedRenderSegments = useMemo(
+    () => mergeNonSandboxSegments(renderSegments),
+    [renderSegments]
   );
 
   const segments = useMemo(
@@ -376,7 +408,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   if (hasSandbox) {
     return (
       <div className="content-render markdown-body">
-        {renderSegments.map((segment, idx) =>
+        {mergedRenderSegments.map((segment, idx) =>
           segment.type === "sandbox" ? (
             <IframeSandbox
               key={`sandbox-${idx}`}

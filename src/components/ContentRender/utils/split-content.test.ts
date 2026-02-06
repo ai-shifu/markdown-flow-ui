@@ -22,4 +22,42 @@ describe("splitContentSegments", () => {
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("sandbox");
   });
+
+  it("extracts custom button from sandbox blocks", () => {
+    const raw =
+      "<div><p>real html</p></div><custom-button-after-content>Ask</custom-button-after-content>";
+
+    const segments = splitContentSegments(raw);
+    const sandboxSegments = segments.filter(
+      (segment) => segment.type === "sandbox"
+    );
+    const customSegments = segments.filter(
+      (segment) =>
+        segment.type !== "sandbox" &&
+        segment.value.includes("custom-button-after-content")
+    );
+
+    expect(sandboxSegments).toHaveLength(1);
+    expect(sandboxSegments[0].value).not.toContain(
+      "custom-button-after-content"
+    );
+    expect(customSegments).toHaveLength(1);
+  });
+
+  it("keeps script blocks inside sandbox when custom button follows", () => {
+    const raw = [
+      "<div><p>real html</p></div>",
+      "<style>.demo{color:red;}</style>",
+      "<script>console.log('demo');</script><custom-button-after-content>Ask</custom-button-after-content>",
+    ].join("\n");
+
+    const segments = splitContentSegments(raw, true);
+    const sandboxValue = segments
+      .filter((segment) => segment.type === "sandbox")
+      .map((segment) => segment.value)
+      .join("");
+
+    expect(sandboxValue).toContain("<script>");
+    expect(sandboxValue).not.toContain("custom-button-after-content");
+  });
 });

@@ -3,7 +3,6 @@ import { Loader2 } from "lucide-react";
 
 export interface SandboxAppProps {
   html: string;
-  loadingText?: string;
   styleLoadingText?: string;
   scriptLoadingText?: string;
   resetToken?: number;
@@ -12,7 +11,6 @@ export interface SandboxAppProps {
 
 const SandboxApp: React.FC<SandboxAppProps> = ({
   html,
-  loadingText,
   styleLoadingText,
   scriptLoadingText,
   resetToken = 0,
@@ -20,7 +18,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isWaitingFirstDiv, setIsWaitingFirstDiv] = useState(true);
+  const [, setIsWaitingFirstDiv] = useState(true);
   const [isGeneratingStyles, setIsGeneratingStyles] = useState(false);
   const [isGeneratingScripts, setIsGeneratingScripts] = useState(false);
   const appendedStylesRef = useRef<HTMLStyleElement[]>([]);
@@ -66,10 +64,15 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     if (!styleEl) {
       styleEl = doc.createElement("style");
       styleEl.id = styleId;
-      styleEl.textContent =
-        "@keyframes sandbox-spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }";
       doc.head?.appendChild(styleEl);
     }
+    styleEl.textContent = `
+      @keyframes sandbox-spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+      .sandbox-wrapper { align-items: center; }
+      @media (max-width: 640px) {
+        .sandbox-wrapper { align-items: stretch; }
+      }
+    `;
   }, []);
 
   useEffect(() => {
@@ -226,7 +229,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       return scriptLoadingText || "Building scripts cache...";
     if (isGeneratingStyles || hasStylesRef.current)
       return styleLoadingText || "Building styles...";
-    if (isWaitingFirstDiv) return loadingText || "Loading...";
     return null;
   })();
 
@@ -235,14 +237,15 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   return (
     <div
       ref={wrapperRef}
+      className="sandbox-wrapper"
       style={{
         position: "relative",
         width: "100%",
         height: isBlackboard ? "100vh" : undefined,
-        display: isBlackboard ? "flex" : undefined,
-        flexDirection: isBlackboard ? "column" : undefined,
+        display: "flex",
+        flexDirection: "column",
         // if use center, too long iframe wont see header
-        justifyContent: isBlackboard ? "space-around" : undefined,
+        justifyContent: "space-around",
       }}
       aria-busy={!!overlayMessage}
     >

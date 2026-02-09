@@ -1692,6 +1692,7 @@ export const HTMLDemoIframeOnly: Story = {
           <IframeSandbox
             type="markdown"
             content={svgContent}
+            // content={`<svg width=\"100%\" height=\"100%\" viewBox=\"0 0 1000 600\" xmlns=\"http://www.w3.org/2000/svg\" style=\"background: linear-gradient(135deg, #0F63EE 0%, #1E3A8A 100%);\">\n  <defs>\n    <clipPath id=\"circleClip\">\n      <circle cx=\"200\" cy=\"300\" r=\"120\"/>\n    </clipPath>\n  </defs>\n\n  <image href=\"https://resource.ai-shifu.com/ac186b833d0e417fb02737910b3a5ae0\" x=\"80\" y=\"180\" height=\"240\" width=\"240\" clip-path=\"url(#circleClip)\"/>\n  <circle cx=\"200\" cy=\"300\" r=\"120\" fill=\"none\" stroke=\"white\" stroke-width=\"4\"/>\n\n  <text x=\"500\" y=\"280\" font-family=\"Arial, sans-serif\" font-size=\"48\" font-weight=\"bold\" fill=\"white\" text-anchor=\"middle\" style=\"text-shadow: 2px 2px 4px rgba(0,0,0,0.5);\">\n    <tspan x=\"500\" dy=\"-0.6em\">帮助 100 万人顺利走进</tspan>\n    <tspan x=\"500\" dy=\"1.2em\" font-size=\"56\">AGI 时代</tspan>\n  </text>\n\n  <text x=\"500\" y=\"400\" font-family=\"Arial, sans-serif\" font-size=\"28\" fill=\"#E0E7FF\" text-anchor=\"middle\">\n    跟 AI 学 AI 通识\n  </text>\n</svg>\n\n`}
             className="content-render-iframe"
             loadingText={args.sandboxLoadingText}
             styleLoadingText={args.sandboxStyleLoadingText}

@@ -138,13 +138,31 @@ const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
         const normalized = value.trim().toLowerCase();
         return normalized === "auto" || normalized.endsWith("%");
       };
+      const toNumericLength = (value?: string | null) => {
+        if (!value) return null;
+        const normalized = value.trim().toLowerCase();
+        if (normalized === "auto" || normalized.endsWith("%")) {
+          return null;
+        }
+        const parsed = Number.parseFloat(normalized);
+        return Number.isNaN(parsed) ? null : parsed;
+      };
       // Treat percentage/auto sizing as responsive so viewBox drives the layout
-      const hasWidth =
-        !!widthAttr && widthAttr !== "0" && !isRelativeLength(widthAttr);
-      const hasHeight =
-        !!heightAttr && heightAttr !== "0" && !isRelativeLength(heightAttr);
+      const isWidthRelative = isRelativeLength(widthAttr);
+      const isHeightRelative = isRelativeLength(heightAttr);
+      const widthMissing = !widthAttr || widthAttr === "0";
+      const heightMissing = !heightAttr || heightAttr === "0";
+      const numericWidth = toNumericLength(widthAttr);
+      const numericHeight = toNumericLength(heightAttr);
+      const matchesViewBox =
+        numericWidth === viewBoxWidth && numericHeight === viewBoxHeight;
 
-      const shouldUseResponsiveSize = !hasWidth && !hasHeight;
+      // Prefer responsive layout when sizing is relative or matches the viewBox
+      const shouldUseResponsiveSize =
+        isWidthRelative ||
+        isHeightRelative ||
+        (widthMissing && heightMissing) ||
+        matchesViewBox;
 
       if (shouldUseResponsiveSize) {
         hasResponsiveSvg = true;
@@ -161,10 +179,10 @@ const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
       hasFixedSvg = true;
       svgEl.classList.add("content-render-svg-el--fixed");
       svgEl.classList.remove("content-render-svg-el--responsive");
-      if (!hasWidth && viewBoxWidth > 0) {
+      if (widthMissing && viewBoxWidth > 0) {
         svgEl.setAttribute("width", `${viewBoxWidth}`);
       }
-      if (!hasHeight && viewBoxHeight > 0) {
+      if (heightMissing && viewBoxHeight > 0) {
         svgEl.setAttribute("height", `${viewBoxHeight}`);
       }
     });

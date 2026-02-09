@@ -1652,6 +1652,7 @@ export const HTMLDemoIframeOnly: Story = {
         <div style={{ width: "100%", height: "700px", background: "#e0e0e0" }}>
           <IframeSandbox
             type="markdown"
+            // content={`<div style=\"display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: linear-gradient(to bottom right, #f8fafc, #e0e7ff); font-family: 'Arial', sans-serif; padding: 2rem;\">\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    AI 是一种工具\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    每种 AI 产品都需要<br>学习使用方法\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2;\">\n    打造 AI 产品是<br>技术高手的事情\n  </div>\n</div>`}
             content={htmlContent}
             className="content-render-iframe"
             loadingText={args.sandboxLoadingText}

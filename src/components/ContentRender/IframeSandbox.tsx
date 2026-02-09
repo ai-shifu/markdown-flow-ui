@@ -45,6 +45,20 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         : sandboxSegments.map((seg) => seg.value).join("\n");
     return sandboxContent || "";
   }, [content, mode]);
+  const hasRootVhHeight = React.useMemo(() => {
+    const normalized = htmlContent.trim();
+    if (!normalized) return false;
+    const rootMatch = normalized.match(/^<([a-zA-Z][\w:-]*)(\s[^>]*?)?>/);
+    if (!rootMatch) return false;
+    const attrs = rootMatch[2] || "";
+    const heightAttrMatch = attrs.match(/\bheight\s*=\s*["']([^"']+)["']/i);
+    if (heightAttrMatch && /vh$/i.test(heightAttrMatch[1].trim())) {
+      return true;
+    }
+    const styleAttrMatch = attrs.match(/\bstyle\s*=\s*["']([^"']+)["']/i);
+    if (!styleAttrMatch) return false;
+    return /height\s*:\s*[^;]*vh\b/i.test(styleAttrMatch[1]);
+  }, [htmlContent]);
   useEffect(() => {
     if (mode !== "blackboard") {
       prevHtmlRef.current = htmlContent;
@@ -194,6 +208,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         fullScreenButtonText={fullScreenButtonText}
         hideFullScreen={hideFullScreen}
         resetToken={resetToken}
+        hasRootVhHeight={hasRootVhHeight}
         mode={mode}
       />
     );
@@ -212,6 +227,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   return (
     <div
       ref={containerRef}
+      data-root-vh={hasRootVhHeight ? "true" : "false"}
       className={
         "w-full h-full overflow-auto relative flex flex-col justify-center content-render-iframe-sandbox"
       }

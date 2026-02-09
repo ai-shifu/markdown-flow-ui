@@ -45,7 +45,6 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         : sandboxSegments.map((seg) => seg.value).join("\n");
     return sandboxContent || "";
   }, [content, mode]);
-
   useEffect(() => {
     if (mode !== "blackboard") {
       prevHtmlRef.current = htmlContent;
@@ -89,6 +88,42 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     const root = createRoot(rootEl);
     rootRef.current = root;
 
+    const parseExplicitHeight = (
+      value: string,
+      parentViewportHeight: number
+    ) => {
+      const normalized = value.trim().toLowerCase();
+      if (!normalized) return null;
+      const numeric = Number.parseFloat(normalized);
+      if (Number.isNaN(numeric)) return null;
+      if (normalized.endsWith("vh")) {
+        return (numeric / 100) * parentViewportHeight;
+      }
+      if (normalized.endsWith("px") || /^[0-9.]+$/.test(normalized)) {
+        return numeric;
+      }
+      return null;
+    };
+
+    const resolveExplicitHeight = () => {
+      if (!iframeRef.current || !doc.body) return null;
+      const wrapper = doc.body.querySelector(
+        ".sandbox-wrapper"
+      ) as HTMLElement | null;
+      const container = wrapper?.firstElementChild as HTMLElement | null;
+      if (!container) return null;
+      const elements = Array.from(container.children) as HTMLElement[];
+      if (elements.length !== 1) return null;
+      const target = elements[0];
+      const heightValue = target.style.height || target.getAttribute("height");
+      if (!heightValue) return null;
+      const parentViewportHeight =
+        iframeRef.current.ownerDocument?.documentElement?.clientHeight ||
+        window.innerHeight;
+      const parsed = parseExplicitHeight(heightValue, parentViewportHeight);
+      return parsed ? Math.ceil(parsed) : null;
+    };
+
     const updateHeight = () => {
       if (!iframeRef.current || !doc.body) return;
       const bodyRect = doc.body.getBoundingClientRect();
@@ -96,7 +131,11 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       const bodyHeight = bodyRect.height;
       const htmlHeight = htmlRect?.height || 0;
       const contentHeight = Math.max(bodyHeight, htmlHeight);
-      const nextHeight = Math.max(200, Math.ceil(contentHeight));
+      const explicitHeight = resolveExplicitHeight();
+      const nextHeight = Math.max(
+        200,
+        explicitHeight ?? Math.ceil(contentHeight)
+      );
       setHeight(nextHeight);
     };
     updateHeightRef.current = updateHeight;

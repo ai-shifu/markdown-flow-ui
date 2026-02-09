@@ -7,6 +7,7 @@ export interface SandboxAppProps {
   scriptLoadingText?: string;
   resetToken?: number;
   mode?: "content" | "blackboard";
+  hasRootVhHeight?: boolean;
 }
 
 const SandboxApp: React.FC<SandboxAppProps> = ({
@@ -15,6 +16,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   scriptLoadingText,
   resetToken = 0,
   mode = "content",
+  hasRootVhHeight = false,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -69,8 +71,12 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     styleEl.textContent = `
       @keyframes sandbox-spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
       .sandbox-wrapper { align-items: center; }
+      .sandbox-container { width: 100%; }
+      .sandbox-container svg,
+      .sandbox-container img { display: block; margin-left: auto; margin-right: auto; }
       @media (max-width: 640px) {
         .sandbox-wrapper { align-items: stretch; }
+        .sandbox-wrapper[data-root-vh="true"] .sandbox-container > :first-child { height: auto !important; }
       }
     `;
   }, []);
@@ -237,6 +243,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   return (
     <div
       ref={wrapperRef}
+      data-root-vh={hasRootVhHeight ? "true" : "false"}
       className="sandbox-wrapper"
       style={{
         position: "relative",
@@ -251,6 +258,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     >
       <div
         ref={containerRef}
+        className="sandbox-container"
         style={{
           pointerEvents: overlayMessage ? "none" : undefined,
         }}

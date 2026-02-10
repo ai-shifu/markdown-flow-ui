@@ -10,6 +10,7 @@ import remarkFlow from "remark-flow";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import { CustomRenderBarProps, OnSendContentParams } from "../types";
+import { sanitizeInvalidTagName } from "./utils/sanitize-invalid-tag-name";
 import "./contentRender.css";
 import "./github-markdown-light.css";
 import CodeBlock from "./CodeBlock";
@@ -211,6 +212,7 @@ const remarkPlugins = [remarkGfm, remarkMath, remarkFlow, remarkBreaks];
 const rehypePlugins = [
   preserveCustomVariableProperties,
   rehypeRaw,
+  sanitizeInvalidTagName,
   restoreCustomVariableProperties,
   [rehypeHighlight, { languages: highlightLanguages, subset: subsetLanguages }],
   rehypeKatex,

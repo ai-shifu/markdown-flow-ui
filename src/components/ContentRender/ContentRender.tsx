@@ -11,6 +11,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import { CustomRenderBarProps, OnSendContentParams } from "../types";
 import { sanitizeInvalidTagName } from "./utils/sanitize-invalid-tag-name";
+import { stripSvgTextLineBreaks } from "./utils/strip-svg-text-line-breaks";
 import "./contentRender.css";
 import "./github-markdown-light.css";
 import CodeBlock from "./CodeBlock";
@@ -113,7 +114,9 @@ const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
     nodesToRemove.forEach((node) => shadowRoot.removeChild(node));
 
     const template = document.createElement("template");
-    template.innerHTML = svg;
+    const cleanedSvg = stripSvgTextLineBreaks(svg);
+    template.innerHTML = cleanedSvg;
+    console.log("template.innerHTML", template.innerHTML);
     shadowRoot.append(template.content.cloneNode(true));
 
     let hasResponsiveSvg = false;
@@ -425,6 +428,37 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     hasCompleted.current = false; // Reset completion status when content changes
   }, [hasSandbox, content]);
 
+  const renderMarkdownSegments = (raw: string, keyPrefix: string) => {
+    const normalized = normalizeInlineHtml(raw);
+    const parsed = parseMarkdownSegments(normalized);
+
+    return parsed.map((seg, index) => {
+      const key = `${keyPrefix}-${seg.type}-${index}`;
+
+      if (seg.type === "text") {
+        return (
+          <MarkdownRenderer
+            key={key}
+            components={components}
+            content={seg.value}
+          />
+        );
+      }
+
+      if (seg.type === "mermaid") {
+        return (
+          <MermaidChart key={key} chart={seg.value} frozen={!seg.complete} />
+        );
+      }
+
+      if (seg.type === "svg") {
+        return <SvgBlockInShadow key={key} svg={seg.value} />;
+      }
+
+      return null;
+    });
+  };
+
   if (hasSandbox) {
     return (
       <div className="content-render markdown-body">
@@ -442,11 +476,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               mode={sandboxMode}
             />
           ) : (
-            <MarkdownRenderer
-              key={`md-${idx}`}
-              components={components}
-              content={normalizeInlineHtml(segment.value)}
-            />
+            <React.Fragment key={`md-${idx}`}>
+              {renderMarkdownSegments(segment.value, `md-${idx}`)}
+            </React.Fragment>
           )
         )}
       </div>

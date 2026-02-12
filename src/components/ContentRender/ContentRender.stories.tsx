@@ -913,14 +913,14 @@ export const SVGDemo: Story = {
     <text x="180" y="170" class="desc">• 信息处理：快速阅读、总结海量资料，成为你的“第二大脑”</text>
     <text x="180" y="200" class="desc">• 内容创作：辅助写作、设计、生成基础代码，突破创意瓶颈</text>
     <text x="180" y="230" class="desc">• 决策支持：基于数据提供多角度分析，减少直觉判断的偏差</text>
-  
+
     <circle cx="100" cy="300" r="40" class="node"/>
     <text x="100" y="300" class="node-text">2-3<br>年</text>
     <text x="180" y="280" class="title">2-3年后：职业竞争力的重构器</text>
     <text x="180" y="320" class="desc">• 技能融合：AI 将深度融入各岗位，懂 AI 成为基础职业素养</text>
     <text x="180" y="350" class="desc">• 角色进化：从“执行者”转向“AI 协作管理者”和“问题定义者”</text>
     <text x="180" y="380" class="desc">• 新机会涌现：AI 运维、提示工程、AI 赋能培训等新岗位成熟</text>
-  
+
     <circle cx="100" cy="450" r="40" class="node"/>
     <text x="100" y="450" class="node-text">4-5<br>年</text>
     <text x="180" y="430" class="title">4-5年后（AGI 前夜）：生存模式的切换点</text>

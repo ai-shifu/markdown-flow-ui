@@ -115,4 +115,26 @@ describe("splitContentSegments", () => {
     expect(segments[3].value).toContain("| SVG | <svg>...</svg> | Yes |");
     expect(segments[5].value).toContain("> [!NOTE]");
   });
+
+  it("keeps inline svg text inside markdown table rows", () => {
+    const raw = `### Markdown Table Example
+| Feature | Syntax | Supported |
+| --- | --- | --- |
+| SVG | <svg>...</svg> | Yes |
+
+<div>HTML Block</div>`;
+
+    const segments = splitContentSegments(raw, true);
+
+    const isolatedSvgSegment = segments.find(
+      (segment) =>
+        segment.type === "markdown" && segment.value === "<svg>...</svg>"
+    );
+    const tableCarrier = segments.find((segment) =>
+      segment.value.includes("| SVG | <svg>...</svg> | Yes |")
+    );
+
+    expect(isolatedSvgSegment).toBeUndefined();
+    expect(tableCarrier).toBeDefined();
+  });
 });

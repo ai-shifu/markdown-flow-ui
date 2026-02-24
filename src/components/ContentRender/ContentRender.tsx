@@ -239,6 +239,22 @@ export const MarkdownRenderer: React.FC<{
 const mergeNonSandboxSegments = (segments: RenderSegment[]) => {
   if (segments.length <= 1) return segments;
   const merged: RenderSegment[] = [];
+  const appendMarkdownValue = (prevValue: string, nextValue: string) => {
+    // Keep block-level markdown segments on a new line when split-content emits
+    // them as adjacent segments without boundary whitespace.
+    const trimmedNext = nextValue.trimStart();
+    const startsWithBlockMarker =
+      trimmedNext.startsWith("|") ||
+      /^#{1,6}[ \t]/.test(trimmedNext) ||
+      /^>[ \t]?/.test(trimmedNext) ||
+      /^[-*+][ \t]/.test(trimmedNext) ||
+      /^\d+\.[ \t]/.test(trimmedNext);
+    const shouldInsertLineBreak =
+      !prevValue.endsWith("\n") && startsWithBlockMarker;
+    return shouldInsertLineBreak
+      ? `${prevValue}\n${nextValue}`
+      : `${prevValue}${nextValue}`;
+  };
 
   segments.forEach((segment) => {
     if (segment.type === "sandbox") {
@@ -250,7 +266,7 @@ const mergeNonSandboxSegments = (segments: RenderSegment[]) => {
     if (last && last.type !== "sandbox") {
       merged[merged.length - 1] = {
         type: "markdown",
-        value: `${last.value}${segment.value}`,
+        value: appendMarkdownValue(last.value, segment.value),
       };
       return;
     }

@@ -10,6 +10,53 @@ export function parseMarkdownSegments(markdown: string) {
   // 2. SVG blocks: <svg ... </svg>
   const regex = /```[\s\S]*?```|<svg[\s\S]*?<\/svg>/g;
 
+  const getLineRange = (index: number) => {
+    const lineStart = markdown.lastIndexOf("\n", index - 1) + 1;
+    const nextBreak = markdown.indexOf("\n", index);
+    const lineEnd = nextBreak === -1 ? markdown.length : nextBreak;
+    return { lineStart, lineEnd };
+  };
+
+  const isIndexInsideMarkdownTableLine = (index: number) => {
+    const { lineStart, lineEnd } = getLineRange(index);
+    const line = markdown.slice(lineStart, lineEnd).trimStart();
+    return line.startsWith("|");
+  };
+
+  const isIndexInsideInlineCode = (index: number) => {
+    const { lineStart, lineEnd } = getLineRange(index);
+    const line = markdown.slice(lineStart, lineEnd);
+    const relativeIndex = index - lineStart;
+    let cursor = 0;
+    let inCode = false;
+    let delimiterLength = 0;
+
+    while (cursor < relativeIndex) {
+      if (line[cursor] !== "`") {
+        cursor += 1;
+        continue;
+      }
+
+      let runEnd = cursor;
+      while (runEnd < line.length && line[runEnd] === "`") {
+        runEnd += 1;
+      }
+      const runLength = runEnd - cursor;
+
+      if (!inCode) {
+        inCode = true;
+        delimiterLength = runLength;
+      } else if (runLength === delimiterLength) {
+        inCode = false;
+        delimiterLength = 0;
+      }
+
+      cursor = runEnd;
+    }
+
+    return inCode;
+  };
+
   let lastIndex = 0;
   let match;
 
@@ -17,6 +64,13 @@ export function parseMarkdownSegments(markdown: string) {
     const start = match.index;
     const end = regex.lastIndex;
     const rawMatch = match[0];
+
+    if (
+      rawMatch.startsWith("<svg") &&
+      (isIndexInsideMarkdownTableLine(start) || isIndexInsideInlineCode(start))
+    ) {
+      continue;
+    }
 
     // Preceding plain text
     if (start > lastIndex) {

@@ -322,6 +322,27 @@ graph TD
     expect(segments2[1].value).toContain("Header 1");
   });
 
+  it("keeps inline svg text inside markdown table rows", () => {
+    const raw = `### Markdown Table Example
+| Feature | Syntax | Supported |
+| --- | --- | --- |
+| SVG | <svg>...</svg> | Yes |
+
+<div>HTML Block</div>`;
+
+    const segments = splitContentSegments(raw, true);
+    const isolatedSvgSegment = segments.find(
+      (segment) =>
+        segment.type === "markdown" && segment.value === "<svg>...</svg>"
+    );
+    const tableCarrier = segments.find((segment) =>
+      segment.value.includes("| SVG | <svg>...</svg> | Yes |")
+    );
+
+    expect(isolatedSvgSegment).toBeUndefined();
+    expect(tableCarrier).toBeDefined();
+  });
+
   it("splits markdown heading as markdown segment", () => {
     const raw = `开头文本
 

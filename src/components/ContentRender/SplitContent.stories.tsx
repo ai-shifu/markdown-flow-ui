@@ -48,11 +48,8 @@ flowchart LR
 \`\`\`
 
 ### Markdown Table Example
-| Feature | Syntax | Supported |
-| --- | --- | --- |
-| Heading | ## Title | Yes |
-| Video | iframe[data-tag="video"] | Yes |
-| SVG | <svg>...</svg> | Yes |
+| 对比维度 | 传统课件/录播课 | AI 师傅平台创作的课程 |\n| :--- | :--- | :--- |\n| **个性化教学** | 内容固定，无法因人调整。比如教“宝宝辅食”，无法根据学员孩子的月龄、过敏史定制食谱。 | **内容完全动态生成**，贴合每位学员的具体情况。比如学员输入“10个月大、对鸡蛋过敏的宝宝”，课程会自动生成专属的辅食方案与注意事项。 |\n| **24小时答疑** | 学员问题无法及时解答，学习容易卡壳、放弃。 | 内置**24小时AI助教**，随时回答学员追问。比如学员半夜哄睡孩子后突然想起问题：“孩子积食了，你教的山楂水能加冰糖吗？”AI助教能立刻给出专业解答，让教学服务不间断。 |\n| **课程制作成本** | 需要专业设备录制、剪辑，耗时耗力，对个人创作者门槛高。 | **无需出镜、无需剪辑**。你只需像写一份详细的教学指导书（提示词），AI就能基于它生成生动课程。让你能轻松、低成本地将知识产品化。 |\n| **互动学习体验** | 单向灌输，学员被动观看，容易走神。 | **强互动式学习**。课程中可穿插提问、练习、情景模拟。比如教“家庭预算规划”，可以让学员直接输入自家收支，AI即时生成分析报告并给出调整建议，学完就能用。 |
+
 
 ### Markdown Callout Example
 > [!NOTE]
@@ -135,7 +132,7 @@ export const SplitContentValidation: Story = {
 
     return (
       <div className="mx-auto w-full max-w-[1600px] p-6">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div className="whitespace-pre-wrap break-words rounded-md border border-zinc-200 bg-white p-4 text-sm leading-6 text-zinc-900">
             {SPLIT_CONTENT_VALIDATION_MARKDOWN}
           </div>
@@ -144,6 +141,12 @@ export const SplitContentValidation: Story = {
               "splitContentSegments(content, true)",
               segmentsWithText
             )}
+          </div>
+          <div className="border p-4">
+            <h1 className="text-lg font-semibold text-zinc-900">
+              ContentRender
+            </h1>
+            <ContentRender content={SPLIT_CONTENT_VALIDATION_MARKDOWN} />
           </div>
         </div>
       </div>

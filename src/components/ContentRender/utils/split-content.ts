@@ -118,6 +118,11 @@ const findInlineSandboxMatch = (raw: string): MatchResult | null => {
     const match = pattern.exec(raw);
     if (!match || typeof match.index !== "number") return;
     const start = match.index;
+    const matchedValue = match[0].trimStart();
+    const isHtmlInlineTagMatch = /^<(svg|img)\b/i.test(matchedValue);
+    if (isHtmlInlineTagMatch && isIndexInsideMarkdownTableLine(raw, start)) {
+      return;
+    }
     const end = match.index + match[0].length;
 
     if (!earliest || start < earliest.start) {

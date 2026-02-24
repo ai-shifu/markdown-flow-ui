@@ -62,6 +62,7 @@ flowchart LR
 <div style="padding: 12px; border: 1px solid #d4d4d8; border-radius: 8px; background: #f8fafc;">
   This is a sandbox HTML block.
 </div>
+<script>console.log('script block');</script>
 
 ### SVG Example
 <svg width="360" height="120" viewBox="0 0 360 120" xmlns="http://www.w3.org/2000/svg">

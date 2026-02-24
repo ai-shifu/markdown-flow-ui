@@ -36,7 +36,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const prevHtmlRef = useRef<string>("");
   const htmlContent = React.useMemo(() => {
-    const segments = splitContentSegments(content);
+    const segments = splitContentSegments(content, true);
     // console.log('segments=====', segments);
     const sandboxSegments = segments.filter((seg) => seg.type === "sandbox");
     const sandboxContent =

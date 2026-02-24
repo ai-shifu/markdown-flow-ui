@@ -364,7 +364,6 @@ graph TD
       type: "text",
       value: "\n\n结尾文本",
     });
-
   });
 
   it("treats iframe video blocks as markdown segments", () => {
@@ -381,7 +380,6 @@ graph TD
     expect(segments[1].value).toContain("<iframe");
     expect(segments[1].value).toContain("data-tag='video'");
     expect(segments[2].type).toBe("text");
-
   });
 
   it("splits validation markdown into expected text, markdown, and sandbox blocks", () => {
@@ -476,7 +474,9 @@ Final trailing text.`;
       "text",
     ]);
 
-    expect(segments[1].value.trim()).toBe("## Heading: Split Content Validation");
+    expect(segments[1].value.trim()).toBe(
+      "## Heading: Split Content Validation"
+    );
     expect(segments[3].value.trim()).toBe("### Link Example");
     expect(segments[6].value).toContain("> This is a markdown quote.");
     expect(segments[8].value).toContain("- Unordered item A");
@@ -490,7 +490,7 @@ Final trailing text.`;
     expect(segments[20].value).toContain("<div style=");
     expect(segments[21].value.trim()).toBe("### SVG Example");
     expect(segments[22].type).toBe("markdown");
-    expect(segments[22].value).toContain("<svg width=\"360\"");
+    expect(segments[22].value).toContain('<svg width="360"');
     expect(segments[23].value.trim()).toBe("### Video Example");
     expect(segments[24].type).toBe("markdown");
     expect(segments[24].value).toContain("data-tag='video'");

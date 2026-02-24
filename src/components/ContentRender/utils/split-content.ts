@@ -13,6 +13,9 @@ const INLINE_SANDBOX_PATTERNS: RegExp[] = [
   /```[a-zA-Z0-9]+[\s\S]*?```/i,
 ];
 const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*]\([^\s)\n]+(?:\s+"[^"]*")?\)/i;
+const MARKDOWN_HEADING_PATTERN = /^(?: {0,3})#{1,6}[ \t]+[^\n]+$/m;
+const MARKDOWN_VIDEO_IFRAME_PATTERN =
+  /<iframe\b[^>]*\bdata-tag\s*=\s*(["'])video\1[^>]*>[\s\S]*?<\/iframe>/i;
 
 const closingBoundary = /<\/[a-z][^>]*>\s*\n(?=[^\s<])/gi;
 const CUSTOM_BUTTON_PATTERN =
@@ -125,6 +128,13 @@ const findInlineSandboxMatch = (raw: string): MatchResult | null => {
   return earliest;
 };
 
+const pickEarliestMatch = (...matches: Array<MatchResult | null>) =>
+  matches.reduce<MatchResult | null>((earliest, match) => {
+    if (!match) return earliest;
+    if (!earliest || match.start < earliest.start) return match;
+    return earliest;
+  }, null);
+
 const findMarkdownImageMatch = (
   raw: string,
   fenceRanges: FenceRange[]
@@ -140,6 +150,48 @@ const findMarkdownImageMatch = (
   if (!match) return null;
 
   return { start, end: start + match[0].length };
+};
+
+const findMarkdownHeadingMatch = (
+  raw: string,
+  fenceRanges: FenceRange[]
+): MatchResult | null => {
+  const start = findFirstMatchOutsideFence(
+    raw,
+    MARKDOWN_HEADING_PATTERN,
+    fenceRanges
+  );
+
+  if (start === -1) return null;
+  const match = raw.slice(start).match(MARKDOWN_HEADING_PATTERN);
+  if (!match) return null;
+
+  return { start, end: start + match[0].length };
+};
+
+const findMarkdownVideoIframeMatch = (
+  raw: string,
+  fenceRanges: FenceRange[]
+): MatchResult | null => {
+  const start = findFirstMatchOutsideFence(
+    raw,
+    MARKDOWN_VIDEO_IFRAME_PATTERN,
+    fenceRanges
+  );
+
+  if (start === -1) return null;
+  const match = raw.slice(start).match(MARKDOWN_VIDEO_IFRAME_PATTERN);
+  if (!match) return null;
+
+  return { start, end: start + match[0].length };
+};
+
+const isIndexInsideMarkdownTableLine = (raw: string, index: number) => {
+  const lineStart = raw.lastIndexOf("\n", index - 1) + 1;
+  const lineEnd = raw.indexOf("\n", index);
+  const end = lineEnd === -1 ? raw.length : lineEnd;
+  const line = raw.slice(lineStart, end).trimStart();
+  return line.startsWith("|");
 };
 
 const extractTableBlock = (
@@ -167,7 +219,7 @@ const extractTableBlock = (
 // Split incoming markdown content into markdown and sandbox HTML segments
 export const splitContentSegments = (
   raw: string,
-  keepText = false
+  keepText = true
 ): RenderSegment[] => {
   const finalizeSegments = (segments: RenderSegment[]) =>
     splitCustomButtonsFromSandbox(segments);
@@ -188,11 +240,13 @@ export const splitContentSegments = (
     fenceRanges
   );
   const svgOpenIndex = findFirstMatchOutsideFence(raw, /<svg\b/i, fenceRanges);
+  const svgInTableLine =
+    svgOpenIndex !== -1 && isIndexInsideMarkdownTableLine(raw, svgOpenIndex);
   const hasSandboxBeforeSvg =
     sandboxStartIndex !== -1 &&
     svgOpenIndex !== -1 &&
     sandboxStartIndex < svgOpenIndex;
-  if (svgOpenIndex !== -1 && !hasSandboxBeforeSvg) {
+  if (svgOpenIndex !== -1 && !hasSandboxBeforeSvg && !svgInTableLine) {
     const before = raw.slice(0, svgOpenIndex);
     const closeIdx = raw.indexOf("</svg>", svgOpenIndex);
     const svgBlock =
@@ -204,7 +258,9 @@ export const splitContentSegments = (
     if (keepText) {
       const segments: RenderSegment[] = [];
       if (before.trim()) {
-        segments.push({ type: "text", value: before });
+        // Keep splitting the prefix so headings and other markdown markers
+        // become their own segments instead of one large text block.
+        segments.push(...splitContentSegments(before, true));
       }
       segments.push({ type: "markdown", value: svgBlock });
       if (after.trim()) {
@@ -219,7 +275,11 @@ export const splitContentSegments = (
   }
 
   const tableBlock = extractTableBlock(raw);
-  if (tableBlock) {
+  const markdownHeadingMatch = findMarkdownHeadingMatch(raw, fenceRanges);
+  const shouldProcessTableBlock =
+    !!tableBlock &&
+    (!markdownHeadingMatch || tableBlock.start < markdownHeadingMatch.start);
+  if (tableBlock && shouldProcessTableBlock) {
     const segments: RenderSegment[] = [];
     const before = raw.slice(0, tableBlock.start);
     if (keepText && before.trim()) {
@@ -240,12 +300,16 @@ export const splitContentSegments = (
 
   const inlineMatch = findInlineSandboxMatch(raw);
   const markdownImageMatch = findMarkdownImageMatch(raw, fenceRanges);
-  const inlineCandidate =
-    inlineMatch && markdownImageMatch
-      ? inlineMatch.start <= markdownImageMatch.start
-        ? inlineMatch
-        : markdownImageMatch
-      : (inlineMatch ?? markdownImageMatch);
+  const markdownVideoIframeMatch = findMarkdownVideoIframeMatch(
+    raw,
+    fenceRanges
+  );
+  const inlineCandidate = pickEarliestMatch(
+    inlineMatch,
+    markdownImageMatch,
+    markdownHeadingMatch,
+    markdownVideoIframeMatch
+  );
 
   if (sandboxStartIndex === -1 && !inlineCandidate) {
     if (keepText && raw.trim()) {
@@ -256,7 +320,7 @@ export const splitContentSegments = (
 
   const shouldUseInline =
     !!inlineCandidate &&
-    (sandboxStartIndex === -1 || inlineCandidate.start < sandboxStartIndex);
+    (sandboxStartIndex === -1 || inlineCandidate.start <= sandboxStartIndex);
 
   const startIndex = shouldUseInline
     ? inlineCandidate!.start

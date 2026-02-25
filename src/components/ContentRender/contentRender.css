@@ -346,6 +346,10 @@
 .content-render .multi-select-container .block {
   /* margin-top: 16px; */
 }
+
+.content-render-iframe-sandbox {
+  justify-content: safe center;
+}
 /* Responsive when content-render width <= 640 px */
 @media (max-width: 640px) {
   /* @container (max-width: 640px) { */
@@ -391,10 +395,10 @@
       transparent
     );
   }
-
+  /*
   .content-render-iframe-sandbox {
-    justify-content: space-around !important;
-  }
+    justify-content: safe center !important;
+  } */
 }
 .markdown-body p,
 .markdown-body blockquote,

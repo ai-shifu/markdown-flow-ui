@@ -4,16 +4,76 @@ import { splitContentSegments } from "../../../src/components/ContentRender/util
 
 describe("splitContentSegments", () => {
   it("splits content into segments", () => {
-    const raw = `"先说一下这是第六个块的开始\n\n本次春节文化之旅的学习路径，可以清晰地用以下流程图来展示：\n\n\`\`\`mermaid\nflowchart TD\n    A[“了解用户背景<br>（知识水平、地区兴趣）”] --> B[“讲解春节由来<br>（起源、年兽传说、历法）”]\n    B --> C[“探索传统历史<br>（习俗演变、核心活动）”]\n    C --> D[“介绍各地风俗<br>（重点：西部地区特色）”]\n    D --> E[“深入年夜饭与烟花<br>（饮食文化、节日象征）”]\n    E --> F[“总结文化意义<br>（核心价值与个性化启示）”]\n\`\`\`\n\n先说一下这是最后一个块的开始\n\n**春节文化意义总结**\n\nkk，通过这次旅程，我们一起揭开了春节神秘而温暖的面纱。作为中国最重要、最隆重的传统节日，它的核心价值在于：\n\n1.  **家庭团聚的仪式**：无论身处何方，春节就像一块巨大的磁石，将家人吸引回同一张饭桌前。对于操持家庭的您来说，这正是一年辛勤付出后，收获**亲情环绕**的最高奖赏。\n2.  **文化传承的课堂**：从贴春联、放鞭炮到准备一桌寓意深刻的年夜饭，每一个习俗都是一颗文化的种子。您带着孩子参与其中，就是在进行最生动的**文化传承**。\n3.  **辞旧迎新的心理节点**：它象征着与过去一年的告别，和对新一年的美好憧憬。燃放烟花（或观看电子烟花）的那一刻，正是这种**焕新与希望**情绪最直接的释放。\n\n结合您 **“完全不了解”** 的起点和对 **“西部地区（如四川、云南）”** 的兴趣，这次旅程为您打开了一扇窗。您看到了春节从古老的祭祀演变为充满温情的家庭节日，也领略了西部热烈多彩的“年味”。希望这能鼓励您，未来可以更深入地去体验，比如尝试制作一道**四川腊肉**，或者关注一次本地的**元宵灯会**，将知识转化为亲身感受的温暖记忆。\n\n最后，为您送上一份诚挚的新年祝福动画：\n\n<svg width=\"400\" height=\"300\" viewBox=\"0 0 400 300\" xmlns=\"http://www.w3.org/2000/svg\">\n    <rect width=\"400\" height=\"300\" fill=\"#FFF8E1\"/>\n    <!-- 灯笼 -->\n    <rect x=\"180\" y=\"80\" width=\"40\" height=\"60\" fill=\"#F44336\"/>\n    <rect x=\"185\" y=\"70\" width=\"30\" height=\"10\" fill=\"#FF9800\"/>\n    <rect x=\"190\" y=\"140\" width=\"20\" height=\"20\" fill=\"#FFEB3B\">\n        <animate attributeName=\"opacity\" values=\"1;0.7;1\" dur=\"1.5s\" repeatCount=\"indefinite\"/>\n    </rect>\n    <text x=\"200\" y=\"165\" text-anchor=\"middle\" font-family=\"SimHei, sans-serif\" font-size=\"12\" fill=\"#333\">福</text>\n\n    <!-- 祝福语 -->\n    <text x=\"200\" y=\"220\" text-anchor=\"middle\" font-family=\"SimHei, sans-serif\" font-size=\"20\" fill=\"#D32F2F\" font-weight=\"bold\">\n        <animate attributeName=\"opacity\" values=\"0;1\" dur=\"2s\" fill=\"freeze\"/>\n        新年快乐\n    </text>\n    <text x=\"200\" y=\"250\" text-anchor=\"middle\" font-family=\"SimHei, sans-serif\" font-size=\"16\" fill=\"#0F63EE\">\n        <animate attributeName=\"opacity\" values=\"0;1\" dur=\"2s\" begin=\"0.5s\" fill=\"freeze\"/>\n        阖家幸福，万事如意！\n    </text>\n\n    <!-- 装饰彩带 -->\n    <line x1=\"50\" y1=\"50\" x2=\"150\" y2=\"100\" stroke=\"#4CAF50\" stroke-width=\"2\" stroke-dasharray=\"5,5\">\n        <animate attributeName=\"x2\" values=\"150;160;150\" dur=\"2s\" repeatCount=\"indefinite\"/>\n    </line>\n    <line x1=\"350\" y1=\"50\" x2=\"250\" y2=\"100\" stroke=\"#FF9800\" stroke-width=\"2\" stroke-dasharray=\"5,5\">\n        <animate attributeName=\"x2\" values=\"250;240;250\" dur=\"2s\" repeatCount=\"indefinite\"/>\n    </line>\n</svg>\n\n**kk，愿您和您的家人，在新的一年里，身体健康，生活像春节的年夜饭一样丰盛美满，每一天都充满温馨与欢笑！**"`;
+    const raw = `先说一下这是第六个块的开始
+
+本次春节文化之旅的学习路径，可以清晰地用以下流程图来展示：
+
+\`\`\`mermaid
+flowchart TD
+    A[“了解用户背景<br>（知识水平、地区兴趣）”] --> B[“讲解春节由来<br>（起源、年兽传说、历法）”]
+    B --> C[“探索传统历史<br>（习俗演变、核心活动）”]
+    C --> D[“介绍各地风俗<br>（重点：西部地区特色）”]
+    D --> E[“深入年夜饭与烟花<br>（饮食文化、节日象征）”]
+    E --> F[“总结文化意义<br>（核心价值与个性化启示）”]
+\`\`\`
+
+先说一下这是最后一个块的开始
+
+**春节文化意义总结**
+
+kk，通过这次旅程，我们一起揭开了春节神秘而温暖的面纱。作为中国最重要、最隆重的传统节日，它的核心价值在于：
+
+1.  **家庭团聚的仪式**：无论身处何方，春节就像一块巨大的磁石，将家人吸引回同一张饭桌前。对于操持家庭的您来说，这正是一年辛勤付出后，收获**亲情环绕**的最高奖赏。
+2.  **文化传承的课堂**：从贴春联、放鞭炮到准备一桌寓意深刻的年夜饭，每一个习俗都是一颗文化的种子。您带着孩子参与其中，就是在进行最生动的**文化传承**。
+3.  **辞旧迎新的心理节点**：它象征着与过去一年的告别，和对新一年的美好憧憬。燃放烟花（或观看电子烟花）的那一刻，正是这种**焕新与希望**情绪最直接的释放。
+
+结合您 **“完全不了解”** 的起点和对 **“西部地区（如四川、云南）”** 的兴趣，这次旅程为您打开了一扇窗。您看到了春节从古老的祭祀演变为充满温情的家庭节日，也领略了西部热烈多彩的“年味”。希望这能鼓励您，未来可以更深入地去体验，比如尝试制作一道**四川腊肉**，或者关注一次本地的**元宵灯会**，将知识转化为亲身感受的温暖记忆。
+
+最后，为您送上一份诚挚的新年祝福动画：
+
+<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+    <rect width="400" height="300" fill="#FFF8E1"/>
+    <!-- 灯笼 -->
+    <rect x="180" y="80" width="40" height="60" fill="#F44336"/>
+    <rect x="185" y="70" width="30" height="10" fill="#FF9800"/>
+    <rect x="190" y="140" width="20" height="20" fill="#FFEB3B">
+        <animate attributeName="opacity" values="1;0.7;1" dur="1.5s" repeatCount="indefinite"/>
+    </rect>
+    <text x="200" y="165" text-anchor="middle" font-family="SimHei, sans-serif" font-size="12" fill="#333">福</text>
+
+    <!-- 祝福语 -->
+    <text x="200" y="220" text-anchor="middle" font-family="SimHei, sans-serif" font-size="20" fill="#D32F2F" font-weight="bold">
+        <animate attributeName="opacity" values="0;1" dur="2s" fill="freeze"/>
+        新年快乐
+    </text>
+    <text x="200" y="250" text-anchor="middle" font-family="SimHei, sans-serif" font-size="16" fill="#0F63EE">
+        <animate attributeName="opacity" values="0;1" dur="2s" begin="0.5s" fill="freeze"/>
+        阖家幸福，万事如意！
+    </text>
+
+    <!-- 装饰彩带 -->
+    <line x1="50" y1="50" x2="150" y2="100" stroke="#4CAF50" stroke-width="2" stroke-dasharray="5,5">
+        <animate attributeName="x2" values="150;160;150" dur="2s" repeatCount="indefinite"/>
+    </line>
+    <line x1="350" y1="50" x2="250" y2="100" stroke="#FF9800" stroke-width="2" stroke-dasharray="5,5">
+        <animate attributeName="x2" values="250;240;250" dur="2s" repeatCount="indefinite"/>
+    </line>
+</svg>
+
+**kk，愿您和您的家人，在新的一年里，身体健康，生活像春节的年夜饭一样丰盛美满，每一天都充满温馨与欢笑！**`;
     const segments = splitContentSegments(raw, true);
     console.log('segments', segments);
-    expect(segments).toHaveLength(3);
+    expect(segments).toHaveLength(5);
     expect(segments[0].type).toBe("text");
     expect(segments[0].value).toBe("先说一下这是第六个块的开始");
     expect(segments[1].type).toBe("markdown");
     expect(segments[1].value).toBe("```mermaid\nflowchart TD\n    A[“了解用户背景<br>（知识水平、地区兴趣）”] --> B[“讲解春节由来<br>（起源、年兽传说、历法）”]\n    B --> C[“探索传统历史<br>（习俗演变、核心活动）”]\n    C --> D[“介绍各地风俗<br>（重点：西部地区特色）”]\n    D --> E[“深入年夜饭与烟花<br>（饮食文化、节日象征）”]\n    E --> F[“总结文化意义<br>（核心价值与个性化启示）”]\n\`\`\`");
     expect(segments[2].type).toBe("text");
-    expect(segments[2].value).toBe("先说一下这是最后一个块的开始");
+    expect(segments[2].value).toContain("先说一下这是最后一个块的开始");
+    expect(segments[3].type).toBe("markdown");
+    expect(segments[3].value).toContain(`<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">`);
+    expect(segments[4].type).toBe("text");
+    expect(segments[4].value).toContain("kk，愿您和您的家人，在新的一年里，身体健康，生活像春节的年夜饭一样丰盛美满，每一天都充满温馨与欢笑！");
   });
 
   it("keeps inline svg and fenced code as markdown segments", () => {

@@ -20,6 +20,9 @@ const CUSTOM_BUTTON_PATTERN =
 
 type MatchResult = { start: number; end: number };
 type FenceRange = { start: number; end: number };
+type FenceBlock =
+  | { start: number; end: number; block: string; complete: true }
+  | { start: number; block: string; complete: false };
 
 const WRAPPED_QUOTES_PATTERN = /^"[\s\S]*"$/;
 const MERMAID_BLOCK_PATTERN = /```mermaid[\s\S]*?```/i;
@@ -29,6 +32,37 @@ const firstNonEmptyLine = (content: string) =>
     .split(/\r?\n/)
     .map((line) => line.trim())
     .find(Boolean) ?? "";
+
+const extractFirstFenceBlock = (raw: string): FenceBlock | null => {
+  const start = raw.indexOf("```");
+  if (start === -1) return null;
+
+  const closing = raw.indexOf("```", start + 3);
+  if (closing === -1) {
+    return {
+      start,
+      block: raw.slice(start),
+      complete: false,
+    };
+  }
+
+  return {
+    start,
+    end: closing + 3,
+    block: raw.slice(start, closing + 3),
+    complete: true,
+  };
+};
+
+const normalizeBeforeFenceText = (before: string) => {
+  const nonEmptyLines = before
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (nonEmptyLines.length <= 1) return before;
+  return nonEmptyLines[0];
+};
 
 const normalizeQuotedMermaidContent = (raw: string, keepText: boolean) => {
   if (!WRAPPED_QUOTES_PATTERN.test(raw)) return raw;
@@ -206,12 +240,34 @@ export const splitContentSegments = (
   const finalizeSegments = (segments: RenderSegment[]) =>
     splitCustomButtonsFromSandbox(segments);
 
-  const fenceStart = source.indexOf("```");
-  if (keepText && fenceStart !== -1) {
-    const closingFence = source.indexOf("```", fenceStart + 3);
-    if (closingFence === -1) {
-      return finalizeSegments([{ type: "markdown", value: source }]);
+  const fenceBlock = extractFirstFenceBlock(source);
+  if (fenceBlock) {
+    if (!fenceBlock.complete) {
+      if (keepText) {
+        return finalizeSegments([{ type: "markdown", value: source }]);
+      }
+      return finalizeSegments([{ type: "markdown", value: fenceBlock.block }]);
     }
+
+    if (!keepText) {
+      return finalizeSegments([{ type: "markdown", value: fenceBlock.block }]);
+    }
+
+    const segments: RenderSegment[] = [];
+    const before = source.slice(0, fenceBlock.start);
+    const normalizedBefore = normalizeBeforeFenceText(before);
+    if (normalizedBefore.trim()) {
+      segments.push({ type: "text", value: normalizedBefore });
+    }
+
+    segments.push({ type: "markdown", value: fenceBlock.block });
+
+    const after = source.slice(fenceBlock.end);
+    if (after.trim()) {
+      segments.push(...splitContentSegments(after, true));
+    }
+
+    return finalizeSegments(segments);
   }
 
   const fenceRanges = getFenceRanges(source);

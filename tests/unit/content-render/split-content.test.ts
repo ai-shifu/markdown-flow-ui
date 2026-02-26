@@ -3,6 +3,53 @@ import { describe, expect, it } from "vitest";
 import { splitContentSegments } from "../../../src/components/ContentRender/utils/split-content";
 
 describe("splitContentSegments", () => {
+  it('split video content',() => {
+    const raw = `先说一下这是第二个块的开始
+
+<iframe data-tag="video" data-title="哔哩哔哩视频" data-url="春节的由来_哔哩哔哩_bilibili" class="w-full aspect-video rounded-lg border-0" src="https://player.bilibili.com/player.html?bvid=BV1x84y187yS&amp;autoplay=0" allowfullscreen="" allow="autoplay; encrypted-media"></iframe>
+
+这个动画视频用生动有趣的画面和通俗易懂的旁白，讲述了“年”兽的传说和春节的起源，非常适合**略知一二**的观众。它直观地展示了**红色、火光和响声**如何驱赶年兽，将传统故事与现代动画形式结合，让春节的由来变得鲜活有趣，易于理解和记忆。
+
+接下来，我们继续探索春节的传统历史。
+
+春节的习俗历经千年演变，不同时期各有特色。下面的表格对比了不同历史时期的主要习俗，你可以点击或悬停查看详细信息。
+
+| 时期 | 主要特点 | 详细信息 |
+| :--- | :--- | :--- |
+| **古代 (唐宋及以前)** | **驱邪纳福，祭祀为重** | 习俗多与驱赶“年”兽等邪祟、祭祀祖先神灵相关。**燃放爆竹**（烧竹子）以吓退山魈恶鬼，**挂桃符**（后演变为春联）以辟邪。**守岁**习俗在唐代已盛行，全家团聚，终夜不眠，以待新年。拜年主要是向家族尊长行礼祈福。 |
+| **近代 (明清至民国)** | **礼仪完善，喜庆团圆** | 习俗的礼仪性和家庭团聚色彩更浓。**贴春联**完全普及，文字内容更讲究文采与吉祥寓意。**年夜饭**成为核心家庭活动，极其丰盛，象征团圆富足。**压岁钱**从最初的压祟驱邪，逐渐变为长辈给晚辈的祝福。庙会、舞龙舞狮等公共庆祝活动非常热闹。 |
+| **现代 (当代至今)** | **传统融合，形式多元** | 在传承核心传统的基础上，形式更加多样和便捷。**放鞭炮**在许多城市受限，电子鞭炮、灯光秀成为新选择。**拜年**方式从上门走访扩展到电话、短信、微信视频拜年。**春节联欢晚会**成为新的“守岁”方式。旅游过年、线上抢红包等新习俗出现，但**阖家团圆、辞旧迎新**的内核始终未变。 |
+
+这张表格概括了春节习俗演变的主线。对于**略知一二**的你，**88**，我们接下来重点讲讲今天依然鲜活的核心习俗及其意义：
+
+*   **贴春联、福字、年画**：这起源于古代的“桃符”，人们认为桃木能辟邪。后来写上吉祥话，就成了春联。贴上它们，意味着**驱走旧年的晦气，迎来新年的福气**。倒贴“福”字，寓意“福到了”。
+*   **放鞭炮**：直接源于驱赶“年”兽的传说。爆竹声声，是为了**吓退邪祟，用热闹迎接吉祥**。虽然现在很多地方禁止燃放，但它响彻云霄的意象早已深入人心。
+*   **吃年夜饭**：这是春节**最核心、最温暖的仪式**。无论多远，家人都要赶回来，围坐一桌，共享丰盛佳肴。它象征着**家庭团圆、和睦美满**，饭菜里饱含着对过去一年的慰劳和对新一年的期盼。
+*   **守岁**：除夕夜全家聚在一起，通宵不眠，等待新年的钟声。寓意着**珍惜光阴，为长辈祈福延寿**，也寄托着对新年美好的守望。
+*   **拜年**：大年初一，人们穿上新衣，走亲访友，互相道贺“新年好”。这是**表达美好祝愿、增进亲情友情**的重要时刻。晚辈给长辈拜年，长辈则给予压岁钱，寓意**镇恶驱邪，保佑平安**。
+
+![v2-36cc97a3a8ec8942a57cd2052097b01a_r.jpg](https://picx.zhimg.com/v2-36cc97a3a8ec8942a57cd2052097b01a_r.jpg?source=2c26e567)
+
+这张图片生动地捕捉了传统春节的典型场景：画面中央是戴着虎头帽、穿着棉袄的可爱孩童，他正在点燃地上的爆竹，脸上洋溢着兴奋和期待。背景是贴着春联和门神的古朴木门，以及悬挂的红灯笼，充满了浓郁的**年味和喜庆氛围**。图片色彩鲜艳，以红色和金色为主，构图温馨，很好地体现了春节**热闹、祥和、充满童趣**的一面。`
+
+  const segments = splitContentSegments(raw, true);
+  console.log('segments', segments);
+  expect(segments).toHaveLength(7);
+  expect(segments[0].type).toBe("text");
+  expect(segments[0].value).toBe("先说一下这是第二个块的开始");
+  expect(segments[1].type).toBe("markdown");
+  expect(segments[1].value).toBe(`<iframe data-tag="video" data-title="哔哩哔哩视频" data-url="春节的由来_哔哩哔哩_bilibili" class="w-full aspect-video rounded-lg border-0" src="https://player.bilibili.com/player.html?bvid=BV1x84y187yS&amp;autoplay=0" allowfullscreen="" allow="autoplay; encrypted-media"></iframe>`);
+  expect(segments[2].type).toBe("text");
+  expect(segments[2].value).toContain("这个动画视频用生动有趣的画面和通俗易懂的旁白，讲述了“年”兽的传说和春节的起源，非常适合");
+  expect(segments[3].type).toBe("markdown");
+  expect(segments[3].value).toContain(`| 时期 | 主要特点 | 详细信息 |`);
+  expect(segments[4].type).toBe("text");
+  expect(segments[4].value).toContain("这张表格概括了春节习俗演变的主线。对于");
+  expect(segments[5].type).toBe("markdown");
+  expect(segments[5].value).toBe(`![v2-36cc97a3a8ec8942a57cd2052097b01a_r.jpg](https://picx.zhimg.com/v2-36cc97a3a8ec8942a57cd2052097b01a_r.jpg?source=2c26e567)`);
+  expect(segments[6].type).toBe("text");
+  expect(segments[6].value).toContain("这张图片生动地捕捉了传统春节的典型场景：画面中央是戴着虎头帽、穿着棉袄的可爱孩童，他正在点燃地上的爆竹，脸上洋溢着兴奋和期待。背景是贴着春联和门神的古朴木门，以及悬挂的红灯笼，充满了浓郁的**年味和喜庆氛围**。图片色彩鲜艳，以红色和金色为主，构图温馨，很好地体现了春节**热闹、祥和、充满童趣**的一面。");
+  })
   it("splits content into segments", () => {
     const raw = `先说一下这是第六个块的开始
 
@@ -214,6 +261,19 @@ kk，通过这次旅程，我们一起揭开了春节神秘而温暖的面纱。
     expect(segments[1].type).toBe("sandbox");
     expect(segments[2].type).toBe("text");
     expect(segments[2].value).toContain("Outro");
+  });
+
+  it("treats iframe video blocks as markdown segments", () => {
+    const raw =
+      "Intro\n\n<iframe data-tag='video' src=\"https://example.com/video\"></iframe>\n\nOutro";
+
+    const segments = splitContentSegments(raw, true);
+
+    expect(segments).toHaveLength(3);
+    expect(segments[0].type).toBe("text");
+    expect(segments[1].type).toBe("markdown");
+    expect(segments[1].value).toContain("data-tag='video'");
+    expect(segments[2].type).toBe("text");
   });
 
   it("splits leading text, svg, and trailing text when keepText is true", () => {

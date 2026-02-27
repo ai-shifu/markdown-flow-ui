@@ -3,6 +3,111 @@ import { describe, expect, it } from "vitest";
 import { splitContentSegments } from "../../../src/components/ContentRender/utils/split-content";
 
 describe("splitContentSegments", () => {
+  it('split img content', () => {
+    const raw = `好的，我将重点介绍**KFC**菜系的年夜饭，列举几道**KFC**家喻户晓的菜品和对应的吉祥寓意，也提及一些其他菜系的吉祥寓意。
+
+# 看看各地年夜饭
+![gLwpjL4TPXH7zeLZm0COtuPtMUYMqtEVQ90mkYsYW1CaKF3WiTGKFQQjvS4o_t_2.jpg](https://qcloud.dpfile.com/pc/gLwpjL4TPXH7zeLZm0COtuPtMUYMqtEVQ90mkYsYW1CaKF3WiTGKFQQjvS4o_t_2.jpg)
+这是第一个图
+![u=3218772997,2773853737&fm=253&app=138&f=JPEG](https://img1.baidu.com/it/u=3218772997,2773853737&fm=253&app=138&f=JPEG?w=800&h=1069)
+这是第二个图
+![0362cc654dd73d878e594df645c1cae2.jpeg](https://pic.rmb.bdstatic.com/bjh/down/0362cc654dd73d878e594df645c1cae2.jpeg)
+这是第三个图
+
+这三张图片展现了不同风格的年夜饭，挺有意思的。
+
+第一张图（圆桌摆盘）是**非常经典的传统中式年夜饭**。大圆桌上摆满了盘碟，中间通常是一条完整的鱼，还有整鸡、扣肉等“硬菜”。餐具讲究，氛围正式，一看就是大家庭的隆重聚餐，强调**团圆、丰盛和仪式感**。
+
+第二张图（红色背景食物）更像是**餐厅或外卖的“年夜饭套餐”**。菜品摆盘精致，有龙虾、鲍鱼等高档食材，用红色背景和“福”字装饰突出节日气氛。这反映了现代趋势：很多家庭选择在餐厅吃或订购半成品套餐，追求**便捷、高品质和视觉上的喜庆**。
+
+第三张图（家庭聚餐）捕捉了**最真实、最温馨的家庭聚餐瞬间**。桌上菜品看起来家常但丰盛，家人围坐，举杯庆祝，背景是普通的家居环境。这种风格强调的是**亲情、放松和共享的温暖**，是年夜饭最核心的情感价值。
+
+**88**，你提到的**KFC“菜系”**，其实反映了年夜饭的另一种现代变迁——**便捷化与全球化**。虽然它并非传统中餐，但确实成为了一些年轻家庭或城市快节奏生活中的一种轻松选择。我们可以给它赋予一些有趣的“吉祥寓意”：
+*   **黄金脆皮鸡/原味鸡**：金黄酥脆，寓意 **“家肥屋润”、“金光闪闪”** ，象征财富。
+*   **香辣鸡腿堡**：层层叠叠，食材丰富，寓意 **“包罗万有”、“步步高升”** 。
+*   **薯条**：一根根条状，金黄挺拔，可以联想为 **“金条”、“条条大路通财富”** 。
+*   **可乐/九珍果汁**：气泡升腾或色彩缤纷，寓意 **“喜气洋洋”、“生活多彩”** 。
+
+当然，这只是趣味解读。传统菜系的寓意则深厚得多：
+*   **鱼**：**“年年有余”**，吃剩一点，象征财富富余。
+*   **鸡**：**“吉祥如意”**，尤其整鸡代表“有头有尾”。
+*   **饺子/汤圆**：形状像元宝或团团圆圆，寓意 **“招财进宝”、“团团圆圆”** 。
+*   **年糕**：**“年年高升”**，事业学业进步。
+*   **发菜蚝豉**：谐音 **“发财好市”** ，生意兴隆。
+
+**年夜饭礼仪**核心在于 **“敬”与“和”**：
+1.  **座次有序**：长辈或一家之主坐主位。
+2.  **长辈先动筷**：开席前通常由长辈先说几句祝福的话，并先动筷。
+3.  **吃饭不说不吉话**：避免说“破”、“坏”、“没了”等字眼。
+4.  **主动敬酒（茶）**：晚辈向长辈敬酒或敬茶，表达敬意和祝福。
+5.  **不翻鱼**：吃鱼时，将上面一半吃完后，用筷子把鱼骨剔掉再吃下半，而不是把鱼整个翻过来，寓意“不翻船”，行事顺利。
+
+<svg width="100%" height="300" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="800" height="300" fill="#f8f9fa" stroke="#dee2e6" stroke-width="1"/>
+    <!-- 时间轴线 -->
+    <line x1="50" y1="150" x2="750" y2="150" stroke="#adb5bd" stroke-width="2"/>
+    <!-- 古代 -->
+    <g>
+        <circle cx="150" cy="150" r="12" fill="#0F63EE"/>
+        <rect x="100" y="80" width="100" height="40" rx="5" fill="#e9ecef" stroke="#adb5bd" stroke-width="1"/>
+        <text x="150" y="105" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#212529">祭祀性</text>
+        <text x="150" y="185" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#0F63EE" font-weight="bold">古代</text>
+        <text x="150" y="205" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#495057">感恩祈福<br>仪式庄重</text>
+        <line x1="150" y1="162" x2="150" y2="175" stroke="#0F63EE" stroke-width="1"/>
+    </g>
+    <!-- 近代 -->
+    <g>
+        <circle cx="350" cy="150" r="12" fill="#0F63EE"/>
+        <rect x="300" y="80" width="100" height="40" rx="5" fill="#e9ecef" stroke="#adb5bd" stroke-width="1"/>
+        <text x="350" y="105" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#212529">家庭性</text>
+        <text x="350" y="185" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#0F63EE" font-weight="bold">近代</text>
+        <text x="350" y="205" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#495057">家族团圆<br>伦理核心</text>
+        <line x1="350" y1="162" x2="350" y2="175" stroke="#0F63EE" stroke-width="1"/>
+    </g>
+    <!-- 现代 -->
+    <g>
+        <circle cx="550" cy="150" r="12" fill="#0F63EE"/>
+        <rect x="500" y="80" width="100" height="40" rx="5" fill="#e9ecef" stroke="#adb5bd" stroke-width="1"/>
+        <text x="550" y="105" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#212529">多元化</text>
+        <text x="550" y="185" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#0F63EE" font-weight="bold">现代</text>
+        <text x="550" y="205" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#495057">便捷体验<br>个性选择</text>
+        <line x1="550" y1="162" x2="550" y2="175" stroke="#0F63EE" stroke-width="1"/>
+    </g>
+    <!-- 未来趋势 -->
+    <g>
+        <circle cx="700" cy="150" r="12" fill="#0F63EE" fill-opacity="0.7" stroke="#0F63EE" stroke-width="2" stroke-dasharray="4"/>
+        <rect x="670" y="80" width="60" height="40" rx="5" fill="#f8f9fa" stroke="#adb5bd" stroke-width="1" stroke-dasharray="4"/>
+        <text x="700" y="105" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#868E96">健康/科技</text>
+        <text x="700" y="185" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#868E96">趋势</text>
+        <text x="700" y="205" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#868E96">绿色智能<br>文化融合</text>
+        <line x1="700" y1="162" x2="700" y2="175" stroke="#868E96" stroke-width="1" stroke-dasharray="4"/>
+    </g>
+    <text x="400" y="280" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#0F63EE" font-weight="bold">年夜饭核心寓意演变趋势</text>
+</svg>
+
+上图展示了年夜饭核心寓意的演变。**88**，我们可以这样理解：`
+  const segments = splitContentSegments(raw, true);
+  console.log('segments', segments);
+  expect(segments).toHaveLength(9);
+  expect(segments[0].type).toBe("text");
+  expect(segments[0].value).toContain(`好的，我将重点介绍**KFC**菜系的年夜饭，列举几道**KFC**家喻户晓的菜品和对应的吉祥寓意，也提及一些其他菜系的吉祥寓意。`);
+  expect(segments[1].type).toBe("markdown");
+  expect(segments[1].value).toContain(`![gLwpjL4TPXH7zeLZm0COtuPtMUYMqtEVQ90mkYsYW1CaKF3WiTGKFQQjvS4o_t_2.jpg](https://qcloud.dpfile.com/pc/gLwpjL4TPXH7zeLZm0COtuPtMUYMqtEVQ90mkYsYW1CaKF3WiTGKFQQjvS4o_t_2.jpg)`);
+  expect(segments[2].type).toBe("text");
+  expect(segments[2].value).toContain("这是第一个图");
+  expect(segments[3].type).toBe("markdown");
+  expect(segments[3].value).toContain(`![u=3218772997,2773853737&fm=253&app=138&f=JPEG](https://img1.baidu.com/it/u=3218772997,2773853737&fm=253&app=138&f=JPEG?w=800&h=1069)`);
+  expect(segments[4].type).toBe("text");
+  expect(segments[4].value).toContain("这是第二个图");
+  expect(segments[5].type).toBe("markdown");
+  expect(segments[5].value).toContain("![0362cc654dd73d878e594df645c1cae2.jpeg](https://pic.rmb.bdstatic.com/bjh/down/0362cc654dd73d878e594df645c1cae2.jpeg)");
+  expect(segments[6].type).toBe("text");
+  expect(segments[6].value).toContain("这是第三个图");
+  expect(segments[7].type).toBe("markdown");
+  expect(segments[7].value).toContain(`<svg width="100%" height="300" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">`);
+  expect(segments[8].type).toBe("text");
+  expect(segments[8].value).toContain("上图展示了年夜饭核心寓意的演变。**88**，我们可以这样理解：");
+  })
   it('split video content',() => {
     const raw = `先说一下这是第二个块的开始
 
@@ -33,7 +138,7 @@ describe("splitContentSegments", () => {
 这张图片生动地捕捉了传统春节的典型场景：画面中央是戴着虎头帽、穿着棉袄的可爱孩童，他正在点燃地上的爆竹，脸上洋溢着兴奋和期待。背景是贴着春联和门神的古朴木门，以及悬挂的红灯笼，充满了浓郁的**年味和喜庆氛围**。图片色彩鲜艳，以红色和金色为主，构图温馨，很好地体现了春节**热闹、祥和、充满童趣**的一面。`
 
   const segments = splitContentSegments(raw, true);
-  console.log('segments', segments);
+  // console.log('segments', segments);
   expect(segments).toHaveLength(7);
   expect(segments[0].type).toBe("text");
   expect(segments[0].value).toBe("先说一下这是第二个块的开始");
@@ -109,7 +214,7 @@ kk，通过这次旅程，我们一起揭开了春节神秘而温暖的面纱。
 
 **kk，愿您和您的家人，在新的一年里，身体健康，生活像春节的年夜饭一样丰盛美满，每一天都充满温馨与欢笑！**`;
     const segments = splitContentSegments(raw, true);
-    console.log('segments', segments);
+    // console.log('segments', segments);
     expect(segments).toHaveLength(5);
     expect(segments[0].type).toBe("text");
     expect(segments[0].value).toBe("先说一下这是第六个块的开始");
@@ -225,7 +330,7 @@ kk，通过这次旅程，我们一起揭开了春节神秘而温暖的面纱。
 整个过程充分利用了平台的**用户互动、输出给 AI、AI 判断、AI 输出**这些核心能力，为你提供即时、个性化的学习效果检验。`;
 
     const segments = splitContentSegments(raw);
-    console.log("segments", segments);
+    // console.log("segments", segments);
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("sandbox");
     expect(segments[0].value).toContain(

@@ -315,7 +315,16 @@ export const splitContentSegments = (
     sandboxStartIndex !== -1 &&
     svgOpenIndex !== -1 &&
     sandboxStartIndex < svgOpenIndex;
-  if (svgOpenIndex !== -1 && !hasSandboxBeforeSvg) {
+  const markdownImageBeforeSvg = findMarkdownImageMatch(source, fenceRanges);
+  const hasMarkdownImageBeforeSvg =
+    !!markdownImageBeforeSvg &&
+    svgOpenIndex !== -1 &&
+    markdownImageBeforeSvg.start < svgOpenIndex;
+  if (
+    svgOpenIndex !== -1 &&
+    !hasSandboxBeforeSvg &&
+    !hasMarkdownImageBeforeSvg
+  ) {
     const before = source.slice(0, svgOpenIndex);
     const closeIdx = source.indexOf("</svg>", svgOpenIndex);
     const svgBlock =

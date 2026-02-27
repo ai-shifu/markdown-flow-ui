@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { splitContentSegments } from "../../../src/components/ContentRender/utils/split-content";
 
 describe("splitContentSegments", () => {
-  it('split img content', () => {
+  it("split img content", () => {
     const raw = `好的，我将重点介绍**KFC**菜系的年夜饭，列举几道**KFC**家喻户晓的菜品和对应的吉祥寓意，也提及一些其他菜系的吉祥寓意。
 
 # 看看各地年夜饭
@@ -85,30 +85,42 @@ describe("splitContentSegments", () => {
     <text x="400" y="280" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#0F63EE" font-weight="bold">年夜饭核心寓意演变趋势</text>
 </svg>
 
-上图展示了年夜饭核心寓意的演变。**88**，我们可以这样理解：`
-  const segments = splitContentSegments(raw, true);
-  console.log('segments', segments);
-  expect(segments).toHaveLength(9);
-  expect(segments[0].type).toBe("text");
-  expect(segments[0].value).toContain(`好的，我将重点介绍**KFC**菜系的年夜饭，列举几道**KFC**家喻户晓的菜品和对应的吉祥寓意，也提及一些其他菜系的吉祥寓意。`);
-  expect(segments[1].type).toBe("markdown");
-  expect(segments[1].value).toContain(`![gLwpjL4TPXH7zeLZm0COtuPtMUYMqtEVQ90mkYsYW1CaKF3WiTGKFQQjvS4o_t_2.jpg](https://qcloud.dpfile.com/pc/gLwpjL4TPXH7zeLZm0COtuPtMUYMqtEVQ90mkYsYW1CaKF3WiTGKFQQjvS4o_t_2.jpg)`);
-  expect(segments[2].type).toBe("text");
-  expect(segments[2].value).toContain("这是第一个图");
-  expect(segments[3].type).toBe("markdown");
-  expect(segments[3].value).toContain(`![u=3218772997,2773853737&fm=253&app=138&f=JPEG](https://img1.baidu.com/it/u=3218772997,2773853737&fm=253&app=138&f=JPEG?w=800&h=1069)`);
-  expect(segments[4].type).toBe("text");
-  expect(segments[4].value).toContain("这是第二个图");
-  expect(segments[5].type).toBe("markdown");
-  expect(segments[5].value).toContain("![0362cc654dd73d878e594df645c1cae2.jpeg](https://pic.rmb.bdstatic.com/bjh/down/0362cc654dd73d878e594df645c1cae2.jpeg)");
-  expect(segments[6].type).toBe("text");
-  expect(segments[6].value).toContain("这是第三个图");
-  expect(segments[7].type).toBe("markdown");
-  expect(segments[7].value).toContain(`<svg width="100%" height="300" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">`);
-  expect(segments[8].type).toBe("text");
-  expect(segments[8].value).toContain("上图展示了年夜饭核心寓意的演变。**88**，我们可以这样理解：");
-  })
-  it('split video content',() => {
+上图展示了年夜饭核心寓意的演变。**88**，我们可以这样理解：`;
+    const segments = splitContentSegments(raw, true);
+    console.log("segments", segments);
+    expect(segments).toHaveLength(9);
+    expect(segments[0].type).toBe("text");
+    expect(segments[0].value).toContain(
+      `好的，我将重点介绍**KFC**菜系的年夜饭，列举几道**KFC**家喻户晓的菜品和对应的吉祥寓意，也提及一些其他菜系的吉祥寓意。`
+    );
+    expect(segments[1].type).toBe("markdown");
+    expect(segments[1].value).toContain(
+      `![gLwpjL4TPXH7zeLZm0COtuPtMUYMqtEVQ90mkYsYW1CaKF3WiTGKFQQjvS4o_t_2.jpg](https://qcloud.dpfile.com/pc/gLwpjL4TPXH7zeLZm0COtuPtMUYMqtEVQ90mkYsYW1CaKF3WiTGKFQQjvS4o_t_2.jpg)`
+    );
+    expect(segments[2].type).toBe("text");
+    expect(segments[2].value).toContain("这是第一个图");
+    expect(segments[3].type).toBe("markdown");
+    expect(segments[3].value).toContain(
+      `![u=3218772997,2773853737&fm=253&app=138&f=JPEG](https://img1.baidu.com/it/u=3218772997,2773853737&fm=253&app=138&f=JPEG?w=800&h=1069)`
+    );
+    expect(segments[4].type).toBe("text");
+    expect(segments[4].value).toContain("这是第二个图");
+    expect(segments[5].type).toBe("markdown");
+    expect(segments[5].value).toContain(
+      "![0362cc654dd73d878e594df645c1cae2.jpeg](https://pic.rmb.bdstatic.com/bjh/down/0362cc654dd73d878e594df645c1cae2.jpeg)"
+    );
+    expect(segments[6].type).toBe("text");
+    expect(segments[6].value).toContain("这是第三个图");
+    expect(segments[7].type).toBe("markdown");
+    expect(segments[7].value).toContain(
+      `<svg width="100%" height="300" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">`
+    );
+    expect(segments[8].type).toBe("text");
+    expect(segments[8].value).toContain(
+      "上图展示了年夜饭核心寓意的演变。**88**，我们可以这样理解："
+    );
+  });
+  it("split video content", () => {
     const raw = `先说一下这是第二个块的开始
 
 <iframe data-tag="video" data-title="哔哩哔哩视频" data-url="春节的由来_哔哩哔哩_bilibili" class="w-full aspect-video rounded-lg border-0" src="https://player.bilibili.com/player.html?bvid=BV1x84y187yS&amp;autoplay=0" allowfullscreen="" allow="autoplay; encrypted-media"></iframe>
@@ -135,26 +147,36 @@ describe("splitContentSegments", () => {
 
 ![v2-36cc97a3a8ec8942a57cd2052097b01a_r.jpg](https://picx.zhimg.com/v2-36cc97a3a8ec8942a57cd2052097b01a_r.jpg?source=2c26e567)
 
-这张图片生动地捕捉了传统春节的典型场景：画面中央是戴着虎头帽、穿着棉袄的可爱孩童，他正在点燃地上的爆竹，脸上洋溢着兴奋和期待。背景是贴着春联和门神的古朴木门，以及悬挂的红灯笼，充满了浓郁的**年味和喜庆氛围**。图片色彩鲜艳，以红色和金色为主，构图温馨，很好地体现了春节**热闹、祥和、充满童趣**的一面。`
+这张图片生动地捕捉了传统春节的典型场景：画面中央是戴着虎头帽、穿着棉袄的可爱孩童，他正在点燃地上的爆竹，脸上洋溢着兴奋和期待。背景是贴着春联和门神的古朴木门，以及悬挂的红灯笼，充满了浓郁的**年味和喜庆氛围**。图片色彩鲜艳，以红色和金色为主，构图温馨，很好地体现了春节**热闹、祥和、充满童趣**的一面。`;
 
-  const segments = splitContentSegments(raw, true);
-  // console.log('segments', segments);
-  expect(segments).toHaveLength(7);
-  expect(segments[0].type).toBe("text");
-  expect(segments[0].value).toBe("先说一下这是第二个块的开始");
-  expect(segments[1].type).toBe("markdown");
-  expect(segments[1].value).toBe(`<iframe data-tag="video" data-title="哔哩哔哩视频" data-url="春节的由来_哔哩哔哩_bilibili" class="w-full aspect-video rounded-lg border-0" src="https://player.bilibili.com/player.html?bvid=BV1x84y187yS&amp;autoplay=0" allowfullscreen="" allow="autoplay; encrypted-media"></iframe>`);
-  expect(segments[2].type).toBe("text");
-  expect(segments[2].value).toContain("这个动画视频用生动有趣的画面和通俗易懂的旁白，讲述了“年”兽的传说和春节的起源，非常适合");
-  expect(segments[3].type).toBe("markdown");
-  expect(segments[3].value).toContain(`| 时期 | 主要特点 | 详细信息 |`);
-  expect(segments[4].type).toBe("text");
-  expect(segments[4].value).toContain("这张表格概括了春节习俗演变的主线。对于");
-  expect(segments[5].type).toBe("markdown");
-  expect(segments[5].value).toBe(`![v2-36cc97a3a8ec8942a57cd2052097b01a_r.jpg](https://picx.zhimg.com/v2-36cc97a3a8ec8942a57cd2052097b01a_r.jpg?source=2c26e567)`);
-  expect(segments[6].type).toBe("text");
-  expect(segments[6].value).toContain("这张图片生动地捕捉了传统春节的典型场景：画面中央是戴着虎头帽、穿着棉袄的可爱孩童，他正在点燃地上的爆竹，脸上洋溢着兴奋和期待。背景是贴着春联和门神的古朴木门，以及悬挂的红灯笼，充满了浓郁的**年味和喜庆氛围**。图片色彩鲜艳，以红色和金色为主，构图温馨，很好地体现了春节**热闹、祥和、充满童趣**的一面。");
-  })
+    const segments = splitContentSegments(raw, true);
+    // console.log('segments', segments);
+    expect(segments).toHaveLength(7);
+    expect(segments[0].type).toBe("text");
+    expect(segments[0].value).toBe("先说一下这是第二个块的开始");
+    expect(segments[1].type).toBe("markdown");
+    expect(segments[1].value).toBe(
+      `<iframe data-tag="video" data-title="哔哩哔哩视频" data-url="春节的由来_哔哩哔哩_bilibili" class="w-full aspect-video rounded-lg border-0" src="https://player.bilibili.com/player.html?bvid=BV1x84y187yS&amp;autoplay=0" allowfullscreen="" allow="autoplay; encrypted-media"></iframe>`
+    );
+    expect(segments[2].type).toBe("text");
+    expect(segments[2].value).toContain(
+      "这个动画视频用生动有趣的画面和通俗易懂的旁白，讲述了“年”兽的传说和春节的起源，非常适合"
+    );
+    expect(segments[3].type).toBe("markdown");
+    expect(segments[3].value).toContain(`| 时期 | 主要特点 | 详细信息 |`);
+    expect(segments[4].type).toBe("text");
+    expect(segments[4].value).toContain(
+      "这张表格概括了春节习俗演变的主线。对于"
+    );
+    expect(segments[5].type).toBe("markdown");
+    expect(segments[5].value).toBe(
+      `![v2-36cc97a3a8ec8942a57cd2052097b01a_r.jpg](https://picx.zhimg.com/v2-36cc97a3a8ec8942a57cd2052097b01a_r.jpg?source=2c26e567)`
+    );
+    expect(segments[6].type).toBe("text");
+    expect(segments[6].value).toContain(
+      "这张图片生动地捕捉了传统春节的典型场景：画面中央是戴着虎头帽、穿着棉袄的可爱孩童，他正在点燃地上的爆竹，脸上洋溢着兴奋和期待。背景是贴着春联和门神的古朴木门，以及悬挂的红灯笼，充满了浓郁的**年味和喜庆氛围**。图片色彩鲜艳，以红色和金色为主，构图温馨，很好地体现了春节**热闹、祥和、充满童趣**的一面。"
+    );
+  });
   it("splits content into segments", () => {
     const raw = `先说一下这是第六个块的开始
 
@@ -219,13 +241,19 @@ kk，通过这次旅程，我们一起揭开了春节神秘而温暖的面纱。
     expect(segments[0].type).toBe("text");
     expect(segments[0].value).toBe("先说一下这是第六个块的开始");
     expect(segments[1].type).toBe("markdown");
-    expect(segments[1].value).toBe("```mermaid\nflowchart TD\n    A[“了解用户背景<br>（知识水平、地区兴趣）”] --> B[“讲解春节由来<br>（起源、年兽传说、历法）”]\n    B --> C[“探索传统历史<br>（习俗演变、核心活动）”]\n    C --> D[“介绍各地风俗<br>（重点：西部地区特色）”]\n    D --> E[“深入年夜饭与烟花<br>（饮食文化、节日象征）”]\n    E --> F[“总结文化意义<br>（核心价值与个性化启示）”]\n\`\`\`");
+    expect(segments[1].value).toBe(
+      "```mermaid\nflowchart TD\n    A[“了解用户背景<br>（知识水平、地区兴趣）”] --> B[“讲解春节由来<br>（起源、年兽传说、历法）”]\n    B --> C[“探索传统历史<br>（习俗演变、核心活动）”]\n    C --> D[“介绍各地风俗<br>（重点：西部地区特色）”]\n    D --> E[“深入年夜饭与烟花<br>（饮食文化、节日象征）”]\n    E --> F[“总结文化意义<br>（核心价值与个性化启示）”]\n\`\`\`"
+    );
     expect(segments[2].type).toBe("text");
     expect(segments[2].value).toContain("先说一下这是最后一个块的开始");
     expect(segments[3].type).toBe("markdown");
-    expect(segments[3].value).toContain(`<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">`);
+    expect(segments[3].value).toContain(
+      `<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">`
+    );
     expect(segments[4].type).toBe("text");
-    expect(segments[4].value).toContain("kk，愿您和您的家人，在新的一年里，身体健康，生活像春节的年夜饭一样丰盛美满，每一天都充满温馨与欢笑！");
+    expect(segments[4].value).toContain(
+      "kk，愿您和您的家人，在新的一年里，身体健康，生活像春节的年夜饭一样丰盛美满，每一天都充满温馨与欢笑！"
+    );
   });
 
   it("keeps inline svg and fenced code as markdown segments", () => {

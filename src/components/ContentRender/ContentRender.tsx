@@ -116,7 +116,6 @@ const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
     const template = document.createElement("template");
     const cleanedSvg = stripSvgTextLineBreaks(svg);
     template.innerHTML = cleanedSvg;
-    console.log("template.innerHTML", template.innerHTML);
     shadowRoot.append(template.content.cloneNode(true));
 
     let hasResponsiveSvg = false;

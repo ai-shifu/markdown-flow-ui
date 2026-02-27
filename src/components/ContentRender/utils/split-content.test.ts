@@ -60,4 +60,17 @@ describe("splitContentSegments", () => {
     expect(sandboxValue).toContain("<script>");
     expect(sandboxValue).not.toContain("custom-button-after-content");
   });
+
+  it("treats iframe video blocks as markdown segments", () => {
+    const raw =
+      "Intro\n\n<iframe data-tag='video' src=\"https://example.com/video\"></iframe>\n\nOutro";
+
+    const segments = splitContentSegments(raw, true);
+
+    expect(segments).toHaveLength(3);
+    expect(segments[0].type).toBe("text");
+    expect(segments[1].type).toBe("markdown");
+    expect(segments[1].value).toContain("data-tag='video'");
+    expect(segments[2].type).toBe("text");
+  });
 });

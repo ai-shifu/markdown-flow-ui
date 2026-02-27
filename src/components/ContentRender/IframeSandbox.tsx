@@ -241,7 +241,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       ref={containerRef}
       data-root-vh={hasRootVhHeight ? "true" : "false"}
       className={
-        "w-full h-full overflow-auto relative flex flex-col justify-center content-render-iframe-sandbox"
+        "w-full h-full overflow-auto relative flex flex-col content-render-iframe-sandbox"
       }
     >
       {!hideFullScreen && (

@@ -3,7 +3,7 @@ import { createRoot, Root } from "react-dom/client";
 import SandboxApp from "./SandboxApp";
 import { splitContentSegments } from "./utils/split-content";
 import ContentRender from "./ContentRender";
-// Lazy-loaded to avoid bundling ~3.3 MB of vendor libs for non-blackboard consumers
+// Lazy-load iframe vendor libraries and inject them into the sandbox document.
 const loadBlackboardVendor = () =>
   import("./blackboard-vendor").then((m) => m.injectBlackboardLibraries);
 export interface IframeSandboxProps {
@@ -84,12 +84,12 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
     doc.open();
     doc.write(`<!DOCTYPE html>
-<html${mode === "blackboard" ? ' style="height: 100%;"' : ""}>
+<html style="height: 100%;">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
-      html, body { margin: 0; padding: 0;${mode === "blackboard" ? " width: 100%; height: 100%; overflow: auto;" : ""} }
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: auto; }
       *, *::before, *::after { box-sizing: border-box; }
     </style>
   </head>
@@ -99,12 +99,10 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 </html>`);
     doc.close();
 
-    // Inject Tailwind/DaisyUI/GSAP into iframe for blackboard mode.
+    // Inject Tailwind/DaisyUI/GSAP into iframe for all sandbox modes.
     // Dynamic import keeps ~3.3 MB of vendor libs out of the main bundle.
     // Tailwind's MutationObserver ensures styles apply even if content renders first.
-    if (mode === "blackboard") {
-      loadBlackboardVendor().then((inject) => inject(doc));
-    }
+    loadBlackboardVendor().then((inject) => inject(doc));
 
     docRef.current = doc;
 

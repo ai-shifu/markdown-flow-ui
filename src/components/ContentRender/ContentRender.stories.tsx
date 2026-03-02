@@ -1035,6 +1035,7 @@ export const SVGDemo: Story = {
 };
 
 const HTML_DEMO_STREAM_SOURCE = `
+<div style=\"width: 100%; max-width: 1200px; margin: 30px auto; padding: 50px 20px; background: linear-gradient(135deg, #0F63EE 0%, #0a4bb8 100%); border-radius: 12px; box-sizing: border-box;\">\n  <div style=\"text-align: center;\">\n    <div style=\"font-size: 42px; line-height: 1.4; color: #ffffff; font-weight: bold;\">\n      AI 能力定律\n    </div>\n    <div style=\"font-size: 32px; line-height: 1.6; color: #ffffff; margin-top: 20px; font-weight: 500;\">\n      AI 能力的上限，是使用者的判断力\n    </div>\n  </div>\n</div>\n\n这个定律告诉咱们：AI 时代，光指望 AI 自己输出好东西是不够的。你得尽可能提升自己在多个领域的判断力、审美，才能在这些领域和 AI 结成好联盟，一起做出真正有价值的创造。你判断得准，AI 才能帮你输出对的、好的结果；你判断力不行，再好的 AI 也出不了能用的活。\n\n给你留个思考题：你打算提升自己在哪些方面的判断力？\n\n给你一个提示：先从提升自己对下游岗位的判断力开始，这样能减少你对下游岗位人员的依赖，降低沟通成本；之后再去提升上游岗位的判断力，就能帮你实现岗位跃迁，一路成长为超级个体，甚至创办自己的一人公司。
 div长度
 <div style=\"display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: linear-gradient(to bottom right, #f8fafc, #e0e7ff); font-family: 'Arial', sans-serif; padding: 2rem;\">\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    AI 是一种工具\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    每种 AI 产品都需要<br>学习使用方法\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2;\">\n    打造 AI 产品是<br>技术高手的事情\n  </div>\n</div>
 测试一下

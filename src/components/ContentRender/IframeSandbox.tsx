@@ -84,12 +84,12 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
     doc.open();
     doc.write(`<!DOCTYPE html>
-<html style="height: 100%;">
+<html${mode === "blackboard" ? ' style="height: 100%;"' : ""}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
-      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: auto; }
+      html, body { margin: 0; padding: 0;${mode === "blackboard" ? " width: 100%; height: 100%; overflow: auto;" : ""} }
       *, *::before, *::after { box-sizing: border-box; }
     </style>
   </head>

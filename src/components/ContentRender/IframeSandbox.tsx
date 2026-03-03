@@ -99,11 +99,6 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 </html>`);
     doc.close();
 
-    // Inject Tailwind/DaisyUI/GSAP into iframe for all sandbox modes.
-    // Dynamic import keeps ~3.3 MB of vendor libs out of the main bundle.
-    // Tailwind's MutationObserver ensures styles apply even if content renders first.
-    loadBlackboardVendor().then((inject) => inject(doc));
-
     docRef.current = doc;
 
     const rootEl = doc.getElementById("root");
@@ -111,6 +106,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
     const root = createRoot(rootEl);
     rootRef.current = root;
+    let isDestroyed = false;
+    const pendingHeightTimerIds = new Set<number>();
 
     const parseExplicitHeight = (
       value: string,
@@ -120,13 +117,43 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       if (!normalized) return null;
       const numeric = Number.parseFloat(normalized);
       if (Number.isNaN(numeric)) return null;
-      if (normalized.endsWith("vh")) {
+      if (/(dvh|svh|lvh|vh)$/i.test(normalized)) {
         return (numeric / 100) * parentViewportHeight;
       }
       if (normalized.endsWith("px") || /^[0-9.]+$/.test(normalized)) {
         return numeric;
       }
       return null;
+    };
+    const parseTailwindHeightClass = (
+      className: string,
+      parentViewportHeight: number
+    ) => {
+      if (!className.trim()) return null;
+      const normalizedTokens = className
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((token) => token.split(":").pop() || token);
+      if (
+        normalizedTokens.some((token) =>
+          ["h-screen", "h-dvh", "h-svh", "h-lvh"].includes(token)
+        )
+      ) {
+        return parentViewportHeight;
+      }
+      const arbitraryToken = normalizedTokens.find((token) =>
+        /^h-\[[0-9.]+(vh|dvh|svh|lvh|px)\]$/i.test(token)
+      );
+      if (!arbitraryToken) return null;
+      const matched = arbitraryToken.match(
+        /^h-\[([0-9.]+)(vh|dvh|svh|lvh|px)\]$/i
+      );
+      if (!matched) return null;
+      const numeric = Number.parseFloat(matched[1]);
+      if (Number.isNaN(numeric)) return null;
+      const unit = matched[2].toLowerCase();
+      if (unit === "px") return numeric;
+      return (numeric / 100) * parentViewportHeight;
     };
 
     const resolveExplicitHeight = () => {
@@ -145,7 +172,14 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         iframeRef.current.ownerDocument?.documentElement?.clientHeight ||
         window.innerHeight;
       const parsed = parseExplicitHeight(heightValue, parentViewportHeight);
-      return parsed ? Math.ceil(parsed) : null;
+      if (parsed !== null) {
+        return Math.ceil(parsed);
+      }
+      const classHeight = parseTailwindHeightClass(
+        target.getAttribute("class") || "",
+        parentViewportHeight
+      );
+      return classHeight !== null ? Math.ceil(classHeight) : null;
     };
 
     const updateHeight = () => {
@@ -162,9 +196,40 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       );
       setHeight(nextHeight);
     };
-    updateHeightRef.current = updateHeight;
+    const queueHeightUpdate = (delayMs: number) => {
+      const timerId = window.setTimeout(() => {
+        pendingHeightTimerIds.delete(timerId);
+        if (isDestroyed) return;
+        updateHeight();
+      }, delayMs);
+      pendingHeightTimerIds.add(timerId);
+    };
+    const scheduleHeightUpdate = () => {
+      requestAnimationFrame(() => {
+        if (isDestroyed) return;
+        updateHeight();
+      });
+      // Keep measuring until runtime styles are fully injected and applied.
+      [80, 220, 420].forEach(queueHeightUpdate);
+    };
+    updateHeightRef.current = scheduleHeightUpdate;
 
     updateHeight();
+    scheduleHeightUpdate();
+
+    // Inject Tailwind/DaisyUI/GSAP into iframe for all sandbox modes.
+    // Dynamic import keeps ~3.3 MB of vendor libs out of the main bundle.
+    // Tailwind's MutationObserver ensures styles apply even if content renders first.
+    loadBlackboardVendor()
+      .then((inject) => {
+        if (isDestroyed) return;
+        inject(doc);
+        scheduleHeightUpdate();
+      })
+      .catch(() => {
+        if (isDestroyed) return;
+        scheduleHeightUpdate();
+      });
 
     const resizeObserver = new ResizeObserver(() => updateHeight());
     resizeObserver.observe(doc.body);
@@ -173,6 +238,9 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     }
 
     return () => {
+      isDestroyed = true;
+      pendingHeightTimerIds.forEach((timerId) => clearTimeout(timerId));
+      pendingHeightTimerIds.clear();
       resizeObserver.disconnect();
       // Defer unmount to avoid React warning when parent is mid-render
       setTimeout(() => {

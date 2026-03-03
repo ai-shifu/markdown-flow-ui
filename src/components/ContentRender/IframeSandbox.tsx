@@ -155,7 +155,6 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     const root = createRoot(rootEl);
     rootRef.current = root;
     let isDestroyed = false;
-    const pendingHeightTimerIds = new Set<number>();
 
     const parseExplicitHeight = (
       value: string,
@@ -236,21 +235,11 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       );
       setHeight(nextHeight);
     };
-    const queueHeightUpdate = (delayMs: number) => {
-      const timerId = window.setTimeout(() => {
-        pendingHeightTimerIds.delete(timerId);
-        if (isDestroyed) return;
-        updateHeight();
-      }, delayMs);
-      pendingHeightTimerIds.add(timerId);
-    };
     const scheduleHeightUpdate = () => {
       requestAnimationFrame(() => {
         if (isDestroyed) return;
         updateHeight();
       });
-      // Keep measuring until runtime styles are fully injected and applied.
-      [80, 220, 420].forEach(queueHeightUpdate);
     };
     updateHeightRef.current = scheduleHeightUpdate;
 
@@ -279,8 +268,6 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
     return () => {
       isDestroyed = true;
-      pendingHeightTimerIds.forEach((timerId) => clearTimeout(timerId));
-      pendingHeightTimerIds.clear();
       resizeObserver.disconnect();
       // Defer unmount to avoid React warning when parent is mid-render
       setTimeout(() => {

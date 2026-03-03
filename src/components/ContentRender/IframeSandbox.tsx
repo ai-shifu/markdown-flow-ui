@@ -3,7 +3,7 @@ import { createRoot, Root } from "react-dom/client";
 import SandboxApp from "./SandboxApp";
 import { splitContentSegments } from "./utils/split-content";
 import ContentRender from "./ContentRender";
-// Lazy-loaded to avoid bundling ~3.3 MB of vendor libs for non-blackboard consumers
+// Lazy-load iframe vendor libraries and inject them into the sandbox document.
 const loadBlackboardVendor = () =>
   import("./blackboard-vendor").then((m) => m.injectBlackboardLibraries);
 export interface IframeSandboxProps {
@@ -17,6 +17,44 @@ export interface IframeSandboxProps {
   mode?: "content" | "blackboard";
   type: "sandbox" | "markdown";
 }
+
+const normalizeTailwindHeightTokens = (className: string) =>
+  className
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((token) => token.split(":").pop() || token);
+
+const parseViewportHeightCss = (value: string) => {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return null;
+  const matched = normalized.match(/^([0-9.]+)(vh|dvh|svh|lvh)$/i);
+  if (!matched) return null;
+  return `${matched[1]}${matched[2].toLowerCase()}`;
+};
+
+const extractViewportHeightFromTailwindClass = (className: string) => {
+  if (!className.trim()) return null;
+  const normalizedTokens = normalizeTailwindHeightTokens(className);
+  if (
+    normalizedTokens.includes("h-screen") ||
+    normalizedTokens.includes("h-dvh")
+  ) {
+    return "100dvh";
+  }
+  if (normalizedTokens.includes("h-svh")) {
+    return "100svh";
+  }
+  if (normalizedTokens.includes("h-lvh")) {
+    return "100lvh";
+  }
+  const arbitraryToken = normalizedTokens.find((token) =>
+    /^h-\[[0-9.]+(vh|dvh|svh|lvh)\]$/i.test(token)
+  );
+  if (!arbitraryToken) return null;
+  const matched = arbitraryToken.match(/^h-\[([0-9.]+)(vh|dvh|svh|lvh)\]$/i);
+  if (!matched) return null;
+  return `${matched[1]}${matched[2].toLowerCase()}`;
+};
 
 const IframeSandbox: React.FC<IframeSandboxProps> = ({
   content,
@@ -48,20 +86,30 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         : sandboxSegments.map((seg) => seg.value).join("\n");
     return sandboxContent || "";
   }, [content, mode]);
-  const hasRootVhHeight = React.useMemo(() => {
+  const rootViewportHeightCss = React.useMemo(() => {
     const normalized = htmlContent.trim();
-    if (!normalized) return false;
+    if (!normalized) return null;
     const rootMatch = normalized.match(/^<([a-zA-Z][\w:-]*)(\s[^>]*?)?>/);
-    if (!rootMatch) return false;
+    if (!rootMatch) return null;
     const attrs = rootMatch[2] || "";
     const heightAttrMatch = attrs.match(/\bheight\s*=\s*["']([^"']+)["']/i);
-    if (heightAttrMatch && /vh$/i.test(heightAttrMatch[1].trim())) {
-      return true;
+    if (heightAttrMatch) {
+      const explicitHeightCss = parseViewportHeightCss(heightAttrMatch[1]);
+      if (explicitHeightCss) return explicitHeightCss;
     }
-    const styleAttrMatch = attrs.match(/\bstyle\s*=\s*["']([^"']+)["']/i);
-    if (!styleAttrMatch) return false;
-    return /height\s*:\s*[^;]*vh\b/i.test(styleAttrMatch[1]);
+    const styleAttrMatch = attrs.match(/\bstyle\s*=\s*["']([^"']+)["']/i)?.[1];
+    const styleHeightMatch = styleAttrMatch?.match(
+      /\bheight\s*:\s*([^;]+)/i
+    )?.[1];
+    if (styleHeightMatch) {
+      const styleHeightCss = parseViewportHeightCss(styleHeightMatch);
+      if (styleHeightCss) return styleHeightCss;
+    }
+    const classAttrMatch = attrs.match(/\bclass\s*=\s*["']([^"']+)["']/i)?.[1];
+    if (!classAttrMatch) return null;
+    return extractViewportHeightFromTailwindClass(classAttrMatch);
   }, [htmlContent]);
+  const hasRootVhHeight = Boolean(rootViewportHeightCss);
   useEffect(() => {
     if (mode !== "blackboard") {
       prevHtmlRef.current = htmlContent;
@@ -99,13 +147,6 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 </html>`);
     doc.close();
 
-    // Inject Tailwind/DaisyUI/GSAP into iframe for blackboard mode.
-    // Dynamic import keeps ~3.3 MB of vendor libs out of the main bundle.
-    // Tailwind's MutationObserver ensures styles apply even if content renders first.
-    if (mode === "blackboard") {
-      loadBlackboardVendor().then((inject) => inject(doc));
-    }
-
     docRef.current = doc;
 
     const rootEl = doc.getElementById("root");
@@ -113,6 +154,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
     const root = createRoot(rootEl);
     rootRef.current = root;
+    let isDestroyed = false;
 
     const parseExplicitHeight = (
       value: string,
@@ -122,13 +164,34 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       if (!normalized) return null;
       const numeric = Number.parseFloat(normalized);
       if (Number.isNaN(numeric)) return null;
-      if (normalized.endsWith("vh")) {
+      if (/(dvh|svh|lvh|vh)$/i.test(normalized)) {
         return (numeric / 100) * parentViewportHeight;
       }
       if (normalized.endsWith("px") || /^[0-9.]+$/.test(normalized)) {
         return numeric;
       }
       return null;
+    };
+    const parseTailwindHeightClass = (
+      className: string,
+      parentViewportHeight: number
+    ) => {
+      if (!className.trim()) return null;
+      const viewportHeightCss =
+        extractViewportHeightFromTailwindClass(className);
+      if (viewportHeightCss) {
+        return parseExplicitHeight(viewportHeightCss, parentViewportHeight);
+      }
+      const normalizedTokens = normalizeTailwindHeightTokens(className);
+      const arbitraryToken = normalizedTokens.find((token) =>
+        /^h-\[[0-9.]+px\]$/i.test(token)
+      );
+      if (!arbitraryToken) return null;
+      const matched = arbitraryToken.match(/^h-\[([0-9.]+)px\]$/i);
+      if (!matched) return null;
+      const numeric = Number.parseFloat(matched[1]);
+      if (Number.isNaN(numeric)) return null;
+      return numeric;
     };
 
     const resolveExplicitHeight = () => {
@@ -142,12 +205,20 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       if (elements.length !== 1) return null;
       const target = elements[0];
       const heightValue = target.style.height || target.getAttribute("height");
-      if (!heightValue) return null;
       const parentViewportHeight =
         iframeRef.current.ownerDocument?.documentElement?.clientHeight ||
         window.innerHeight;
-      const parsed = parseExplicitHeight(heightValue, parentViewportHeight);
-      return parsed ? Math.ceil(parsed) : null;
+      const parsed = heightValue
+        ? parseExplicitHeight(heightValue, parentViewportHeight)
+        : null;
+      if (parsed !== null) {
+        return Math.ceil(parsed);
+      }
+      const classHeight = parseTailwindHeightClass(
+        target.getAttribute("class") || "",
+        parentViewportHeight
+      );
+      return classHeight !== null ? Math.ceil(classHeight) : null;
     };
 
     const updateHeight = () => {
@@ -164,9 +235,30 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       );
       setHeight(nextHeight);
     };
-    updateHeightRef.current = updateHeight;
+    const scheduleHeightUpdate = () => {
+      requestAnimationFrame(() => {
+        if (isDestroyed) return;
+        updateHeight();
+      });
+    };
+    updateHeightRef.current = scheduleHeightUpdate;
 
     updateHeight();
+    scheduleHeightUpdate();
+
+    // Inject Tailwind/DaisyUI/GSAP into iframe for all sandbox modes.
+    // Dynamic import keeps ~3.3 MB of vendor libs out of the main bundle.
+    // Tailwind's MutationObserver ensures styles apply even if content renders first.
+    loadBlackboardVendor()
+      .then((inject) => {
+        if (isDestroyed) return;
+        inject(doc);
+        scheduleHeightUpdate();
+      })
+      .catch(() => {
+        if (isDestroyed) return;
+        scheduleHeightUpdate();
+      });
 
     const resizeObserver = new ResizeObserver(() => updateHeight());
     resizeObserver.observe(doc.body);
@@ -175,6 +267,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     }
 
     return () => {
+      isDestroyed = true;
       resizeObserver.disconnect();
       // Defer unmount to avoid React warning when parent is mid-render
       setTimeout(() => {
@@ -265,7 +358,10 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
           allowFullScreen
           className={(className, "w-full")}
           style={{
-            height: mode === "blackboard" ? "100%" : `${height}px`,
+            height:
+              mode === "blackboard"
+                ? "100%"
+                : rootViewportHeightCss || `${height}px`,
             // height: `${height}px`,
             // margin: "16px 0",
           }}

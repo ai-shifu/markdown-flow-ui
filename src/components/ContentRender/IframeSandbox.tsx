@@ -18,6 +18,44 @@ export interface IframeSandboxProps {
   type: "sandbox" | "markdown";
 }
 
+const normalizeTailwindHeightTokens = (className: string) =>
+  className
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((token) => token.split(":").pop() || token);
+
+const parseViewportHeightCss = (value: string) => {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return null;
+  const matched = normalized.match(/^([0-9.]+)(vh|dvh|svh|lvh)$/i);
+  if (!matched) return null;
+  return `${matched[1]}${matched[2].toLowerCase()}`;
+};
+
+const extractViewportHeightFromTailwindClass = (className: string) => {
+  if (!className.trim()) return null;
+  const normalizedTokens = normalizeTailwindHeightTokens(className);
+  if (
+    normalizedTokens.includes("h-screen") ||
+    normalizedTokens.includes("h-dvh")
+  ) {
+    return "100dvh";
+  }
+  if (normalizedTokens.includes("h-svh")) {
+    return "100svh";
+  }
+  if (normalizedTokens.includes("h-lvh")) {
+    return "100lvh";
+  }
+  const arbitraryToken = normalizedTokens.find((token) =>
+    /^h-\[[0-9.]+(vh|dvh|svh|lvh)\]$/i.test(token)
+  );
+  if (!arbitraryToken) return null;
+  const matched = arbitraryToken.match(/^h-\[([0-9.]+)(vh|dvh|svh|lvh)\]$/i);
+  if (!matched) return null;
+  return `${matched[1]}${matched[2].toLowerCase()}`;
+};
+
 const IframeSandbox: React.FC<IframeSandboxProps> = ({
   content,
   type,
@@ -48,20 +86,30 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         : sandboxSegments.map((seg) => seg.value).join("\n");
     return sandboxContent || "";
   }, [content, mode]);
-  const hasRootVhHeight = React.useMemo(() => {
+  const rootViewportHeightCss = React.useMemo(() => {
     const normalized = htmlContent.trim();
-    if (!normalized) return false;
+    if (!normalized) return null;
     const rootMatch = normalized.match(/^<([a-zA-Z][\w:-]*)(\s[^>]*?)?>/);
-    if (!rootMatch) return false;
+    if (!rootMatch) return null;
     const attrs = rootMatch[2] || "";
     const heightAttrMatch = attrs.match(/\bheight\s*=\s*["']([^"']+)["']/i);
-    if (heightAttrMatch && /vh$/i.test(heightAttrMatch[1].trim())) {
-      return true;
+    if (heightAttrMatch) {
+      const explicitHeightCss = parseViewportHeightCss(heightAttrMatch[1]);
+      if (explicitHeightCss) return explicitHeightCss;
     }
-    const styleAttrMatch = attrs.match(/\bstyle\s*=\s*["']([^"']+)["']/i);
-    if (!styleAttrMatch) return false;
-    return /height\s*:\s*[^;]*vh\b/i.test(styleAttrMatch[1]);
+    const styleAttrMatch = attrs.match(/\bstyle\s*=\s*["']([^"']+)["']/i)?.[1];
+    const styleHeightMatch = styleAttrMatch?.match(
+      /\bheight\s*:\s*([^;]+)/i
+    )?.[1];
+    if (styleHeightMatch) {
+      const styleHeightCss = parseViewportHeightCss(styleHeightMatch);
+      if (styleHeightCss) return styleHeightCss;
+    }
+    const classAttrMatch = attrs.match(/\bclass\s*=\s*["']([^"']+)["']/i)?.[1];
+    if (!classAttrMatch) return null;
+    return extractViewportHeightFromTailwindClass(classAttrMatch);
   }, [htmlContent]);
+  const hasRootVhHeight = Boolean(rootViewportHeightCss);
   useEffect(() => {
     if (mode !== "blackboard") {
       prevHtmlRef.current = htmlContent;
@@ -130,30 +178,21 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       parentViewportHeight: number
     ) => {
       if (!className.trim()) return null;
-      const normalizedTokens = className
-        .split(/\s+/)
-        .filter(Boolean)
-        .map((token) => token.split(":").pop() || token);
-      if (
-        normalizedTokens.some((token) =>
-          ["h-screen", "h-dvh", "h-svh", "h-lvh"].includes(token)
-        )
-      ) {
-        return parentViewportHeight;
+      const viewportHeightCss =
+        extractViewportHeightFromTailwindClass(className);
+      if (viewportHeightCss) {
+        return parseExplicitHeight(viewportHeightCss, parentViewportHeight);
       }
+      const normalizedTokens = normalizeTailwindHeightTokens(className);
       const arbitraryToken = normalizedTokens.find((token) =>
-        /^h-\[[0-9.]+(vh|dvh|svh|lvh|px)\]$/i.test(token)
+        /^h-\[[0-9.]+px\]$/i.test(token)
       );
       if (!arbitraryToken) return null;
-      const matched = arbitraryToken.match(
-        /^h-\[([0-9.]+)(vh|dvh|svh|lvh|px)\]$/i
-      );
+      const matched = arbitraryToken.match(/^h-\[([0-9.]+)px\]$/i);
       if (!matched) return null;
       const numeric = Number.parseFloat(matched[1]);
       if (Number.isNaN(numeric)) return null;
-      const unit = matched[2].toLowerCase();
-      if (unit === "px") return numeric;
-      return (numeric / 100) * parentViewportHeight;
+      return numeric;
     };
 
     const resolveExplicitHeight = () => {
@@ -167,11 +206,12 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       if (elements.length !== 1) return null;
       const target = elements[0];
       const heightValue = target.style.height || target.getAttribute("height");
-      if (!heightValue) return null;
       const parentViewportHeight =
         iframeRef.current.ownerDocument?.documentElement?.clientHeight ||
         window.innerHeight;
-      const parsed = parseExplicitHeight(heightValue, parentViewportHeight);
+      const parsed = heightValue
+        ? parseExplicitHeight(heightValue, parentViewportHeight)
+        : null;
       if (parsed !== null) {
         return Math.ceil(parsed);
       }
@@ -331,7 +371,10 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
           allowFullScreen
           className={(className, "w-full")}
           style={{
-            height: mode === "blackboard" ? "100%" : `${height}px`,
+            height:
+              mode === "blackboard"
+                ? "100%"
+                : rootViewportHeightCss || `${height}px`,
             // height: `${height}px`,
             // margin: "16px 0",
           }}

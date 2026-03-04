@@ -72,9 +72,10 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const rootRef = useRef<Root | null>(null);
   const docRef = useRef<Document | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
-  const [height, setHeight] = useState(480);
+  const [, setHeight] = useState(480);
   const [resetToken, setResetToken] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const isBlackboardMode = mode === "blackboard";
   const prevHtmlRef = useRef<string>("");
   const htmlContent = React.useMemo(() => {
     const segments = splitContentSegments(content);
@@ -328,14 +329,18 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     resetToken,
     mode,
   ]);
+  const containerClassName = [
+    "w-full relative flex flex-col content-render-iframe-sandbox",
+    isBlackboardMode ? "h-full overflow-auto" : "aspect-[4/3] overflow-hidden",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div
       ref={containerRef}
       data-root-vh={hasRootVhHeight ? "true" : "false"}
-      className={
-        "w-full h-full overflow-auto relative flex flex-col content-render-iframe-sandbox"
-      }
+      className={containerClassName}
     >
       {!hideFullScreen && (
         <button
@@ -356,14 +361,9 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
           sandbox="allow-scripts allow-same-origin"
           allow="fullscreen"
           allowFullScreen
-          className={(className, "w-full")}
+          className={[className, "w-full h-full"].filter(Boolean).join(" ")}
           style={{
-            height:
-              mode === "blackboard"
-                ? "100%"
-                : rootViewportHeightCss || `${height}px`,
-            // height: `${height}px`,
-            // margin: "16px 0",
+            height: "100%",
           }}
         />
       )}

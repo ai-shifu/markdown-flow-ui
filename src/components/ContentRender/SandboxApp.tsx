@@ -239,29 +239,33 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   })();
 
   const isBlackboard = mode === "blackboard";
+  const sandboxWrapperStyle: React.CSSProperties = {
+    position: "relative",
+    width: "100%",
+    height: isBlackboard ? "100vh" : "100%",
+    display: "flex",
+    flexDirection: "column",
+    // Keep blackboard scroll behavior while centering content in non-blackboard mode
+    justifyContent: isBlackboard ? "space-around" : "flex-start",
+  };
+  const sandboxContainerStyle: React.CSSProperties = {
+    pointerEvents: overlayMessage ? "none" : undefined,
+    margin: isBlackboard ? undefined : "auto 0",
+    width: "100%",
+  };
 
   return (
     <div
       ref={wrapperRef}
       data-root-vh={hasRootVhHeight ? "true" : "false"}
       className="sandbox-wrapper"
-      style={{
-        position: "relative",
-        width: "100%",
-        height: isBlackboard ? "100vh" : undefined,
-        display: "flex",
-        flexDirection: "column",
-        // if use center, too long iframe wont see header
-        justifyContent: "space-around",
-      }}
+      style={sandboxWrapperStyle}
       aria-busy={!!overlayMessage}
     >
       <div
         ref={containerRef}
         className="sandbox-container"
-        style={{
-          pointerEvents: overlayMessage ? "none" : undefined,
-        }}
+        style={sandboxContainerStyle}
       />
       {overlayMessage && (
         <div

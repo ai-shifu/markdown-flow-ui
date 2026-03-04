@@ -138,7 +138,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
-      html, body { margin: 0; padding: 0;${mode === "blackboard" ? " width: 100%; height: 100%; overflow: auto;" : ""} }
+      html, body, #root { width: 100%; height: 100%; }
+      html, body { margin: 0; padding: 0; overflow: auto; }
       *, *::before, *::after { box-sizing: border-box; }
     </style>
   </head>
@@ -330,8 +331,10 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     mode,
   ]);
   const containerClassName = [
-    "w-full relative flex flex-col content-render-iframe-sandbox",
-    isBlackboardMode ? "h-full overflow-auto" : "aspect-[4/3] overflow-hidden",
+    "w-full relative content-render-iframe-sandbox",
+    isBlackboardMode
+      ? "h-full overflow-auto flex flex-col"
+      : "aspect-[16/9] overflow-hidden flex items-center justify-center",
   ]
     .filter(Boolean)
     .join(" ");
@@ -361,9 +364,12 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
           sandbox="allow-scripts allow-same-origin"
           allow="fullscreen"
           allowFullScreen
-          className={[className, "w-full h-full"].filter(Boolean).join(" ")}
+          className={[className, "w-full h-full mx-auto my-auto block"]
+            .filter(Boolean)
+            .join(" ")}
           style={{
             height: "100%",
+            margin: "auto",
           }}
         />
       )}

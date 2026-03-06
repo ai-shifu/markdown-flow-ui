@@ -6,6 +6,9 @@ import ContentRender from "./ContentRender";
 // Lazy-load iframe vendor libraries and inject them into the sandbox document.
 const loadBlackboardVendor = () =>
   import("./blackboard-vendor").then((m) => m.injectBlackboardLibraries);
+
+const COMPLETE_IMAGE_TAG_PATTERN = /<img\b[^>]*>/i;
+const POST_IMAGE_STREAM_DEBOUNCE_MS = 180;
 export interface IframeSandboxProps {
   content: string;
   className?: string;
@@ -87,8 +90,52 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         : sandboxSegments.map((seg) => seg.value).join("\n");
     return sandboxContent || "";
   }, [content, mode]);
+  const [renderHtmlContent, setRenderHtmlContent] = useState(htmlContent);
+  const prevIncomingHtmlRef = useRef(htmlContent);
+  const pendingHtmlRef = useRef(htmlContent);
+  const deferRenderTimerRef = useRef<number | null>(null);
+
+  const clearDeferredRenderTimer = () => {
+    if (deferRenderTimerRef.current === null) return;
+    window.clearTimeout(deferRenderTimerRef.current);
+    deferRenderTimerRef.current = null;
+  };
+
+  useEffect(
+    () => () => {
+      clearDeferredRenderTimer();
+    },
+    []
+  );
+
+  useEffect(() => {
+    const prevIncomingHtml = prevIncomingHtmlRef.current;
+    prevIncomingHtmlRef.current = htmlContent;
+
+    const isAppendOnlyStream =
+      !!prevIncomingHtml &&
+      htmlContent.length > prevIncomingHtml.length &&
+      htmlContent.startsWith(prevIncomingHtml);
+    const containsCompleteImage = COMPLETE_IMAGE_TAG_PATTERN.test(htmlContent);
+    const shouldDeferRender = isAppendOnlyStream && containsCompleteImage;
+
+    if (!shouldDeferRender) {
+      clearDeferredRenderTimer();
+      pendingHtmlRef.current = htmlContent;
+      setRenderHtmlContent(htmlContent);
+      return;
+    }
+
+    pendingHtmlRef.current = htmlContent;
+    clearDeferredRenderTimer();
+    deferRenderTimerRef.current = window.setTimeout(() => {
+      setRenderHtmlContent(pendingHtmlRef.current);
+      deferRenderTimerRef.current = null;
+    }, POST_IMAGE_STREAM_DEBOUNCE_MS);
+  }, [htmlContent]);
+
   const rootViewportHeightCss = React.useMemo(() => {
-    const normalized = htmlContent.trim();
+    const normalized = renderHtmlContent.trim();
     if (!normalized) return null;
     const rootMatch = normalized.match(/^<([a-zA-Z][\w:-]*)(\s[^>]*?)?>/);
     if (!rootMatch) return null;
@@ -109,7 +156,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     const classAttrMatch = attrs.match(/\bclass\s*=\s*["']([^"']+)["']/i)?.[1];
     if (!classAttrMatch) return null;
     return extractViewportHeightFromTailwindClass(classAttrMatch);
-  }, [htmlContent]);
+  }, [renderHtmlContent]);
   const hasRootVhHeight = Boolean(rootViewportHeightCss);
   useEffect(() => {
     if (mode !== "blackboard") {
@@ -308,7 +355,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
     root.render(
       <SandboxApp
-        html={htmlContent}
+        html={renderHtmlContent}
         loadingText={loadingText}
         styleLoadingText={styleLoadingText}
         scriptLoadingText={scriptLoadingText}
@@ -321,8 +368,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     );
     requestAnimationFrame(() => updateHeightRef.current?.());
   }, [
-    content,
-    htmlContent,
+    renderHtmlContent,
     loadingText,
     styleLoadingText,
     scriptLoadingText,

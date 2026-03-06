@@ -1035,6 +1035,54 @@ export const SVGDemo: Story = {
 };
 
 const HTML_DEMO_STREAM_SOURCE = `
+<html>
+<body>
+<h3>工业用水水质金字塔（层级 -> 指标关注 -> 典型用途）</h3>
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+  <thead>
+    <tr style="background-color: #0F63EE; color: white;">
+      <th>水质层级</th>
+      <th>一句话定义</th>
+      <th>关键指标关注点</th>
+      <th>典型用途</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>超纯水</td>
+      <td>几乎去除所有电解质、微粒、有机物、微生物的极致工艺水。</td>
+      <td>电阻率接近理论极限的 18.24 MΩ·cm，并同时严格控制颗粒数、TOC（如 < 0.05 mg/L）、微生物、溶解气体等。</td>
+      <td>半导体芯片制造中的清洗与刻蚀、高端生物制药、超临界锅炉。</td>
+    </tr>
+    <tr>
+      <td>高纯水</td>
+      <td>去除了电解质、部分气体和有机物的高纯度工艺用水。</td>
+      <td>电阻率通常 > 10 MΩ·cm，并开始关注有机物等。</td>
+      <td>制药工业（如透析用水）、高端清洗、部分电子制造。</td>
+    </tr>
+    <tr>
+      <td>纯水 / 去离子水</td>
+      <td>去除了绝大部分强电解质的工业用水。</td>
+      <td>电阻率约 0.1-1.0 MΩ·cm（电导率 1-10 μS/cm）。</td>
+      <td>锅炉补给水、一般化工、实验室基础用水。</td>
+    </tr>
+    <tr>
+      <td>原水</td>
+      <td>未经过处理或仅初步处理的自然或市政来水。</td>
+      <td>浊度、微生物、硬度、悬浮物等波动。</td>
+      <td>冷却、灌溉、一般供水、水处理系统进水。</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>数据来源：</strong></p>
+<ul>
+<li><a href="https://www.sciencedirect.com/science/article/abs/pii/S0015188209700345" target="_blank">《Filtration & Separation》期刊论文</a></li>
+<li><a href="http://jiankangjiadian.net/h-nd-966.html#_jcp=4_11" target="_blank">健康家电网</a></li>
+</ul>
+</body>
+</html>
+带a标签的html
 <div class=\"w-full overflow-x-auto my-[4vmin]\">\n  <table class=\"min-w-full divide-y divide-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-md\">\n    <thead class=\"bg-[#0F63EE]\">\n      <tr>\n        <th class=\"px-[3vmin] py-[2vmin] text-left text-[2.2vmin] font-bold text-white\">历史时期</th>\n        <th class=\"px-[3vmin] py-[2vmin] text-left text-[2.2vmin] font-bold text-white\">主要特点</th>\n        <th class=\"px-[3vmin] py-[2vmin] text-left text-[2.2vmin] font-bold text-white\">核心习俗（悬停查看详情）</th>\n      </tr>\n    </thead>\n    <tbody class=\"bg-white divide-y divide-gray-200\">\n      <tr class=\"hover:bg-amber-50 transition-colors\">\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] font-semibold text-gray-800 align-top\">古代<br/><span class=\"text-[1.6vmin] text-gray-500\">(唐宋及以前)</span></td>\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] text-gray-700 align-top\">驱邪避灾，祭祀祈福。节日氛围**庄严而神秘**，更像一场全民参与的“大型祈福仪式”。</td>\n        <td class=\"px-[3vmin] py-[2vmin] align-top\">\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">挂桃符 / 燃爆竹</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[40vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              <strong>挂桃符：</strong>在桃木板上写神名或画门神，挂在门上驱鬼，是**春联的前身**。<br/><br/>\n              <strong>燃爆竹：</strong>焚烧竹子，使其爆裂发出巨响来吓退“年”兽等邪祟，是**鞭炮的起源**。\n            </div>\n          </div>\n          <span class=\"mx-[1vmin]\">•</span>\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">守岁</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[30vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              全家团聚，终夜不眠，迎接新年到来，寓意**珍惜光阴、为长辈祈福延寿**。\n            </div>\n          </div>\n        </td>\n      </tr>\n      <tr class=\"hover:bg-amber-50 transition-colors\">\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] font-semibold text-gray-800 align-top\">近代<br/><span class=\"text-[1.6vmin] text-gray-500\">(明清至民国)</span></td>\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] text-gray-700 align-top\">家庭团圆，礼尚往来。习俗**逐渐世俗化和家庭化**，从敬神转向更重人情。</td>\n        <td class=\"px-[3vmin] py-[2vmin] align-top\">\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">贴春联 / 年画</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[40vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              <strong>贴春联：</strong>桃符演变为在红纸上写吉祥对联，表达美好祝愿。<br/><br/>\n              <strong>贴年画：</strong>门上贴门神（如秦琼、尉迟恭），屋里贴吉祥画，增添喜庆。\n            </div>\n          </div>\n          <span class=\"mx-[1vmin]\">•</span>\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">吃年夜饭 / 拜年</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[35vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              <strong>年夜饭：</strong>一年中最重要的一餐，讲究**全家到齐、菜肴丰盛**，寓意团圆美满。<br/><br/>\n              <strong>拜年：</strong>初一开始走亲访友，互道祝福，是维系亲情友情的重要活动。\n            </div>\n          </div>\n        </td>\n      </tr>\n      <tr class=\"hover:bg-amber-50 transition-colors\">\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] font-semibold text-gray-800 align-top\">现代<br/><span class=\"text-[1.6vmin] text-gray-500\">(当代)</span></td>\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] text-gray-700 align-top\">多元融合，新旧交织。在保留核心传统的同时，加入了**许多新时代的元素和方式**。</td>\n        <td class=\"px-[3vmin] py-[2vmin] align-top\">\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">看春晚 / 电子红包</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[40vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              <strong>看春晚：</strong>自1983年起，收看中央电视台春节联欢晚会成为**新的“守岁”方式**，是全家围坐的娱乐盛宴。<br/><br/>\n              <strong>电子红包：</strong>通过微信等平台发红包，让压岁钱的传递跨越时空，更加便捷有趣。\n            </div>\n          </div>\n          <span class=\"mx-[1vmin]\">•</span>\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">旅游过年</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[30vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              越来越多的家庭选择在春节期间外出旅行，体验不同的年味，**团圆的形式变得更加多样**。\n            </div>\n          </div>\n        </td>\n      </tr>\n    </tbody>\n  </table>\n</div>
 一个表格的div
 <div class=\"w-full h-screen overflow-hidden p-[4vmin] bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center\">\n  <div class=\"grid grid-cols-2 gap-[3vmin] w-full h-full\">\n    <!-- 左侧：能力惊人 -->\n    <div class=\"bg-gradient-to-br from-green-400 to-blue-500 rounded-[2vmin] p-[3vmin] flex flex-col items-center justify-center text-white shadow-xl\">\n      <div class=\"text-[8vmin] mb-[2vmin]\">🚀</div>\n      <h2 class=\"text-[5vmin] font-bold mb-[2vmin]\">神通广大</h2>\n      <ul class=\"text-[2.5vmin] leading-[4vmin] space-y-[1vmin]\">\n        <li>• 写诗作画样样行</li>\n        <li>• 上知天文下知地理</li>\n        <li>• 代码论文一键生成</li>\n      </ul>\n    </div>\n    <!-- 右侧：经常犯错 -->\n    <div class=\"bg-gradient-to-br from-red-400 to-orange-500 rounded-[2vmin] p-[3vmin] flex flex-col items-center justify-center text-white shadow-xl\">\n      <div class=\"text-[8vmin] mb-[2vmin]\">💥</div>\n      <h2 class=\"text-[5vmin] font-bold mb-[2vmin]\">低级错误</h2>\n      <ul class=\"text-[2.5vmin] leading-[4vmin] space-y-[1vmin]\">\n        <li>• 简单算数算不对</li>\n        <li>• 睁眼说瞎话</li>\n        <li>• 逻辑推理经常崩</li>\n      </ul>\n    </div>\n    <!-- 底部标题 -->\n    <div class=\"col-span-2 bg-white/80 backdrop-blur rounded-[2vmin] p-[3vmin] text-center shadow-lg\">\n      <h1 class=\"text-[5vmin] font-bold text-[#0F63EE]\">AI 的两面性</h1>\n    </div>\n  </div>\n</div>\n\n这张图很清楚地展示了 AI 的矛盾：左边是上天入地无所不能，让所有人惊呼 AI 竟然这么聪明；右边却连小学生都不会错的题，它能错得离谱，气得你直跺脚。\n\n咱有没有发现这个现象？每个人刚接触 AI 的时候，都会惊讶 AI 怎么懂那么多，但是用久了，就常常被 AI 的低级错误气得要命。**学好这门课，你就能明白这一切背后的原因，既不会对 AI 盲目崇拜，也不会因为出错就歇斯底里**。\n\n你有没有好奇过，为什么 ChatGPT 这些 AI 都是一个字一个字地输出答案，而不是一次把所有内容都给出来呢？猜猜可能是什么原因？
@@ -1691,7 +1739,54 @@ export const HTMLDemoIframeOnly: Story = {
             type="sandbox"
             // content={`<div style=\"display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: linear-gradient(to bottom right, #f8fafc, #e0e7ff); font-family: 'Arial', sans-serif; padding: 2rem;\">\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    AI 是一种工具\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    每种 AI 产品都需要<br>学习使用方法\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2;\">\n    打造 AI 产品是<br>技术高手的事情\n  </div>\n</div>`}
             // content={htmlContent}
-            content={`<div class=\"w-full h-screen overflow-hidden flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800 p-[4vmin] text-white\">\n  <div class=\"text-[3vmin] text-blue-300 mb-[3vmin] opacity-80\">OpenAI CEO Sam Altman 说：</div>\n  <blockquote class=\"text-[4.5vmin] font-light italic text-center leading-[6vmin] max-w-[90%]\">\n    \"I think there will be a one-person company that reaches a billion-dollar valuation.\"\n  </blockquote>\n  <div class=\"mt-[6vmin] w-[60%] h-[0.5vmin] bg-blue-500 rounded-full\"></div>\n</div>`}
+            content={`<html>
+<body>
+<h3>工业用水水质金字塔（层级 -> 指标关注 -> 典型用途）</h3>
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+  <thead>
+    <tr style="background-color: #0F63EE; color: white;">
+      <th>水质层级</th>
+      <th>一句话定义</th>
+      <th>关键指标关注点</th>
+      <th>典型用途</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>超纯水</td>
+      <td>几乎去除所有电解质、微粒、有机物、微生物的极致工艺水。</td>
+      <td>电阻率接近理论极限的 18.24 MΩ·cm，并同时严格控制颗粒数、TOC（如 < 0.05 mg/L）、微生物、溶解气体等。</td>
+      <td>半导体芯片制造中的清洗与刻蚀、高端生物制药、超临界锅炉。</td>
+    </tr>
+    <tr>
+      <td>高纯水</td>
+      <td>去除了电解质、部分气体和有机物的高纯度工艺用水。</td>
+      <td>电阻率通常 > 10 MΩ·cm，并开始关注有机物等。</td>
+      <td>制药工业（如透析用水）、高端清洗、部分电子制造。</td>
+    </tr>
+    <tr>
+      <td>纯水 / 去离子水</td>
+      <td>去除了绝大部分强电解质的工业用水。</td>
+      <td>电阻率约 0.1-1.0 MΩ·cm（电导率 1-10 μS/cm）。</td>
+      <td>锅炉补给水、一般化工、实验室基础用水。</td>
+    </tr>
+    <tr>
+      <td>原水</td>
+      <td>未经过处理或仅初步处理的自然或市政来水。</td>
+      <td>浊度、微生物、硬度、悬浮物等波动。</td>
+      <td>冷却、灌溉、一般供水、水处理系统进水。</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>数据来源：</strong></p>
+<ul>
+<li><a href="https://www.sciencedirect.com/science/article/abs/pii/S0015188209700345" target="_blank">《Filtration & Separation》期刊论文</a></li>
+<li><a href="http://jiankangjiadian.net/h-nd-966.html#_jcp=4_11" target="_blank">健康家电网</a></li>
+</ul>
+</body>
+</html>`}
+            // content={`<div class=\"w-full h-screen overflow-hidden flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800 p-[4vmin] text-white\">\n  <div class=\"text-[3vmin] text-blue-300 mb-[3vmin] opacity-80\">OpenAI CEO Sam Altman 说：</div>\n  <blockquote class=\"text-[4.5vmin] font-light italic text-center leading-[6vmin] max-w-[90%]\">\n    \"I think there will be a one-person company that reaches a billion-dollar valuation.\"\n  </blockquote>\n  <div class=\"mt-[6vmin] w-[60%] h-[0.5vmin] bg-blue-500 rounded-full\"></div>\n</div>`}
             className="content-render-iframe"
             loadingText={args.sandboxLoadingText}
             styleLoadingText={args.sandboxStyleLoadingText}

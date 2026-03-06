@@ -1453,6 +1453,20 @@ div长度
 
 `;
 
+const HTML_DEMO_STREAM_SOURCE_2 = `
+<div class="w-full h-screen overflow-hidden flex flex-col items-center justify-[safe_center] bg-gradient-to-br from-blue-50 to-blue-100 p-[4vmin]">
+  <div class="w-full max-w-[120vmin] bg-white rounded-[2vmin] shadow-lg p-[6vmin] flex flex-col gap-[4vmin]">
+    <h1 class="text-[5vmin] font-bold text-[#0F63EE] text-center">哈喽美少女大战哥斯拉😉</h1>
+    <div class="flex flex-col gap-[3vmin]">
+      <p class="text-[3vmin] text-gray-800">现在麻烦你先扫码添加咱们BP刘谊的微信哦，同时需要跟你确认一下你的姓名和你使用的考勤方式，是EHR、钉钉还是云EHR呀？</p>
+      <div class="flex justify-center w-full">
+        <img src="https://resource.ai-shifu.cn/a428928668b744469e6c761d5249ecbf" alt="扫码添加微信" class="rounded-[1.5vmin] w-[50vmin] h-auto shadow-md" />
+      </div>
+      <p class="text-[3vmin] text-gray-800 font-medium text-center mt-[2vmin]">请选择你的考勤系统。</p>
+    </div>
+  </div>
+</div>`;
+
 const STREAM_CODE_IFRAME_CONTENT = `\`\`\`c
 int maze[5][5] = {
     {1, 1, 1, 1, 1},
@@ -1543,45 +1557,45 @@ export const HTMLDemo: Story = {
     sandboxFullscreenButtonText: "全屏浏览",
   },
   render: (args) => {
-    // const [streamContent, setStreamContent] = useState("");
+    const [streamContent, setStreamContent] = useState("");
 
-    // useEffect(() => {
-    //   let currentIndex = 0;
-    //   let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    useEffect(() => {
+      let currentIndex = 0;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    //   const streamNext = () => {
-    //     if (currentIndex >= HTML_DEMO_STREAM_SOURCE.length) {
-    //       timeoutId = null;
-    //       return;
-    //     }
+      const streamNext = () => {
+        if (currentIndex >= HTML_DEMO_STREAM_SOURCE_2.length) {
+          timeoutId = null;
+          return;
+        }
 
-    //     const chunkSize = Math.floor(Math.random() * 30) + 1;
-    //     const nextIndex = Math.min(
-    //       HTML_DEMO_STREAM_SOURCE.length,
-    //       currentIndex + chunkSize
-    //     );
-    //     const nextChunk = HTML_DEMO_STREAM_SOURCE.slice(
-    //       currentIndex,
-    //       nextIndex
-    //     );
-    //     currentIndex = nextIndex;
-    //     setStreamContent((prev) => `${prev}${nextChunk}`);
+        const chunkSize = Math.floor(Math.random() * 30) + 1;
+        const nextIndex = Math.min(
+          HTML_DEMO_STREAM_SOURCE_2.length,
+          currentIndex + chunkSize
+        );
+        const nextChunk = HTML_DEMO_STREAM_SOURCE_2.slice(
+          currentIndex,
+          nextIndex
+        );
+        currentIndex = nextIndex;
+        setStreamContent((prev) => `${prev}${nextChunk}`);
 
-    //     timeoutId = setTimeout(streamNext, 80);
-    //   };
+        timeoutId = setTimeout(streamNext, 80);
+      };
 
-    //   // Simulate SSE-like streaming by appending 1-3 characters per tick
-    //   timeoutId = setTimeout(streamNext, 120);
+      // Simulate SSE-like streaming by appending 1-3 characters per tick
+      timeoutId = setTimeout(streamNext, 120);
 
-    //   return () => {
-    //     if (timeoutId) {
-    //       clearTimeout(timeoutId);
-    //     }
-    //   };
-    // }, []);
+      return () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      };
+    }, []);
     // console.log("streamContent", streamContent);
 
-    return <ContentRender {...args} content={HTML_DEMO_STREAM_SOURCE} />;
+    return <ContentRender {...args} content={streamContent} />;
   },
 };
 

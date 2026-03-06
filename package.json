@@ -156,7 +156,7 @@
     "storybook": "storybook dev -p 6006",
     "test": "echo \"No tests specified\" && exit 0"
   },
-  "version": "0.1.97",
+  "version": "0.1.98",
   "type": "module",
   "exports": {
     ".": {

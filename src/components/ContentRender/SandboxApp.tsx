@@ -10,6 +10,80 @@ export interface SandboxAppProps {
   hasRootVhHeight?: boolean;
 }
 
+const IMAGE_REUSE_ATTRIBUTES = [
+  "src",
+  "srcset",
+  "sizes",
+  "alt",
+  "class",
+  "width",
+  "height",
+  "style",
+  "loading",
+  "decoding",
+  "crossorigin",
+  "referrerpolicy",
+];
+
+const getImageReuseKey = (image: HTMLImageElement) =>
+  IMAGE_REUSE_ATTRIBUTES.map(
+    (attribute) => `${attribute}:${image.getAttribute(attribute) || ""}`
+  ).join("|");
+
+const collectReusableImages = (root: ParentNode) => {
+  const imageMap = new Map<string, HTMLImageElement[]>();
+  root.querySelectorAll("img").forEach((node) => {
+    const image = node as HTMLImageElement;
+    const key = getImageReuseKey(image);
+    const bucket = imageMap.get(key) || [];
+    bucket.push(image);
+    imageMap.set(key, bucket);
+  });
+  return imageMap;
+};
+
+const syncImageAttributes = (
+  sourceImage: HTMLImageElement,
+  targetImage: HTMLImageElement
+) => {
+  const sourceAttributes = Array.from(sourceImage.attributes);
+  const sourceAttributeNames = new Set(
+    sourceAttributes.map((attribute) => attribute.name)
+  );
+
+  Array.from(targetImage.attributes).forEach((attribute) => {
+    if (!sourceAttributeNames.has(attribute.name)) {
+      targetImage.removeAttribute(attribute.name);
+    }
+  });
+
+  sourceAttributes.forEach((attribute) => {
+    targetImage.setAttribute(attribute.name, attribute.value);
+  });
+};
+
+const reuseRenderedImages = (
+  root: ParentNode,
+  imageMap: Map<string, HTMLImageElement[]>
+) => {
+  if (!imageMap.size) return;
+
+  root.querySelectorAll("img").forEach((node) => {
+    const nextImage = node as HTMLImageElement;
+    const key = getImageReuseKey(nextImage);
+    const bucket = imageMap.get(key);
+    const preservedImage = bucket?.shift();
+    if (!preservedImage) return;
+
+    syncImageAttributes(nextImage, preservedImage);
+    nextImage.replaceWith(preservedImage);
+
+    if (bucket && bucket.length === 0) {
+      imageMap.delete(key);
+    }
+  });
+};
+
 const SandboxApp: React.FC<SandboxAppProps> = ({
   html,
   styleLoadingText,
@@ -96,6 +170,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     const doc = container.ownerDocument;
     const body = doc?.body;
     if (!body) return;
+    const reusableImages = collectReusableImages(container);
 
     appendedStylesRef.current.forEach((node) => node.remove());
     appendedStylesRef.current = [];
@@ -106,8 +181,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     setIsWaitingFirstDiv(!hasRenderedBefore);
     setIsGeneratingStyles(false);
     setIsGeneratingScripts(false);
-    container.innerHTML = "";
-    const wrapper = document.createElement("div");
+    const wrapper = doc.createElement("div");
     wrapper.innerHTML = html;
 
     const openScriptCount = (html.match(/<script[\s>]/gi) || []).length;
@@ -135,6 +209,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       }
       node.remove();
     });
+    reuseRenderedImages(wrapper, reusableImages);
 
     const hasStyles = resourceQueue.some(
       (node) => node.tagName.toLowerCase() === "style"
@@ -161,6 +236,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       hasRenderedContentRef.current = true;
     }
 
+    container.innerHTML = "";
     const contentNodes = Array.from(wrapper.childNodes);
     container.append(...contentNodes);
 

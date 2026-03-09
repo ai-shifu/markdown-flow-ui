@@ -148,9 +148,8 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       .sandbox-container { width: 100%; }
       .sandbox-container svg,
       .sandbox-container img { display: block; margin-left: auto; margin-right: auto; }
-      @media (max-width: 640px) {
-        .sandbox-wrapper { align-items: stretch; }
-        .sandbox-wrapper[data-root-vh="true"] .sandbox-container > :first-child { height: auto !important; }
+      .justify-\\[safe_center\\]{
+        justify-content: safe center;
       }
     `;
   }, []);

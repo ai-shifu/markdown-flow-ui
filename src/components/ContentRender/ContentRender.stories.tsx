@@ -1753,53 +1753,54 @@ export const HTMLDemoIframeOnly: Story = {
             type="sandbox"
             // content={`<div style=\"display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: linear-gradient(to bottom right, #f8fafc, #e0e7ff); font-family: 'Arial', sans-serif; padding: 2rem;\">\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    AI 是一种工具\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    每种 AI 产品都需要<br>学习使用方法\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2;\">\n    打造 AI 产品是<br>技术高手的事情\n  </div>\n</div>`}
             // content={htmlContent}
-            content={`<html>
-<body>
-<h3>工业用水水质金字塔（层级 -> 指标关注 -> 典型用途）</h3>
-<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
-  <thead>
-    <tr style="background-color: #0F63EE; color: white;">
-      <th>水质层级</th>
-      <th>一句话定义</th>
-      <th>关键指标关注点</th>
-      <th>典型用途</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>超纯水</td>
-      <td>几乎去除所有电解质、微粒、有机物、微生物的极致工艺水。</td>
-      <td>电阻率接近理论极限的 18.24 MΩ·cm，并同时严格控制颗粒数、TOC（如 < 0.05 mg/L）、微生物、溶解气体等。</td>
-      <td>半导体芯片制造中的清洗与刻蚀、高端生物制药、超临界锅炉。</td>
-    </tr>
-    <tr>
-      <td>高纯水</td>
-      <td>去除了电解质、部分气体和有机物的高纯度工艺用水。</td>
-      <td>电阻率通常 > 10 MΩ·cm，并开始关注有机物等。</td>
-      <td>制药工业（如透析用水）、高端清洗、部分电子制造。</td>
-    </tr>
-    <tr>
-      <td>纯水 / 去离子水</td>
-      <td>去除了绝大部分强电解质的工业用水。</td>
-      <td>电阻率约 0.1-1.0 MΩ·cm（电导率 1-10 μS/cm）。</td>
-      <td>锅炉补给水、一般化工、实验室基础用水。</td>
-    </tr>
-    <tr>
-      <td>原水</td>
-      <td>未经过处理或仅初步处理的自然或市政来水。</td>
-      <td>浊度、微生物、硬度、悬浮物等波动。</td>
-      <td>冷却、灌溉、一般供水、水处理系统进水。</td>
-    </tr>
-  </tbody>
-</table>
+            content={`<div class=\"w-full h-screen p-[4vmin] bg-gradient-to-br from-sky-50 to-blue-100 flex flex-col  justify-[safe_center] gap-[4vmin]\">\n  <h2 class=\"text-[4vmin] font-bold text-gray-800 mb-[2vmin]\">这三个观点，你认同吗？</h2>\n  <div class=\"bg-white rounded-[1.5vmin] p-[3vmin] shadow-lg\">\n    <span class=\"inline-block w-[6vmin] h-[6vmin] leading-[6vmin] text-center rounded-full bg-[#0F63EE] text-white font-bold text-[3vmin] mr-[2vmin]\">1</span>\n    <span class=\"text-[3vmin] text-gray-800\">AI 是一种工具</span>\n  </div>\n  <div class=\"bg-white rounded-[1.5vmin] p-[3vmin] shadow-lg\">\n    <span class=\"inline-block w-[6vmin] h-[6vmin] leading-[6vmin] text-center rounded-full bg-[#0F63EE] text-white font-bold text-[3vmin] mr-[2vmin]\">2</span>\n    <span class=\"text-[3vmin] text-gray-800\">每种 AI 产品都需要学习使用方法</span>\n  </div>\n  <div class=\"bg-white rounded-[1.5vmin] p-[3vmin] shadow-lg\">\n    <span class=\"inline-block w-[6vmin] h-[6vmin] leading-[6vmin] text-center rounded-full bg-[#0F63EE] text-white font-bold text-[3vmin] mr-[2vmin]\">3</span>\n    <span class=\"text-[3vmin] text-gray-800\">打造 AI 产品是技术高手的事情</span>\n  </div>\n</div>`}
+            //             content={`<html>
+            // <body>
+            // <h3>工业用水水质金字塔（层级 -> 指标关注 -> 典型用途）</h3>
+            // <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+            //   <thead>
+            //     <tr style="background-color: #0F63EE; color: white;">
+            //       <th>水质层级</th>
+            //       <th>一句话定义</th>
+            //       <th>关键指标关注点</th>
+            //       <th>典型用途</th>
+            //     </tr>
+            //   </thead>
+            //   <tbody>
+            //     <tr>
+            //       <td>超纯水</td>
+            //       <td>几乎去除所有电解质、微粒、有机物、微生物的极致工艺水。</td>
+            //       <td>电阻率接近理论极限的 18.24 MΩ·cm，并同时严格控制颗粒数、TOC（如 < 0.05 mg/L）、微生物、溶解气体等。</td>
+            //       <td>半导体芯片制造中的清洗与刻蚀、高端生物制药、超临界锅炉。</td>
+            //     </tr>
+            //     <tr>
+            //       <td>高纯水</td>
+            //       <td>去除了电解质、部分气体和有机物的高纯度工艺用水。</td>
+            //       <td>电阻率通常 > 10 MΩ·cm，并开始关注有机物等。</td>
+            //       <td>制药工业（如透析用水）、高端清洗、部分电子制造。</td>
+            //     </tr>
+            //     <tr>
+            //       <td>纯水 / 去离子水</td>
+            //       <td>去除了绝大部分强电解质的工业用水。</td>
+            //       <td>电阻率约 0.1-1.0 MΩ·cm（电导率 1-10 μS/cm）。</td>
+            //       <td>锅炉补给水、一般化工、实验室基础用水。</td>
+            //     </tr>
+            //     <tr>
+            //       <td>原水</td>
+            //       <td>未经过处理或仅初步处理的自然或市政来水。</td>
+            //       <td>浊度、微生物、硬度、悬浮物等波动。</td>
+            //       <td>冷却、灌溉、一般供水、水处理系统进水。</td>
+            //     </tr>
+            //   </tbody>
+            // </table>
 
-<p><strong>数据来源：</strong></p>
-<ul>
-<li><a href="https://www.sciencedirect.com/science/article/abs/pii/S0015188209700345" target="_blank">《Filtration & Separation》期刊论文</a></li>
-<li><a href="http://jiankangjiadian.net/h-nd-966.html#_jcp=4_11" target="_blank">健康家电网</a></li>
-</ul>
-</body>
-</html>`}
+            // <p><strong>数据来源：</strong></p>
+            // <ul>
+            // <li><a href="https://www.sciencedirect.com/science/article/abs/pii/S0015188209700345" target="_blank">《Filtration & Separation》期刊论文</a></li>
+            // <li><a href="http://jiankangjiadian.net/h-nd-966.html#_jcp=4_11" target="_blank">健康家电网</a></li>
+            // </ul>
+            // </body>
+            // </html>`}
             // content={`<div class=\"w-full h-screen overflow-hidden flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800 p-[4vmin] text-white\">\n  <div class=\"text-[3vmin] text-blue-300 mb-[3vmin] opacity-80\">OpenAI CEO Sam Altman 说：</div>\n  <blockquote class=\"text-[4.5vmin] font-light italic text-center leading-[6vmin] max-w-[90%]\">\n    \"I think there will be a one-person company that reaches a billion-dollar valuation.\"\n  </blockquote>\n  <div class=\"mt-[6vmin] w-[60%] h-[0.5vmin] bg-blue-500 rounded-full\"></div>\n</div>`}
             className="content-render-iframe"
             loadingText={args.sandboxLoadingText}

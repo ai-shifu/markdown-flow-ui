@@ -4,6 +4,7 @@ import ContentRender from "../ContentRender";
 import { cn } from "../../lib/utils";
 
 type ElementType =
+  | "slot"
   | "html"
   | "svg"
   | "diff"
@@ -22,7 +23,7 @@ type ElementType =
 type SlideOperation = "new" | "append" | string;
 
 export interface Element {
-  content: string;
+  content: React.ReactNode;
   type: ElementType;
   is_show?: boolean;
   operation?: SlideOperation;
@@ -55,8 +56,14 @@ const Slide: React.FC<SlideProps> = ({
                 key={`${element.serial_number ?? index}-${element.type}`}
                 className="w-full"
               >
-                {/* Keep slide rendering minimal and defer content parsing to ContentRender */}
-                <ContentRender content={element.content} />
+                {/* Render custom slot content directly and keep other types on ContentRender */}
+                {element.type === "slot" ? (
+                  element.content
+                ) : typeof element.content === "string" ? (
+                  <ContentRender content={element.content} />
+                ) : (
+                  element.content
+                )}
               </div>
             ))
           : null}

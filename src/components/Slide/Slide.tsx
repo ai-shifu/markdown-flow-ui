@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useRef } from "react";
 
 import { cn } from "../../lib/utils";
 import IframeSandbox from "../ContentRender/IframeSandbox";
+import Player from "./Player";
+import "./slide.css";
 
 type ElementType =
   | "slot"
@@ -36,13 +38,18 @@ export interface Element {
 
 export interface SlideProps extends React.ComponentProps<"section"> {
   elementList?: Element[];
+  showPlayer?: boolean;
+  playerClassName?: string;
 }
 
 const Slide: React.FC<SlideProps> = ({
   elementList = [],
+  showPlayer = true,
+  playerClassName,
   className,
   ...props
 }) => {
+  const sectionRef = useRef<HTMLElement | null>(null);
   const checkpointElementList = elementList.filter(
     (element) => element.is_checkpoint
   );
@@ -50,17 +57,41 @@ const Slide: React.FC<SlideProps> = ({
     (element) => element.is_show !== false
   ).length;
   const isSingleSlide = visibleCheckpointCount === 1;
+  const shouldRenderPlayer = showPlayer && isSingleSlide;
+
+  const handleFullscreen = () => {
+    const target = sectionRef.current;
+    if (!target) return;
+
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+      return;
+    }
+
+    target.requestFullscreen?.().catch(() => {});
+  };
 
   return (
-    <section className={cn("h-full w-full", className)} {...props}>
-      <div className={cn("w-full", isSingleSlide ? "h-full" : "grid gap-4")}>
+    <section
+      ref={sectionRef}
+      className={cn("relative h-full w-full", className)}
+      {...props}
+    >
+      <div
+        className={cn(
+          "w-full",
+          isSingleSlide ? "slide-content--single" : "grid gap-4"
+        )}
+      >
         {checkpointElementList.length > 0
           ? checkpointElementList.map((element, index) => (
               <div
                 key={`${element.serial_number ?? index}-${element.type}`}
                 className={cn(
                   "w-full",
-                  isSingleSlide && element.is_show !== false && "h-full",
+                  isSingleSlide &&
+                    element.is_show !== false &&
+                    "slide-element--single",
                   element.is_show === false && "hidden"
                 )}
               >
@@ -70,6 +101,7 @@ const Slide: React.FC<SlideProps> = ({
                 ) : element.type === "html" ? (
                   <IframeSandbox
                     className="content-render-iframe"
+                    hideFullScreen
                     mode="blackboard"
                     type="sandbox"
                     content={element.content as string}
@@ -77,6 +109,7 @@ const Slide: React.FC<SlideProps> = ({
                 ) : (
                   <IframeSandbox
                     className="content-render-iframe"
+                    hideFullScreen
                     mode="blackboard"
                     type="markdown"
                     content={element.content as string}
@@ -86,6 +119,12 @@ const Slide: React.FC<SlideProps> = ({
             ))
           : null}
       </div>
+
+      {shouldRenderPlayer ? (
+        <div className="slide-player-wrapper">
+          <Player className={playerClassName} onFullscreen={handleFullscreen} />
+        </div>
+      ) : null}
     </section>
   );
 };

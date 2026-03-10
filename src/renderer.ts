@@ -4,6 +4,7 @@ import ContentRender from "./components/ContentRender";
 import MarkdownFlowInput from "./components/ContentRender/MarkdownFlowInput";
 import IframeSandbox from "./components/ContentRender/IframeSandbox";
 import Slide from "./components/Slide";
+import { Player } from "./components/Slide";
 import { RenderSegment } from "./components/ContentRender/utils/split-content";
 import { splitContentSegments } from "./components/ContentRender/utils/split-content";
 import type { MarkdownFlowProps } from "./components/MarkdownFlow/MarkdownFlow";
@@ -15,7 +16,7 @@ import type {
 } from "./components/types";
 import type { IframeSandboxProps } from "./components/ContentRender/IframeSandbox";
 import type { SandboxAppProps } from "./components/ContentRender/SandboxApp";
-import type { SlideProps, Element } from "./components/Slide";
+import type { SlideProps, Element, PlayerProps } from "./components/Slide";
 export default ContentRender;
 
 export {
@@ -24,6 +25,7 @@ export {
   MarkdownFlowInput,
   IframeSandbox,
   Slide,
+  Player,
   splitContentSegments,
 };
 
@@ -37,5 +39,6 @@ export type {
   SandboxAppProps,
   SlideProps,
   Element,
+  PlayerProps,
   RenderSegment,
 };

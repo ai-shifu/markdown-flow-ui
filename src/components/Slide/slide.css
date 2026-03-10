@@ -1,0 +1,21 @@
+.slide-content--single {
+  height: 100%;
+}
+
+.slide-element--single {
+  height: 100%;
+}
+
+.slide-player-wrapper {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  bottom: 25px;
+  z-index: 2;
+  padding: 0 24px;
+  transform: translateX(-50%);
+}
+
+.slide-player-wrapper > * {
+  pointer-events: auto;
+}

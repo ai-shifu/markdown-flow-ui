@@ -3,7 +3,7 @@ export { default as MarkdownFlow } from "./MarkdownFlow";
 export { default as ScrollableMarkdown } from "./MarkdownFlow/ScrollableMarkdownFlow";
 export { default as MarkdownFlowEditor } from "./MarkdownFlowEditor";
 export { default as Slide } from "./Slide";
-export { Player } from "./Slide";
+export { Player, useSlide } from "./Slide";
 
 // Export types
 export type { ContentRenderProps } from "./ContentRender/ContentRender";
@@ -15,3 +15,4 @@ export type {
 } from "./MarkdownFlowEditor";
 export type { SlideProps, Element } from "./Slide";
 export type { PlayerProps } from "./Slide";
+export type { UseSlideResult } from "./Slide";

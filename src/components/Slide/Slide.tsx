@@ -33,6 +33,7 @@ export interface Element {
   serial_number?: number;
   is_read?: boolean;
   audio_url?: string;
+  user_input?: string;
   audio_segments?: string[];
 }
 

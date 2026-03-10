@@ -43,19 +43,26 @@ const Slide: React.FC<SlideProps> = ({
   className,
   ...props
 }) => {
-  const visibleElementList = elementList.filter(
-    (element) => element.is_show && element.is_checkpoint
+  const checkpointElementList = elementList.filter(
+    (element) => element.is_checkpoint
   );
-  const isSingleSlide = visibleElementList.length === 1;
+  const visibleCheckpointCount = checkpointElementList.filter(
+    (element) => element.is_show !== false
+  ).length;
+  const isSingleSlide = visibleCheckpointCount === 1;
 
   return (
     <section className={cn("h-full w-full", className)} {...props}>
       <div className={cn("w-full", isSingleSlide ? "h-full" : "grid gap-4")}>
-        {visibleElementList.length > 0
-          ? visibleElementList.map((element, index) => (
+        {checkpointElementList.length > 0
+          ? checkpointElementList.map((element, index) => (
               <div
                 key={`${element.serial_number ?? index}-${element.type}`}
-                className={cn("w-full", isSingleSlide && "h-full")}
+                className={cn(
+                  "w-full",
+                  isSingleSlide && element.is_show !== false && "h-full",
+                  element.is_show === false && "hidden"
+                )}
               >
                 {/* Render custom slot content directly and use the iframe sandbox for string-based content */}
                 {element.type === "slot" ? (

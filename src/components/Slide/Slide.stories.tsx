@@ -114,6 +114,8 @@ const SLOT_CONTENT = (
   </div>
 );
 
+const VIDEO_CONTENT = `<iframe data-tag="video" data-title="哔哩哔哩视频" data-url="https://www.bilibili.com/video/BV1ry4y1y7KZ/" class="w-full aspect-video rounded-lg border-0" src="https://player.bilibili.com/player.html?bvid=BV1ry4y1y7KZ&autoplay=0" allowfullscreen="" allow="autoplay; encrypted-media"></iframe>`;
+
 const createExampleElement = (
   serialNumber: number,
   type: Element["type"],
@@ -146,6 +148,7 @@ const exampleElementList: Element[] = [
   createExampleElement(12, "title", TITLE_CONTENT),
   createExampleElement(13, "text", TEXT_CONTENT),
   createExampleElement(14, "link", LINK_CONTENT),
+  createExampleElement(15, "video", VIDEO_CONTENT),
 ];
 
 export const Default: Story = {

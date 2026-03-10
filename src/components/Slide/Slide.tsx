@@ -1,7 +1,7 @@
 import React from "react";
 
-import ContentRender from "../ContentRender";
 import { cn } from "../../lib/utils";
+import IframeSandbox from "../ContentRender/IframeSandbox";
 
 type ElementType =
   | "slot"
@@ -46,23 +46,36 @@ const Slide: React.FC<SlideProps> = ({
   const visibleElementList = elementList.filter(
     (element) => element.is_show && element.is_checkpoint
   );
+  const isSingleSlide = visibleElementList.length === 1;
 
   return (
-    <section className={cn("w-full h-full", className)} {...props}>
-      <div className="grid gap-4">
+    <section className={cn("h-full w-full", className)} {...props}>
+      <div className={cn("w-full", isSingleSlide ? "h-full" : "grid gap-4")}>
         {visibleElementList.length > 0
           ? visibleElementList.map((element, index) => (
               <div
                 key={`${element.serial_number ?? index}-${element.type}`}
-                className="w-full"
+                className={cn("w-full", isSingleSlide && "h-full")}
               >
-                {/* Render custom slot content directly and keep other types on ContentRender */}
+                {/* Render custom slot content directly and use the iframe sandbox for string-based content */}
                 {element.type === "slot" ? (
-                  element.content
-                ) : typeof element.content === "string" ? (
-                  <ContentRender content={element.content} />
+                  <div className="flex h-full w-full items-center justify-center">
+                    {element.content}
+                  </div>
+                ) : element.type === "html" ? (
+                  <IframeSandbox
+                    className="content-render-iframe"
+                    mode="blackboard"
+                    type="sandbox"
+                    content={element.content as string}
+                  />
                 ) : (
-                  element.content
+                  <IframeSandbox
+                    className="content-render-iframe"
+                    mode="blackboard"
+                    type="markdown"
+                    content={element.content as string}
+                  />
                 )}
               </div>
             ))

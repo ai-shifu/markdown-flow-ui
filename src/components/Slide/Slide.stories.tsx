@@ -153,3 +153,21 @@ export const Default: Story = {
     elementList: exampleElementList,
   },
 };
+
+export const FullViewportSlides: Story = {
+  args: {
+    elementList: exampleElementList,
+  },
+  render: ({ elementList = [] }) => (
+    <div className="w-full">
+      {elementList.map((element, index) => (
+        <div
+          key={`${element.serial_number ?? index}-${element.type}-viewport`}
+          className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20 p-6"
+        >
+          <Slide className="w-full" elementList={[element]} />
+        </div>
+      ))}
+    </div>
+  ),
+};

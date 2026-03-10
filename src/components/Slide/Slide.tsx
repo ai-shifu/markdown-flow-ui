@@ -59,6 +59,11 @@ const Slide: React.FC<SlideProps> = ({
   const interactionElement = checkpointElementList.find(
     (element) => element.type === "interaction"
   );
+  const visibleInteractionContent =
+    interactionElement?.is_show !== false &&
+    typeof interactionElement?.content === "string"
+      ? interactionElement.content
+      : undefined;
   const slideElementList = checkpointElementList.filter(
     (element) => element.type !== "interaction"
   );
@@ -135,11 +140,7 @@ const Slide: React.FC<SlideProps> = ({
         <div className="slide-player-wrapper">
           <Player
             className={playerClassName}
-            interactionContent={
-              typeof interactionElement?.content === "string"
-                ? interactionElement.content
-                : undefined
-            }
+            interactionContent={visibleInteractionContent}
             interactionTitle={interactionTitle}
             onFullscreen={handleFullscreen}
           />

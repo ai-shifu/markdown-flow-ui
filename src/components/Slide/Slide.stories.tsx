@@ -247,6 +247,7 @@ export const FullViewportSingleSlide: Story = {
     elementList: [
       createExampleElement({
         serialNumber: 0,
+        is_show: true,
         type: "svg",
         content:
           '<svg width=\"100%\" viewBox=\"0 0 1200 675\" xmlns=\"http://www.w3.org/2000/svg\" style=\"width: 100%; height: auto; aspect-ratio: 1200 / 675;\">\n  <defs>\n    <linearGradient id=\"bg\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\">\n      <stop offset=\"0%\" stop-color=\"#0F63EE\"/>\n      <stop offset=\"100%\" stop-color=\"#073482\"/>\n    </linearGradient>\n  </defs>\n  <rect width=\"100%\" height=\"100%\" fill=\"url(#bg)\"/>\n  <image href=\"https://resource.ai-shifu.com/ac186b833d0e417fb02737910b3a5ae0\" x=\"100\" y=\"85\" width=\"220\" height=\"505\" clip-path=\"circle(110px at 110px 130px)\"/>\n  <text x=\"420\" y=\"220\" font-size=\"65\" font-weight=\"bold\" fill=\"white\">跟 AI 学 AI 通识</text>\n  <text x=\"420\" y=\"310\" font-size=\"40\" fill=\"#e0e0e0\">讲师：孙志岗</text>\n  <text x=\"420\" y=\"400\" font-size=\"30\" fill=\"#cce0ff\">帮助 100 万人顺利走进 AGI 时代</text>\n</svg>\n\n',
@@ -265,6 +266,7 @@ export const FullViewportSingleSlide: Story = {
       createExampleElement({
         serialNumber: 2,
         type: "html",
+        is_show: false,
         content:
           '<div class=\"w-full h-screen flex flex-col p-[4vmin] bg-white\">\n  <div class=\"flex-1 flex flex-col items-center justify-[safe_center] gap-[4vmin]\">\n    <h1 class=\"text-[4vmin] font-bold text-[#0F63EE]\">三个常见观点，请你判断</h1>\n    <div class=\"w-full grid grid-cols-1 gap-[3vmin]\">\n      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n        <p class=\"text-[3vmin] leading-[4vmin] text-gray-800\">1. AI 是一种工具</p>\n      </div>\n      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n        <p class=\"text-[3vmin] leading-[4vmin] text-gray-800\">2. 每种 AI 产品都需要学习使用方法</p>\n      </div>\n      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n        <p class=\"text-[3vmin] leading-[4vmin] text-gray-800\">3. 打造 AI 产品是技术高手的事情</p>\n      </div>\n    </div>\n  </div>\n</div>\n\n',
       }),
@@ -281,6 +283,7 @@ export const FullViewportSingleSlide: Story = {
       }),
       createExampleElement({
         serialNumber: 4,
+        is_show: false,
         type: "interaction",
         content:
           "?[%{{agreeed_points}} AI 是一种工具 || 每种 AI 产品都需要学习使用方法 || 打造 AI 产品是技术高手的事情 || 都不同意 ]",
@@ -288,6 +291,7 @@ export const FullViewportSingleSlide: Story = {
       }),
       createExampleElement({
         serialNumber: 5,
+        is_show: false,
         type: "diff",
         content:
           '!+++\n--- a/0\n+++ b/0\n@@ -1,8 +1,8 @@\n <div class=\"w-full h-screen flex flex-col p-[4vmin] bg-white\">\n-  <div class=\"flex-1 flex flex-col items-center justify-[safe_center] gap-[4vmin]\">\n+  <div class=\"flex-1 flex flex-col items-center justify-[safe_center] gap-[3vmin]\">\n     <h1 class=\"text-[4vmin] font-bold text-[#0F63EE]\">三个常见观点，请你判断</h1>\n     <div class=\"w-full grid grid-cols-1 gap-[3vmin]\">\n-      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n+      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-[#0F63EE] shadow-lg\">\n         <p class=\"text-[3vmin] leading-[4vmin] text-gray-800\">1. AI 是一种工具</p>\n       </div>\n       <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n!+++\n\n在帮助过几十家企业、上万人用 AI 提升业绩、效率之后，我总结出：这三种观点其实都是多数人都会有的对 AI 的误解。\n\n你真厉害，见识远超普通人！既然你都不同意，说明你对 AI 的认知已经超过了大多数人，这门课整体上可能对你帮助不大，不过某些内容还是可能会给你启发，你可以按需决定要不要继续学习。\n\n非常感谢你的交流，也真诚邀请你继续学习。在帮大家用好 AI 的过程中，我发现：用好 AI 的前提，是你得知道**如何调教 AI**——发挥 AI 的长处，弥补 AI 的短处。调教好了，一句话就能让 AI 帮你搞定所有繁琐工作。\n\n这门课讲的就是如何调教 AI，帮你成为 AI 的真正主人。而且调教的思路非常符合人的直觉，最核心的只需要理解三件事：\n\n<svg width=\"100%\" viewBox=\"0 0 1000 550\" xmlns=\"http://www.w3.org/2000/svg\" style=\"width: 100%; height: auto; aspect-ratio: 1000 / 550;\">\n  <rect width=\"100%\" height=\"100%\" fill=\"#ffffff\"/>\n  <circle cx=\"80\" cy=\"100\" r=\"50\" fill=\"#0F63EE\"/>\n  <text x=\"80\" y=\"110\" text-anchor=\"middle\" font-size=\"36\" fill=\"white\">1</text>\n  <rect x=\"160\" y=\"60\" width=\"780\" height=\"80\" rx=\"15\" fill=\"#f0f6ff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n  <text x=\"180\" y=\"105\" font-size=\"24\" fill=\"#0a2463\">明白 AI 的一切表现都是概率的结果</text>\n\n  <circle cx=\"80\" cy=\"250\" r=\"50\" fill=\"#0F63EE\"/>\n  <text x=\"80\" y=\"260\" text-anchor=\"middle\" font-size=\"36\" fill=\"white\">2</text>\n  <rect x=\"160\" y=\"210\" width=\"780\" height=\"80\" rx=\"15\" fill=\"#f0f6ff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n  <text x=\"180\" y=\"255\" font-size=\"24\" fill=\"#0a2463\">知道 AI 的知识来自哪里</text>\n\n  <circle cx=\"80\" cy=\"400\" r=\"50\" fill=\"#0F63EE\"/>\n  <text x=\"80\" cy=\"410\" text-anchor=\"middle\" font-size=\"36\" fill=\"white\">3</text>\n  <rect x=\"160\" y=\"360\" width=\"780\" height=\"80\" rx=\"15\" fill=\"#f0f6ff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n  <text x=\"180\" y=\"405\" font-size=\"24\" fill=\"#0a2463\">知道如何操纵 AI 的记忆</text>\n</svg>\n\n',
@@ -317,11 +321,13 @@ export const FullViewportSingleSlide: Story = {
       createExampleElement({
         serialNumber: 8,
         type: "interaction",
+        is_show: false,
         content: "?[%{{sys_user_nickname}}...我可以怎样称呼你？]",
         user_input: "kk",
       }),
       createExampleElement({
         serialNumber: 9,
+        is_show: false,
         type: "svg",
         content:
           '<svg width="100%" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; aspect-ratio: 800 / 400;">\n  <defs>\n    <linearGradient id="welcomeBg" x1="0%" y1="0%" x2="100%" y2="100%">\n      <stop offset="0%" stop-color="#0F63EE"/>\n      <stop offset="100%" stop-color="#4a8bff"/>\n    </linearGradient>\n  </defs>\n  <rect width="100%" height="100%" fill="url(#welcomeBg)"/>\n  <text id="welcome" x="400" y="160" text-anchor="middle" font-size="60" fill="white" font-weight="bold">欢迎你，</text>\n  <text id="name" x="400" y="240" text-anchor="middle" font-size="80" fill="white" font-weight="bold">kk</text>\n  <text id="wave" x="680" y="340" text-anchor="middle" font-size="50" fill="white">👋</text>\n  <script type="text/javascript"><![CDATA[\n    let scale = 1;\n    let growing = false;\n    function animate() {\n      if(growing) {\n        scale += 0.01;\n        if(scale >= 1.2) growing = false;\n      } else {\n        scale -= 0.01;\n        if(scale <= 0.9) growing = true;\n      }\n      name.setAttribute(\'transform\', `scale(${scale}) translate(-400 -240)`);\n      requestAnimationFrame(animate);\n    }\n    animate();\n    let waveRotate = 0;\n    function waveAnimate() {\n      waveRotate += 2;\n      wave.setAttribute(\'transform\', `rotate(${waveRotate} 680 340)`);\n      requestAnimationFrame(waveAnimate);\n    }\n    waveAnimate();\n  ]]></script>\n</svg>\n\n',
@@ -339,6 +345,7 @@ export const FullViewportSingleSlide: Story = {
       }),
       createExampleElement({
         serialNumber: 11,
+        is_show: false,
         type: "interaction",
         content:
           "?[%{{sys_user_background}}我不告诉你 | ...你的身份背景、当前状态如何？]",
@@ -358,6 +365,7 @@ export const FullViewportSingleSlide: Story = {
       createExampleElement({
         serialNumber: 13,
         type: "svg",
+        is_show: false,
         content:
           '<svg width=\"100%\" viewBox=\"0 0 1000 600\" xmlns=\"http://www.w3.org/2000/svg\" style=\"width: 100%; height: auto; aspect-ratio: 1000 / 600;\">\n  <defs>\n    <linearGradient id=\"timeline\" x1=\"0%\" y1=\"0\" x2=\"0\" y2=\"100%\">\n      <stop offset=\"0%\" stop-color=\"#0F63EE\"/>\n      <stop offset=\"100%\" stop-color=\"#073482\"/>\n    </linearGradient>\n  </defs>\n  <rect width=\"100%\" height=\"100%\" fill=\"#ffffff\"/>\n  <text x=\"50\" y=\"50\" font-size=\"36\" font-weight=\"bold\" fill=\"#0F63EE\">AI 对普通人的价值时间线</text>\n  <rect x=\"100\" y=\"80\" width=\"10\" height=\"480\" fill=\"url(#timeline)\"/>\n  \n  <!-- 当前 -->\n  <circle cx=\"105\" cy=\"140\" r=\"15\" fill=\"#ffffff\" stroke=\"#0F63EE\" stroke-width=\"3\"/>\n  <rect x=\"140\" y=\"100\" width=\"800\" height=\"80\" rx=\"12\" fill=\"#f0f6ff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n  <text x=\"160\" y=\"145\" font-size=\"24\" fill=\"#0a2463\">当下：当副业赚零花钱，提升本职工作效率</text>\n\n  <!-- 2-3年 -->\n  <circle cx=\"105\" cy=\"280\" r=\"15\" fill=\"#ffffff\" stroke=\"#0F63EE\" stroke-width=\"3\"/>\n  <rect x=\"140\" y=\"240\" width=\"800\" height=\"80\" rx=\"12\" fill=\"#f0f6ff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n  <text x=\"160\" y=\"285\" font-size=\"24\" fill=\"#0a2463\">2 - 3 年：AI 会成为你的职业护城河，拉开和普通人的差距</text>\n\n  <!-- 4-5年 -->\n  <circle cx=\"105\" cy=\"420\" r=\"15\" fill=\"#ffffff\" stroke=\"#0F63EE\" stroke-width=\"3\"/>\n  <rect x=\"140\" y=\"380\" width=\"800\" height=\"80\" rx=\"12\" fill=\"#f0f6ff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n  <text x=\"160\" y=\"425\" font-size=\"24\" fill=\"#0a2463\">4 - 5 年（AGI 落地后）：提前掌握 AI 思维，就是拿到了新时代船票</text>\n</svg>\n\n',
       }),
@@ -374,6 +382,7 @@ export const FullViewportSingleSlide: Story = {
       }),
       createExampleElement({
         serialNumber: 11,
+        is_show: false,
         type: "interaction",
         content: "?[%{{purpose}} 还没想好 |...学 AI 的目的是什么？]",
         user_input: "",

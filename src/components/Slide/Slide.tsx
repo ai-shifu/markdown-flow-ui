@@ -66,9 +66,7 @@ const Slide: React.FC<SlideProps> = ({
               >
                 {/* Render custom slot content directly and use the iframe sandbox for string-based content */}
                 {element.type === "slot" ? (
-                  <div className="flex h-full w-full items-center justify-center">
-                    {element.content}
-                  </div>
+                  <>{element.content}</>
                 ) : element.type === "html" ? (
                   <IframeSandbox
                     className="content-render-iframe"

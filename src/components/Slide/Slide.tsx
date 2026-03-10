@@ -40,12 +40,14 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   elementList?: Element[];
   showPlayer?: boolean;
   playerClassName?: string;
+  interactionTitle?: string;
 }
 
 const Slide: React.FC<SlideProps> = ({
   elementList = [],
   showPlayer = true,
   playerClassName,
+  interactionTitle,
   className,
   ...props
 }) => {
@@ -53,11 +55,19 @@ const Slide: React.FC<SlideProps> = ({
   const checkpointElementList = elementList.filter(
     (element) => element.is_checkpoint
   );
-  const visibleCheckpointCount = checkpointElementList.filter(
+  const interactionElement = checkpointElementList.find(
+    (element) => element.type === "interaction"
+  );
+  const slideElementList = checkpointElementList.filter(
+    (element) => element.type !== "interaction"
+  );
+  const visibleCheckpointCount = slideElementList.filter(
     (element) => element.is_show !== false
   ).length;
+  const hasVisibleInteraction = interactionElement?.is_show !== false;
   const isSingleSlide = visibleCheckpointCount === 1;
-  const shouldRenderPlayer = showPlayer && isSingleSlide;
+  const shouldRenderPlayer =
+    showPlayer && (isSingleSlide || hasVisibleInteraction);
 
   const handleFullscreen = () => {
     const target = sectionRef.current;
@@ -83,8 +93,8 @@ const Slide: React.FC<SlideProps> = ({
           isSingleSlide ? "slide-content--single" : "grid gap-4"
         )}
       >
-        {checkpointElementList.length > 0
-          ? checkpointElementList.map((element, index) => (
+        {slideElementList.length > 0
+          ? slideElementList.map((element, index) => (
               <div
                 key={`${element.serial_number ?? index}-${element.type}`}
                 className={cn(
@@ -122,7 +132,16 @@ const Slide: React.FC<SlideProps> = ({
 
       {shouldRenderPlayer ? (
         <div className="slide-player-wrapper">
-          <Player className={playerClassName} onFullscreen={handleFullscreen} />
+          <Player
+            className={playerClassName}
+            interactionContent={
+              typeof interactionElement?.content === "string"
+                ? interactionElement.content
+                : undefined
+            }
+            interactionTitle={interactionTitle}
+            onFullscreen={handleFullscreen}
+          />
         </div>
       ) : null}
     </section>

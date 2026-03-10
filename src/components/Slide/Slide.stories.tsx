@@ -20,9 +20,14 @@ const meta = {
         },
       },
     },
+    interactionTitle: {
+      control: "text",
+      description: "I18n-ready interaction overlay title",
+    },
   },
   args: {
     elementList: [],
+    interactionTitle: "Submit the content below to continue.",
   },
 } satisfies Meta<typeof Slide>;
 

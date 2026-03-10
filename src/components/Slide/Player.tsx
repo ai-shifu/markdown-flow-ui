@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   EllipsisVertical,
   FilePenLine,
@@ -9,11 +9,14 @@ import {
 } from "lucide-react";
 
 import { cn } from "../../lib/utils";
+import ContentRender from "../ContentRender";
 import "./player.css";
 
 export type PlayerProps = React.ComponentProps<"div"> & {
   defaultPlaying?: boolean;
   onFullscreen?: () => void;
+  interactionContent?: string;
+  interactionTitle?: string;
 };
 
 const PauseIcon = () => (
@@ -52,12 +55,51 @@ const Player: React.FC<PlayerProps> = ({
   className,
   defaultPlaying = true,
   onFullscreen,
+  interactionContent,
+  interactionTitle = "Submit the content below to continue.",
   ...props
 }) => {
   const [isPlaying, setIsPlaying] = useState(defaultPlaying);
+  const [isInteractionOpen, setIsInteractionOpen] = useState(false);
+  const lastInteractionContentRef = useRef<string | null>(null);
+  const hasInteraction = Boolean(interactionContent);
+
+  useEffect(() => {
+    const nextInteraction = interactionContent ?? null;
+    if (!nextInteraction) {
+      lastInteractionContentRef.current = null;
+      setIsInteractionOpen(false);
+      return;
+    }
+
+    if (lastInteractionContentRef.current !== nextInteraction) {
+      lastInteractionContentRef.current = nextInteraction;
+      setIsInteractionOpen(true);
+    }
+  }, [interactionContent]);
 
   return (
     <div className={cn("slide-player", className)} {...props}>
+      {hasInteraction && isInteractionOpen ? (
+        <div className="slide-player__interaction">
+          <div className="slide-player__interaction-card">
+            <div className="slide-player__interaction-header">
+              <p className="slide-player__interaction-title">
+                {interactionTitle}
+              </p>
+            </div>
+            <div className="slide-player__interaction-body">
+              <ContentRender
+                content={interactionContent as string}
+                enableTypewriter={false}
+                sandboxMode="content"
+              />
+            </div>
+            <div className="slide-player__interaction-arrow" />
+          </div>
+        </div>
+      ) : null}
+
       <div className="slide-player__group">
         <button
           aria-label="More options"
@@ -114,7 +156,14 @@ const Player: React.FC<PlayerProps> = ({
       <div className="slide-player__group">
         <button
           aria-label="Edit slide"
-          className="slide-player__action"
+          className={cn(
+            "slide-player__action",
+            hasInteraction && "slide-player__action--active"
+          )}
+          onClick={() => {
+            if (!hasInteraction) return;
+            setIsInteractionOpen((open) => !open);
+          }}
           type="button"
         >
           <FilePenLine className="slide-player__icon" strokeWidth={2.25} />

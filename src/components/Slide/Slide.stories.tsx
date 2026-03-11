@@ -24,10 +24,15 @@ const meta = {
       control: "text",
       description: "I18n-ready interaction overlay title",
     },
+    playerAutoHideDelay: {
+      control: { type: "number", min: 0, step: 500 },
+      description: "Auto-hide delay for player controls in milliseconds",
+    },
   },
   args: {
     elementList: [],
     interactionTitle: "Submit the content below to continue.",
+    playerAutoHideDelay: 3000,
   },
 } satisfies Meta<typeof Slide>;
 
@@ -392,6 +397,32 @@ export const FullViewportSingleSlide: Story = {
   render: (args) => (
     <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
       <Slide className="w-full" {...args} />
+    </div>
+  ),
+};
+
+export const InteractionOverlayAutoHide: Story = {
+  args: {
+    playerAutoHideDelay: 3000,
+    elementList: [
+      createExampleElement({
+        serialNumber: 1,
+        type: "svg",
+        content: SVG_CONTENT,
+        audio_url:
+          "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3",
+        is_read: true,
+      }),
+      createExampleElement({
+        serialNumber: 2,
+        type: "interaction",
+        content: INTERACTION_CONTENT,
+      }),
+    ],
+  },
+  render: (args) => (
+    <div className="mx-auto flex min-h-[720px] w-full max-w-4xl items-center justify-center bg-muted/20 p-8">
+      <Slide className="w-full max-w-3xl" {...args} />
     </div>
   ),
 };

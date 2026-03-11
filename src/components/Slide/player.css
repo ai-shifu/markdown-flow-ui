@@ -1,5 +1,13 @@
 .slide-player {
   position: relative;
+  display: flex;
+  min-height: 80px;
+  width: min(664px, calc(100vw - 48px));
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.slide-player__controls {
   display: inline-flex;
   align-items: center;
   height: 80px;
@@ -24,11 +32,11 @@
 .slide-player__interaction {
   position: absolute;
   left: 50%;
-  top: 0;
-  z-index: 3;
-  width: min(664px, calc(100vw - 48px));
+  bottom: 100%;
+  z-index: 4;
+  width: 100%;
   padding-bottom: 16px;
-  transform: translate(-50%, -100%);
+  transform: translateX(-50%);
 }
 
 .slide-player__interaction-card {

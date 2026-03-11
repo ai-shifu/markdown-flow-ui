@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   EllipsisVertical,
   FilePenLine,
@@ -24,6 +24,7 @@ export type PlayerProps = React.ComponentProps<"div"> & {
   nextDisabled?: boolean;
   interactionContent?: string;
   interactionTitle?: string;
+  showControls?: boolean;
 };
 
 const PauseIcon = () => (
@@ -70,6 +71,7 @@ const Player: React.FC<PlayerProps> = ({
   nextDisabled = false,
   interactionContent,
   interactionTitle = "Submit the content below to continue.",
+  showControls = true,
   ...props
 }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -152,11 +154,26 @@ const Player: React.FC<PlayerProps> = ({
     }
   }, [defaultPlaying]);
 
+  const stopInteractionPropagation = useCallback(
+    (
+      event:
+        | React.PointerEvent<HTMLDivElement>
+        | React.MouseEvent<HTMLDivElement>
+    ) => {
+      event.stopPropagation();
+    },
+    []
+  );
+
   return (
     <div className={cn("slide-player", className)} {...props}>
       <audio ref={audioRef} preload="auto" />
       {hasInteraction && isInteractionOpen ? (
-        <div className="slide-player__interaction">
+        <div
+          className="slide-player__interaction"
+          onClick={stopInteractionPropagation}
+          onPointerDown={stopInteractionPropagation}
+        >
           <div className="slide-player__interaction-card">
             <div className="slide-player__interaction-header">
               <p className="slide-player__interaction-title">
@@ -175,92 +192,100 @@ const Player: React.FC<PlayerProps> = ({
         </div>
       ) : null}
 
-      <div className="slide-player__group">
-        <button
-          aria-label="More options"
-          className="slide-player__action"
-          type="button"
-        >
-          <EllipsisVertical className="slide-player__icon" strokeWidth={2.25} />
-        </button>
-        <button
-          aria-label="Volume"
-          className="slide-player__action"
-          type="button"
-        >
-          <Volume2 className="slide-player__icon" strokeWidth={2.25} />
-        </button>
-        <button
-          aria-label="Rewind"
-          className="slide-player__action"
-          disabled={prevDisabled}
-          onClick={onPrev}
-          type="button"
-        >
-          <RotateCcw className="slide-player__icon" strokeWidth={2.25} />
-        </button>
-        <button
-          aria-label={isPlaying ? "Pause" : "Play"}
-          className="slide-player__toggle"
-          onClick={() => {
-            const audioElement = audioRef.current;
+      {showControls ? (
+        <div className="slide-player__controls">
+          <div className="slide-player__group">
+            <button
+              aria-label="More options"
+              className="slide-player__action"
+              type="button"
+            >
+              <EllipsisVertical
+                className="slide-player__icon"
+                strokeWidth={2.25}
+              />
+            </button>
+            <button
+              aria-label="Volume"
+              className="slide-player__action"
+              type="button"
+            >
+              <Volume2 className="slide-player__icon" strokeWidth={2.25} />
+            </button>
+            <button
+              aria-label="Rewind"
+              className="slide-player__action"
+              disabled={prevDisabled}
+              onClick={onPrev}
+              type="button"
+            >
+              <RotateCcw className="slide-player__icon" strokeWidth={2.25} />
+            </button>
+            <button
+              aria-label={isPlaying ? "Pause" : "Play"}
+              className="slide-player__toggle"
+              onClick={() => {
+                const audioElement = audioRef.current;
 
-            if (!audioElement || !currentAudio?.audioUrl) {
-              return;
-            }
+                if (!audioElement || !currentAudio?.audioUrl) {
+                  return;
+                }
 
-            if (audioElement.paused) {
-              void audioElement.play().catch(() => {
-                setIsPlaying(false);
-              });
-              return;
-            }
+                if (audioElement.paused) {
+                  void audioElement.play().catch(() => {
+                    setIsPlaying(false);
+                  });
+                  return;
+                }
 
-            audioElement.pause();
-          }}
-          type="button"
-        >
-          <span className="slide-player__toggle-icon">
-            {isPlaying ? <PauseIcon /> : <PlayIcon />}
-          </span>
-        </button>
-        <button
-          aria-label="Forward"
-          className="slide-player__action"
-          disabled={nextDisabled}
-          onClick={onNext}
-          type="button"
-        >
-          <RotateCw className="slide-player__icon" strokeWidth={2.25} />
-        </button>
-        <button
-          aria-label="Fullscreen"
-          className="slide-player__action"
-          onClick={onFullscreen}
-          type="button"
-        >
-          <Maximize className="slide-player__icon" strokeWidth={2.25} />
-        </button>
-      </div>
+                audioElement.pause();
+              }}
+              type="button"
+            >
+              {isPlaying ? <PauseIcon /> : <PlayIcon />}
+            </button>
+            <button
+              aria-label="Forward"
+              className="slide-player__action"
+              disabled={nextDisabled}
+              onClick={onNext}
+              type="button"
+            >
+              <RotateCw className="slide-player__icon" strokeWidth={2.25} />
+            </button>
+            <button
+              aria-label="Fullscreen"
+              className="slide-player__action"
+              onClick={onFullscreen}
+              type="button"
+            >
+              <Maximize className="slide-player__icon" strokeWidth={2.25} />
+            </button>
+          </div>
 
-      <div className="slide-player__separator" />
+          <div className="slide-player__separator" />
 
-      <div className="slide-player__group">
-        <button
-          aria-label="Edit slide"
-          className={cn(
-            "slide-player__action",
-            hasInteraction && "slide-player__action--active"
-          )}
-          onClick={() => {
-            if (!hasInteraction) return;
-            setIsInteractionOpen((open) => !open);
-          }}
-          type="button"
-        >
-          <FilePenLine className="slide-player__icon" strokeWidth={2.25} />
-        </button>
-      </div>
+          <div className="slide-player__group">
+            <button
+              aria-label="Notes"
+              className={cn(
+                "slide-player__action",
+                hasInteraction && "slide-player__action--active"
+              )}
+              disabled={!hasInteraction}
+              onClick={() => {
+                if (!hasInteraction) {
+                  return;
+                }
+                setIsInteractionOpen((prevOpen) => !prevOpen);
+              }}
+              type="button"
+            >
+              <FilePenLine className="slide-player__icon" strokeWidth={2.25} />
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };

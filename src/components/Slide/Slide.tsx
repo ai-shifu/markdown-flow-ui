@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "../../lib/utils";
 import IframeSandbox from "../ContentRender/IframeSandbox";
@@ -13,6 +13,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   showPlayer?: boolean;
   playerClassName?: string;
   interactionTitle?: string;
+  playerAutoHideDelay?: number;
 }
 
 const Slide: React.FC<SlideProps> = ({
@@ -20,10 +21,13 @@ const Slide: React.FC<SlideProps> = ({
   showPlayer = true,
   playerClassName,
   interactionTitle,
+  playerAutoHideDelay = 3000,
   className,
+  onPointerDown,
   ...props
 }) => {
   const sectionRef = useRef<HTMLElement | null>(null);
+  const playerHideTimerRef = useRef<number | null>(null);
   const checkpointElementList = elementList.filter(
     (element) => element.is_checkpoint
   );
@@ -64,6 +68,34 @@ const Slide: React.FC<SlideProps> = ({
     string | number | undefined
   >();
   const [exitingRenderElement, setExitingRenderElement] = useState<Element>();
+  const [isPlayerVisible, setIsPlayerVisible] = useState(true);
+
+  const clearPlayerHideTimer = useCallback(() => {
+    if (playerHideTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(playerHideTimerRef.current);
+    playerHideTimerRef.current = null;
+  }, []);
+
+  const showPlayerControls = useCallback(() => {
+    if (!shouldRenderPlayer) {
+      return;
+    }
+
+    setIsPlayerVisible(true);
+    clearPlayerHideTimer();
+
+    if (playerAutoHideDelay <= 0) {
+      return;
+    }
+
+    playerHideTimerRef.current = window.setTimeout(() => {
+      setIsPlayerVisible(false);
+      playerHideTimerRef.current = null;
+    }, playerAutoHideDelay);
+  }, [clearPlayerHideTimer, playerAutoHideDelay, shouldRenderPlayer]);
 
   useEffect(() => {
     if (!currentElement || currentElementRenderKey == null) {
@@ -100,6 +132,28 @@ const Slide: React.FC<SlideProps> = ({
       window.clearTimeout(timer);
     };
   }, [exitingRenderKey]);
+
+  useEffect(() => {
+    return () => {
+      clearPlayerHideTimer();
+    };
+  }, [clearPlayerHideTimer]);
+
+  useEffect(() => {
+    if (!shouldRenderPlayer) {
+      clearPlayerHideTimer();
+      setIsPlayerVisible(false);
+      return;
+    }
+
+    showPlayerControls();
+  }, [
+    clearPlayerHideTimer,
+    currentElementRenderKey,
+    showPlayerControls,
+    shouldRenderPlayer,
+    visibleInteractionContent,
+  ]);
 
   const renderSlideElement = (element?: Element) => {
     if (!element) {
@@ -145,12 +199,21 @@ const Slide: React.FC<SlideProps> = ({
     target.requestFullscreen?.().catch(() => {});
   };
 
+  const handleSurfacePointerDown = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      onPointerDown?.(event);
+      showPlayerControls();
+    },
+    [onPointerDown, showPlayerControls]
+  );
+
   console.log("currentElement", currentElement);
 
   return (
     <section
       ref={sectionRef}
       className={cn("relative h-full w-full", className)}
+      onPointerDown={handleSurfacePointerDown}
       {...props}
     >
       <div
@@ -205,6 +268,7 @@ const Slide: React.FC<SlideProps> = ({
             onPrev={handlePrev}
             nextDisabled={!canGoNext}
             prevDisabled={!canGoPrev}
+            showControls={isPlayerVisible}
           />
         </div>
       ) : null}

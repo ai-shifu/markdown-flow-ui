@@ -222,6 +222,14 @@ const Slide: React.FC<SlideProps> = ({
           isSingleSlide ? "slide-content--single" : "grid gap-4"
         )}
       >
+        {shouldRenderPlayer && !isPlayerVisible ? (
+          <button
+            aria-label="Show player controls"
+            className="slide-player-hit-area"
+            onPointerDown={handleSurfacePointerDown}
+            type="button"
+          />
+        ) : null}
         {activeRenderElement ? (
           <div className="slide-stage">
             {exitingRenderElement ? (

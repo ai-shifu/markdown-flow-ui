@@ -68,3 +68,13 @@
 .slide-player-wrapper > * {
   pointer-events: auto;
 }
+
+.slide-player-hit-area {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}

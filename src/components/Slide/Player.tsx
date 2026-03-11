@@ -75,12 +75,28 @@ const Player: React.FC<PlayerProps> = ({
   ...props
 }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioSrcRef = useRef<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(defaultPlaying);
   const [isInteractionOpen, setIsInteractionOpen] = useState(false);
   const lastInteractionContentRef = useRef<string | null>(null);
   const hasInteraction = Boolean(interactionContent);
   const currentAudio =
     currentAudioIndex >= 0 ? audioList[currentAudioIndex] : undefined;
+  const currentAudioUrl = currentAudio?.audioUrl;
+
+  const resetAudio = useCallback(() => {
+    const audioElement = audioRef.current;
+
+    if (!audioElement) {
+      return;
+    }
+
+    audioElement.pause();
+    audioElement.removeAttribute("src");
+    audioElement.load();
+    audioSrcRef.current = null;
+    setIsPlaying(false);
+  }, []);
 
   useEffect(() => {
     const nextInteraction = interactionContent ?? null;
@@ -103,56 +119,46 @@ const Player: React.FC<PlayerProps> = ({
       return;
     }
 
-    if (!currentAudio?.audioUrl) {
-      audioElement.pause();
-      audioElement.removeAttribute("src");
+    if (!currentAudioUrl) {
+      resetAudio();
+      return;
+    }
+
+    if (audioSrcRef.current !== currentAudioUrl) {
+      audioSrcRef.current = currentAudioUrl;
+      audioElement.src = currentAudioUrl;
       audioElement.load();
+      audioElement.currentTime = 0;
+    }
+
+    if (!defaultPlaying) {
+      audioElement.pause();
       setIsPlaying(false);
       return;
     }
 
-    audioElement.src = currentAudio.audioUrl;
-    audioElement.currentTime = 0;
     void audioElement.play().catch(() => {
       setIsPlaying(false);
     });
-  }, [currentAudio?.audioUrl]);
+  }, [currentAudioUrl, defaultPlaying, resetAudio]);
 
-  useEffect(() => {
-    const audioElement = audioRef.current;
+  useEffect(() => resetAudio, [resetAudio]);
 
-    if (!audioElement) {
-      return;
-    }
-
-    const handlePlay = () => {
-      setIsPlaying(true);
-    };
-
-    const handlePause = () => {
-      setIsPlaying(false);
-    };
-
-    const handleEnded = () => {
-      setIsPlaying(false);
-    };
-
-    audioElement.addEventListener("play", handlePlay);
-    audioElement.addEventListener("pause", handlePause);
-    audioElement.addEventListener("ended", handleEnded);
-
-    return () => {
-      audioElement.removeEventListener("play", handlePlay);
-      audioElement.removeEventListener("pause", handlePause);
-      audioElement.removeEventListener("ended", handleEnded);
-    };
+  const handleAudioPlay = useCallback(() => {
+    setIsPlaying(true);
   }, []);
 
-  useEffect(() => {
-    if (!defaultPlaying) {
-      setIsPlaying(false);
-    }
-  }, [defaultPlaying]);
+  const handleAudioPause = useCallback(() => {
+    setIsPlaying(false);
+  }, []);
+
+  const handleAudioEnded = useCallback(() => {
+    setIsPlaying(false);
+  }, []);
+
+  const handleAudioError = useCallback(() => {
+    setIsPlaying(false);
+  }, []);
 
   const stopInteractionPropagation = useCallback(
     (
@@ -167,7 +173,15 @@ const Player: React.FC<PlayerProps> = ({
 
   return (
     <div className={cn("slide-player", className)} {...props}>
-      <audio ref={audioRef} preload="auto" />
+      <audio
+        ref={audioRef}
+        preload="metadata"
+        playsInline
+        onPlay={handleAudioPlay}
+        onPause={handleAudioPause}
+        onEnded={handleAudioEnded}
+        onError={handleAudioError}
+      />
       {hasInteraction && isInteractionOpen ? (
         <div
           className="slide-player__interaction"
@@ -227,7 +241,7 @@ const Player: React.FC<PlayerProps> = ({
               onClick={() => {
                 const audioElement = audioRef.current;
 
-                if (!audioElement || !currentAudio?.audioUrl) {
+                if (!audioElement || !currentAudioUrl) {
                   return;
                 }
 

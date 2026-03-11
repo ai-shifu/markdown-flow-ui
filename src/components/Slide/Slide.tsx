@@ -35,7 +35,16 @@ const Slide: React.FC<SlideProps> = ({
     typeof interactionElement?.content === "string"
       ? interactionElement.content
       : undefined;
-  const { currentElement, slideElementList } = useSlide(elementList);
+  const {
+    currentElement,
+    slideElementList,
+    audioList,
+    currentAudioIndex,
+    canGoPrev,
+    canGoNext,
+    handlePrev,
+    handleNext,
+  } = useSlide(elementList);
   const visibleCheckpointCount = slideElementList.filter(
     (element) => element.is_show !== false
   ).length;
@@ -105,10 +114,16 @@ const Slide: React.FC<SlideProps> = ({
       {shouldRenderPlayer ? (
         <div className="slide-player-wrapper">
           <Player
+            audioList={audioList}
             className={playerClassName}
+            currentAudioIndex={currentAudioIndex}
             interactionContent={visibleInteractionContent}
             interactionTitle={interactionTitle}
             onFullscreen={handleFullscreen}
+            onNext={handleNext}
+            onPrev={handlePrev}
+            nextDisabled={!canGoNext}
+            prevDisabled={!canGoPrev}
           />
         </div>
       ) : null}

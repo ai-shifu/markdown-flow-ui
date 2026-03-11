@@ -10,11 +10,18 @@ import {
 
 import { cn } from "../../lib/utils";
 import ContentRender from "../ContentRender";
+import type { SlideAudioItem } from "./useSlide";
 import "./player.css";
 
 export type PlayerProps = React.ComponentProps<"div"> & {
+  audioList?: SlideAudioItem[];
+  currentAudioIndex?: number;
   defaultPlaying?: boolean;
+  onPrev?: () => void;
+  onNext?: () => void;
   onFullscreen?: () => void;
+  prevDisabled?: boolean;
+  nextDisabled?: boolean;
   interactionContent?: string;
   interactionTitle?: string;
 };
@@ -52,17 +59,26 @@ const PlayIcon = () => (
 );
 
 const Player: React.FC<PlayerProps> = ({
+  audioList = [],
   className,
+  currentAudioIndex = -1,
   defaultPlaying = true,
+  onPrev,
+  onNext,
   onFullscreen,
+  prevDisabled = false,
+  nextDisabled = false,
   interactionContent,
   interactionTitle = "Submit the content below to continue.",
   ...props
 }) => {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(defaultPlaying);
   const [isInteractionOpen, setIsInteractionOpen] = useState(false);
   const lastInteractionContentRef = useRef<string | null>(null);
   const hasInteraction = Boolean(interactionContent);
+  const currentAudio =
+    currentAudioIndex >= 0 ? audioList[currentAudioIndex] : undefined;
 
   useEffect(() => {
     const nextInteraction = interactionContent ?? null;
@@ -78,8 +94,67 @@ const Player: React.FC<PlayerProps> = ({
     }
   }, [interactionContent]);
 
+  useEffect(() => {
+    const audioElement = audioRef.current;
+
+    if (!audioElement) {
+      return;
+    }
+
+    if (!currentAudio?.audioUrl) {
+      audioElement.pause();
+      audioElement.removeAttribute("src");
+      audioElement.load();
+      setIsPlaying(false);
+      return;
+    }
+
+    audioElement.src = currentAudio.audioUrl;
+    audioElement.currentTime = 0;
+    void audioElement.play().catch(() => {
+      setIsPlaying(false);
+    });
+  }, [currentAudio?.audioUrl]);
+
+  useEffect(() => {
+    const audioElement = audioRef.current;
+
+    if (!audioElement) {
+      return;
+    }
+
+    const handlePlay = () => {
+      setIsPlaying(true);
+    };
+
+    const handlePause = () => {
+      setIsPlaying(false);
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+    };
+
+    audioElement.addEventListener("play", handlePlay);
+    audioElement.addEventListener("pause", handlePause);
+    audioElement.addEventListener("ended", handleEnded);
+
+    return () => {
+      audioElement.removeEventListener("play", handlePlay);
+      audioElement.removeEventListener("pause", handlePause);
+      audioElement.removeEventListener("ended", handleEnded);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!defaultPlaying) {
+      setIsPlaying(false);
+    }
+  }, [defaultPlaying]);
+
   return (
     <div className={cn("slide-player", className)} {...props}>
+      <audio ref={audioRef} preload="auto" />
       {hasInteraction && isInteractionOpen ? (
         <div className="slide-player__interaction">
           <div className="slide-player__interaction-card">
@@ -118,6 +193,8 @@ const Player: React.FC<PlayerProps> = ({
         <button
           aria-label="Rewind"
           className="slide-player__action"
+          disabled={prevDisabled}
+          onClick={onPrev}
           type="button"
         >
           <RotateCcw className="slide-player__icon" strokeWidth={2.25} />
@@ -126,7 +203,20 @@ const Player: React.FC<PlayerProps> = ({
           aria-label={isPlaying ? "Pause" : "Play"}
           className="slide-player__toggle"
           onClick={() => {
-            setIsPlaying((playing) => !playing);
+            const audioElement = audioRef.current;
+
+            if (!audioElement || !currentAudio?.audioUrl) {
+              return;
+            }
+
+            if (audioElement.paused) {
+              void audioElement.play().catch(() => {
+                setIsPlaying(false);
+              });
+              return;
+            }
+
+            audioElement.pause();
           }}
           type="button"
         >
@@ -137,6 +227,8 @@ const Player: React.FC<PlayerProps> = ({
         <button
           aria-label="Forward"
           className="slide-player__action"
+          disabled={nextDisabled}
+          onClick={onNext}
           type="button"
         >
           <RotateCw className="slide-player__icon" strokeWidth={2.25} />

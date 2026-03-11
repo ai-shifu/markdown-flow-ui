@@ -126,6 +126,12 @@
   color: var(--foreground);
 }
 
+.slide-player__action:disabled,
+.slide-player__toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.2;
+}
+
 .slide-player__action--active,
 .slide-player__action--active:hover {
   color: var(--primary);

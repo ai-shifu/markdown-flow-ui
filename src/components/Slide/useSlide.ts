@@ -189,7 +189,12 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
 
   return {
     currentElement:
-      currentIndex >= 0 ? slideElementList[currentIndex] : undefined,
+      currentIndex >= 0
+        ? {
+            ...slideElementList[currentIndex],
+            is_show: true,
+          }
+        : undefined,
     slideElementList,
     currentIndex,
     audioList,

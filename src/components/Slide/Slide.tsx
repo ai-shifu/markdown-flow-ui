@@ -37,6 +37,7 @@ const Slide: React.FC<SlideProps> = ({
       : undefined;
   const {
     currentElement,
+    currentIndex,
     slideElementList,
     audioList,
     currentAudioIndex,
@@ -52,6 +53,8 @@ const Slide: React.FC<SlideProps> = ({
   const isSingleSlide = visibleCheckpointCount === 1;
   const shouldRenderPlayer =
     showPlayer && (isSingleSlide || hasVisibleInteraction);
+  const currentElementRenderKey =
+    currentElement?.serial_number ?? `${currentIndex}-${currentElement?.type}`;
 
   const handleFullscreen = () => {
     const target = sectionRef.current;
@@ -64,6 +67,8 @@ const Slide: React.FC<SlideProps> = ({
 
     target.requestFullscreen?.().catch(() => {});
   };
+
+  console.log("currentElement", currentElement);
 
   return (
     <section
@@ -79,6 +84,7 @@ const Slide: React.FC<SlideProps> = ({
       >
         {currentElement ? (
           <div
+            key={currentElementRenderKey}
             className={cn(
               "w-full",
               isSingleSlide &&

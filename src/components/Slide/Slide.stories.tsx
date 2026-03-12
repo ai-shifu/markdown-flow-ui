@@ -257,12 +257,10 @@ export const FullViewportSingleSlide: Story = {
   args: {
     elementList: [
       createExampleElement({
-        serialNumber: 0,
+        serialNumber: -1,
+        type: "slot",
+        content: "自定义节标题",
         is_show: true,
-        operation: "new",
-        type: "svg",
-        content:
-          '<svg width=\"100%\" viewBox=\"0 0 1200 675\" xmlns=\"http://www.w3.org/2000/svg\" style=\"width: 100%; height: auto; aspect-ratio: 1200 / 675;\">\n  <defs>\n    <linearGradient id=\"bg\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\">\n      <stop offset=\"0%\" stop-color=\"#0F63EE\"/>\n      <stop offset=\"100%\" stop-color=\"#073482\"/>\n    </linearGradient>\n  </defs>\n  <rect width=\"100%\" height=\"100%\" fill=\"url(#bg)\"/>\n  <image href=\"https://resource.ai-shifu.com/ac186b833d0e417fb02737910b3a5ae0\" x=\"100\" y=\"85\" width=\"220\" height=\"505\" clip-path=\"circle(110px at 110px 130px)\"/>\n  <text x=\"420\" y=\"220\" font-size=\"65\" font-weight=\"bold\" fill=\"white\">跟 AI 学 AI 通识</text>\n  <text x=\"420\" y=\"310\" font-size=\"40\" fill=\"#e0e0e0\">讲师：孙志岗</text>\n  <text x=\"420\" y=\"400\" font-size=\"30\" fill=\"#cce0ff\">帮助 100 万人顺利走进 AGI 时代</text>\n</svg>\n\n',
       }),
       createExampleElement({
         serialNumber: 1,
@@ -275,6 +273,25 @@ export const FullViewportSingleSlide: Story = {
         is_checkpoint: false,
         is_show: false,
       }),
+      createExampleElement({
+        serialNumber: 0,
+        is_show: true,
+        operation: "new",
+        type: "svg",
+        content:
+          '<svg width=\"100%\" viewBox=\"0 0 1200 675\" xmlns=\"http://www.w3.org/2000/svg\" style=\"width: 100%; height: auto; aspect-ratio: 1200 / 675;\">\n  <defs>\n    <linearGradient id=\"bg\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\">\n      <stop offset=\"0%\" stop-color=\"#0F63EE\"/>\n      <stop offset=\"100%\" stop-color=\"#073482\"/>\n    </linearGradient>\n  </defs>\n  <rect width=\"100%\" height=\"100%\" fill=\"url(#bg)\"/>\n  <image href=\"https://resource.ai-shifu.com/ac186b833d0e417fb02737910b3a5ae0\" x=\"100\" y=\"85\" width=\"220\" height=\"505\" clip-path=\"circle(110px at 110px 130px)\"/>\n  <text x=\"420\" y=\"220\" font-size=\"65\" font-weight=\"bold\" fill=\"white\">跟 AI 学 AI 通识</text>\n  <text x=\"420\" y=\"310\" font-size=\"40\" fill=\"#e0e0e0\">讲师：孙志岗</text>\n  <text x=\"420\" y=\"400\" font-size=\"30\" fill=\"#cce0ff\">帮助 100 万人顺利走进 AGI 时代</text>\n</svg>\n\n',
+      }),
+      // createExampleElement({
+      //   serialNumber: 1,
+      //   type: "text",
+      //   content:
+      //     "kk，初次见面很高兴，我是孙志岗，AI 师傅的创始人。我曾是哈尔滨工业大学计算机专业的副教授，后来在网易、得到 App 和一家独角兽级创业公司担任过中高管，负责过产品、技术和业务。我的工作领域主要是互联网、人工智能和教育的结合，已经有超过 20 多年的经验。最近几年已经帮助各行各业的几万人转型成 AI 专业人士，还帮助数十家企业成功落地 AI 到生产实践。\n\n在 ChatGPT 问世的第 6 天，我就注册并被深深地震撼。在深入了解这个技术变革之后，我给自己定了一个目标：**帮助 100 万人顺利走进 AGI 时代**\n\n",
+      //   audio_url:
+      //     "https://resource.ai-shifu.cn/tts-audio/3a9bac6e4f8546bfa2607a53dbd4d89e.mp3",
+      //   is_read: true,
+      //   is_checkpoint: false,
+      //   is_show: false,
+      // }),
       createExampleElement({
         serialNumber: 2,
         type: "html",

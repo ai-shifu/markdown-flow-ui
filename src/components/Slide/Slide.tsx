@@ -84,8 +84,11 @@ const Slide: React.FC<SlideProps> = ({
   ...props
 }) => {
   const sectionRef = useRef<HTMLElement | null>(null);
+  const stageLayerRef = useRef<HTMLDivElement | null>(null);
+  const lastElementRef = useRef<HTMLDivElement | null>(null);
   const playerHideTimerRef = useRef<number | null>(null);
   const interactionAutoCloseTimerRef = useRef<number | null>(null);
+  const prevRenderElementKeysRef = useRef<string[]>([]);
   const {
     currentElementList,
     slideElementList,
@@ -368,6 +371,7 @@ const Slide: React.FC<SlideProps> = ({
         {elementList.map((element, index) => (
           <div
             key={element.serial_number ?? `${element.type}-${index}`}
+            ref={index === elementList.length - 1 ? lastElementRef : null}
             className={cn(
               "w-full shrink-0",
               visibleElementCount === 1 &&
@@ -477,6 +481,59 @@ const Slide: React.FC<SlideProps> = ({
   const shouldShowInteractionOverlay =
     Boolean(activeInteractionElement) && isInteractionOverlayOpen;
 
+  const currentRenderElementKeys = useMemo(
+    () =>
+      currentElementList.map(
+        (element, index) =>
+          `${element.serial_number ?? `${element.type}-${index}`}:${element.operation ?? ""}`
+      ),
+    [currentElementList]
+  );
+
+  useEffect(() => {
+    const prevKeys = prevRenderElementKeysRef.current;
+    const hasStablePrefix =
+      prevKeys.length > 0 &&
+      prevKeys.length < currentRenderElementKeys.length &&
+      prevKeys.every((key, index) => key === currentRenderElementKeys[index]);
+    const appendedElements = hasStablePrefix
+      ? currentElementList.slice(prevKeys.length)
+      : [];
+    const shouldAutoScrollToAppend = appendedElements.some(
+      (element) => element.operation === "append"
+    );
+
+    prevRenderElementKeysRef.current = currentRenderElementKeys;
+
+    if (!shouldAutoScrollToAppend) {
+      return;
+    }
+
+    const animationFrameId = window.requestAnimationFrame(() => {
+      const stageLayerElement = stageLayerRef.current;
+      const targetElement = lastElementRef.current;
+
+      if (!stageLayerElement || !targetElement) {
+        return;
+      }
+
+      const stageLayerRect = stageLayerElement.getBoundingClientRect();
+      const targetRect = targetElement.getBoundingClientRect();
+      const nextScrollTop =
+        stageLayerElement.scrollTop + (targetRect.top - stageLayerRect.top);
+
+      // Keep newly appended content visible when the current slide grows downward.
+      stageLayerElement.scrollTo({
+        top: Math.max(nextScrollTop, 0),
+        behavior: "smooth",
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+    };
+  }, [currentElementList, currentRenderElementKeys]);
+
   console.log(
     "currentElement",
     currentElementList.at(-1),
@@ -512,7 +569,7 @@ const Slide: React.FC<SlideProps> = ({
         ) : null}
         {currentElementList.length > 0 ? (
           <div className="slide-stage">
-            <div className="slide-stage__layer w-full">
+            <div ref={stageLayerRef} className="slide-stage__layer w-full">
               {renderSlideElementList(currentElementList)}
             </div>
           </div>

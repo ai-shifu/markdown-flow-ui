@@ -29,6 +29,7 @@ interface InteractionOverlayCardProps {
   defaultButtonText?: string;
   defaultInputText?: string;
   defaultSelectedValues?: string[];
+  readonly?: boolean;
 }
 
 const InteractionOverlayCard = memo(
@@ -38,6 +39,7 @@ const InteractionOverlayCard = memo(
     defaultButtonText,
     defaultInputText,
     defaultSelectedValues,
+    readonly = false,
   }: InteractionOverlayCardProps) => (
     <div className="slide-player__interaction-card">
       <div className="slide-player__interaction-header">
@@ -49,6 +51,7 @@ const InteractionOverlayCard = memo(
           defaultButtonText={defaultButtonText}
           defaultInputText={defaultInputText}
           defaultSelectedValues={defaultSelectedValues}
+          readonly={readonly}
           enableTypewriter={false}
           sandboxMode="content"
         />
@@ -81,6 +84,7 @@ const Slide: React.FC<SlideProps> = ({
   const sectionRef = useRef<HTMLElement | null>(null);
   const playerHideTimerRef = useRef<number | null>(null);
   const audioStartTimerRef = useRef<number | null>(null);
+  const interactionAutoCloseTimerRef = useRef<number | null>(null);
   const audioSequenceTokenRef = useRef(0);
   const {
     currentElement,
@@ -145,14 +149,24 @@ const Slide: React.FC<SlideProps> = ({
     audioStartTimerRef.current = null;
   }, []);
 
+  const clearInteractionAutoCloseTimer = useCallback(() => {
+    if (interactionAutoCloseTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(interactionAutoCloseTimerRef.current);
+    interactionAutoCloseTimerRef.current = null;
+  }, []);
+
   const resetAudioSequence = useCallback(() => {
     audioSequenceTokenRef.current += 1;
     clearAudioStartTimer();
+    clearInteractionAutoCloseTimer();
     setCurrentAudioIndex(-1);
     setCurrentAudioSequencePosition(-1);
     setActiveInteractionElement(undefined);
     setIsInteractionOverlayOpen(false);
-  }, [clearAudioStartTimer]);
+  }, [clearAudioStartTimer, clearInteractionAutoCloseTimer]);
 
   const showPlayerControls = useCallback(
     (enableAutoHide = hasPlayerInteracted) => {
@@ -220,8 +234,13 @@ const Slide: React.FC<SlideProps> = ({
     return () => {
       clearPlayerHideTimer();
       clearAudioStartTimer();
+      clearInteractionAutoCloseTimer();
     };
-  }, [clearAudioStartTimer, clearPlayerHideTimer]);
+  }, [
+    clearAudioStartTimer,
+    clearInteractionAutoCloseTimer,
+    clearPlayerHideTimer,
+  ]);
 
   useEffect(() => {
     if (!shouldRenderPlayer) {
@@ -302,6 +321,37 @@ const Slide: React.FC<SlideProps> = ({
       activeInteractionElement.user_input
     );
   }, [activeInteractionElement]);
+
+  const hasResolvedInteractionInput = Boolean(
+    activeInteractionElement?.user_input?.trim()
+  );
+
+  useEffect(() => {
+    clearInteractionAutoCloseTimer();
+
+    if (!isInteractionOverlayOpen || !hasResolvedInteractionInput) {
+      return;
+    }
+
+    interactionAutoCloseTimerRef.current = window.setTimeout(() => {
+      setIsInteractionOverlayOpen(false);
+      interactionAutoCloseTimerRef.current = null;
+
+      if (canGoNext) {
+        goNext();
+      }
+    }, 2000);
+
+    return () => {
+      clearInteractionAutoCloseTimer();
+    };
+  }, [
+    canGoNext,
+    clearInteractionAutoCloseTimer,
+    goNext,
+    hasResolvedInteractionInput,
+    isInteractionOverlayOpen,
+  ]);
 
   const renderSlideElement = (element?: Element) => {
     if (!element) {
@@ -517,6 +567,7 @@ const Slide: React.FC<SlideProps> = ({
             defaultButtonText={interactionDefaults.buttonText ?? ""}
             defaultInputText={interactionDefaults.inputText ?? ""}
             defaultSelectedValues={interactionDefaultSelectedValues}
+            readonly={hasResolvedInteractionInput}
             title={interactionTitle ?? "Submit the content below to continue."}
           />
         </div>

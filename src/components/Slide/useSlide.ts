@@ -8,7 +8,7 @@ export interface SlideAudioItem {
 }
 
 export interface UseSlideResult {
-  currentElement?: Element;
+  currentElementList: Element[];
   slideElementList: Element[];
   currentIndex: number;
   audioList: SlideAudioItem[];
@@ -103,6 +103,40 @@ const getInitialSlideIndex = (slideElementList: Element[]) => {
   return slideElementList.findIndex((element) => element.is_show !== false);
 };
 
+const getVisibleElement = (element: Element): Element => ({
+  ...element,
+  is_show: true,
+});
+
+const getCurrentElementList = (
+  slideElementList: Element[],
+  currentIndex: number
+) => {
+  if (currentIndex < 0) {
+    return [];
+  }
+
+  return slideElementList
+    .slice(0, currentIndex + 1)
+    .reduce<Element[]>((currentList, element) => {
+      if (element.type === "interaction") {
+        return currentList;
+      }
+
+      const visibleElement = getVisibleElement(element);
+
+      if (element.operation === "new") {
+        return [visibleElement];
+      }
+
+      if (currentList.length === 0) {
+        return [visibleElement];
+      }
+
+      return [...currentList, visibleElement];
+    }, []);
+};
+
 const useSlide = (elementList: Element[] = []): UseSlideResult => {
   const slideElementList = useMemo(
     () => getSlideElementList(elementList),
@@ -163,7 +197,7 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
   const canGoPrev = currentIndex > 0;
   const canGoNext =
     currentIndex >= 0 && currentIndex < slideElementList.length - 1;
-  const currentElement = useMemo(() => {
+  const currentStepElement = useMemo(() => {
     if (currentIndex < 0) {
       return undefined;
     }
@@ -174,22 +208,26 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
       return undefined;
     }
 
-    return {
-      ...element,
-      is_show: true,
-    };
+    return getVisibleElement(element);
   }, [currentIndex, slideElementList]);
+  const currentElementList = useMemo(
+    () => getCurrentElementList(slideElementList, currentIndex),
+    [currentIndex, slideElementList]
+  );
   const currentAudioSequenceIndexes = useMemo(
     () => slideAudioSequenceMap.get(currentIndex) ?? [],
     [currentIndex, slideAudioSequenceMap]
   );
   const currentInteractionElement = useMemo(
-    () => (currentElement?.type === "interaction" ? currentElement : undefined),
-    [currentElement]
+    () =>
+      currentStepElement?.type === "interaction"
+        ? currentStepElement
+        : undefined,
+    [currentStepElement]
   );
 
   return {
-    currentElement,
+    currentElementList,
     slideElementList,
     currentIndex,
     audioList,

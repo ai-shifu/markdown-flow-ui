@@ -165,21 +165,13 @@ const Player: React.FC<PlayerProps> = ({
       {showControls ? (
         <div className="slide-player__controls">
           <div className="slide-player__group">
-            <button
-              aria-label="More options"
-              className="slide-player__action"
-              type="button"
-            >
+            <button aria-label="More options" className="hidden" type="button">
               <EllipsisVertical
                 className="slide-player__icon"
                 strokeWidth={2.25}
               />
             </button>
-            <button
-              aria-label="Volume"
-              className="slide-player__action"
-              type="button"
-            >
+            <button aria-label="Volume" className="hidden" type="button">
               <Volume2 className="slide-player__icon" strokeWidth={2.25} />
             </button>
             <button
@@ -225,7 +217,7 @@ const Player: React.FC<PlayerProps> = ({
             </button>
             <button
               aria-label="Fullscreen"
-              className="slide-player__action"
+              className="hidden"
               onClick={onFullscreen}
               type="button"
             >

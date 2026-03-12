@@ -23,6 +23,34 @@ export type { Element } from "./types";
 
 const SLIDE_STAGE_TRANSITION_MS = 260;
 
+const areSameRenderElements = (
+  prevElementList: Element[],
+  nextElementList: Element[]
+) => {
+  if (prevElementList.length !== nextElementList.length) {
+    return false;
+  }
+
+  return prevElementList.every((prevElement, index) => {
+    const nextElement = nextElementList[index];
+
+    if (!nextElement) {
+      return false;
+    }
+
+    return (
+      prevElement.serial_number === nextElement.serial_number &&
+      prevElement.type === nextElement.type &&
+      prevElement.operation === nextElement.operation &&
+      prevElement.is_show === nextElement.is_show &&
+      prevElement.is_read === nextElement.is_read &&
+      prevElement.audio_url === nextElement.audio_url &&
+      prevElement.user_input === nextElement.user_input &&
+      prevElement.content === nextElement.content
+    );
+  });
+};
+
 interface InteractionOverlayCardProps {
   content: string;
   title: string;
@@ -205,23 +233,35 @@ const Slide: React.FC<SlideProps> = ({
 
   useEffect(() => {
     if (currentElementList.length === 0 || !currentElementRenderKey) {
-      setActiveRenderKey(undefined);
-      setActiveRenderElementList([]);
-      setExitingRenderKey(undefined);
-      setExitingRenderElementList([]);
+      setActiveRenderKey((prevKey) => (prevKey == null ? prevKey : undefined));
+      setActiveRenderElementList((prevElementList) =>
+        prevElementList.length === 0 ? prevElementList : []
+      );
+      setExitingRenderKey((prevKey) => (prevKey == null ? prevKey : undefined));
+      setExitingRenderElementList((prevElementList) =>
+        prevElementList.length === 0 ? prevElementList : []
+      );
       return;
     }
 
     setActiveRenderKey((prevKey) => {
-      if (prevKey == null || prevKey === currentElementRenderKey) {
+      if (prevKey == null) {
         return currentElementRenderKey;
+      }
+
+      if (prevKey === currentElementRenderKey) {
+        return prevKey;
       }
 
       setExitingRenderKey(prevKey);
       setExitingRenderElementList(activeRenderElementList);
       return currentElementRenderKey;
     });
-    setActiveRenderElementList(currentElementList);
+    setActiveRenderElementList((prevElementList) =>
+      areSameRenderElements(prevElementList, currentElementList)
+        ? prevElementList
+        : currentElementList
+    );
   }, [activeRenderElementList, currentElementList, currentElementRenderKey]);
 
   useEffect(() => {

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { applyDiffElement } from "./diff-utils";
 import type { Element } from "./types";
 
 export interface SlideAudioItem {
@@ -125,6 +126,12 @@ const getCurrentElementList = (
 
       const visibleElement = getVisibleElement(element);
 
+      if (visibleElement.type === "diff") {
+        const nextList = applyDiffElement(currentList, visibleElement);
+
+        return nextList ?? [...currentList, visibleElement];
+      }
+
       if (element.operation === "new") {
         return [visibleElement];
       }
@@ -137,24 +144,48 @@ const getCurrentElementList = (
     }, []);
 };
 
+const hasSameElementReferences = (
+  prevElementList: Element[],
+  nextElementList: Element[]
+) =>
+  prevElementList.length === nextElementList.length &&
+  prevElementList.every((element, index) => element === nextElementList[index]);
+
 const useSlide = (elementList: Element[] = []): UseSlideResult => {
+  const stableElementListRef = useRef(elementList);
+  const stableElementList = useMemo(() => {
+    if (hasSameElementReferences(stableElementListRef.current, elementList)) {
+      return stableElementListRef.current;
+    }
+
+    // Reuse the previous wrapper array when the element references are unchanged.
+    stableElementListRef.current = elementList;
+    return elementList;
+  }, [elementList]);
   const slideElementList = useMemo(
-    () => getSlideElementList(elementList),
-    [elementList]
+    () => getSlideElementList(stableElementList),
+    [stableElementList]
   );
   const slideElementIndexes = useMemo(
-    () => getSlideElementIndexes(elementList),
-    [elementList]
+    () => getSlideElementIndexes(stableElementList),
+    [stableElementList]
   );
-  const audioList = useMemo(() => getAudioList(elementList), [elementList]);
+  const audioList = useMemo(
+    () => getAudioList(stableElementList),
+    [stableElementList]
+  );
   const audioIndexMap = useMemo(
-    () => getAudioIndexMap(elementList),
-    [elementList]
+    () => getAudioIndexMap(stableElementList),
+    [stableElementList]
   );
   const slideAudioSequenceMap = useMemo(
     () =>
-      getSlideAudioSequenceMap(elementList, slideElementIndexes, audioIndexMap),
-    [audioIndexMap, elementList, slideElementIndexes]
+      getSlideAudioSequenceMap(
+        stableElementList,
+        slideElementIndexes,
+        audioIndexMap
+      ),
+    [audioIndexMap, slideElementIndexes, stableElementList]
   );
   const [currentIndex, setCurrentIndex] = useState(() =>
     getInitialSlideIndex(slideElementList)

@@ -317,7 +317,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   const sandboxWrapperStyle: React.CSSProperties = {
     position: "relative",
     width: "100%",
-    height: isBlackboard ? "100vh" : "100%",
+    height: "100%",
     display: "flex",
     flexDirection: "column",
     // Keep blackboard scroll behavior while centering content in non-blackboard mode

@@ -409,7 +409,7 @@ const Slide: React.FC<SlideProps> = ({
           <div
             key={element.serial_number ?? `${element.type}-${index}`}
             className={cn(
-              "w-full",
+              "w-full shrink-0",
               visibleElementCount === 1 &&
                 element.is_show !== false &&
                 "slide-element--single",
@@ -545,7 +545,7 @@ const Slide: React.FC<SlideProps> = ({
     >
       <div
         className={cn(
-          "w-full",
+          "h-full min-h-0 w-full",
           isSingleSlide ? "slide-content--single" : "grid gap-4"
         )}
       >

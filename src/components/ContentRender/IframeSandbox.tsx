@@ -75,7 +75,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const rootRef = useRef<Root | null>(null);
   const docRef = useRef<Document | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
-  const [, setHeight] = useState(480);
+  const [height, setHeight] = useState(480);
   const [resetToken, setResetToken] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const isBlackboardMode = mode === "blackboard";
@@ -158,6 +158,10 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     return extractViewportHeightFromTailwindClass(classAttrMatch);
   }, [renderHtmlContent]);
   const hasRootVhHeight = Boolean(rootViewportHeightCss);
+  const sandboxViewportHeight =
+    isBlackboardMode && type === "sandbox"
+      ? (rootViewportHeightCss ?? `${height}px`)
+      : undefined;
   useEffect(() => {
     if (mode !== "blackboard") {
       prevHtmlRef.current = htmlContent;
@@ -390,6 +394,14 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       ref={containerRef}
       data-root-vh={hasRootVhHeight ? "true" : "false"}
       className={containerClassName}
+      style={
+        sandboxViewportHeight
+          ? {
+              height: sandboxViewportHeight,
+              minHeight: sandboxViewportHeight,
+            }
+          : undefined
+      }
     >
       {!hideFullScreen && (
         <button
@@ -414,7 +426,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
             .filter(Boolean)
             .join(" ")}
           style={{
-            height: "100%",
+            height: sandboxViewportHeight ?? "100%",
+            minHeight: sandboxViewportHeight,
             margin: "auto",
           }}
         />

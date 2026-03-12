@@ -23,34 +23,6 @@ export type { Element } from "./types";
 
 const SLIDE_STAGE_TRANSITION_MS = 260;
 
-const areSameRenderElements = (
-  prevElementList: Element[],
-  nextElementList: Element[]
-) => {
-  if (prevElementList.length !== nextElementList.length) {
-    return false;
-  }
-
-  return prevElementList.every((prevElement, index) => {
-    const nextElement = nextElementList[index];
-
-    if (!nextElement) {
-      return false;
-    }
-
-    return (
-      prevElement.serial_number === nextElement.serial_number &&
-      prevElement.type === nextElement.type &&
-      prevElement.operation === nextElement.operation &&
-      prevElement.is_show === nextElement.is_show &&
-      prevElement.is_read === nextElement.is_read &&
-      prevElement.audio_url === nextElement.audio_url &&
-      prevElement.user_input === nextElement.user_input &&
-      prevElement.content === nextElement.content
-    );
-  });
-};
-
 interface InteractionOverlayCardProps {
   content: string;
   title: string;
@@ -134,27 +106,6 @@ const Slide: React.FC<SlideProps> = ({
     (isSingleSlide ||
       audioList.length > 0 ||
       Boolean(currentInteractionElement));
-  const currentElementRenderKey = useMemo(
-    () =>
-      currentElementList
-        .map(
-          (element, index) =>
-            element.serial_number ?? `${element.type}-${index}`
-        )
-        .join(":"),
-    [currentElementList]
-  );
-  const [activeRenderKey, setActiveRenderKey] = useState(
-    currentElementRenderKey
-  );
-  const [activeRenderElementList, setActiveRenderElementList] =
-    useState(currentElementList);
-  const [exitingRenderKey, setExitingRenderKey] = useState<
-    string | number | undefined
-  >();
-  const [exitingRenderElementList, setExitingRenderElementList] = useState<
-    Element[]
-  >([]);
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
   const [hasPlayerInteracted, setHasPlayerInteracted] = useState(false);
   const [shouldAutoPlay] = useState(() => hasBrowserUserActivation());
@@ -232,54 +183,6 @@ const Slide: React.FC<SlideProps> = ({
   );
 
   useEffect(() => {
-    if (currentElementList.length === 0 || !currentElementRenderKey) {
-      setActiveRenderKey((prevKey) => (prevKey == null ? prevKey : undefined));
-      setActiveRenderElementList((prevElementList) =>
-        prevElementList.length === 0 ? prevElementList : []
-      );
-      setExitingRenderKey((prevKey) => (prevKey == null ? prevKey : undefined));
-      setExitingRenderElementList((prevElementList) =>
-        prevElementList.length === 0 ? prevElementList : []
-      );
-      return;
-    }
-
-    setActiveRenderKey((prevKey) => {
-      if (prevKey == null) {
-        return currentElementRenderKey;
-      }
-
-      if (prevKey === currentElementRenderKey) {
-        return prevKey;
-      }
-
-      setExitingRenderKey(prevKey);
-      setExitingRenderElementList(activeRenderElementList);
-      return currentElementRenderKey;
-    });
-    setActiveRenderElementList((prevElementList) =>
-      areSameRenderElements(prevElementList, currentElementList)
-        ? prevElementList
-        : currentElementList
-    );
-  }, [activeRenderElementList, currentElementList, currentElementRenderKey]);
-
-  useEffect(() => {
-    if (exitingRenderKey == null) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setExitingRenderKey(undefined);
-      setExitingRenderElementList([]);
-    }, SLIDE_STAGE_TRANSITION_MS);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [exitingRenderKey]);
-
-  useEffect(() => {
     return () => {
       clearPlayerHideTimer();
       clearAudioStartTimer();
@@ -341,7 +244,6 @@ const Slide: React.FC<SlideProps> = ({
     clearAudioStartTimer,
     currentAudioSequenceIndexes,
     currentElementList,
-    currentElementRenderKey,
     currentInteractionElement,
     resetAudioSequence,
   ]);
@@ -598,22 +500,10 @@ const Slide: React.FC<SlideProps> = ({
             type="button"
           />
         ) : null}
-        {activeRenderElementList.length > 0 ? (
+        {currentElementList.length > 0 ? (
           <div className="slide-stage">
-            {exitingRenderElementList.length > 0 ? (
-              <div
-                key={exitingRenderKey}
-                className="slide-stage__layer slide-stage__layer--exit w-full"
-              >
-                {renderSlideElementList(exitingRenderElementList)}
-              </div>
-            ) : null}
-
-            <div
-              key={activeRenderKey}
-              className="slide-stage__layer slide-stage__layer--enter w-full"
-            >
-              {renderSlideElementList(activeRenderElementList)}
+            <div className="slide-stage__layer w-full">
+              {renderSlideElementList(currentElementList)}
             </div>
           </div>
         ) : null}

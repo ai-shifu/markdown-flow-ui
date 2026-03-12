@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 
 import { cn } from "../../lib/utils";
-import ContentRender from "../ContentRender";
 import type { SlideAudioItem } from "./useSlide";
 import "./player.css";
 
@@ -21,10 +20,11 @@ export type PlayerProps = React.ComponentProps<"div"> & {
   onNext?: () => void;
   onFullscreen?: () => void;
   onEnded?: (audioIndex: number) => void;
+  onInteractionToggle?: () => void;
+  hasInteraction?: boolean;
+  isInteractionOpen?: boolean;
   prevDisabled?: boolean;
   nextDisabled?: boolean;
-  interactionContent?: string;
-  interactionTitle?: string;
   showControls?: boolean;
 };
 
@@ -69,19 +69,17 @@ const Player: React.FC<PlayerProps> = ({
   onNext,
   onFullscreen,
   onEnded,
+  onInteractionToggle,
+  hasInteraction = false,
+  isInteractionOpen = false,
   prevDisabled = false,
   nextDisabled = false,
-  interactionContent,
-  interactionTitle = "Submit the content below to continue.",
   showControls = true,
   ...props
 }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioSrcRef = useRef<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(defaultPlaying);
-  const [isInteractionOpen, setIsInteractionOpen] = useState(false);
-  const lastInteractionContentRef = useRef<string | null>(null);
-  const hasInteraction = Boolean(interactionContent);
   const currentAudio =
     currentAudioIndex >= 0 ? audioList[currentAudioIndex] : undefined;
   const currentAudioUrl = currentAudio?.audioUrl;
@@ -99,20 +97,6 @@ const Player: React.FC<PlayerProps> = ({
     audioSrcRef.current = null;
     setIsPlaying(false);
   }, []);
-
-  useEffect(() => {
-    const nextInteraction = interactionContent ?? null;
-    if (!nextInteraction) {
-      lastInteractionContentRef.current = null;
-      setIsInteractionOpen(false);
-      return;
-    }
-
-    if (lastInteractionContentRef.current !== nextInteraction) {
-      lastInteractionContentRef.current = nextInteraction;
-      setIsInteractionOpen(true);
-    }
-  }, [interactionContent]);
 
   useEffect(() => {
     const audioElement = audioRef.current;
@@ -166,17 +150,6 @@ const Player: React.FC<PlayerProps> = ({
     setIsPlaying(false);
   }, []);
 
-  const stopInteractionPropagation = useCallback(
-    (
-      event:
-        | React.PointerEvent<HTMLDivElement>
-        | React.MouseEvent<HTMLDivElement>
-    ) => {
-      event.stopPropagation();
-    },
-    []
-  );
-
   return (
     <div className={cn("slide-player", className)} {...props}>
       <audio
@@ -188,29 +161,6 @@ const Player: React.FC<PlayerProps> = ({
         onEnded={handleAudioEnded}
         onError={handleAudioError}
       />
-      {hasInteraction && isInteractionOpen ? (
-        <div
-          className="slide-player__interaction"
-          onClick={stopInteractionPropagation}
-          onPointerDown={stopInteractionPropagation}
-        >
-          <div className="slide-player__interaction-card">
-            <div className="slide-player__interaction-header">
-              <p className="slide-player__interaction-title">
-                {interactionTitle}
-              </p>
-            </div>
-            <div className="slide-player__interaction-body">
-              <ContentRender
-                content={interactionContent as string}
-                enableTypewriter={false}
-                sandboxMode="content"
-              />
-            </div>
-            <div className="slide-player__interaction-arrow" />
-          </div>
-        </div>
-      ) : null}
 
       {showControls ? (
         <div className="slide-player__controls">
@@ -290,15 +240,10 @@ const Player: React.FC<PlayerProps> = ({
               aria-label="Notes"
               className={cn(
                 "slide-player__action",
-                hasInteraction && "slide-player__action--active"
+                isInteractionOpen && "slide-player__action--active"
               )}
               disabled={!hasInteraction}
-              onClick={() => {
-                if (!hasInteraction) {
-                  return;
-                }
-                setIsInteractionOpen((prevOpen) => !prevOpen);
-              }}
+              onClick={onInteractionToggle}
               type="button"
             >
               <FilePenLine className="slide-player__icon" strokeWidth={2.25} />

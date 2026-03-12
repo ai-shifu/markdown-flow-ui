@@ -13,6 +13,7 @@ export interface UseSlideResult {
   currentIndex: number;
   audioList: SlideAudioItem[];
   currentAudioSequenceIndexes: number[];
+  currentInteractionContent?: string;
   canGoPrev: boolean;
   canGoNext: boolean;
   handlePrev: () => void;
@@ -92,6 +93,37 @@ const getSlideAudioSequenceMap = (
     new Map<number, number[]>()
   );
 
+const getSlideInteractionMap = (
+  elementList: Element[],
+  slideElementIndexes: number[]
+) =>
+  slideElementIndexes.reduce<Map<number, string | undefined>>(
+    (interactionMap, startIndex, slideIndex) => {
+      const nextCheckpointIndex =
+        slideElementIndexes[slideIndex + 1] ?? elementList.length;
+      let interactionContent: string | undefined;
+
+      for (let index = startIndex; index < nextCheckpointIndex; index += 1) {
+        const element = elementList[index];
+
+        if (element?.type !== "interaction") {
+          continue;
+        }
+
+        if (typeof element.content !== "string") {
+          continue;
+        }
+
+        interactionContent = element.content;
+        break;
+      }
+
+      interactionMap.set(slideIndex, interactionContent);
+      return interactionMap;
+    },
+    new Map<number, string | undefined>()
+  );
+
 const getInitialSlideIndex = (slideElementList: Element[]) => {
   const visibleIndex = slideElementList.findIndex(
     (element) => element.is_show === true
@@ -122,6 +154,10 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
     () =>
       getSlideAudioSequenceMap(elementList, slideElementIndexes, audioIndexMap),
     [audioIndexMap, elementList, slideElementIndexes]
+  );
+  const slideInteractionMap = useMemo(
+    () => getSlideInteractionMap(elementList, slideElementIndexes),
+    [elementList, slideElementIndexes]
   );
   const [currentIndex, setCurrentIndex] = useState(() =>
     getInitialSlideIndex(slideElementList)
@@ -184,6 +220,10 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
     () => slideAudioSequenceMap.get(currentIndex) ?? [],
     [currentIndex, slideAudioSequenceMap]
   );
+  const currentInteractionContent = useMemo(
+    () => slideInteractionMap.get(currentIndex),
+    [currentIndex, slideInteractionMap]
+  );
 
   return {
     currentElement,
@@ -191,6 +231,7 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
     currentIndex,
     audioList,
     currentAudioSequenceIndexes,
+    currentInteractionContent,
     canGoPrev,
     canGoNext,
     handlePrev,

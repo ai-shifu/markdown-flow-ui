@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { hasBrowserUserActivation } from "../../lib/browserUserActivation";
 import { cn } from "../../lib/utils";
+import ContentRender from "../ContentRender";
 import IframeSandbox from "../ContentRender/IframeSandbox";
 import Player from "./Player";
 import type { Element } from "./types";
@@ -33,23 +34,13 @@ const Slide: React.FC<SlideProps> = ({
   const playerHideTimerRef = useRef<number | null>(null);
   const audioStartTimerRef = useRef<number | null>(null);
   const audioSequenceTokenRef = useRef(0);
-  const checkpointElementList = elementList.filter(
-    (element) => element.is_checkpoint
-  );
-  const interactionElement = checkpointElementList.find(
-    (element) => element.type === "interaction"
-  );
-  const visibleInteractionContent =
-    interactionElement?.is_show !== false &&
-    typeof interactionElement?.content === "string"
-      ? interactionElement.content
-      : undefined;
   const {
     currentElement,
     currentIndex,
     slideElementList,
     audioList,
     currentAudioSequenceIndexes,
+    currentInteractionContent,
     canGoPrev,
     canGoNext,
     handlePrev: goPrev,
@@ -58,10 +49,12 @@ const Slide: React.FC<SlideProps> = ({
   const visibleCheckpointCount = slideElementList.filter(
     (element) => element.is_show !== false
   ).length;
-  const hasVisibleInteraction = interactionElement?.is_show !== false;
   const isSingleSlide = visibleCheckpointCount === 1;
   const shouldRenderPlayer =
-    showPlayer && (isSingleSlide || hasVisibleInteraction);
+    showPlayer &&
+    (isSingleSlide ||
+      audioList.length > 0 ||
+      Boolean(currentInteractionContent));
   const currentElementRenderKey =
     currentElement?.serial_number ?? `${currentIndex}-${currentElement?.type}`;
   const [activeRenderKey, setActiveRenderKey] = useState(
@@ -80,6 +73,11 @@ const Slide: React.FC<SlideProps> = ({
   const [currentAudioIndex, setCurrentAudioIndex] = useState(-1);
   const [currentAudioSequencePosition, setCurrentAudioSequencePosition] =
     useState(-1);
+  const [activeInteractionContent, setActiveInteractionContent] = useState<
+    string | undefined
+  >();
+  const [isInteractionOverlayOpen, setIsInteractionOverlayOpen] =
+    useState(false);
 
   const clearPlayerHideTimer = useCallback(() => {
     if (playerHideTimerRef.current === null) {
@@ -104,6 +102,8 @@ const Slide: React.FC<SlideProps> = ({
     clearAudioStartTimer();
     setCurrentAudioIndex(-1);
     setCurrentAudioSequencePosition(-1);
+    setActiveInteractionContent(undefined);
+    setIsInteractionOverlayOpen(false);
   }, [clearAudioStartTimer]);
 
   const showPlayerControls = useCallback(
@@ -185,36 +185,35 @@ const Slide: React.FC<SlideProps> = ({
     if (!hasPlayerInteracted) {
       clearPlayerHideTimer();
       setIsPlayerVisible(true);
-      return;
     }
-
-    showPlayerControls();
-  }, [
-    clearPlayerHideTimer,
-    currentElementRenderKey,
-    hasPlayerInteracted,
-    showPlayerControls,
-    shouldRenderPlayer,
-    visibleInteractionContent,
-  ]);
+  }, [clearPlayerHideTimer, hasPlayerInteracted, shouldRenderPlayer]);
 
   useEffect(() => {
     resetAudioSequence();
 
-    if (!currentElement || currentAudioSequenceIndexes.length === 0) {
+    if (!currentElement) {
       return;
     }
 
     const sequenceToken = audioSequenceTokenRef.current;
 
-    // Start transition audio after the current slide has finished entering.
     audioStartTimerRef.current = window.setTimeout(() => {
       if (audioSequenceTokenRef.current !== sequenceToken) {
         return;
       }
 
-      setCurrentAudioSequencePosition(0);
-      setCurrentAudioIndex(currentAudioSequenceIndexes[0] ?? -1);
+      if (currentAudioSequenceIndexes.length > 0) {
+        setCurrentAudioSequencePosition(0);
+        setCurrentAudioIndex(currentAudioSequenceIndexes[0] ?? -1);
+        audioStartTimerRef.current = null;
+        return;
+      }
+
+      if (currentInteractionContent) {
+        setActiveInteractionContent(currentInteractionContent);
+        setIsInteractionOverlayOpen(true);
+      }
+
       audioStartTimerRef.current = null;
     }, SLIDE_STAGE_TRANSITION_MS);
 
@@ -226,6 +225,7 @@ const Slide: React.FC<SlideProps> = ({
     currentAudioSequenceIndexes,
     currentElement,
     currentElementRenderKey,
+    currentInteractionContent,
     resetAudioSequence,
   ]);
 
@@ -307,6 +307,12 @@ const Slide: React.FC<SlideProps> = ({
       setCurrentAudioIndex(-1);
       setCurrentAudioSequencePosition(-1);
 
+      if (currentInteractionContent) {
+        setActiveInteractionContent(currentInteractionContent);
+        setIsInteractionOverlayOpen(true);
+        return;
+      }
+
       if (canGoNext) {
         goNext();
       }
@@ -315,8 +321,28 @@ const Slide: React.FC<SlideProps> = ({
       canGoNext,
       currentAudioSequenceIndexes,
       currentAudioSequencePosition,
+      currentInteractionContent,
       goNext,
     ]
+  );
+
+  const handleInteractionToggle = useCallback(() => {
+    if (!activeInteractionContent) {
+      return;
+    }
+
+    setIsInteractionOverlayOpen((prevOpen) => !prevOpen);
+  }, [activeInteractionContent]);
+
+  const stopOverlayPropagation = useCallback(
+    (
+      event:
+        | React.PointerEvent<HTMLDivElement>
+        | React.MouseEvent<HTMLDivElement>
+    ) => {
+      event.stopPropagation();
+    },
+    []
   );
 
   const handleSurfacePointerDown = useCallback(
@@ -328,11 +354,18 @@ const Slide: React.FC<SlideProps> = ({
     [onPointerDown, showPlayerControls]
   );
 
+  const shouldShowInteractionOverlay =
+    Boolean(activeInteractionContent) && isInteractionOverlayOpen;
+
   console.log(
     "currentElement",
     currentElement,
     shouldRenderPlayer,
-    isPlayerVisible
+    isPlayerVisible,
+    currentAudioSequenceIndexes,
+    currentInteractionContent,
+    activeInteractionContent,
+    isInteractionOverlayOpen
   );
 
   return (
@@ -389,6 +422,35 @@ const Slide: React.FC<SlideProps> = ({
         ) : null}
       </div>
 
+      {shouldShowInteractionOverlay ? (
+        <div
+          className={cn(
+            "slide-interaction-overlay",
+            isPlayerVisible && shouldRenderPlayer
+              ? "slide-interaction-overlay--with-player"
+              : "slide-interaction-overlay--standalone"
+          )}
+          onClick={stopOverlayPropagation}
+          onPointerDown={stopOverlayPropagation}
+        >
+          <div className="slide-player__interaction-card">
+            <div className="slide-player__interaction-header">
+              <p className="slide-player__interaction-title">
+                {interactionTitle ?? "Submit the content below to continue."}
+              </p>
+            </div>
+            <div className="slide-player__interaction-body">
+              <ContentRender
+                content={activeInteractionContent as string}
+                enableTypewriter={false}
+                sandboxMode="content"
+              />
+            </div>
+            {/* <div className="slide-player__interaction-arrow" /> */}
+          </div>
+        </div>
+      ) : null}
+
       {shouldRenderPlayer ? (
         <Player
           audioList={audioList}
@@ -399,11 +461,12 @@ const Slide: React.FC<SlideProps> = ({
           )}
           currentAudioIndex={currentAudioIndex}
           defaultPlaying={canAutoPlayAudio}
-          interactionContent={visibleInteractionContent}
-          interactionTitle={interactionTitle}
+          hasInteraction={Boolean(activeInteractionContent)}
+          isInteractionOpen={isInteractionOverlayOpen}
           nextDisabled={!canGoNext}
           onEnded={handlePlayerEnded}
           onFullscreen={handleFullscreen}
+          onInteractionToggle={handleInteractionToggle}
           onNext={handleNext}
           onPrev={handlePrev}
           prevDisabled={!canGoPrev}

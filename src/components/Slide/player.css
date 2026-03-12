@@ -164,3 +164,19 @@
   background: var(--border);
   flex: 0 0 1px;
 }
+
+.slide-interaction-overlay {
+  position: absolute;
+  left: 50%;
+  z-index: 4;
+  width: min(664px, calc(100vw - 48px));
+  transform: translateX(-50%);
+}
+
+.slide-interaction-overlay--with-player {
+  bottom: 120px;
+}
+
+.slide-interaction-overlay--standalone {
+  bottom: 24px;
+}

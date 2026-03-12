@@ -20,6 +20,7 @@ export type PlayerProps = React.ComponentProps<"div"> & {
   onPrev?: () => void;
   onNext?: () => void;
   onFullscreen?: () => void;
+  onEnded?: (audioIndex: number) => void;
   prevDisabled?: boolean;
   nextDisabled?: boolean;
   interactionContent?: string;
@@ -67,6 +68,7 @@ const Player: React.FC<PlayerProps> = ({
   onPrev,
   onNext,
   onFullscreen,
+  onEnded,
   prevDisabled = false,
   nextDisabled = false,
   interactionContent,
@@ -154,7 +156,11 @@ const Player: React.FC<PlayerProps> = ({
 
   const handleAudioEnded = useCallback(() => {
     setIsPlaying(false);
-  }, []);
+
+    if (currentAudioIndex >= 0) {
+      onEnded?.(currentAudioIndex);
+    }
+  }, [currentAudioIndex, onEnded]);
 
   const handleAudioError = useCallback(() => {
     setIsPlaying(false);

@@ -12,7 +12,7 @@ export interface UseSlideResult {
   slideElementList: Element[];
   currentIndex: number;
   audioList: SlideAudioItem[];
-  currentAudioIndex: number;
+  currentAudioSequenceIndexes: number[];
   canGoPrev: boolean;
   canGoNext: boolean;
   handlePrev: () => void;
@@ -59,6 +59,39 @@ const getAudioIndexMap = (elementList: Element[]) => {
   return audioIndexMap;
 };
 
+const getSlideAudioSequenceMap = (
+  elementList: Element[],
+  slideElementIndexes: number[],
+  audioIndexMap: Map<number, number>
+) =>
+  slideElementIndexes.reduce<Map<number, number[]>>(
+    (sequenceMap, startIndex, slideIndex) => {
+      const nextCheckpointIndex =
+        slideElementIndexes[slideIndex + 1] ?? elementList.length;
+      const sequenceIndexes: number[] = [];
+
+      for (let index = startIndex; index < nextCheckpointIndex; index += 1) {
+        const element = elementList[index];
+
+        if (!element?.is_read || !element.audio_url) {
+          continue;
+        }
+
+        const audioIndex = audioIndexMap.get(index);
+
+        if (audioIndex == null) {
+          continue;
+        }
+
+        sequenceIndexes.push(audioIndex);
+      }
+
+      sequenceMap.set(slideIndex, sequenceIndexes);
+      return sequenceMap;
+    },
+    new Map<number, number[]>()
+  );
+
 const getInitialSlideIndex = (slideElementList: Element[]) => {
   const visibleIndex = slideElementList.findIndex(
     (element) => element.is_show === true
@@ -85,10 +118,14 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
     () => getAudioIndexMap(elementList),
     [elementList]
   );
+  const slideAudioSequenceMap = useMemo(
+    () =>
+      getSlideAudioSequenceMap(elementList, slideElementIndexes, audioIndexMap),
+    [audioIndexMap, elementList, slideElementIndexes]
+  );
   const [currentIndex, setCurrentIndex] = useState(() =>
     getInitialSlideIndex(slideElementList)
   );
-  const [currentAudioIndex, setCurrentAudioIndex] = useState(-1);
 
   useEffect(() => {
     setCurrentIndex((prevIndex) => {
@@ -104,84 +141,25 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
     });
   }, [slideElementList]);
 
-  useEffect(() => {
-    setCurrentAudioIndex((prevIndex) => {
-      if (audioList.length === 0) {
-        return -1;
-      }
-
-      return prevIndex >= 0 && prevIndex < audioList.length ? prevIndex : -1;
-    });
-  }, [audioList]);
-
-  const getAudioIndexInRange = useCallback(
-    (startIndex: number, endIndex: number, step: 1 | -1) => {
-      for (
-        let index = startIndex;
-        step === 1 ? index <= endIndex : index >= endIndex;
-        index += step
-      ) {
-        const element = elementList[index];
-
-        if (!element?.is_read || !element.audio_url) {
-          continue;
-        }
-
-        return audioIndexMap.get(index) ?? -1;
-      }
-
-      return -1;
-    },
-    [audioIndexMap, elementList]
-  );
-
   const handlePrev = useCallback(() => {
     setCurrentIndex((prevIndex) => {
-      if (prevIndex <= 0 || slideElementIndexes[prevIndex] == null) {
+      if (prevIndex <= 0) {
         return Math.max(prevIndex, 0);
       }
 
-      const nextIndex = Math.max(prevIndex - 1, 0);
-
-      if (nextIndex === prevIndex) {
-        return prevIndex;
-      }
-
-      setCurrentAudioIndex(
-        getAudioIndexInRange(
-          slideElementIndexes[prevIndex] - 1,
-          slideElementIndexes[nextIndex],
-          -1
-        )
-      );
-
-      return nextIndex;
+      return Math.max(prevIndex - 1, 0);
     });
-  }, [getAudioIndexInRange, slideElementIndexes]);
+  }, []);
 
   const handleNext = useCallback(() => {
     setCurrentIndex((prevIndex) => {
-      if (prevIndex < 0 || slideElementIndexes[prevIndex] == null) {
+      if (prevIndex < 0) {
         return prevIndex;
       }
 
-      const nextIndex = Math.min(prevIndex + 1, slideElementList.length - 1);
-
-      if (nextIndex === prevIndex) {
-        return prevIndex;
-      }
-
-      setCurrentAudioIndex(
-        getAudioIndexInRange(
-          slideElementIndexes[prevIndex] + 1,
-          slideElementIndexes[nextIndex],
-          1
-        )
-      );
-
-      return nextIndex;
+      return Math.min(prevIndex + 1, slideElementList.length - 1);
     });
-  }, [getAudioIndexInRange, slideElementIndexes, slideElementList.length]);
+  }, [slideElementList.length]);
 
   const canGoPrev = currentIndex > 0;
   const canGoNext =
@@ -202,13 +180,17 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
       is_show: true,
     };
   }, [currentIndex, slideElementList]);
+  const currentAudioSequenceIndexes = useMemo(
+    () => slideAudioSequenceMap.get(currentIndex) ?? [],
+    [currentIndex, slideAudioSequenceMap]
+  );
 
   return {
     currentElement,
     slideElementList,
     currentIndex,
     audioList,
-    currentAudioIndex,
+    currentAudioSequenceIndexes,
     canGoPrev,
     canGoNext,
     handlePrev,

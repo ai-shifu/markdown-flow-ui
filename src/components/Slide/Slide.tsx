@@ -9,6 +9,8 @@ import useSlide from "./useSlide";
 import "./slide.css";
 export type { Element } from "./types";
 
+const SLIDE_STAGE_TRANSITION_MS = 260;
+
 export interface SlideProps extends React.ComponentProps<"section"> {
   elementList?: Element[];
   showPlayer?: boolean;
@@ -29,6 +31,8 @@ const Slide: React.FC<SlideProps> = ({
 }) => {
   const sectionRef = useRef<HTMLElement | null>(null);
   const playerHideTimerRef = useRef<number | null>(null);
+  const audioStartTimerRef = useRef<number | null>(null);
+  const audioSequenceTokenRef = useRef(0);
   const checkpointElementList = elementList.filter(
     (element) => element.is_checkpoint
   );
@@ -45,11 +49,11 @@ const Slide: React.FC<SlideProps> = ({
     currentIndex,
     slideElementList,
     audioList,
-    currentAudioIndex,
+    currentAudioSequenceIndexes,
     canGoPrev,
     canGoNext,
-    handlePrev,
-    handleNext,
+    handlePrev: goPrev,
+    handleNext: goNext,
   } = useSlide(elementList);
   const visibleCheckpointCount = slideElementList.filter(
     (element) => element.is_show !== false
@@ -72,6 +76,10 @@ const Slide: React.FC<SlideProps> = ({
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
   const [hasPlayerInteracted, setHasPlayerInteracted] = useState(false);
   const [shouldAutoPlay] = useState(() => hasBrowserUserActivation());
+  const canAutoPlayAudio = shouldAutoPlay || hasPlayerInteracted;
+  const [currentAudioIndex, setCurrentAudioIndex] = useState(-1);
+  const [currentAudioSequencePosition, setCurrentAudioSequencePosition] =
+    useState(-1);
 
   const clearPlayerHideTimer = useCallback(() => {
     if (playerHideTimerRef.current === null) {
@@ -81,6 +89,22 @@ const Slide: React.FC<SlideProps> = ({
     window.clearTimeout(playerHideTimerRef.current);
     playerHideTimerRef.current = null;
   }, []);
+
+  const clearAudioStartTimer = useCallback(() => {
+    if (audioStartTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(audioStartTimerRef.current);
+    audioStartTimerRef.current = null;
+  }, []);
+
+  const resetAudioSequence = useCallback(() => {
+    audioSequenceTokenRef.current += 1;
+    clearAudioStartTimer();
+    setCurrentAudioIndex(-1);
+    setCurrentAudioSequencePosition(-1);
+  }, [clearAudioStartTimer]);
 
   const showPlayerControls = useCallback(
     (enableAutoHide = hasPlayerInteracted) => {
@@ -137,7 +161,7 @@ const Slide: React.FC<SlideProps> = ({
     const timer = window.setTimeout(() => {
       setExitingRenderKey(undefined);
       setExitingRenderElement(undefined);
-    }, 260);
+    }, SLIDE_STAGE_TRANSITION_MS);
 
     return () => {
       window.clearTimeout(timer);
@@ -147,8 +171,9 @@ const Slide: React.FC<SlideProps> = ({
   useEffect(() => {
     return () => {
       clearPlayerHideTimer();
+      clearAudioStartTimer();
     };
-  }, [clearPlayerHideTimer]);
+  }, [clearAudioStartTimer, clearPlayerHideTimer]);
 
   useEffect(() => {
     if (!shouldRenderPlayer) {
@@ -171,6 +196,37 @@ const Slide: React.FC<SlideProps> = ({
     showPlayerControls,
     shouldRenderPlayer,
     visibleInteractionContent,
+  ]);
+
+  useEffect(() => {
+    resetAudioSequence();
+
+    if (!currentElement || currentAudioSequenceIndexes.length === 0) {
+      return;
+    }
+
+    const sequenceToken = audioSequenceTokenRef.current;
+
+    // Start transition audio after the current slide has finished entering.
+    audioStartTimerRef.current = window.setTimeout(() => {
+      if (audioSequenceTokenRef.current !== sequenceToken) {
+        return;
+      }
+
+      setCurrentAudioSequencePosition(0);
+      setCurrentAudioIndex(currentAudioSequenceIndexes[0] ?? -1);
+      audioStartTimerRef.current = null;
+    }, SLIDE_STAGE_TRANSITION_MS);
+
+    return () => {
+      clearAudioStartTimer();
+    };
+  }, [
+    clearAudioStartTimer,
+    currentAudioSequenceIndexes,
+    currentElement,
+    currentElementRenderKey,
+    resetAudioSequence,
   ]);
 
   const renderSlideElement = (element?: Element) => {
@@ -216,6 +272,52 @@ const Slide: React.FC<SlideProps> = ({
 
     target.requestFullscreen?.().catch(() => {});
   };
+
+  const handlePrev = useCallback(() => {
+    resetAudioSequence();
+    goPrev();
+  }, [goPrev, resetAudioSequence]);
+
+  const handleNext = useCallback(() => {
+    resetAudioSequence();
+    goNext();
+  }, [goNext, resetAudioSequence]);
+
+  const handlePlayerEnded = useCallback(
+    (audioIndex: number) => {
+      if (currentAudioSequencePosition < 0) {
+        return;
+      }
+
+      if (
+        currentAudioSequenceIndexes[currentAudioSequencePosition] !== audioIndex
+      ) {
+        return;
+      }
+
+      const nextSequencePosition = currentAudioSequencePosition + 1;
+      const nextAudioIndex = currentAudioSequenceIndexes[nextSequencePosition];
+
+      if (typeof nextAudioIndex === "number") {
+        setCurrentAudioSequencePosition(nextSequencePosition);
+        setCurrentAudioIndex(nextAudioIndex);
+        return;
+      }
+
+      setCurrentAudioIndex(-1);
+      setCurrentAudioSequencePosition(-1);
+
+      if (canGoNext) {
+        goNext();
+      }
+    },
+    [
+      canGoNext,
+      currentAudioSequenceIndexes,
+      currentAudioSequencePosition,
+      goNext,
+    ]
+  );
 
   const handleSurfacePointerDown = useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
@@ -296,10 +398,11 @@ const Slide: React.FC<SlideProps> = ({
             !isPlayerVisible && "pointer-events-none opacity-0"
           )}
           currentAudioIndex={currentAudioIndex}
-          defaultPlaying={shouldAutoPlay}
+          defaultPlaying={canAutoPlayAudio}
           interactionContent={visibleInteractionContent}
           interactionTitle={interactionTitle}
           nextDisabled={!canGoNext}
+          onEnded={handlePlayerEnded}
           onFullscreen={handleFullscreen}
           onNext={handleNext}
           onPrev={handlePrev}

@@ -98,6 +98,26 @@ const Slide: React.FC<SlideProps> = ({
     handlePrev: goPrev,
     handleNext: goNext,
   } = useSlide(elementList);
+  const currentDisplayElement = useMemo(() => {
+    if (currentElement?.type !== "interaction") {
+      return currentElement;
+    }
+
+    for (let index = currentIndex - 1; index >= 0; index -= 1) {
+      const element = slideElementList[index];
+
+      if (!element || element.type === "interaction") {
+        continue;
+      }
+
+      return {
+        ...element,
+        is_show: true,
+      };
+    }
+
+    return undefined;
+  }, [currentElement, currentIndex, slideElementList]);
   const visibleCheckpointCount = slideElementList.filter(
     (element) => element.is_show !== false
   ).length;
@@ -108,12 +128,14 @@ const Slide: React.FC<SlideProps> = ({
       audioList.length > 0 ||
       Boolean(currentInteractionElement));
   const currentElementRenderKey =
-    currentElement?.serial_number ?? `${currentIndex}-${currentElement?.type}`;
+    currentDisplayElement?.serial_number ??
+    `${currentIndex}-${currentDisplayElement?.type}`;
   const [activeRenderKey, setActiveRenderKey] = useState(
     currentElementRenderKey
   );
-  const [activeRenderElement, setActiveRenderElement] =
-    useState(currentElement);
+  const [activeRenderElement, setActiveRenderElement] = useState(
+    currentDisplayElement
+  );
   const [exitingRenderKey, setExitingRenderKey] = useState<
     string | number | undefined
   >();
@@ -195,7 +217,7 @@ const Slide: React.FC<SlideProps> = ({
   );
 
   useEffect(() => {
-    if (!currentElement || currentElementRenderKey == null) {
+    if (!currentDisplayElement || currentElementRenderKey == null) {
       setActiveRenderKey(undefined);
       setActiveRenderElement(undefined);
       setExitingRenderKey(undefined);
@@ -212,8 +234,8 @@ const Slide: React.FC<SlideProps> = ({
       setExitingRenderElement(activeRenderElement);
       return currentElementRenderKey;
     });
-    setActiveRenderElement(currentElement);
-  }, [activeRenderElement, currentElement, currentElementRenderKey]);
+    setActiveRenderElement(currentDisplayElement);
+  }, [activeRenderElement, currentDisplayElement, currentElementRenderKey]);
 
   useEffect(() => {
     if (exitingRenderKey == null) {

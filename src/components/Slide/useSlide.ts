@@ -21,13 +21,11 @@ export interface UseSlideResult {
 }
 
 const getSlideElementList = (elementList: Element[]) =>
-  elementList.filter(
-    (element) => element.is_checkpoint && element.type !== "interaction"
-  );
+  elementList.filter((element) => element.is_checkpoint);
 
 const getSlideElementIndexes = (elementList: Element[]) =>
   elementList.reduce<number[]>((indexes, element, index) => {
-    if (element.is_checkpoint && element.type !== "interaction") {
+    if (element.is_checkpoint) {
       indexes.push(index);
     }
 
@@ -93,33 +91,6 @@ const getSlideAudioSequenceMap = (
     new Map<number, number[]>()
   );
 
-const getSlideInteractionMap = (
-  elementList: Element[],
-  slideElementIndexes: number[]
-) =>
-  slideElementIndexes.reduce<Map<number, Element | undefined>>(
-    (interactionMap, startIndex, slideIndex) => {
-      const nextCheckpointIndex =
-        slideElementIndexes[slideIndex + 1] ?? elementList.length;
-      let interactionElement: Element | undefined;
-
-      for (let index = startIndex; index < nextCheckpointIndex; index += 1) {
-        const element = elementList[index];
-
-        if (element?.type !== "interaction") {
-          continue;
-        }
-
-        interactionElement = element;
-        break;
-      }
-
-      interactionMap.set(slideIndex, interactionElement);
-      return interactionMap;
-    },
-    new Map<number, Element | undefined>()
-  );
-
 const getInitialSlideIndex = (slideElementList: Element[]) => {
   const visibleIndex = slideElementList.findIndex(
     (element) => element.is_show === true
@@ -150,10 +121,6 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
     () =>
       getSlideAudioSequenceMap(elementList, slideElementIndexes, audioIndexMap),
     [audioIndexMap, elementList, slideElementIndexes]
-  );
-  const slideInteractionMap = useMemo(
-    () => getSlideInteractionMap(elementList, slideElementIndexes),
-    [elementList, slideElementIndexes]
   );
   const [currentIndex, setCurrentIndex] = useState(() =>
     getInitialSlideIndex(slideElementList)
@@ -217,8 +184,8 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
     [currentIndex, slideAudioSequenceMap]
   );
   const currentInteractionElement = useMemo(
-    () => slideInteractionMap.get(currentIndex),
-    [currentIndex, slideInteractionMap]
+    () => (currentElement?.type === "interaction" ? currentElement : undefined),
+    [currentElement]
   );
 
   return {

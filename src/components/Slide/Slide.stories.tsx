@@ -8,6 +8,12 @@ const meta = {
   component: Slide,
   parameters: {
     layout: "padded",
+    docs: {
+      description: {
+        component:
+          "Interaction checkpoints are counted as independent player steps while preserving the previous visible slide content under the overlay.",
+      },
+    },
   },
   tags: ["autodocs"],
   argTypes: {

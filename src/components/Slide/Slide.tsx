@@ -313,22 +313,23 @@ const Slide: React.FC<SlideProps> = ({
 
     const sequenceToken = audioSequenceTokenRef.current;
 
+    if (currentAudioSequenceIndexes.length > 0) {
+      setCurrentAudioSequencePosition(0);
+      setCurrentAudioIndex(currentAudioSequenceIndexes[0] ?? -1);
+      return;
+    }
+
+    if (!currentInteractionElement) {
+      return;
+    }
+
     audioStartTimerRef.current = window.setTimeout(() => {
       if (audioSequenceTokenRef.current !== sequenceToken) {
         return;
       }
 
-      if (currentAudioSequenceIndexes.length > 0) {
-        setCurrentAudioSequencePosition(0);
-        setCurrentAudioIndex(currentAudioSequenceIndexes[0] ?? -1);
-        audioStartTimerRef.current = null;
-        return;
-      }
-
-      if (currentInteractionElement) {
-        setActiveInteractionElement(currentInteractionElement);
-        setIsInteractionOverlayOpen(true);
-      }
+      setActiveInteractionElement(currentInteractionElement);
+      setIsInteractionOverlayOpen(true);
 
       audioStartTimerRef.current = null;
     }, SLIDE_STAGE_TRANSITION_MS);

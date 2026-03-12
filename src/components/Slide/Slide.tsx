@@ -22,6 +22,8 @@ import useSlide from "./useSlide";
 import "./slide.css";
 export type { Element } from "./types";
 
+const CHECKPOINT_AUTO_ADVANCE_DELAY_MS = 1000;
+
 interface InteractionOverlayCardProps {
   content: string;
   title: string;
@@ -87,6 +89,7 @@ const Slide: React.FC<SlideProps> = ({
   const stageLayerRef = useRef<HTMLDivElement | null>(null);
   const lastElementRef = useRef<HTMLDivElement | null>(null);
   const playerHideTimerRef = useRef<number | null>(null);
+  const autoAdvanceTimerRef = useRef<number | null>(null);
   const interactionAutoCloseTimerRef = useRef<number | null>(null);
   const prevRenderElementKeysRef = useRef<string[]>([]);
   const {
@@ -140,13 +143,23 @@ const Slide: React.FC<SlideProps> = ({
     interactionAutoCloseTimerRef.current = null;
   }, []);
 
+  const clearAutoAdvanceTimer = useCallback(() => {
+    if (autoAdvanceTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(autoAdvanceTimerRef.current);
+    autoAdvanceTimerRef.current = null;
+  }, []);
+
   const resetAudioSequence = useCallback(() => {
+    clearAutoAdvanceTimer();
     clearInteractionAutoCloseTimer();
     setCurrentAudioIndex(-1);
     setCurrentAudioSequencePosition(-1);
     setActiveInteractionElement(undefined);
     setIsInteractionOverlayOpen(false);
-  }, [clearInteractionAutoCloseTimer]);
+  }, [clearAutoAdvanceTimer, clearInteractionAutoCloseTimer]);
 
   const startCurrentAudioSequence = useCallback(() => {
     const nextAudioIndex = currentAudioSequenceIndexes[0];
@@ -207,10 +220,15 @@ const Slide: React.FC<SlideProps> = ({
 
   useEffect(() => {
     return () => {
+      clearAutoAdvanceTimer();
       clearPlayerHideTimer();
       clearInteractionAutoCloseTimer();
     };
-  }, [clearInteractionAutoCloseTimer, clearPlayerHideTimer]);
+  }, [
+    clearAutoAdvanceTimer,
+    clearInteractionAutoCloseTimer,
+    clearPlayerHideTimer,
+  ]);
 
   useEffect(() => {
     if (!shouldRenderPlayer) {
@@ -239,10 +257,29 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    startCurrentAudioSequence();
+    if (startCurrentAudioSequence()) {
+      return;
+    }
+
+    if (!canGoNext) {
+      return;
+    }
+
+    // Auto-advance silent checkpoint-only steps so playback flow does not stall.
+    autoAdvanceTimerRef.current = window.setTimeout(() => {
+      autoAdvanceTimerRef.current = null;
+      goNext();
+    }, CHECKPOINT_AUTO_ADVANCE_DELAY_MS);
+
+    return () => {
+      clearAutoAdvanceTimer();
+    };
   }, [
+    canGoNext,
+    clearAutoAdvanceTimer,
     currentElementList,
     currentInteractionElement,
+    goNext,
     resetAudioSequence,
     startCurrentAudioSequence,
   ]);

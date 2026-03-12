@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 
 import { hasBrowserUserActivation } from "../../lib/browserUserActivation";
 import { cn } from "../../lib/utils";
@@ -11,6 +11,26 @@ import "./slide.css";
 export type { Element } from "./types";
 
 const SLIDE_STAGE_TRANSITION_MS = 260;
+
+const InteractionOverlayCard = memo(
+  ({ content, title }: { content: string; title: string }) => (
+    <div className="slide-player__interaction-card">
+      <div className="slide-player__interaction-header">
+        <p className="slide-player__interaction-title">{title}</p>
+      </div>
+      <div className="slide-player__interaction-body">
+        <ContentRender
+          content={content}
+          enableTypewriter={false}
+          sandboxMode="content"
+        />
+      </div>
+      <div className="slide-player__interaction-arrow" />
+    </div>
+  )
+);
+
+InteractionOverlayCard.displayName = "InteractionOverlayCard";
 
 export interface SlideProps extends React.ComponentProps<"section"> {
   elementList?: Element[];
@@ -341,8 +361,13 @@ const Slide: React.FC<SlideProps> = ({
         | React.MouseEvent<HTMLDivElement>
     ) => {
       event.stopPropagation();
+
+      // Keep the player visible a bit longer when users interact with the overlay.
+      if (isPlayerVisible) {
+        showPlayerControls(true);
+      }
     },
-    []
+    [isPlayerVisible, showPlayerControls]
   );
 
   const handleSurfacePointerDown = useCallback(
@@ -433,21 +458,10 @@ const Slide: React.FC<SlideProps> = ({
           onClick={stopOverlayPropagation}
           onPointerDown={stopOverlayPropagation}
         >
-          <div className="slide-player__interaction-card">
-            <div className="slide-player__interaction-header">
-              <p className="slide-player__interaction-title">
-                {interactionTitle ?? "Submit the content below to continue."}
-              </p>
-            </div>
-            <div className="slide-player__interaction-body">
-              <ContentRender
-                content={activeInteractionContent as string}
-                enableTypewriter={false}
-                sandboxMode="content"
-              />
-            </div>
-            {/* <div className="slide-player__interaction-arrow" /> */}
-          </div>
+          <InteractionOverlayCard
+            content={activeInteractionContent as string}
+            title={interactionTitle ?? "Submit the content below to continue."}
+          />
         </div>
       ) : null}
 

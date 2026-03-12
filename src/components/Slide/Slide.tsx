@@ -11,6 +11,7 @@ import { hasBrowserUserActivation } from "../../lib/browserUserActivation";
 import { cn } from "../../lib/utils";
 import ContentRender from "../ContentRender";
 import IframeSandbox from "../ContentRender/IframeSandbox";
+import type { OnSendContentParams } from "../types";
 import {
   getInteractionDefaultSelectedValues,
   getInteractionDefaultValues,
@@ -21,14 +22,13 @@ import useSlide from "./useSlide";
 import "./slide.css";
 export type { Element } from "./types";
 
-const SLIDE_STAGE_TRANSITION_MS = 260;
-
 interface InteractionOverlayCardProps {
   content: string;
   title: string;
   defaultButtonText?: string;
   defaultInputText?: string;
   defaultSelectedValues?: string[];
+  onSend?: (content: OnSendContentParams) => void;
   readonly?: boolean;
 }
 
@@ -39,6 +39,7 @@ const InteractionOverlayCard = memo(
     defaultButtonText,
     defaultInputText,
     defaultSelectedValues,
+    onSend,
     readonly = false,
   }: InteractionOverlayCardProps) => (
     <div className="slide-player__interaction-card">
@@ -51,6 +52,7 @@ const InteractionOverlayCard = memo(
           defaultButtonText={defaultButtonText}
           defaultInputText={defaultInputText}
           defaultSelectedValues={defaultSelectedValues}
+          onSend={onSend}
           readonly={readonly}
           enableTypewriter={false}
           sandboxMode="content"
@@ -83,9 +85,7 @@ const Slide: React.FC<SlideProps> = ({
 }) => {
   const sectionRef = useRef<HTMLElement | null>(null);
   const playerHideTimerRef = useRef<number | null>(null);
-  const audioStartTimerRef = useRef<number | null>(null);
   const interactionAutoCloseTimerRef = useRef<number | null>(null);
-  const audioSequenceTokenRef = useRef(0);
   const {
     currentElementList,
     slideElementList,
@@ -128,15 +128,6 @@ const Slide: React.FC<SlideProps> = ({
     playerHideTimerRef.current = null;
   }, []);
 
-  const clearAudioStartTimer = useCallback(() => {
-    if (audioStartTimerRef.current === null) {
-      return;
-    }
-
-    window.clearTimeout(audioStartTimerRef.current);
-    audioStartTimerRef.current = null;
-  }, []);
-
   const clearInteractionAutoCloseTimer = useCallback(() => {
     if (interactionAutoCloseTimerRef.current === null) {
       return;
@@ -147,14 +138,43 @@ const Slide: React.FC<SlideProps> = ({
   }, []);
 
   const resetAudioSequence = useCallback(() => {
-    audioSequenceTokenRef.current += 1;
-    clearAudioStartTimer();
     clearInteractionAutoCloseTimer();
     setCurrentAudioIndex(-1);
     setCurrentAudioSequencePosition(-1);
     setActiveInteractionElement(undefined);
     setIsInteractionOverlayOpen(false);
-  }, [clearAudioStartTimer, clearInteractionAutoCloseTimer]);
+  }, [clearInteractionAutoCloseTimer]);
+
+  const startCurrentAudioSequence = useCallback(() => {
+    const nextAudioIndex = currentAudioSequenceIndexes[0];
+
+    if (typeof nextAudioIndex !== "number") {
+      return false;
+    }
+
+    // Start the first audio segment for the current step immediately.
+    setCurrentAudioSequencePosition(0);
+    setCurrentAudioIndex(nextAudioIndex);
+    return true;
+  }, [currentAudioSequenceIndexes]);
+
+  const continueAfterInteraction = useCallback(() => {
+    clearInteractionAutoCloseTimer();
+    setIsInteractionOverlayOpen(false);
+
+    if (startCurrentAudioSequence()) {
+      return;
+    }
+
+    if (canGoNext) {
+      goNext();
+    }
+  }, [
+    canGoNext,
+    clearInteractionAutoCloseTimer,
+    goNext,
+    startCurrentAudioSequence,
+  ]);
 
   const showPlayerControls = useCallback(
     (enableAutoHide = hasPlayerInteracted) => {
@@ -185,14 +205,9 @@ const Slide: React.FC<SlideProps> = ({
   useEffect(() => {
     return () => {
       clearPlayerHideTimer();
-      clearAudioStartTimer();
       clearInteractionAutoCloseTimer();
     };
-  }, [
-    clearAudioStartTimer,
-    clearInteractionAutoCloseTimer,
-    clearPlayerHideTimer,
-  ]);
+  }, [clearInteractionAutoCloseTimer, clearPlayerHideTimer]);
 
   useEffect(() => {
     if (!shouldRenderPlayer) {
@@ -214,38 +229,19 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    const sequenceToken = audioSequenceTokenRef.current;
-
-    if (currentAudioSequenceIndexes.length > 0) {
-      setCurrentAudioSequencePosition(0);
-      setCurrentAudioIndex(currentAudioSequenceIndexes[0] ?? -1);
-      return;
-    }
-
-    if (!currentInteractionElement) {
-      return;
-    }
-
-    audioStartTimerRef.current = window.setTimeout(() => {
-      if (audioSequenceTokenRef.current !== sequenceToken) {
-        return;
-      }
-
+    if (currentInteractionElement) {
+      // Show the interaction gate before playing any follow-up audio.
       setActiveInteractionElement(currentInteractionElement);
       setIsInteractionOverlayOpen(true);
+      return;
+    }
 
-      audioStartTimerRef.current = null;
-    }, SLIDE_STAGE_TRANSITION_MS);
-
-    return () => {
-      clearAudioStartTimer();
-    };
+    startCurrentAudioSequence();
   }, [
-    clearAudioStartTimer,
-    currentAudioSequenceIndexes,
     currentElementList,
     currentInteractionElement,
     resetAudioSequence,
+    startCurrentAudioSequence,
   ]);
 
   const interactionDefaults = useMemo(() => {
@@ -278,6 +274,31 @@ const Slide: React.FC<SlideProps> = ({
     activeInteractionElement?.user_input?.trim()
   );
 
+  const handleInteractionSend = useCallback(
+    (content: OnSendContentParams) => {
+      const submittedValues = [
+        ...(content.selectedValues ?? []),
+        content.inputText?.trim() ?? "",
+        content.buttonText?.trim() ?? "",
+      ].filter(Boolean);
+      const resolvedUserInput = submittedValues.join(", ");
+
+      setActiveInteractionElement((prevElement) => {
+        if (!prevElement || !resolvedUserInput) {
+          return prevElement;
+        }
+
+        return {
+          ...prevElement,
+          user_input: resolvedUserInput,
+        };
+      });
+
+      continueAfterInteraction();
+    },
+    [continueAfterInteraction]
+  );
+
   useEffect(() => {
     clearInteractionAutoCloseTimer();
 
@@ -286,21 +307,17 @@ const Slide: React.FC<SlideProps> = ({
     }
 
     interactionAutoCloseTimerRef.current = window.setTimeout(() => {
-      setIsInteractionOverlayOpen(false);
       interactionAutoCloseTimerRef.current = null;
 
-      if (canGoNext) {
-        goNext();
-      }
+      continueAfterInteraction();
     }, 2000);
 
     return () => {
       clearInteractionAutoCloseTimer();
     };
   }, [
-    canGoNext,
     clearInteractionAutoCloseTimer,
-    goNext,
+    continueAfterInteraction,
     hasResolvedInteractionInput,
     isInteractionOverlayOpen,
   ]);
@@ -412,12 +429,6 @@ const Slide: React.FC<SlideProps> = ({
       setCurrentAudioIndex(-1);
       setCurrentAudioSequencePosition(-1);
 
-      if (currentInteractionElement) {
-        setActiveInteractionElement(currentInteractionElement);
-        setIsInteractionOverlayOpen(true);
-        return;
-      }
-
       if (canGoNext) {
         goNext();
       }
@@ -426,7 +437,6 @@ const Slide: React.FC<SlideProps> = ({
       canGoNext,
       currentAudioSequenceIndexes,
       currentAudioSequencePosition,
-      currentInteractionElement,
       goNext,
     ]
   );
@@ -525,6 +535,7 @@ const Slide: React.FC<SlideProps> = ({
             defaultButtonText={interactionDefaults.buttonText ?? ""}
             defaultInputText={interactionDefaults.inputText ?? ""}
             defaultSelectedValues={interactionDefaultSelectedValues}
+            onSend={handleInteractionSend}
             readonly={hasResolvedInteractionInput}
             title={interactionTitle ?? "Submit the content below to continue."}
           />

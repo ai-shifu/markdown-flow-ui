@@ -1,9 +1,20 @@
-import React, { memo, useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { hasBrowserUserActivation } from "../../lib/browserUserActivation";
 import { cn } from "../../lib/utils";
 import ContentRender from "../ContentRender";
 import IframeSandbox from "../ContentRender/IframeSandbox";
+import {
+  getInteractionDefaultSelectedValues,
+  getInteractionDefaultValues,
+} from "./interaction-defaults";
 import Player from "./Player";
 import type { Element } from "./types";
 import useSlide from "./useSlide";
@@ -12,8 +23,22 @@ export type { Element } from "./types";
 
 const SLIDE_STAGE_TRANSITION_MS = 260;
 
+interface InteractionOverlayCardProps {
+  content: string;
+  title: string;
+  defaultButtonText?: string;
+  defaultInputText?: string;
+  defaultSelectedValues?: string[];
+}
+
 const InteractionOverlayCard = memo(
-  ({ content, title }: { content: string; title: string }) => (
+  ({
+    content,
+    title,
+    defaultButtonText,
+    defaultInputText,
+    defaultSelectedValues,
+  }: InteractionOverlayCardProps) => (
     <div className="slide-player__interaction-card">
       <div className="slide-player__interaction-header">
         <p className="slide-player__interaction-title">{title}</p>
@@ -21,6 +46,9 @@ const InteractionOverlayCard = memo(
       <div className="slide-player__interaction-body">
         <ContentRender
           content={content}
+          defaultButtonText={defaultButtonText}
+          defaultInputText={defaultInputText}
+          defaultSelectedValues={defaultSelectedValues}
           enableTypewriter={false}
           sandboxMode="content"
         />
@@ -60,7 +88,7 @@ const Slide: React.FC<SlideProps> = ({
     slideElementList,
     audioList,
     currentAudioSequenceIndexes,
-    currentInteractionContent,
+    currentInteractionElement,
     canGoPrev,
     canGoNext,
     handlePrev: goPrev,
@@ -74,7 +102,7 @@ const Slide: React.FC<SlideProps> = ({
     showPlayer &&
     (isSingleSlide ||
       audioList.length > 0 ||
-      Boolean(currentInteractionContent));
+      Boolean(currentInteractionElement));
   const currentElementRenderKey =
     currentElement?.serial_number ?? `${currentIndex}-${currentElement?.type}`;
   const [activeRenderKey, setActiveRenderKey] = useState(
@@ -93,8 +121,8 @@ const Slide: React.FC<SlideProps> = ({
   const [currentAudioIndex, setCurrentAudioIndex] = useState(-1);
   const [currentAudioSequencePosition, setCurrentAudioSequencePosition] =
     useState(-1);
-  const [activeInteractionContent, setActiveInteractionContent] = useState<
-    string | undefined
+  const [activeInteractionElement, setActiveInteractionElement] = useState<
+    Element | undefined
   >();
   const [isInteractionOverlayOpen, setIsInteractionOverlayOpen] =
     useState(false);
@@ -122,7 +150,7 @@ const Slide: React.FC<SlideProps> = ({
     clearAudioStartTimer();
     setCurrentAudioIndex(-1);
     setCurrentAudioSequencePosition(-1);
-    setActiveInteractionContent(undefined);
+    setActiveInteractionElement(undefined);
     setIsInteractionOverlayOpen(false);
   }, [clearAudioStartTimer]);
 
@@ -229,8 +257,8 @@ const Slide: React.FC<SlideProps> = ({
         return;
       }
 
-      if (currentInteractionContent) {
-        setActiveInteractionContent(currentInteractionContent);
+      if (currentInteractionElement) {
+        setActiveInteractionElement(currentInteractionElement);
         setIsInteractionOverlayOpen(true);
       }
 
@@ -245,9 +273,35 @@ const Slide: React.FC<SlideProps> = ({
     currentAudioSequenceIndexes,
     currentElement,
     currentElementRenderKey,
-    currentInteractionContent,
+    currentInteractionElement,
     resetAudioSequence,
   ]);
+
+  const interactionDefaults = useMemo(() => {
+    if (!activeInteractionElement) {
+      return {};
+    }
+
+    return getInteractionDefaultValues(
+      typeof activeInteractionElement.content === "string"
+        ? activeInteractionElement.content
+        : undefined,
+      activeInteractionElement.user_input
+    );
+  }, [activeInteractionElement]);
+
+  const interactionDefaultSelectedValues = useMemo(() => {
+    if (!activeInteractionElement) {
+      return undefined;
+    }
+
+    return getInteractionDefaultSelectedValues(
+      typeof activeInteractionElement.content === "string"
+        ? activeInteractionElement.content
+        : undefined,
+      activeInteractionElement.user_input
+    );
+  }, [activeInteractionElement]);
 
   const renderSlideElement = (element?: Element) => {
     if (!element) {
@@ -327,8 +381,8 @@ const Slide: React.FC<SlideProps> = ({
       setCurrentAudioIndex(-1);
       setCurrentAudioSequencePosition(-1);
 
-      if (currentInteractionContent) {
-        setActiveInteractionContent(currentInteractionContent);
+      if (currentInteractionElement) {
+        setActiveInteractionElement(currentInteractionElement);
         setIsInteractionOverlayOpen(true);
         return;
       }
@@ -341,18 +395,18 @@ const Slide: React.FC<SlideProps> = ({
       canGoNext,
       currentAudioSequenceIndexes,
       currentAudioSequencePosition,
-      currentInteractionContent,
+      currentInteractionElement,
       goNext,
     ]
   );
 
   const handleInteractionToggle = useCallback(() => {
-    if (!activeInteractionContent) {
+    if (!activeInteractionElement) {
       return;
     }
 
     setIsInteractionOverlayOpen((prevOpen) => !prevOpen);
-  }, [activeInteractionContent]);
+  }, [activeInteractionElement]);
 
   const stopOverlayPropagation = useCallback(
     (
@@ -380,7 +434,7 @@ const Slide: React.FC<SlideProps> = ({
   );
 
   const shouldShowInteractionOverlay =
-    Boolean(activeInteractionContent) && isInteractionOverlayOpen;
+    Boolean(activeInteractionElement) && isInteractionOverlayOpen;
 
   console.log(
     "currentElement",
@@ -388,8 +442,8 @@ const Slide: React.FC<SlideProps> = ({
     shouldRenderPlayer,
     isPlayerVisible,
     currentAudioSequenceIndexes,
-    currentInteractionContent,
-    activeInteractionContent,
+    currentInteractionElement,
+    activeInteractionElement,
     isInteractionOverlayOpen
   );
 
@@ -459,7 +513,10 @@ const Slide: React.FC<SlideProps> = ({
           onPointerDown={stopOverlayPropagation}
         >
           <InteractionOverlayCard
-            content={activeInteractionContent as string}
+            content={String(activeInteractionElement?.content ?? "")}
+            defaultButtonText={interactionDefaults.buttonText ?? ""}
+            defaultInputText={interactionDefaults.inputText ?? ""}
+            defaultSelectedValues={interactionDefaultSelectedValues}
             title={interactionTitle ?? "Submit the content below to continue."}
           />
         </div>
@@ -475,7 +532,7 @@ const Slide: React.FC<SlideProps> = ({
           )}
           currentAudioIndex={currentAudioIndex}
           defaultPlaying={canAutoPlayAudio}
-          hasInteraction={Boolean(activeInteractionContent)}
+          hasInteraction={Boolean(activeInteractionElement)}
           isInteractionOpen={isInteractionOverlayOpen}
           nextDisabled={!canGoNext}
           onEnded={handlePlayerEnded}

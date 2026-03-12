@@ -13,7 +13,7 @@ export interface UseSlideResult {
   currentIndex: number;
   audioList: SlideAudioItem[];
   currentAudioSequenceIndexes: number[];
-  currentInteractionContent?: string;
+  currentInteractionElement?: Element;
   canGoPrev: boolean;
   canGoNext: boolean;
   handlePrev: () => void;
@@ -97,11 +97,11 @@ const getSlideInteractionMap = (
   elementList: Element[],
   slideElementIndexes: number[]
 ) =>
-  slideElementIndexes.reduce<Map<number, string | undefined>>(
+  slideElementIndexes.reduce<Map<number, Element | undefined>>(
     (interactionMap, startIndex, slideIndex) => {
       const nextCheckpointIndex =
         slideElementIndexes[slideIndex + 1] ?? elementList.length;
-      let interactionContent: string | undefined;
+      let interactionElement: Element | undefined;
 
       for (let index = startIndex; index < nextCheckpointIndex; index += 1) {
         const element = elementList[index];
@@ -110,18 +110,14 @@ const getSlideInteractionMap = (
           continue;
         }
 
-        if (typeof element.content !== "string") {
-          continue;
-        }
-
-        interactionContent = element.content;
+        interactionElement = element;
         break;
       }
 
-      interactionMap.set(slideIndex, interactionContent);
+      interactionMap.set(slideIndex, interactionElement);
       return interactionMap;
     },
-    new Map<number, string | undefined>()
+    new Map<number, Element | undefined>()
   );
 
 const getInitialSlideIndex = (slideElementList: Element[]) => {
@@ -220,7 +216,7 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
     () => slideAudioSequenceMap.get(currentIndex) ?? [],
     [currentIndex, slideAudioSequenceMap]
   );
-  const currentInteractionContent = useMemo(
+  const currentInteractionElement = useMemo(
     () => slideInteractionMap.get(currentIndex),
     [currentIndex, slideInteractionMap]
   );
@@ -231,7 +227,7 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
     currentIndex,
     audioList,
     currentAudioSequenceIndexes,
-    currentInteractionContent,
+    currentInteractionElement,
     canGoPrev,
     canGoNext,
     handlePrev,

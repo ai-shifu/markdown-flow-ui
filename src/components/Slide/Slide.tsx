@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
+import { hasBrowserUserActivation } from "../../lib/browserUserActivation";
 import { cn } from "../../lib/utils";
 import IframeSandbox from "../ContentRender/IframeSandbox";
 import Player from "./Player";
@@ -69,6 +70,8 @@ const Slide: React.FC<SlideProps> = ({
   >();
   const [exitingRenderElement, setExitingRenderElement] = useState<Element>();
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
+  const [hasPlayerInteracted, setHasPlayerInteracted] = useState(false);
+  const [shouldAutoPlay] = useState(() => hasBrowserUserActivation());
 
   const clearPlayerHideTimer = useCallback(() => {
     if (playerHideTimerRef.current === null) {
@@ -79,23 +82,31 @@ const Slide: React.FC<SlideProps> = ({
     playerHideTimerRef.current = null;
   }, []);
 
-  const showPlayerControls = useCallback(() => {
-    if (!shouldRenderPlayer) {
-      return;
-    }
+  const showPlayerControls = useCallback(
+    (enableAutoHide = hasPlayerInteracted) => {
+      if (!shouldRenderPlayer) {
+        return;
+      }
 
-    setIsPlayerVisible(true);
-    clearPlayerHideTimer();
+      setIsPlayerVisible(true);
+      clearPlayerHideTimer();
 
-    if (playerAutoHideDelay <= 0) {
-      return;
-    }
+      if (!enableAutoHide || playerAutoHideDelay <= 0) {
+        return;
+      }
 
-    playerHideTimerRef.current = window.setTimeout(() => {
-      setIsPlayerVisible(false);
-      playerHideTimerRef.current = null;
-    }, playerAutoHideDelay);
-  }, [clearPlayerHideTimer, playerAutoHideDelay, shouldRenderPlayer]);
+      playerHideTimerRef.current = window.setTimeout(() => {
+        setIsPlayerVisible(false);
+        playerHideTimerRef.current = null;
+      }, playerAutoHideDelay);
+    },
+    [
+      clearPlayerHideTimer,
+      hasPlayerInteracted,
+      playerAutoHideDelay,
+      shouldRenderPlayer,
+    ]
+  );
 
   useEffect(() => {
     if (!currentElement || currentElementRenderKey == null) {
@@ -146,10 +157,17 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
+    if (!hasPlayerInteracted) {
+      clearPlayerHideTimer();
+      setIsPlayerVisible(true);
+      return;
+    }
+
     showPlayerControls();
   }, [
     clearPlayerHideTimer,
     currentElementRenderKey,
+    hasPlayerInteracted,
     showPlayerControls,
     shouldRenderPlayer,
     visibleInteractionContent,
@@ -202,12 +220,18 @@ const Slide: React.FC<SlideProps> = ({
   const handleSurfacePointerDown = useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
       onPointerDown?.(event);
-      showPlayerControls();
+      setHasPlayerInteracted(true);
+      showPlayerControls(true);
     },
     [onPointerDown, showPlayerControls]
   );
 
-  console.log("currentElement", currentElement);
+  console.log(
+    "currentElement",
+    currentElement,
+    shouldRenderPlayer,
+    isPlayerVisible
+  );
 
   return (
     <section
@@ -264,21 +288,24 @@ const Slide: React.FC<SlideProps> = ({
       </div>
 
       {shouldRenderPlayer ? (
-        <div className="slide-player-wrapper">
-          <Player
-            audioList={audioList}
-            className={playerClassName}
-            currentAudioIndex={currentAudioIndex}
-            interactionContent={visibleInteractionContent}
-            interactionTitle={interactionTitle}
-            onFullscreen={handleFullscreen}
-            onNext={handleNext}
-            onPrev={handlePrev}
-            nextDisabled={!canGoNext}
-            prevDisabled={!canGoPrev}
-            showControls={isPlayerVisible}
-          />
-        </div>
+        <Player
+          audioList={audioList}
+          className={cn(
+            "absolute left-1/2 bottom-6 z-[2] -translate-x-1/2",
+            playerClassName,
+            !isPlayerVisible && "pointer-events-none opacity-0"
+          )}
+          currentAudioIndex={currentAudioIndex}
+          defaultPlaying={shouldAutoPlay}
+          interactionContent={visibleInteractionContent}
+          interactionTitle={interactionTitle}
+          nextDisabled={!canGoNext}
+          onFullscreen={handleFullscreen}
+          onNext={handleNext}
+          onPrev={handlePrev}
+          prevDisabled={!canGoPrev}
+          showControls={isPlayerVisible}
+        />
       ) : null}
     </section>
   );

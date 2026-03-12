@@ -186,15 +186,25 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
   const canGoPrev = currentIndex > 0;
   const canGoNext =
     currentIndex >= 0 && currentIndex < slideElementList.length - 1;
+  const currentElement = useMemo(() => {
+    if (currentIndex < 0) {
+      return undefined;
+    }
+
+    const element = slideElementList[currentIndex];
+
+    if (!element) {
+      return undefined;
+    }
+
+    return {
+      ...element,
+      is_show: true,
+    };
+  }, [currentIndex, slideElementList]);
 
   return {
-    currentElement:
-      currentIndex >= 0
-        ? {
-            ...slideElementList[currentIndex],
-            is_show: true,
-          }
-        : undefined,
+    currentElement,
     slideElementList,
     currentIndex,
     audioList,

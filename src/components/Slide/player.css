@@ -1,5 +1,5 @@
 .slide-player {
-  position: relative;
+  position: absolute;
   display: flex;
   min-height: 80px;
   width: min(664px, calc(100vw - 48px));

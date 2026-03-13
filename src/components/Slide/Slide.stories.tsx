@@ -22,7 +22,7 @@ const meta = {
       table: {
         type: {
           summary:
-            "{ content: ReactNode; type: string; is_show?: boolean; operation?: string; is_checkpoint?: boolean; serial_number?: number; is_read?: boolean; audio_url?: string; audio_segments?: string[]; }[]",
+            "{ content: ReactNode; type: string; is_show?: boolean; operation?: string; is_checkpoint?: boolean; serial_number?: number; is_read?: boolean; audio_url?: string; audio_segments?: ElementAudioSegment[]; }[]",
         },
       },
     },

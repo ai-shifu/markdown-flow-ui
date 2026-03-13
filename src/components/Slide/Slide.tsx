@@ -20,7 +20,7 @@ import Player from "./Player";
 import type { Element } from "./types";
 import useSlide from "./useSlide";
 import "./slide.css";
-export type { Element } from "./types";
+export type { Element, ElementAudioSegment } from "./types";
 
 const CHECKPOINT_AUTO_ADVANCE_DELAY_MS = 1000;
 

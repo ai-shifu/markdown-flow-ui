@@ -21,6 +21,6 @@ export type {
   InteractionDefaultValues,
   InteractionParseResult,
 } from "./interaction-defaults";
-export type { Element } from "./types";
+export type { Element, ElementAudioSegment } from "./types";
 export type { PlayerProps } from "./Player";
 export type { UseSlideResult } from "./useSlide";

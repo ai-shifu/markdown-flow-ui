@@ -92,6 +92,7 @@ const Slide: React.FC<SlideProps> = ({
   const autoAdvanceTimerRef = useRef<number | null>(null);
   const interactionAutoCloseTimerRef = useRef<number | null>(null);
   const prevRenderElementKeysRef = useRef<string[]>([]);
+  const shouldScrollToBottomRef = useRef(false);
   const {
     currentElementList,
     slideElementList,
@@ -436,12 +437,28 @@ const Slide: React.FC<SlideProps> = ({
     target.requestFullscreen?.().catch(() => {});
   };
 
+  const scrollStageToBottom = useCallback(() => {
+    const stageLayerElement = stageLayerRef.current;
+
+    if (!stageLayerElement) {
+      return;
+    }
+
+    // Keep the latest content visible after manual player navigation.
+    stageLayerElement.scrollTo({
+      top: stageLayerElement.scrollHeight,
+      behavior: "smooth",
+    });
+  }, []);
+
   const handlePrev = useCallback(() => {
+    shouldScrollToBottomRef.current = true;
     resetAudioSequence();
     goPrev();
   }, [goPrev, resetAudioSequence]);
 
   const handleNext = useCallback(() => {
+    shouldScrollToBottomRef.current = true;
     resetAudioSequence();
     goNext();
   }, [goNext, resetAudioSequence]);
@@ -570,6 +587,26 @@ const Slide: React.FC<SlideProps> = ({
       window.cancelAnimationFrame(animationFrameId);
     };
   }, [currentElementList, currentRenderElementKeys]);
+
+  useEffect(() => {
+    if (!shouldScrollToBottomRef.current) {
+      return;
+    }
+
+    shouldScrollToBottomRef.current = false;
+
+    if (currentElementList.length === 0) {
+      return;
+    }
+
+    const animationFrameId = window.requestAnimationFrame(() => {
+      scrollStageToBottom();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+    };
+  }, [currentElementList, scrollStageToBottom]);
 
   console.log(
     "currentElement",

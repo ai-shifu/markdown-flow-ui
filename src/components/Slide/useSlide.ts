@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { applyDiffElement } from "./diff-utils";
-import type { Element } from "./types";
+import type { Element, ElementAudioSegment } from "./types";
 
 export interface SlideAudioItem {
   serialNumber?: number;
-  audioUrl: string;
+  audioUrl?: string;
+  audioSegments?: ElementAudioSegment[];
+  isAudioStreaming?: boolean;
 }
 
 export interface UseSlideResult {
@@ -33,12 +35,23 @@ const getSlideElementIndexes = (elementList: Element[]) =>
     return indexes;
   }, []);
 
+const hasPlayableAudio = (element?: Element) =>
+  Boolean(
+    element?.is_read &&
+      (element.audio_url || (element.audio_segments?.length ?? 0) > 0)
+  );
+
+const isStreamingAudio = (segments: ElementAudioSegment[] = []) =>
+  segments.length > 0 && !segments.some((segment) => segment.is_final);
+
 const getAudioList = (elementList: Element[]) =>
   elementList.reduce<SlideAudioItem[]>((list, element) => {
-    if (element.is_read && element.audio_url) {
+    if (hasPlayableAudio(element)) {
       list.push({
         serialNumber: element.serial_number,
         audioUrl: element.audio_url,
+        audioSegments: element.audio_segments,
+        isAudioStreaming: isStreamingAudio(element.audio_segments),
       });
     }
 
@@ -50,7 +63,7 @@ const getAudioIndexMap = (elementList: Element[]) => {
   let audioIndex = 0;
 
   elementList.forEach((element, index) => {
-    if (element.is_read && element.audio_url) {
+    if (hasPlayableAudio(element)) {
       audioIndexMap.set(index, audioIndex);
       audioIndex += 1;
     }
@@ -73,7 +86,7 @@ const getSlideAudioSequenceMap = (
       for (let index = startIndex; index < nextCheckpointIndex; index += 1) {
         const element = elementList[index];
 
-        if (!element?.is_read || !element.audio_url) {
+        if (!hasPlayableAudio(element)) {
           continue;
         }
 

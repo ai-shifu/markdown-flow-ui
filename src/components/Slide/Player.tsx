@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   EllipsisVertical,
   FilePenLine,
@@ -79,12 +85,206 @@ const Player: React.FC<PlayerProps> = ({
 }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioSrcRef = useRef<string | null>(null);
+  const currentAudioKeyRef = useRef<string | null>(null);
+  const currentSegmentIndexRef = useRef(0);
+  const waitingSegmentIndexRef = useRef<number | null>(null);
+  const currentAudioRef = useRef<SlideAudioItem | undefined>(undefined);
+  const currentAudioSegmentsRef = useRef<
+    NonNullable<SlideAudioItem["audioSegments"]>
+  >([]);
+  const isWaitingForSegmentRef = useRef(false);
+  const pendingAutoPlayRef = useRef(false);
+  const pendingSeekTimeRef = useRef<number | null>(null);
+  const isSwitchingSegmentRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(defaultPlaying);
   const currentAudio =
     currentAudioIndex >= 0 ? audioList[currentAudioIndex] : undefined;
   const currentAudioUrl = currentAudio?.audioUrl;
+  const currentAudioSegments = useMemo(
+    () =>
+      [...(currentAudio?.audioSegments ?? [])].sort(
+        (prevSegment, nextSegment) =>
+          prevSegment.segment_index - nextSegment.segment_index
+      ),
+    [currentAudio?.audioSegments]
+  );
+  const currentAudioKey = `${currentAudioIndex}:${currentAudio?.serialNumber ?? "none"}:${currentAudioUrl ?? ""}`;
+
+  useEffect(() => {
+    currentAudioRef.current = currentAudio;
+  }, [currentAudio]);
+
+  useEffect(() => {
+    currentAudioSegmentsRef.current = currentAudioSegments;
+  }, [currentAudioSegments]);
+
+  const getSegmentSrc = useCallback((audioData: string) => {
+    if (!audioData) {
+      return "";
+    }
+
+    if (audioData.startsWith("data:")) {
+      return audioData;
+    }
+
+    return `data:audio/mpeg;base64,${audioData}`;
+  }, []);
 
   const resetAudio = useCallback(() => {
+    const audioElement = audioRef.current;
+
+    if (!audioElement) {
+      return;
+    }
+
+    pendingAutoPlayRef.current = false;
+    pendingSeekTimeRef.current = null;
+    isWaitingForSegmentRef.current = false;
+    isSwitchingSegmentRef.current = false;
+    audioElement.pause();
+    audioElement.removeAttribute("src");
+    audioElement.load();
+    audioSrcRef.current = null;
+    currentSegmentIndexRef.current = 0;
+    waitingSegmentIndexRef.current = null;
+    setIsPlaying(false);
+  }, [currentAudioIndex]);
+
+  const tryPlayCurrentAudio = useCallback(
+    (_reason: string) => {
+      const audioElement = audioRef.current;
+
+      if (!audioElement) {
+        return false;
+      }
+
+      const playPromise = audioElement.play();
+
+      if (playPromise && typeof playPromise.then === "function") {
+        void playPromise
+          .then(() => {
+            pendingAutoPlayRef.current = false;
+            isSwitchingSegmentRef.current = false;
+          })
+          .catch((_error: unknown) => {
+            setIsPlaying(false);
+          });
+      }
+
+      return true;
+    },
+    [currentAudioIndex]
+  );
+
+  const startSegmentPlayback = useCallback(
+    (segmentIndex: number, _reason: string) => {
+      const audioElement = audioRef.current;
+      const segment = currentAudioSegmentsRef.current[segmentIndex];
+
+      if (!audioElement || !segment) {
+        return false;
+      }
+
+      const nextAudioSrc = getSegmentSrc(segment.audio_data);
+
+      currentSegmentIndexRef.current = segmentIndex;
+      waitingSegmentIndexRef.current = null;
+      isWaitingForSegmentRef.current = false;
+      isSwitchingSegmentRef.current = true;
+      pendingAutoPlayRef.current = defaultPlaying;
+
+      const hasNewSrc = audioSrcRef.current !== nextAudioSrc;
+
+      if (hasNewSrc) {
+        audioElement.pause();
+        audioElement.removeAttribute("src");
+        audioElement.load();
+        audioSrcRef.current = nextAudioSrc;
+        audioElement.src = nextAudioSrc;
+        audioElement.load();
+      }
+
+      pendingSeekTimeRef.current = 0;
+
+      if (audioElement.readyState > 0) {
+        audioElement.currentTime = 0;
+        pendingSeekTimeRef.current = null;
+      }
+
+      if (!defaultPlaying) {
+        pendingAutoPlayRef.current = false;
+        isSwitchingSegmentRef.current = false;
+        audioElement.pause();
+        setIsPlaying(false);
+        return true;
+      }
+
+      if (hasNewSrc) {
+        return true;
+      }
+
+      return tryPlayCurrentAudio(`start-segment:`);
+    },
+    [currentAudioIndex, defaultPlaying, getSegmentSrc, tryPlayCurrentAudio]
+  );
+
+  const finishAudioItem = useCallback(
+    (_reason: string) => {
+      pendingAutoPlayRef.current = false;
+      isWaitingForSegmentRef.current = false;
+      isSwitchingSegmentRef.current = false;
+      setIsPlaying(false);
+
+      if (currentAudioIndex >= 0) {
+        onEnded?.(currentAudioIndex);
+      }
+    },
+    [currentAudioIndex, onEnded]
+  );
+
+  const handleSegmentEnded = useCallback(() => {
+    const nextSegmentIndex = currentSegmentIndexRef.current + 1;
+    const segments = currentAudioSegmentsRef.current;
+    const nextSegment = segments[nextSegmentIndex];
+    const activeAudio = currentAudioRef.current;
+    const hasFinal = segments.some((segment) => segment.is_final);
+
+    if (nextSegment) {
+      startSegmentPlayback(nextSegmentIndex, "ended");
+      return;
+    }
+
+    if (activeAudio?.isAudioStreaming || !hasFinal) {
+      currentSegmentIndexRef.current = nextSegmentIndex;
+      waitingSegmentIndexRef.current = nextSegmentIndex;
+      isWaitingForSegmentRef.current = true;
+      pendingAutoPlayRef.current = defaultPlaying;
+      setIsPlaying(defaultPlaying);
+
+      return;
+    }
+
+    finishAudioItem("segments-completed");
+  }, [
+    currentAudioIndex,
+    defaultPlaying,
+    finishAudioItem,
+    startSegmentPlayback,
+  ]);
+
+  useEffect(() => {
+    if (currentAudioKeyRef.current === currentAudioKey) {
+      return;
+    }
+
+    currentAudioKeyRef.current = currentAudioKey;
+    currentSegmentIndexRef.current = 0;
+    waitingSegmentIndexRef.current = null;
+    isWaitingForSegmentRef.current = false;
+    pendingAutoPlayRef.current = false;
+    isSwitchingSegmentRef.current = false;
+    audioSrcRef.current = null;
+
     const audioElement = audioRef.current;
 
     if (!audioElement) {
@@ -94,9 +294,13 @@ const Player: React.FC<PlayerProps> = ({
     audioElement.pause();
     audioElement.removeAttribute("src");
     audioElement.load();
-    audioSrcRef.current = null;
     setIsPlaying(false);
-  }, []);
+  }, [
+    currentAudioIndex,
+    currentAudioKey,
+    currentAudioSegments.length,
+    currentAudioUrl,
+  ]);
 
   useEffect(() => {
     const audioElement = audioRef.current;
@@ -105,50 +309,160 @@ const Player: React.FC<PlayerProps> = ({
       return;
     }
 
-    if (!currentAudioUrl) {
+    if (!currentAudio) {
       resetAudio();
       return;
     }
 
-    if (audioSrcRef.current !== currentAudioUrl) {
-      audioSrcRef.current = currentAudioUrl;
-      audioElement.src = currentAudioUrl;
-      audioElement.load();
-      audioElement.currentTime = 0;
+    if (currentAudioUrl) {
+      const hasNewSrc = audioSrcRef.current !== currentAudioUrl;
+
+      if (hasNewSrc) {
+        audioElement.pause();
+        audioElement.removeAttribute("src");
+        audioElement.load();
+        audioSrcRef.current = currentAudioUrl;
+        audioElement.src = currentAudioUrl;
+        audioElement.load();
+      }
+
+      pendingSeekTimeRef.current = 0;
+
+      if (audioElement.readyState > 0) {
+        audioElement.currentTime = 0;
+        pendingSeekTimeRef.current = null;
+      }
+
+      pendingAutoPlayRef.current = defaultPlaying;
+      isWaitingForSegmentRef.current = false;
+      isSwitchingSegmentRef.current = false;
+
+      if (!defaultPlaying) {
+        pendingAutoPlayRef.current = false;
+        audioElement.pause();
+        setIsPlaying(false);
+        return;
+      }
+
+      if (!hasNewSrc) {
+        tryPlayCurrentAudio("sync-url");
+      }
+      return;
+    }
+
+    if (waitingSegmentIndexRef.current !== null) {
+      if (waitingSegmentIndexRef.current < currentAudioSegments.length) {
+        startSegmentPlayback(waitingSegmentIndexRef.current, "wait-resume");
+        return;
+      }
+
+      isWaitingForSegmentRef.current = true;
+      pendingAutoPlayRef.current = defaultPlaying;
+      setIsPlaying(defaultPlaying);
+      return;
+    }
+
+    if (!currentAudioSegments.length) {
+      if (currentAudio.isAudioStreaming) {
+        waitingSegmentIndexRef.current = currentSegmentIndexRef.current;
+        isWaitingForSegmentRef.current = true;
+        pendingAutoPlayRef.current = defaultPlaying;
+        setIsPlaying(defaultPlaying);
+        return;
+      }
+
+      resetAudio();
+      return;
+    }
+
+    if (!audioSrcRef.current) {
+      startSegmentPlayback(
+        Math.min(
+          currentSegmentIndexRef.current,
+          currentAudioSegments.length - 1
+        ),
+        "effect-init"
+      );
+      return;
     }
 
     if (!defaultPlaying) {
+      pendingAutoPlayRef.current = false;
       audioElement.pause();
       setIsPlaying(false);
       return;
     }
 
-    void audioElement.play().catch(() => {
-      setIsPlaying(false);
-    });
-  }, [currentAudioUrl, defaultPlaying, resetAudio]);
+    if (audioElement.paused) {
+      pendingAutoPlayRef.current = true;
+      tryPlayCurrentAudio("sync-paused-retry");
+    }
+  }, [
+    currentAudio,
+    currentAudioIndex,
+    currentAudioSegments,
+    currentAudioUrl,
+    defaultPlaying,
+    resetAudio,
+    startSegmentPlayback,
+    tryPlayCurrentAudio,
+  ]);
 
   useEffect(() => resetAudio, [resetAudio]);
 
   const handleAudioPlay = useCallback(() => {
     setIsPlaying(true);
-  }, []);
+  }, [currentAudioIndex]);
 
   const handleAudioPause = useCallback(() => {
+    if (isWaitingForSegmentRef.current || isSwitchingSegmentRef.current) {
+      return;
+    }
+
     setIsPlaying(false);
-  }, []);
+  }, [currentAudioIndex]);
+
+  const handleAudioCanPlay = useCallback(() => {
+    const audioElement = audioRef.current;
+
+    if (audioElement && pendingSeekTimeRef.current !== null) {
+      audioElement.currentTime = pendingSeekTimeRef.current;
+      pendingSeekTimeRef.current = null;
+    }
+
+    if (!pendingAutoPlayRef.current || !defaultPlaying) {
+      return;
+    }
+
+    tryPlayCurrentAudio("canplay");
+  }, [currentAudioIndex, defaultPlaying, tryPlayCurrentAudio]);
+
+  const handleLoadedMetadata = useCallback(() => {
+    const audioElement = audioRef.current;
+
+    if (audioElement && pendingSeekTimeRef.current !== null) {
+      audioElement.currentTime = pendingSeekTimeRef.current;
+      pendingSeekTimeRef.current = null;
+    }
+  }, [currentAudioIndex]);
 
   const handleAudioEnded = useCallback(() => {
-    setIsPlaying(false);
+    isSwitchingSegmentRef.current = false;
 
-    if (currentAudioIndex >= 0) {
-      onEnded?.(currentAudioIndex);
+    if (
+      currentAudioRef.current?.audioUrl ||
+      currentAudioSegmentsRef.current.length === 0
+    ) {
+      finishAudioItem("url-ended");
+      return;
     }
-  }, [currentAudioIndex, onEnded]);
+
+    handleSegmentEnded();
+  }, [currentAudioIndex, finishAudioItem, handleSegmentEnded]);
 
   const handleAudioError = useCallback(() => {
     setIsPlaying(false);
-  }, []);
+  }, [currentAudioIndex]);
 
   return (
     <div className={cn("slide-player", className)} {...props}>
@@ -156,6 +470,8 @@ const Player: React.FC<PlayerProps> = ({
         ref={audioRef}
         preload="metadata"
         playsInline
+        onLoadedMetadata={handleLoadedMetadata}
+        onCanPlay={handleAudioCanPlay}
         onPlay={handleAudioPlay}
         onPause={handleAudioPause}
         onEnded={handleAudioEnded}
@@ -189,17 +505,43 @@ const Player: React.FC<PlayerProps> = ({
               onClick={() => {
                 const audioElement = audioRef.current;
 
-                if (!audioElement || !currentAudioUrl) {
+                if (!audioElement || !currentAudio) {
+                  return;
+                }
+
+                if (waitingSegmentIndexRef.current !== null) {
+                  if (isPlaying) {
+                    pendingAutoPlayRef.current = false;
+                    waitingSegmentIndexRef.current = null;
+                    isWaitingForSegmentRef.current = false;
+                    setIsPlaying(false);
+                    audioElement.pause();
+                    return;
+                  }
+
+                  pendingAutoPlayRef.current = true;
+                  setIsPlaying(true);
+                  return;
+                }
+
+                if (!audioElement.src && currentAudioSegments.length > 0) {
+                  startSegmentPlayback(
+                    Math.min(
+                      currentSegmentIndexRef.current,
+                      currentAudioSegments.length - 1
+                    ),
+                    "toggle"
+                  );
                   return;
                 }
 
                 if (audioElement.paused) {
-                  void audioElement.play().catch(() => {
-                    setIsPlaying(false);
-                  });
+                  pendingAutoPlayRef.current = true;
+                  tryPlayCurrentAudio("toggle-resume");
                   return;
                 }
 
+                pendingAutoPlayRef.current = false;
                 audioElement.pause();
               }}
               type="button"

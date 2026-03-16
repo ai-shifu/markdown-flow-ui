@@ -223,24 +223,21 @@ const Player: React.FC<PlayerProps> = ({
         return true;
       }
 
-      return tryPlayCurrentAudio(`start-segment:`);
+      return tryPlayCurrentAudio(`start-segment:${_reason}`);
     },
     [currentAudioIndex, defaultPlaying, getSegmentSrc, tryPlayCurrentAudio]
   );
 
-  const finishAudioItem = useCallback(
-    (_reason: string) => {
-      pendingAutoPlayRef.current = false;
-      isWaitingForSegmentRef.current = false;
-      isSwitchingSegmentRef.current = false;
-      setIsPlaying(false);
+  const finishAudioItem = useCallback(() => {
+    pendingAutoPlayRef.current = false;
+    isWaitingForSegmentRef.current = false;
+    isSwitchingSegmentRef.current = false;
+    setIsPlaying(false);
 
-      if (currentAudioIndex >= 0) {
-        onEnded?.(currentAudioIndex);
-      }
-    },
-    [currentAudioIndex, onEnded]
-  );
+    if (currentAudioIndex >= 0) {
+      onEnded?.(currentAudioIndex);
+    }
+  }, [currentAudioIndex, onEnded]);
 
   const handleSegmentEnded = useCallback(() => {
     const nextSegmentIndex = currentSegmentIndexRef.current + 1;

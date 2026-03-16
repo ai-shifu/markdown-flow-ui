@@ -7,6 +7,21 @@
   justify-content: center;
 }
 
+@media (max-width: 640px) {
+  .slide-player {
+    width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    translate: 0 !important;
+    border-top: 1px solid #e5e5e5;
+    border-bottom: 1px solid #e5e5e5;
+  }
+  .slide-player__controls {
+    background: #fff !important;
+    border-radius: none !important;
+    box-shadow: none !important;
+  }
+}
 .slide-player__controls {
   display: inline-flex;
   align-items: center;

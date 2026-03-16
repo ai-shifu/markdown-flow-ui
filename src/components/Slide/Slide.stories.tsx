@@ -144,6 +144,7 @@ const STREAM_INITIAL_DELAY_MS = 600;
 const STREAM_ELEMENT_PAUSE_MS = 500;
 const STREAM_TEXT_CHAR_DELAY_MS = 24;
 const STREAM_MARKUP_CHAR_DELAY_MS = 8;
+const STREAM_AUDIO_SEGMENT_INTERVAL_MS = 2200;
 
 const canStreamElementContent = (
   element: Element
@@ -162,18 +163,60 @@ const getStreamCharacterDelay = (element: Element) => {
   return STREAM_TEXT_CHAR_DELAY_MS;
 };
 
+const getVisibleAudioSegmentCount = (element: Element, elapsedMs: number) => {
+  if (element.type !== "text") {
+    return element.audio_segments?.length ?? 0;
+  }
+
+  const totalSegmentCount = element.audio_segments?.length ?? 0;
+
+  if (totalSegmentCount === 0) {
+    return 0;
+  }
+
+  return Math.min(
+    totalSegmentCount,
+    1 + Math.floor(Math.max(elapsedMs, 0) / STREAM_AUDIO_SEGMENT_INTERVAL_MS)
+  );
+};
+
+const shouldStreamAudioSegments = (element: Element) =>
+  element.type === "text" && (element.audio_segments?.length ?? 0) > 0;
+
+const getNextAudioSegmentDelay = (
+  elapsedMs: number,
+  visibleAudioSegmentCount: number
+) => {
+  const nextVisibleAt =
+    Math.max(visibleAudioSegmentCount, 0) * STREAM_AUDIO_SEGMENT_INTERVAL_MS;
+
+  return Math.max(80, nextVisibleAt - Math.max(elapsedMs, 0));
+};
+
 const buildStreamedElement = (
   element: Element,
   content: Element["content"],
-  isComplete: boolean
-): Element => ({
-  ...element,
-  content,
-  is_show: true,
-  is_read: isComplete ? element.is_read : false,
-  audio_url: isComplete ? element.audio_url : "",
-  audio_segments: isComplete ? element.audio_segments : [],
-});
+  isElementComplete: boolean,
+  visibleAudioSegmentCount: number = 0
+): Element => {
+  const nextAudioSegments = isElementComplete
+    ? element.audio_segments
+    : (element.audio_segments ?? []).slice(0, visibleAudioSegmentCount);
+  const hasVisibleAudioSegments = (nextAudioSegments?.length ?? 0) > 0;
+
+  return {
+    ...element,
+    content,
+    is_show: true,
+    is_read: isElementComplete
+      ? element.is_read
+      : hasVisibleAudioSegments
+        ? element.is_read
+        : false,
+    audio_url: isElementComplete ? element.audio_url : "",
+    audio_segments: nextAudioSegments,
+  };
+};
 
 const StreamingSlidePreview = ({
   elementList = [],
@@ -191,6 +234,7 @@ const StreamingSlidePreview = ({
 
     let currentIndex = 0;
     let currentCharacterCount = 0;
+    let currentElementStartedAt = 0;
     let timerId: number | null = null;
     let isCancelled = false;
 
@@ -212,9 +256,15 @@ const StreamingSlidePreview = ({
       ) {
         setStreamedElementList([
           ...completedElementList,
-          buildStreamedElement(currentElement, currentElement.content, true),
+          buildStreamedElement(
+            currentElement,
+            currentElement.content,
+            true,
+            currentElement.audio_segments?.length ?? 0
+          ),
         ]);
         currentIndex += 1;
+        currentElementStartedAt = 0;
 
         if (currentIndex >= stableElementList.length) {
           return;
@@ -224,24 +274,42 @@ const StreamingSlidePreview = ({
         return;
       }
 
+      if (currentElementStartedAt === 0) {
+        currentElementStartedAt = Date.now();
+      }
+
       const nextCharacterCount = Math.min(
         currentCharacterCount + 1,
         currentElement.content.length
       );
-      const isComplete = nextCharacterCount >= currentElement.content.length;
+      const isContentComplete =
+        nextCharacterCount >= currentElement.content.length;
+      const elapsedMs = Date.now() - currentElementStartedAt;
+      const totalAudioSegmentCount = currentElement.audio_segments?.length ?? 0;
+      const visibleAudioSegmentCount = getVisibleAudioSegmentCount(
+        currentElement,
+        elapsedMs
+      );
+      const isAudioSegmentStreamingComplete =
+        !shouldStreamAudioSegments(currentElement) ||
+        visibleAudioSegmentCount >= totalAudioSegmentCount;
+      const isElementComplete =
+        isContentComplete && isAudioSegmentStreamingComplete;
 
       setStreamedElementList([
         ...completedElementList,
         buildStreamedElement(
           currentElement,
           currentElement.content.slice(0, nextCharacterCount),
-          isComplete
+          isElementComplete,
+          visibleAudioSegmentCount
         ),
       ]);
 
-      if (isComplete) {
+      if (isElementComplete) {
         currentIndex += 1;
         currentCharacterCount = 0;
+        currentElementStartedAt = 0;
 
         if (currentIndex >= stableElementList.length) {
           return;
@@ -254,7 +322,9 @@ const StreamingSlidePreview = ({
       currentCharacterCount = nextCharacterCount;
       timerId = window.setTimeout(
         streamNextFrame,
-        getStreamCharacterDelay(currentElement)
+        isContentComplete
+          ? getNextAudioSegmentDelay(elapsedMs, visibleAudioSegmentCount)
+          : getStreamCharacterDelay(currentElement)
       );
     };
 

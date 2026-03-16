@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot, Root } from "react-dom/client";
 import { Loader2 } from "lucide-react";
 import SandboxApp from "./SandboxApp";
@@ -28,6 +28,9 @@ if (typeof window !== "undefined") {
 
 const COMPLETE_IMAGE_TAG_PATTERN = /<img\b[^>]*>/i;
 const POST_IMAGE_STREAM_DEBOUNCE_MS = 180;
+const SANDBOX_INTERACTION_MESSAGE_SOURCE = "markdown-flow-ui:sandbox";
+const SANDBOX_INTERACTION_MESSAGE_TYPE = "interaction";
+const SANDBOX_INTERACTION_THROTTLE_MS = 240;
 export interface IframeSandboxProps {
   content: string;
   className?: string;
@@ -95,6 +98,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const docRef = useRef<Document | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
   const [height, setHeight] = useState(480);
+  const lastSandboxInteractionTimeRef = useRef(0);
   const [resetToken, setResetToken] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isSandboxVendorReady, setIsSandboxVendorReady] = useState(
@@ -116,6 +120,28 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const prevIncomingHtmlRef = useRef(htmlContent);
   const pendingHtmlRef = useRef(htmlContent);
   const deferRenderTimerRef = useRef<number | null>(null);
+
+  const emitSandboxInteraction = useCallback((eventType: string) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const now = Date.now();
+    if (
+      now - lastSandboxInteractionTimeRef.current <
+      SANDBOX_INTERACTION_THROTTLE_MS
+    ) {
+      return;
+    }
+    lastSandboxInteractionTimeRef.current = now;
+    window.postMessage(
+      {
+        source: SANDBOX_INTERACTION_MESSAGE_SOURCE,
+        type: SANDBOX_INTERACTION_MESSAGE_TYPE,
+        eventType,
+      },
+      window.location.origin
+    );
+  }, []);
 
   const clearDeferredRenderTimer = () => {
     if (deferRenderTimerRef.current === null) return;
@@ -224,6 +250,19 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     doc.close();
 
     docRef.current = doc;
+
+    const shouldBridgeSandboxInteraction =
+      isBlackboardMode && type === "sandbox";
+    const handleSandboxPointerDown = () =>
+      emitSandboxInteraction("pointerdown");
+    const handleSandboxMouseDown = () => emitSandboxInteraction("mousedown");
+    const handleSandboxTouchStart = () => emitSandboxInteraction("touchstart");
+
+    if (shouldBridgeSandboxInteraction) {
+      doc.addEventListener("pointerdown", handleSandboxPointerDown, true);
+      doc.addEventListener("mousedown", handleSandboxMouseDown, true);
+      doc.addEventListener("touchstart", handleSandboxTouchStart, true);
+    }
 
     const rootEl = doc.getElementById("root");
     if (!rootEl) return undefined;
@@ -352,6 +391,11 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     return () => {
       isDestroyed = true;
       resizeObserver.disconnect();
+      if (shouldBridgeSandboxInteraction) {
+        doc.removeEventListener("pointerdown", handleSandboxPointerDown, true);
+        doc.removeEventListener("mousedown", handleSandboxMouseDown, true);
+        doc.removeEventListener("touchstart", handleSandboxTouchStart, true);
+      }
       // Defer unmount to avoid React warning when parent is mid-render
       setTimeout(() => {
         root.unmount();
@@ -449,7 +493,13 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         </button>
       )}
       {mode === "blackboard" && type === "markdown" ? (
-        <ContentRender content={content} />
+        <div
+          onMouseDown={() => emitSandboxInteraction("mousedown")}
+          onPointerDown={() => emitSandboxInteraction("pointerdown")}
+          onTouchStart={() => emitSandboxInteraction("touchstart")}
+        >
+          <ContentRender content={content} />
+        </div>
       ) : (
         <>
           <iframe

@@ -96,6 +96,7 @@ const Slide: React.FC<SlideProps> = ({
   const {
     currentElementList,
     slideElementList,
+    currentIndex,
     audioList,
     currentAudioSequenceIndexes,
     currentInteractionElement,
@@ -403,24 +404,37 @@ const Slide: React.FC<SlideProps> = ({
     const visibleElementCount = elementList.filter(
       (element) => element.is_show !== false
     ).length;
+    const lastVisibleElementIndex = elementList.reduce(
+      (lastVisibleIndex, element, index) =>
+        element.is_show !== false ? index : lastVisibleIndex,
+      -1
+    );
 
     return (
       <div className="slide-stage__content flex w-full flex-col gap-4">
-        {elementList.map((element, index) => (
-          <div
-            key={element.serial_number ?? `${element.type}-${index}`}
-            ref={index === elementList.length - 1 ? lastElementRef : null}
-            className={cn(
-              "w-full shrink-0",
-              visibleElementCount === 1 &&
-                element.is_show !== false &&
-                "slide-element--single",
-              element.is_show === false && "hidden"
-            )}
-          >
-            {renderSlideElement(element)}
-          </div>
-        ))}
+        {elementList.map((element, index) => {
+          const isPreRenderedHtml =
+            element.type === "html" && element.is_show === false;
+
+          return (
+            <div
+              key={element.serial_number ?? `${element.type}-${index}`}
+              ref={index === lastVisibleElementIndex ? lastElementRef : null}
+              aria-hidden={isPreRenderedHtml || undefined}
+              className={cn(
+                "w-full shrink-0",
+                visibleElementCount === 1 &&
+                  element.is_show !== false &&
+                  "slide-element--single",
+                isPreRenderedHtml
+                  ? "pointer-events-none fixed left-[-200vw] top-0 -z-10 h-[100dvh] w-[100vw] overflow-hidden opacity-0"
+                  : element.is_show === false && "hidden"
+              )}
+            >
+              {renderSlideElement(element)}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -544,6 +558,27 @@ const Slide: React.FC<SlideProps> = ({
     [currentElementList]
   );
 
+  const renderElementList = useMemo(() => {
+    const nextHtmlElement = slideElementList
+      .slice(currentIndex + 1)
+      .find((element) => element.type === "html");
+
+    if (!nextHtmlElement) {
+      return currentElementList;
+    }
+
+    const hasMountedNextHtml = currentElementList.some(
+      (element) => element.serial_number === nextHtmlElement.serial_number
+    );
+
+    if (hasMountedNextHtml) {
+      return currentElementList;
+    }
+
+    // Keep the next html sandbox mounted offscreen so it is ready when revealed.
+    return [...currentElementList, { ...nextHtmlElement, is_show: false }];
+  }, [currentElementList, currentIndex, slideElementList]);
+
   useEffect(() => {
     const prevKeys = prevRenderElementKeysRef.current;
     const hasStablePrefix =
@@ -644,7 +679,7 @@ const Slide: React.FC<SlideProps> = ({
         {currentElementList.length > 0 ? (
           <div className="slide-stage">
             <div ref={stageLayerRef} className="slide-stage__layer w-full">
-              {renderSlideElementList(currentElementList)}
+              {renderSlideElementList(renderElementList)}
             </div>
           </div>
         ) : null}

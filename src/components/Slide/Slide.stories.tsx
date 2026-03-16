@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { useEffect, useMemo, useState } from "react";
 
 import Slide from "./Slide";
 import type { Element } from "./Slide";
@@ -138,6 +139,138 @@ type ExampleElementConfig = {
   content: Element["content"];
   operation?: Element["operation"];
 } & Partial<Omit<Element, "serial_number" | "type" | "content" | "operation">>;
+
+const STREAM_INITIAL_DELAY_MS = 600;
+const STREAM_ELEMENT_PAUSE_MS = 500;
+const STREAM_TEXT_CHAR_DELAY_MS = 24;
+const STREAM_MARKUP_CHAR_DELAY_MS = 8;
+
+const canStreamElementContent = (
+  element: Element
+): element is Element & { content: string } =>
+  typeof element.content === "string";
+
+const getStreamCharacterDelay = (element: Element) => {
+  if (["html", "svg"].includes(String(element.type))) {
+    return STREAM_MARKUP_CHAR_DELAY_MS;
+  }
+
+  if (element.type === "interaction") {
+    return STREAM_TEXT_CHAR_DELAY_MS + 8;
+  }
+
+  return STREAM_TEXT_CHAR_DELAY_MS;
+};
+
+const buildStreamedElement = (
+  element: Element,
+  content: Element["content"],
+  isComplete: boolean
+): Element => ({
+  ...element,
+  content,
+  is_show: true,
+  is_read: isComplete ? element.is_read : false,
+  audio_url: isComplete ? element.audio_url : "",
+  audio_segments: isComplete ? element.audio_segments : [],
+});
+
+const StreamingSlidePreview = ({
+  elementList = [],
+  ...props
+}: React.ComponentProps<typeof Slide>) => {
+  const [streamedElementList, setStreamedElementList] = useState<Element[]>([]);
+
+  const stableElementList = useMemo(() => elementList, [elementList]);
+
+  useEffect(() => {
+    if (stableElementList.length === 0) {
+      setStreamedElementList([]);
+      return;
+    }
+
+    let currentIndex = 0;
+    let currentCharacterCount = 0;
+    let timerId: number | null = null;
+    let isCancelled = false;
+
+    setStreamedElementList([]);
+
+    const streamNextFrame = () => {
+      if (isCancelled || currentIndex >= stableElementList.length) {
+        return;
+      }
+
+      const currentElement = stableElementList[currentIndex];
+      const completedElementList = stableElementList
+        .slice(0, currentIndex)
+        .map((element) => buildStreamedElement(element, element.content, true));
+
+      if (
+        !canStreamElementContent(currentElement) ||
+        currentElement.content.length === 0
+      ) {
+        setStreamedElementList([
+          ...completedElementList,
+          buildStreamedElement(currentElement, currentElement.content, true),
+        ]);
+        currentIndex += 1;
+
+        if (currentIndex >= stableElementList.length) {
+          return;
+        }
+
+        timerId = window.setTimeout(streamNextFrame, STREAM_ELEMENT_PAUSE_MS);
+        return;
+      }
+
+      const nextCharacterCount = Math.min(
+        currentCharacterCount + 1,
+        currentElement.content.length
+      );
+      const isComplete = nextCharacterCount >= currentElement.content.length;
+
+      setStreamedElementList([
+        ...completedElementList,
+        buildStreamedElement(
+          currentElement,
+          currentElement.content.slice(0, nextCharacterCount),
+          isComplete
+        ),
+      ]);
+
+      if (isComplete) {
+        currentIndex += 1;
+        currentCharacterCount = 0;
+
+        if (currentIndex >= stableElementList.length) {
+          return;
+        }
+
+        timerId = window.setTimeout(streamNextFrame, STREAM_ELEMENT_PAUSE_MS);
+        return;
+      }
+
+      currentCharacterCount = nextCharacterCount;
+      timerId = window.setTimeout(
+        streamNextFrame,
+        getStreamCharacterDelay(currentElement)
+      );
+    };
+
+    timerId = window.setTimeout(streamNextFrame, STREAM_INITIAL_DELAY_MS);
+
+    return () => {
+      isCancelled = true;
+
+      if (timerId !== null) {
+        window.clearTimeout(timerId);
+      }
+    };
+  }, [stableElementList]);
+  console.log("streamedElementList", streamedElementList);
+  return <Slide {...props} elementList={streamedElementList} />;
+};
 
 const createExampleElement = ({
   serialNumber,
@@ -507,7 +640,7 @@ export const FullViewportSingleSlideWithSSE: Story = {
   },
   render: (args) => (
     <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
-      <Slide className="w-full" {...args} />
+      <StreamingSlidePreview className="w-full" {...args} />
     </div>
   ),
 };

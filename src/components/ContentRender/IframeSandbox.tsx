@@ -1,11 +1,30 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot, Root } from "react-dom/client";
+import { Loader2 } from "lucide-react";
 import SandboxApp from "./SandboxApp";
 import { splitContentSegments } from "./utils/split-content";
 import ContentRender from "./ContentRender";
-// Lazy-load iframe vendor libraries and inject them into the sandbox document.
-const loadBlackboardVendor = () =>
-  import("./blackboard-vendor").then((m) => m.injectBlackboardLibraries);
+
+type InjectBlackboardLibraries =
+  typeof import("./blackboard-vendor").injectBlackboardLibraries;
+
+// Cache the sandbox vendor loader so every iframe reuses the same preload request.
+let blackboardVendorPromise: Promise<InjectBlackboardLibraries> | null = null;
+
+const loadBlackboardVendor = () => {
+  if (!blackboardVendorPromise) {
+    blackboardVendorPromise = import("./blackboard-vendor").then(
+      (m) => m.injectBlackboardLibraries
+    );
+  }
+
+  return blackboardVendorPromise;
+};
+
+// Warm the sandbox vendor chunk as early as possible in the browser.
+if (typeof window !== "undefined") {
+  void loadBlackboardVendor();
+}
 
 const COMPLETE_IMAGE_TAG_PATTERN = /<img\b[^>]*>/i;
 const POST_IMAGE_STREAM_DEBOUNCE_MS = 180;
@@ -78,6 +97,9 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const [height, setHeight] = useState(480);
   const [resetToken, setResetToken] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSandboxVendorReady, setIsSandboxVendorReady] = useState(
+    type !== "sandbox"
+  );
   const isBlackboardMode = mode === "blackboard";
   const prevHtmlRef = useRef<string>("");
   const htmlContent = React.useMemo(() => {
@@ -158,6 +180,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     return extractViewportHeightFromTailwindClass(classAttrMatch);
   }, [renderHtmlContent]);
   const hasRootVhHeight = Boolean(rootViewportHeightCss);
+  const shouldInjectSandboxVendor = type === "sandbox";
   const sandboxViewportHeight =
     isBlackboardMode && type === "sandbox"
       ? (rootViewportHeightCss ?? `${height}px`)
@@ -299,19 +322,26 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     updateHeight();
     scheduleHeightUpdate();
 
-    // Inject Tailwind/DaisyUI/GSAP into iframe for all sandbox modes.
-    // Dynamic import keeps ~3.3 MB of vendor libs out of the main bundle.
-    // Tailwind's MutationObserver ensures styles apply even if content renders first.
-    loadBlackboardVendor()
-      .then((inject) => {
-        if (isDestroyed) return;
-        inject(doc);
-        scheduleHeightUpdate();
-      })
-      .catch(() => {
-        if (isDestroyed) return;
-        scheduleHeightUpdate();
-      });
+    if (!shouldInjectSandboxVendor) {
+      setIsSandboxVendorReady(true);
+    } else {
+      // Inject Tailwind/DaisyUI/GSAP before rendering sandbox content to avoid FOUC.
+      loadBlackboardVendor()
+        .then((inject) => {
+          if (isDestroyed) return;
+          inject(doc);
+          requestAnimationFrame(() => {
+            if (isDestroyed) return;
+            setIsSandboxVendorReady(true);
+            scheduleHeightUpdate();
+          });
+        })
+        .catch(() => {
+          if (isDestroyed) return;
+          setIsSandboxVendorReady(true);
+          scheduleHeightUpdate();
+        });
+    }
 
     const resizeObserver = new ResizeObserver(() => updateHeight());
     resizeObserver.observe(doc.body);
@@ -355,7 +385,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
   useEffect(() => {
     const root = rootRef.current;
-    if (!root) return;
+    if (!root || !isSandboxVendorReady) return;
 
     root.render(
       <SandboxApp
@@ -379,6 +409,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     fullScreenButtonText,
     resetToken,
     mode,
+    isSandboxVendorReady,
   ]);
   const containerClassName = [
     "w-full relative content-render-iframe-sandbox",
@@ -388,6 +419,9 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   ]
     .filter(Boolean)
     .join(" ");
+
+  const shouldShowSandboxLoading =
+    shouldInjectSandboxVendor && !isSandboxVendorReady;
 
   return (
     <div
@@ -417,20 +451,31 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       {mode === "blackboard" && type === "markdown" ? (
         <ContentRender content={content} />
       ) : (
-        <iframe
-          ref={iframeRef}
-          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-          allow="fullscreen"
-          allowFullScreen
-          className={[className, "w-full h-full mx-auto my-auto block"]
-            .filter(Boolean)
-            .join(" ")}
-          style={{
-            height: sandboxViewportHeight ?? "100%",
-            minHeight: sandboxViewportHeight,
-            margin: "auto",
-          }}
-        />
+        <>
+          <iframe
+            ref={iframeRef}
+            sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+            allow="fullscreen"
+            allowFullScreen
+            className={[className, "w-full h-full mx-auto my-auto block"]
+              .filter(Boolean)
+              .join(" ")}
+            style={{
+              height: sandboxViewportHeight ?? "100%",
+              minHeight: sandboxViewportHeight,
+              margin: "auto",
+              visibility: shouldShowSandboxLoading ? "hidden" : "visible",
+            }}
+          />
+          {shouldShowSandboxLoading ? (
+            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+              <Loader2
+                aria-label={loadingText || "Preparing sandbox styles"}
+                className="text-primary h-7 w-7 animate-spin"
+              />
+            </div>
+          ) : null}
+        </>
       )}
     </div>
   );

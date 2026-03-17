@@ -73,6 +73,9 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   playerClassName?: string;
   interactionTitle?: string;
   playerAutoHideDelay?: number;
+  onSend?: (content: OnSendContentParams, element?: Element) => void;
+  onPlayerVisibilityChange?: (visible: boolean) => void;
+  onStepChange?: (element: Element | undefined, index: number) => void;
 }
 
 const Slide: React.FC<SlideProps> = ({
@@ -81,6 +84,9 @@ const Slide: React.FC<SlideProps> = ({
   playerClassName,
   interactionTitle,
   playerAutoHideDelay = 3000,
+  onSend,
+  onPlayerVisibilityChange,
+  onStepChange,
   className,
   onPointerDown,
   ...props
@@ -105,6 +111,13 @@ const Slide: React.FC<SlideProps> = ({
     handlePrev: goPrev,
     handleNext: goNext,
   } = useSlide(elementList);
+  const currentStepElement = useMemo(() => {
+    if (currentIndex < 0) {
+      return undefined;
+    }
+
+    return slideElementList[currentIndex];
+  }, [currentIndex, slideElementList]);
   const visibleCheckpointCount = slideElementList.filter(
     (element) => element.is_show !== false
   ).length;
@@ -234,6 +247,18 @@ const Slide: React.FC<SlideProps> = ({
   ]);
 
   useEffect(() => {
+    onPlayerVisibilityChange?.(isPlayerVisible);
+
+    return () => {
+      onPlayerVisibilityChange?.(false);
+    };
+  }, [isPlayerVisible, onPlayerVisibilityChange]);
+
+  useEffect(() => {
+    onStepChange?.(currentStepElement, currentIndex);
+  }, [currentIndex, currentStepElement, onStepChange]);
+
+  useEffect(() => {
     if (!shouldRenderPlayer) {
       clearPlayerHideTimer();
       setIsPlayerVisible(false);
@@ -321,6 +346,8 @@ const Slide: React.FC<SlideProps> = ({
   const hasResolvedInteractionInput = Boolean(
     activeInteractionElement?.user_input?.trim()
   );
+  const isInteractionReadonly =
+    Boolean(activeInteractionElement?.readonly) || hasResolvedInteractionInput;
 
   const handleInteractionSend = useCallback(
     (content: OnSendContentParams) => {
@@ -342,9 +369,10 @@ const Slide: React.FC<SlideProps> = ({
         };
       });
 
+      onSend?.(content, activeInteractionElement);
       continueAfterInteraction();
     },
-    [continueAfterInteraction]
+    [activeInteractionElement, continueAfterInteraction, onSend]
   );
 
   useEffect(() => {
@@ -708,7 +736,7 @@ const Slide: React.FC<SlideProps> = ({
             defaultInputText={interactionDefaults.inputText ?? ""}
             defaultSelectedValues={interactionDefaultSelectedValues}
             onSend={handleInteractionSend}
-            readonly={hasResolvedInteractionInput}
+            readonly={isInteractionReadonly}
             title={interactionTitle ?? "Submit the content below to continue."}
           />
         </div>

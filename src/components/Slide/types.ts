@@ -39,5 +39,6 @@ export interface Element {
   is_read?: boolean;
   audio_url?: string;
   user_input?: string;
+  readonly?: boolean;
   audio_segments?: ElementAudioSegment[];
 }

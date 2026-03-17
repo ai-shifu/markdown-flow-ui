@@ -10,16 +10,30 @@
 @media (max-width: 640px) {
   .slide-player {
     width: 100% !important;
+    min-height: 80px;
+    align-items: stretch;
     left: 0 !important;
     right: 0 !important;
     translate: 0 !important;
+    background: #fff !important;
     border-top: 1px solid #e5e5e5;
     border-bottom: 1px solid #e5e5e5;
   }
+
   .slide-player__controls {
+    display: flex;
+    width: 100%;
+    min-height: 100%;
+    height: 100%;
     background: #fff !important;
-    border-radius: none !important;
+    border-radius: 0 !important;
     box-shadow: none !important;
+  }
+
+  .slide-player__separator {
+    align-self: stretch;
+    height: auto;
+    min-height: 100%;
   }
 }
 .slide-player__controls {

@@ -3,8 +3,15 @@ import MarkdownFlow from "./components/MarkdownFlow";
 import ContentRender from "./components/ContentRender";
 import MarkdownFlowInput from "./components/ContentRender/MarkdownFlowInput";
 import IframeSandbox from "./components/ContentRender/IframeSandbox";
-import Slide from "./components/Slide";
-import { Player, useSlide } from "./components/Slide";
+import {
+  Player,
+  Slide as SlideComponent,
+  applyDiffElement,
+  applyUnifiedDiff,
+  parseUnifiedDiff,
+  splitDiffContent,
+  useSlide,
+} from "./components/Slide";
 import { RenderSegment } from "./components/ContentRender/utils/split-content";
 import { splitContentSegments } from "./components/ContentRender/utils/split-content";
 import type { MarkdownFlowProps } from "./components/MarkdownFlow/MarkdownFlow";
@@ -29,10 +36,14 @@ export {
   ContentRender,
   MarkdownFlowInput,
   IframeSandbox,
-  Slide,
+  SlideComponent as Slide,
   Player,
   useSlide,
   splitContentSegments,
+  splitDiffContent,
+  parseUnifiedDiff,
+  applyUnifiedDiff,
+  applyDiffElement,
 };
 
 export type {

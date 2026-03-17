@@ -1,6 +1,12 @@
 import Slide from "./Slide";
 import Player from "./Player";
 import {
+  applyDiffElement,
+  applyUnifiedDiff,
+  parseUnifiedDiff,
+  splitDiffContent,
+} from "./diff-utils";
+import {
   getInteractionDefaultSelectedValues,
   getInteractionDefaultValues,
 } from "./interaction-defaults";
@@ -8,6 +14,11 @@ import useSlide from "./useSlide";
 
 export default Slide;
 export {
+  Slide,
+  applyDiffElement,
+  applyUnifiedDiff,
+  parseUnifiedDiff,
+  splitDiffContent,
   Player,
   useSlide,
   getInteractionDefaultValues,

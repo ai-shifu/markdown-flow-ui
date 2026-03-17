@@ -240,10 +240,15 @@ const Slide: React.FC<SlideProps> = ({
     }
 
     if (!hasPlayerInteracted) {
-      clearPlayerHideTimer();
-      setIsPlayerVisible(true);
+      // Keep the initial player visible briefly, then hide it automatically.
+      showPlayerControls(true);
     }
-  }, [clearPlayerHideTimer, hasPlayerInteracted, shouldRenderPlayer]);
+  }, [
+    clearPlayerHideTimer,
+    hasPlayerInteracted,
+    shouldRenderPlayer,
+    showPlayerControls,
+  ]);
 
   useEffect(() => {
     resetAudioSequence();

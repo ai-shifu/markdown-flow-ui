@@ -466,6 +466,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
             <IframeSandbox
               key={`sandbox-${idx}`}
               hideFullScreen
+              type="sandbox"
               content={segment.value}
               className="content-render-iframe"
               loadingText={sandboxLoadingText}

@@ -35,11 +35,16 @@ const meta = {
       control: { type: "number", min: 0, step: 500 },
       description: "Auto-hide delay for player controls in milliseconds",
     },
+    playerAlwaysVisible: {
+      control: "boolean",
+      description: "Keep the player controls visible without auto hiding",
+    },
   },
   args: {
     elementList: [],
     interactionTitle: "Submit the content below to continue.",
     playerAutoHideDelay: 3000,
+    playerAlwaysVisible: false,
   },
 } satisfies Meta<typeof Slide>;
 
@@ -458,6 +463,7 @@ export const FullViewportSlides: Story = {
 
 export const FullViewportSingleSlide: Story = {
   args: {
+    playerAlwaysVisible: true,
     elementList: [
       createExampleElement({
         serialNumber: -1,

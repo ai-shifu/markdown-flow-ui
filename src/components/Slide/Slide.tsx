@@ -70,6 +70,7 @@ InteractionOverlayCard.displayName = "InteractionOverlayCard";
 export interface SlideProps extends React.ComponentProps<"section"> {
   elementList?: Element[];
   showPlayer?: boolean;
+  playerAlwaysVisible?: boolean;
   playerClassName?: string;
   interactionTitle?: string;
   playerAutoHideDelay?: number;
@@ -81,6 +82,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
 const Slide: React.FC<SlideProps> = ({
   elementList = [],
   showPlayer = true,
+  playerAlwaysVisible = false,
   playerClassName,
   interactionTitle,
   playerAutoHideDelay = 3000,
@@ -140,6 +142,8 @@ const Slide: React.FC<SlideProps> = ({
   >();
   const [isInteractionOverlayOpen, setIsInteractionOverlayOpen] =
     useState(false);
+  const playerVisible =
+    shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
 
   const clearPlayerHideTimer = useCallback(() => {
     if (playerHideTimerRef.current === null) {
@@ -217,7 +221,7 @@ const Slide: React.FC<SlideProps> = ({
       setIsPlayerVisible(true);
       clearPlayerHideTimer();
 
-      if (!enableAutoHide || playerAutoHideDelay <= 0) {
+      if (playerAlwaysVisible || !enableAutoHide || playerAutoHideDelay <= 0) {
         return;
       }
 
@@ -229,6 +233,7 @@ const Slide: React.FC<SlideProps> = ({
     [
       clearPlayerHideTimer,
       hasPlayerInteracted,
+      playerAlwaysVisible,
       playerAutoHideDelay,
       shouldRenderPlayer,
     ]
@@ -247,12 +252,12 @@ const Slide: React.FC<SlideProps> = ({
   ]);
 
   useEffect(() => {
-    onPlayerVisibilityChange?.(isPlayerVisible);
+    onPlayerVisibilityChange?.(playerVisible);
 
     return () => {
       onPlayerVisibilityChange?.(false);
     };
-  }, [isPlayerVisible, onPlayerVisibilityChange]);
+  }, [onPlayerVisibilityChange, playerVisible]);
 
   useEffect(() => {
     onStepChange?.(currentStepElement, currentIndex);
@@ -265,6 +270,12 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
+    if (playerAlwaysVisible) {
+      clearPlayerHideTimer();
+      setIsPlayerVisible(true);
+      return;
+    }
+
     if (!hasPlayerInteracted) {
       // Keep the initial player visible briefly, then hide it automatically.
       showPlayerControls(true);
@@ -272,6 +283,7 @@ const Slide: React.FC<SlideProps> = ({
   }, [
     clearPlayerHideTimer,
     hasPlayerInteracted,
+    playerAlwaysVisible,
     shouldRenderPlayer,
     showPlayerControls,
   ]);
@@ -564,7 +576,7 @@ const Slide: React.FC<SlideProps> = ({
       event.stopPropagation();
 
       // Keep the player visible a bit longer when users interact with the overlay.
-      if (isPlayerVisible) {
+      if (playerVisible) {
         showPlayerControls(true);
       }
     },
@@ -702,7 +714,7 @@ const Slide: React.FC<SlideProps> = ({
           isSingleSlide ? "slide-content--single" : "grid gap-4"
         )}
       >
-        {shouldRenderPlayer && !isPlayerVisible ? (
+        {shouldRenderPlayer && !playerVisible ? (
           <button
             aria-label="Show player controls"
             className="slide-player-hit-area"
@@ -723,7 +735,7 @@ const Slide: React.FC<SlideProps> = ({
         <div
           className={cn(
             "slide-interaction-overlay",
-            isPlayerVisible && shouldRenderPlayer
+            playerVisible && shouldRenderPlayer
               ? "slide-interaction-overlay--with-player"
               : "slide-interaction-overlay--standalone"
           )}
@@ -748,7 +760,7 @@ const Slide: React.FC<SlideProps> = ({
           className={cn(
             "absolute left-1/2 bottom-6 z-[2] -translate-x-1/2",
             playerClassName,
-            !isPlayerVisible && "pointer-events-none opacity-0"
+            !playerVisible && "pointer-events-none opacity-0"
           )}
           currentAudioIndex={currentAudioIndex}
           defaultPlaying={canAutoPlayAudio}
@@ -762,7 +774,7 @@ const Slide: React.FC<SlideProps> = ({
           onNext={handleNext}
           onPrev={handlePrev}
           prevDisabled={!canGoPrev}
-          showControls={isPlayerVisible}
+          showControls={playerVisible}
         />
       ) : null}
     </section>

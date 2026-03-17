@@ -21,18 +21,34 @@
   }
 
   .slide-player__controls {
-    display: flex;
+    display: grid !important;
     width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: center;
+    padding: 0 20px;
     border: none !important;
     background: #fff !important;
     border-radius: 0 !important;
     box-shadow: none !important;
   }
 
+  .slide-player__group {
+    display: contents !important;
+  }
+
+  .slide-player__action,
+  .slide-player__toggle {
+    justify-self: center;
+    margin: 0 !important;
+  }
+
   .slide-player__separator {
-    align-self: stretch;
-    height: auto;
-    min-height: 100%;
+    display: none;
+  }
+
+  .slide-player__interaction-arrow {
+    /* Align to the center of the fourth action slot on mobile. */
+    right: calc(((100% + 48px - 40px) / 8) + 20px - 24px) !important;
   }
 }
 .slide-player__controls {

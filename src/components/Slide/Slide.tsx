@@ -116,8 +116,9 @@ const Slide: React.FC<SlideProps> = ({
       Boolean(currentInteractionElement));
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
   const [hasPlayerInteracted, setHasPlayerInteracted] = useState(false);
+  const [hasPlaybackInteracted, setHasPlaybackInteracted] = useState(false);
   const [shouldAutoPlay] = useState(() => hasBrowserUserActivation());
-  const canAutoPlayAudio = shouldAutoPlay || hasPlayerInteracted;
+  const canAutoPlayAudio = shouldAutoPlay || hasPlaybackInteracted;
   const [currentAudioIndex, setCurrentAudioIndex] = useState(-1);
   const [currentAudioSequencePosition, setCurrentAudioSequencePosition] =
     useState(-1);
@@ -729,6 +730,7 @@ const Slide: React.FC<SlideProps> = ({
           onEnded={handlePlayerEnded}
           onFullscreen={handleFullscreen}
           onInteractionToggle={handleInteractionToggle}
+          onPlayRequest={() => setHasPlaybackInteracted(true)}
           onNext={handleNext}
           onPrev={handlePrev}
           prevDisabled={!canGoPrev}

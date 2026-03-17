@@ -26,6 +26,7 @@ export type PlayerProps = React.ComponentProps<"div"> & {
   onNext?: () => void;
   onFullscreen?: () => void;
   onEnded?: (audioIndex: number) => void;
+  onPlayRequest?: () => void;
   onInteractionToggle?: () => void;
   hasInteraction?: boolean;
   isInteractionOpen?: boolean;
@@ -75,6 +76,7 @@ const Player: React.FC<PlayerProps> = ({
   onNext,
   onFullscreen,
   onEnded,
+  onPlayRequest,
   onInteractionToggle,
   hasInteraction = false,
   isInteractionOpen = false,
@@ -516,12 +518,15 @@ const Player: React.FC<PlayerProps> = ({
                     return;
                   }
 
+                  onPlayRequest?.();
                   pendingAutoPlayRef.current = true;
                   setIsPlaying(true);
                   return;
                 }
 
                 if (!audioElement.src && currentAudioSegments.length > 0) {
+                  // Only the player play button can unlock playback when autoplay is unavailable.
+                  onPlayRequest?.();
                   startSegmentPlayback(
                     Math.min(
                       currentSegmentIndexRef.current,
@@ -533,6 +538,7 @@ const Player: React.FC<PlayerProps> = ({
                 }
 
                 if (audioElement.paused) {
+                  onPlayRequest?.();
                   pendingAutoPlayRef.current = true;
                   tryPlayCurrentAudio("toggle-resume");
                   return;

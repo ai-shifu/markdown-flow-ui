@@ -636,6 +636,9 @@ export const FullViewportSingleSlide: Story = {
         user_input: "",
       }),
     ],
+    onSend: (content, element) => {
+      console.log("onsend", content, element);
+    },
   },
   render: (args) => (
     <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">

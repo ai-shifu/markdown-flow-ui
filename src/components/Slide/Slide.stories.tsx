@@ -463,7 +463,7 @@ export const FullViewportSlides: Story = {
 
 export const FullViewportSingleSlide: Story = {
   args: {
-    playerAlwaysVisible: true,
+    playerAlwaysVisible: false,
     elementList: [
       createExampleElement({
         serialNumber: -1,

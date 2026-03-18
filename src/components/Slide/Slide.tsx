@@ -8,6 +8,7 @@ import React, {
 } from "react";
 
 import { hasBrowserUserActivation } from "../../lib/browserUserActivation";
+import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
 import ContentRender from "../ContentRender";
 import IframeSandbox from "../ContentRender/IframeSandbox";
@@ -287,6 +288,32 @@ const Slide: React.FC<SlideProps> = ({
     shouldRenderPlayer,
     showPlayerControls,
   ]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleSandboxInteraction = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      if (!isSandboxInteractionMessage(event.data) || !shouldRenderPlayer) {
+        return;
+      }
+
+      // Restore player controls without blocking native iframe scrolling.
+      setHasPlayerInteracted(true);
+      showPlayerControls(true);
+    };
+
+    window.addEventListener("message", handleSandboxInteraction);
+
+    return () => {
+      window.removeEventListener("message", handleSandboxInteraction);
+    };
+  }, [shouldRenderPlayer, showPlayerControls]);
 
   useEffect(() => {
     resetAudioSequence();
@@ -714,14 +741,6 @@ const Slide: React.FC<SlideProps> = ({
           isSingleSlide ? "slide-content--single" : "grid gap-4"
         )}
       >
-        {shouldRenderPlayer && !playerVisible ? (
-          <button
-            aria-label="Show player controls"
-            className="slide-player-hit-area"
-            onPointerDown={handleSurfacePointerDown}
-            type="button"
-          />
-        ) : null}
         {currentElementList.length > 0 ? (
           <div className="slide-stage">
             <div ref={stageLayerRef} className="slide-stage__layer w-full">

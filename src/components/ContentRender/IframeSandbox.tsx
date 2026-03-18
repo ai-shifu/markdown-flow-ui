@@ -4,6 +4,10 @@ import { Loader2 } from "lucide-react";
 import SandboxApp from "./SandboxApp";
 import { splitContentSegments } from "./utils/split-content";
 import ContentRender from "./ContentRender";
+import {
+  SANDBOX_INTERACTION_MESSAGE_SOURCE,
+  SANDBOX_INTERACTION_MESSAGE_TYPE,
+} from "../../lib/sandboxInteraction";
 
 type InjectBlackboardLibraries =
   typeof import("./blackboard-vendor").injectBlackboardLibraries;
@@ -28,8 +32,6 @@ if (typeof window !== "undefined") {
 
 const COMPLETE_IMAGE_TAG_PATTERN = /<img\b[^>]*>/i;
 const POST_IMAGE_STREAM_DEBOUNCE_MS = 180;
-const SANDBOX_INTERACTION_MESSAGE_SOURCE = "markdown-flow-ui:sandbox";
-const SANDBOX_INTERACTION_MESSAGE_TYPE = "interaction";
 const SANDBOX_INTERACTION_THROTTLE_MS = 240;
 export interface IframeSandboxProps {
   content: string;

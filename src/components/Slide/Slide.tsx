@@ -540,12 +540,14 @@ const Slide: React.FC<SlideProps> = ({
 
   const handlePrev = useCallback(() => {
     shouldScrollToBottomRef.current = true;
+    setHasPlaybackInteracted(true);
     resetAudioSequence();
     goPrev();
   }, [goPrev, resetAudioSequence]);
 
   const handleNext = useCallback(() => {
     shouldScrollToBottomRef.current = true;
+    setHasPlaybackInteracted(true);
     resetAudioSequence();
     goNext();
   }, [goNext, resetAudioSequence]);

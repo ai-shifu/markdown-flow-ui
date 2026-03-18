@@ -20,6 +20,7 @@ import {
 import Player from "./Player";
 import type { Element } from "./types";
 import useSlide from "./useSlide";
+import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
 import "./slide.css";
 export type { Element, ElementAudioSegment } from "./types";
 
@@ -319,137 +320,14 @@ const Slide: React.FC<SlideProps> = ({
     };
   }, [shouldRenderPlayer, showPlayerControls]);
 
-  useEffect(() => {
-    const sectionElement = sectionRef.current;
-
-    if (!sectionElement) {
-      return;
-    }
-
-    const cleanupMap = new Map<
-      HTMLIFrameElement,
-      {
-        cleanup: () => void;
-        handleLoad: () => void;
-      }
-    >();
-
-    const restorePlayerControls = () => {
-      if (!shouldRenderPlayer) {
-        return;
-      }
-
+  useWakePlayerFromIframe({
+    sectionRef,
+    enabled: shouldRenderPlayer,
+    onWake: () => {
       setHasPlayerInteracted(true);
       showPlayerControls(true);
-    };
-
-    const bindIframeDocument = (iframeElement: HTMLIFrameElement) => {
-      if (cleanupMap.has(iframeElement)) {
-        return;
-      }
-
-      const handleLoad = () => {
-        cleanupMap.get(iframeElement)?.cleanup();
-        cleanupMap.delete(iframeElement);
-        bindIframeDocument(iframeElement);
-      };
-
-      iframeElement.addEventListener("load", handleLoad);
-
-      const iframeDocument = iframeElement.contentDocument;
-
-      if (!iframeDocument) {
-        cleanupMap.set(iframeElement, {
-          cleanup: () => {
-            iframeElement.removeEventListener("load", handleLoad);
-          },
-          handleLoad,
-        });
-        return;
-      }
-
-      const handleIframeDocumentInteraction = () => {
-        restorePlayerControls();
-      };
-
-      iframeDocument.addEventListener(
-        "pointerdown",
-        handleIframeDocumentInteraction,
-        true
-      );
-      iframeDocument.addEventListener(
-        "mousedown",
-        handleIframeDocumentInteraction,
-        true
-      );
-      iframeDocument.addEventListener(
-        "touchstart",
-        handleIframeDocumentInteraction,
-        true
-      );
-
-      const cleanup = () => {
-        iframeDocument.removeEventListener(
-          "pointerdown",
-          handleIframeDocumentInteraction,
-          true
-        );
-        iframeDocument.removeEventListener(
-          "mousedown",
-          handleIframeDocumentInteraction,
-          true
-        );
-        iframeDocument.removeEventListener(
-          "touchstart",
-          handleIframeDocumentInteraction,
-          true
-        );
-      };
-
-      cleanupMap.set(iframeElement, {
-        cleanup: () => {
-          cleanup();
-          iframeElement.removeEventListener("load", handleLoad);
-        },
-        handleLoad,
-      });
-    };
-
-    const syncIframeBindings = () => {
-      const iframeElements = Array.from(
-        sectionElement.querySelectorAll<HTMLIFrameElement>(
-          "iframe.content-render-iframe"
-        )
-      );
-
-      iframeElements.forEach(bindIframeDocument);
-
-      cleanupMap.forEach((value, iframeElement) => {
-        if (iframeElements.includes(iframeElement)) {
-          return;
-        }
-
-        value.cleanup();
-        cleanupMap.delete(iframeElement);
-      });
-    };
-
-    const mutationObserver = new MutationObserver(() => {
-      syncIframeBindings();
-    });
-
-    syncIframeBindings();
-    mutationObserver.observe(sectionElement, {
-      childList: true,
-      subtree: true,
-    });
-
-    return () => {
-      mutationObserver.disconnect();
-      cleanupMap.forEach((value) => value.cleanup());
-      cleanupMap.clear();
-    };
-  }, [shouldRenderPlayer, showPlayerControls]);
+    },
+  });
 
   useEffect(() => {
     resetAudioSequence();

@@ -25,6 +25,7 @@ export type {
   InteractionDefaultValueOptions,
   InteractionDefaultValues,
   InteractionParseResult,
+  SlideInteractionTexts,
   SlideProps,
 } from "./Slide";
 export type { PlayerProps } from "./Slide";

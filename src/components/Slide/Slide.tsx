@@ -11,6 +11,7 @@ import { hasBrowserUserActivation } from "../../lib/browserUserActivation";
 import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
 import ContentRender from "../ContentRender";
+import type { ContentRenderProps } from "../ContentRender/ContentRender";
 import IframeSandbox from "../ContentRender/IframeSandbox";
 import type { OnSendContentParams } from "../types";
 import {
@@ -32,8 +33,19 @@ interface InteractionOverlayCardProps {
   defaultButtonText?: string;
   defaultInputText?: string;
   defaultSelectedValues?: string[];
+  confirmButtonText?: string;
+  copyButtonText?: string;
+  copiedButtonText?: string;
   onSend?: (content: OnSendContentParams) => void;
   readonly?: boolean;
+}
+
+export interface SlideInteractionTexts
+  extends Pick<
+    ContentRenderProps,
+    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+  > {
+  title?: string;
 }
 
 const InteractionOverlayCard = memo(
@@ -43,6 +55,9 @@ const InteractionOverlayCard = memo(
     defaultButtonText,
     defaultInputText,
     defaultSelectedValues,
+    confirmButtonText,
+    copyButtonText,
+    copiedButtonText,
     onSend,
     readonly = false,
   }: InteractionOverlayCardProps) => (
@@ -56,6 +71,9 @@ const InteractionOverlayCard = memo(
           defaultButtonText={defaultButtonText}
           defaultInputText={defaultInputText}
           defaultSelectedValues={defaultSelectedValues}
+          confirmButtonText={confirmButtonText}
+          copyButtonText={copyButtonText}
+          copiedButtonText={copiedButtonText}
           onSend={onSend}
           readonly={readonly}
           enableTypewriter={false}
@@ -75,6 +93,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   playerAlwaysVisible?: boolean;
   playerClassName?: string;
   interactionTitle?: string;
+  interactionTexts?: SlideInteractionTexts;
   playerAutoHideDelay?: number;
   onSend?: (content: OnSendContentParams, element?: Element) => void;
   onPlayerVisibilityChange?: (visible: boolean) => void;
@@ -87,6 +106,7 @@ const Slide: React.FC<SlideProps> = ({
   playerAlwaysVisible = false,
   playerClassName,
   interactionTitle,
+  interactionTexts,
   playerAutoHideDelay = 3000,
   onSend,
   onPlayerVisibilityChange,
@@ -781,9 +801,16 @@ const Slide: React.FC<SlideProps> = ({
             defaultButtonText={interactionDefaults.buttonText ?? ""}
             defaultInputText={interactionDefaults.inputText ?? ""}
             defaultSelectedValues={interactionDefaultSelectedValues}
+            confirmButtonText={interactionTexts?.confirmButtonText}
+            copyButtonText={interactionTexts?.copyButtonText}
+            copiedButtonText={interactionTexts?.copiedButtonText}
             onSend={handleInteractionSend}
             readonly={isInteractionReadonly}
-            title={interactionTitle ?? "Submit the content below to continue."}
+            title={
+              interactionTexts?.title ??
+              interactionTitle ??
+              "Submit the content below to continue."
+            }
           />
         </div>
       ) : null}

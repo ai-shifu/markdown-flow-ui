@@ -31,6 +31,10 @@ const meta = {
       control: "text",
       description: "I18n-ready interaction overlay title",
     },
+    interactionTexts: {
+      control: "object",
+      description: "I18n-ready interaction overlay UI texts",
+    },
     playerAutoHideDelay: {
       control: { type: "number", min: 0, step: 500 },
       description: "Auto-hide delay for player controls in milliseconds",
@@ -42,7 +46,12 @@ const meta = {
   },
   args: {
     elementList: [],
-    interactionTitle: "Submit the content below to continue.",
+    interactionTexts: {
+      title: "Submit the content below to continue.",
+      confirmButtonText: "Submit",
+      copyButtonText: "Copy",
+      copiedButtonText: "Copied",
+    },
     playerAutoHideDelay: 3000,
     playerAlwaysVisible: false,
   },

@@ -24,7 +24,7 @@ export {
   getInteractionDefaultValues,
   getInteractionDefaultSelectedValues,
 };
-export type { SlideProps } from "./Slide";
+export type { SlideInteractionTexts, SlideProps } from "./Slide";
 export type {
   InteractionDefaultResolver,
   InteractionDefaultResolverParams,

@@ -25,6 +25,7 @@ import type { IframeSandboxProps } from "./components/ContentRender/IframeSandbo
 import type { SandboxAppProps } from "./components/ContentRender/SandboxApp";
 import type {
   SlideProps,
+  SlideInteractionTexts,
   Element,
   PlayerProps,
   UseSlideResult,
@@ -55,6 +56,7 @@ export type {
   IframeSandboxProps,
   SandboxAppProps,
   SlideProps,
+  SlideInteractionTexts,
   Element,
   PlayerProps,
   UseSlideResult,

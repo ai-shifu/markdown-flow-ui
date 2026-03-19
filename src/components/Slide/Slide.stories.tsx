@@ -12,7 +12,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Interaction checkpoints are counted as independent player steps while preserving the previous visible slide content under the overlay.",
+          "Interaction markers are counted as independent player steps while preserving the previous visible slide content under the overlay.",
       },
     },
   },
@@ -23,7 +23,7 @@ const meta = {
       table: {
         type: {
           summary:
-            "{ content: ReactNode; type: string; is_show?: boolean; operation?: string; is_checkpoint?: boolean; serial_number?: number; is_read?: boolean; audio_url?: string; audio_segments?: ElementAudioSegment[]; }[]",
+            "{ content: ReactNode; type: string; is_renderable?: boolean; is_new?: boolean; is_marker?: boolean; sequence_number?: number; is_speakable?: boolean; audio_url?: string; audio_segments?: ElementAudioSegment[]; }[]",
         },
       },
     },
@@ -148,11 +148,11 @@ const SLOT_CONTENT = (
 const VIDEO_CONTENT = `<iframe data-tag="video" data-title="哔哩哔哩视频" data-url="https://www.bilibili.com/video/BV1ry4y1y7KZ/" class="w-full aspect-video rounded-lg border-0" src="https://player.bilibili.com/player.html?bvid=BV1ry4y1y7KZ&autoplay=0" allowfullscreen="" allow="autoplay; encrypted-media"></iframe>`;
 
 type ExampleElementConfig = {
-  serialNumber: number;
+  sequenceNumber: number;
   type: Element["type"];
   content: Element["content"];
-  operation?: Element["operation"];
-} & Partial<Omit<Element, "serial_number" | "type" | "content" | "operation">>;
+  isNew?: Element["is_new"];
+} & Partial<Omit<Element, "sequence_number" | "type" | "content" | "is_new">>;
 
 const STREAM_INITIAL_DELAY_MS = 600;
 const STREAM_ELEMENT_PAUSE_MS = 500;
@@ -221,11 +221,11 @@ const buildStreamedElement = (
   return {
     ...element,
     content,
-    is_show: true,
-    is_read: isElementComplete
-      ? element.is_read
+    is_renderable: true,
+    is_speakable: isElementComplete
+      ? element.is_speakable
       : hasVisibleAudioSegments
-        ? element.is_read
+        ? element.is_speakable
         : false,
     audio_url: isElementComplete ? element.audio_url : "",
     audio_segments: nextAudioSegments,
@@ -357,19 +357,19 @@ const StreamingSlidePreview = ({
 };
 
 const createExampleElement = ({
-  serialNumber,
+  sequenceNumber,
   type,
   content,
-  operation = "append",
+  isNew = false,
   ...element
 }: ExampleElementConfig): Element => ({
   content,
   type,
-  is_show: true,
-  operation,
-  is_checkpoint: true,
-  serial_number: serialNumber,
-  is_read: false,
+  is_renderable: true,
+  is_new: isNew,
+  is_marker: true,
+  sequence_number: sequenceNumber,
+  is_speakable: false,
   audio_url: "",
   audio_segments: [],
   ...element,
@@ -377,70 +377,78 @@ const createExampleElement = ({
 
 const exampleElementList: Element[] = [
   createExampleElement({
-    serialNumber: 1,
+    sequenceNumber: 1,
     type: "slot",
     content: SLOT_CONTENT,
-    operation: "new",
+    isNew: true,
   }),
   createExampleElement({
-    serialNumber: 2,
+    sequenceNumber: 2,
     type: "html",
     content: HTML_IFRAME_CONTENT,
   }),
-  createExampleElement({ serialNumber: 3, type: "svg", content: SVG_CONTENT }),
   createExampleElement({
-    serialNumber: 4,
+    sequenceNumber: 3,
+    type: "svg",
+    content: SVG_CONTENT,
+  }),
+  createExampleElement({
+    sequenceNumber: 4,
     type: "diff",
     content: DIFF_CONTENT,
   }),
-  createExampleElement({ serialNumber: 5, type: "img", content: IMG_CONTENT }),
   createExampleElement({
-    serialNumber: 6,
+    sequenceNumber: 5,
+    type: "img",
+    content: IMG_CONTENT,
+  }),
+  createExampleElement({
+    sequenceNumber: 6,
     type: "interaction",
     content: INTERACTION_CONTENT,
   }),
   createExampleElement({
-    serialNumber: 7,
+    sequenceNumber: 7,
     type: "tables",
     content: TABLES_CONTENT,
   }),
   createExampleElement({
-    serialNumber: 8,
+    sequenceNumber: 8,
     type: "code",
     content: CODE_CONTENT,
   }),
   createExampleElement({
-    serialNumber: 9,
+    sequenceNumber: 9,
     type: "latex",
     content: LATEX_CONTENT,
   }),
   createExampleElement({
-    serialNumber: 10,
+    sequenceNumber: 10,
     type: "md_img",
     content: MARKDOWN_IMAGE_CONTENT,
   }),
   createExampleElement({
-    serialNumber: 11,
+    sequenceNumber: 11,
     type: "mermaid",
     content: MERMAID_CONTENT,
   }),
   createExampleElement({
-    serialNumber: 12,
+    sequenceNumber: 12,
     type: "title",
     content: TITLE_CONTENT,
   }),
   createExampleElement({
-    serialNumber: 13,
+    sequenceNumber: 13,
     type: "text",
     content: TEXT_CONTENT,
   }),
   createExampleElement({
-    serialNumber: 14,
+    sequenceNumber: 14,
     type: "link",
     content: LINK_CONTENT,
   }),
   createExampleElement({
-    serialNumber: 15,
+    sequenceNumber: 15,
     type: "video",
     content: VIDEO_CONTENT,
   }),
@@ -460,7 +468,7 @@ export const FullViewportSlides: Story = {
     <div className="w-full">
       {elementList.map((element, index) => (
         <div
-          key={`${element.serial_number ?? index}-${element.type}-viewport`}
+          key={`${element.sequence_number ?? index}-${element.type}-viewport`}
           className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20"
         >
           <Slide className="w-full" elementList={[element]} />
@@ -475,162 +483,162 @@ export const FullViewportSingleSlide: Story = {
     playerAlwaysVisible: false,
     elementList: [
       createExampleElement({
-        serialNumber: -1,
+        sequenceNumber: -1,
         type: "slot",
         content: "自定义节标题",
-        is_show: true,
+        is_renderable: true,
       }),
       createExampleElement({
-        serialNumber: 1,
+        sequenceNumber: 1,
         type: "text",
         content:
           "kk，初次见面很高兴，我是孙志岗，AI 师傅的创始人。我曾是哈尔滨工业大学计算机专业的副教授，后来在网易、得到 App 和一家独角兽级创业公司担任过中高管，负责过产品、技术和业务。我的工作领域主要是互联网、人工智能和教育的结合，已经有超过 20 多年的经验。最近几年已经帮助各行各业的几万人转型成 AI 专业人士，还帮助数十家企业成功落地 AI 到生产实践。\n\n在 ChatGPT 问世的第 6 天，我就注册并被深深地震撼。在深入了解这个技术变革之后，我给自己定了一个目标：**帮助 100 万人顺利走进 AGI 时代**\n\n",
         audio_url:
           "https://resource.ai-shifu.cn/tts-audio/3a9bac6e4f8546bfa2607a53dbd4d89e.mp3",
-        is_read: true,
-        is_checkpoint: false,
-        is_show: false,
+        is_speakable: true,
+        is_marker: false,
+        is_renderable: false,
       }),
       createExampleElement({
-        serialNumber: 0,
-        is_show: true,
-        operation: "new",
+        sequenceNumber: 0,
+        is_renderable: true,
+        isNew: true,
         type: "svg",
         content:
           '<svg width=\"100%\" viewBox=\"0 0 1200 675\" xmlns=\"http://www.w3.org/2000/svg\" style=\"width: 100%; height: auto; aspect-ratio: 1200 / 675;\">\n  <defs>\n    <linearGradient id=\"bg\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\">\n      <stop offset=\"0%\" stop-color=\"#0F63EE\"/>\n      <stop offset=\"100%\" stop-color=\"#073482\"/>\n    </linearGradient>\n  </defs>\n  <rect width=\"100%\" height=\"100%\" fill=\"url(#bg)\"/>\n  <image href=\"https://resource.ai-shifu.com/ac186b833d0e417fb02737910b3a5ae0\" x=\"100\" y=\"85\" width=\"220\" height=\"505\" clip-path=\"circle(110px at 110px 130px)\"/>\n  <text x=\"420\" y=\"220\" font-size=\"65\" font-weight=\"bold\" fill=\"white\">跟 AI 学 AI 通识</text>\n  <text x=\"420\" y=\"310\" font-size=\"40\" fill=\"#e0e0e0\">讲师：孙志岗</text>\n  <text x=\"420\" y=\"400\" font-size=\"30\" fill=\"#cce0ff\">帮助 100 万人顺利走进 AGI 时代</text>\n</svg>\n\n',
       }),
       // createExampleElement({
-      //   serialNumber: 1,
+      //   sequenceNumber: 1,
       //   type: "text",
       //   content:
       //     "kk，初次见面很高兴，我是孙志岗，AI 师傅的创始人。我曾是哈尔滨工业大学计算机专业的副教授，后来在网易、得到 App 和一家独角兽级创业公司担任过中高管，负责过产品、技术和业务。我的工作领域主要是互联网、人工智能和教育的结合，已经有超过 20 多年的经验。最近几年已经帮助各行各业的几万人转型成 AI 专业人士，还帮助数十家企业成功落地 AI 到生产实践。\n\n在 ChatGPT 问世的第 6 天，我就注册并被深深地震撼。在深入了解这个技术变革之后，我给自己定了一个目标：**帮助 100 万人顺利走进 AGI 时代**\n\n",
       //   audio_url:
       //     "https://resource.ai-shifu.cn/tts-audio/3a9bac6e4f8546bfa2607a53dbd4d89e.mp3",
-      //   is_read: true,
-      //   is_checkpoint: false,
-      //   is_show: false,
+      //   is_speakable: true,
+      //   is_marker: false,
+      //   is_renderable: false,
       // }),
       createExampleElement({
-        serialNumber: 2,
+        sequenceNumber: 2,
         type: "html",
-        operation: "new",
-        is_show: false,
+        isNew: true,
+        is_renderable: false,
         content:
           '<div class=\"w-full h-screen flex flex-col p-[4vmin] bg-white\">\n  <div class=\"flex-1 flex flex-col items-center justify-[safe_center] gap-[4vmin]\">\n    <h1 class=\"text-[4vmin] font-bold text-[#0F63EE]\">三个常见观点，请你判断</h1>\n    <div class=\"w-full grid grid-cols-1 gap-[3vmin]\">\n      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n        <p class=\"text-[3vmin] leading-[4vmin] text-gray-800\">1. AI 是一种工具</p>\n      </div>\n      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n        <p class=\"text-[3vmin] leading-[4vmin] text-gray-800\">2. 每种 AI 产品都需要学习使用方法</p>\n      </div>\n      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n        <p class=\"text-[3vmin] leading-[4vmin] text-gray-800\">3. 打造 AI 产品是技术高手的事情</p>\n      </div>\n    </div>\n  </div>\n</div>\n\n',
       }),
       createExampleElement({
-        serialNumber: 3,
+        sequenceNumber: 3,
         type: "text",
         content:
           "我很想知道你是否同意这几个观点？\n1. AI 是一种工具\n2. 每种 AI 产品都需要学习使用方法\n3. 打造 AI 产品是技术高手的事情",
         audio_url:
           "https://resource.ai-shifu.cn/tts-audio/3bb0ea1263474ed78db21796faac1a13.mp3",
-        is_read: true,
-        is_checkpoint: false,
-        is_show: false,
+        is_speakable: true,
+        is_marker: false,
+        is_renderable: false,
       }),
       createExampleElement({
-        serialNumber: 4,
-        is_show: false,
+        sequenceNumber: 4,
+        is_renderable: false,
         type: "interaction",
         content:
           "?[%{{agreeed_points}} AI 是一种工具 || 每种 AI 产品都需要学习使用方法 || 打造 AI 产品是技术高手的事情 || 都不同意 ]",
         user_input: "都不同意",
       }),
       createExampleElement({
-        serialNumber: 5,
-        is_show: false,
+        sequenceNumber: 5,
+        is_renderable: false,
         type: "diff",
         content:
           '!+++\n--- a/0\n+++ b/0\n@@ -1,8 +1,8 @@\n <div class=\"w-full h-screen flex flex-col p-[4vmin] bg-white\">\n-  <div class=\"flex-1 flex flex-col items-center justify-[safe_center] gap-[4vmin]\">\n+  <div class=\"flex-1 flex flex-col items-center justify-[safe_center] gap-[3vmin]\">\n     <h1 class=\"text-[4vmin] font-bold text-[#0F63EE]\">三个常见观点，请你判断</h1>\n     <div class=\"w-full grid grid-cols-1 gap-[3vmin]\">\n-      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n+      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-[#0F63EE] shadow-lg\">\n         <p class=\"text-[3vmin] leading-[4vmin] text-gray-800\">1. AI 是一种工具</p>\n       </div>\n       <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n!+++\n\n',
       }),
       createExampleElement({
-        serialNumber: 6,
+        sequenceNumber: 6,
         type: "text",
         audio_url:
           "https://resource.ai-shifu.cn/tts-audio/f949d0729a5d47adb70a249e4a850058.mp3",
-        is_read: true,
-        is_checkpoint: false,
-        is_show: false,
+        is_speakable: true,
+        is_marker: false,
+        is_renderable: false,
         content:
           '我来简单给你解释一下：\n- **AI 一切都是概率结果**：AI 不会像计算器一样给你\"绝对正确\"的答案，它是根据训练数据猜下一个字，理解了这件事，你就不会迷信 AI 的输出，会懂得怎么验证、怎么修正结果。\n- **AI 的知识从哪来**：AI 不会凭空创造知识，它所有的认知都来自训练数据。你得搞懂它的知识边界，才知道什么时候能信它，什么时候要提醒它补新知识。\n- **操纵 AI 的记忆**：AI 没有真正的长期记忆，但我们可以通过提示词、上下文把需要的信息喂给它。学会这招，AI 就能一直记住你的需求、你的习惯，用起来越用越顺手。',
       }),
       createExampleElement({
-        serialNumber: 7,
+        sequenceNumber: 7,
         type: "text",
         content:
           "你可能还没注意到：**咱们这门用 AI 师傅制作的课，本身就是 AI 适应人的最好例证**。\n\n你现在看到的一切，都不是提前写死的固定内容，而是由 AI 此时此刻给你量身定制的。而且了解你的喜好和个人情况越多，给你做的个性化讲课就越精准，学习体验和效果自然也就越好。\n\n但这和 ChatGPT 那种纯对话 AI 差别很大：虽然内容都是 AI 实时生成的，但并不是 AI 凭空瞎编，而是在后台被我严格约束了教学逻辑——该讲什么、怎么讲，哪里必须严谨，哪里可以灵活发挥，全都是受我的严格控制。打个比方：AI 就像是我亲自培训出来的助教，我把核心知识和讲课逻辑都教给它，它再按照你的情况，把内容用最适合你的方式讲出来，既保证内容准确权威，又能最大化发挥 AI 的优势。\n\n对了，你希望我怎么称呼你？",
         audio_url:
           "https://resource.ai-shifu.cn/tts-audio/7c04ca6357ba4ad1b0935a9afba37ca9.mp3",
-        is_read: true,
-        is_checkpoint: false,
-        is_show: false,
+        is_speakable: true,
+        is_marker: false,
+        is_renderable: false,
       }),
       createExampleElement({
-        serialNumber: 8,
+        sequenceNumber: 8,
         type: "interaction",
-        is_show: false,
+        is_renderable: false,
         content: "?[%{{sys_user_nickname}}...我可以怎样称呼你？]",
         user_input: "kk",
       }),
       createExampleElement({
-        serialNumber: 9,
-        is_show: false,
+        sequenceNumber: 9,
+        is_renderable: false,
         type: "svg",
         content:
           '<svg width="100%" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; aspect-ratio: 800 / 400;">\n  <defs>\n    <linearGradient id="welcomeBg" x1="0%" y1="0%" x2="100%" y2="100%">\n      <stop offset="0%" stop-color="#0F63EE"/>\n      <stop offset="100%" stop-color="#4a8bff"/>\n    </linearGradient>\n  </defs>\n  <rect width="100%" height="100%" fill="url(#welcomeBg)"/>\n  <text id="welcome" x="400" y="160" text-anchor="middle" font-size="60" fill="white" font-weight="bold">欢迎你，</text>\n  <text id="name" x="400" y="240" text-anchor="middle" font-size="80" fill="white" font-weight="bold">kk</text>\n  <text id="wave" x="680" y="340" text-anchor="middle" font-size="50" fill="white">👋</text>\n  <script type="text/javascript"><![CDATA[\n    let scale = 1;\n    let growing = false;\n    function animate() {\n      if(growing) {\n        scale += 0.01;\n        if(scale >= 1.2) growing = false;\n      } else {\n        scale -= 0.01;\n        if(scale <= 0.9) growing = true;\n      }\n      name.setAttribute(\'transform\', `scale(${scale}) translate(-400 -240)`);\n      requestAnimationFrame(animate);\n    }\n    animate();\n    let waveRotate = 0;\n    function waveAnimate() {\n      waveRotate += 2;\n      wave.setAttribute(\'transform\', `rotate(${waveRotate} 680 340)`);\n      requestAnimationFrame(waveAnimate);\n    }\n    waveAnimate();\n  ]]></script>\n</svg>\n\n',
       }),
       createExampleElement({
-        serialNumber: 10,
+        sequenceNumber: 10,
         type: "text",
         content:
           "哈喽 kk，你的名字真好听，简洁好记又响亮，一下就记在我脑子里啦！\n\n为了让课程里的所有案例都更贴合你的情况，我需要简单了解一下你现在是做什么的。麻烦你从行业、岗位、工作年限、当前状态这些角度，详细介绍一下自己，越详细越好，比如这样：\n1. 我是互联网行业运营，做了 5 年，现在是运营主管，想靠 AI 做内容提升效率，再接兼职赚钱\n2. 我是大学应届毕业生，学的是汉语言文学，还没找到工作，想靠 AI 接单做文案\n3. 我全职在家带娃 5 年，之前做过行政，现在想试试做 AI 相关的副业增加收入\n\n请你一定要告诉我你的真实情况，这样后面我才能完全按照你的情况调整讲课内容，给你最适配的学习体验。",
         audio_url:
           "https://resource.ai-shifu.cn/tts-audio/8ff97c75dd454a6585d195901219d055.mp3",
-        is_read: true,
-        is_checkpoint: false,
-        is_show: false,
+        is_speakable: true,
+        is_marker: false,
+        is_renderable: false,
       }),
       createExampleElement({
-        serialNumber: 11,
-        is_show: false,
+        sequenceNumber: 11,
+        is_renderable: false,
         type: "interaction",
         content:
           "?[%{{sys_user_background}}我不告诉你 | ...你的身份背景、当前状态如何？]",
         user_input: "我不告诉你",
       }),
       createExampleElement({
-        serialNumber: 12,
+        sequenceNumber: 12,
         type: "text",
         content:
           "哈哈，没关系，保持神秘感也挺好，我懂！不提前说透反而能碰撞出更多惊喜，这种松弛感我太喜欢了。不过也正好，咱们今天就聊点通用的——不管你是什么背景，AI 能帮你的大方向其实都是一样的。\n\n",
         audio_url:
           "https://resource.ai-shifu.cn/tts-audio/3a4fb5e4da8c4eb988b4a840aaaf9b21.mp3",
-        is_read: true,
-        is_checkpoint: false,
-        is_show: false,
+        is_speakable: true,
+        is_marker: false,
+        is_renderable: false,
       }),
       createExampleElement({
-        serialNumber: 13,
+        sequenceNumber: 13,
         type: "svg",
-        is_show: false,
+        is_renderable: false,
         content:
           '<svg width=\"100%\" viewBox=\"0 0 1000 600\" xmlns=\"http://www.w3.org/2000/svg\" style=\"width: 100%; height: auto; aspect-ratio: 1000 / 600;\">\n  <defs>\n    <linearGradient id=\"timeline\" x1=\"0%\" y1=\"0\" x2=\"0\" y2=\"100%\">\n      <stop offset=\"0%\" stop-color=\"#0F63EE\"/>\n      <stop offset=\"100%\" stop-color=\"#073482\"/>\n    </linearGradient>\n  </defs>\n  <rect width=\"100%\" height=\"100%\" fill=\"#ffffff\"/>\n  <text x=\"50\" y=\"50\" font-size=\"36\" font-weight=\"bold\" fill=\"#0F63EE\">AI 对普通人的价值时间线</text>\n  <rect x=\"100\" y=\"80\" width=\"10\" height=\"480\" fill=\"url(#timeline)\"/>\n  \n  <!-- 当前 -->\n  <circle cx=\"105\" cy=\"140\" r=\"15\" fill=\"#ffffff\" stroke=\"#0F63EE\" stroke-width=\"3\"/>\n  <rect x=\"140\" y=\"100\" width=\"800\" height=\"80\" rx=\"12\" fill=\"#f0f6ff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n  <text x=\"160\" y=\"145\" font-size=\"24\" fill=\"#0a2463\">当下：当副业赚零花钱，提升本职工作效率</text>\n\n  <!-- 2-3年 -->\n  <circle cx=\"105\" cy=\"280\" r=\"15\" fill=\"#ffffff\" stroke=\"#0F63EE\" stroke-width=\"3\"/>\n  <rect x=\"140\" y=\"240\" width=\"800\" height=\"80\" rx=\"12\" fill=\"#f0f6ff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n  <text x=\"160\" y=\"285\" font-size=\"24\" fill=\"#0a2463\">2 - 3 年：AI 会成为你的职业护城河，拉开和普通人的差距</text>\n\n  <!-- 4-5年 -->\n  <circle cx=\"105\" cy=\"420\" r=\"15\" fill=\"#ffffff\" stroke=\"#0F63EE\" stroke-width=\"3\"/>\n  <rect x=\"140\" y=\"380\" width=\"800\" height=\"80\" rx=\"12\" fill=\"#f0f6ff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n  <text x=\"160\" y=\"425\" font-size=\"24\" fill=\"#0a2463\">4 - 5 年（AGI 落地后）：提前掌握 AI 思维，就是拿到了新时代船票</text>\n</svg>\n\n',
       }),
       createExampleElement({
-        serialNumber: 14,
+        sequenceNumber: 14,
         type: "text",
         audio_url:
           "https://resource.ai-shifu.cn/tts-audio/783eb8c83fef4af19c1582a87f5f81c4.mp3",
-        is_read: true,
-        is_checkpoint: false,
-        is_show: false,
+        is_speakable: true,
+        is_marker: false,
+        is_renderable: false,
         content:
           "我来给你拆解一下这条时间线：\n\n1. **当下**：对想做副业的你来说，现在就是最好的入场时机。现在 AI 人才缺口极大，不管是帮人做提示词、做 AI 应用方案，还是用 AI 生产内容接单，都能直接赚到零花钱。哪怕你不打算做副业，用 AI 帮自己的本职工作提效，也能早点下班多陪家人，或者省出时间干更多自己想干的事。\n\n2. **2-3 年之后**：AI 会变成职场人的标配，但**早学会和被迫接受，完全是两码事**。现在就入门的你，早就摸透了 AI 的脾气，知道怎么让它帮你干活，而那些抵触 AI 不愿意学的人，只会被时代甩在后面。这两三年的先发优势，就是你最稳的职业护城河，差距一旦拉开，再追就难了。\n\n3. **按照行业预测，AGI 大概率会在 5 年内落地**，到那个时候，整个社会的生产方式都会彻底重构。很多现在的岗位会彻底消失，新的岗位会源源不断冒出来。提前掌握了 AI 思维，懂怎么和 AI 协作、怎么用 AI 解决问题，你就相当于提前拿到了新时代的船票，不管浪怎么拍，你都能站在船头，而不是被拍在沙滩上。\n\n说了这么多，你来说说：你希望 AI 能帮自己解决什么具体问题？我后面的课程就围绕这个目标给你讲。",
       }),
       createExampleElement({
-        serialNumber: 11,
-        is_show: false,
+        sequenceNumber: 11,
+        is_renderable: false,
         type: "interaction",
         content: "?[%{{purpose}} 还没想好 |...学 AI 的目的是什么？]",
         user_input: "",
@@ -650,7 +658,7 @@ export const FullViewportSingleSlideWithSSE: Story = {
   args: {
     elementList: [
       createExampleElement({
-        serialNumber: 0,
+        sequenceNumber: 0,
         type: "html",
         content: `<div class=\"w-full h-screen flex flex-col items-center justify-[safe_center] bg-gradient-to-br from-gray-900 to-black p-[4vmin]\">\n
         <div class=\"flex-1 flex flex-col items-center justify-center text-center space-y-[3vmin] max-w-[90%]\">\n
@@ -668,7 +676,7 @@ export const FullViewportSingleSlideWithSSE: Story = {
         `,
       }),
       createExampleElement({
-        serialNumber: 1,
+        sequenceNumber: 1,
         type: "text",
         content: `十亿美元市值？这听起来像神话，对吧？但咱们得清醒点，这是小概率中的小概率事件。
 
@@ -679,9 +687,9 @@ export const FullViewportSingleSlideWithSSE: Story = {
         所以，随着一人公司作为新的职业形态普及，咱们大多数人的务实目标，根本不该是追逐“独角兽”，而是追求 “体面的收入 + 高自由度 + 可持续”。
 
         今天，你将拿到一个自检量表。越坦诚，你对自己越有利。`,
-        is_read: true,
-        is_checkpoint: false,
-        is_show: false,
+        is_speakable: true,
+        is_marker: false,
+        is_renderable: false,
         audio_segments: [
           {
             position: 0,

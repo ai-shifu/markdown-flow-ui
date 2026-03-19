@@ -17,8 +17,6 @@ export type ElementType =
   | "link"
   | string;
 
-export type SlideOperation = "new" | "append" | string;
-
 export interface ElementAudioSegment {
   segment_index: number;
   audio_data: string;
@@ -32,11 +30,11 @@ export interface ElementAudioSegment {
 export interface Element {
   content: React.ReactNode;
   type: ElementType;
-  is_show?: boolean;
-  operation?: SlideOperation;
-  is_checkpoint?: boolean;
-  serial_number?: number;
-  is_read?: boolean;
+  is_renderable?: boolean;
+  is_new?: boolean;
+  is_marker?: boolean;
+  sequence_number?: number;
+  is_speakable?: boolean;
   audio_url?: string;
   user_input?: string;
   readonly?: boolean;

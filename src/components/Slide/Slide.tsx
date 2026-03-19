@@ -145,10 +145,10 @@ const Slide: React.FC<SlideProps> = ({
 
     return slideElementList[currentIndex];
   }, [currentIndex, slideElementList]);
-  const visibleCheckpointCount = slideElementList.filter(
-    (element) => element.is_show !== false
+  const visibleMarkerCount = slideElementList.filter(
+    (element) => element.is_renderable !== false
   ).length;
-  const isSingleSlide = visibleCheckpointCount === 1;
+  const isSingleSlide = visibleMarkerCount === 1;
   const shouldRenderPlayer =
     showPlayer &&
     (isSingleSlide ||
@@ -374,7 +374,7 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    // Auto-advance silent checkpoint-only steps so playback flow does not stall.
+    // Auto-advance silent marker-only steps so playback flow does not stall.
     autoAdvanceTimerRef.current = window.setTimeout(() => {
       autoAdvanceTimerRef.current = null;
       goNext();
@@ -514,11 +514,11 @@ const Slide: React.FC<SlideProps> = ({
     }
 
     const visibleElementCount = elementList.filter(
-      (element) => element.is_show !== false
+      (element) => element.is_renderable !== false
     ).length;
     const lastVisibleElementIndex = elementList.reduce(
       (lastVisibleIndex, element, index) =>
-        element.is_show !== false ? index : lastVisibleIndex,
+        element.is_renderable !== false ? index : lastVisibleIndex,
       -1
     );
 
@@ -526,21 +526,21 @@ const Slide: React.FC<SlideProps> = ({
       <div className="slide-stage__content flex w-full flex-col gap-4">
         {elementList.map((element, index) => {
           const isPreRenderedHtml =
-            element.type === "html" && element.is_show === false;
+            element.type === "html" && element.is_renderable === false;
 
           return (
             <div
-              key={element.serial_number ?? `${element.type}-${index}`}
+              key={element.sequence_number ?? `${element.type}-${index}`}
               ref={index === lastVisibleElementIndex ? lastElementRef : null}
               aria-hidden={isPreRenderedHtml || undefined}
               className={cn(
                 "w-full shrink-0",
                 visibleElementCount === 1 &&
-                  element.is_show !== false &&
+                  element.is_renderable !== false &&
                   "slide-element--single",
                 isPreRenderedHtml
                   ? "pointer-events-none fixed left-[-200vw] top-0 -z-10 h-[100dvh] w-[100vw] overflow-hidden opacity-0"
-                  : element.is_show === false && "hidden"
+                  : element.is_renderable === false && "hidden"
               )}
             >
               {renderSlideElement(element)}
@@ -666,7 +666,7 @@ const Slide: React.FC<SlideProps> = ({
     () =>
       currentElementList.map(
         (element, index) =>
-          `${element.serial_number ?? `${element.type}-${index}`}:${element.operation ?? ""}`
+          `${element.sequence_number ?? `${element.type}-${index}`}:${String(element.is_new ?? "")}`
       ),
     [currentElementList]
   );
@@ -681,7 +681,7 @@ const Slide: React.FC<SlideProps> = ({
     }
 
     const hasMountedNextHtml = currentElementList.some(
-      (element) => element.serial_number === nextHtmlElement.serial_number
+      (element) => element.sequence_number === nextHtmlElement.sequence_number
     );
 
     if (hasMountedNextHtml) {
@@ -689,7 +689,10 @@ const Slide: React.FC<SlideProps> = ({
     }
 
     // Keep the next html sandbox mounted offscreen so it is ready when revealed.
-    return [...currentElementList, { ...nextHtmlElement, is_show: false }];
+    return [
+      ...currentElementList,
+      { ...nextHtmlElement, is_renderable: false },
+    ];
   }, [currentElementList, currentIndex, slideElementList]);
 
   useEffect(() => {
@@ -702,7 +705,7 @@ const Slide: React.FC<SlideProps> = ({
       ? currentElementList.slice(prevKeys.length)
       : [];
     const shouldAutoScrollToAppend = appendedElements.some(
-      (element) => element.operation === "append"
+      (element) => element.is_new === false
     );
 
     prevRenderElementKeysRef.current = currentRenderElementKeys;

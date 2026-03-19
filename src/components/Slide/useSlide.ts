@@ -4,7 +4,7 @@ import { applyDiffElement } from "./diff-utils";
 import type { Element, ElementAudioSegment } from "./types";
 
 export interface SlideAudioItem {
-  serialNumber?: number;
+  sequenceNumber?: number;
   audioUrl?: string;
   audioSegments?: ElementAudioSegment[];
   isAudioStreaming?: boolean;
@@ -23,12 +23,12 @@ export interface UseSlideResult {
   handleNext: () => void;
 }
 
-const getSlideElementList = (elementList: Element[]) =>
-  elementList.filter((element) => element.is_checkpoint);
+const getMarkerElementList = (elementList: Element[]) =>
+  elementList.filter((element) => element.is_marker);
 
-const getSlideElementIndexes = (elementList: Element[]) =>
+const getMarkerElementIndexes = (elementList: Element[]) =>
   elementList.reduce<number[]>((indexes, element, index) => {
-    if (element.is_checkpoint) {
+    if (element.is_marker) {
       indexes.push(index);
     }
 
@@ -37,7 +37,7 @@ const getSlideElementIndexes = (elementList: Element[]) =>
 
 const hasPlayableAudio = (element?: Element) =>
   Boolean(
-    element?.is_read &&
+    element?.is_speakable &&
       (element.audio_url || (element.audio_segments?.length ?? 0) > 0)
   );
 
@@ -48,7 +48,7 @@ const getAudioList = (elementList: Element[]) =>
   elementList.reduce<SlideAudioItem[]>((list, element) => {
     if (hasPlayableAudio(element)) {
       list.push({
-        serialNumber: element.serial_number,
+        sequenceNumber: element.sequence_number,
         audioUrl: element.audio_url,
         audioSegments: element.audio_segments,
         isAudioStreaming: isStreamingAudio(element.audio_segments),
@@ -74,16 +74,16 @@ const getAudioIndexMap = (elementList: Element[]) => {
 
 const getSlideAudioSequenceMap = (
   elementList: Element[],
-  slideElementIndexes: number[],
+  markerElementIndexes: number[],
   audioIndexMap: Map<number, number>
 ) =>
-  slideElementIndexes.reduce<Map<number, number[]>>(
+  markerElementIndexes.reduce<Map<number, number[]>>(
     (sequenceMap, startIndex, slideIndex) => {
-      const nextCheckpointIndex =
-        slideElementIndexes[slideIndex + 1] ?? elementList.length;
+      const nextMarkerIndex =
+        markerElementIndexes[slideIndex + 1] ?? elementList.length;
       const sequenceIndexes: number[] = [];
 
-      for (let index = startIndex; index < nextCheckpointIndex; index += 1) {
+      for (let index = startIndex; index < nextMarkerIndex; index += 1) {
         const element = elementList[index];
 
         if (!hasPlayableAudio(element)) {
@@ -107,19 +107,21 @@ const getSlideAudioSequenceMap = (
 
 const getInitialSlideIndex = (slideElementList: Element[]) => {
   const visibleIndex = slideElementList.findIndex(
-    (element) => element.is_show === true
+    (element) => element.is_renderable === true
   );
 
   if (visibleIndex >= 0) {
     return visibleIndex;
   }
 
-  return slideElementList.findIndex((element) => element.is_show !== false);
+  return slideElementList.findIndex(
+    (element) => element.is_renderable !== false
+  );
 };
 
 const getVisibleElement = (element: Element): Element => ({
   ...element,
-  is_show: true,
+  is_renderable: true,
 });
 
 const getCurrentElementList = (
@@ -145,7 +147,7 @@ const getCurrentElementList = (
         return nextList ?? [...currentList, visibleElement];
       }
 
-      if (element.operation === "new") {
+      if (element.is_new) {
         return [visibleElement];
       }
 
@@ -176,11 +178,11 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
     return elementList;
   }, [elementList]);
   const slideElementList = useMemo(
-    () => getSlideElementList(stableElementList),
+    () => getMarkerElementList(stableElementList),
     [stableElementList]
   );
-  const slideElementIndexes = useMemo(
-    () => getSlideElementIndexes(stableElementList),
+  const markerElementIndexes = useMemo(
+    () => getMarkerElementIndexes(stableElementList),
     [stableElementList]
   );
   const audioList = useMemo(
@@ -195,10 +197,10 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
     () =>
       getSlideAudioSequenceMap(
         stableElementList,
-        slideElementIndexes,
+        markerElementIndexes,
         audioIndexMap
       ),
-    [audioIndexMap, slideElementIndexes, stableElementList]
+    [audioIndexMap, markerElementIndexes, stableElementList]
   );
   const [currentIndex, setCurrentIndex] = useState(() =>
     getInitialSlideIndex(slideElementList)

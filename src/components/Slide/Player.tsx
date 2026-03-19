@@ -110,7 +110,7 @@ const Player: React.FC<PlayerProps> = ({
       ),
     [currentAudio?.audioSegments]
   );
-  const currentAudioKey = `${currentAudioIndex}:${currentAudio?.serialNumber ?? "none"}:${currentAudioUrl ?? ""}`;
+  const currentAudioKey = `${currentAudioIndex}:${currentAudio?.sequenceNumber ?? "none"}:${currentAudioUrl ?? ""}`;
 
   useEffect(() => {
     currentAudioRef.current = currentAudio;

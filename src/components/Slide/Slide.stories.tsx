@@ -147,6 +147,25 @@ const SLOT_CONTENT = (
 
 const VIDEO_CONTENT = `<iframe data-tag="video" data-title="哔哩哔哩视频" data-url="https://www.bilibili.com/video/BV1ry4y1y7KZ/" class="w-full aspect-video rounded-lg border-0" src="https://player.bilibili.com/player.html?bvid=BV1ry4y1y7KZ&autoplay=0" allowfullscreen="" allow="autoplay; encrypted-media"></iframe>`;
 
+const STREAMING_IFRAME_CONTENT = `<div class="w-full h-screen flex flex-col p-[4vmin] bg-white">
+  <div class="flex-1 flex flex-col items-center justify-[safe_center] gap-[4vmin]">
+    <h1 class="text-[4vmin] font-bold text-[#0F63EE]">三个常见观点，请你判断</h1>
+    <div class="w-full grid grid-cols-1 gap-[3vmin]">
+      <div class="p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100">
+        <p class="text-[3vmin] leading-[4vmin] text-gray-800">1. AI 是一种工具</p>
+      </div>
+      <div class="p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100">
+        <p class="text-[3vmin] leading-[4vmin] text-gray-800">2. 每种 AI 产品都需要学习使用方法</p>
+      </div>
+      <div class="p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100">
+        <p class="text-[3vmin] leading-[4vmin] text-gray-800">3. 打造 AI 产品是技术高手的事情</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+`;
+
 type ExampleElementConfig = {
   sequenceNumber: number;
   type: Element["type"];
@@ -694,6 +713,33 @@ export const HiddenMountedHtmlSlides: Story = {
   render: (args) => (
     <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
       <Slide className="w-full" {...args} />
+    </div>
+  ),
+};
+
+export const StreamingSingleIframeSlide: Story = {
+  args: {
+    playerAlwaysVisible: false,
+    elementList: [
+      createExampleElement({
+        sequenceNumber: 1,
+        type: "html",
+        isNew: true,
+        content: STREAMING_IFRAME_CONTENT,
+      }),
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Streams a single iframe-backed html slide so the sandbox content appears progressively.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
+      <StreamingSlidePreview className="w-full" {...args} />
     </div>
   ),
 };

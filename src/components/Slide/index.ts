@@ -9,7 +9,7 @@ import {
 import {
   getInteractionDefaultSelectedValues,
   getInteractionDefaultValues,
-} from "./interaction-defaults";
+} from "../../lib/interaction-defaults";
 import useSlide from "./useSlide";
 
 export default Slide;
@@ -31,7 +31,7 @@ export type {
   InteractionDefaultValueOptions,
   InteractionDefaultValues,
   InteractionParseResult,
-} from "./interaction-defaults";
+} from "../../lib/interaction-defaults";
 export type { Element, ElementAudioSegment } from "./types";
 export type { PlayerProps } from "./Player";
 export type { UseSlideResult } from "./useSlide";

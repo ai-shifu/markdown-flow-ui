@@ -17,7 +17,8 @@ import type { OnSendContentParams } from "../types";
 import {
   getInteractionDefaultSelectedValues,
   getInteractionDefaultValues,
-} from "./interaction-defaults";
+  type InteractionDefaultValueOptions,
+} from "../../lib/interaction-defaults";
 import Player from "./Player";
 import type { Element } from "./types";
 import useSlide from "./useSlide";
@@ -95,6 +96,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   interactionTitle?: string;
   interactionTexts?: SlideInteractionTexts;
   playerAutoHideDelay?: number;
+  interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   onSend?: (content: OnSendContentParams, element?: Element) => void;
   onPlayerVisibilityChange?: (visible: boolean) => void;
   onStepChange?: (element: Element | undefined, index: number) => void;
@@ -108,6 +110,7 @@ const Slide: React.FC<SlideProps> = ({
   interactionTitle,
   interactionTexts,
   playerAutoHideDelay = 3000,
+  interactionDefaultValueOptions,
   onSend,
   onPlayerVisibilityChange,
   onStepChange,
@@ -399,9 +402,10 @@ const Slide: React.FC<SlideProps> = ({
       typeof activeInteractionElement.content === "string"
         ? activeInteractionElement.content
         : undefined,
-      activeInteractionElement.user_input
+      activeInteractionElement.user_input,
+      interactionDefaultValueOptions
     );
-  }, [activeInteractionElement]);
+  }, [activeInteractionElement, interactionDefaultValueOptions]);
 
   const interactionDefaultSelectedValues = useMemo(() => {
     if (!activeInteractionElement) {
@@ -412,9 +416,10 @@ const Slide: React.FC<SlideProps> = ({
       typeof activeInteractionElement.content === "string"
         ? activeInteractionElement.content
         : undefined,
-      activeInteractionElement.user_input
+      activeInteractionElement.user_input,
+      interactionDefaultValueOptions
     );
-  }, [activeInteractionElement]);
+  }, [activeInteractionElement, interactionDefaultValueOptions]);
 
   const hasResolvedInteractionInput = Boolean(
     activeInteractionElement?.user_input?.trim()

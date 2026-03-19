@@ -28,6 +28,12 @@ export interface InteractionDefaultValueOptions {
   resolveDefaultValues?: InteractionDefaultResolver;
 }
 
+interface StructuredInteractionPayload {
+  buttonText?: unknown;
+  inputText?: unknown;
+  selectedValues?: unknown;
+}
+
 const interactionParser = createInteractionParser();
 
 const parseInteractionBlock = (
@@ -86,6 +92,46 @@ const splitPresetValues = (raw: string) => {
     .filter(Boolean);
 };
 
+const normalizeStructuredInteractionDefaults = (
+  payload?: StructuredInteractionPayload | null
+): InteractionDefaultValues | null => {
+  if (!payload || Array.isArray(payload)) {
+    return null;
+  }
+
+  const selectedValues = Array.isArray(payload.selectedValues)
+    ? payload.selectedValues
+        .map((item) => `${item ?? ""}`.trim())
+        .filter(Boolean)
+    : undefined;
+  const buttonText = `${payload.buttonText ?? ""}`.trim();
+  const inputText =
+    typeof payload.inputText === "string" ? payload.inputText : undefined;
+
+  if (!selectedValues?.length && !buttonText && !inputText) {
+    return null;
+  }
+
+  return {
+    buttonText: buttonText || undefined,
+    inputText,
+    selectedValues: selectedValues?.length ? selectedValues : undefined,
+  };
+};
+
+const parseStructuredInteractionDefaults = (rawValue?: string | null) => {
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue) as StructuredInteractionPayload;
+    return normalizeStructuredInteractionDefaults(parsed);
+  } catch {
+    return null;
+  }
+};
+
 const resolveCustomInteractionDefaults = (
   content?: string | null,
   rawValue?: string | null,
@@ -122,6 +168,12 @@ export const getInteractionDefaultValues = (
 
   if (customDefaults) {
     return customDefaults;
+  }
+
+  const structuredDefaults = parseStructuredInteractionDefaults(normalized);
+
+  if (structuredDefaults) {
+    return structuredDefaults;
   }
 
   if (!interactionInfo) {

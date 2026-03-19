@@ -1,4 +1,5 @@
 import React from "react";
+import type { InteractionDefaultValueOptions } from "../../lib/interaction-defaults";
 import ContentRender from "../ContentRender";
 import { CustomRenderBarProps, OnSendContentParams } from "../types";
 import "./markdownFlow.css";
@@ -7,6 +8,7 @@ export interface MarkdownFlowProps {
   initialContentList?: {
     content: string;
     isFinished?: boolean;
+    userInput?: string;
     defaultInputText?: string;
     defaultButtonText?: string;
     defaultSelectedValues?: string[];
@@ -27,6 +29,7 @@ export interface MarkdownFlowProps {
   // Copied state text for code blocks
   copiedButtonText?: string;
   beforeSend?: (content: OnSendContentParams) => boolean;
+  interactionDefaultValueOptions?: InteractionDefaultValueOptions;
 }
 
 const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
@@ -40,6 +43,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   copyButtonText,
   copiedButtonText,
   beforeSend: beforeSendProp,
+  interactionDefaultValueOptions,
 }) => {
   return (
     <div className="markdown-flow">
@@ -53,6 +57,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
           <ContentRender
             key={index}
             content={contentInfo.content}
+            userInput={contentInfo.userInput}
             defaultInputText={contentInfo.defaultInputText}
             defaultButtonText={contentInfo.defaultButtonText}
             defaultSelectedValues={contentInfo.defaultSelectedValues}
@@ -61,6 +66,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             customRenderBar={contentInfo.customRenderBar || customRenderBar}
             onSend={onSend}
             beforeSend={beforeSend}
+            interactionDefaultValueOptions={interactionDefaultValueOptions}
             onClickCustomButtonAfterContent={
               contentInfo.onClickCustomButtonAfterContent
             }

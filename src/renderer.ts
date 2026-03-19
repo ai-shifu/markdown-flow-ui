@@ -12,6 +12,10 @@ import {
   splitDiffContent,
   useSlide,
 } from "./components/Slide";
+import {
+  getInteractionDefaultSelectedValues,
+  getInteractionDefaultValues,
+} from "./lib/interaction-defaults";
 import { RenderSegment } from "./components/ContentRender/utils/split-content";
 import { splitContentSegments } from "./components/ContentRender/utils/split-content";
 import type { MarkdownFlowProps } from "./components/MarkdownFlow/MarkdownFlow";
@@ -40,6 +44,8 @@ export {
   SlideComponent as Slide,
   Player,
   useSlide,
+  getInteractionDefaultValues,
+  getInteractionDefaultSelectedValues,
   splitContentSegments,
   splitDiffContent,
   parseUnifiedDiff,
@@ -62,3 +68,10 @@ export type {
   UseSlideResult,
   RenderSegment,
 };
+export type {
+  InteractionDefaultResolver,
+  InteractionDefaultResolverParams,
+  InteractionDefaultValueOptions,
+  InteractionDefaultValues,
+  InteractionParseResult,
+} from "./lib/interaction-defaults";

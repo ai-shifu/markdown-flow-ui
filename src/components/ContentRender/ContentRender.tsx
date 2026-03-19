@@ -39,25 +39,32 @@ import {
   splitContentSegments,
   type RenderSegment,
 } from "./utils/split-content";
+import {
+  getInteractionDefaultSelectedValues,
+  getInteractionDefaultValues,
+  type InteractionDefaultValueOptions,
+} from "../../lib/interaction-defaults";
 // Define component Props type
 export interface ContentRenderProps {
   content: string;
   /**
-+   * Callback invoked when the custom button after content is clicked.
-+   * This button is rendered via the `<custom-button-after-content>` tag in markdown content.
-+   * @example
-+   * ```tsx
-+   * <ContentRender
-+   *   content="Hello <custom-button-after-content>Ask</custom-button-after-content>"
-+   *   onClickCustomButtonAfterContent={() => console.log('Button clicked')}
-+   * />
-+   * ```
-+   */
+   * Callback invoked when the custom button after content is clicked.
+   * This button is rendered via the `<custom-button-after-content>` tag in markdown content.
+   * @example
+   * ```tsx
+   * <ContentRender
+   *   content="Hello <custom-button-after-content>Ask</custom-button-after-content>"
+   *   onClickCustomButtonAfterContent={() => console.log('Button clicked')}
+   * />
+   * ```
+   */
   customRenderBar?: CustomRenderBarProps;
   onClickCustomButtonAfterContent?: () => void;
   onSend?: (content: OnSendContentParams) => void;
   typingSpeed?: number;
   enableTypewriter?: boolean;
+  userInput?: string;
+  interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   defaultButtonText?: string;
   defaultInputText?: string; // Text input by user
   defaultSelectedValues?: string[]; // Default selected values for multi-select
@@ -266,6 +273,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   onSend,
   typingSpeed = 30,
   enableTypewriter = false,
+  userInput,
+  interactionDefaultValueOptions,
   defaultButtonText,
   defaultInputText,
   defaultSelectedValues,
@@ -287,6 +296,34 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     () => normalizeInlineHtml(content),
     [content]
   );
+
+  const interactionDefaults = useMemo(
+    () =>
+      getInteractionDefaultValues(
+        content,
+        userInput,
+        interactionDefaultValueOptions
+      ),
+    [content, interactionDefaultValueOptions, userInput]
+  );
+
+  const interactionDefaultSelectedValues = useMemo(
+    () =>
+      getInteractionDefaultSelectedValues(
+        content,
+        userInput,
+        interactionDefaultValueOptions
+      ),
+    [content, interactionDefaultValueOptions, userInput]
+  );
+
+  const resolvedDefaultButtonText =
+    defaultButtonText?.trim() || interactionDefaults.buttonText;
+  const resolvedDefaultInputText =
+    defaultInputText?.trim() || interactionDefaults.inputText;
+  const resolvedDefaultSelectedValues = defaultSelectedValues?.length
+    ? defaultSelectedValues
+    : interactionDefaultSelectedValues;
 
   // Use custom Hook to handle typewriter effect
   const components: CustomComponents = {
@@ -310,9 +347,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       <CustomButtonInputVariable
         {...props}
         readonly={readonly}
-        defaultButtonText={defaultButtonText}
-        defaultInputText={defaultInputText}
-        defaultSelectedValues={defaultSelectedValues}
+        defaultButtonText={resolvedDefaultButtonText}
+        defaultInputText={resolvedDefaultInputText}
+        defaultSelectedValues={resolvedDefaultSelectedValues}
         onSend={onSend}
         beforeSend={beforeSend}
         confirmButtonText={confirmButtonText}

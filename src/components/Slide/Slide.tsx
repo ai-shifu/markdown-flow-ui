@@ -88,6 +88,21 @@ const InteractionOverlayCard = memo(
 
 InteractionOverlayCard.displayName = "InteractionOverlayCard";
 
+const areStepElementListsEqual = (
+  prevElementList: Element[],
+  nextElementList: Element[]
+) =>
+  prevElementList.length === nextElementList.length &&
+  prevElementList.every((element, index) => {
+    const nextElement = nextElementList[index];
+
+    return (
+      element.sequence_number === nextElement?.sequence_number &&
+      element.type === nextElement?.type &&
+      element.content === nextElement?.content
+    );
+  });
+
 export interface SlideProps extends React.ComponentProps<"section"> {
   elementList?: Element[];
   showPlayer?: boolean;
@@ -128,6 +143,7 @@ const Slide: React.FC<SlideProps> = ({
   const shouldScrollToBottomRef = useRef(false);
   const {
     currentElementList,
+    stepElementLists,
     slideElementList,
     currentIndex,
     audioList,
@@ -508,7 +524,10 @@ const Slide: React.FC<SlideProps> = ({
     );
   };
 
-  const renderSlideElementList = (elementList: Element[] = []) => {
+  const renderSlideElementList = (
+    elementList: Element[] = [],
+    isActiveStep = false
+  ) => {
     if (elementList.length === 0) {
       return null;
     }
@@ -531,7 +550,11 @@ const Slide: React.FC<SlideProps> = ({
           return (
             <div
               key={element.sequence_number ?? `${element.type}-${index}`}
-              ref={index === lastVisibleElementIndex ? lastElementRef : null}
+              ref={
+                isActiveStep && index === lastVisibleElementIndex
+                  ? lastElementRef
+                  : null
+              }
               aria-hidden={isPreRenderedHtml || undefined}
               className={cn(
                 "w-full shrink-0",
@@ -550,6 +573,46 @@ const Slide: React.FC<SlideProps> = ({
       </div>
     );
   };
+
+  const { mountedStepStates, currentMountedStateIndex } = useMemo(() => {
+    const nextMountedStepStates: Array<{
+      elementList: Element[];
+      sourceStepIndexes: number[];
+    }> = [];
+    const mountedStateIndexByStep = new Map<number, number>();
+
+    stepElementLists.forEach((stepElementList, stepIndex) => {
+      const existingMountedStateIndex = nextMountedStepStates.findIndex(
+        (mountedStepState) =>
+          areStepElementListsEqual(
+            mountedStepState.elementList,
+            stepElementList
+          )
+      );
+
+      if (existingMountedStateIndex >= 0) {
+        nextMountedStepStates[
+          existingMountedStateIndex
+        ]?.sourceStepIndexes.push(stepIndex);
+        mountedStateIndexByStep.set(stepIndex, existingMountedStateIndex);
+        return;
+      }
+
+      nextMountedStepStates.push({
+        elementList: stepElementList,
+        sourceStepIndexes: [stepIndex],
+      });
+      mountedStateIndexByStep.set(stepIndex, nextMountedStepStates.length - 1);
+    });
+
+    return {
+      mountedStepStates: nextMountedStepStates,
+      currentMountedStateIndex:
+        currentIndex >= 0
+          ? (mountedStateIndexByStep.get(currentIndex) ?? -1)
+          : -1,
+    };
+  }, [currentIndex, stepElementLists]);
 
   const handleFullscreen = () => {
     const target = sectionRef.current;
@@ -671,30 +734,6 @@ const Slide: React.FC<SlideProps> = ({
     [currentElementList]
   );
 
-  const renderElementList = useMemo(() => {
-    const nextHtmlElement = slideElementList
-      .slice(currentIndex + 1)
-      .find((element) => element.type === "html");
-
-    if (!nextHtmlElement) {
-      return currentElementList;
-    }
-
-    const hasMountedNextHtml = currentElementList.some(
-      (element) => element.sequence_number === nextHtmlElement.sequence_number
-    );
-
-    if (hasMountedNextHtml) {
-      return currentElementList;
-    }
-
-    // Keep the next html sandbox mounted offscreen so it is ready when revealed.
-    return [
-      ...currentElementList,
-      { ...nextHtmlElement, is_renderable: false },
-    ];
-  }, [currentElementList, currentIndex, slideElementList]);
-
   useEffect(() => {
     const prevKeys = prevRenderElementKeysRef.current;
     const hasStablePrefix =
@@ -759,18 +798,6 @@ const Slide: React.FC<SlideProps> = ({
     };
   }, [currentElementList, scrollStageToBottom]);
 
-  console.log(
-    "currentElement",
-    currentElementList.at(-1),
-    currentElementList,
-    shouldRenderPlayer,
-    isPlayerVisible,
-    currentAudioSequenceIndexes,
-    currentInteractionElement,
-    activeInteractionElement,
-    isInteractionOverlayOpen
-  );
-
   return (
     <section
       ref={sectionRef}
@@ -787,7 +814,29 @@ const Slide: React.FC<SlideProps> = ({
         {currentElementList.length > 0 ? (
           <div className="slide-stage">
             <div ref={stageLayerRef} className="slide-stage__layer w-full">
-              {renderSlideElementList(renderElementList)}
+              {mountedStepStates.map(
+                (mountedStepState, mountedStepStateIndex) => {
+                  const isActiveStep =
+                    mountedStepStateIndex === currentMountedStateIndex;
+
+                  return (
+                    <div
+                      key={
+                        mountedStepState.sourceStepIndexes[0] ??
+                        mountedStepStateIndex
+                      }
+                      aria-hidden={!isActiveStep || undefined}
+                      className="w-full"
+                      style={{ display: isActiveStep ? undefined : "none" }}
+                    >
+                      {renderSlideElementList(
+                        mountedStepState.elementList,
+                        isActiveStep
+                      )}
+                    </div>
+                  );
+                }
+              )}
             </div>
           </div>
         ) : null}

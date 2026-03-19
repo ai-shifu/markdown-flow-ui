@@ -352,7 +352,6 @@ const StreamingSlidePreview = ({
       }
     };
   }, [stableElementList]);
-  console.log("streamedElementList", streamedElementList);
   return <Slide {...props} elementList={streamedElementList} />;
 };
 
@@ -654,6 +653,51 @@ export const FullViewportSingleSlide: Story = {
     </div>
   ),
 };
+
+export const HiddenMountedHtmlSlides: Story = {
+  args: {
+    playerAlwaysVisible: false,
+    elementList: [
+      createExampleElement({
+        sequenceNumber: 1,
+        type: "html",
+        isNew: true,
+        content:
+          '<div class="flex h-screen w-full items-center justify-center bg-slate-950 p-[4vmin] text-white"><div class="space-y-[2vmin] text-center"><p class="text-[4vmin] font-semibold">Step 1</p><p class="text-[2.5vmin] text-slate-300">The first iframe stays mounted after navigation.</p></div></div>',
+      }),
+      createExampleElement({
+        sequenceNumber: 2,
+        type: "html",
+        isNew: true,
+        is_renderable: false,
+        content:
+          '<div class="flex h-screen w-full items-center justify-center bg-blue-950 p-[4vmin] text-white"><div class="space-y-[2vmin] text-center"><p class="text-[4vmin] font-semibold">Step 2</p><p class="text-[2.5vmin] text-blue-100">Inactive steps switch with CSS display only.</p></div></div>',
+      }),
+      createExampleElement({
+        sequenceNumber: 3,
+        type: "html",
+        isNew: true,
+        is_renderable: false,
+        content:
+          '<div class="flex h-screen w-full items-center justify-center bg-emerald-950 p-[4vmin] text-white"><div class="space-y-[2vmin] text-center"><p class="text-[4vmin] font-semibold">Step 3</p><p class="text-[2.5vmin] text-emerald-100">Future iframe sandboxes preload before they are shown.</p></div></div>',
+      }),
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "All slide iframe steps stay mounted and switch visibility with CSS display.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
+      <Slide className="w-full" {...args} />
+    </div>
+  ),
+};
+
 export const FullViewportSingleSlideWithSSE: Story = {
   args: {
     elementList: [

@@ -12,6 +12,7 @@ export interface SlideAudioItem {
 
 export interface UseSlideResult {
   currentElementList: Element[];
+  stepElementLists: Element[][];
   slideElementList: Element[];
   currentIndex: number;
   audioList: SlideAudioItem[];
@@ -159,6 +160,11 @@ const getCurrentElementList = (
     }, []);
 };
 
+const getStepElementLists = (slideElementList: Element[]) =>
+  slideElementList.map((_, index) =>
+    getCurrentElementList(slideElementList, index)
+  );
+
 const hasSameElementReferences = (
   prevElementList: Element[],
   nextElementList: Element[]
@@ -260,6 +266,10 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
     () => getCurrentElementList(slideElementList, currentIndex),
     [currentIndex, slideElementList]
   );
+  const stepElementLists = useMemo(
+    () => getStepElementLists(slideElementList),
+    [slideElementList]
+  );
   const currentAudioSequenceIndexes = useMemo(
     () => slideAudioSequenceMap.get(currentIndex) ?? [],
     [currentIndex, slideAudioSequenceMap]
@@ -274,6 +284,7 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
 
   return {
     currentElementList,
+    stepElementLists,
     slideElementList,
     currentIndex,
     audioList,

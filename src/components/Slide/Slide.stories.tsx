@@ -500,168 +500,268 @@ export const FullViewportSingleSlide: Story = {
   args: {
     playerAlwaysVisible: false,
     elementList: [
-      createExampleElement({
-        sequenceNumber: -1,
-        type: "slot",
-        content: "自定义节标题",
+      {
+        sequence_number: 1,
+        type: "markdown",
+        content:
+          '<svg width="100%" viewBox="0 0 1200 675" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; aspect-ratio: 1200 / 675;">\n  <defs>\n    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">\n      <stop offset="0%" stop-color="#0F63EE"/>\n      <stop offset="100%" stop-color="#1a1a2e"/>\n    </linearGradient>\n    <filter id="glow">\n      <feGaussianBlur stdDeviation="5" result="coloredBlur"/>\n      <feMerge>\n        <feMergeNode in="coloredBlur"/>\n        <feMergeNode in="SourceGraphic"/>\n      </feMerge>\n    </filter>\n  </defs>\n  <rect width="100%" height="100%" fill="url(#bgGrad)"/>\n  <g transform="translate(600, 250)">\n    <circle cx="-250" cy="0" r="100" fill="#0F63EE" filter="url(#glow)" opacity="0.9"/>\n    <path d="M-350,0 L-150,0" stroke="white" stroke-width="8" stroke-linecap="round"/>\n    <path d="M-250,-90 L-250,90" stroke="white" stroke-width="8" stroke-linecap="round"/>\n    <text x="-250" y="150" text-anchor="middle" fill="white" font-size="36" font-weight="bold">全知</text>\n    <text x="-250" y="190" text-anchor="middle" fill="#a0aec0" font-size="28">博古通今</text>\n    <text x="-250" y="230" text-anchor="middle" fill="#a0aec0" font-size="28">逻辑清晰</text>\n  </g>\n  <g transform="translate(600, 250)">\n    <circle cx="250" cy="0" r="100" fill="#EF4444" filter="url(#glow)" opacity="0.9"/>\n    <line x1="150" y1="-90" x2="350" y2="90" stroke="white" stroke-width="8" stroke-linecap="round"/>\n    <line x1="150" y1="90" x2="350" y2="-90" stroke="white" stroke-width="8" stroke-linecap="round"/>\n    <text x="250" y="150" text-anchor="middle" fill="white" font-size="36" font-weight="bold">幼稚</text>\n    <text x="250" y="190" text-anchor="middle" fill="#a0aec0" font-size="28">事实幻觉</text>\n    <text x="250" y="230" text-anchor="middle" fill="#a0aec0" font-size="28">逻辑短路</text>\n  </g>\n  <text x="600" y="500" text-anchor="middle" fill="white" font-size="48" font-weight="bold">AI 的两面性</text>\n  <text x="600" y="550" text-anchor="middle" fill="#cbd5e0" font-size="32">同一个模型，截然不同的表现</text>\n</svg>',
+        is_marker: true,
         is_renderable: true,
-      }),
-      createExampleElement({
-        sequenceNumber: 1,
-        type: "text",
+        is_new: true,
+        is_speakable: false,
+        blockBid: "c9ab9e84c3584a2f881e821a69ecf729",
+        page: 0,
+      },
+      {
+        sequence_number: 2,
+        type: "interaction",
         content:
-          "kk，初次见面很高兴，我是孙志岗，AI 师傅的创始人。我曾是哈尔滨工业大学计算机专业的副教授，后来在网易、得到 App 和一家独角兽级创业公司担任过中高管，负责过产品、技术和业务。我的工作领域主要是互联网、人工智能和教育的结合，已经有超过 20 多年的经验。最近几年已经帮助各行各业的几万人转型成 AI 专业人士，还帮助数十家企业成功落地 AI 到生产实践。\n\n在 ChatGPT 问世的第 6 天，我就注册并被深深地震撼。在深入了解这个技术变革之后，我给自己定了一个目标：**帮助 100 万人顺利走进 AGI 时代**\n\n",
-        audio_url:
-          "https://resource.ai-shifu.cn/tts-audio/3a9bac6e4f8546bfa2607a53dbd4d89e.mp3",
-        is_speakable: true,
-        is_marker: false,
-        is_renderable: false,
-      }),
-      createExampleElement({
-        sequenceNumber: 0,
+          "?[%{{why_streaming_guess}} 为了装得更像人 | 网络拥堵导致的 | AI 在查资料/翻数据库然后拼接答案 | 这就是生成式 AI 本来的样子 ]",
+        is_marker: true,
         is_renderable: true,
-        isNew: true,
-        type: "svg",
-        content:
-          '<svg width=\"100%\" viewBox=\"0 0 1200 675\" xmlns=\"http://www.w3.org/2000/svg\" style=\"width: 100%; height: auto; aspect-ratio: 1200 / 675;\">\n  <defs>\n    <linearGradient id=\"bg\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\">\n      <stop offset=\"0%\" stop-color=\"#0F63EE\"/>\n      <stop offset=\"100%\" stop-color=\"#073482\"/>\n    </linearGradient>\n  </defs>\n  <rect width=\"100%\" height=\"100%\" fill=\"url(#bg)\"/>\n  <image href=\"https://resource.ai-shifu.com/ac186b833d0e417fb02737910b3a5ae0\" x=\"100\" y=\"85\" width=\"220\" height=\"505\" clip-path=\"circle(110px at 110px 130px)\"/>\n  <text x=\"420\" y=\"220\" font-size=\"65\" font-weight=\"bold\" fill=\"white\">跟 AI 学 AI 通识</text>\n  <text x=\"420\" y=\"310\" font-size=\"40\" fill=\"#e0e0e0\">讲师：孙志岗</text>\n  <text x=\"420\" y=\"400\" font-size=\"30\" fill=\"#cce0ff\">帮助 100 万人顺利走进 AGI 时代</text>\n</svg>\n\n',
-      }),
-      // createExampleElement({
-      //   sequenceNumber: 1,
-      //   type: "text",
-      //   content:
-      //     "kk，初次见面很高兴，我是孙志岗，AI 师傅的创始人。我曾是哈尔滨工业大学计算机专业的副教授，后来在网易、得到 App 和一家独角兽级创业公司担任过中高管，负责过产品、技术和业务。我的工作领域主要是互联网、人工智能和教育的结合，已经有超过 20 多年的经验。最近几年已经帮助各行各业的几万人转型成 AI 专业人士，还帮助数十家企业成功落地 AI 到生产实践。\n\n在 ChatGPT 问世的第 6 天，我就注册并被深深地震撼。在深入了解这个技术变革之后，我给自己定了一个目标：**帮助 100 万人顺利走进 AGI 时代**\n\n",
-      //   audio_url:
-      //     "https://resource.ai-shifu.cn/tts-audio/3a9bac6e4f8546bfa2607a53dbd4d89e.mp3",
-      //   is_speakable: true,
-      //   is_marker: false,
-      //   is_renderable: false,
-      // }),
-      createExampleElement({
-        sequenceNumber: 2,
-        type: "html",
-        isNew: true,
-        is_renderable: false,
-        content:
-          '<div class=\"w-full h-screen flex flex-col p-[4vmin] bg-white\">\n  <div class=\"flex-1 flex flex-col items-center justify-[safe_center] gap-[4vmin]\">\n    <h1 class=\"text-[4vmin] font-bold text-[#0F63EE]\">三个常见观点，请你判断</h1>\n    <div class=\"w-full grid grid-cols-1 gap-[3vmin]\">\n      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n        <p class=\"text-[3vmin] leading-[4vmin] text-gray-800\">1. AI 是一种工具</p>\n      </div>\n      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n        <p class=\"text-[3vmin] leading-[4vmin] text-gray-800\">2. 每种 AI 产品都需要学习使用方法</p>\n      </div>\n      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n        <p class=\"text-[3vmin] leading-[4vmin] text-gray-800\">3. 打造 AI 产品是技术高手的事情</p>\n      </div>\n    </div>\n  </div>\n</div>\n\n',
-      }),
-      createExampleElement({
-        sequenceNumber: 3,
-        type: "text",
-        content:
-          "我很想知道你是否同意这几个观点？\n1. AI 是一种工具\n2. 每种 AI 产品都需要学习使用方法\n3. 打造 AI 产品是技术高手的事情",
-        audio_url:
-          "https://resource.ai-shifu.cn/tts-audio/3bb0ea1263474ed78db21796faac1a13.mp3",
-        is_speakable: true,
-        is_marker: false,
-        is_renderable: false,
-      }),
-      createExampleElement({
-        sequenceNumber: 4,
-        is_renderable: false,
-        type: "interaction",
-        content:
-          "?[%{{agreeed_points}} AI 是一种工具 || 每种 AI 产品都需要学习使用方法 || 打造 AI 产品是技术高手的事情 || 都不同意 ]",
-        user_input: "都不同意",
-      }),
-      createExampleElement({
-        sequenceNumber: 5,
-        is_renderable: false,
-        type: "diff",
-        content:
-          '!+++\n--- a/0\n+++ b/0\n@@ -1,8 +1,8 @@\n <div class=\"w-full h-screen flex flex-col p-[4vmin] bg-white\">\n-  <div class=\"flex-1 flex flex-col items-center justify-[safe_center] gap-[4vmin]\">\n+  <div class=\"flex-1 flex flex-col items-center justify-[safe_center] gap-[3vmin]\">\n     <h1 class=\"text-[4vmin] font-bold text-[#0F63EE]\">三个常见观点，请你判断</h1>\n     <div class=\"w-full grid grid-cols-1 gap-[3vmin]\">\n-      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n+      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-[#0F63EE] shadow-lg\">\n         <p class=\"text-[3vmin] leading-[4vmin] text-gray-800\">1. AI 是一种工具</p>\n       </div>\n       <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n!+++\n\n',
-      }),
-      createExampleElement({
-        sequenceNumber: 6,
-        type: "text",
-        audio_url:
-          "https://resource.ai-shifu.cn/tts-audio/f949d0729a5d47adb70a249e4a850058.mp3",
-        is_speakable: true,
-        is_marker: false,
-        is_renderable: false,
-        content:
-          '我来简单给你解释一下：\n- **AI 一切都是概率结果**：AI 不会像计算器一样给你\"绝对正确\"的答案，它是根据训练数据猜下一个字，理解了这件事，你就不会迷信 AI 的输出，会懂得怎么验证、怎么修正结果。\n- **AI 的知识从哪来**：AI 不会凭空创造知识，它所有的认知都来自训练数据。你得搞懂它的知识边界，才知道什么时候能信它，什么时候要提醒它补新知识。\n- **操纵 AI 的记忆**：AI 没有真正的长期记忆，但我们可以通过提示词、上下文把需要的信息喂给它。学会这招，AI 就能一直记住你的需求、你的习惯，用起来越用越顺手。',
-      }),
-      createExampleElement({
-        sequenceNumber: 7,
-        type: "text",
-        content:
-          "你可能还没注意到：**咱们这门用 AI 师傅制作的课，本身就是 AI 适应人的最好例证**。\n\n你现在看到的一切，都不是提前写死的固定内容，而是由 AI 此时此刻给你量身定制的。而且了解你的喜好和个人情况越多，给你做的个性化讲课就越精准，学习体验和效果自然也就越好。\n\n但这和 ChatGPT 那种纯对话 AI 差别很大：虽然内容都是 AI 实时生成的，但并不是 AI 凭空瞎编，而是在后台被我严格约束了教学逻辑——该讲什么、怎么讲，哪里必须严谨，哪里可以灵活发挥，全都是受我的严格控制。打个比方：AI 就像是我亲自培训出来的助教，我把核心知识和讲课逻辑都教给它，它再按照你的情况，把内容用最适合你的方式讲出来，既保证内容准确权威，又能最大化发挥 AI 的优势。\n\n对了，你希望我怎么称呼你？",
-        audio_url:
-          "https://resource.ai-shifu.cn/tts-audio/7c04ca6357ba4ad1b0935a9afba37ca9.mp3",
-        is_speakable: true,
-        is_marker: false,
-        is_renderable: false,
-      }),
-      createExampleElement({
-        sequenceNumber: 8,
-        type: "interaction",
-        is_renderable: false,
-        content: "?[%{{sys_user_nickname}}...我可以怎样称呼你？]",
-        user_input: "kk",
-      }),
-      createExampleElement({
-        sequenceNumber: 9,
-        is_renderable: false,
-        type: "svg",
-        content:
-          '<svg width="100%" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; aspect-ratio: 800 / 400;">\n  <defs>\n    <linearGradient id="welcomeBg" x1="0%" y1="0%" x2="100%" y2="100%">\n      <stop offset="0%" stop-color="#0F63EE"/>\n      <stop offset="100%" stop-color="#4a8bff"/>\n    </linearGradient>\n  </defs>\n  <rect width="100%" height="100%" fill="url(#welcomeBg)"/>\n  <text id="welcome" x="400" y="160" text-anchor="middle" font-size="60" fill="white" font-weight="bold">欢迎你，</text>\n  <text id="name" x="400" y="240" text-anchor="middle" font-size="80" fill="white" font-weight="bold">kk</text>\n  <text id="wave" x="680" y="340" text-anchor="middle" font-size="50" fill="white">👋</text>\n  <script type="text/javascript"><![CDATA[\n    let scale = 1;\n    let growing = false;\n    function animate() {\n      if(growing) {\n        scale += 0.01;\n        if(scale >= 1.2) growing = false;\n      } else {\n        scale -= 0.01;\n        if(scale <= 0.9) growing = true;\n      }\n      name.setAttribute(\'transform\', `scale(${scale}) translate(-400 -240)`);\n      requestAnimationFrame(animate);\n    }\n    animate();\n    let waveRotate = 0;\n    function waveAnimate() {\n      waveRotate += 2;\n      wave.setAttribute(\'transform\', `rotate(${waveRotate} 680 340)`);\n      requestAnimationFrame(waveAnimate);\n    }\n    waveAnimate();\n  ]]></script>\n</svg>\n\n',
-      }),
-      createExampleElement({
-        sequenceNumber: 10,
-        type: "text",
-        content:
-          "哈喽 kk，你的名字真好听，简洁好记又响亮，一下就记在我脑子里啦！\n\n为了让课程里的所有案例都更贴合你的情况，我需要简单了解一下你现在是做什么的。麻烦你从行业、岗位、工作年限、当前状态这些角度，详细介绍一下自己，越详细越好，比如这样：\n1. 我是互联网行业运营，做了 5 年，现在是运营主管，想靠 AI 做内容提升效率，再接兼职赚钱\n2. 我是大学应届毕业生，学的是汉语言文学，还没找到工作，想靠 AI 接单做文案\n3. 我全职在家带娃 5 年，之前做过行政，现在想试试做 AI 相关的副业增加收入\n\n请你一定要告诉我你的真实情况，这样后面我才能完全按照你的情况调整讲课内容，给你最适配的学习体验。",
-        audio_url:
-          "https://resource.ai-shifu.cn/tts-audio/8ff97c75dd454a6585d195901219d055.mp3",
-        is_speakable: true,
-        is_marker: false,
-        is_renderable: false,
-      }),
-      createExampleElement({
-        sequenceNumber: 11,
-        is_renderable: false,
-        type: "interaction",
-        content:
-          "?[%{{sys_user_background}}我不告诉你 | ...你的身份背景、当前状态如何？]",
-        user_input: "我不告诉你",
-      }),
-      createExampleElement({
-        sequenceNumber: 12,
-        type: "text",
-        content:
-          "哈哈，没关系，保持神秘感也挺好，我懂！不提前说透反而能碰撞出更多惊喜，这种松弛感我太喜欢了。不过也正好，咱们今天就聊点通用的——不管你是什么背景，AI 能帮你的大方向其实都是一样的。\n\n",
-        audio_url:
-          "https://resource.ai-shifu.cn/tts-audio/3a4fb5e4da8c4eb988b4a840aaaf9b21.mp3",
-        is_speakable: true,
-        is_marker: false,
-        is_renderable: false,
-      }),
-      createExampleElement({
-        sequenceNumber: 13,
-        type: "svg",
-        is_renderable: false,
-        content:
-          '<svg width=\"100%\" viewBox=\"0 0 1000 600\" xmlns=\"http://www.w3.org/2000/svg\" style=\"width: 100%; height: auto; aspect-ratio: 1000 / 600;\">\n  <defs>\n    <linearGradient id=\"timeline\" x1=\"0%\" y1=\"0\" x2=\"0\" y2=\"100%\">\n      <stop offset=\"0%\" stop-color=\"#0F63EE\"/>\n      <stop offset=\"100%\" stop-color=\"#073482\"/>\n    </linearGradient>\n  </defs>\n  <rect width=\"100%\" height=\"100%\" fill=\"#ffffff\"/>\n  <text x=\"50\" y=\"50\" font-size=\"36\" font-weight=\"bold\" fill=\"#0F63EE\">AI 对普通人的价值时间线</text>\n  <rect x=\"100\" y=\"80\" width=\"10\" height=\"480\" fill=\"url(#timeline)\"/>\n  \n  <!-- 当前 -->\n  <circle cx=\"105\" cy=\"140\" r=\"15\" fill=\"#ffffff\" stroke=\"#0F63EE\" stroke-width=\"3\"/>\n  <rect x=\"140\" y=\"100\" width=\"800\" height=\"80\" rx=\"12\" fill=\"#f0f6ff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n  <text x=\"160\" y=\"145\" font-size=\"24\" fill=\"#0a2463\">当下：当副业赚零花钱，提升本职工作效率</text>\n\n  <!-- 2-3年 -->\n  <circle cx=\"105\" cy=\"280\" r=\"15\" fill=\"#ffffff\" stroke=\"#0F63EE\" stroke-width=\"3\"/>\n  <rect x=\"140\" y=\"240\" width=\"800\" height=\"80\" rx=\"12\" fill=\"#f0f6ff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n  <text x=\"160\" y=\"285\" font-size=\"24\" fill=\"#0a2463\">2 - 3 年：AI 会成为你的职业护城河，拉开和普通人的差距</text>\n\n  <!-- 4-5年 -->\n  <circle cx=\"105\" cy=\"420\" r=\"15\" fill=\"#ffffff\" stroke=\"#0F63EE\" stroke-width=\"3\"/>\n  <rect x=\"140\" y=\"380\" width=\"800\" height=\"80\" rx=\"12\" fill=\"#f0f6ff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n  <text x=\"160\" y=\"425\" font-size=\"24\" fill=\"#0a2463\">4 - 5 年（AGI 落地后）：提前掌握 AI 思维，就是拿到了新时代船票</text>\n</svg>\n\n',
-      }),
-      createExampleElement({
-        sequenceNumber: 14,
-        type: "text",
-        audio_url:
-          "https://resource.ai-shifu.cn/tts-audio/783eb8c83fef4af19c1582a87f5f81c4.mp3",
-        is_speakable: true,
-        is_marker: false,
-        is_renderable: false,
-        content:
-          "我来给你拆解一下这条时间线：\n\n1. **当下**：对想做副业的你来说，现在就是最好的入场时机。现在 AI 人才缺口极大，不管是帮人做提示词、做 AI 应用方案，还是用 AI 生产内容接单，都能直接赚到零花钱。哪怕你不打算做副业，用 AI 帮自己的本职工作提效，也能早点下班多陪家人，或者省出时间干更多自己想干的事。\n\n2. **2-3 年之后**：AI 会变成职场人的标配，但**早学会和被迫接受，完全是两码事**。现在就入门的你，早就摸透了 AI 的脾气，知道怎么让它帮你干活，而那些抵触 AI 不愿意学的人，只会被时代甩在后面。这两三年的先发优势，就是你最稳的职业护城河，差距一旦拉开，再追就难了。\n\n3. **按照行业预测，AGI 大概率会在 5 年内落地**，到那个时候，整个社会的生产方式都会彻底重构。很多现在的岗位会彻底消失，新的岗位会源源不断冒出来。提前掌握了 AI 思维，懂怎么和 AI 协作、怎么用 AI 解决问题，你就相当于提前拿到了新时代的船票，不管浪怎么拍，你都能站在船头，而不是被拍在沙滩上。\n\n说了这么多，你来说说：你希望 AI 能帮自己解决什么具体问题？我后面的课程就围绕这个目标给你讲。",
-      }),
-      createExampleElement({
-        sequenceNumber: 11,
-        is_renderable: false,
-        type: "interaction",
-        content: "?[%{{purpose}} 还没想好 |...学 AI 的目的是什么？]",
+        is_new: true,
+        blockBid: "350bed19723a403ca5700f0a87e23fa0",
+        page: 0,
         user_input: "",
-      }),
+        readonly: true,
+      },
+      {
+        sequence_number: 3,
+        type: "html",
+        content:
+          '<div class="w-full h-screen flex flex-col items-center justify-[safe_center] bg-gradient-to-br from-gray-900 to-[#0F63EE] p-[4vmin]">\n  <div class="flex flex-col items-center justify-center gap-[3vmin] max-w-[90%]">\n    <h1 class="text-[6vmin] font-bold text-white text-center">“这就是它本来的样子”</h1>\n    <p class="text-[3.5vmin] text-blue-200 text-center leading-[4.5vmin]">kk，你这个猜想，**直接命中了本质**。</p>\n    <div class="bg-white/10 backdrop-blur-sm rounded-[2vmin] p-[4vmin] border border-white/20 mt-[2vmin]">\n      <p class="text-[3vmin] text-white text-center leading-[4vmin]">它不是一个“设计缺陷”，也不是因为网速慢。<br>这**一字一顿的“思考”过程，恰恰是它智慧的源头活水**。</p>\n    </div>\n    <p class="text-[3vmin] text-blue-200 text-center mt-[2vmin]">要理解这源头，咱们得先搞懂一个核心概念：</p>\n    <div class="relative">\n      <div class="absolute -inset-4 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-[3vmin] blur-xl opacity-30"></div>\n      <h2 class="relative text-[8vmin] font-bold text-white bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-white">Token</h2>\n    </div>\n    <p class="text-[2.8vmin] text-gray-300 text-center">（不是区块链那个，是 AI 世界的“原子”）</p>\n  </div>\n</div>\n\n<script>\n// 简单的入场动画\ngsap.from(\'h1, p, div\', {\n  duration: 0.8,\n  y: 30,\n  opacity: 0,\n  stagger: 0.1,\n  ease: "back.out(1.2)"\n});\n</script>\n\n',
+        is_marker: true,
+        is_renderable: true,
+        is_new: true,
+        is_speakable: false,
+        blockBid: "d4882bdbbda045debea179195a8c5f58",
+        page: 1,
+      },
+      {
+        sequence_number: 4,
+        type: "markdown",
+        content:
+          '<svg width="100%" viewBox="0 0 1200 600" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; aspect-ratio: 1200 / 600;">\n  <defs>\n    <linearGradient id="tokenGrad" x1="0%" y1="0%" x2="100%" y2="100%">\n      <stop offset="0%" stop-color="#0F63EE"/>\n      <stop offset="100%" stop-color="#3B82F6"/>\n    </linearGradient>\n    <filter id="tokenGlow" x="-50%" y="-50%" width="200%" height="200%">\n      <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="blur"/>\n      <feFlood flood-color="#0F63EE" flood-opacity="0.6" result="color"/>\n      <feComposite in="color" in2="blur" operator="in" result="glow"/>\n      <feMerge>\n        <feMergeNode in="glow"/>\n        <feMergeNode in="SourceGraphic"/>\n      </feMerge>\n    </filter>\n  </defs>\n  <rect width="100%" height="100%" fill="#111827"/>\n  <text x="600" y="100" text-anchor="middle" fill="white" font-size="52" font-weight="bold">Token：AI 理解世界的基本粒子</text>\n  <g transform="translate(300, 300)">\n    <rect x="-120" y="-80" width="240" height="160" rx="20" fill="url(#tokenGrad)" filter="url(#tokenGlow)"/>\n    <text x="0" y="-15" text-anchor="middle" fill="white" font-size="42" font-weight="bold">AI</text>\n    <text x="0" y="30" text-anchor="middle" fill="white" font-size="36">眼中的</text>\n    <text x="0" y="75" text-anchor="middle" fill="white" font-size="42" font-weight="bold">“吃”</text>\n    <text x="0" y="120" text-anchor="middle" fill="#BFDBFE" font-size="28">(一个 Token)</text>\n  </g>\n  <g transform="translate(600, 300)">\n    <rect x="-120" y="-80" width="240" height="160" rx="20" fill="url(#tokenGrad)" filter="url(#tokenGlow)"/>\n    <text x="0" y="-15" text-anchor="middle" fill="white" font-size="42" font-weight="bold">AI</text>\n    <text x="0" y="30" text-anchor="middle" fill="white" font-size="36">眼中的</text>\n    <text x="0" y="75" text-anchor="middle" fill="white" font-size="42" font-weight="bold">“葡萄”</text>\n    <text x="0" y="120" text-anchor="middle" fill="#BFDBFE" font-size="28">(一个 Token)</text>\n  </g>\n  <g transform="translate(900, 300)">\n    <rect x="-120" y="-80" width="240" height="160" rx="20" fill="url(#tokenGrad)" filter="url(#tokenGlow)"/>\n    <text x="0" y="-15" text-anchor="middle" fill="white" font-size="42" font-weight="bold">AI</text>\n    <text x="0" y="30" text-anchor="middle" fill="white" font-size="36">眼中的</text>\n    <text x="0" y="75" text-anchor="middle" fill="white" font-size="42" font-weight="bold">“了吗？”</text>\n    <text x="0" y="120" text-anchor="middle" fill="#BFDBFE" font-size="28">(一个 Token)</text>\n  </g>\n  <text x="600" y="500" text-anchor="middle" fill="#CBD5E1" font-size="36">“你吃葡萄了吗？” = Token 序列 [你, 吃, 葡萄, 了, 吗, ？]</text>\n</svg>',
+        is_marker: true,
+        is_renderable: true,
+        is_new: true,
+        is_speakable: false,
+        blockBid: "e6402047e9dd41f3ab103894862b9248",
+        page: 2,
+      },
+      {
+        sequence_number: 5,
+        type: "html",
+        content:
+          '<div class="w-full h-screen flex flex-col items-center justify-[safe_center] bg-gradient-to-br from-gray-900 via-[#0F1B3D] to-gray-900 p-[4vmin] overflow-hidden">\n  <h1 class="text-[5vmin] font-bold text-white mb-[3vmin]">AI 的“猜猜看”游戏</h1>\n  <p class="text-[2.8vmin] text-blue-300 text-center mb-[4vmin] max-w-[90%]">看它如何一个字一个字地“编织”答案</p>\n\n  <div class="flex flex-col items-center w-full max-w-[95%] gap-[3vmin]">\n    <!-- 输入区 -->\n    <div class="w-full bg-gray-800/50 backdrop-blur-sm rounded-[2vmin] p-[3vmin] border border-gray-700">\n      <div class="flex items-center gap-[2vmin]">\n        <span class="text-[3vmin] text-cyan-400 font-mono font-bold">输入：</span>\n        <div class="flex-1 min-h-[6vmin] bg-gray-900/80 rounded-[1vmin] p-[2vmin] border border-cyan-800/50">\n          <span class="text-[3.2vmin] text-white font-mono">帮我写一段简单的Python代码，实现</span>\n        </div>\n      </div>\n    </div>\n\n    <!-- 生成过程可视化区 -->\n    <div class="relative w-full h-[40vmin] bg-gray-900/40 rounded-[2vmin] border border-gray-700 p-[3vmin] overflow-hidden">\n      <!-- 背景网格线 -->\n      <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(to right, #3B82F6 1px, transparent 1px), linear-gradient(to bottom, #3B82F6 1px, transparent 1px); background-size: 5vmin 5vmin;"></div>\n\n      <!-- 已生成序列 -->\n      <div class="flex items-center gap-[1.5vmin] mb-[4vmin]">\n        <span class="text-[3vmin] text-green-400 font-mono">已生成：</span>\n        <div id="generated-sequence" class="flex items-center gap-[1vmin]">\n          <!-- 这里会通过JS动态添加Token -->\n          <span class="token-box bg-gradient-to-r from-green-600 to-emerald-700 text-white text-[3vmin] font-mono px-[2vmin] py-[1vmin] rounded-[1vmin] border border-green-500">def</span>\n          <span class="token-box bg-gradient-to-r from-green-600 to-emerald-700 text-white text-[3vmin] font-mono px-[2vmin] py-[1vmin] rounded-[1vmin] border border-green-500"> factorial</span>\n          <span class="token-box bg-gradient-to-r from-green-600 to-emerald-700 text-white text-[3vmin] font-mono px-[2vmin] py-[1vmin] rounded-[1vmin] border border-green-500">(n)</span>\n          <span class="token-box bg-gradient-to-r from-green-600 to-emerald-700 text-white text-[3vmin] font-mono px-[2vmin] py-[1vmin] rounded-[1vmin] border border-green-500">:</span>\n        </div>\n      </div>\n\n      <!-- 当前预测区 -->\n      <div class="mb-[3vmin]">\n        <div class="flex items-center gap-[2vmin] mb-[2vmin]">\n          <span class="text-[3vmin] text-yellow-400 font-mono">正在预测下一个Token：</span>\n          <div class="flex-1 h-[0.3vmin] bg-gradient-to-r from-transparent via-yellow-500 to-transparent"></div>\n        </div>\n\n        <!-- 候选Token概率条 -->\n        <div class="space-y-[1.8vmin]">\n          <div class="candidate-token" data-token="    if" data-prob="85">\n            <div class="flex items-center justify-between mb-[0.5vmin]">\n              <span class="text-[2.8vmin] text-gray-300 font-mono">    if</span>\n              <span class="text-[2.5vmin] text-yellow-300 font-bold">85%</span>\n            </div>\n            <div class="w-full h-[1.8vmin] bg-gray-800 rounded-full overflow-hidden">\n              <div class="h-full bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full" style="width: 85%"></div>\n            </div>\n          </div>\n\n          <div class="candidate-token" data-token="    for" data-prob="12">\n            <div class="flex items-center justify-between mb-[0.5vmin]">\n              <span class="text-[2.8vmin] text-gray-300 font-mono">    for</span>\n              <span class="text-[2.5vmin] text-yellow-300 font-bold">12%</span>\n            </div>\n            <div class="w-full h-[1.8vmin] bg-gray-800 rounded-full overflow-hidden">\n              <div class="h-full bg-gradient-to-r from-yellow-500/60 to-amber-500/60 rounded-full" style="width: 12%"></div>\n            </div>\n          </div>\n\n          <div class="candidate-token" data-token="    while" data-prob="3">\n            <div class="flex items-center justify-between mb-[0.5vmin]">\n              <span class="text-[2.8vmin] text-gray-300 font-mono">    while</span>\n              <span class="text-[2.5vmin] text-yellow-300 font-bold">3%</span>\n            </div>\n            <div class="w-full h-[1.8vmin] bg-gray-800 rounded-full overflow-hidden">\n              <div class="h-full bg-gradient-to-r from-yellow-500/30 to-amber-500/30 rounded-full" style="width: 3%"></div>\n            </div>\n          </div>\n        </div>\n      </div>\n\n      <!-- 下一步箭头 -->\n      <div class="absolute right-[4vmin] bottom-[4vmin] flex flex-col items-center">\n        <div class="text-[2.5vmin] text-blue-400 mb-[1vmin]">选择最高概率</div>\n        <div class="text-[4vmin] text-green-500 animate-pulse">↓</div>\n        <div class="text-[2.5vmin] text-green-400 mt-[1vmin]">加入序列</div>\n      </div>\n    </div>\n\n    <!-- 最终结果预览（隐藏，最后揭示） -->\n    <div id="final-result" class="w-full bg-gray-800/30 backdrop-blur-sm rounded-[2vmin] p-[3vmin] border border-gray-700/50 hidden">\n      <div class="flex items-center gap-[2vmin] mb-[2vmin]">\n        <span class="text-[3vmin] text-purple-400 font-mono">完整代码：</span>\n        <div class="flex-1 h-[0.3vmin] bg-gradient-to-r from-transparent via-purple-500 to-transparent"></div>\n      </div>\n      <pre class="text-[2.5vmin] text-white font-mono bg-gray-900/80 p-[3vmin] rounded-[1.5vmin] overflow-x-auto">\ndef factorial(n):\n    if n == 0:\n        return 1\n    else:\n        return n * factorial(n-1)</pre>\n    </div>\n  </div>\n</div>\n\n<script>\ngsap.from(\'h1, p, .token-box, .candidate-token\', {\n  duration: 0.8,\n  y: 20,\n  opacity: 0,\n  stagger: 0.1,\n  ease: "power2.out"\n});\n\n// 模拟选择过程\nsetTimeout(() => {\n  // 高亮最高概率选项\n  const topCandidate = document.querySelector(\'[data-prob="85"]\');\n  gsap.to(topCandidate, {\n    duration: 0.5,\n    scale: 1.05,\n    boxShadow: \'0 0 20px rgba(234, 179, 8, 0.5)\',\n    border: \'1px solid #fbbf24\',\n    borderRadius: \'1vmin\',\n    onComplete: () => {\n      // 将选中的token添加到序列\n      const token = topCandidate.getAttribute(\'data-token\');\n      const newToken = document.createElement(\'span\');\n      newToken.className = \'token-box bg-gradient-to-r from-green-600 to-emerald-700 text-white text-[3vmin] font-mono px-[2vmin] py-[1vmin] rounded-[1vmin] border border-green-500\';\n      newToken.textContent = token;\n      newToken.style.opacity = 0;\n      document.getElementById(\'generated-sequence\').appendChild(newToken);\n      \n      gsap.to(newToken, {\n        duration: 0.5,\n        opacity: 1,\n        scale: 1.2,\n        scale: 1,\n        onComplete: () => {\n          // 显示最终结果\n          setTimeout(() => {\n            document.getElementById(\'final-result\').classList.remove(\'hidden\');\n            gsap.from(\'#final-result\', {\n              duration: 0.8,\n              y: 30,\n              opacity: 0,\n              ease: "back.out(1.2)"\n            });\n          }, 500);\n        }\n      });\n    }\n  });\n}, 2000);\n</script>\n\n<style>\n.token-box {\n  transition: all 0.3s ease;\n}\n.candidate-token {\n  padding: 1.5vmin;\n  background: rgba(30, 41, 59, 0.5);\n  border-radius: 1vmin;\n  border: 1px solid transparent;\n  transition: all 0.3s ease;\n}\n.candidate-token:hover {\n  border-color: rgba(59, 130, 246, 0.5);\n  background: rgba(30, 41, 59, 0.8);\n}\n</style>\n\n',
+        is_marker: true,
+        is_renderable: true,
+        is_new: true,
+        is_speakable: false,
+        blockBid: "bf2e465fcadb442d93216c19adbd5bd0",
+        page: 3,
+      },
+      {
+        sequence_number: 6,
+        type: "html",
+        content:
+          '<div class="w-full h-screen flex flex-col items-center justify-[safe_center] bg-gradient-to-br from-gray-900 via-[#0F1B3D] to-[#0F63EE] p-[4vmin]">\n  <div class="flex flex-col items-center justify-center gap-[3vmin] max-w-[90%] text-center">\n    <!-- 主标题 -->\n    <h1 class="text-[6vmin] font-bold text-white">同一个问题，为何答案不同？</h1>\n    <div class="h-[0.3vmin] w-[30vmin] bg-gradient-to-r from-transparent via-cyan-400 to-transparent my-[1vmin]"></div>\n    <p class="text-[3.5vmin] text-blue-200 leading-[4.5vmin]">如果 AI 只是选概率最高的 Token，<br>那它每次的回答应该一模一样才对。</p>\n\n    <!-- 核心概念卡片 -->\n    <div class="relative mt-[4vmin]">\n      <div class="absolute -inset-4 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 rounded-[3vmin] blur-xl opacity-30"></div>\n      <div class="relative bg-gray-900/80 backdrop-blur-md border border-amber-500/30 rounded-[2.5vmin] p-[4vmin]">\n        <h2 class="text-[5vmin] font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-300 to-yellow-300 mb-[2vmin]">Temperature</h2>\n        <p class="text-[3vmin] text-gray-300">（温度 / 创造力旋钮）</p>\n      </div>\n    </div>\n\n    <!-- 温度计可视化 -->\n    <div class="w-full max-w-[70vmin] mt-[4vmin]">\n      <div class="flex justify-between items-end mb-[2vmin]">\n        <div class="text-center">\n          <div class="text-[3vmin] text-cyan-400 font-bold">低温 (0)</div>\n          <div class="text-[2.5vmin] text-gray-400 mt-[1vmin]">精准 · 确定</div>\n        </div>\n        <div class="text-center">\n          <div class="text-[3vmin] text-amber-400 font-bold">中温 (0.3)</div>\n          <div class="text-[2.5vmin] text-gray-400 mt-[1vmin]">平衡 · 本课</div>\n        </div>\n        <div class="text-center">\n          <div class="text-[3vmin] text-red-400 font-bold">高温 (0.7-0.9)</div>\n          <div class="text-[2.5vmin] text-gray-400 mt-[1vmin]">创意 · 对话</div>\n        </div>\n      </div>\n      <div class="relative h-[8vmin] bg-gradient-to-r from-cyan-600 via-amber-500 to-red-600 rounded-full overflow-hidden">\n        <div class="absolute top-0 left-0 right-0 bottom-0 flex">\n          <div class="flex-1 border-r border-white/30"></div>\n          <div class="flex-1 border-r border-white/30"></div>\n          <div class="flex-1"></div>\n        </div>\n        <!-- 温度指针 -->\n        <div id="temp-indicator" class="absolute top-[-1vmin] w-[3vmin] h-[10vmin] bg-white rounded-full shadow-lg" style="left: 30%;"></div>\n      </div>\n    </div>\n\n    <!-- 底部提示 -->\n    <div class="mt-[5vmin] p-[3vmin] bg-white/5 backdrop-blur-sm rounded-[2vmin] border border-white/10">\n      <p class="text-[2.8vmin] text-blue-300">\n        试试点击<span class="inline-block mx-[1vmin] px-[2vmin] py-[0.5vmin] bg-amber-500/20 text-amber-300 rounded-[1vmin] text-[2.8vmin] font-mono border border-amber-500/30">重新生成</span>按钮<br>\n        <span class="text-[2.5vmin] text-gray-400">就像让老师“重讲一遍”</span>\n      </p>\n    </div>\n  </div>\n</div>\n\n<script>\n// 温度计指针动画\ngsap.to("#temp-indicator", {\n  duration: 2,\n  left: "30%",\n  ease: "elastic.out(1, 0.5)",\n  delay: 0.5\n});\n\n// 整体入场动画\ngsap.from("h1, p, div", {\n  duration: 0.8,\n  y: 20,\n  opacity: 0,\n  stagger: 0.1,\n  ease: "power2.out"\n});\n</script>\n\n<style>\n#temp-indicator {\n  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));\n}\n</style>\n\n',
+        is_marker: true,
+        is_renderable: true,
+        is_new: true,
+        is_speakable: false,
+        blockBid: "c6bc8de0bf6249b0979ef77389ad8c0f",
+        page: 4,
+      },
+      {
+        sequence_number: 7,
+        type: "html",
+        content:
+          '<div class="w-full h-screen flex flex-col items-center justify-[safe_center] bg-gradient-to-br from-gray-900 via-[#0F1B3D] to-[#0F63EE] p-[4vmin]">\n  <div class="flex flex-col items-center justify-center gap-[4vmin] max-w-[90%] text-center">\n    <!-- 标题区 -->\n    <div class="relative">\n      <div class="absolute -inset-4 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-[3vmin] blur-xl opacity-30"></div>\n      <h1 class="relative text-[5.5vmin] font-bold text-white">提示词实战测验</h1>\n    </div>\n    <div class="h-[0.3vmin] w-[25vmin] bg-gradient-to-r from-transparent via-white to-transparent"></div>\n\n    <!-- 问题卡片 -->\n    <div class="w-full max-w-[85vmin] bg-gray-900/70 backdrop-blur-md border border-cyan-500/40 rounded-[3vmin] p-[5vmin] shadow-2xl">\n      <div class="mb-[3vmin]">\n        <div class="inline-flex items-center gap-[2vmin] px-[3vmin] py-[1.5vmin] bg-cyan-900/40 rounded-full border border-cyan-700">\n          <div class="w-[2vmin] h-[2vmin] rounded-full bg-cyan-400 animate-pulse"></div>\n          <span class="text-[3vmin] text-cyan-300 font-bold">场景</span>\n        </div>\n      </div>\n\n      <p class="text-[4vmin] text-white leading-[5vmin] mb-[3vmin]">\n        你需要 AI 帮忙写一封<br>\n        <span class="text-cyan-400 font-bold">「向直属领导汇报项目延期」</span><br>\n        的邮件。\n      </p>\n\n      <div class="my-[4vmin]">\n        <div class="inline-flex items-center gap-[2vmin] px-[3vmin] py-[1.5vmin] bg-amber-900/40 rounded-full border border-amber-700">\n          <div class="w-[2vmin] h-[2vmin] rounded-full bg-amber-400 animate-pulse"></div>\n          <span class="text-[3vmin] text-amber-300 font-bold">目标</span>\n        </div>\n        <p class="text-[3.5vmin] text-white mt-[2vmin]">希望得到<span class="text-amber-300 font-bold">「可直接使用」</span>的结果</p>\n      </div>\n\n      <!-- 核心问题 -->\n      <div class="mt-[5vmin] pt-[4vmin] border-t border-white/20">\n        <div class="inline-flex items-center gap-[2vmin] px-[3vmin] py-[1.5vmin] bg-red-900/40 rounded-full border border-red-700 mb-[3vmin]">\n          <div class="w-[2vmin] h-[2vmin] rounded-full bg-red-400 animate-pulse"></div>\n          <span class="text-[3vmin] text-red-300 font-bold">问题</span>\n        </div>\n        <p class="text-[4.5vmin] text-white font-bold leading-[5.5vmin]">\n          怎样的提示词，<br>\n          <span class="text-red-300">更可能</span>达成目标？\n        </p>\n      </div>\n    </div>\n\n    <!-- 底部提示 -->\n    <div class="mt-[2vmin] p-[3vmin] bg-white/5 backdrop-blur-sm rounded-[2vmin] border border-white/10">\n      <p class="text-[2.8vmin] text-gray-400">思考一下，<span class="text-white">不要着急回答</span></p>\n    </div>\n  </div>\n</div>\n\n<script>\n// 简单的入场动画\ngsap.from(\'h1, .inline-flex, p\', {\n  duration: 0.8,\n  y: 30,\n  opacity: 0,\n  stagger: 0.15,\n  ease: "back.out(1.2)"\n});\n</script>',
+        is_marker: true,
+        is_renderable: true,
+        is_new: true,
+        is_speakable: false,
+        blockBid: "752bde7c18c24baa8d76df42d6215b45",
+        page: 5,
+      },
+      {
+        sequence_number: 8,
+        type: "interaction",
+        content:
+          "?[%{{answer_email}} 帮我写一封邮件 | 写一封正式一点的邮件 | 写一封向直属领导汇报项目延期的邮件，语气专业、诚恳，重点说明延期原因和补救计划，字数 300 字以内 | 模仿人类写邮件的方式写一封邮件 ]",
+        is_marker: true,
+        is_renderable: true,
+        is_new: true,
+        blockBid: "9528121dba434fe98960b34f8ba672ff",
+        page: 5,
+        user_input: "",
+        readonly: false,
+      },
     ],
+    // elementList: [
+    //   createExampleElement({
+    //     sequenceNumber: -1,
+    //     type: "slot",
+    //     content: "自定义节标题",
+    //     is_renderable: true,
+    //   }),
+    //   createExampleElement({
+    //     sequenceNumber: 1,
+    //     type: "text",
+    //     content:
+    //       "kk，初次见面很高兴，我是孙志岗，AI 师傅的创始人。我曾是哈尔滨工业大学计算机专业的副教授，后来在网易、得到 App 和一家独角兽级创业公司担任过中高管，负责过产品、技术和业务。我的工作领域主要是互联网、人工智能和教育的结合，已经有超过 20 多年的经验。最近几年已经帮助各行各业的几万人转型成 AI 专业人士，还帮助数十家企业成功落地 AI 到生产实践。\n\n在 ChatGPT 问世的第 6 天，我就注册并被深深地震撼。在深入了解这个技术变革之后，我给自己定了一个目标：**帮助 100 万人顺利走进 AGI 时代**\n\n",
+    //     audio_url:
+    //       "https://resource.ai-shifu.cn/tts-audio/3a9bac6e4f8546bfa2607a53dbd4d89e.mp3",
+    //     is_speakable: true,
+    //     is_marker: false,
+    //     is_renderable: false,
+    //   }),
+    //   createExampleElement({
+    //     sequenceNumber: 0,
+    //     is_renderable: true,
+    //     isNew: true,
+    //     type: "svg",
+    //     content:
+    //       '<svg width=\"100%\" viewBox=\"0 0 1200 675\" xmlns=\"http://www.w3.org/2000/svg\" style=\"width: 100%; height: auto; aspect-ratio: 1200 / 675;\">\n  <defs>\n    <linearGradient id=\"bg\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\">\n      <stop offset=\"0%\" stop-color=\"#0F63EE\"/>\n      <stop offset=\"100%\" stop-color=\"#073482\"/>\n    </linearGradient>\n  </defs>\n  <rect width=\"100%\" height=\"100%\" fill=\"url(#bg)\"/>\n  <image href=\"https://resource.ai-shifu.com/ac186b833d0e417fb02737910b3a5ae0\" x=\"100\" y=\"85\" width=\"220\" height=\"505\" clip-path=\"circle(110px at 110px 130px)\"/>\n  <text x=\"420\" y=\"220\" font-size=\"65\" font-weight=\"bold\" fill=\"white\">跟 AI 学 AI 通识</text>\n  <text x=\"420\" y=\"310\" font-size=\"40\" fill=\"#e0e0e0\">讲师：孙志岗</text>\n  <text x=\"420\" y=\"400\" font-size=\"30\" fill=\"#cce0ff\">帮助 100 万人顺利走进 AGI 时代</text>\n</svg>\n\n',
+    //   }),
+    //   // createExampleElement({
+    //   //   sequenceNumber: 1,
+    //   //   type: "text",
+    //   //   content:
+    //   //     "kk，初次见面很高兴，我是孙志岗，AI 师傅的创始人。我曾是哈尔滨工业大学计算机专业的副教授，后来在网易、得到 App 和一家独角兽级创业公司担任过中高管，负责过产品、技术和业务。我的工作领域主要是互联网、人工智能和教育的结合，已经有超过 20 多年的经验。最近几年已经帮助各行各业的几万人转型成 AI 专业人士，还帮助数十家企业成功落地 AI 到生产实践。\n\n在 ChatGPT 问世的第 6 天，我就注册并被深深地震撼。在深入了解这个技术变革之后，我给自己定了一个目标：**帮助 100 万人顺利走进 AGI 时代**\n\n",
+    //   //   audio_url:
+    //   //     "https://resource.ai-shifu.cn/tts-audio/3a9bac6e4f8546bfa2607a53dbd4d89e.mp3",
+    //   //   is_speakable: true,
+    //   //   is_marker: false,
+    //   //   is_renderable: false,
+    //   // }),
+    //   createExampleElement({
+    //     sequenceNumber: 2,
+    //     type: "html",
+    //     isNew: true,
+    //     is_renderable: false,
+    //     content:
+    //       '<div class=\"w-full h-screen flex flex-col p-[4vmin] bg-white\">\n  <div class=\"flex-1 flex flex-col items-center justify-[safe_center] gap-[4vmin]\">\n    <h1 class=\"text-[4vmin] font-bold text-[#0F63EE]\">三个常见观点，请你判断</h1>\n    <div class=\"w-full grid grid-cols-1 gap-[3vmin]\">\n      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n        <p class=\"text-[3vmin] leading-[4vmin] text-gray-800\">1. AI 是一种工具</p>\n      </div>\n      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n        <p class=\"text-[3vmin] leading-[4vmin] text-gray-800\">2. 每种 AI 产品都需要学习使用方法</p>\n      </div>\n      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n        <p class=\"text-[3vmin] leading-[4vmin] text-gray-800\">3. 打造 AI 产品是技术高手的事情</p>\n      </div>\n    </div>\n  </div>\n</div>\n\n',
+    //   }),
+    //   createExampleElement({
+    //     sequenceNumber: 3,
+    //     type: "text",
+    //     content:
+    //       "我很想知道你是否同意这几个观点？\n1. AI 是一种工具\n2. 每种 AI 产品都需要学习使用方法\n3. 打造 AI 产品是技术高手的事情",
+    //     audio_url:
+    //       "https://resource.ai-shifu.cn/tts-audio/3bb0ea1263474ed78db21796faac1a13.mp3",
+    //     is_speakable: true,
+    //     is_marker: false,
+    //     is_renderable: false,
+    //   }),
+    //   createExampleElement({
+    //     sequenceNumber: 4,
+    //     is_renderable: false,
+    //     type: "interaction",
+    //     content:
+    //       "?[%{{agreeed_points}} AI 是一种工具 || 每种 AI 产品都需要学习使用方法 || 打造 AI 产品是技术高手的事情 || 都不同意 ]",
+    //     user_input: "都不同意",
+    //   }),
+    //   createExampleElement({
+    //     sequenceNumber: 5,
+    //     is_renderable: false,
+    //     type: "diff",
+    //     content:
+    //       '!+++\n--- a/0\n+++ b/0\n@@ -1,8 +1,8 @@\n <div class=\"w-full h-screen flex flex-col p-[4vmin] bg-white\">\n-  <div class=\"flex-1 flex flex-col items-center justify-[safe_center] gap-[4vmin]\">\n+  <div class=\"flex-1 flex flex-col items-center justify-[safe_center] gap-[3vmin]\">\n     <h1 class=\"text-[4vmin] font-bold text-[#0F63EE]\">三个常见观点，请你判断</h1>\n     <div class=\"w-full grid grid-cols-1 gap-[3vmin]\">\n-      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n+      <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-[#0F63EE] shadow-lg\">\n         <p class=\"text-[3vmin] leading-[4vmin] text-gray-800\">1. AI 是一种工具</p>\n       </div>\n       <div class=\"p-[3vmin] rounded-[1.5vmin] bg-blue-50 border-2 border-blue-100\">\n!+++\n\n',
+    //   }),
+    //   createExampleElement({
+    //     sequenceNumber: 6,
+    //     type: "text",
+    //     audio_url:
+    //       "https://resource.ai-shifu.cn/tts-audio/f949d0729a5d47adb70a249e4a850058.mp3",
+    //     is_speakable: true,
+    //     is_marker: false,
+    //     is_renderable: false,
+    //     content:
+    //       '我来简单给你解释一下：\n- **AI 一切都是概率结果**：AI 不会像计算器一样给你\"绝对正确\"的答案，它是根据训练数据猜下一个字，理解了这件事，你就不会迷信 AI 的输出，会懂得怎么验证、怎么修正结果。\n- **AI 的知识从哪来**：AI 不会凭空创造知识，它所有的认知都来自训练数据。你得搞懂它的知识边界，才知道什么时候能信它，什么时候要提醒它补新知识。\n- **操纵 AI 的记忆**：AI 没有真正的长期记忆，但我们可以通过提示词、上下文把需要的信息喂给它。学会这招，AI 就能一直记住你的需求、你的习惯，用起来越用越顺手。',
+    //   }),
+    //   createExampleElement({
+    //     sequenceNumber: 7,
+    //     type: "text",
+    //     content:
+    //       "你可能还没注意到：**咱们这门用 AI 师傅制作的课，本身就是 AI 适应人的最好例证**。\n\n你现在看到的一切，都不是提前写死的固定内容，而是由 AI 此时此刻给你量身定制的。而且了解你的喜好和个人情况越多，给你做的个性化讲课就越精准，学习体验和效果自然也就越好。\n\n但这和 ChatGPT 那种纯对话 AI 差别很大：虽然内容都是 AI 实时生成的，但并不是 AI 凭空瞎编，而是在后台被我严格约束了教学逻辑——该讲什么、怎么讲，哪里必须严谨，哪里可以灵活发挥，全都是受我的严格控制。打个比方：AI 就像是我亲自培训出来的助教，我把核心知识和讲课逻辑都教给它，它再按照你的情况，把内容用最适合你的方式讲出来，既保证内容准确权威，又能最大化发挥 AI 的优势。\n\n对了，你希望我怎么称呼你？",
+    //     audio_url:
+    //       "https://resource.ai-shifu.cn/tts-audio/7c04ca6357ba4ad1b0935a9afba37ca9.mp3",
+    //     is_speakable: true,
+    //     is_marker: false,
+    //     is_renderable: false,
+    //   }),
+    //   createExampleElement({
+    //     sequenceNumber: 8,
+    //     type: "interaction",
+    //     is_renderable: false,
+    //     content: "?[%{{sys_user_nickname}}...我可以怎样称呼你？]",
+    //     user_input: "kk",
+    //   }),
+    //   createExampleElement({
+    //     sequenceNumber: 9,
+    //     is_renderable: false,
+    //     type: "svg",
+    //     content:
+    //       '<svg width="100%" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; aspect-ratio: 800 / 400;">\n  <defs>\n    <linearGradient id="welcomeBg" x1="0%" y1="0%" x2="100%" y2="100%">\n      <stop offset="0%" stop-color="#0F63EE"/>\n      <stop offset="100%" stop-color="#4a8bff"/>\n    </linearGradient>\n  </defs>\n  <rect width="100%" height="100%" fill="url(#welcomeBg)"/>\n  <text id="welcome" x="400" y="160" text-anchor="middle" font-size="60" fill="white" font-weight="bold">欢迎你，</text>\n  <text id="name" x="400" y="240" text-anchor="middle" font-size="80" fill="white" font-weight="bold">kk</text>\n  <text id="wave" x="680" y="340" text-anchor="middle" font-size="50" fill="white">👋</text>\n  <script type="text/javascript"><![CDATA[\n    let scale = 1;\n    let growing = false;\n    function animate() {\n      if(growing) {\n        scale += 0.01;\n        if(scale >= 1.2) growing = false;\n      } else {\n        scale -= 0.01;\n        if(scale <= 0.9) growing = true;\n      }\n      name.setAttribute(\'transform\', `scale(${scale}) translate(-400 -240)`);\n      requestAnimationFrame(animate);\n    }\n    animate();\n    let waveRotate = 0;\n    function waveAnimate() {\n      waveRotate += 2;\n      wave.setAttribute(\'transform\', `rotate(${waveRotate} 680 340)`);\n      requestAnimationFrame(waveAnimate);\n    }\n    waveAnimate();\n  ]]></script>\n</svg>\n\n',
+    //   }),
+    //   createExampleElement({
+    //     sequenceNumber: 10,
+    //     type: "text",
+    //     content:
+    //       "哈喽 kk，你的名字真好听，简洁好记又响亮，一下就记在我脑子里啦！\n\n为了让课程里的所有案例都更贴合你的情况，我需要简单了解一下你现在是做什么的。麻烦你从行业、岗位、工作年限、当前状态这些角度，详细介绍一下自己，越详细越好，比如这样：\n1. 我是互联网行业运营，做了 5 年，现在是运营主管，想靠 AI 做内容提升效率，再接兼职赚钱\n2. 我是大学应届毕业生，学的是汉语言文学，还没找到工作，想靠 AI 接单做文案\n3. 我全职在家带娃 5 年，之前做过行政，现在想试试做 AI 相关的副业增加收入\n\n请你一定要告诉我你的真实情况，这样后面我才能完全按照你的情况调整讲课内容，给你最适配的学习体验。",
+    //     audio_url:
+    //       "https://resource.ai-shifu.cn/tts-audio/8ff97c75dd454a6585d195901219d055.mp3",
+    //     is_speakable: true,
+    //     is_marker: false,
+    //     is_renderable: false,
+    //   }),
+    //   createExampleElement({
+    //     sequenceNumber: 11,
+    //     is_renderable: false,
+    //     type: "interaction",
+    //     content:
+    //       "?[%{{sys_user_background}}我不告诉你 | ...你的身份背景、当前状态如何？]",
+    //     user_input: "我不告诉你",
+    //   }),
+    //   createExampleElement({
+    //     sequenceNumber: 12,
+    //     type: "text",
+    //     content:
+    //       "哈哈，没关系，保持神秘感也挺好，我懂！不提前说透反而能碰撞出更多惊喜，这种松弛感我太喜欢了。不过也正好，咱们今天就聊点通用的——不管你是什么背景，AI 能帮你的大方向其实都是一样的。\n\n",
+    //     audio_url:
+    //       "https://resource.ai-shifu.cn/tts-audio/3a4fb5e4da8c4eb988b4a840aaaf9b21.mp3",
+    //     is_speakable: true,
+    //     is_marker: false,
+    //     is_renderable: false,
+    //   }),
+    //   createExampleElement({
+    //     sequenceNumber: 13,
+    //     type: "svg",
+    //     is_renderable: false,
+    //     content:
+    //       '<svg width=\"100%\" viewBox=\"0 0 1000 600\" xmlns=\"http://www.w3.org/2000/svg\" style=\"width: 100%; height: auto; aspect-ratio: 1000 / 600;\">\n  <defs>\n    <linearGradient id=\"timeline\" x1=\"0%\" y1=\"0\" x2=\"0\" y2=\"100%\">\n      <stop offset=\"0%\" stop-color=\"#0F63EE\"/>\n      <stop offset=\"100%\" stop-color=\"#073482\"/>\n    </linearGradient>\n  </defs>\n  <rect width=\"100%\" height=\"100%\" fill=\"#ffffff\"/>\n  <text x=\"50\" y=\"50\" font-size=\"36\" font-weight=\"bold\" fill=\"#0F63EE\">AI 对普通人的价值时间线</text>\n  <rect x=\"100\" y=\"80\" width=\"10\" height=\"480\" fill=\"url(#timeline)\"/>\n  \n  <!-- 当前 -->\n  <circle cx=\"105\" cy=\"140\" r=\"15\" fill=\"#ffffff\" stroke=\"#0F63EE\" stroke-width=\"3\"/>\n  <rect x=\"140\" y=\"100\" width=\"800\" height=\"80\" rx=\"12\" fill=\"#f0f6ff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n  <text x=\"160\" y=\"145\" font-size=\"24\" fill=\"#0a2463\">当下：当副业赚零花钱，提升本职工作效率</text>\n\n  <!-- 2-3年 -->\n  <circle cx=\"105\" cy=\"280\" r=\"15\" fill=\"#ffffff\" stroke=\"#0F63EE\" stroke-width=\"3\"/>\n  <rect x=\"140\" y=\"240\" width=\"800\" height=\"80\" rx=\"12\" fill=\"#f0f6ff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n  <text x=\"160\" y=\"285\" font-size=\"24\" fill=\"#0a2463\">2 - 3 年：AI 会成为你的职业护城河，拉开和普通人的差距</text>\n\n  <!-- 4-5年 -->\n  <circle cx=\"105\" cy=\"420\" r=\"15\" fill=\"#ffffff\" stroke=\"#0F63EE\" stroke-width=\"3\"/>\n  <rect x=\"140\" y=\"380\" width=\"800\" height=\"80\" rx=\"12\" fill=\"#f0f6ff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n  <text x=\"160\" y=\"425\" font-size=\"24\" fill=\"#0a2463\">4 - 5 年（AGI 落地后）：提前掌握 AI 思维，就是拿到了新时代船票</text>\n</svg>\n\n',
+    //   }),
+    //   createExampleElement({
+    //     sequenceNumber: 14,
+    //     type: "text",
+    //     audio_url:
+    //       "https://resource.ai-shifu.cn/tts-audio/783eb8c83fef4af19c1582a87f5f81c4.mp3",
+    //     is_speakable: true,
+    //     is_marker: false,
+    //     is_renderable: false,
+    //     content:
+    //       "我来给你拆解一下这条时间线：\n\n1. **当下**：对想做副业的你来说，现在就是最好的入场时机。现在 AI 人才缺口极大，不管是帮人做提示词、做 AI 应用方案，还是用 AI 生产内容接单，都能直接赚到零花钱。哪怕你不打算做副业，用 AI 帮自己的本职工作提效，也能早点下班多陪家人，或者省出时间干更多自己想干的事。\n\n2. **2-3 年之后**：AI 会变成职场人的标配，但**早学会和被迫接受，完全是两码事**。现在就入门的你，早就摸透了 AI 的脾气，知道怎么让它帮你干活，而那些抵触 AI 不愿意学的人，只会被时代甩在后面。这两三年的先发优势，就是你最稳的职业护城河，差距一旦拉开，再追就难了。\n\n3. **按照行业预测，AGI 大概率会在 5 年内落地**，到那个时候，整个社会的生产方式都会彻底重构。很多现在的岗位会彻底消失，新的岗位会源源不断冒出来。提前掌握了 AI 思维，懂怎么和 AI 协作、怎么用 AI 解决问题，你就相当于提前拿到了新时代的船票，不管浪怎么拍，你都能站在船头，而不是被拍在沙滩上。\n\n说了这么多，你来说说：你希望 AI 能帮自己解决什么具体问题？我后面的课程就围绕这个目标给你讲。",
+    //   }),
+    //   createExampleElement({
+    //     sequenceNumber: 11,
+    //     is_renderable: false,
+    //     type: "interaction",
+    //     content: "?[%{{purpose}} 还没想好 |...学 AI 的目的是什么？]",
+    //     user_input: "",
+    //   }),
+    // ],
     onSend: (content, element) => {
       console.log("onsend", content, element);
     },

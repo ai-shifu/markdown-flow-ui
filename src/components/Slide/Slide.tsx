@@ -442,6 +442,8 @@ const Slide: React.FC<SlideProps> = ({
   );
   const isInteractionReadonly =
     Boolean(activeInteractionElement?.readonly) || hasResolvedInteractionInput;
+  const shouldAutoContinueInteraction =
+    isInteractionReadonly || hasResolvedInteractionInput;
 
   const handleInteractionSend = useCallback(
     (content: OnSendContentParams) => {
@@ -472,10 +474,11 @@ const Slide: React.FC<SlideProps> = ({
   useEffect(() => {
     clearInteractionAutoCloseTimer();
 
-    if (!isInteractionOverlayOpen || !hasResolvedInteractionInput) {
+    if (!isInteractionOverlayOpen || !shouldAutoContinueInteraction) {
       return;
     }
 
+    // Auto-close passive interaction checkpoints to keep playback moving.
     interactionAutoCloseTimerRef.current = window.setTimeout(() => {
       interactionAutoCloseTimerRef.current = null;
 
@@ -488,8 +491,8 @@ const Slide: React.FC<SlideProps> = ({
   }, [
     clearInteractionAutoCloseTimer,
     continueAfterInteraction,
-    hasResolvedInteractionInput,
     isInteractionOverlayOpen,
+    shouldAutoContinueInteraction,
   ]);
 
   const renderSlideElement = (element?: Element) => {

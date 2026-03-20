@@ -167,7 +167,7 @@ const Slide: React.FC<SlideProps> = ({
   const isSingleSlide = visibleMarkerCount === 1;
   const shouldRenderPlayer =
     showPlayer &&
-    (isSingleSlide ||
+    (slideElementList.length > 0 ||
       audioList.length > 0 ||
       Boolean(currentInteractionElement));
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
@@ -645,17 +645,21 @@ const Slide: React.FC<SlideProps> = ({
 
   const handlePrev = useCallback(() => {
     shouldScrollToBottomRef.current = true;
+    setHasPlayerInteracted(true);
     setHasPlaybackInteracted(true);
+    showPlayerControls(true);
     resetAudioSequence();
     goPrev();
-  }, [goPrev, resetAudioSequence]);
+  }, [goPrev, resetAudioSequence, showPlayerControls]);
 
   const handleNext = useCallback(() => {
     shouldScrollToBottomRef.current = true;
+    setHasPlayerInteracted(true);
     setHasPlaybackInteracted(true);
+    showPlayerControls(true);
     resetAudioSequence();
     goNext();
-  }, [goNext, resetAudioSequence]);
+  }, [goNext, resetAudioSequence, showPlayerControls]);
 
   const handlePlayerEnded = useCallback(
     (audioIndex: number) => {

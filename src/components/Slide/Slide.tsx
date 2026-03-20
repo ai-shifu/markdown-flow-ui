@@ -28,6 +28,10 @@ export type { Element, ElementAudioSegment } from "./types";
 
 const CHECKPOINT_AUTO_ADVANCE_DELAY_MS = 1000;
 
+type RenderSlideElementOptions = {
+  replaceRootScreenHeightWithFull?: boolean;
+};
+
 interface InteractionOverlayCardProps {
   content: string;
   title: string;
@@ -495,7 +499,10 @@ const Slide: React.FC<SlideProps> = ({
     shouldAutoContinueInteraction,
   ]);
 
-  const renderSlideElement = (element?: Element) => {
+  const renderSlideElement = (
+    element?: Element,
+    options: RenderSlideElementOptions = {}
+  ) => {
     if (!element) {
       return null;
     }
@@ -510,6 +517,9 @@ const Slide: React.FC<SlideProps> = ({
           className="content-render-iframe"
           hideFullScreen
           mode="blackboard"
+          replaceRootScreenHeightWithFull={
+            options.replaceRootScreenHeightWithFull
+          }
           type="sandbox"
           content={element.content as string}
         />
@@ -569,7 +579,12 @@ const Slide: React.FC<SlideProps> = ({
                   : element.is_renderable === false && "hidden"
               )}
             >
-              {renderSlideElement(element)}
+              {renderSlideElement(element, {
+                replaceRootScreenHeightWithFull:
+                  visibleElementCount === 1 &&
+                  element.type === "html" &&
+                  element.is_renderable !== false,
+              })}
             </div>
           );
         })}
@@ -833,7 +848,7 @@ const Slide: React.FC<SlideProps> = ({
                         mountedStepStateIndex
                       }
                       aria-hidden={!isActiveStep || undefined}
-                      className="w-full"
+                      className="w-full h-full"
                       style={{ display: isActiveStep ? undefined : "none" }}
                     >
                       {renderSlideElementList(

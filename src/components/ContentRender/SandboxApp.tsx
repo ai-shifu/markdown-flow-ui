@@ -8,6 +8,7 @@ export interface SandboxAppProps {
   resetToken?: number;
   mode?: "content" | "blackboard";
   hasRootVhHeight?: boolean;
+  stretchRootHeight?: boolean;
 }
 
 const IMAGE_REUSE_ATTRIBUTES = [
@@ -91,6 +92,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   resetToken = 0,
   mode = "content",
   hasRootVhHeight = false,
+  stretchRootHeight = false,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -314,6 +316,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   })();
 
   const isBlackboard = mode === "blackboard";
+  const shouldStretchRootHeight = isBlackboard && stretchRootHeight;
   const sandboxWrapperStyle: React.CSSProperties = {
     position: "relative",
     width: "100%",
@@ -321,12 +324,19 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     display: "flex",
     flexDirection: "column",
     // Keep blackboard scroll behavior while centering content in non-blackboard mode
-    justifyContent: isBlackboard ? "space-around" : "flex-start",
+    justifyContent: shouldStretchRootHeight
+      ? "flex-start"
+      : isBlackboard
+        ? "space-around"
+        : "flex-start",
   };
   const sandboxContainerStyle: React.CSSProperties = {
     pointerEvents: overlayMessage ? "none" : undefined,
     margin: isBlackboard ? undefined : "auto 0",
     width: "100%",
+    height: shouldStretchRootHeight ? "100%" : undefined,
+    minHeight: shouldStretchRootHeight ? 0 : undefined,
+    flex: shouldStretchRootHeight ? "1 1 auto" : undefined,
   };
 
   return (

@@ -544,7 +544,7 @@ export const FullViewportSingleSlide: Story = {
           '<svg width="100%" viewBox="0 0 1200 600" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; aspect-ratio: 1200 / 600;">\n  <defs>\n    <linearGradient id="tokenGrad" x1="0%" y1="0%" x2="100%" y2="100%">\n      <stop offset="0%" stop-color="#0F63EE"/>\n      <stop offset="100%" stop-color="#3B82F6"/>\n    </linearGradient>\n    <filter id="tokenGlow" x="-50%" y="-50%" width="200%" height="200%">\n      <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="blur"/>\n      <feFlood flood-color="#0F63EE" flood-opacity="0.6" result="color"/>\n      <feComposite in="color" in2="blur" operator="in" result="glow"/>\n      <feMerge>\n        <feMergeNode in="glow"/>\n        <feMergeNode in="SourceGraphic"/>\n      </feMerge>\n    </filter>\n  </defs>\n  <rect width="100%" height="100%" fill="#111827"/>\n  <text x="600" y="100" text-anchor="middle" fill="white" font-size="52" font-weight="bold">Token：AI 理解世界的基本粒子</text>\n  <g transform="translate(300, 300)">\n    <rect x="-120" y="-80" width="240" height="160" rx="20" fill="url(#tokenGrad)" filter="url(#tokenGlow)"/>\n    <text x="0" y="-15" text-anchor="middle" fill="white" font-size="42" font-weight="bold">AI</text>\n    <text x="0" y="30" text-anchor="middle" fill="white" font-size="36">眼中的</text>\n    <text x="0" y="75" text-anchor="middle" fill="white" font-size="42" font-weight="bold">“吃”</text>\n    <text x="0" y="120" text-anchor="middle" fill="#BFDBFE" font-size="28">(一个 Token)</text>\n  </g>\n  <g transform="translate(600, 300)">\n    <rect x="-120" y="-80" width="240" height="160" rx="20" fill="url(#tokenGrad)" filter="url(#tokenGlow)"/>\n    <text x="0" y="-15" text-anchor="middle" fill="white" font-size="42" font-weight="bold">AI</text>\n    <text x="0" y="30" text-anchor="middle" fill="white" font-size="36">眼中的</text>\n    <text x="0" y="75" text-anchor="middle" fill="white" font-size="42" font-weight="bold">“葡萄”</text>\n    <text x="0" y="120" text-anchor="middle" fill="#BFDBFE" font-size="28">(一个 Token)</text>\n  </g>\n  <g transform="translate(900, 300)">\n    <rect x="-120" y="-80" width="240" height="160" rx="20" fill="url(#tokenGrad)" filter="url(#tokenGlow)"/>\n    <text x="0" y="-15" text-anchor="middle" fill="white" font-size="42" font-weight="bold">AI</text>\n    <text x="0" y="30" text-anchor="middle" fill="white" font-size="36">眼中的</text>\n    <text x="0" y="75" text-anchor="middle" fill="white" font-size="42" font-weight="bold">“了吗？”</text>\n    <text x="0" y="120" text-anchor="middle" fill="#BFDBFE" font-size="28">(一个 Token)</text>\n  </g>\n  <text x="600" y="500" text-anchor="middle" fill="#CBD5E1" font-size="36">“你吃葡萄了吗？” = Token 序列 [你, 吃, 葡萄, 了, 吗, ？]</text>\n</svg>',
         is_marker: true,
         is_renderable: true,
-        is_new: true,
+        is_new: false,
         is_speakable: false,
         blockBid: "e6402047e9dd41f3ab103894862b9248",
         page: 2,
@@ -806,7 +806,7 @@ export const HiddenMountedHtmlSlides: Story = {
     docs: {
       description: {
         story:
-          "All slide iframe steps stay mounted and switch visibility with CSS display.",
+          "All slide iframe steps stay mounted and switch visibility with CSS display, while single active iframe roots can fit the host container height.",
       },
     },
   },

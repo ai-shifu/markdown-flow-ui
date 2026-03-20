@@ -1453,19 +1453,19 @@ div长度
 
 `;
 
-const HTML_DEMO_STREAM_SOURCE_2 = `
-<div class="w-full h-screen overflow-hidden flex flex-col items-center justify-[safe_center] bg-gradient-to-br from-blue-50 to-blue-100 p-[4vmin]">
-  <div class="w-full max-w-[120vmin] bg-white rounded-[2vmin] shadow-lg p-[6vmin] flex flex-col gap-[4vmin]">
-    <h1 class="text-[5vmin] font-bold text-[#0F63EE] text-center">哈喽美少女大战哥斯拉😉</h1>
-    <div class="flex flex-col gap-[3vmin]">
-      <p class="text-[3vmin] text-gray-800">现在麻烦你先扫码添加咱们BP刘谊的微信哦，同时需要跟你确认一下你的姓名和你使用的考勤方式，是EHR、钉钉还是云EHR呀？</p>
-      <div class="flex justify-center w-full">
-        <img src="https://resource.ai-shifu.cn/a428928668b744469e6c761d5249ecbf" alt="扫码添加微信" class="rounded-[1.5vmin] w-[50vmin] h-auto shadow-md" />
-      </div>
-      <p class="text-[3vmin] text-gray-800 font-medium text-center mt-[2vmin]">请选择你的考勤系统。</p>
-    </div>
-  </div>
-</div>`;
+// const HTML_DEMO_STREAM_SOURCE_2 = `
+// <div class="w-full h-screen overflow-hidden flex flex-col items-center justify-[safe_center] bg-gradient-to-br from-blue-50 to-blue-100 p-[4vmin]">
+//   <div class="w-full max-w-[120vmin] bg-white rounded-[2vmin] shadow-lg p-[6vmin] flex flex-col gap-[4vmin]">
+//     <h1 class="text-[5vmin] font-bold text-[#0F63EE] text-center">哈喽美少女大战哥斯拉😉</h1>
+//     <div class="flex flex-col gap-[3vmin]">
+//       <p class="text-[3vmin] text-gray-800">现在麻烦你先扫码添加咱们BP刘谊的微信哦，同时需要跟你确认一下你的姓名和你使用的考勤方式，是EHR、钉钉还是云EHR呀？</p>
+//       <div class="flex justify-center w-full">
+//         <img src="https://resource.ai-shifu.cn/a428928668b744469e6c761d5249ecbf" alt="扫码添加微信" class="rounded-[1.5vmin] w-[50vmin] h-auto shadow-md" />
+//       </div>
+//       <p class="text-[3vmin] text-gray-800 font-medium text-center mt-[2vmin]">请选择你的考勤系统。</p>
+//     </div>
+//   </div>
+// </div>`;
 
 const STREAM_CODE_IFRAME_CONTENT = `\`\`\`c
 int maze[5][5] = {
@@ -1564,17 +1564,17 @@ export const HTMLDemo: Story = {
       let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
       const streamNext = () => {
-        if (currentIndex >= HTML_DEMO_STREAM_SOURCE_2.length) {
+        if (currentIndex >= HTML_DEMO_STREAM_SOURCE.length) {
           timeoutId = null;
           return;
         }
 
         const chunkSize = Math.floor(Math.random() * 30) + 1;
         const nextIndex = Math.min(
-          HTML_DEMO_STREAM_SOURCE_2.length,
+          HTML_DEMO_STREAM_SOURCE.length,
           currentIndex + chunkSize
         );
-        const nextChunk = HTML_DEMO_STREAM_SOURCE_2.slice(
+        const nextChunk = HTML_DEMO_STREAM_SOURCE.slice(
           currentIndex,
           nextIndex
         );
@@ -1813,7 +1813,7 @@ export const HTMLDemoIframeOnly: Story = {
         <div style={{ width: "100%", height: "700px", background: "#e0e0e0" }}>
           <IframeSandbox
             type="sandbox"
-            content={HTML_DEMO_STREAM_SOURCE_2}
+            content={HTML_DEMO_STREAM_SOURCE}
             // content={`<div style=\"display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: linear-gradient(to bottom right, #f8fafc, #e0e7ff); font-family: 'Arial', sans-serif; padding: 2rem;\">\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    AI 是一种工具\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    每种 AI 产品都需要<br>学习使用方法\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2;\">\n    打造 AI 产品是<br>技术高手的事情\n  </div>\n</div>`}
             // content={htmlContent}
             // content={`<div class=\"w-full h-screen overflow-hidden flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800 p-[4vmin] text-white\">\n  <div class=\"text-[3vmin] text-blue-300 mb-[3vmin] opacity-80\">OpenAI CEO Sam Altman 说：</div>\n  <blockquote class=\"text-[4.5vmin] font-light italic text-center leading-[6vmin] max-w-[90%]\">\n    \"I think there will be a one-person company that reaches a billion-dollar valuation.\"\n  </blockquote>\n  <div class=\"mt-[6vmin] w-[60%] h-[0.5vmin] bg-blue-500 rounded-full\"></div>\n</div>`}

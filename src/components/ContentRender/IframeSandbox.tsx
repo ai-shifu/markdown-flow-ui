@@ -43,6 +43,7 @@ export interface IframeSandboxProps {
   hideFullScreen?: boolean;
   mode?: "content" | "blackboard";
   type: "sandbox" | "markdown";
+  replaceRootScreenHeightWithFull?: boolean;
 }
 
 const normalizeTailwindHeightTokens = (className: string) =>
@@ -83,6 +84,65 @@ const extractViewportHeightFromTailwindClass = (className: string) => {
   return `${matched[1]}${matched[2].toLowerCase()}`;
 };
 
+const extractRootClassName = (html: string) => {
+  const normalized = html.trim();
+  if (!normalized) return null;
+  const rootMatch = normalized.match(/^<([a-zA-Z][\w:-]*)(\s[^>]*?)?>/);
+  if (!rootMatch) return null;
+  return rootMatch[2]?.match(/\bclass\s*=\s*["']([^"']*)["']/i)?.[1] ?? null;
+};
+
+const hasRootScreenHeightClass = (html: string) => {
+  const rootClassName = extractRootClassName(html);
+  if (!rootClassName) return false;
+  return normalizeTailwindHeightTokens(rootClassName).includes("h-screen");
+};
+
+const replaceRootScreenHeightToken = (className: string) =>
+  className
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((token) => {
+      const segments = token.split(":");
+      if (segments[segments.length - 1] !== "h-screen") {
+        return token;
+      }
+      segments[segments.length - 1] = "h-full";
+      return segments.join(":");
+    })
+    .join(" ");
+
+const replaceRootScreenHeightWithFullClass = (
+  html: string,
+  enabled: boolean
+) => {
+  if (!enabled || !html.trim()) {
+    return html;
+  }
+
+  return html.replace(
+    /^(\s*<[a-zA-Z][\w:-]*)(\s[^>]*?)?>/,
+    (match, tagStart: string, attrs = "") => {
+      const classMatch = attrs.match(/\bclass\s*=\s*(["'])([^"']*)\1/i);
+
+      if (!classMatch) {
+        return match;
+      }
+
+      const nextClassName = replaceRootScreenHeightToken(classMatch[2]);
+
+      if (nextClassName === classMatch[2]) {
+        return match;
+      }
+
+      return `${tagStart}${attrs.replace(
+        classMatch[0],
+        `class=${classMatch[1]}${nextClassName}${classMatch[1]}`
+      )}>`;
+    }
+  );
+};
+
 const IframeSandbox: React.FC<IframeSandboxProps> = ({
   content,
   type,
@@ -93,6 +153,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   fullScreenButtonText,
   hideFullScreen = false,
   mode = "content",
+  replaceRootScreenHeightWithFull = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -118,9 +179,24 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         : sandboxSegments.map((seg) => seg.value).join("\n");
     return sandboxContent || "";
   }, [content, mode]);
-  const [renderHtmlContent, setRenderHtmlContent] = useState(htmlContent);
-  const prevIncomingHtmlRef = useRef(htmlContent);
-  const pendingHtmlRef = useRef(htmlContent);
+  const normalizedHtmlContent = React.useMemo(
+    () =>
+      replaceRootScreenHeightWithFullClass(
+        htmlContent,
+        replaceRootScreenHeightWithFull
+      ),
+    [htmlContent, replaceRootScreenHeightWithFull]
+  );
+  const shouldStretchRootHeight = React.useMemo(
+    () =>
+      replaceRootScreenHeightWithFull && hasRootScreenHeightClass(htmlContent),
+    [htmlContent, replaceRootScreenHeightWithFull]
+  );
+  const [renderHtmlContent, setRenderHtmlContent] = useState(
+    normalizedHtmlContent
+  );
+  const prevIncomingHtmlRef = useRef(normalizedHtmlContent);
+  const pendingHtmlRef = useRef(normalizedHtmlContent);
   const deferRenderTimerRef = useRef<number | null>(null);
 
   const emitSandboxInteraction = useCallback((eventType: string) => {
@@ -160,29 +236,31 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
   useEffect(() => {
     const prevIncomingHtml = prevIncomingHtmlRef.current;
-    prevIncomingHtmlRef.current = htmlContent;
+    prevIncomingHtmlRef.current = normalizedHtmlContent;
 
     const isAppendOnlyStream =
       !!prevIncomingHtml &&
-      htmlContent.length > prevIncomingHtml.length &&
-      htmlContent.startsWith(prevIncomingHtml);
-    const containsCompleteImage = COMPLETE_IMAGE_TAG_PATTERN.test(htmlContent);
+      normalizedHtmlContent.length > prevIncomingHtml.length &&
+      normalizedHtmlContent.startsWith(prevIncomingHtml);
+    const containsCompleteImage = COMPLETE_IMAGE_TAG_PATTERN.test(
+      normalizedHtmlContent
+    );
     const shouldDeferRender = isAppendOnlyStream && containsCompleteImage;
 
     if (!shouldDeferRender) {
       clearDeferredRenderTimer();
-      pendingHtmlRef.current = htmlContent;
-      setRenderHtmlContent(htmlContent);
+      pendingHtmlRef.current = normalizedHtmlContent;
+      setRenderHtmlContent(normalizedHtmlContent);
       return;
     }
 
-    pendingHtmlRef.current = htmlContent;
+    pendingHtmlRef.current = normalizedHtmlContent;
     clearDeferredRenderTimer();
     deferRenderTimerRef.current = window.setTimeout(() => {
       setRenderHtmlContent(pendingHtmlRef.current);
       deferRenderTimerRef.current = null;
     }, POST_IMAGE_STREAM_DEBOUNCE_MS);
-  }, [htmlContent]);
+  }, [normalizedHtmlContent]);
 
   const rootViewportHeightCss = React.useMemo(() => {
     const normalized = renderHtmlContent.trim();
@@ -211,20 +289,22 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const shouldInjectSandboxVendor = type === "sandbox";
   const sandboxViewportHeight =
     isBlackboardMode && type === "sandbox"
-      ? (rootViewportHeightCss ?? `${height}px`)
+      ? shouldStretchRootHeight
+        ? "100%"
+        : (rootViewportHeightCss ?? `${height}px`)
       : undefined;
   useEffect(() => {
     if (mode !== "blackboard") {
-      prevHtmlRef.current = htmlContent;
+      prevHtmlRef.current = normalizedHtmlContent;
       return;
     }
     const prev = prevHtmlRef.current;
-    const isContinuation = prev && htmlContent.startsWith(prev);
+    const isContinuation = prev && normalizedHtmlContent.startsWith(prev);
     if (!isContinuation && prev) {
       setResetToken((token) => token + 1);
     }
-    prevHtmlRef.current = htmlContent;
-  }, [htmlContent, mode]);
+    prevHtmlRef.current = normalizedHtmlContent;
+  }, [mode, normalizedHtmlContent]);
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -444,6 +524,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         resetToken={resetToken}
         hasRootVhHeight={hasRootVhHeight}
         mode={mode}
+        stretchRootHeight={shouldStretchRootHeight}
       />
     );
     requestAnimationFrame(() => updateHeightRef.current?.());

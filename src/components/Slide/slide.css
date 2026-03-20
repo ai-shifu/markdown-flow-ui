@@ -28,7 +28,7 @@
 .slide-stage__content {
   width: 100%;
   flex: 0 0 auto;
-  min-height: 100%;
+  height: 100%;
 }
 
 .slide-player-wrapper {

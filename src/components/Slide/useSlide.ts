@@ -4,6 +4,7 @@ import { applyDiffElement } from "./diff-utils";
 import type { Element, ElementAudioSegment } from "./types";
 
 export interface SlideAudioItem {
+  audioKey?: string;
   sequenceNumber?: number;
   audioUrl?: string;
   audioSegments?: ElementAudioSegment[];
@@ -46,10 +47,26 @@ const hasPlayableAudio = (element?: Element) =>
 const isStreamingAudio = (segments: ElementAudioSegment[] = []) =>
   segments.length > 0 && !segments.some((segment) => segment.is_final);
 
+const getElementAudioKey = (element: Element, index: number) => {
+  const candidateElement = element as Element & {
+    element_bid?: string;
+    blockBid?: string;
+    generated_block_bid?: string;
+  };
+
+  return (
+    candidateElement.element_bid ||
+    candidateElement.blockBid ||
+    candidateElement.generated_block_bid ||
+    `${element.type}:${String(element.sequence_number ?? index)}`
+  );
+};
+
 const getAudioList = (elementList: Element[]) =>
-  elementList.reduce<SlideAudioItem[]>((list, element) => {
+  elementList.reduce<SlideAudioItem[]>((list, element, elementIndex) => {
     if (hasPlayableAudio(element)) {
       list.push({
+        audioKey: getElementAudioKey(element, elementIndex),
         sequenceNumber: element.sequence_number,
         audioUrl: element.audio_url,
         audioSegments: element.audio_segments,

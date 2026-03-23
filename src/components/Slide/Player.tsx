@@ -97,6 +97,8 @@ const Player: React.FC<PlayerProps> = ({
     NonNullable<SlideAudioItem["audioSegments"]>
   >([]);
   const isLoadingRef = useRef(false);
+  const isPausedByUserRef = useRef(false);
+  const activeSourceTypeRef = useRef<"url" | "segment" | null>(null);
   const isWaitingForSegmentRef = useRef(false);
   const pendingAutoPlayRef = useRef(false);
   const pendingSeekTimeRef = useRef<number | null>(null);
@@ -113,7 +115,7 @@ const Player: React.FC<PlayerProps> = ({
       ),
     [currentAudio?.audioSegments]
   );
-  const currentAudioKey = `${currentAudioIndex}:${currentAudio?.sequenceNumber ?? "none"}:${currentAudioUrl ?? ""}`;
+  const currentAudioKey = `${currentAudioIndex}:${currentAudio?.audioKey ?? "none"}`;
 
   useEffect(() => {
     currentAudioRef.current = currentAudio;
@@ -155,6 +157,8 @@ const Player: React.FC<PlayerProps> = ({
     }
 
     pendingAutoPlayRef.current = false;
+    isPausedByUserRef.current = false;
+    activeSourceTypeRef.current = null;
     pendingSeekTimeRef.current = null;
     isWaitingForSegmentRef.current = false;
     isSwitchingSegmentRef.current = false;
@@ -209,10 +213,22 @@ const Player: React.FC<PlayerProps> = ({
       waitingSegmentIndexRef.current = null;
       isWaitingForSegmentRef.current = false;
       isSwitchingSegmentRef.current = true;
-      pendingAutoPlayRef.current = defaultPlaying;
+      const shouldAutoResume = defaultPlaying && !isPausedByUserRef.current;
+
+      pendingAutoPlayRef.current = shouldAutoResume;
       updateLoading(false);
 
       const hasNewSrc = audioSrcRef.current !== nextAudioSrc;
+
+      activeSourceTypeRef.current = "segment";
+
+      console.log("[SlidePlayer][SegmentFlow] start", {
+        segment_index: segmentIndex,
+        has_new_src: hasNewSrc,
+        should_auto_resume: shouldAutoResume,
+        source_type: activeSourceTypeRef.current,
+        segment_count: currentAudioSegmentsRef.current.length,
+      });
 
       if (hasNewSrc) {
         audioElement.pause();
@@ -230,7 +246,7 @@ const Player: React.FC<PlayerProps> = ({
         pendingSeekTimeRef.current = null;
       }
 
-      if (!defaultPlaying) {
+      if (!shouldAutoResume) {
         pendingAutoPlayRef.current = false;
         isSwitchingSegmentRef.current = false;
         audioElement.pause();
@@ -269,6 +285,16 @@ const Player: React.FC<PlayerProps> = ({
     const activeAudio = currentAudioRef.current;
     const hasFinal = segments.some((segment) => segment.is_final);
 
+    console.log("[SlidePlayer][SegmentFlow] segment-ended", {
+      finished_segment_index: currentSegmentIndexRef.current,
+      next_segment_index: nextSegmentIndex,
+      has_next_segment: Boolean(nextSegment),
+      has_final: hasFinal,
+      is_audio_streaming: activeAudio?.isAudioStreaming,
+      source_type: activeSourceTypeRef.current,
+      segment_count: segments.length,
+    });
+
     if (nextSegment) {
       startSegmentPlayback(nextSegmentIndex, "ended");
       return;
@@ -297,8 +323,10 @@ const Player: React.FC<PlayerProps> = ({
     currentSegmentIndexRef.current = 0;
     waitingSegmentIndexRef.current = null;
     isWaitingForSegmentRef.current = false;
+    isPausedByUserRef.current = false;
     pendingAutoPlayRef.current = false;
     isSwitchingSegmentRef.current = false;
+    activeSourceTypeRef.current = null;
     audioSrcRef.current = null;
     updateLoading(false);
 
@@ -334,29 +362,58 @@ const Player: React.FC<PlayerProps> = ({
 
     if (currentAudioUrl) {
       const hasNewSrc = audioSrcRef.current !== currentAudioUrl;
+      const shouldAutoResume = defaultPlaying && !isPausedByUserRef.current;
+      const shouldKeepSegmentSource =
+        activeSourceTypeRef.current === "segment" &&
+        Boolean(audioSrcRef.current);
+
+      if (shouldKeepSegmentSource) {
+        console.log("[SlidePlayer][SegmentFlow] keep-segment-source", {
+          has_new_src: hasNewSrc,
+          should_auto_resume: shouldAutoResume,
+          source_type: activeSourceTypeRef.current,
+          segment_count: currentAudioSegmentsRef.current.length,
+        });
+      }
+
+      if (shouldKeepSegmentSource) {
+        if (!shouldAutoResume) {
+          pendingAutoPlayRef.current = false;
+          audioElement.pause();
+          setIsPlaying(false);
+          return;
+        }
+
+        if (audioElement.paused) {
+          pendingAutoPlayRef.current = true;
+          tryPlayCurrentAudio("keep-segment-source");
+        }
+
+        return;
+      }
 
       if (hasNewSrc) {
         audioElement.pause();
         audioElement.removeAttribute("src");
         audioElement.load();
         audioSrcRef.current = currentAudioUrl;
+        activeSourceTypeRef.current = "url";
         audioElement.src = currentAudioUrl;
         audioElement.load();
+        pendingSeekTimeRef.current = 0;
+
+        if (audioElement.readyState > 0) {
+          audioElement.currentTime = 0;
+          pendingSeekTimeRef.current = null;
+        }
       }
 
-      pendingSeekTimeRef.current = 0;
-
-      if (audioElement.readyState > 0) {
-        audioElement.currentTime = 0;
-        pendingSeekTimeRef.current = null;
-      }
-
-      pendingAutoPlayRef.current = defaultPlaying;
+      pendingAutoPlayRef.current = shouldAutoResume;
       isWaitingForSegmentRef.current = false;
       isSwitchingSegmentRef.current = false;
       updateLoading(false);
 
-      if (!defaultPlaying) {
+      if (!shouldAutoResume) {
         pendingAutoPlayRef.current = false;
         audioElement.pause();
         setIsPlaying(false);
@@ -371,14 +428,20 @@ const Player: React.FC<PlayerProps> = ({
 
     if (waitingSegmentIndexRef.current !== null) {
       if (waitingSegmentIndexRef.current < currentAudioSegments.length) {
+        if (isPausedByUserRef.current) {
+          setIsPlaying(false);
+          updateLoading(false);
+          return;
+        }
+
         startSegmentPlayback(waitingSegmentIndexRef.current, "wait-resume");
         return;
       }
 
       isWaitingForSegmentRef.current = true;
-      pendingAutoPlayRef.current = defaultPlaying;
-      setIsPlaying(defaultPlaying);
-      updateLoading(true);
+      pendingAutoPlayRef.current = defaultPlaying && !isPausedByUserRef.current;
+      setIsPlaying(defaultPlaying && !isPausedByUserRef.current);
+      updateLoading(!isPausedByUserRef.current);
       return;
     }
 
@@ -386,9 +449,10 @@ const Player: React.FC<PlayerProps> = ({
       if (currentAudio.isAudioStreaming) {
         waitingSegmentIndexRef.current = currentSegmentIndexRef.current;
         isWaitingForSegmentRef.current = true;
-        pendingAutoPlayRef.current = defaultPlaying;
-        setIsPlaying(defaultPlaying);
-        updateLoading(true);
+        pendingAutoPlayRef.current =
+          defaultPlaying && !isPausedByUserRef.current;
+        setIsPlaying(defaultPlaying && !isPausedByUserRef.current);
+        updateLoading(!isPausedByUserRef.current);
         return;
       }
 
@@ -407,7 +471,7 @@ const Player: React.FC<PlayerProps> = ({
       return;
     }
 
-    if (!defaultPlaying) {
+    if (!defaultPlaying || isPausedByUserRef.current) {
       pendingAutoPlayRef.current = false;
       audioElement.pause();
       setIsPlaying(false);
@@ -470,20 +534,35 @@ const Player: React.FC<PlayerProps> = ({
   }, [currentAudioIndex]);
 
   const handleAudioEnded = useCallback(() => {
+    const shouldFinishAsUrl =
+      activeSourceTypeRef.current === "url" ||
+      currentAudioSegmentsRef.current.length === 0;
+
+    console.log("[SlidePlayer][SegmentFlow] audio-ended", {
+      source_type: activeSourceTypeRef.current,
+      current_segment_index: currentSegmentIndexRef.current,
+      segment_count: currentAudioSegmentsRef.current.length,
+      has_audio_url: Boolean(currentAudioRef.current?.audioUrl),
+      should_finish_as_url: shouldFinishAsUrl,
+    });
+
     isSwitchingSegmentRef.current = false;
 
-    if (
-      currentAudioRef.current?.audioUrl ||
-      currentAudioSegmentsRef.current.length === 0
-    ) {
+    if (shouldFinishAsUrl) {
       finishAudioItem("url-ended");
       return;
     }
 
     handleSegmentEnded();
-  }, [currentAudioIndex, finishAudioItem, handleSegmentEnded]);
+  }, [finishAudioItem, handleSegmentEnded]);
 
   const handleAudioError = useCallback(() => {
+    console.log("[SlidePlayer][SegmentFlow] audio-error", {
+      source_type: activeSourceTypeRef.current,
+      current_segment_index: currentSegmentIndexRef.current,
+      segment_count: currentAudioSegmentsRef.current.length,
+      audio_src: audioSrcRef.current,
+    });
     setIsPlaying(false);
     updateLoading(false);
   }, [updateLoading]);
@@ -536,14 +615,17 @@ const Player: React.FC<PlayerProps> = ({
                 if (waitingSegmentIndexRef.current !== null) {
                   if (isPlaying) {
                     pendingAutoPlayRef.current = false;
+                    isPausedByUserRef.current = true;
                     waitingSegmentIndexRef.current = null;
                     isWaitingForSegmentRef.current = false;
                     setIsPlaying(false);
+                    updateLoading(false);
                     audioElement.pause();
                     return;
                   }
 
                   onPlayRequest?.();
+                  isPausedByUserRef.current = false;
                   pendingAutoPlayRef.current = true;
                   setIsPlaying(true);
                   return;
@@ -552,6 +634,7 @@ const Player: React.FC<PlayerProps> = ({
                 if (!audioElement.src && currentAudioSegments.length > 0) {
                   // Only the player play button can unlock playback when autoplay is unavailable.
                   onPlayRequest?.();
+                  isPausedByUserRef.current = false;
                   startSegmentPlayback(
                     Math.min(
                       currentSegmentIndexRef.current,
@@ -564,12 +647,14 @@ const Player: React.FC<PlayerProps> = ({
 
                 if (audioElement.paused) {
                   onPlayRequest?.();
+                  isPausedByUserRef.current = false;
                   pendingAutoPlayRef.current = true;
                   tryPlayCurrentAudio("toggle-resume");
                   return;
                 }
 
                 pendingAutoPlayRef.current = false;
+                isPausedByUserRef.current = true;
                 audioElement.pause();
               }}
               type="button"

@@ -453,7 +453,68 @@ type RunStreamFixtureElement = Element & {
   run_event_seq?: number;
 };
 
+type RunStreamAudioSegment = NonNullable<Element["audio_segments"]>[number];
+
 const RUN_STREAM_EVENT_INTERVAL_MS = 180;
+
+const normalizeRunStreamAudioPosition = (position?: number | null) =>
+  Number(position ?? 0);
+
+const sortRunStreamAudioSegments = (segments: RunStreamAudioSegment[] = []) =>
+  [...segments].sort(
+    (prevSegment, nextSegment) =>
+      normalizeRunStreamAudioPosition(prevSegment.position) -
+        normalizeRunStreamAudioPosition(nextSegment.position) ||
+      Number(prevSegment.segment_index ?? 0) -
+        Number(nextSegment.segment_index ?? 0)
+  );
+
+const buildRunStreamAudioSegmentUniqueKey = (
+  elementBid: string,
+  segment: RunStreamAudioSegment
+) =>
+  [
+    elementBid,
+    String(segment.element_id ?? ""),
+    normalizeRunStreamAudioPosition(segment.position),
+    Number(segment.segment_index ?? 0),
+  ].join(":");
+
+const mergeRunStreamAudioSegments = (
+  elementBid: string,
+  segments: RunStreamAudioSegment[] = []
+) => {
+  const mergedSegments = segments.reduce<RunStreamAudioSegment[]>(
+    (result, segment) => {
+      if (
+        segment?.segment_index === undefined ||
+        typeof segment?.audio_data !== "string" ||
+        !segment.audio_data
+      ) {
+        return result;
+      }
+
+      const segmentKey = buildRunStreamAudioSegmentUniqueKey(
+        elementBid,
+        segment
+      );
+      const hasDuplicatedSegment = result.some(
+        (currentSegment) =>
+          buildRunStreamAudioSegmentUniqueKey(elementBid, currentSegment) ===
+          segmentKey
+      );
+
+      if (hasDuplicatedSegment) {
+        return result;
+      }
+
+      return sortRunStreamAudioSegments([...result, segment]);
+    },
+    []
+  );
+
+  return mergedSegments;
+};
 
 const parseRunStreamFixture = (rawText: string): RunStreamFixtureEvent[] =>
   rawText
@@ -514,9 +575,32 @@ const upsertRunStreamElementList = (
   const nextList = [...currentList];
 
   if (hitIndex >= 0) {
+    const previousElement = nextList[hitIndex];
+    const mergedAudioSegments = mergeRunStreamAudioSegments(
+      nextElement.element_bid,
+      [
+        ...(Array.isArray(previousElement?.audio_segments)
+          ? previousElement.audio_segments
+          : []),
+        ...(Array.isArray(nextElement.audio_segments)
+          ? nextElement.audio_segments
+          : []),
+      ]
+    );
+
     nextList[hitIndex] = {
-      ...nextList[hitIndex],
+      ...previousElement,
       ...nextElement,
+      // Keep the first-seen order stable for the same streamed element.
+      sequence_number:
+        previousElement?.sequence_number ?? nextElement.sequence_number,
+      audio_url: nextElement.audio_url || previousElement?.audio_url,
+      audio_segments:
+        mergedAudioSegments.length > 0
+          ? mergedAudioSegments
+          : previousElement?.audio_segments,
+      user_input: nextElement.user_input || previousElement?.user_input || "",
+      readonly: nextElement.readonly ?? previousElement?.readonly ?? false,
     };
   } else {
     nextList.push(nextElement);

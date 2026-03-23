@@ -236,8 +236,9 @@ const Slide: React.FC<SlideProps> = ({
           : -1,
     };
   }, [currentIndex, stepElementLists]);
-  const currentAudioSequenceKey = useMemo(
-    () => currentAudioSequenceIndexes.join(","),
+  const currentStepKey = useMemo(() => String(currentIndex), [currentIndex]);
+  const currentAudioSequenceStartKey = useMemo(
+    () => String(currentAudioSequenceIndexes[0] ?? "none"),
     [currentAudioSequenceIndexes]
   );
   const currentInteractionResetKey = useMemo(() => {
@@ -252,15 +253,11 @@ const Slide: React.FC<SlideProps> = ({
   const currentPlaybackResetKey = useMemo(
     () =>
       [
-        currentMountedStateIndex,
+        currentStepKey,
         currentInteractionResetKey,
-        currentAudioSequenceKey,
+        currentAudioSequenceStartKey,
       ].join("|"),
-    [
-      currentAudioSequenceKey,
-      currentInteractionResetKey,
-      currentMountedStateIndex,
-    ]
+    [currentAudioSequenceStartKey, currentInteractionResetKey, currentStepKey]
   );
 
   const clearPlayerHideTimer = useCallback(() => {

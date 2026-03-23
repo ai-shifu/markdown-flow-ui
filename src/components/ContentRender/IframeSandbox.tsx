@@ -167,6 +167,11 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const [isSandboxVendorReady, setIsSandboxVendorReady] = useState(
     type !== "sandbox"
   );
+  const [isInitialIframePaintReady, setIsInitialIframePaintReady] = useState(
+    type !== "sandbox" || mode !== "blackboard"
+  );
+  const shouldInjectSandboxVendor = type === "sandbox";
+
   const isBlackboardMode = mode === "blackboard";
   const prevHtmlRef = useRef<string>("");
   const htmlContent = React.useMemo(() => {
@@ -198,6 +203,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const prevIncomingHtmlRef = useRef(normalizedHtmlContent);
   const pendingHtmlRef = useRef(normalizedHtmlContent);
   const deferRenderTimerRef = useRef<number | null>(null);
+  const initialPaintFrameRef = useRef<number | null>(null);
+  const initialPaintCommitFrameRef = useRef<number | null>(null);
 
   const emitSandboxInteraction = useCallback((eventType: string) => {
     if (typeof window === "undefined") {
@@ -227,12 +234,36 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     deferRenderTimerRef.current = null;
   };
 
+  const clearInitialPaintFrames = () => {
+    if (initialPaintFrameRef.current !== null) {
+      window.cancelAnimationFrame(initialPaintFrameRef.current);
+      initialPaintFrameRef.current = null;
+    }
+    if (initialPaintCommitFrameRef.current !== null) {
+      window.cancelAnimationFrame(initialPaintCommitFrameRef.current);
+      initialPaintCommitFrameRef.current = null;
+    }
+  };
+
   useEffect(
     () => () => {
       clearDeferredRenderTimer();
+      clearInitialPaintFrames();
     },
     []
   );
+
+  useEffect(() => {
+    if (!shouldInjectSandboxVendor || !isBlackboardMode) {
+      setIsInitialIframePaintReady(true);
+      return;
+    }
+
+    if (!isSandboxVendorReady) {
+      clearInitialPaintFrames();
+      setIsInitialIframePaintReady(false);
+    }
+  }, [isBlackboardMode, isSandboxVendorReady, shouldInjectSandboxVendor]);
 
   useEffect(() => {
     const prevIncomingHtml = prevIncomingHtmlRef.current;
@@ -286,13 +317,17 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     return extractViewportHeightFromTailwindClass(classAttrMatch);
   }, [renderHtmlContent]);
   const hasRootVhHeight = Boolean(rootViewportHeightCss);
-  const shouldInjectSandboxVendor = type === "sandbox";
   const sandboxViewportHeight =
     isBlackboardMode && type === "sandbox"
       ? shouldStretchRootHeight
         ? "100%"
         : (rootViewportHeightCss ?? `${height}px`)
       : undefined;
+  const shouldShowHtmlFallbackWhilePreparingSandbox =
+    shouldInjectSandboxVendor &&
+    isBlackboardMode &&
+    (!isSandboxVendorReady || !isInitialIframePaintReady) &&
+    Boolean(renderHtmlContent.trim());
   useEffect(() => {
     if (mode !== "blackboard") {
       prevHtmlRef.current = normalizedHtmlContent;
@@ -513,6 +548,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     const root = rootRef.current;
     if (!root || !isSandboxVendorReady) return;
 
+    clearInitialPaintFrames();
+
     root.render(
       <SandboxApp
         html={renderHtmlContent}
@@ -527,7 +564,15 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         stretchRootHeight={shouldStretchRootHeight}
       />
     );
-    requestAnimationFrame(() => updateHeightRef.current?.());
+
+    initialPaintFrameRef.current = window.requestAnimationFrame(() => {
+      updateHeightRef.current?.();
+      initialPaintCommitFrameRef.current = window.requestAnimationFrame(() => {
+        setIsInitialIframePaintReady(true);
+        initialPaintCommitFrameRef.current = null;
+      });
+      initialPaintFrameRef.current = null;
+    });
   }, [
     renderHtmlContent,
     loadingText,
@@ -548,7 +593,9 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     .join(" ");
 
   const shouldShowSandboxLoading =
-    shouldInjectSandboxVendor && !isSandboxVendorReady;
+    shouldInjectSandboxVendor &&
+    !isSandboxVendorReady &&
+    !shouldShowHtmlFallbackWhilePreparingSandbox;
 
   return (
     <div
@@ -585,6 +632,21 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         </div>
       ) : (
         <>
+          {shouldShowHtmlFallbackWhilePreparingSandbox ? (
+            <div
+              aria-hidden
+              className="absolute inset-0 z-10 overflow-hidden"
+              style={{
+                height: sandboxViewportHeight ?? "100%",
+                minHeight: sandboxViewportHeight,
+              }}
+            >
+              <div
+                className="h-full w-full"
+                dangerouslySetInnerHTML={{ __html: renderHtmlContent }}
+              />
+            </div>
+          ) : null}
           <iframe
             ref={iframeRef}
             sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
@@ -597,7 +659,11 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
               height: sandboxViewportHeight ?? "100%",
               minHeight: sandboxViewportHeight,
               margin: "auto",
-              visibility: shouldShowSandboxLoading ? "hidden" : "visible",
+              visibility:
+                shouldShowSandboxLoading ||
+                shouldShowHtmlFallbackWhilePreparingSandbox
+                  ? "hidden"
+                  : "visible",
             }}
           />
           {shouldShowSandboxLoading ? (

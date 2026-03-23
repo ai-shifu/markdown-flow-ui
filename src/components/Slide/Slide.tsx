@@ -197,6 +197,71 @@ const Slide: React.FC<SlideProps> = ({
   const playerVisible =
     shouldRenderPlayer &&
     (playerAlwaysVisible || isPlayerVisible || isAudioLoadingVisible);
+  const { mountedStepStates, currentMountedStateIndex } = useMemo(() => {
+    const nextMountedStepStates: Array<{
+      elementList: Element[];
+      sourceStepIndexes: number[];
+    }> = [];
+    const mountedStateIndexByStep = new Map<number, number>();
+
+    stepElementLists.forEach((stepElementList, stepIndex) => {
+      const existingMountedStateIndex = nextMountedStepStates.findIndex(
+        (mountedStepState) =>
+          areStepElementListsEqual(
+            mountedStepState.elementList,
+            stepElementList
+          )
+      );
+
+      if (existingMountedStateIndex >= 0) {
+        nextMountedStepStates[
+          existingMountedStateIndex
+        ]?.sourceStepIndexes.push(stepIndex);
+        mountedStateIndexByStep.set(stepIndex, existingMountedStateIndex);
+        return;
+      }
+
+      nextMountedStepStates.push({
+        elementList: stepElementList,
+        sourceStepIndexes: [stepIndex],
+      });
+      mountedStateIndexByStep.set(stepIndex, nextMountedStepStates.length - 1);
+    });
+
+    return {
+      mountedStepStates: nextMountedStepStates,
+      currentMountedStateIndex:
+        currentIndex >= 0
+          ? (mountedStateIndexByStep.get(currentIndex) ?? -1)
+          : -1,
+    };
+  }, [currentIndex, stepElementLists]);
+  const currentAudioSequenceKey = useMemo(
+    () => currentAudioSequenceIndexes.join(","),
+    [currentAudioSequenceIndexes]
+  );
+  const currentInteractionResetKey = useMemo(() => {
+    if (!currentInteractionElement) {
+      return "none";
+    }
+
+    return `${currentInteractionElement.sequence_number ?? "none"}:${String(
+      currentInteractionElement.content ?? ""
+    )}`;
+  }, [currentInteractionElement]);
+  const currentPlaybackResetKey = useMemo(
+    () =>
+      [
+        currentMountedStateIndex,
+        currentInteractionResetKey,
+        currentAudioSequenceKey,
+      ].join("|"),
+    [
+      currentAudioSequenceKey,
+      currentInteractionResetKey,
+      currentMountedStateIndex,
+    ]
+  );
 
   const clearPlayerHideTimer = useCallback(() => {
     if (playerHideTimerRef.current === null) {
@@ -421,8 +486,9 @@ const Slide: React.FC<SlideProps> = ({
   }, [
     canGoNext,
     clearAutoAdvanceTimer,
-    currentElementList,
+    currentElementList.length,
     currentInteractionElement,
+    currentPlaybackResetKey,
     currentStepHasSpeakableElement,
     goNext,
     resetAudioSequence,
@@ -628,46 +694,6 @@ const Slide: React.FC<SlideProps> = ({
       </div>
     );
   };
-
-  const { mountedStepStates, currentMountedStateIndex } = useMemo(() => {
-    const nextMountedStepStates: Array<{
-      elementList: Element[];
-      sourceStepIndexes: number[];
-    }> = [];
-    const mountedStateIndexByStep = new Map<number, number>();
-
-    stepElementLists.forEach((stepElementList, stepIndex) => {
-      const existingMountedStateIndex = nextMountedStepStates.findIndex(
-        (mountedStepState) =>
-          areStepElementListsEqual(
-            mountedStepState.elementList,
-            stepElementList
-          )
-      );
-
-      if (existingMountedStateIndex >= 0) {
-        nextMountedStepStates[
-          existingMountedStateIndex
-        ]?.sourceStepIndexes.push(stepIndex);
-        mountedStateIndexByStep.set(stepIndex, existingMountedStateIndex);
-        return;
-      }
-
-      nextMountedStepStates.push({
-        elementList: stepElementList,
-        sourceStepIndexes: [stepIndex],
-      });
-      mountedStateIndexByStep.set(stepIndex, nextMountedStepStates.length - 1);
-    });
-
-    return {
-      mountedStepStates: nextMountedStepStates,
-      currentMountedStateIndex:
-        currentIndex >= 0
-          ? (mountedStateIndexByStep.get(currentIndex) ?? -1)
-          : -1,
-    };
-  }, [currentIndex, stepElementLists]);
 
   const handleFullscreen = () => {
     const target = sectionRef.current;

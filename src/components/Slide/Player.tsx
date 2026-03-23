@@ -22,6 +22,7 @@ export type PlayerProps = React.ComponentProps<"div"> & {
   audioList?: SlideAudioItem[];
   currentAudioIndex?: number;
   defaultPlaying?: boolean;
+  onLoadingChange?: (loading: boolean) => void;
   onPrev?: () => void;
   onNext?: () => void;
   onFullscreen?: () => void;
@@ -72,6 +73,7 @@ const Player: React.FC<PlayerProps> = ({
   className,
   currentAudioIndex = -1,
   defaultPlaying = true,
+  onLoadingChange,
   onPrev,
   onNext,
   onFullscreen,
@@ -94,6 +96,7 @@ const Player: React.FC<PlayerProps> = ({
   const currentAudioSegmentsRef = useRef<
     NonNullable<SlideAudioItem["audioSegments"]>
   >([]);
+  const isLoadingRef = useRef(false);
   const isWaitingForSegmentRef = useRef(false);
   const pendingAutoPlayRef = useRef(false);
   const pendingSeekTimeRef = useRef<number | null>(null);
@@ -119,6 +122,18 @@ const Player: React.FC<PlayerProps> = ({
   useEffect(() => {
     currentAudioSegmentsRef.current = currentAudioSegments;
   }, [currentAudioSegments]);
+
+  const updateLoading = useCallback(
+    (loading: boolean) => {
+      if (isLoadingRef.current === loading) {
+        return;
+      }
+
+      isLoadingRef.current = loading;
+      onLoadingChange?.(loading);
+    },
+    [onLoadingChange]
+  );
 
   const getSegmentSrc = useCallback((audioData: string) => {
     if (!audioData) {
@@ -150,7 +165,8 @@ const Player: React.FC<PlayerProps> = ({
     currentSegmentIndexRef.current = 0;
     waitingSegmentIndexRef.current = null;
     setIsPlaying(false);
-  }, [currentAudioIndex]);
+    updateLoading(false);
+  }, [updateLoading]);
 
   const tryPlayCurrentAudio = useCallback(
     (_reason: string) => {
@@ -194,6 +210,7 @@ const Player: React.FC<PlayerProps> = ({
       isWaitingForSegmentRef.current = false;
       isSwitchingSegmentRef.current = true;
       pendingAutoPlayRef.current = defaultPlaying;
+      updateLoading(false);
 
       const hasNewSrc = audioSrcRef.current !== nextAudioSrc;
 
@@ -227,19 +244,23 @@ const Player: React.FC<PlayerProps> = ({
 
       return tryPlayCurrentAudio(`start-segment:${_reason}`);
     },
-    [currentAudioIndex, defaultPlaying, getSegmentSrc, tryPlayCurrentAudio]
+    [defaultPlaying, getSegmentSrc, tryPlayCurrentAudio, updateLoading]
   );
 
-  const finishAudioItem = useCallback(() => {
-    pendingAutoPlayRef.current = false;
-    isWaitingForSegmentRef.current = false;
-    isSwitchingSegmentRef.current = false;
-    setIsPlaying(false);
+  const finishAudioItem = useCallback(
+    (_reason?: string) => {
+      pendingAutoPlayRef.current = false;
+      isWaitingForSegmentRef.current = false;
+      isSwitchingSegmentRef.current = false;
+      setIsPlaying(false);
+      updateLoading(false);
 
-    if (currentAudioIndex >= 0) {
-      onEnded?.(currentAudioIndex);
-    }
-  }, [currentAudioIndex, onEnded]);
+      if (currentAudioIndex >= 0) {
+        onEnded?.(currentAudioIndex);
+      }
+    },
+    [currentAudioIndex, onEnded, updateLoading]
+  );
 
   const handleSegmentEnded = useCallback(() => {
     const nextSegmentIndex = currentSegmentIndexRef.current + 1;
@@ -259,17 +280,13 @@ const Player: React.FC<PlayerProps> = ({
       isWaitingForSegmentRef.current = true;
       pendingAutoPlayRef.current = defaultPlaying;
       setIsPlaying(defaultPlaying);
+      updateLoading(true);
 
       return;
     }
 
     finishAudioItem("segments-completed");
-  }, [
-    currentAudioIndex,
-    defaultPlaying,
-    finishAudioItem,
-    startSegmentPlayback,
-  ]);
+  }, [defaultPlaying, finishAudioItem, startSegmentPlayback, updateLoading]);
 
   useEffect(() => {
     if (currentAudioKeyRef.current === currentAudioKey) {
@@ -283,6 +300,7 @@ const Player: React.FC<PlayerProps> = ({
     pendingAutoPlayRef.current = false;
     isSwitchingSegmentRef.current = false;
     audioSrcRef.current = null;
+    updateLoading(false);
 
     const audioElement = audioRef.current;
 
@@ -299,6 +317,7 @@ const Player: React.FC<PlayerProps> = ({
     currentAudioKey,
     currentAudioSegments.length,
     currentAudioUrl,
+    updateLoading,
   ]);
 
   useEffect(() => {
@@ -335,6 +354,7 @@ const Player: React.FC<PlayerProps> = ({
       pendingAutoPlayRef.current = defaultPlaying;
       isWaitingForSegmentRef.current = false;
       isSwitchingSegmentRef.current = false;
+      updateLoading(false);
 
       if (!defaultPlaying) {
         pendingAutoPlayRef.current = false;
@@ -358,6 +378,7 @@ const Player: React.FC<PlayerProps> = ({
       isWaitingForSegmentRef.current = true;
       pendingAutoPlayRef.current = defaultPlaying;
       setIsPlaying(defaultPlaying);
+      updateLoading(true);
       return;
     }
 
@@ -367,6 +388,7 @@ const Player: React.FC<PlayerProps> = ({
         isWaitingForSegmentRef.current = true;
         pendingAutoPlayRef.current = defaultPlaying;
         setIsPlaying(defaultPlaying);
+        updateLoading(true);
         return;
       }
 
@@ -405,13 +427,15 @@ const Player: React.FC<PlayerProps> = ({
     resetAudio,
     startSegmentPlayback,
     tryPlayCurrentAudio,
+    updateLoading,
   ]);
 
   useEffect(() => resetAudio, [resetAudio]);
 
   const handleAudioPlay = useCallback(() => {
     setIsPlaying(true);
-  }, [currentAudioIndex]);
+    updateLoading(false);
+  }, [updateLoading]);
 
   const handleAudioPause = useCallback(() => {
     if (isWaitingForSegmentRef.current || isSwitchingSegmentRef.current) {
@@ -461,7 +485,8 @@ const Player: React.FC<PlayerProps> = ({
 
   const handleAudioError = useCallback(() => {
     setIsPlaying(false);
-  }, [currentAudioIndex]);
+    updateLoading(false);
+  }, [updateLoading]);
 
   return (
     <div className={cn("slide-player", className)} {...props}>

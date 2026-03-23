@@ -127,6 +127,10 @@ const TITLE_CONTENT = `# Slide Title\n\n## Subtitle Example`;
 
 const TEXT_CONTENT = `This is a plain text example used to verify that normal text content can still render correctly inside Slide.`;
 
+const STREAMING_BUFFERING_TEXT_CONTENT = `This focused story streams text content first and keeps the step speakable before any audio payload arrives, so the Slide buffering overlay stays visible for inspection.`;
+
+const STREAMING_DELAYED_AUDIO_TEXT_CONTENT = `This story shows the small buffering overlay first, then receives audio a little later and starts playback automatically as soon as the streamed audio becomes available.`;
+
 const LINK_CONTENT = `[OpenAI API Documentation](https://platform.openai.com/docs/overview)`;
 
 const SLOT_CONTENT = (
@@ -171,7 +175,14 @@ type ExampleElementConfig = {
   type: Element["type"];
   content: Element["content"];
   isNew?: Element["is_new"];
+  stream_audio_start_delay_ms?: number;
+  stream_audio_segment_interval_ms?: number;
 } & Partial<Omit<Element, "sequence_number" | "type" | "content" | "is_new">>;
+
+type StreamingStoryElement = Element & {
+  stream_audio_start_delay_ms?: number;
+  stream_audio_segment_interval_ms?: number;
+};
 
 const STREAM_INITIAL_DELAY_MS = 600;
 const STREAM_ELEMENT_PAUSE_MS = 500;
@@ -196,38 +207,69 @@ const getStreamCharacterDelay = (element: Element) => {
   return STREAM_TEXT_CHAR_DELAY_MS;
 };
 
-const getVisibleAudioSegmentCount = (element: Element, elapsedMs: number) => {
+const getVisibleAudioSegmentCount = (
+  element: StreamingStoryElement,
+  elapsedMs: number
+) => {
   if (element.type !== "text") {
     return element.audio_segments?.length ?? 0;
   }
 
   const totalSegmentCount = element.audio_segments?.length ?? 0;
+  const audioStartDelayMs = Math.max(
+    element.stream_audio_start_delay_ms ?? 0,
+    0
+  );
+  const audioSegmentIntervalMs = Math.max(
+    element.stream_audio_segment_interval_ms ??
+      STREAM_AUDIO_SEGMENT_INTERVAL_MS,
+    1
+  );
 
   if (totalSegmentCount === 0) {
     return 0;
   }
 
+  if (elapsedMs < audioStartDelayMs) {
+    return 0;
+  }
+
   return Math.min(
     totalSegmentCount,
-    1 + Math.floor(Math.max(elapsedMs, 0) / STREAM_AUDIO_SEGMENT_INTERVAL_MS)
+    1 +
+      Math.floor(
+        Math.max(elapsedMs - audioStartDelayMs, 0) / audioSegmentIntervalMs
+      )
   );
 };
 
-const shouldStreamAudioSegments = (element: Element) =>
+const shouldStreamAudioSegments = (element: StreamingStoryElement) =>
   element.type === "text" && (element.audio_segments?.length ?? 0) > 0;
 
 const getNextAudioSegmentDelay = (
+  element: StreamingStoryElement,
   elapsedMs: number,
   visibleAudioSegmentCount: number
 ) => {
+  const audioStartDelayMs = Math.max(
+    element.stream_audio_start_delay_ms ?? 0,
+    0
+  );
+  const audioSegmentIntervalMs = Math.max(
+    element.stream_audio_segment_interval_ms ??
+      STREAM_AUDIO_SEGMENT_INTERVAL_MS,
+    1
+  );
   const nextVisibleAt =
-    Math.max(visibleAudioSegmentCount, 0) * STREAM_AUDIO_SEGMENT_INTERVAL_MS;
+    visibleAudioSegmentCount <= 0
+      ? audioStartDelayMs
+      : audioStartDelayMs + visibleAudioSegmentCount * audioSegmentIntervalMs;
 
   return Math.max(80, nextVisibleAt - Math.max(elapsedMs, 0));
 };
 
 const buildStreamedElement = (
-  element: Element,
+  element: StreamingStoryElement,
   content: Element["content"],
   isElementComplete: boolean,
   visibleAudioSegmentCount: number = 0
@@ -235,17 +277,13 @@ const buildStreamedElement = (
   const nextAudioSegments = isElementComplete
     ? element.audio_segments
     : (element.audio_segments ?? []).slice(0, visibleAudioSegmentCount);
-  const hasVisibleAudioSegments = (nextAudioSegments?.length ?? 0) > 0;
 
   return {
     ...element,
     content,
     is_renderable: true,
-    is_speakable: isElementComplete
-      ? element.is_speakable
-      : hasVisibleAudioSegments
-        ? element.is_speakable
-        : false,
+    // Keep speakable intent so Slide can surface buffering before audio arrives.
+    is_speakable: element.is_speakable,
     audio_url: isElementComplete ? element.audio_url : "",
     audio_segments: nextAudioSegments,
   };
@@ -257,7 +295,10 @@ const StreamingSlidePreview = ({
 }: React.ComponentProps<typeof Slide>) => {
   const [streamedElementList, setStreamedElementList] = useState<Element[]>([]);
 
-  const stableElementList = useMemo(() => elementList, [elementList]);
+  const stableElementList = useMemo(
+    () => elementList as StreamingStoryElement[],
+    [elementList]
+  );
 
   useEffect(() => {
     if (stableElementList.length === 0) {
@@ -356,7 +397,11 @@ const StreamingSlidePreview = ({
       timerId = window.setTimeout(
         streamNextFrame,
         isContentComplete
-          ? getNextAudioSegmentDelay(elapsedMs, visibleAudioSegmentCount)
+          ? getNextAudioSegmentDelay(
+              currentElement,
+              elapsedMs,
+              visibleAudioSegmentCount
+            )
           : getStreamCharacterDelay(currentElement)
       );
     };
@@ -844,6 +889,35 @@ export const StreamingSingleIframeSlide: Story = {
   ),
 };
 
+export const StreamingSpeakableLoadingOnlySlide: Story = {
+  args: {
+    bufferingText: "Audio buffering...",
+    playerAlwaysVisible: false,
+    elementList: [
+      createExampleElement({
+        sequenceNumber: 1,
+        type: "text",
+        isNew: true,
+        is_speakable: true,
+        content: STREAMING_BUFFERING_TEXT_CONTENT,
+      }),
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Streams a single speakable text slide without audio payloads so the centered buffering overlay can be observed clearly during streaming.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
+      <StreamingSlidePreview className="w-full" {...args} />
+    </div>
+  ),
+};
+
 export const FullViewportSingleSlideWithSSE: Story = {
   args: {
     elementList: [
@@ -923,6 +997,52 @@ export const FullViewportSingleSlideWithSSE: Story = {
         ],
       }),
     ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Streams a speakable slide with progressive audio segments so the centered buffering overlay appears before playback can resume.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
+      <StreamingSlidePreview className="w-full" {...args} />
+    </div>
+  ),
+};
+
+const delayedAudioSourceElement =
+  FullViewportSingleSlideWithSSE.args?.elementList?.find(
+    (element) =>
+      element.type === "text" && (element.audio_segments?.length ?? 0) > 0
+  ) ?? null;
+
+export const StreamingSpeakableDelayedAudioSlide: Story = {
+  args: {
+    bufferingText: "Audio buffering...",
+    playerAlwaysVisible: false,
+    elementList: [
+      createExampleElement({
+        sequenceNumber: 1,
+        type: "text",
+        isNew: true,
+        is_speakable: true,
+        content: STREAMING_DELAYED_AUDIO_TEXT_CONTENT,
+        audio_segments:
+          delayedAudioSourceElement?.audio_segments?.slice(0, 1) ?? [],
+        stream_audio_start_delay_ms: 2600,
+      }),
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Streams a single speakable text slide, shows the small buffering overlay first, then reveals the audio segment and starts playback automatically.",
+      },
+    },
   },
   render: (args) => (
     <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">

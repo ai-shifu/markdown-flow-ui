@@ -17,6 +17,7 @@ export interface UseSlideResult {
   currentIndex: number;
   audioList: SlideAudioItem[];
   currentAudioSequenceIndexes: number[];
+  currentStepHasSpeakableElement: boolean;
   currentInteractionElement?: Element;
   canGoPrev: boolean;
   canGoNext: boolean;
@@ -165,6 +166,33 @@ const getStepElementLists = (slideElementList: Element[]) =>
     getCurrentElementList(slideElementList, index)
   );
 
+const getStepHasSpeakableElement = (
+  elementList: Element[],
+  markerElementIndexes: number[],
+  currentIndex: number
+) => {
+  if (currentIndex < 0) {
+    return false;
+  }
+
+  const startIndex = markerElementIndexes[currentIndex];
+
+  if (typeof startIndex !== "number") {
+    return false;
+  }
+
+  const nextMarkerIndex =
+    markerElementIndexes[currentIndex + 1] ?? elementList.length;
+
+  for (let index = startIndex; index < nextMarkerIndex; index += 1) {
+    if (elementList[index]?.is_speakable) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 const hasSameElementReferences = (
   prevElementList: Element[],
   nextElementList: Element[]
@@ -172,8 +200,13 @@ const hasSameElementReferences = (
   prevElementList.length === nextElementList.length &&
   prevElementList.every((element, index) => element === nextElementList[index]);
 
+const hasSameNumberValues = (prevValues: number[], nextValues: number[]) =>
+  prevValues.length === nextValues.length &&
+  prevValues.every((value, index) => value === nextValues[index]);
+
 const useSlide = (elementList: Element[] = []): UseSlideResult => {
   const stableElementListRef = useRef(elementList);
+  const stableCurrentAudioSequenceIndexesRef = useRef<number[]>([]);
   const stableElementList = useMemo(() => {
     if (hasSameElementReferences(stableElementListRef.current, elementList)) {
       return stableElementListRef.current;
@@ -270,9 +303,31 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
     () => getStepElementLists(slideElementList),
     [slideElementList]
   );
-  const currentAudioSequenceIndexes = useMemo(
-    () => slideAudioSequenceMap.get(currentIndex) ?? [],
-    [currentIndex, slideAudioSequenceMap]
+  const currentAudioSequenceIndexes = useMemo(() => {
+    const nextAudioSequenceIndexes =
+      slideAudioSequenceMap.get(currentIndex) ?? [];
+
+    if (
+      hasSameNumberValues(
+        stableCurrentAudioSequenceIndexesRef.current,
+        nextAudioSequenceIndexes
+      )
+    ) {
+      return stableCurrentAudioSequenceIndexesRef.current;
+    }
+
+    stableCurrentAudioSequenceIndexesRef.current = nextAudioSequenceIndexes;
+
+    return nextAudioSequenceIndexes;
+  }, [currentIndex, slideAudioSequenceMap]);
+  const currentStepHasSpeakableElement = useMemo(
+    () =>
+      getStepHasSpeakableElement(
+        stableElementList,
+        markerElementIndexes,
+        currentIndex
+      ),
+    [currentIndex, markerElementIndexes, stableElementList]
   );
   const currentInteractionElement = useMemo(
     () =>
@@ -289,6 +344,7 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
     currentIndex,
     audioList,
     currentAudioSequenceIndexes,
+    currentStepHasSpeakableElement,
     currentInteractionElement,
     canGoPrev,
     canGoNext,

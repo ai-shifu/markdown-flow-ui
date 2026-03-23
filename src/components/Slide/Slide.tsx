@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { LoaderCircle } from "lucide-react";
 
 import { hasBrowserUserActivation } from "../../lib/browserUserActivation";
 import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
@@ -112,6 +113,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   showPlayer?: boolean;
   playerAlwaysVisible?: boolean;
   playerClassName?: string;
+  bufferingText?: string;
   interactionTitle?: string;
   interactionTexts?: SlideInteractionTexts;
   playerAutoHideDelay?: number;
@@ -126,6 +128,7 @@ const Slide: React.FC<SlideProps> = ({
   showPlayer = true,
   playerAlwaysVisible = false,
   playerClassName,
+  bufferingText = "Buffering...",
   interactionTitle,
   interactionTexts,
   playerAutoHideDelay = 3000,
@@ -152,6 +155,7 @@ const Slide: React.FC<SlideProps> = ({
     currentIndex,
     audioList,
     currentAudioSequenceIndexes,
+    currentStepHasSpeakableElement,
     currentInteractionElement,
     canGoPrev,
     canGoNext,
@@ -182,13 +186,17 @@ const Slide: React.FC<SlideProps> = ({
   const [currentAudioIndex, setCurrentAudioIndex] = useState(-1);
   const [currentAudioSequencePosition, setCurrentAudioSequencePosition] =
     useState(-1);
+  const [isAudioLoadingVisible, setIsAudioLoadingVisible] = useState(false);
+  const [hasCompletedCurrentStepAudio, setHasCompletedCurrentStepAudio] =
+    useState(false);
   const [activeInteractionElement, setActiveInteractionElement] = useState<
     Element | undefined
   >();
   const [isInteractionOverlayOpen, setIsInteractionOverlayOpen] =
     useState(false);
   const playerVisible =
-    shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
+    shouldRenderPlayer &&
+    (playerAlwaysVisible || isPlayerVisible || isAudioLoadingVisible);
 
   const clearPlayerHideTimer = useCallback(() => {
     if (playerHideTimerRef.current === null) {
@@ -222,6 +230,8 @@ const Slide: React.FC<SlideProps> = ({
     clearInteractionAutoCloseTimer();
     setCurrentAudioIndex(-1);
     setCurrentAudioSequencePosition(-1);
+    setIsAudioLoadingVisible(false);
+    setHasCompletedCurrentStepAudio(false);
     setActiveInteractionElement(undefined);
     setIsInteractionOverlayOpen(false);
   }, [clearAutoAdvanceTimer, clearInteractionAutoCloseTimer]);
@@ -390,6 +400,11 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
+    if (currentStepHasSpeakableElement) {
+      setIsAudioLoadingVisible(true);
+      return;
+    }
+
     if (!canGoNext) {
       return;
     }
@@ -408,9 +423,31 @@ const Slide: React.FC<SlideProps> = ({
     clearAutoAdvanceTimer,
     currentElementList,
     currentInteractionElement,
+    currentStepHasSpeakableElement,
     goNext,
     resetAudioSequence,
     startCurrentAudioSequence,
+  ]);
+
+  useEffect(() => {
+    if (!currentStepHasSpeakableElement || currentInteractionElement) {
+      setIsAudioLoadingVisible(false);
+      return;
+    }
+
+    if (hasCompletedCurrentStepAudio) {
+      setIsAudioLoadingVisible(false);
+      return;
+    }
+
+    if (currentAudioSequenceIndexes.length === 0) {
+      setIsAudioLoadingVisible(true);
+    }
+  }, [
+    currentAudioSequenceIndexes.length,
+    currentInteractionElement,
+    currentStepHasSpeakableElement,
+    hasCompletedCurrentStepAudio,
   ]);
 
   const interactionDefaults = useMemo(() => {
@@ -662,6 +699,7 @@ const Slide: React.FC<SlideProps> = ({
     shouldScrollToBottomRef.current = true;
     setHasPlayerInteracted(true);
     setHasPlaybackInteracted(true);
+    setIsAudioLoadingVisible(false);
     showPlayerControls(true);
     resetAudioSequence();
     goPrev();
@@ -671,10 +709,23 @@ const Slide: React.FC<SlideProps> = ({
     shouldScrollToBottomRef.current = true;
     setHasPlayerInteracted(true);
     setHasPlaybackInteracted(true);
+    setIsAudioLoadingVisible(false);
     showPlayerControls(true);
     resetAudioSequence();
     goNext();
   }, [goNext, resetAudioSequence, showPlayerControls]);
+
+  const handlePlayerLoadingChange = useCallback(
+    (loading: boolean) => {
+      if (!currentStepHasSpeakableElement || hasCompletedCurrentStepAudio) {
+        setIsAudioLoadingVisible(false);
+        return;
+      }
+
+      setIsAudioLoadingVisible(loading);
+    },
+    [currentStepHasSpeakableElement, hasCompletedCurrentStepAudio]
+  );
 
   const handlePlayerEnded = useCallback(
     (audioIndex: number) => {
@@ -699,6 +750,8 @@ const Slide: React.FC<SlideProps> = ({
 
       setCurrentAudioIndex(-1);
       setCurrentAudioSequencePosition(-1);
+      setHasCompletedCurrentStepAudio(true);
+      setIsAudioLoadingVisible(false);
 
       if (canGoNext) {
         goNext();
@@ -864,6 +917,13 @@ const Slide: React.FC<SlideProps> = ({
         ) : null}
       </div>
 
+      {isAudioLoadingVisible ? (
+        <div className="pointer-events-none absolute left-1/2 top-1/2 z-[3] flex size-28 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-2 rounded-2xl bg-foreground/65 px-3 py-4 text-center text-xs leading-4 font-medium text-background shadow-lg backdrop-blur-sm">
+          <LoaderCircle className="size-5 animate-spin text-background" />
+          <span>{bufferingText}</span>
+        </div>
+      ) : null}
+
       {shouldShowInteractionOverlay ? (
         <div
           className={cn(
@@ -906,6 +966,7 @@ const Slide: React.FC<SlideProps> = ({
           defaultPlaying={canAutoPlayAudio}
           hasInteraction={Boolean(activeInteractionElement)}
           isInteractionOpen={isInteractionOverlayOpen}
+          onLoadingChange={handlePlayerLoadingChange}
           nextDisabled={!canGoNext}
           onEnded={handlePlayerEnded}
           onFullscreen={handleFullscreen}

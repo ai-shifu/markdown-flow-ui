@@ -867,21 +867,33 @@ const prependEmptyPptPlaceholderForLeadingText = (elementList: Element[]) => {
   ];
 };
 
+type RunStreamSlidePreviewProps = React.ComponentProps<typeof Slide> & {
+  prependEmptyPptPlaceholder?: boolean;
+};
+
 const RunStreamSlidePreview = ({
   elementList = [],
+  prependEmptyPptPlaceholder = false,
   ...props
-}: React.ComponentProps<typeof Slide>) => {
+}: RunStreamSlidePreviewProps) => {
   const [streamedElementList, setStreamedElementList] = useState<Element[]>([]);
   const runStreamEvents = useMemo(
     () => parseRunStreamFixture(runStreamFixtureText),
     []
   );
   const fallbackElementList = useMemo(() => elementList, [elementList]);
+  const applyRunStreamElementListTransform = useCallback(
+    (nextElementList: Element[]) =>
+      prependEmptyPptPlaceholder
+        ? prependEmptyPptPlaceholderForLeadingText(nextElementList)
+        : nextElementList,
+    [prependEmptyPptPlaceholder]
+  );
 
   useEffect(() => {
     if (runStreamEvents.length === 0) {
       setStreamedElementList(
-        prependEmptyPptPlaceholderForLeadingText(fallbackElementList)
+        applyRunStreamElementListTransform(fallbackElementList)
       );
       return;
     }
@@ -908,7 +920,7 @@ const RunStreamSlidePreview = ({
 
         if (nextElement) {
           setStreamedElementList((prevElementList) =>
-            prependEmptyPptPlaceholderForLeadingText(
+            applyRunStreamElementListTransform(
               upsertRunStreamElementList(
                 prevElementList as RunStreamFixtureElement[],
                 nextElement
@@ -934,7 +946,11 @@ const RunStreamSlidePreview = ({
         window.clearTimeout(timerId);
       }
     };
-  }, [fallbackElementList, runStreamEvents]);
+  }, [
+    applyRunStreamElementListTransform,
+    fallbackElementList,
+    runStreamEvents,
+  ]);
 
   console.log("streamedElementList", streamedElementList);
 
@@ -1657,13 +1673,34 @@ export const FullViewportSingleSlide: Story = {
     docs: {
       description: {
         story:
-          "Replays the raw ai-shifu run stream from the repo root fixture so each `data:` payload updates the Slide like a live SSE event.",
+          "Replays the raw ai-shifu run stream from the repo root fixture so each `data:` payload updates the Slide like a live SSE event without adding the empty-ppt placeholder step.",
       },
     },
   },
   render: (args) => (
     <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
       <RunStreamSlidePreview className="w-full" {...args} />
+    </div>
+  ),
+};
+
+export const FullViewportSingleSlideWithEmptyPpt: Story = {
+  args: FullViewportSingleSlide.args,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Replays the same ai-shifu run stream but prepends the empty-ppt placeholder step when the stream begins with leading text content.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
+      <RunStreamSlidePreview
+        className="w-full"
+        prependEmptyPptPlaceholder
+        {...args}
+      />
     </div>
   ),
 };

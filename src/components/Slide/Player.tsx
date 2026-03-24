@@ -338,7 +338,7 @@ const Player: React.FC<PlayerProps> = ({
       waitingSegmentIndexRef.current = nextSegmentIndex;
       isWaitingForSegmentRef.current = true;
       pendingAutoPlayRef.current = defaultPlaying;
-      setIsPlaying(defaultPlaying);
+      setIsPlaying(false);
       updateLoading(true);
 
       return;
@@ -470,7 +470,7 @@ const Player: React.FC<PlayerProps> = ({
 
       isWaitingForSegmentRef.current = true;
       pendingAutoPlayRef.current = defaultPlaying && !isPausedByUserRef.current;
-      setIsPlaying(defaultPlaying && !isPausedByUserRef.current);
+      setIsPlaying(false);
       updateLoading(!isPausedByUserRef.current);
       return;
     }
@@ -481,7 +481,7 @@ const Player: React.FC<PlayerProps> = ({
         isWaitingForSegmentRef.current = true;
         pendingAutoPlayRef.current =
           defaultPlaying && !isPausedByUserRef.current;
-        setIsPlaying(defaultPlaying && !isPausedByUserRef.current);
+        setIsPlaying(false);
         updateLoading(!isPausedByUserRef.current);
         return;
       }
@@ -644,7 +644,7 @@ const Player: React.FC<PlayerProps> = ({
                   onPlayRequest?.();
                   isPausedByUserRef.current = false;
                   pendingAutoPlayRef.current = true;
-                  setIsPlaying(true);
+                  updateLoading(true);
                   return;
                 }
 

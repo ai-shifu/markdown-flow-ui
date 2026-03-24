@@ -40,7 +40,7 @@ const preloadAudioUrl = (url?: string) => {
   audioPreloadElementCache.set(url, audio);
 };
 
-export type PlayerProps = React.ComponentProps<"div"> & {
+export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   audioList?: SlideAudioItem[];
   currentAudioIndex?: number;
   defaultPlaying?: boolean;
@@ -49,7 +49,6 @@ export type PlayerProps = React.ComponentProps<"div"> & {
   onNext?: () => void;
   onFullscreen?: () => void;
   onEnded?: (audioIndex: number) => void;
-  onPlayRequest?: () => void;
   onInteractionToggle?: () => void;
   hasInteraction?: boolean;
   isInteractionOpen?: boolean;
@@ -100,7 +99,6 @@ const Player: React.FC<PlayerProps> = ({
   onNext,
   onFullscreen,
   onEnded,
-  onPlayRequest,
   onInteractionToggle,
   hasInteraction = false,
   isInteractionOpen = false,
@@ -125,6 +123,9 @@ const Player: React.FC<PlayerProps> = ({
   const pendingAutoPlayRef = useRef(false);
   const pendingSeekTimeRef = useRef<number | null>(null);
   const isSwitchingSegmentRef = useRef(false);
+  const playbackAccessModeRef = useRef<
+    "unknown" | "auto" | "manual" | "blocked"
+  >("unknown");
   const [isPlaying, setIsPlaying] = useState(defaultPlaying);
   const currentAudio =
     currentAudioIndex >= 0 ? audioList[currentAudioIndex] : undefined;
@@ -169,6 +170,22 @@ const Player: React.FC<PlayerProps> = ({
     },
     [onLoadingChange]
   );
+
+  const isAutoplayBlockedError = useCallback((error: unknown) => {
+    if (!(error instanceof DOMException)) {
+      return false;
+    }
+
+    return error.name === "NotAllowedError" || error.name === "SecurityError";
+  }, []);
+
+  const canStartPlaybackAutomatically = useCallback(() => {
+    return (
+      defaultPlaying &&
+      !isPausedByUserRef.current &&
+      playbackAccessModeRef.current !== "blocked"
+    );
+  }, [defaultPlaying]);
 
   const getSegmentSrc = useCallback((audioData: string) => {
     if (!audioData) {
@@ -236,17 +253,32 @@ const Player: React.FC<PlayerProps> = ({
       if (playPromise && typeof playPromise.then === "function") {
         void playPromise
           .then(() => {
+            if (playbackAccessModeRef.current === "unknown") {
+              playbackAccessModeRef.current = "auto";
+            }
+
             pendingAutoPlayRef.current = false;
             isSwitchingSegmentRef.current = false;
           })
-          .catch((_error: unknown) => {
+          .catch((error: unknown) => {
+            if (
+              playbackAccessModeRef.current === "unknown" &&
+              isAutoplayBlockedError(error)
+            ) {
+              // Lock autoplay after the first browser rejection.
+              playbackAccessModeRef.current = "blocked";
+              pendingAutoPlayRef.current = false;
+              updateLoading(false);
+            }
+
+            isSwitchingSegmentRef.current = false;
             setIsPlaying(false);
           });
       }
 
       return true;
     },
-    [currentAudioIndex]
+    [isAutoplayBlockedError, updateLoading]
   );
 
   const startSegmentPlayback = useCallback(
@@ -264,7 +296,7 @@ const Player: React.FC<PlayerProps> = ({
       waitingSegmentIndexRef.current = null;
       isWaitingForSegmentRef.current = false;
       isSwitchingSegmentRef.current = true;
-      const shouldAutoResume = defaultPlaying && !isPausedByUserRef.current;
+      const shouldAutoResume = canStartPlaybackAutomatically();
 
       pendingAutoPlayRef.current = shouldAutoResume;
       updateLoading(false);
@@ -297,13 +329,14 @@ const Player: React.FC<PlayerProps> = ({
         return true;
       }
 
-      if (hasNewSrc) {
-        return true;
-      }
-
       return tryPlayCurrentAudio(`start-segment:${_reason}`);
     },
-    [defaultPlaying, getSegmentSrc, tryPlayCurrentAudio, updateLoading]
+    [
+      canStartPlaybackAutomatically,
+      getSegmentSrc,
+      tryPlayCurrentAudio,
+      updateLoading,
+    ]
   );
 
   const finishAudioItem = useCallback(
@@ -395,7 +428,7 @@ const Player: React.FC<PlayerProps> = ({
 
     if (currentAudioUrl) {
       const hasNewSrc = audioSrcRef.current !== currentAudioUrl;
-      const shouldAutoResume = defaultPlaying && !isPausedByUserRef.current;
+      const shouldAutoResume = canStartPlaybackAutomatically();
       const shouldKeepSegmentSource =
         activeSourceTypeRef.current === "segment" &&
         Boolean(audioSrcRef.current) &&
@@ -450,9 +483,7 @@ const Player: React.FC<PlayerProps> = ({
         return;
       }
 
-      if (!hasNewSrc) {
-        tryPlayCurrentAudio("sync-url");
-      }
+      tryPlayCurrentAudio(hasNewSrc ? "sync-url-init" : "sync-url");
       return;
     }
 
@@ -469,9 +500,9 @@ const Player: React.FC<PlayerProps> = ({
       }
 
       isWaitingForSegmentRef.current = true;
-      pendingAutoPlayRef.current = defaultPlaying && !isPausedByUserRef.current;
+      pendingAutoPlayRef.current = canStartPlaybackAutomatically();
       setIsPlaying(false);
-      updateLoading(!isPausedByUserRef.current);
+      updateLoading(canStartPlaybackAutomatically());
       return;
     }
 
@@ -479,10 +510,9 @@ const Player: React.FC<PlayerProps> = ({
       if (currentAudio.isAudioStreaming) {
         waitingSegmentIndexRef.current = currentSegmentIndexRef.current;
         isWaitingForSegmentRef.current = true;
-        pendingAutoPlayRef.current =
-          defaultPlaying && !isPausedByUserRef.current;
+        pendingAutoPlayRef.current = canStartPlaybackAutomatically();
         setIsPlaying(false);
-        updateLoading(!isPausedByUserRef.current);
+        updateLoading(canStartPlaybackAutomatically());
         return;
       }
 
@@ -518,6 +548,7 @@ const Player: React.FC<PlayerProps> = ({
     currentAudioSegments,
     currentAudioUrl,
     defaultPlaying,
+    canStartPlaybackAutomatically,
     resetAudio,
     startSegmentPlayback,
     tryPlayCurrentAudio,
@@ -641,7 +672,7 @@ const Player: React.FC<PlayerProps> = ({
                     return;
                   }
 
-                  onPlayRequest?.();
+                  playbackAccessModeRef.current = "manual";
                   isPausedByUserRef.current = false;
                   pendingAutoPlayRef.current = true;
                   updateLoading(true);
@@ -649,8 +680,7 @@ const Player: React.FC<PlayerProps> = ({
                 }
 
                 if (!audioElement.src && currentAudioSegments.length > 0) {
-                  // Only the player play button can unlock playback when autoplay is unavailable.
-                  onPlayRequest?.();
+                  playbackAccessModeRef.current = "manual";
                   isPausedByUserRef.current = false;
                   startSegmentPlayback(
                     Math.min(
@@ -663,7 +693,7 @@ const Player: React.FC<PlayerProps> = ({
                 }
 
                 if (audioElement.paused) {
-                  onPlayRequest?.();
+                  playbackAccessModeRef.current = "manual";
                   isPausedByUserRef.current = false;
                   pendingAutoPlayRef.current = true;
                   tryPlayCurrentAudio("toggle-resume");

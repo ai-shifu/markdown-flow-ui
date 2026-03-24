@@ -8,7 +8,6 @@ import React, {
 } from "react";
 import { LoaderCircle } from "lucide-react";
 
-import { hasBrowserUserActivation } from "../../lib/browserUserActivation";
 import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
 import ContentRender from "../ContentRender";
@@ -180,9 +179,6 @@ const Slide: React.FC<SlideProps> = ({
       Boolean(currentInteractionElement));
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
   const [hasPlayerInteracted, setHasPlayerInteracted] = useState(false);
-  const [hasPlaybackInteracted, setHasPlaybackInteracted] = useState(false);
-  const [shouldAutoPlay] = useState(() => hasBrowserUserActivation());
-  const canAutoPlayAudio = shouldAutoPlay || hasPlaybackInteracted;
   const [currentAudioIndex, setCurrentAudioIndex] = useState(-1);
   const [currentAudioSequencePosition, setCurrentAudioSequencePosition] =
     useState(-1);
@@ -735,7 +731,6 @@ const Slide: React.FC<SlideProps> = ({
   const handlePrev = useCallback(() => {
     shouldScrollToBottomRef.current = true;
     setHasPlayerInteracted(true);
-    setHasPlaybackInteracted(true);
     setIsAudioLoadingVisible(false);
     showPlayerControls(true);
     resetAudioSequence();
@@ -745,7 +740,6 @@ const Slide: React.FC<SlideProps> = ({
   const handleNext = useCallback(() => {
     shouldScrollToBottomRef.current = true;
     setHasPlayerInteracted(true);
-    setHasPlaybackInteracted(true);
     setIsAudioLoadingVisible(false);
     showPlayerControls(true);
     resetAudioSequence();
@@ -1000,7 +994,7 @@ const Slide: React.FC<SlideProps> = ({
             !playerVisible && "pointer-events-none opacity-0"
           )}
           currentAudioIndex={currentAudioIndex}
-          defaultPlaying={canAutoPlayAudio}
+          defaultPlaying
           hasInteraction={Boolean(activeInteractionElement)}
           isInteractionOpen={isInteractionOverlayOpen}
           onLoadingChange={handlePlayerLoadingChange}
@@ -1008,7 +1002,6 @@ const Slide: React.FC<SlideProps> = ({
           onEnded={handlePlayerEnded}
           onFullscreen={handleFullscreen}
           onInteractionToggle={handleInteractionToggle}
-          onPlayRequest={() => setHasPlaybackInteracted(true)}
           onNext={handleNext}
           onPrev={handlePrev}
           prevDisabled={!canGoPrev}

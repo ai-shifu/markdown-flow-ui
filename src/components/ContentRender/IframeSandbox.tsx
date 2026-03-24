@@ -155,18 +155,151 @@ const extractViewportHeightFromTailwindClass = (className: string) => {
   return `${matched[1]}${matched[2].toLowerCase()}`;
 };
 
-const extractRootClassName = (html: string) => {
-  const normalized = html.trim();
-  if (!normalized) return null;
-  const rootMatch = normalized.match(/^<([a-zA-Z][\w:-]*)(\s[^>]*?)?>/);
-  if (!rootMatch) return null;
-  return rootMatch[2]?.match(/\bclass\s*=\s*["']([^"']*)["']/i)?.[1] ?? null;
+const SANDBOX_IGNORED_TAG_NAMES = new Set([
+  "base",
+  "link",
+  "meta",
+  "script",
+  "style",
+  "template",
+  "title",
+]);
+
+const isSandboxRenderableElement = (element: Element) =>
+  !SANDBOX_IGNORED_TAG_NAMES.has(element.tagName.toLowerCase());
+
+const getFirstRenderableElementChild = (root: ParentNode) =>
+  Array.from(root.childNodes).find(
+    (node): node is HTMLElement =>
+      node.nodeType === Node.ELEMENT_NODE &&
+      isSandboxRenderableElement(node as HTMLElement)
+  ) || null;
+
+const getInspectableSandboxElementChain = (root: ParentNode) => {
+  const chain: HTMLElement[] = [];
+  let current = getFirstRenderableElementChild(root);
+
+  while (current) {
+    chain.push(current);
+
+    const childElements = Array.from(current.children).filter(
+      (element): element is HTMLElement => isSandboxRenderableElement(element)
+    );
+
+    if (childElements.length !== 1) {
+      break;
+    }
+
+    current = childElements[0];
+  }
+
+  return chain;
 };
 
-const hasRootScreenHeightClass = (html: string) => {
-  const rootClassName = extractRootClassName(html);
-  if (!rootClassName) return false;
-  return normalizeTailwindHeightTokens(rootClassName).includes("h-screen");
+const extractViewportHeightFromElement = (element: HTMLElement) => {
+  const heightAttrValue = element.getAttribute("height");
+  const attrViewportHeight = heightAttrValue
+    ? parseViewportHeightCss(heightAttrValue)
+    : null;
+
+  if (attrViewportHeight) {
+    return attrViewportHeight;
+  }
+
+  const styleHeightValue =
+    element.getAttribute("style")?.match(/\bheight\s*:\s*([^;]+)/i)?.[1] ||
+    null;
+  const styleViewportHeight = styleHeightValue
+    ? parseViewportHeightCss(styleHeightValue)
+    : null;
+
+  if (styleViewportHeight) {
+    return styleViewportHeight;
+  }
+
+  return extractViewportHeightFromTailwindClass(
+    element.getAttribute("class") || ""
+  );
+};
+
+const isFullViewportHeightCss = (value: string | null) =>
+  value === "100vh" ||
+  value === "100dvh" ||
+  value === "100svh" ||
+  value === "100lvh";
+
+const inspectSandboxPrimaryHeight = (root: ParentNode) => {
+  const inspectableElements = getInspectableSandboxElementChain(root);
+  let viewportHeightCss: string | null = null;
+  let hasFullViewportHeight = false;
+
+  inspectableElements.forEach((element) => {
+    const elementViewportHeight = extractViewportHeightFromElement(element);
+
+    if (!viewportHeightCss && elementViewportHeight) {
+      viewportHeightCss = elementViewportHeight;
+    }
+
+    if (isFullViewportHeightCss(elementViewportHeight)) {
+      hasFullViewportHeight = true;
+    }
+  });
+
+  return {
+    viewportHeightCss,
+    hasFullViewportHeight,
+  };
+};
+
+const inspectRootHeightFromHtmlString = (html: string) => {
+  const normalized = html.trim();
+
+  if (!normalized) {
+    return {
+      viewportHeightCss: null,
+      hasFullViewportHeight: false,
+    };
+  }
+
+  const rootMatch = normalized.match(/^<([a-zA-Z][\w:-]*)(\s[^>]*?)?>/);
+  const attrs = rootMatch?.[2] || "";
+  const heightAttrValue = attrs.match(/\bheight\s*=\s*["']([^"']+)["']/i)?.[1];
+  const styleAttrValue = attrs.match(/\bstyle\s*=\s*["']([^"']+)["']/i)?.[1];
+  const styleHeightValue = styleAttrValue?.match(
+    /\bheight\s*:\s*([^;]+)/i
+  )?.[1];
+  const classAttrValue = attrs.match(/\bclass\s*=\s*["']([^"']+)["']/i)?.[1];
+  const viewportHeightCss =
+    (heightAttrValue ? parseViewportHeightCss(heightAttrValue) : null) ||
+    (styleHeightValue ? parseViewportHeightCss(styleHeightValue) : null) ||
+    (classAttrValue
+      ? extractViewportHeightFromTailwindClass(classAttrValue)
+      : null);
+
+  return {
+    viewportHeightCss,
+    hasFullViewportHeight: isFullViewportHeightCss(viewportHeightCss),
+  };
+};
+
+const inspectSandboxPrimaryHeightFromHtml = (html: string) => {
+  const normalized = html.trim();
+
+  if (!normalized) {
+    return {
+      viewportHeightCss: null,
+      hasFullViewportHeight: false,
+    };
+  }
+
+  if (typeof document === "undefined") {
+    return inspectRootHeightFromHtmlString(normalized);
+  }
+
+  const template = document.createElement("template");
+  template.innerHTML = normalized;
+
+  return inspectSandboxPrimaryHeight(template.content);
 };
 
 const replaceRootScreenHeightToken = (className: string) =>
@@ -262,10 +395,14 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     () => extractCompleteImageSources(normalizedHtmlContent),
     [normalizedHtmlContent]
   );
+  const htmlHeightMeta = React.useMemo(
+    () => inspectSandboxPrimaryHeightFromHtml(htmlContent),
+    [htmlContent]
+  );
   const shouldStretchRootHeight = React.useMemo(
     () =>
-      replaceRootScreenHeightWithFull && hasRootScreenHeightClass(htmlContent),
-    [htmlContent, replaceRootScreenHeightWithFull]
+      replaceRootScreenHeightWithFull && htmlHeightMeta.hasFullViewportHeight,
+    [htmlHeightMeta.hasFullViewportHeight, replaceRootScreenHeightWithFull]
   );
   const [renderHtmlContent, setRenderHtmlContent] = useState(
     normalizedHtmlContent
@@ -375,29 +512,11 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     }, POST_IMAGE_STREAM_DEBOUNCE_MS);
   }, [completeImageSources, normalizedHtmlContent]);
 
-  const rootViewportHeightCss = React.useMemo(() => {
-    const normalized = renderHtmlContent.trim();
-    if (!normalized) return null;
-    const rootMatch = normalized.match(/^<([a-zA-Z][\w:-]*)(\s[^>]*?)?>/);
-    if (!rootMatch) return null;
-    const attrs = rootMatch[2] || "";
-    const heightAttrMatch = attrs.match(/\bheight\s*=\s*["']([^"']+)["']/i);
-    if (heightAttrMatch) {
-      const explicitHeightCss = parseViewportHeightCss(heightAttrMatch[1]);
-      if (explicitHeightCss) return explicitHeightCss;
-    }
-    const styleAttrMatch = attrs.match(/\bstyle\s*=\s*["']([^"']+)["']/i)?.[1];
-    const styleHeightMatch = styleAttrMatch?.match(
-      /\bheight\s*:\s*([^;]+)/i
-    )?.[1];
-    if (styleHeightMatch) {
-      const styleHeightCss = parseViewportHeightCss(styleHeightMatch);
-      if (styleHeightCss) return styleHeightCss;
-    }
-    const classAttrMatch = attrs.match(/\bclass\s*=\s*["']([^"']+)["']/i)?.[1];
-    if (!classAttrMatch) return null;
-    return extractViewportHeightFromTailwindClass(classAttrMatch);
-  }, [renderHtmlContent]);
+  const rootViewportHeightCss = React.useMemo(
+    () =>
+      inspectSandboxPrimaryHeightFromHtml(renderHtmlContent).viewportHeightCss,
+    [renderHtmlContent]
+  );
   const hasRootVhHeight = Boolean(rootViewportHeightCss);
   const sandboxViewportHeight =
     isBlackboardMode && type === "sandbox"
@@ -506,28 +625,41 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
     const resolveExplicitHeight = () => {
       if (!iframeRef.current || !doc.body) return null;
-      const wrapper = doc.body.querySelector(
-        ".sandbox-wrapper"
-      ) as HTMLElement | null;
-      const container = wrapper?.firstElementChild as HTMLElement | null;
-      if (!container) return null;
-      const elements = Array.from(container.children) as HTMLElement[];
-      if (elements.length !== 1) return null;
-      const target = elements[0];
-      const heightValue = target.style.height || target.getAttribute("height");
       const parentViewportHeight =
         iframeRef.current.ownerDocument?.documentElement?.clientHeight ||
         window.innerHeight;
-      const parsed = heightValue
-        ? parseExplicitHeight(heightValue, parentViewportHeight)
+      const { viewportHeightCss } = inspectSandboxPrimaryHeight(doc.body);
+      const parsed = viewportHeightCss
+        ? parseExplicitHeight(viewportHeightCss, parentViewportHeight)
         : null;
+
       if (parsed !== null) {
         return Math.ceil(parsed);
       }
+
+      const wrapper = doc.body.querySelector(
+        ".sandbox-wrapper"
+      ) as HTMLElement | null;
+      const target = wrapper?.querySelector(
+        ".sandbox-container > *"
+      ) as HTMLElement | null;
+
+      if (!target) return null;
+
+      const heightValue = target.style.height || target.getAttribute("height");
+      const explicitPixelHeight = heightValue
+        ? parseExplicitHeight(heightValue, parentViewportHeight)
+        : null;
+
+      if (explicitPixelHeight !== null) {
+        return Math.ceil(explicitPixelHeight);
+      }
+
       const classHeight = parseTailwindHeightClass(
         target.getAttribute("class") || "",
         parentViewportHeight
       );
+
       return classHeight !== null ? Math.ceil(classHeight) : null;
     };
 

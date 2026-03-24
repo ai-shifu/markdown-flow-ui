@@ -3,8 +3,11 @@ import { Loader2 } from "lucide-react";
 
 export interface SandboxAppProps {
   html: string;
+  loadingText?: string;
   styleLoadingText?: string;
   scriptLoadingText?: string;
+  fullScreenButtonText?: string;
+  hideFullScreen?: boolean;
   resetToken?: number;
   mode?: "content" | "blackboard";
   hasRootVhHeight?: boolean;

@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import historyFixtureText from "../../../../测试历史数据.json?raw";
 import runStreamFixtureText from "../../../../测试数据.json?raw";
+import type { OnSendContentParams } from "../types";
 
 import Slide from "./Slide";
 import type { Element } from "./Slide";
@@ -533,6 +535,106 @@ const parseRunStreamFixture = (rawText: string): RunStreamFixtureEvent[] =>
       }
     });
 
+const parseHistoryFixture = (rawText: string): Element[] => {
+  try {
+    const parsedFixture = JSON.parse(rawText) as Element[];
+
+    return Array.isArray(parsedFixture) ? parsedFixture : [];
+  } catch {
+    return [];
+  }
+};
+
+const getLatestInteractionIndex = (elementList: Element[]) =>
+  elementList.reduce(
+    (latestIndex, element, index) =>
+      element.type === "interaction" ? index : latestIndex,
+    -1
+  );
+
+const focusHistoryOnLatestInteraction = (elementList: Element[]) => {
+  const latestInteractionIndex = getLatestInteractionIndex(elementList);
+
+  if (latestInteractionIndex < 0) {
+    return elementList;
+  }
+
+  return elementList.map((element, index) => {
+    if (!element.is_marker) {
+      return element;
+    }
+
+    return {
+      ...element,
+      is_renderable: index === latestInteractionIndex,
+    };
+  });
+};
+
+const resolveSubmittedUserInput = (content: OnSendContentParams) =>
+  [
+    ...(content.selectedValues ?? []),
+    content.inputText?.trim() ?? "",
+    content.buttonText?.trim() ?? "",
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+const isSameStoryElement = (currentElement: Element, targetElement?: Element) =>
+  Boolean(
+    targetElement &&
+      currentElement.type === targetElement.type &&
+      currentElement.sequence_number === targetElement.sequence_number &&
+      currentElement.content === targetElement.content
+  );
+
+const applyInteractionSubmission = (
+  elementList: Element[],
+  targetElement: Element | undefined,
+  submittedUserInput: string
+) => {
+  if (!submittedUserInput) {
+    return elementList;
+  }
+
+  const fallbackInteractionIndex = getLatestInteractionIndex(elementList);
+
+  return elementList.map((element, index) => {
+    const shouldUpdateElement = targetElement
+      ? isSameStoryElement(element, targetElement)
+      : index === fallbackInteractionIndex;
+
+    if (!shouldUpdateElement) {
+      return element;
+    }
+
+    return {
+      ...element,
+      user_input: submittedUserInput,
+      readonly: true,
+    };
+  });
+};
+
+const buildTriggeredRunStreamEvents = (events: RunStreamFixtureEvent[]) => {
+  const triggerEventIndex = events.findIndex((event) => {
+    const eventContent = event.content;
+
+    return (
+      event?.type === "element" &&
+      eventContent?.element_type === "text" &&
+      typeof eventContent.content === "string" &&
+      eventContent.content.includes("三个观点你都不同意")
+    );
+  });
+
+  if (triggerEventIndex < 0) {
+    return [];
+  }
+
+  return events.slice(triggerEventIndex);
+};
+
 const normalizeRunStreamElement = (
   record: RunStreamFixtureRecord,
   fallbackEventSeq: number
@@ -683,6 +785,120 @@ const RunStreamSlidePreview = ({
   console.log("streamedElementList", streamedElementList);
 
   return <Slide {...props} elementList={streamedElementList} />;
+};
+
+const historyInteractionFixtureElementList = focusHistoryOnLatestInteraction(
+  parseHistoryFixture(historyFixtureText)
+);
+
+const triggeredRunStreamEvents = buildTriggeredRunStreamEvents(
+  parseRunStreamFixture(runStreamFixtureText)
+);
+
+const HistoryInteractionTriggeredRunStreamSlidePreview = ({
+  elementList = [],
+  onSend,
+  ...props
+}: React.ComponentProps<typeof Slide>) => {
+  const stableHistoryElementList = useMemo(
+    () => focusHistoryOnLatestInteraction(elementList),
+    [elementList]
+  );
+  const [historyElementList, setHistoryElementList] = useState<Element[]>(
+    stableHistoryElementList
+  );
+  const [streamedElementList, setStreamedElementList] = useState<Element[]>([]);
+  const [streamSessionCount, setStreamSessionCount] = useState(0);
+
+  useEffect(() => {
+    setHistoryElementList(stableHistoryElementList);
+    setStreamedElementList([]);
+    setStreamSessionCount(0);
+  }, [stableHistoryElementList]);
+
+  useEffect(() => {
+    if (streamSessionCount === 0 || triggeredRunStreamEvents.length === 0) {
+      return;
+    }
+
+    let currentEventIndex = 0;
+    let timerId: number | null = null;
+    let isCancelled = false;
+
+    setStreamedElementList([]);
+
+    const emitNextEvent = () => {
+      if (isCancelled || currentEventIndex >= triggeredRunStreamEvents.length) {
+        return;
+      }
+
+      const currentEvent = triggeredRunStreamEvents[currentEventIndex];
+      currentEventIndex += 1;
+
+      if (currentEvent?.type === "element" && currentEvent.content) {
+        const nextElement = normalizeRunStreamElement(
+          currentEvent.content,
+          Number(currentEvent.run_event_seq ?? 0)
+        );
+
+        if (nextElement) {
+          setStreamedElementList((prevElementList) =>
+            upsertRunStreamElementList(
+              prevElementList as RunStreamFixtureElement[],
+              nextElement
+            )
+          );
+        }
+      }
+
+      if (currentEventIndex >= triggeredRunStreamEvents.length) {
+        return;
+      }
+
+      timerId = window.setTimeout(emitNextEvent, RUN_STREAM_EVENT_INTERVAL_MS);
+    };
+
+    timerId = window.setTimeout(emitNextEvent, STREAM_INITIAL_DELAY_MS);
+
+    return () => {
+      isCancelled = true;
+
+      if (timerId !== null) {
+        window.clearTimeout(timerId);
+      }
+    };
+  }, [streamSessionCount]);
+
+  const handleSend = useCallback(
+    (content: OnSendContentParams, element?: Element) => {
+      console.log("onsend", content, element);
+      onSend?.(content, element);
+
+      const submittedUserInput = resolveSubmittedUserInput(content);
+
+      setHistoryElementList((prevElementList) =>
+        applyInteractionSubmission(
+          prevElementList,
+          element,
+          submittedUserInput || "都不同意"
+        )
+      );
+      setStreamedElementList([]);
+      setStreamSessionCount((prevCount) => prevCount + 1);
+    },
+    [onSend]
+  );
+
+  const mergedElementList = useMemo(
+    () => [...historyElementList, ...streamedElementList],
+    [historyElementList, streamedElementList]
+  );
+
+  console.log("mergedElementList", mergedElementList);
+
+  return (
+    <Slide {...props} elementList={mergedElementList} onSend={handleSend} />
+  );
 };
 
 const createExampleElement = ({
@@ -1489,6 +1705,40 @@ export const FullViewportSingleSlideWithSSE: Story = {
   render: (args) => (
     <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
       <StreamingSlidePreview className="w-full" {...args} />
+    </div>
+  ),
+};
+
+export const HistoryInteractionTriggeredSSE: Story = {
+  args: {
+    playerAlwaysVisible: false,
+    interactionDefaultValueOptions: {
+      resolveDefaultValues: () => ({
+        selectedValues: ["都不同意"],
+      }),
+    },
+    interactionTexts: {
+      title: "提交以下内容后继续学习",
+      confirmButtonText: "提交",
+      copyButtonText: "复制",
+      copiedButtonText: "已复制",
+    },
+    elementList: historyInteractionFixtureElementList,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Preloads the repo root history fixture, focuses the latest interaction checkpoint, and replays the updated run-stream fixture only after `onSend` fires.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
+      <HistoryInteractionTriggeredRunStreamSlidePreview
+        className="w-full"
+        {...args}
+      />
     </div>
   ),
 };

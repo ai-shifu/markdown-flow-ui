@@ -18,26 +18,26 @@ import { cn } from "../../lib/utils";
 import type { SlideAudioItem } from "./useSlide";
 import "./player.css";
 
-const audioPreloadLinkCache = new Set<string>();
+const audioPreloadElementCache = new Map<string, HTMLAudioElement>();
 
 const preloadAudioUrl = (url?: string) => {
-  if (
-    typeof document === "undefined" ||
-    !url ||
-    audioPreloadLinkCache.has(url)
-  ) {
+  if (typeof window === "undefined" || !url) {
     return;
   }
 
-  const link = document.createElement("link");
-  link.rel = "preload";
-  link.as = "audio";
-  link.href = url;
-  if (/^https?:/i.test(url)) {
-    link.crossOrigin = "anonymous";
+  if (audioPreloadElementCache.has(url)) {
+    return;
   }
-  document.head.appendChild(link);
-  audioPreloadLinkCache.add(url);
+
+  // Use a detached audio element so warm-up follows the same media loading
+  // path as the visible player instead of relying on link preload hints.
+  const audio = window.document.createElement("audio");
+  audio.preload = "auto";
+  audio.setAttribute("playsinline", "true");
+  audio.src = url;
+  audio.load();
+
+  audioPreloadElementCache.set(url, audio);
 };
 
 export type PlayerProps = React.ComponentProps<"div"> & {

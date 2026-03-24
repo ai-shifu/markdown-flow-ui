@@ -518,6 +518,94 @@ const mergeRunStreamAudioSegments = (
   return mergedSegments;
 };
 
+const hasRunStreamAudioPayload = (
+  element?: Pick<RunStreamFixtureElement, "audio_url" | "audio_segments">
+) =>
+  Boolean(
+    (element?.audio_url ?? "").trim() ||
+      (Array.isArray(element?.audio_segments) &&
+        element.audio_segments.length > 0)
+  );
+
+const isRunStreamSpeakableTextElement = (
+  element?: Pick<RunStreamFixtureElement, "type" | "is_speakable">
+) => element?.type === "text" && Boolean(element?.is_speakable);
+
+const stripRunStreamAudioPayload = (
+  element: RunStreamFixtureElement
+): RunStreamFixtureElement => ({
+  ...element,
+  audio_url: "",
+  audio_segments: [],
+});
+
+const resolveRunStreamAudioTargetIndex = (
+  elementList: RunStreamFixtureElement[],
+  sourceIndex: number
+) => {
+  for (let cursor = sourceIndex - 1; cursor >= 0; cursor -= 1) {
+    if (isRunStreamSpeakableTextElement(elementList[cursor])) {
+      return cursor;
+    }
+  }
+
+  return -1;
+};
+
+const rebalanceRunStreamAudioOwnership = (
+  elementList: RunStreamFixtureElement[],
+  sourceElementBid: string
+) => {
+  const sourceIndex = elementList.findIndex(
+    (element) => element.element_bid === sourceElementBid
+  );
+  if (sourceIndex < 0) {
+    return elementList;
+  }
+
+  const sourceElement = elementList[sourceIndex];
+  if (
+    !hasRunStreamAudioPayload(sourceElement) ||
+    isRunStreamSpeakableTextElement(sourceElement)
+  ) {
+    return elementList;
+  }
+
+  const targetIndex = resolveRunStreamAudioTargetIndex(
+    elementList,
+    sourceIndex
+  );
+  if (targetIndex < 0) {
+    return elementList;
+  }
+
+  const targetElement = elementList[targetIndex];
+  const sourceAudioSegments = Array.isArray(sourceElement.audio_segments)
+    ? sourceElement.audio_segments
+    : [];
+  const targetAudioSegments = Array.isArray(targetElement.audio_segments)
+    ? targetElement.audio_segments
+    : [];
+  const mergedAudioSegments = mergeRunStreamAudioSegments(
+    targetElement.element_bid,
+    [...targetAudioSegments, ...sourceAudioSegments]
+  );
+
+  const nextList = [...elementList];
+
+  nextList[targetIndex] = {
+    ...targetElement,
+    audio_url: targetElement.audio_url || sourceElement.audio_url || "",
+    audio_segments:
+      mergedAudioSegments.length > 0
+        ? mergedAudioSegments
+        : targetElement.audio_segments,
+  };
+  nextList[sourceIndex] = stripRunStreamAudioPayload(sourceElement);
+
+  return nextList;
+};
+
 const parseRunStreamFixture = (rawText: string): RunStreamFixtureEvent[] =>
   rawText
     .split(/\r?\n/)
@@ -708,13 +796,69 @@ const upsertRunStreamElementList = (
     nextList.push(nextElement);
   }
 
-  return nextList.sort(
+  const rebalancedList = rebalanceRunStreamAudioOwnership(
+    nextList,
+    nextElement.element_bid
+  );
+
+  return rebalancedList.sort(
     (prevElement, nextItem) =>
       Number(prevElement.sequence_number ?? 0) -
         Number(nextItem.sequence_number ?? 0) ||
       Number(prevElement.run_event_seq ?? 0) -
         Number(nextItem.run_event_seq ?? 0)
   );
+};
+
+const EMPTY_PPT_PLACEHOLDER_BLOCK_BID = "empty-ppt";
+
+const createEmptyPptPlaceholderElement = (sequenceNumber: number): Element =>
+  ({
+    sequence_number: sequenceNumber,
+    type: "slot",
+    content: (
+      <div className="flex h-full w-full items-center justify-center text-center text-[40px] font-bold leading-[1.3] text-primary">
+        empty-ppt
+      </div>
+    ),
+    is_marker: true,
+    is_renderable: true,
+    is_new: true,
+    is_speakable: false,
+    audio_url: "",
+    audio_segments: [],
+    blockBid: EMPTY_PPT_PLACEHOLDER_BLOCK_BID,
+    page: 0,
+  }) as Element;
+
+const prependEmptyPptPlaceholderForLeadingText = (elementList: Element[]) => {
+  if (elementList.length === 0) {
+    return elementList;
+  }
+
+  const hasEmptyPptPlaceholder = elementList.some(
+    (element) =>
+      (element as { blockBid?: string }).blockBid ===
+      EMPTY_PPT_PLACEHOLDER_BLOCK_BID
+  );
+  if (hasEmptyPptPlaceholder) {
+    return elementList;
+  }
+
+  // Align with listen-mode behavior: prepend placeholder when leading content is text.
+  const firstContentElement = elementList.find(
+    (element) => element.type !== "interaction"
+  );
+  if (!firstContentElement || firstContentElement.type !== "text") {
+    return elementList;
+  }
+
+  const firstSequenceNumber = Number(elementList[0]?.sequence_number ?? 1);
+
+  return [
+    createEmptyPptPlaceholderElement(Math.max(firstSequenceNumber - 1, 0)),
+    ...elementList,
+  ];
 };
 
 const RunStreamSlidePreview = ({
@@ -730,7 +874,9 @@ const RunStreamSlidePreview = ({
 
   useEffect(() => {
     if (runStreamEvents.length === 0) {
-      setStreamedElementList(fallbackElementList);
+      setStreamedElementList(
+        prependEmptyPptPlaceholderForLeadingText(fallbackElementList)
+      );
       return;
     }
 
@@ -756,9 +902,11 @@ const RunStreamSlidePreview = ({
 
         if (nextElement) {
           setStreamedElementList((prevElementList) =>
-            upsertRunStreamElementList(
-              prevElementList as RunStreamFixtureElement[],
-              nextElement
+            prependEmptyPptPlaceholderForLeadingText(
+              upsertRunStreamElementList(
+                prevElementList as RunStreamFixtureElement[],
+                nextElement
+              )
             )
           );
         }

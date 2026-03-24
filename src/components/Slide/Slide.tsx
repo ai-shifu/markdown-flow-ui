@@ -356,6 +356,14 @@ const Slide: React.FC<SlideProps> = ({
     ]
   );
 
+  const hasResolvedCurrentInteraction = Boolean(
+    currentInteractionElement?.readonly ||
+      currentInteractionElement?.user_input?.trim()
+  );
+
+  const shouldBlockPlaybackForInteraction =
+    Boolean(currentInteractionElement) && !hasResolvedCurrentInteraction;
+
   useEffect(() => {
     return () => {
       clearAutoAdvanceTimer();
@@ -451,11 +459,16 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    if (currentInteractionElement) {
+    if (shouldBlockPlaybackForInteraction) {
       // Show the interaction gate before playing any follow-up audio.
       setActiveInteractionElement(currentInteractionElement);
       setIsInteractionOverlayOpen(true);
       return;
+    }
+
+    if (currentInteractionElement) {
+      setActiveInteractionElement(currentInteractionElement);
+      setIsInteractionOverlayOpen(false);
     }
 
     if (startCurrentAudioSequence()) {
@@ -488,12 +501,13 @@ const Slide: React.FC<SlideProps> = ({
     currentPlaybackResetKey,
     currentStepHasSpeakableElement,
     goNext,
+    shouldBlockPlaybackForInteraction,
     resetAudioSequence,
     startCurrentAudioSequence,
   ]);
 
   useEffect(() => {
-    if (!currentStepHasSpeakableElement || currentInteractionElement) {
+    if (!currentStepHasSpeakableElement || shouldBlockPlaybackForInteraction) {
       setIsAudioLoadingVisible(false);
       return;
     }
@@ -508,9 +522,9 @@ const Slide: React.FC<SlideProps> = ({
     }
   }, [
     currentAudioSequenceIndexes.length,
-    currentInteractionElement,
     currentStepHasSpeakableElement,
     hasCompletedCurrentStepAudio,
+    shouldBlockPlaybackForInteraction,
   ]);
 
   const interactionDefaults = useMemo(() => {
@@ -544,6 +558,7 @@ const Slide: React.FC<SlideProps> = ({
   const hasResolvedInteractionInput = Boolean(
     activeInteractionElement?.user_input?.trim()
   );
+
   const isInteractionReadonly =
     Boolean(activeInteractionElement?.readonly) || hasResolvedInteractionInput;
   const shouldAutoContinueInteraction =

@@ -18,6 +18,28 @@ import { cn } from "../../lib/utils";
 import type { SlideAudioItem } from "./useSlide";
 import "./player.css";
 
+const audioPreloadLinkCache = new Set<string>();
+
+const preloadAudioUrl = (url?: string) => {
+  if (
+    typeof document === "undefined" ||
+    !url ||
+    audioPreloadLinkCache.has(url)
+  ) {
+    return;
+  }
+
+  const link = document.createElement("link");
+  link.rel = "preload";
+  link.as = "audio";
+  link.href = url;
+  if (/^https?:/i.test(url)) {
+    link.crossOrigin = "anonymous";
+  }
+  document.head.appendChild(link);
+  audioPreloadLinkCache.add(url);
+};
+
 export type PlayerProps = React.ComponentProps<"div"> & {
   audioList?: SlideAudioItem[];
   currentAudioIndex?: number;
@@ -125,6 +147,17 @@ const Player: React.FC<PlayerProps> = ({
     currentAudioSegmentsRef.current = currentAudioSegments;
   }, [currentAudioSegments]);
 
+  useEffect(() => {
+    const currentUrl = currentAudio?.audioUrl;
+    const nextUrl =
+      currentAudioIndex >= 0
+        ? audioList[currentAudioIndex + 1]?.audioUrl
+        : undefined;
+
+    preloadAudioUrl(currentUrl);
+    preloadAudioUrl(nextUrl);
+  }, [audioList, currentAudio?.audioUrl, currentAudioIndex]);
+
   const updateLoading = useCallback(
     (loading: boolean) => {
       if (isLoadingRef.current === loading) {
@@ -222,14 +255,6 @@ const Player: React.FC<PlayerProps> = ({
 
       activeSourceTypeRef.current = "segment";
 
-      console.log("[SlidePlayer][SegmentFlow] start", {
-        segment_index: segmentIndex,
-        has_new_src: hasNewSrc,
-        should_auto_resume: shouldAutoResume,
-        source_type: activeSourceTypeRef.current,
-        segment_count: currentAudioSegmentsRef.current.length,
-      });
-
       if (hasNewSrc) {
         audioElement.pause();
         audioElement.removeAttribute("src");
@@ -284,16 +309,6 @@ const Player: React.FC<PlayerProps> = ({
     const nextSegment = segments[nextSegmentIndex];
     const activeAudio = currentAudioRef.current;
     const hasFinal = segments.some((segment) => segment.is_final);
-
-    console.log("[SlidePlayer][SegmentFlow] segment-ended", {
-      finished_segment_index: currentSegmentIndexRef.current,
-      next_segment_index: nextSegmentIndex,
-      has_next_segment: Boolean(nextSegment),
-      has_final: hasFinal,
-      is_audio_streaming: activeAudio?.isAudioStreaming,
-      source_type: activeSourceTypeRef.current,
-      segment_count: segments.length,
-    });
 
     if (nextSegment) {
       startSegmentPlayback(nextSegmentIndex, "ended");
@@ -366,15 +381,6 @@ const Player: React.FC<PlayerProps> = ({
       const shouldKeepSegmentSource =
         activeSourceTypeRef.current === "segment" &&
         Boolean(audioSrcRef.current);
-
-      if (shouldKeepSegmentSource) {
-        console.log("[SlidePlayer][SegmentFlow] keep-segment-source", {
-          has_new_src: hasNewSrc,
-          should_auto_resume: shouldAutoResume,
-          source_type: activeSourceTypeRef.current,
-          segment_count: currentAudioSegmentsRef.current.length,
-        });
-      }
 
       if (shouldKeepSegmentSource) {
         if (!shouldAutoResume) {
@@ -538,14 +544,6 @@ const Player: React.FC<PlayerProps> = ({
       activeSourceTypeRef.current === "url" ||
       currentAudioSegmentsRef.current.length === 0;
 
-    console.log("[SlidePlayer][SegmentFlow] audio-ended", {
-      source_type: activeSourceTypeRef.current,
-      current_segment_index: currentSegmentIndexRef.current,
-      segment_count: currentAudioSegmentsRef.current.length,
-      has_audio_url: Boolean(currentAudioRef.current?.audioUrl),
-      should_finish_as_url: shouldFinishAsUrl,
-    });
-
     isSwitchingSegmentRef.current = false;
 
     if (shouldFinishAsUrl) {
@@ -557,12 +555,6 @@ const Player: React.FC<PlayerProps> = ({
   }, [finishAudioItem, handleSegmentEnded]);
 
   const handleAudioError = useCallback(() => {
-    console.log("[SlidePlayer][SegmentFlow] audio-error", {
-      source_type: activeSourceTypeRef.current,
-      current_segment_index: currentSegmentIndexRef.current,
-      segment_count: currentAudioSegmentsRef.current.length,
-      audio_src: audioSrcRef.current,
-    });
     setIsPlaying(false);
     updateLoading(false);
   }, [updateLoading]);
@@ -571,7 +563,7 @@ const Player: React.FC<PlayerProps> = ({
     <div className={cn("slide-player", className)} {...props}>
       <audio
         ref={audioRef}
-        preload="metadata"
+        preload="auto"
         playsInline
         onLoadedMetadata={handleLoadedMetadata}
         onCanPlay={handleAudioCanPlay}

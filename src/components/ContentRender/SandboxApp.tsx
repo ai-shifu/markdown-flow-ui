@@ -24,6 +24,7 @@ const IMAGE_REUSE_ATTRIBUTES = [
   "decoding",
   "crossorigin",
   "referrerpolicy",
+  "fetchpriority",
 ];
 
 const getImageReuseKey = (image: HTMLImageElement) =>
@@ -41,6 +42,24 @@ const collectReusableImages = (root: ParentNode) => {
     imageMap.set(key, bucket);
   });
   return imageMap;
+};
+
+const applyImageLoadingHints = (root: ParentNode) => {
+  root.querySelectorAll("img").forEach((node) => {
+    const image = node as HTMLImageElement;
+
+    if (!image.getAttribute("loading")) {
+      image.setAttribute("loading", "eager");
+    }
+
+    if (!image.getAttribute("decoding")) {
+      image.setAttribute("decoding", "async");
+    }
+
+    if (!image.getAttribute("fetchpriority")) {
+      image.setAttribute("fetchpriority", "high");
+    }
+  });
 };
 
 const syncImageAttributes = (
@@ -63,6 +82,39 @@ const syncImageAttributes = (
   });
 };
 
+const waitForImagesReady = (root: ParentNode) => {
+  const images = Array.from(root.querySelectorAll("img")) as HTMLImageElement[];
+
+  if (images.length === 0) {
+    return Promise.resolve();
+  }
+
+  return Promise.allSettled(
+    images.map((image) => {
+      const waitForDecode = () => {
+        if (typeof image.decode !== "function") {
+          return Promise.resolve();
+        }
+
+        return image.decode().catch(() => undefined);
+      };
+
+      if (image.complete && image.naturalWidth > 0) {
+        return waitForDecode();
+      }
+
+      return new Promise<void>((resolve) => {
+        const settle = () => {
+          void waitForDecode().finally(() => resolve());
+        };
+
+        image.addEventListener("load", settle, { once: true });
+        image.addEventListener("error", () => resolve(), { once: true });
+      });
+    })
+  ).then(() => undefined);
+};
+
 const reuseRenderedImages = (
   root: ParentNode,
   imageMap: Map<string, HTMLImageElement[]>
@@ -76,8 +128,11 @@ const reuseRenderedImages = (
     const preservedImage = bucket?.shift();
     if (!preservedImage) return;
 
-    syncImageAttributes(nextImage, preservedImage);
-    nextImage.replaceWith(preservedImage);
+    // Clone the already-rendered image instead of moving the live node out of
+    // the visible tree before the next DOM commit.
+    const clonedImage = preservedImage.cloneNode(true) as HTMLImageElement;
+    syncImageAttributes(nextImage, clonedImage);
+    nextImage.replaceWith(clonedImage);
 
     if (bucket && bucket.length === 0) {
       imageMap.delete(key);
@@ -147,7 +202,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     styleEl.textContent = `
       @keyframes sandbox-spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
       .sandbox-wrapper { align-items: center; }
-      .sandbox-container { width: 100%; }
+      .sandbox-container { position: relative; width: 100%; }
       .sandbox-container svg,
       .sandbox-container img { display: block; margin-left: auto; margin-right: auto; }
       .justify-\\[safe_center\\]{
@@ -210,6 +265,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       }
       node.remove();
     });
+    applyImageLoadingHints(wrapper);
     reuseRenderedImages(wrapper, reusableImages);
 
     const hasStyles = resourceQueue.some(
@@ -237,9 +293,34 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       hasRenderedContentRef.current = true;
     }
 
-    container.innerHTML = "";
+    const shouldKeepPreviousFrameVisible =
+      hasRenderedBefore &&
+      container.childNodes.length > 0 &&
+      wrapper.querySelector("img") !== null;
+    const previousFrameOverlay = shouldKeepPreviousFrameVisible
+      ? (container.cloneNode(true) as HTMLDivElement)
+      : null;
+
+    if (previousFrameOverlay) {
+      previousFrameOverlay.setAttribute("aria-hidden", "true");
+      previousFrameOverlay.style.position = "absolute";
+      previousFrameOverlay.style.inset = "0";
+      previousFrameOverlay.style.zIndex = "2";
+      previousFrameOverlay.style.pointerEvents = "none";
+      previousFrameOverlay.style.background = "transparent";
+    }
+
     const contentNodes = Array.from(wrapper.childNodes);
-    container.append(...contentNodes);
+    container.replaceChildren(...contentNodes);
+
+    if (previousFrameOverlay) {
+      container.appendChild(previousFrameOverlay);
+      void waitForImagesReady(container).finally(() => {
+        requestAnimationFrame(() => {
+          previousFrameOverlay.remove();
+        });
+      });
+    }
 
     resourceQueue.forEach((node) => {
       if (node.tagName.toLowerCase() === "style") {

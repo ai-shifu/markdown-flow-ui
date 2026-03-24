@@ -33,6 +33,77 @@ if (typeof window !== "undefined") {
 const COMPLETE_IMAGE_TAG_PATTERN = /<img\b[^>]*>/i;
 const POST_IMAGE_STREAM_DEBOUNCE_MS = 180;
 const SANDBOX_INTERACTION_THROTTLE_MS = 240;
+const COMPLETE_IMAGE_SOURCE_PATTERN =
+  /<img\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi;
+const SANDBOX_IMAGE_PRELOAD_CACHE = new Map<string, Promise<void>>();
+const SANDBOX_IMAGE_READY_CACHE = new Set<string>();
+
+const extractCompleteImageSources = (html: string) => {
+  const matches = Array.from(html.matchAll(COMPLETE_IMAGE_SOURCE_PATTERN));
+  return Array.from(
+    new Set(
+      matches
+        .map((match) => match[1]?.trim())
+        .filter((src): src is string => Boolean(src))
+    )
+  );
+};
+
+const preloadSandboxImage = (src: string) => {
+  if (!src) {
+    return Promise.resolve();
+  }
+
+  const cached = SANDBOX_IMAGE_PRELOAD_CACHE.get(src);
+  if (cached) {
+    return cached;
+  }
+
+  const nextPromise = new Promise<void>((resolve) => {
+    if (typeof window === "undefined") {
+      SANDBOX_IMAGE_READY_CACHE.add(src);
+      resolve();
+      return;
+    }
+
+    const image = new window.Image();
+    image.decoding = "sync";
+    image.loading = "eager";
+    image.fetchPriority = "high";
+
+    const settleWhenRenderable = () => {
+      const decodePromise =
+        typeof image.decode === "function"
+          ? image.decode().catch(() => undefined)
+          : Promise.resolve();
+
+      void decodePromise.finally(() => {
+        SANDBOX_IMAGE_READY_CACHE.add(src);
+        resolve();
+      });
+    };
+
+    image.onload = () => {
+      settleWhenRenderable();
+    };
+    image.onerror = () => {
+      SANDBOX_IMAGE_READY_CACHE.add(src);
+      resolve();
+    };
+    image.src = src;
+
+    if (image.complete && image.naturalWidth > 0) {
+      settleWhenRenderable();
+    }
+  });
+
+  SANDBOX_IMAGE_PRELOAD_CACHE.set(src, nextPromise);
+  return nextPromise;
+};
+
+const preloadSandboxImages = (sources: string[] = []) =>
+  Promise.allSettled(sources.map((source) => preloadSandboxImage(source)));
+
 export interface IframeSandboxProps {
   content: string;
   className?: string;
@@ -164,12 +235,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const lastSandboxInteractionTimeRef = useRef(0);
   const [resetToken, setResetToken] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isSandboxVendorReady, setIsSandboxVendorReady] = useState(
-    type !== "sandbox"
-  );
-  const [isInitialIframePaintReady, setIsInitialIframePaintReady] = useState(
-    type !== "sandbox" || mode !== "blackboard"
-  );
+  const [, setIsSandboxVendorReady] = useState(true);
   const shouldInjectSandboxVendor = type === "sandbox";
 
   const isBlackboardMode = mode === "blackboard";
@@ -192,6 +258,10 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       ),
     [htmlContent, replaceRootScreenHeightWithFull]
   );
+  const completeImageSources = React.useMemo(
+    () => extractCompleteImageSources(normalizedHtmlContent),
+    [normalizedHtmlContent]
+  );
   const shouldStretchRootHeight = React.useMemo(
     () =>
       replaceRootScreenHeightWithFull && hasRootScreenHeightClass(htmlContent),
@@ -205,6 +275,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const deferRenderTimerRef = useRef<number | null>(null);
   const initialPaintFrameRef = useRef<number | null>(null);
   const initialPaintCommitFrameRef = useRef<number | null>(null);
+  const imagePreloadRequestIdRef = useRef(0);
 
   const emitSandboxInteraction = useCallback((eventType: string) => {
     if (typeof window === "undefined") {
@@ -254,16 +325,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   );
 
   useEffect(() => {
-    if (!shouldInjectSandboxVendor || !isBlackboardMode) {
-      setIsInitialIframePaintReady(true);
-      return;
-    }
-
-    if (!isSandboxVendorReady) {
-      clearInitialPaintFrames();
-      setIsInitialIframePaintReady(false);
-    }
-  }, [isBlackboardMode, isSandboxVendorReady, shouldInjectSandboxVendor]);
+    void preloadSandboxImages(completeImageSources);
+  }, [completeImageSources]);
 
   useEffect(() => {
     const prevIncomingHtml = prevIncomingHtmlRef.current;
@@ -276,22 +339,41 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     const containsCompleteImage = COMPLETE_IMAGE_TAG_PATTERN.test(
       normalizedHtmlContent
     );
+    const hasPendingImagePreload =
+      isAppendOnlyStream &&
+      containsCompleteImage &&
+      completeImageSources.some(
+        (source) => !SANDBOX_IMAGE_READY_CACHE.has(source)
+      );
     const shouldDeferRender = isAppendOnlyStream && containsCompleteImage;
 
+    pendingHtmlRef.current = normalizedHtmlContent;
+    clearDeferredRenderTimer();
+
+    if (hasPendingImagePreload) {
+      const requestId = imagePreloadRequestIdRef.current + 1;
+      imagePreloadRequestIdRef.current = requestId;
+
+      void preloadSandboxImages(completeImageSources).then(() => {
+        if (imagePreloadRequestIdRef.current !== requestId) {
+          return;
+        }
+
+        setRenderHtmlContent(pendingHtmlRef.current);
+      });
+      return;
+    }
+
     if (!shouldDeferRender) {
-      clearDeferredRenderTimer();
-      pendingHtmlRef.current = normalizedHtmlContent;
       setRenderHtmlContent(normalizedHtmlContent);
       return;
     }
 
-    pendingHtmlRef.current = normalizedHtmlContent;
-    clearDeferredRenderTimer();
     deferRenderTimerRef.current = window.setTimeout(() => {
       setRenderHtmlContent(pendingHtmlRef.current);
       deferRenderTimerRef.current = null;
     }, POST_IMAGE_STREAM_DEBOUNCE_MS);
-  }, [normalizedHtmlContent]);
+  }, [completeImageSources, normalizedHtmlContent]);
 
   const rootViewportHeightCss = React.useMemo(() => {
     const normalized = renderHtmlContent.trim();
@@ -323,11 +405,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         ? "100%"
         : (rootViewportHeightCss ?? `${height}px`)
       : undefined;
-  const shouldShowHtmlFallbackWhilePreparingSandbox =
-    shouldInjectSandboxVendor &&
-    isBlackboardMode &&
-    (!isSandboxVendorReady || !isInitialIframePaintReady) &&
-    Boolean(renderHtmlContent.trim());
+  const shouldShowHtmlFallbackWhilePreparingSandbox = false;
   useEffect(() => {
     if (mode !== "blackboard") {
       prevHtmlRef.current = normalizedHtmlContent;
@@ -546,9 +624,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
   useEffect(() => {
     const root = rootRef.current;
-    if (!root || !isSandboxVendorReady) return;
-
-    clearInitialPaintFrames();
+    if (!root) return;
 
     root.render(
       <SandboxApp
@@ -567,10 +643,6 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
     initialPaintFrameRef.current = window.requestAnimationFrame(() => {
       updateHeightRef.current?.();
-      initialPaintCommitFrameRef.current = window.requestAnimationFrame(() => {
-        setIsInitialIframePaintReady(true);
-        initialPaintCommitFrameRef.current = null;
-      });
       initialPaintFrameRef.current = null;
     });
   }, [
@@ -581,7 +653,6 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     fullScreenButtonText,
     resetToken,
     mode,
-    isSandboxVendorReady,
   ]);
   const containerClassName = [
     "w-full relative content-render-iframe-sandbox",
@@ -592,10 +663,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     .filter(Boolean)
     .join(" ");
 
-  const shouldShowSandboxLoading =
-    shouldInjectSandboxVendor &&
-    !isSandboxVendorReady &&
-    !shouldShowHtmlFallbackWhilePreparingSandbox;
+  const shouldShowSandboxLoading = false;
 
   return (
     <div
@@ -659,11 +727,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
               height: sandboxViewportHeight ?? "100%",
               minHeight: sandboxViewportHeight,
               margin: "auto",
-              visibility:
-                shouldShowSandboxLoading ||
-                shouldShowHtmlFallbackWhilePreparingSandbox
-                  ? "hidden"
-                  : "visible",
+              visibility: "visible",
             }}
           />
           {shouldShowSandboxLoading ? (

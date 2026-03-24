@@ -195,8 +195,7 @@ const Slide: React.FC<SlideProps> = ({
   const [isInteractionOverlayOpen, setIsInteractionOverlayOpen] =
     useState(false);
   const playerVisible =
-    shouldRenderPlayer &&
-    (playerAlwaysVisible || isPlayerVisible || isAudioLoadingVisible);
+    shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
   const { mountedStepStates, currentMountedStateIndex } = useMemo(() => {
     const nextMountedStepStates: Array<{
       elementList: Element[];

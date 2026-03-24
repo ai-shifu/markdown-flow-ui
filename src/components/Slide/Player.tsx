@@ -182,6 +182,24 @@ const Player: React.FC<PlayerProps> = ({
     return `data:audio/mpeg;base64,${audioData}`;
   }, []);
 
+  const getWaitingSegmentSeekTime = useCallback(() => {
+    const waitingSegmentIndex = waitingSegmentIndexRef.current;
+
+    if (waitingSegmentIndex == null || waitingSegmentIndex <= 0) {
+      return 0;
+    }
+
+    return (
+      currentAudioSegmentsRef.current
+        .slice(0, waitingSegmentIndex)
+        .reduce(
+          (totalDurationMs, segment) =>
+            totalDurationMs + Math.max(Number(segment.duration_ms ?? 0), 0),
+          0
+        ) / 1000
+    );
+  }, []);
+
   const resetAudio = useCallback(() => {
     const audioElement = audioRef.current;
 
@@ -380,7 +398,8 @@ const Player: React.FC<PlayerProps> = ({
       const shouldAutoResume = defaultPlaying && !isPausedByUserRef.current;
       const shouldKeepSegmentSource =
         activeSourceTypeRef.current === "segment" &&
-        Boolean(audioSrcRef.current);
+        Boolean(audioSrcRef.current) &&
+        waitingSegmentIndexRef.current === null;
 
       if (shouldKeepSegmentSource) {
         if (!shouldAutoResume) {
@@ -399,6 +418,11 @@ const Player: React.FC<PlayerProps> = ({
       }
 
       if (hasNewSrc) {
+        const nextSeekTime =
+          waitingSegmentIndexRef.current !== null
+            ? getWaitingSegmentSeekTime()
+            : 0;
+
         audioElement.pause();
         audioElement.removeAttribute("src");
         audioElement.load();
@@ -406,10 +430,10 @@ const Player: React.FC<PlayerProps> = ({
         activeSourceTypeRef.current = "url";
         audioElement.src = currentAudioUrl;
         audioElement.load();
-        pendingSeekTimeRef.current = 0;
+        pendingSeekTimeRef.current = nextSeekTime;
 
         if (audioElement.readyState > 0) {
-          audioElement.currentTime = 0;
+          audioElement.currentTime = nextSeekTime;
           pendingSeekTimeRef.current = null;
         }
       }
@@ -497,6 +521,7 @@ const Player: React.FC<PlayerProps> = ({
     resetAudio,
     startSegmentPlayback,
     tryPlayCurrentAudio,
+    getWaitingSegmentSeekTime,
     updateLoading,
   ]);
 

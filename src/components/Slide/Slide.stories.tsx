@@ -812,6 +812,10 @@ const upsertRunStreamElementList = (
 
 const EMPTY_PPT_PLACEHOLDER_BLOCK_BID = "empty-ppt";
 
+const isEmptyPptPlaceholderElement = (element?: Element) =>
+  (element as { blockBid?: string } | undefined)?.blockBid ===
+  EMPTY_PPT_PLACEHOLDER_BLOCK_BID;
+
 const createEmptyPptPlaceholderElement = (sequenceNumber: number): Element =>
   ({
     sequence_number: sequenceNumber,
@@ -836,19 +840,21 @@ const prependEmptyPptPlaceholderForLeadingText = (elementList: Element[]) => {
     return elementList;
   }
 
-  const hasEmptyPptPlaceholder = elementList.some(
-    (element) =>
-      (element as { blockBid?: string }).blockBid ===
-      EMPTY_PPT_PLACEHOLDER_BLOCK_BID
+  const hasEmptyPptPlaceholder = elementList.some((element) =>
+    isEmptyPptPlaceholderElement(element)
   );
   if (hasEmptyPptPlaceholder) {
     return elementList;
   }
 
-  // Align with listen-mode behavior: prepend placeholder when leading content is text.
-  const firstContentElement = elementList.find(
-    (element) => element.type !== "interaction"
+  const firstContentElementIndex = elementList.findIndex(
+    (element) =>
+      element.type !== "interaction" && !isEmptyPptPlaceholderElement(element)
   );
+  const firstContentElement =
+    firstContentElementIndex >= 0
+      ? elementList[firstContentElementIndex]
+      : null;
   if (!firstContentElement || firstContentElement.type !== "text") {
     return elementList;
   }

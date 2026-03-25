@@ -16,6 +16,7 @@ import {
 
 import { cn } from "../../lib/utils";
 import type { SlideAudioItem } from "./useSlide";
+import { toPlayerCustomActionList } from "./utils/playerCustomActions";
 import "./player.css";
 
 const audioPreloadElementCache = new Map<string, HTMLAudioElement>();
@@ -55,6 +56,7 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   prevDisabled?: boolean;
   nextDisabled?: boolean;
   showControls?: boolean;
+  customActions?: React.ReactNode;
 };
 
 const PauseIcon = () => (
@@ -105,6 +107,7 @@ const Player: React.FC<PlayerProps> = ({
   prevDisabled = false,
   nextDisabled = false,
   showControls = true,
+  customActions,
   ...props
 }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -137,6 +140,18 @@ const Player: React.FC<PlayerProps> = ({
           prevSegment.segment_index - nextSegment.segment_index
       ),
     [currentAudio?.audioSegments]
+  );
+  const customActionList = useMemo(
+    () => toPlayerCustomActionList(customActions),
+    [customActions]
+  );
+  const mobileVisibleActionCount = customActionList.length + 4;
+  const controlsStyle = useMemo(
+    () =>
+      ({
+        "--slide-player-mobile-control-count": String(mobileVisibleActionCount),
+      }) as React.CSSProperties,
+    [mobileVisibleActionCount]
   );
   const currentAudioKey = `${currentAudioIndex}:${currentAudio?.audioKey ?? "none"}`;
 
@@ -630,7 +645,7 @@ const Player: React.FC<PlayerProps> = ({
       />
 
       {showControls ? (
-        <div className="slide-player__controls">
+        <div className="slide-player__controls" style={controlsStyle}>
           <div className="slide-player__group">
             <button aria-label="More options" className="hidden" type="button">
               <EllipsisVertical
@@ -730,6 +745,11 @@ const Player: React.FC<PlayerProps> = ({
           <div className="slide-player__separator" />
 
           <div className="slide-player__group">
+            {customActionList.map((customAction, customActionIndex) => (
+              <React.Fragment key={`custom-action-${customActionIndex}`}>
+                {customAction}
+              </React.Fragment>
+            ))}
             <button
               aria-label="Notes"
               className={cn(

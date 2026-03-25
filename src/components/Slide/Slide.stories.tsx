@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Sparkles } from "lucide-react";
 
 import historyFixtureText from "../../../../测试历史数据.json?raw";
 import runStreamFixtureText from "../../../../测试数据.json?raw";
@@ -46,6 +47,16 @@ const meta = {
     playerAlwaysVisible: {
       control: "boolean",
       description: "Keep the player controls visible without auto hiding",
+    },
+    playerCustomActions: {
+      control: false,
+      description:
+        "Custom player action nodes rendered before the default notes action",
+      table: {
+        type: {
+          summary: "ReactNode",
+        },
+      },
     },
   },
   args: {
@@ -1169,10 +1180,76 @@ const exampleElementList: Element[] = [
   }),
 ];
 
+const CustomPlayerActionSlidePreview = ({
+  elementList = [],
+  ...props
+}: React.ComponentProps<typeof Slide>) => {
+  const [isCustomActionActive, setIsCustomActionActive] = useState(false);
+
+  const handleCustomActionClick = useCallback(() => {
+    setIsCustomActionActive((previous) => !previous);
+    console.log("custom-player-action-clicked");
+  }, []);
+
+  const customPlayerAction = useMemo(
+    () => (
+      <button
+        aria-label="Custom player action"
+        className={[
+          "slide-player__action",
+          isCustomActionActive ? "slide-player__action--active" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        onClick={handleCustomActionClick}
+        type="button"
+      >
+        <Sparkles className="slide-player__icon" strokeWidth={2.25} />
+      </button>
+    ),
+    [handleCustomActionClick, isCustomActionActive]
+  );
+
+  return (
+    <Slide
+      {...props}
+      elementList={elementList}
+      playerCustomActions={customPlayerAction}
+    />
+  );
+};
+
 export const Default: Story = {
   args: {
     elementList: exampleElementList,
   },
+};
+
+export const CustomPlayerActionButton: Story = {
+  args: {
+    playerAlwaysVisible: true,
+    elementList: [
+      createExampleElement({
+        sequenceNumber: 1,
+        type: "text",
+        content:
+          "This story demonstrates how a custom player action button can be provided from outside the Slide component.",
+      }),
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Renders one external custom action button before the default notes action in the Slide player.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
+      <CustomPlayerActionSlidePreview className="w-full" {...args} />
+    </div>
+  ),
 };
 
 export const FullViewportSlides: Story = {

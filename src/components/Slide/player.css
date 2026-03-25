@@ -24,7 +24,10 @@
   .slide-player__controls {
     display: grid !important;
     width: 100%;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(
+      var(--slide-player-mobile-control-count, 4),
+      minmax(0, 1fr)
+    );
     align-items: center;
     padding: 0 20px;
     border: none !important;
@@ -219,6 +222,11 @@
   --slide-player-group-gap: 40px;
   --slide-player-separator-gap: 40px;
   --slide-player-separator-width: 1px;
+  --slide-player-custom-action-count: 0;
+  --slide-player-custom-action-offset: calc(
+    var(--slide-player-custom-action-count) *
+      (var(--slide-player-action-size) + var(--slide-player-group-gap))
+  );
   --slide-player-notes-arrow-offset: calc(
     (
         var(--slide-player-action-size) + var(--slide-player-group-gap) +
@@ -227,7 +235,7 @@
           var(--slide-player-separator-width) +
           var(--slide-player-separator-gap)
       ) /
-      2
+      2 + var(--slide-player-custom-action-offset)
   );
   --slide-player-bottom-offset: 24px;
   --slide-player-height: 80px;

@@ -20,9 +20,11 @@ import {
   type InteractionDefaultValueOptions,
 } from "../../lib/interaction-defaults";
 import Player from "./Player";
+import type { PlayerProps } from "./Player";
 import type { Element } from "./types";
 import useSlide from "./useSlide";
 import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
+import { getPlayerCustomActionCount } from "./utils/playerCustomActions";
 import "./slide.css";
 export type { Element, ElementAudioSegment } from "./types";
 
@@ -112,6 +114,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   showPlayer?: boolean;
   playerAlwaysVisible?: boolean;
   playerClassName?: string;
+  playerCustomActions?: PlayerProps["customActions"];
   bufferingText?: string;
   interactionTitle?: string;
   interactionTexts?: SlideInteractionTexts;
@@ -127,6 +130,7 @@ const Slide: React.FC<SlideProps> = ({
   showPlayer = true,
   playerAlwaysVisible = false,
   playerClassName,
+  playerCustomActions,
   bufferingText = "Buffering...",
   interactionTitle,
   interactionTexts,
@@ -192,6 +196,17 @@ const Slide: React.FC<SlideProps> = ({
     useState(false);
   const playerVisible =
     shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
+  const playerCustomActionCount = useMemo(
+    () => getPlayerCustomActionCount(playerCustomActions),
+    [playerCustomActions]
+  );
+  const interactionOverlayStyle = useMemo(
+    () =>
+      ({
+        "--slide-player-custom-action-count": String(playerCustomActionCount),
+      }) as React.CSSProperties,
+    [playerCustomActionCount]
+  );
   const { mountedStepStates, currentMountedStateIndex } = useMemo(() => {
     const nextMountedStepStates: Array<{
       elementList: Element[];
@@ -965,6 +980,7 @@ const Slide: React.FC<SlideProps> = ({
           )}
           onClick={stopOverlayPropagation}
           onPointerDown={stopOverlayPropagation}
+          style={interactionOverlayStyle}
         >
           <InteractionOverlayCard
             content={String(activeInteractionElement?.content ?? "")}
@@ -1006,6 +1022,7 @@ const Slide: React.FC<SlideProps> = ({
           onPrev={handlePrev}
           prevDisabled={!canGoPrev}
           showControls={playerVisible}
+          customActions={playerCustomActions}
         />
       ) : null}
     </section>

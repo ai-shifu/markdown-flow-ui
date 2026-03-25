@@ -270,6 +270,16 @@ const Slide: React.FC<SlideProps> = ({
       ].join("|"),
     [currentAudioSequenceStartKey, currentInteractionResetKey, currentStepKey]
   );
+  const currentStepAudioUrl = useMemo(() => {
+    const currentStepAudioIndex = currentAudioSequenceIndexes[0];
+
+    if (typeof currentStepAudioIndex !== "number") {
+      return "";
+    }
+
+    return audioList[currentStepAudioIndex]?.audioUrl?.trim() ?? "";
+  }, [audioList, currentAudioSequenceIndexes]);
+  const hasCurrentStepAudioUrl = Boolean(currentStepAudioUrl);
 
   const clearPlayerHideTimer = useCallback(() => {
     if (playerHideTimerRef.current === null) {
@@ -547,6 +557,15 @@ const Slide: React.FC<SlideProps> = ({
     shouldBlockPlaybackForInteraction,
   ]);
 
+  useEffect(() => {
+    if (!hasCurrentStepAudioUrl) {
+      return;
+    }
+
+    // Treat the arrived audio URL as ready and hide the buffering overlay.
+    setIsAudioLoadingVisible(false);
+  }, [hasCurrentStepAudioUrl]);
+
   const interactionDefaults = useMemo(() => {
     if (!activeInteractionElement) {
       return {};
@@ -815,7 +834,7 @@ const Slide: React.FC<SlideProps> = ({
         const nextStepIndex = currentIndex + 1;
         const nextStepElement = slideElementList[nextStepIndex];
 
-        if (nextStepElement?.type === "interaction") {
+        if (hasCurrentStepAudioUrl && nextStepElement?.type === "interaction") {
           pendingInteractionOverlayStepIndexRef.current = nextStepIndex;
         }
 
@@ -828,6 +847,7 @@ const Slide: React.FC<SlideProps> = ({
       currentAudioSequenceIndexes,
       currentAudioSequencePosition,
       goNext,
+      hasCurrentStepAudioUrl,
       slideElementList,
     ]
   );

@@ -978,6 +978,154 @@ const triggeredRunStreamEvents = buildTriggeredRunStreamEvents(
   parseRunStreamFixture(runStreamFixtureText)
 );
 
+const hasAudioDataSegments = (audioSegments: Element["audio_segments"]) =>
+  Boolean(
+    audioSegments?.some(
+      (segment) =>
+        typeof segment?.audio_data === "string" && segment.audio_data.length > 0
+    )
+  );
+
+const getAudioDataSrc = (audioData: string) => {
+  const normalizedAudioData = audioData.trim();
+
+  if (!normalizedAudioData) {
+    return "";
+  }
+
+  if (/^data:audio\//i.test(normalizedAudioData)) {
+    return normalizedAudioData;
+  }
+
+  return `data:audio/mpeg;base64,${normalizedAudioData}`;
+};
+
+const runStreamFixtureElementList = parseRunStreamFixture(
+  runStreamFixtureText
+).reduce<RunStreamFixtureElement[]>((elementList, event) => {
+  if (event?.type !== "element" || !event.content) {
+    return elementList;
+  }
+
+  const normalizedElement = normalizeRunStreamElement(
+    event.content,
+    Number(event.run_event_seq ?? 0)
+  );
+  if (!normalizedElement) {
+    return elementList;
+  }
+
+  return upsertRunStreamElementList(elementList, normalizedElement);
+}, []);
+
+const audioSegmentsPlaybackElementList: Element[] = runStreamFixtureElementList
+  .filter(
+    (element) =>
+      element.type === "text" &&
+      Boolean(element.is_speakable) &&
+      hasAudioDataSegments(element.audio_segments)
+  )
+  .map((element, index) => ({
+    ...element,
+    sequence_number: index + 1,
+    is_marker: true,
+    is_renderable: true,
+    is_new: index === 0,
+    audio_url: "",
+  }));
+
+type AudioSegmentsPlaybackItem = {
+  id: string;
+  elementSequenceNumber: number;
+  segmentIndex: number;
+  durationMs: number;
+  isFinal: boolean;
+  contentPreview: string;
+  audioSrc: string;
+};
+
+const AudioSegmentsPlaybackPreview = ({
+  elementList = [],
+}: {
+  elementList?: Element[];
+}) => {
+  const playbackItemList = useMemo(
+    () =>
+      elementList.flatMap((element, elementIndex) => {
+        const sequenceNumber = Number(
+          element.sequence_number ?? elementIndex + 1
+        );
+        const contentPreview =
+          typeof element.content === "string"
+            ? element.content.slice(0, 120)
+            : "";
+
+        return (element.audio_segments ?? [])
+          .filter(
+            (segment) =>
+              typeof segment?.audio_data === "string" &&
+              segment.audio_data.length > 0
+          )
+          .map<AudioSegmentsPlaybackItem>((segment, segmentOrder) => ({
+            id: [
+              String(element.type),
+              String(sequenceNumber),
+              String(segment.segment_index ?? segmentOrder),
+            ].join(":"),
+            elementSequenceNumber: sequenceNumber,
+            segmentIndex: Number(segment.segment_index ?? segmentOrder),
+            durationMs: Number(segment.duration_ms ?? 0),
+            isFinal: Boolean(segment.is_final),
+            contentPreview,
+            audioSrc: getAudioDataSrc(segment.audio_data),
+          }))
+          .filter((item) => Boolean(item.audioSrc));
+      }),
+    [elementList]
+  );
+
+  console.log("audioSegmentsPlaybackItems", playbackItemList);
+
+  if (playbackItemList.length === 0) {
+    return (
+      <div className="flex min-h-[100dvh] w-full items-center justify-center px-6 text-sm text-muted-foreground">
+        No playable audio_data segments found in elementList.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-6">
+      {playbackItemList.map((item) => (
+        <section
+          key={item.id}
+          className="rounded-lg border border-border bg-card p-4"
+        >
+          <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span>{`Element #${item.elementSequenceNumber}`}</span>
+            <span>{`Segment #${item.segmentIndex}`}</span>
+            <span>{`Duration ${item.durationMs}ms`}</span>
+            <span>{item.isFinal ? "Final segment" : "Streaming segment"}</span>
+          </div>
+          <audio
+            className="w-full"
+            controls
+            preload="metadata"
+            src={item.audioSrc}
+          >
+            Your browser does not support the audio element.
+          </audio>
+          {item.contentPreview ? (
+            <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
+              {item.contentPreview}
+            </p>
+          ) : null}
+        </section>
+      ))}
+    </div>
+  );
+};
+
 const HistoryInteractionTriggeredRunStreamSlidePreview = ({
   elementList = [],
   onSend,
@@ -2225,6 +2373,23 @@ export const HistoryInteractionTriggeredSSE: Story = {
         {...args}
       />
     </div>
+  ),
+};
+
+export const AudioSegmentsPlayback: Story = {
+  args: {
+    elementList: audioSegmentsPlaybackElementList,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Maps playable audio segments from `elementList` and renders one native `<audio>` player per `audio_segments[].audio_data` item.",
+      },
+    },
+  },
+  render: ({ elementList = [] }) => (
+    <AudioSegmentsPlaybackPreview elementList={elementList} />
   ),
 };
 

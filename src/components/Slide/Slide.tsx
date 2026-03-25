@@ -151,6 +151,7 @@ const Slide: React.FC<SlideProps> = ({
   const interactionAutoCloseTimerRef = useRef<number | null>(null);
   const prevRenderElementKeysRef = useRef<string[]>([]);
   const shouldScrollToBottomRef = useRef(false);
+  const pendingInteractionOverlayStepIndexRef = useRef<number | null>(null);
   const {
     currentElementList,
     stepElementLists,
@@ -463,22 +464,31 @@ const Slide: React.FC<SlideProps> = ({
   });
 
   useEffect(() => {
+    const shouldOpenInteractionOverlayAfterAudio =
+      pendingInteractionOverlayStepIndexRef.current === currentIndex &&
+      Boolean(currentInteractionElement);
+
     resetAudioSequence();
 
     if (currentElementList.length === 0 && !currentInteractionElement) {
       return;
     }
 
-    if (shouldBlockPlaybackForInteraction) {
+    if (
+      shouldBlockPlaybackForInteraction ||
+      shouldOpenInteractionOverlayAfterAudio
+    ) {
       // Show the interaction gate before playing any follow-up audio.
       setActiveInteractionElement(currentInteractionElement);
       setIsInteractionOverlayOpen(true);
+      pendingInteractionOverlayStepIndexRef.current = null;
       return;
     }
 
     if (currentInteractionElement) {
       setActiveInteractionElement(currentInteractionElement);
       setIsInteractionOverlayOpen(false);
+      pendingInteractionOverlayStepIndexRef.current = null;
     }
 
     if (startCurrentAudioSequence()) {
@@ -745,6 +755,7 @@ const Slide: React.FC<SlideProps> = ({
 
   const handlePrev = useCallback(() => {
     shouldScrollToBottomRef.current = true;
+    pendingInteractionOverlayStepIndexRef.current = null;
     setHasPlayerInteracted(true);
     setIsAudioLoadingVisible(false);
     showPlayerControls(true);
@@ -754,6 +765,7 @@ const Slide: React.FC<SlideProps> = ({
 
   const handleNext = useCallback(() => {
     shouldScrollToBottomRef.current = true;
+    pendingInteractionOverlayStepIndexRef.current = null;
     setHasPlayerInteracted(true);
     setIsAudioLoadingVisible(false);
     showPlayerControls(true);
@@ -800,14 +812,23 @@ const Slide: React.FC<SlideProps> = ({
       setIsAudioLoadingVisible(false);
 
       if (canGoNext) {
+        const nextStepIndex = currentIndex + 1;
+        const nextStepElement = slideElementList[nextStepIndex];
+
+        if (nextStepElement?.type === "interaction") {
+          pendingInteractionOverlayStepIndexRef.current = nextStepIndex;
+        }
+
         goNext();
       }
     },
     [
       canGoNext,
+      currentIndex,
       currentAudioSequenceIndexes,
       currentAudioSequencePosition,
       goNext,
+      slideElementList,
     ]
   );
 

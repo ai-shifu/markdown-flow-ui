@@ -794,6 +794,11 @@ const Slide: React.FC<SlideProps> = ({
 
   const handlePlayerLoadingChange = useCallback(
     (loading: boolean) => {
+      if (hasCurrentStepAudioUrl) {
+        setIsAudioLoadingVisible(false);
+        return;
+      }
+
       if (!currentStepHasSpeakableElement || hasCompletedCurrentStepAudio) {
         setIsAudioLoadingVisible(false);
         return;
@@ -801,7 +806,11 @@ const Slide: React.FC<SlideProps> = ({
 
       setIsAudioLoadingVisible(loading);
     },
-    [currentStepHasSpeakableElement, hasCompletedCurrentStepAudio]
+    [
+      currentStepHasSpeakableElement,
+      hasCompletedCurrentStepAudio,
+      hasCurrentStepAudioUrl,
+    ]
   );
 
   const handlePlayerEnded = useCallback(

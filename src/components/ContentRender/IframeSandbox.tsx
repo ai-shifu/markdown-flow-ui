@@ -136,23 +136,33 @@ const extractViewportHeightFromTailwindClass = (className: string) => {
   const normalizedTokens = normalizeTailwindHeightTokens(className);
   if (
     normalizedTokens.includes("h-screen") ||
-    normalizedTokens.includes("h-dvh")
+    normalizedTokens.includes("h-dvh") ||
+    normalizedTokens.includes("min-h-screen") ||
+    normalizedTokens.includes("min-h-dvh")
   ) {
     return "100dvh";
   }
-  if (normalizedTokens.includes("h-svh")) {
+  if (
+    normalizedTokens.includes("h-svh") ||
+    normalizedTokens.includes("min-h-svh")
+  ) {
     return "100svh";
   }
-  if (normalizedTokens.includes("h-lvh")) {
+  if (
+    normalizedTokens.includes("h-lvh") ||
+    normalizedTokens.includes("min-h-lvh")
+  ) {
     return "100lvh";
   }
   const arbitraryToken = normalizedTokens.find((token) =>
-    /^h-\[[0-9.]+(vh|dvh|svh|lvh)\]$/i.test(token)
+    /^(h|min-h)-\[[0-9.]+(vh|dvh|svh|lvh)\]$/i.test(token)
   );
   if (!arbitraryToken) return null;
-  const matched = arbitraryToken.match(/^h-\[([0-9.]+)(vh|dvh|svh|lvh)\]$/i);
+  const matched = arbitraryToken.match(
+    /^(h|min-h)-\[([0-9.]+)(vh|dvh|svh|lvh)\]$/i
+  );
   if (!matched) return null;
-  return `${matched[1]}${matched[2].toLowerCase()}`;
+  return `${matched[2]}${matched[3].toLowerCase()}`;
 };
 
 const SANDBOX_IGNORED_TAG_NAMES = new Set([
@@ -308,7 +318,10 @@ const replaceRootScreenHeightToken = (className: string) =>
     .filter(Boolean)
     .map((token) => {
       const segments = token.split(":");
-      if (segments[segments.length - 1] !== "h-screen") {
+      if (
+        segments[segments.length - 1] !== "h-screen" &&
+        segments[segments.length - 1] !== "min-h-screen"
+      ) {
         return token;
       }
       segments[segments.length - 1] = "h-full";

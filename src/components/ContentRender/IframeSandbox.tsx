@@ -565,6 +565,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
+      :root { color-scheme: light; }
       html, body, #root { width: 100%; height: 100%; }
       html, body { margin: 0; padding: 0; overflow: auto; }
       *, *::before, *::after { box-sizing: border-box; }
@@ -575,6 +576,11 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   </body>
 </html>`);
     doc.close();
+
+    // Force iframe theme to stay in light mode regardless of host OS preference.
+    doc.documentElement.setAttribute("data-theme", "light");
+    doc.documentElement.style.colorScheme = "light";
+    doc.body?.style.setProperty("color-scheme", "light");
 
     docRef.current = doc;
 

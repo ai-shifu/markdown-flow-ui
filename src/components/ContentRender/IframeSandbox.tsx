@@ -25,6 +25,11 @@ const loadBlackboardVendor = () => {
   return blackboardVendorPromise;
 };
 
+if (typeof window !== "undefined") {
+  // Warm sandbox vendor in browser so the first iframe render can start sooner.
+  void loadBlackboardVendor();
+}
+
 const loadBlackboardVendorOnDemandWithMetrics = () => {
   const loadStart = performance.now();
   const startedAt = new Date().toISOString();

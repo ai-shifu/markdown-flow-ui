@@ -34,6 +34,7 @@ import {
   mermaidBlockIsComplete,
 } from "./utils/mermaid-parse";
 import { normalizeInlineHtml } from "./utils/normalize-inline-html";
+import IframeSandbox from "./IframeSandbox";
 import {
   splitContentSegments,
   type RenderSegment,
@@ -44,7 +45,6 @@ import {
   type InteractionDefaultValueOptions,
 } from "../../lib/interaction-defaults";
 
-const LazyIframeSandbox = React.lazy(() => import("./IframeSandbox"));
 const SANDBOX_TAG_HINT_PATTERN =
   /<(script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)\b/i;
 // Define component Props type
@@ -513,34 +513,26 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   if (hasSandbox) {
     return (
       <div className="content-render markdown-body">
-        <React.Suspense
-          fallback={
-            <div className="py-6 text-center text-gray-500">
-              Loading sandbox...
-            </div>
-          }
-        >
-          {mergedRenderSegments.map((segment, idx) =>
-            segment.type === "sandbox" ? (
-              <LazyIframeSandbox
-                key={`sandbox-${idx}`}
-                hideFullScreen
-                type="sandbox"
-                content={segment.value}
-                className="content-render-iframe"
-                loadingText={sandboxLoadingText}
-                styleLoadingText={sandboxStyleLoadingText}
-                scriptLoadingText={sandboxScriptLoadingText}
-                fullScreenButtonText={sandboxFullscreenButtonText}
-                mode={sandboxMode}
-              />
-            ) : (
-              <React.Fragment key={`md-${idx}`}>
-                {renderMarkdownSegments(segment.value, `md-${idx}`)}
-              </React.Fragment>
-            )
-          )}
-        </React.Suspense>
+        {mergedRenderSegments.map((segment, idx) =>
+          segment.type === "sandbox" ? (
+            <IframeSandbox
+              key={`sandbox-${idx}`}
+              hideFullScreen
+              type="sandbox"
+              content={segment.value}
+              className="content-render-iframe"
+              loadingText={sandboxLoadingText}
+              styleLoadingText={sandboxStyleLoadingText}
+              scriptLoadingText={sandboxScriptLoadingText}
+              fullScreenButtonText={sandboxFullscreenButtonText}
+              mode={sandboxMode}
+            />
+          ) : (
+            <React.Fragment key={`md-${idx}`}>
+              {renderMarkdownSegments(segment.value, `md-${idx}`)}
+            </React.Fragment>
+          )
+        )}
       </div>
     );
   }

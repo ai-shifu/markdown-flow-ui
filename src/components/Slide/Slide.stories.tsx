@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 
 import historyFixtureText from "../../../../测试历史数据.json?raw";
@@ -789,18 +789,23 @@ const normalizeRunStreamElement = (
     return null;
   }
 
+  const normalizedAudioUrl = record.audio_url ?? "";
+  const normalizedAudioSegments = Array.isArray(record.audio_segments)
+    ? record.audio_segments
+    : [];
+
   return {
     sequence_number: Number(record.sequence_number ?? 0),
     type: type as Element["type"],
     content: record.content ?? "",
-    is_marker: Boolean(record.is_marker),
-    is_renderable: Boolean(record.is_renderable),
-    is_new: Boolean(record.is_new),
-    is_speakable: Boolean(record.is_speakable),
-    audio_url: record.audio_url ?? "",
-    audio_segments: Array.isArray(record.audio_segments)
-      ? record.audio_segments
-      : [],
+    is_marker: record.is_marker ?? true,
+    is_renderable: record.is_renderable ?? true,
+    is_new: record.is_new ?? true,
+    is_speakable:
+      record.is_speakable ??
+      Boolean(normalizedAudioUrl || normalizedAudioSegments.length > 0),
+    audio_url: normalizedAudioUrl,
+    audio_segments: normalizedAudioSegments,
     user_input: record.user_input ?? "",
     readonly: Boolean(record.readonly),
     element_bid: elementBid,
@@ -810,59 +815,233 @@ const normalizeRunStreamElement = (
   };
 };
 
-const upsertRunStreamElementList = (
-  currentList: RunStreamFixtureElement[],
-  nextElement: RunStreamFixtureElement
+type RunStreamStoryItemType = "content" | "interaction";
+
+const resolveRunStreamStoryItemType = (
+  elementType: Element["type"]
+): RunStreamStoryItemType =>
+  elementType === "interaction" ? "interaction" : "content";
+
+const normalizeRunStreamSequenceNumber = (sequenceNumber: unknown) => {
+  const normalizedSequenceNumber = Number(sequenceNumber);
+  return Number.isFinite(normalizedSequenceNumber) &&
+    normalizedSequenceNumber > 0
+    ? normalizedSequenceNumber
+    : null;
+};
+
+const buildRunStreamStreamKey = ({
+  itemType,
+  elementBid,
+  fallbackSequence,
+}: {
+  itemType: RunStreamStoryItemType;
+  elementBid: string;
+  fallbackSequence: number;
+}) =>
+  elementBid
+    ? `${itemType}:${elementBid}`
+    : `${itemType}:fallback-${fallbackSequence}`;
+
+const resolveRunStreamRenderSequence = ({
+  sequenceMap,
+  occupiedSequenceNumbers,
+  itemType,
+  elementBid,
+  incomingSequenceNumber,
+  fallbackSequence,
+}: {
+  sequenceMap: Map<string, number>;
+  occupiedSequenceNumbers: Set<number>;
+  itemType: RunStreamStoryItemType;
+  elementBid: string;
+  incomingSequenceNumber: number | null;
+  fallbackSequence: number;
+}) => {
+  const streamKey = buildRunStreamStreamKey({
+    itemType,
+    elementBid,
+    fallbackSequence,
+  });
+  const existingSequence = sequenceMap.get(streamKey);
+
+  if (typeof existingSequence === "number") {
+    occupiedSequenceNumbers.add(existingSequence);
+    return existingSequence;
+  }
+
+  const hasOccupiedSequenceNumber = (nextSequenceNumber: number) => {
+    if (occupiedSequenceNumbers.has(nextSequenceNumber)) {
+      return true;
+    }
+
+    for (const [
+      mappedStreamKey,
+      mappedSequenceNumber,
+    ] of sequenceMap.entries()) {
+      if (mappedStreamKey === streamKey) {
+        continue;
+      }
+      if (mappedSequenceNumber === nextSequenceNumber) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  let nextSequenceNumber = incomingSequenceNumber ?? fallbackSequence;
+  while (hasOccupiedSequenceNumber(nextSequenceNumber)) {
+    nextSequenceNumber += 1;
+  }
+
+  sequenceMap.set(streamKey, nextSequenceNumber);
+  occupiedSequenceNumbers.add(nextSequenceNumber);
+
+  return nextSequenceNumber;
+};
+
+const reindexRunStreamPagesLikeListenMode = (
+  elementList: RunStreamFixtureElement[]
 ) => {
+  let pageCursor = 0;
+
+  return elementList.map((element) => {
+    if (element.type === "interaction") {
+      return {
+        ...element,
+        page: Math.max(pageCursor - 1, 0),
+      };
+    }
+
+    const nextElement = {
+      ...element,
+      page: pageCursor,
+    };
+    pageCursor += 1;
+    return nextElement;
+  });
+};
+
+const buildRunStreamActiveStreamKeys = (
+  elementList: RunStreamFixtureElement[]
+) =>
+  new Set(
+    elementList.map((element, index) =>
+      buildRunStreamStreamKey({
+        itemType: resolveRunStreamStoryItemType(element.type),
+        elementBid: String(element.element_bid ?? "").trim(),
+        fallbackSequence:
+          normalizeRunStreamSequenceNumber(element.sequence_number) ??
+          index + 1,
+      })
+    )
+  );
+
+const pruneRunStreamSequenceMap = (
+  sequenceMap: Map<string, number>,
+  activeStreamKeys: Set<string>
+) => {
+  for (const streamKey of Array.from(sequenceMap.keys())) {
+    if (activeStreamKeys.has(streamKey)) {
+      continue;
+    }
+    sequenceMap.delete(streamKey);
+  }
+};
+
+const upsertRunStreamElementList = ({
+  currentList,
+  nextElement,
+  sequenceMap,
+}: {
+  currentList: RunStreamFixtureElement[];
+  nextElement: RunStreamFixtureElement;
+  sequenceMap: Map<string, number>;
+}) => {
   const hitIndex = currentList.findIndex(
     (element) => element.element_bid === nextElement.element_bid
   );
   const nextList = [...currentList];
+  const previousElement = hitIndex >= 0 ? nextList[hitIndex] : null;
+  const previousAudioSegments = Array.isArray(previousElement?.audio_segments)
+    ? previousElement.audio_segments
+    : [];
+  const incomingAudioSegments = Array.isArray(nextElement.audio_segments)
+    ? nextElement.audio_segments
+    : [];
+  const mergedAudioSegments = mergeRunStreamAudioSegments(
+    nextElement.element_bid,
+    [...previousAudioSegments, ...incomingAudioSegments]
+  );
+  const occupiedSequenceNumbers = currentList.reduce<Set<number>>(
+    (result, element, index) => {
+      if (index === hitIndex) {
+        return result;
+      }
+
+      const sequenceNumber = normalizeRunStreamSequenceNumber(
+        element.sequence_number
+      );
+      if (sequenceNumber !== null) {
+        result.add(sequenceNumber);
+      }
+      return result;
+    },
+    new Set<number>()
+  );
+  const fallbackSequence = Math.max(
+    currentList.length + (hitIndex >= 0 ? 0 : 1),
+    1
+  );
+  const resolvedSequenceNumber = resolveRunStreamRenderSequence({
+    sequenceMap,
+    occupiedSequenceNumbers,
+    itemType: resolveRunStreamStoryItemType(nextElement.type),
+    elementBid: nextElement.element_bid,
+    incomingSequenceNumber: normalizeRunStreamSequenceNumber(
+      previousElement?.sequence_number ?? nextElement.sequence_number
+    ),
+    fallbackSequence,
+  });
+  const mergedElement: RunStreamFixtureElement = {
+    ...(previousElement ?? nextElement),
+    ...nextElement,
+    sequence_number: resolvedSequenceNumber,
+    audio_url: nextElement.audio_url || previousElement?.audio_url || "",
+    audio_segments:
+      mergedAudioSegments.length > 0
+        ? mergedAudioSegments
+        : previousElement?.audio_segments,
+    user_input: nextElement.user_input || previousElement?.user_input || "",
+    readonly: nextElement.readonly ?? previousElement?.readonly ?? false,
+  };
 
   if (hitIndex >= 0) {
-    const previousElement = nextList[hitIndex];
-    const mergedAudioSegments = mergeRunStreamAudioSegments(
-      nextElement.element_bid,
-      [
-        ...(Array.isArray(previousElement?.audio_segments)
-          ? previousElement.audio_segments
-          : []),
-        ...(Array.isArray(nextElement.audio_segments)
-          ? nextElement.audio_segments
-          : []),
-      ]
-    );
-
-    nextList[hitIndex] = {
-      ...previousElement,
-      ...nextElement,
-      // Keep the first-seen order stable for the same streamed element.
-      sequence_number:
-        previousElement?.sequence_number ?? nextElement.sequence_number,
-      audio_url: nextElement.audio_url || previousElement?.audio_url,
-      audio_segments:
-        mergedAudioSegments.length > 0
-          ? mergedAudioSegments
-          : previousElement?.audio_segments,
-      user_input: nextElement.user_input || previousElement?.user_input || "",
-      readonly: nextElement.readonly ?? previousElement?.readonly ?? false,
-    };
+    nextList[hitIndex] = mergedElement;
   } else {
-    nextList.push(nextElement);
+    nextList.push(mergedElement);
   }
 
   const rebalancedList = rebalanceRunStreamAudioOwnership(
     nextList,
     nextElement.element_bid
   );
-
-  return rebalancedList.sort(
+  const sortedList = rebalancedList.sort(
     (prevElement, nextItem) =>
       Number(prevElement.sequence_number ?? 0) -
         Number(nextItem.sequence_number ?? 0) ||
       Number(prevElement.run_event_seq ?? 0) -
         Number(nextItem.run_event_seq ?? 0)
   );
+  const pageAlignedList = reindexRunStreamPagesLikeListenMode(sortedList);
+
+  pruneRunStreamSequenceMap(
+    sequenceMap,
+    buildRunStreamActiveStreamKeys(pageAlignedList)
+  );
+
+  return pageAlignedList;
 };
 
 const EMPTY_PPT_PLACEHOLDER_BLOCK_BID = "empty-ppt";
@@ -926,12 +1105,42 @@ type RunStreamSlidePreviewProps = React.ComponentProps<typeof Slide> & {
   prependEmptyPptPlaceholder?: boolean;
 };
 
+const buildRunStreamElementListFromEvents = ({
+  events,
+  sequenceMap = new Map<string, number>(),
+}: {
+  events: RunStreamFixtureEvent[];
+  sequenceMap?: Map<string, number>;
+}) =>
+  events.reduce<RunStreamFixtureElement[]>((elementList, event) => {
+    if (event?.type !== "element" || !event.content) {
+      return elementList;
+    }
+
+    const normalizedElement = normalizeRunStreamElement(
+      event.content,
+      Number(event.run_event_seq ?? 0)
+    );
+    if (!normalizedElement) {
+      return elementList;
+    }
+
+    return upsertRunStreamElementList({
+      currentList: elementList,
+      nextElement: normalizedElement,
+      sequenceMap,
+    });
+  }, []);
+
 const RunStreamSlidePreview = ({
   elementList = [],
-  prependEmptyPptPlaceholder = false,
+  prependEmptyPptPlaceholder = true,
   ...props
 }: RunStreamSlidePreviewProps) => {
-  const [streamedElementList, setStreamedElementList] = useState<Element[]>([]);
+  const [streamedElementList, setStreamedElementList] = useState<
+    RunStreamFixtureElement[]
+  >([]);
+  const runStreamSequenceByKeyRef = useRef<Map<string, number>>(new Map());
   const runStreamEvents = useMemo(
     () => parseRunStreamFixture(runStreamFixtureText),
     []
@@ -945,14 +1154,26 @@ const RunStreamSlidePreview = ({
     [prependEmptyPptPlaceholder]
   );
 
+  const displayElementList = useMemo(
+    () =>
+      applyRunStreamElementListTransform(
+        runStreamEvents.length === 0 ? fallbackElementList : streamedElementList
+      ),
+    [
+      applyRunStreamElementListTransform,
+      fallbackElementList,
+      runStreamEvents.length,
+      streamedElementList,
+    ]
+  );
+
   useEffect(() => {
     if (runStreamEvents.length === 0) {
-      setStreamedElementList(
-        applyRunStreamElementListTransform(fallbackElementList)
-      );
+      setStreamedElementList([]);
       return;
     }
 
+    runStreamSequenceByKeyRef.current.clear();
     let currentEventIndex = 0;
     let timerId: number | null = null;
     let isCancelled = false;
@@ -975,12 +1196,11 @@ const RunStreamSlidePreview = ({
 
         if (nextElement) {
           setStreamedElementList((prevElementList) =>
-            applyRunStreamElementListTransform(
-              upsertRunStreamElementList(
-                prevElementList as RunStreamFixtureElement[],
-                nextElement
-              )
-            )
+            upsertRunStreamElementList({
+              currentList: prevElementList,
+              nextElement,
+              sequenceMap: runStreamSequenceByKeyRef.current,
+            })
           );
         }
       }
@@ -1001,15 +1221,11 @@ const RunStreamSlidePreview = ({
         window.clearTimeout(timerId);
       }
     };
-  }, [
-    applyRunStreamElementListTransform,
-    fallbackElementList,
-    runStreamEvents,
-  ]);
+  }, [runStreamEvents]);
 
-  console.log("streamedElementList", streamedElementList);
+  console.log("streamedElementList", displayElementList);
 
-  return <Slide {...props} elementList={streamedElementList} />;
+  return <Slide {...props} elementList={displayElementList} />;
 };
 
 const historyInteractionFixtureElementList = focusHistoryOnLatestInteraction(
@@ -1042,23 +1258,10 @@ const getAudioDataSrc = (audioData: string) => {
   return `data:audio/mpeg;base64,${normalizedAudioData}`;
 };
 
-const runStreamFixtureElementList = parseRunStreamFixture(
-  runStreamFixtureText
-).reduce<RunStreamFixtureElement[]>((elementList, event) => {
-  if (event?.type !== "element" || !event.content) {
-    return elementList;
-  }
-
-  const normalizedElement = normalizeRunStreamElement(
-    event.content,
-    Number(event.run_event_seq ?? 0)
-  );
-  if (!normalizedElement) {
-    return elementList;
-  }
-
-  return upsertRunStreamElementList(elementList, normalizedElement);
-}, []);
+const runStreamFixtureElementList = buildRunStreamElementListFromEvents({
+  events: parseRunStreamFixture(runStreamFixtureText),
+  sequenceMap: new Map<string, number>(),
+});
 
 const audioSegmentsPlaybackElementList: Element[] = runStreamFixtureElementList
   .filter(
@@ -1180,12 +1383,16 @@ const HistoryInteractionTriggeredRunStreamSlidePreview = ({
   const [historyElementList, setHistoryElementList] = useState<Element[]>(
     stableHistoryElementList
   );
-  const [streamedElementList, setStreamedElementList] = useState<Element[]>([]);
+  const [streamedElementList, setStreamedElementList] = useState<
+    RunStreamFixtureElement[]
+  >([]);
+  const runStreamSequenceByKeyRef = useRef<Map<string, number>>(new Map());
   const [streamSessionCount, setStreamSessionCount] = useState(0);
 
   useEffect(() => {
     setHistoryElementList(stableHistoryElementList);
     setStreamedElementList([]);
+    runStreamSequenceByKeyRef.current.clear();
     setStreamSessionCount(0);
   }, [stableHistoryElementList]);
 
@@ -1198,6 +1405,7 @@ const HistoryInteractionTriggeredRunStreamSlidePreview = ({
     let timerId: number | null = null;
     let isCancelled = false;
 
+    runStreamSequenceByKeyRef.current.clear();
     setStreamedElementList([]);
 
     const emitNextEvent = () => {
@@ -1216,10 +1424,11 @@ const HistoryInteractionTriggeredRunStreamSlidePreview = ({
 
         if (nextElement) {
           setStreamedElementList((prevElementList) =>
-            upsertRunStreamElementList(
-              prevElementList as RunStreamFixtureElement[],
-              nextElement
-            )
+            upsertRunStreamElementList({
+              currentList: prevElementList,
+              nextElement,
+              sequenceMap: runStreamSequenceByKeyRef.current,
+            })
           );
         }
       }
@@ -1942,7 +2151,7 @@ export const FullViewportSingleSlide: Story = {
     docs: {
       description: {
         story:
-          "Replays the raw ai-shifu run stream from the repo root fixture so each `data:` payload updates the Slide like a live SSE event without adding the empty-ppt placeholder step.",
+          "Replays the raw ai-shifu run stream from the repo root fixture with listen-mode sequence mapping so each `data:` payload updates the Slide like a live SSE event and auto-prepends empty-ppt for leading text content.",
       },
     },
   },
@@ -1959,7 +2168,7 @@ export const FullViewportSingleSlideWithEmptyPpt: Story = {
     docs: {
       description: {
         story:
-          "Replays the same ai-shifu run stream but prepends the empty-ppt placeholder step when the stream begins with leading text content.",
+          "Replays the same ai-shifu run stream with the same listen-mode mapping while explicitly enabling the empty-ppt leading placeholder switch.",
       },
     },
   },

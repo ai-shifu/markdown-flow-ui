@@ -182,11 +182,16 @@ const Slide: React.FC<SlideProps> = ({
     (slideElementList.length > 0 ||
       audioList.length > 0 ||
       Boolean(currentInteractionElement));
+  const currentAudioSequenceKeys = useMemo(
+    () =>
+      currentAudioSequenceIndexes
+        .map((audioIndex) => audioList[audioIndex]?.audioKey)
+        .filter((audioKey): audioKey is string => Boolean(audioKey)),
+    [audioList, currentAudioSequenceIndexes]
+  );
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
   const [hasPlayerInteracted, setHasPlayerInteracted] = useState(false);
-  const [currentAudioIndex, setCurrentAudioIndex] = useState(-1);
-  const [currentAudioSequencePosition, setCurrentAudioSequencePosition] =
-    useState(-1);
+  const [currentAudioKey, setCurrentAudioKey] = useState<string | null>(null);
   const [isAudioLoadingVisible, setIsAudioLoadingVisible] = useState(false);
   const [hasCompletedCurrentStepAudio, setHasCompletedCurrentStepAudio] =
     useState(false);
@@ -248,9 +253,18 @@ const Slide: React.FC<SlideProps> = ({
     };
   }, [currentIndex, stepElementLists]);
   const currentStepKey = useMemo(() => String(currentIndex), [currentIndex]);
+  const currentAudioIndex = useMemo(() => {
+    if (!currentAudioKey) {
+      return -1;
+    }
+
+    return audioList.findIndex(
+      (audioItem) => (audioItem.audioKey ?? "") === currentAudioKey
+    );
+  }, [audioList, currentAudioKey]);
   const currentAudioSequenceStartKey = useMemo(
-    () => String(currentAudioSequenceIndexes[0] ?? "none"),
-    [currentAudioSequenceIndexes]
+    () => currentAudioSequenceKeys[0] ?? "none",
+    [currentAudioSequenceKeys]
   );
   const currentInteractionResetKey = useMemo(() => {
     if (!currentInteractionElement) {
@@ -262,23 +276,23 @@ const Slide: React.FC<SlideProps> = ({
     )}`;
   }, [currentInteractionElement]);
   const currentPlaybackResetKey = useMemo(
-    () =>
-      [
-        currentStepKey,
-        currentInteractionResetKey,
-        currentAudioSequenceStartKey,
-      ].join("|"),
-    [currentAudioSequenceStartKey, currentInteractionResetKey, currentStepKey]
+    () => [currentStepKey, currentInteractionResetKey].join("|"),
+    [currentInteractionResetKey, currentStepKey]
   );
   const currentStepAudioUrl = useMemo(() => {
-    const currentStepAudioIndex = currentAudioSequenceIndexes[0];
-
-    if (typeof currentStepAudioIndex !== "number") {
+    if (
+      !currentAudioSequenceStartKey ||
+      currentAudioSequenceStartKey === "none"
+    ) {
       return "";
     }
 
-    return audioList[currentStepAudioIndex]?.audioUrl?.trim() ?? "";
-  }, [audioList, currentAudioSequenceIndexes]);
+    const currentStepAudioItem = audioList.find(
+      (audioItem) => audioItem.audioKey === currentAudioSequenceStartKey
+    );
+
+    return currentStepAudioItem?.audioUrl?.trim() ?? "";
+  }, [audioList, currentAudioSequenceStartKey]);
   const hasCurrentStepAudioUrl = Boolean(currentStepAudioUrl);
 
   const clearPlayerHideTimer = useCallback(() => {
@@ -311,8 +325,7 @@ const Slide: React.FC<SlideProps> = ({
   const resetAudioSequence = useCallback(() => {
     clearAutoAdvanceTimer();
     clearInteractionAutoCloseTimer();
-    setCurrentAudioIndex(-1);
-    setCurrentAudioSequencePosition(-1);
+    setCurrentAudioKey(null);
     setIsAudioLoadingVisible(false);
     setHasCompletedCurrentStepAudio(false);
     setActiveInteractionElement(undefined);
@@ -320,17 +333,16 @@ const Slide: React.FC<SlideProps> = ({
   }, [clearAutoAdvanceTimer, clearInteractionAutoCloseTimer]);
 
   const startCurrentAudioSequence = useCallback(() => {
-    const nextAudioIndex = currentAudioSequenceIndexes[0];
+    const nextAudioKey = currentAudioSequenceKeys[0];
 
-    if (typeof nextAudioIndex !== "number") {
+    if (!nextAudioKey) {
       return false;
     }
 
     // Start the first audio segment for the current step immediately.
-    setCurrentAudioSequencePosition(0);
-    setCurrentAudioIndex(nextAudioIndex);
+    setCurrentAudioKey(nextAudioKey);
     return true;
-  }, [currentAudioSequenceIndexes]);
+  }, [currentAudioSequenceKeys]);
 
   const continueAfterInteraction = useCallback(() => {
     clearInteractionAutoCloseTimer();
@@ -547,15 +559,46 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    if (currentAudioSequenceIndexes.length === 0) {
+    if (currentAudioSequenceKeys.length === 0) {
       setIsAudioLoadingVisible(true);
     }
   }, [
-    currentAudioSequenceIndexes.length,
+    currentAudioSequenceKeys.length,
     currentStepHasSpeakableElement,
     hasCompletedCurrentStepAudio,
     shouldBlockPlaybackForInteraction,
   ]);
+
+  useEffect(() => {
+    if (currentAudioKey || currentAudioSequenceKeys.length === 0) {
+      return;
+    }
+
+    if (!currentStepHasSpeakableElement || shouldBlockPlaybackForInteraction) {
+      return;
+    }
+
+    if (hasCompletedCurrentStepAudio) {
+      return;
+    }
+
+    startCurrentAudioSequence();
+  }, [
+    currentAudioKey,
+    currentAudioSequenceKeys,
+    currentStepHasSpeakableElement,
+    hasCompletedCurrentStepAudio,
+    shouldBlockPlaybackForInteraction,
+    startCurrentAudioSequence,
+  ]);
+
+  useEffect(() => {
+    if (!currentAudioKey || currentAudioIndex >= 0) {
+      return;
+    }
+
+    setCurrentAudioKey(null);
+  }, [currentAudioIndex, currentAudioKey]);
 
   useEffect(() => {
     if (!hasCurrentStepAudioUrl) {
@@ -815,27 +858,33 @@ const Slide: React.FC<SlideProps> = ({
 
   const handlePlayerEnded = useCallback(
     (audioIndex: number) => {
-      if (currentAudioSequencePosition < 0) {
+      const endedAudioKey = audioList[audioIndex]?.audioKey;
+
+      if (!endedAudioKey || !currentAudioKey) {
         return;
       }
 
-      if (
-        currentAudioSequenceIndexes[currentAudioSequencePosition] !== audioIndex
-      ) {
+      if (endedAudioKey !== currentAudioKey) {
         return;
       }
 
-      const nextSequencePosition = currentAudioSequencePosition + 1;
-      const nextAudioIndex = currentAudioSequenceIndexes[nextSequencePosition];
-
-      if (typeof nextAudioIndex === "number") {
-        setCurrentAudioSequencePosition(nextSequencePosition);
-        setCurrentAudioIndex(nextAudioIndex);
+      const activeSequencePosition = currentAudioSequenceKeys.findIndex(
+        (audioSequenceKey) => audioSequenceKey === endedAudioKey
+      );
+      if (activeSequencePosition < 0) {
+        setCurrentAudioKey(null);
         return;
       }
 
-      setCurrentAudioIndex(-1);
-      setCurrentAudioSequencePosition(-1);
+      const nextSequencePosition = activeSequencePosition + 1;
+      const nextAudioKey = currentAudioSequenceKeys[nextSequencePosition];
+
+      if (nextAudioKey) {
+        setCurrentAudioKey(nextAudioKey);
+        return;
+      }
+
+      setCurrentAudioKey(null);
       setHasCompletedCurrentStepAudio(true);
       setIsAudioLoadingVisible(false);
 
@@ -851,10 +900,11 @@ const Slide: React.FC<SlideProps> = ({
       }
     },
     [
+      audioList,
       canGoNext,
       currentIndex,
-      currentAudioSequenceIndexes,
-      currentAudioSequencePosition,
+      currentAudioKey,
+      currentAudioSequenceKeys,
       goNext,
       hasCurrentStepAudioUrl,
       slideElementList,

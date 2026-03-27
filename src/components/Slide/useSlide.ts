@@ -65,12 +65,17 @@ const getElementAudioKey = (element: Element, index: number) => {
 const getAudioList = (elementList: Element[]) =>
   elementList.reduce<SlideAudioItem[]>((list, element, elementIndex) => {
     if (hasPlayableAudio(element)) {
+      const normalizedAudioSegments = element.audio_segments ?? [];
+      const hasAudioSegments = normalizedAudioSegments.length > 0;
+
       list.push({
         audioKey: getElementAudioKey(element, elementIndex),
         sequenceNumber: element.sequence_number,
-        audioUrl: element.audio_url,
-        audioSegments: element.audio_segments,
-        isAudioStreaming: isStreamingAudio(element.audio_segments),
+        // Keep one canonical source to avoid duplicated playback resets.
+        // When streaming segments exist, keep playback on the segment source.
+        audioUrl: hasAudioSegments ? "" : element.audio_url,
+        audioSegments: normalizedAudioSegments,
+        isAudioStreaming: isStreamingAudio(normalizedAudioSegments),
       });
     }
 

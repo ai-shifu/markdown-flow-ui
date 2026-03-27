@@ -153,7 +153,16 @@ const Player: React.FC<PlayerProps> = ({
       }) as React.CSSProperties,
     [mobileVisibleActionCount]
   );
-  const currentAudioKey = `${currentAudioIndex}:${currentAudio?.audioKey ?? "none"}`;
+  const currentAudioKey = useMemo(() => {
+    if (!currentAudio) {
+      return "none";
+    }
+
+    return (
+      currentAudio.audioKey ??
+      `${String(currentAudio.sequenceNumber ?? "none")}:${String(currentAudio.audioUrl ?? "")}`
+    );
+  }, [currentAudio]);
 
   useEffect(() => {
     currentAudioRef.current = currentAudio;

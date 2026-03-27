@@ -81,6 +81,10 @@ export interface ContentRenderProps {
   sandboxFullscreenButtonText?: string;
   // Sandbox render mode
   sandboxMode?: "content" | "blackboard";
+  /** Min aspect ratio (width/height) for sandbox in content mode. Default 16/9. */
+  sandboxMinAspectRatio?: number;
+  /** Max aspect ratio (width/height) for sandbox in content mode. Default: no limit (grows to fit content). Set e.g. 4/3 to cap. */
+  sandboxMaxAspectRatio?: number;
   beforeSend?: (param: OnSendContentParams) => boolean;
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
@@ -279,6 +283,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   sandboxScriptLoadingText,
   sandboxFullscreenButtonText,
   sandboxMode = "content",
+  sandboxMinAspectRatio,
+  sandboxMaxAspectRatio,
   onClickCustomButtonAfterContent,
   beforeSend,
   // tooltipMinLength,
@@ -473,6 +479,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               scriptLoadingText={sandboxScriptLoadingText}
               fullScreenButtonText={sandboxFullscreenButtonText}
               mode={sandboxMode}
+              minAspectRatio={sandboxMinAspectRatio}
+              maxAspectRatio={sandboxMaxAspectRatio}
             />
           ) : (
             <React.Fragment key={`md-${idx}`}>

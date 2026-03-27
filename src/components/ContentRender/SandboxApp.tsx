@@ -317,7 +317,10 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   const sandboxWrapperStyle: React.CSSProperties = {
     position: "relative",
     width: "100%",
-    height: isBlackboard ? "100vh" : "100%",
+    // In content mode, use auto height so the wrapper sizes to its content naturally.
+    // This ensures scrollHeight measurements reflect the true content height.
+    // In blackboard mode, use 100vh to fill the viewport.
+    height: isBlackboard ? "100vh" : "auto",
     display: "flex",
     flexDirection: "column",
     // Keep blackboard scroll behavior while centering content in non-blackboard mode

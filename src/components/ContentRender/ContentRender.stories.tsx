@@ -1747,7 +1747,7 @@ export const HTMLDemoIframeOnly: Story = {
             mode={args.sandboxMode}
           />
         </div>
-        HTML(默认daisyui)
+        HTML(默认Bootstrap)
         <div style={{ width: "100%", height: "700px", background: "#e0e0e0" }}>
           <IframeSandbox
             type="sandbox"

@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createRoot, Root } from "react-dom/client";
 import SandboxApp from "./SandboxApp";
 import { splitContentSegments } from "./utils/split-content";
@@ -22,6 +28,10 @@ export interface IframeSandboxProps {
   hideFullScreen?: boolean;
   mode?: "content" | "blackboard";
   type: "sandbox" | "markdown";
+  /** Min aspect ratio for content mode (width/height). Default 16/9. Controls minimum height = width / ratio. */
+  minAspectRatio?: number;
+  /** Max aspect ratio for content mode (width/height). Default: no limit (iframe grows to fit all content, no scrollbar). Set to e.g. 4/3 to cap height and allow scrollbar. */
+  maxAspectRatio?: number;
 }
 
 const normalizeTailwindHeightTokens = (className: string) =>
@@ -72,6 +82,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   fullScreenButtonText,
   hideFullScreen = false,
   mode = "content",
+  minAspectRatio = 16 / 9,
+  maxAspectRatio,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -79,7 +91,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const docRef = useRef<Document | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
   const lastSandboxInteractionTimeRef = useRef(0);
-  const [, setHeight] = useState(480);
+  const [contentHeight, setContentHeight] = useState(480);
+  const [containerWidth, setContainerWidth] = useState(0);
   const [resetToken, setResetToken] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const isBlackboardMode = mode === "blackboard";
@@ -211,7 +224,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
-      html, body, #root { width: 100%; height: 100%; }
+      html, body, #root { width: 100%; }
+      ${mode === "blackboard" ? "html, body, #root { height: 100%; }" : ""}
       html, body { margin: 0; padding: 0; overflow: auto; }
       *, *::before, *::after { box-sizing: border-box; }
     </style>
@@ -309,19 +323,32 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       return classHeight !== null ? Math.ceil(classHeight) : null;
     };
 
+    const measureContentHeight = () => {
+      if (!doc.body) return 0;
+      // Measure from multiple sources to get the true content height:
+      // 1. scrollHeight of body and html (includes overflowed content)
+      const bodyScrollH = doc.body.scrollHeight;
+      const htmlScrollH = doc.documentElement?.scrollHeight || 0;
+      // 2. Direct measurement of the sandbox-container if present
+      const sandboxContainer = doc.body.querySelector(
+        ".sandbox-container"
+      ) as HTMLElement | null;
+      const containerScrollH = sandboxContainer?.scrollHeight || 0;
+      // 3. BoundingClientRect of rootEl for rendered dimensions
+      const rootRect = rootEl?.getBoundingClientRect();
+      const rootH = rootRect ? Math.ceil(rootRect.height) : 0;
+      return Math.max(bodyScrollH, htmlScrollH, containerScrollH, rootH);
+    };
+
     const updateHeight = () => {
       if (!iframeRef.current || !doc.body) return;
-      const bodyRect = doc.body.getBoundingClientRect();
-      const htmlRect = doc.documentElement?.getBoundingClientRect();
-      const bodyHeight = bodyRect.height;
-      const htmlHeight = htmlRect?.height || 0;
-      const contentHeight = Math.max(bodyHeight, htmlHeight);
+      const measuredHeight = measureContentHeight();
       const explicitHeight = resolveExplicitHeight();
       const nextHeight = Math.max(
         200,
-        explicitHeight ?? Math.ceil(contentHeight)
+        explicitHeight ?? Math.ceil(measuredHeight)
       );
-      setHeight(nextHeight);
+      setContentHeight(nextHeight);
     };
     const scheduleHeightUpdate = () => {
       requestAnimationFrame(() => {
@@ -334,8 +361,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     updateHeight();
     scheduleHeightUpdate();
 
-    // Inject Tailwind/DaisyUI/GSAP into iframe for all sandbox modes.
-    // Dynamic import keeps ~3.3 MB of vendor libs out of the main bundle.
+    // Inject Tailwind/Bootstrap/GSAP into iframe for all sandbox modes.
+    // Dynamic import keeps vendor libs out of the main bundle.
     // Tailwind's MutationObserver ensures styles apply even if content renders first.
     loadBlackboardVendor()
       .then((inject) => {
@@ -354,9 +381,22 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       resizeObserver.observe(rootEl);
     }
 
+    // MutationObserver as backup: detect DOM changes that ResizeObserver might miss
+    // (e.g. content injected by scripts, images loading, dynamic rendering)
+    const mutationObserver = new MutationObserver(() => {
+      scheduleHeightUpdate();
+    });
+    mutationObserver.observe(doc.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["style", "class"],
+    });
+
     return () => {
       isDestroyed = true;
       resizeObserver.disconnect();
+      mutationObserver.disconnect();
       if (shouldBridgeSandboxInteraction) {
         doc.removeEventListener("pointerdown", handleSandboxPointerDown, true);
         doc.removeEventListener("mousedown", handleSandboxMouseDown, true);
@@ -380,6 +420,37 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     return () =>
       document.removeEventListener("fullscreenchange", onFullscreenChange);
   }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      setContainerWidth(entries[0]?.contentRect.width ?? el.clientWidth);
+    });
+    ro.observe(el);
+    setContainerWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+
+  const contentModeStyle = useMemo<React.CSSProperties | undefined>(() => {
+    if (isBlackboardMode || containerWidth === 0 || isFullscreen)
+      return undefined;
+    const minH = Math.round(containerWidth / minAspectRatio);
+    // No maxAspectRatio → no upper limit, iframe grows to fit all content (no scrollbar).
+    // With maxAspectRatio → cap height at width / ratio (scrollbar appears if content exceeds).
+    const maxH = maxAspectRatio
+      ? Math.round(containerWidth / maxAspectRatio)
+      : Infinity;
+    const clampedH = Math.max(minH, Math.min(maxH, contentHeight));
+    return { height: clampedH };
+  }, [
+    isBlackboardMode,
+    containerWidth,
+    contentHeight,
+    isFullscreen,
+    minAspectRatio,
+    maxAspectRatio,
+  ]);
 
   const toggleFullscreen = () => {
     const target = containerRef.current || iframeRef.current;
@@ -410,7 +481,15 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         mode={mode}
       />
     );
+    // SandboxApp renders content via DOM manipulation in its useEffect.
+    // Schedule multiple measurements to catch async content (scripts, images, styles).
     requestAnimationFrame(() => updateHeightRef.current?.());
+    const t1 = setTimeout(() => updateHeightRef.current?.(), 100);
+    const t2 = setTimeout(() => updateHeightRef.current?.(), 500);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [
     renderHtmlContent,
     loadingText,
@@ -424,7 +503,9 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     "w-full relative content-render-iframe-sandbox",
     isBlackboardMode
       ? "h-full overflow-auto flex flex-col"
-      : "aspect-[16/9] overflow-hidden flex items-center justify-center",
+      : contentModeStyle
+        ? "overflow-hidden flex items-center justify-center"
+        : "aspect-[16/9] overflow-hidden flex items-center justify-center",
   ]
     .filter(Boolean)
     .join(" ");
@@ -434,6 +515,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       ref={containerRef}
       data-root-vh={hasRootVhHeight ? "true" : "false"}
       className={containerClassName}
+      style={contentModeStyle}
     >
       {!hideFullScreen && (
         <button

@@ -3,6 +3,11 @@ declare module "*.js?raw" {
   export default content;
 }
 
+declare module "*.min.js?raw" {
+  const content: string;
+  export default content;
+}
+
 declare module "*.css?raw" {
   const content: string;
   export default content;

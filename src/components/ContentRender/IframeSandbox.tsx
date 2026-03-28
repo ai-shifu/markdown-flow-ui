@@ -25,11 +25,6 @@ const loadBlackboardVendor = () => {
   return blackboardVendorPromise;
 };
 
-if (typeof window !== "undefined") {
-  // Warm sandbox vendor in browser so the first iframe render can start sooner.
-  void loadBlackboardVendor();
-}
-
 const loadBlackboardVendorOnDemandWithMetrics = () => {
   const loadStart = performance.now();
   const startedAt = new Date().toISOString();
@@ -58,76 +53,21 @@ const loadBlackboardVendorOnDemandWithMetrics = () => {
 const COMPLETE_IMAGE_TAG_PATTERN = /<img\b[^>]*>/i;
 const POST_IMAGE_STREAM_DEBOUNCE_MS = 180;
 const SANDBOX_INTERACTION_THROTTLE_MS = 240;
-const COMPLETE_IMAGE_SOURCE_PATTERN =
-  /<img\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi;
-const SANDBOX_IMAGE_PRELOAD_CACHE = new Map<string, Promise<void>>();
-const SANDBOX_IMAGE_READY_CACHE = new Set<string>();
 
-const extractCompleteImageSources = (html: string) => {
-  const matches = Array.from(html.matchAll(COMPLETE_IMAGE_SOURCE_PATTERN));
-  return Array.from(
-    new Set(
-      matches
-        .map((match) => match[1]?.trim())
-        .filter((src): src is string => Boolean(src))
-    )
-  );
+interface SandboxHeightMeta {
+  viewportHeightCss: string | null;
+  hasFullViewportHeight: boolean;
+}
+
+interface SandboxRenderState {
+  html: string;
+  heightMeta: SandboxHeightMeta;
+}
+
+const EMPTY_SANDBOX_HEIGHT_META: SandboxHeightMeta = {
+  viewportHeightCss: null,
+  hasFullViewportHeight: false,
 };
-
-const preloadSandboxImage = (src: string) => {
-  if (!src) {
-    return Promise.resolve();
-  }
-
-  const cached = SANDBOX_IMAGE_PRELOAD_CACHE.get(src);
-  if (cached) {
-    return cached;
-  }
-
-  const nextPromise = new Promise<void>((resolve) => {
-    if (typeof window === "undefined") {
-      SANDBOX_IMAGE_READY_CACHE.add(src);
-      resolve();
-      return;
-    }
-
-    const image = new window.Image();
-    image.decoding = "sync";
-    image.loading = "eager";
-    image.fetchPriority = "high";
-
-    const settleWhenRenderable = () => {
-      const decodePromise =
-        typeof image.decode === "function"
-          ? image.decode().catch(() => undefined)
-          : Promise.resolve();
-
-      void decodePromise.finally(() => {
-        SANDBOX_IMAGE_READY_CACHE.add(src);
-        resolve();
-      });
-    };
-
-    image.onload = () => {
-      settleWhenRenderable();
-    };
-    image.onerror = () => {
-      SANDBOX_IMAGE_READY_CACHE.add(src);
-      resolve();
-    };
-    image.src = src;
-
-    if (image.complete && image.naturalWidth > 0) {
-      settleWhenRenderable();
-    }
-  });
-
-  SANDBOX_IMAGE_PRELOAD_CACHE.set(src, nextPromise);
-  return nextPromise;
-};
-
-const preloadSandboxImages = (sources: string[] = []) =>
-  Promise.allSettled(sources.map((source) => preloadSandboxImage(source)));
 
 export interface IframeSandboxProps {
   content: string;
@@ -263,7 +203,7 @@ const isFullViewportHeightCss = (value: string | null) =>
   value === "100svh" ||
   value === "100lvh";
 
-const inspectSandboxPrimaryHeight = (root: ParentNode) => {
+const inspectSandboxPrimaryHeight = (root: ParentNode): SandboxHeightMeta => {
   const inspectableElements = getInspectableSandboxElementChain(root);
   let viewportHeightCss: string | null = null;
   let hasFullViewportHeight = false;
@@ -321,10 +261,7 @@ const inspectSandboxPrimaryHeightFromHtml = (html: string) => {
   const normalized = html.trim();
 
   if (!normalized) {
-    return {
-      viewportHeightCss: null,
-      hasFullViewportHeight: false,
-    };
+    return EMPTY_SANDBOX_HEIGHT_META;
   }
 
   if (typeof document === "undefined") {
@@ -429,28 +366,37 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       ),
     [htmlContent, replaceRootScreenHeightWithFull]
   );
-  const completeImageSources = React.useMemo(
-    () => extractCompleteImageSources(normalizedHtmlContent),
-    [normalizedHtmlContent]
-  );
-  const htmlHeightMeta = React.useMemo(
+  const originalHtmlHeightMeta = React.useMemo(
     () => inspectSandboxPrimaryHeightFromHtml(htmlContent),
     [htmlContent]
   );
+  const normalizedHtmlHeightMeta = React.useMemo(
+    () => inspectSandboxPrimaryHeightFromHtml(normalizedHtmlContent),
+    [normalizedHtmlContent]
+  );
   const shouldStretchRootHeight = React.useMemo(
     () =>
-      replaceRootScreenHeightWithFull && htmlHeightMeta.hasFullViewportHeight,
-    [htmlHeightMeta.hasFullViewportHeight, replaceRootScreenHeightWithFull]
+      replaceRootScreenHeightWithFull &&
+      originalHtmlHeightMeta.hasFullViewportHeight,
+    [
+      originalHtmlHeightMeta.hasFullViewportHeight,
+      replaceRootScreenHeightWithFull,
+    ]
   );
-  const [renderHtmlContent, setRenderHtmlContent] = useState(
-    normalizedHtmlContent
-  );
+  const [renderState, setRenderState] = useState<SandboxRenderState>(() => ({
+    html: normalizedHtmlContent,
+    heightMeta: normalizedHtmlHeightMeta,
+  }));
   const prevIncomingHtmlRef = useRef(normalizedHtmlContent);
-  const pendingHtmlRef = useRef(normalizedHtmlContent);
+  const pendingRenderStateRef = useRef<SandboxRenderState>({
+    html: normalizedHtmlContent,
+    heightMeta: normalizedHtmlHeightMeta,
+  });
   const deferRenderTimerRef = useRef<number | null>(null);
   const initialPaintFrameRef = useRef<number | null>(null);
-  const initialPaintCommitFrameRef = useRef<number | null>(null);
-  const imagePreloadRequestIdRef = useRef(0);
+  const renderViewportHeightCssRef = useRef<string | null>(
+    normalizedHtmlHeightMeta.viewportHeightCss
+  );
 
   const emitSandboxInteraction = useCallback((eventType: string) => {
     if (typeof window === "undefined") {
@@ -485,10 +431,6 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       window.cancelAnimationFrame(initialPaintFrameRef.current);
       initialPaintFrameRef.current = null;
     }
-    if (initialPaintCommitFrameRef.current !== null) {
-      window.cancelAnimationFrame(initialPaintCommitFrameRef.current);
-      initialPaintCommitFrameRef.current = null;
-    }
   };
 
   useEffect(
@@ -500,8 +442,9 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   );
 
   useEffect(() => {
-    void preloadSandboxImages(completeImageSources);
-  }, [completeImageSources]);
+    renderViewportHeightCssRef.current =
+      renderState.heightMeta.viewportHeightCss;
+  }, [renderState.heightMeta.viewportHeightCss]);
 
   useEffect(() => {
     const prevIncomingHtml = prevIncomingHtmlRef.current;
@@ -514,47 +457,28 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     const containsCompleteImage = COMPLETE_IMAGE_TAG_PATTERN.test(
       normalizedHtmlContent
     );
-    const hasPendingImagePreload =
-      isAppendOnlyStream &&
-      containsCompleteImage &&
-      completeImageSources.some(
-        (source) => !SANDBOX_IMAGE_READY_CACHE.has(source)
-      );
     const shouldDeferRender = isAppendOnlyStream && containsCompleteImage;
 
-    pendingHtmlRef.current = normalizedHtmlContent;
+    const nextRenderState = {
+      html: normalizedHtmlContent,
+      heightMeta: normalizedHtmlHeightMeta,
+    };
+    pendingRenderStateRef.current = nextRenderState;
     clearDeferredRenderTimer();
 
-    if (hasPendingImagePreload) {
-      const requestId = imagePreloadRequestIdRef.current + 1;
-      imagePreloadRequestIdRef.current = requestId;
-
-      void preloadSandboxImages(completeImageSources).then(() => {
-        if (imagePreloadRequestIdRef.current !== requestId) {
-          return;
-        }
-
-        setRenderHtmlContent(pendingHtmlRef.current);
-      });
-      return;
-    }
-
     if (!shouldDeferRender) {
-      setRenderHtmlContent(normalizedHtmlContent);
+      setRenderState(nextRenderState);
       return;
     }
 
     deferRenderTimerRef.current = window.setTimeout(() => {
-      setRenderHtmlContent(pendingHtmlRef.current);
+      setRenderState(pendingRenderStateRef.current);
       deferRenderTimerRef.current = null;
     }, POST_IMAGE_STREAM_DEBOUNCE_MS);
-  }, [completeImageSources, normalizedHtmlContent]);
+  }, [normalizedHtmlContent, normalizedHtmlHeightMeta]);
 
-  const rootViewportHeightCss = React.useMemo(
-    () =>
-      inspectSandboxPrimaryHeightFromHtml(renderHtmlContent).viewportHeightCss,
-    [renderHtmlContent]
-  );
+  const renderHtmlContent = renderState.html;
+  const rootViewportHeightCss = renderState.heightMeta.viewportHeightCss;
   const hasRootVhHeight = Boolean(rootViewportHeightCss);
   const sandboxViewportHeight =
     isBlackboardMode && type === "sandbox"
@@ -672,13 +596,27 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       const parentViewportHeight =
         iframeRef.current.ownerDocument?.documentElement?.clientHeight ||
         window.innerHeight;
-      const { viewportHeightCss } = inspectSandboxPrimaryHeight(doc.body);
-      const parsed = viewportHeightCss
-        ? parseExplicitHeight(viewportHeightCss, parentViewportHeight)
+      // Reuse parsed height metadata from the current html snapshot first to
+      // avoid re-inspecting the same DOM chain on every height tick.
+      const precomputedViewportHeightCss = renderViewportHeightCssRef.current;
+      const parsed = precomputedViewportHeightCss
+        ? parseExplicitHeight(
+            precomputedViewportHeightCss,
+            parentViewportHeight
+          )
         : null;
 
       if (parsed !== null) {
         return Math.ceil(parsed);
+      }
+
+      const { viewportHeightCss } = inspectSandboxPrimaryHeight(doc.body);
+      const runtimeParsed = viewportHeightCss
+        ? parseExplicitHeight(viewportHeightCss, parentViewportHeight)
+        : null;
+
+      if (runtimeParsed !== null) {
+        return Math.ceil(runtimeParsed);
       }
 
       const wrapper = doc.body.querySelector(

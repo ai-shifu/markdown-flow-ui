@@ -47,24 +47,6 @@ const collectReusableImages = (root: ParentNode) => {
   return imageMap;
 };
 
-const applyImageLoadingHints = (root: ParentNode) => {
-  root.querySelectorAll("img").forEach((node) => {
-    const image = node as HTMLImageElement;
-
-    if (!image.getAttribute("loading")) {
-      image.setAttribute("loading", "eager");
-    }
-
-    if (!image.getAttribute("decoding")) {
-      image.setAttribute("decoding", "async");
-    }
-
-    if (!image.getAttribute("fetchpriority")) {
-      image.setAttribute("fetchpriority", "high");
-    }
-  });
-};
-
 const syncImageAttributes = (
   sourceImage: HTMLImageElement,
   targetImage: HTMLImageElement
@@ -83,39 +65,6 @@ const syncImageAttributes = (
   sourceAttributes.forEach((attribute) => {
     targetImage.setAttribute(attribute.name, attribute.value);
   });
-};
-
-const waitForImagesReady = (root: ParentNode) => {
-  const images = Array.from(root.querySelectorAll("img")) as HTMLImageElement[];
-
-  if (images.length === 0) {
-    return Promise.resolve();
-  }
-
-  return Promise.allSettled(
-    images.map((image) => {
-      const waitForDecode = () => {
-        if (typeof image.decode !== "function") {
-          return Promise.resolve();
-        }
-
-        return image.decode().catch(() => undefined);
-      };
-
-      if (image.complete && image.naturalWidth > 0) {
-        return waitForDecode();
-      }
-
-      return new Promise<void>((resolve) => {
-        const settle = () => {
-          void waitForDecode().finally(() => resolve());
-        };
-
-        image.addEventListener("load", settle, { once: true });
-        image.addEventListener("error", () => resolve(), { once: true });
-      });
-    })
-  ).then(() => undefined);
 };
 
 const reuseRenderedImages = (
@@ -268,7 +217,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       }
       node.remove();
     });
-    applyImageLoadingHints(wrapper);
     reuseRenderedImages(wrapper, reusableImages);
 
     const hasStyles = resourceQueue.some(
@@ -296,34 +244,8 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       hasRenderedContentRef.current = true;
     }
 
-    const shouldKeepPreviousFrameVisible =
-      hasRenderedBefore &&
-      container.childNodes.length > 0 &&
-      wrapper.querySelector("img") !== null;
-    const previousFrameOverlay = shouldKeepPreviousFrameVisible
-      ? (container.cloneNode(true) as HTMLDivElement)
-      : null;
-
-    if (previousFrameOverlay) {
-      previousFrameOverlay.setAttribute("aria-hidden", "true");
-      previousFrameOverlay.style.position = "absolute";
-      previousFrameOverlay.style.inset = "0";
-      previousFrameOverlay.style.zIndex = "2";
-      previousFrameOverlay.style.pointerEvents = "none";
-      previousFrameOverlay.style.background = "transparent";
-    }
-
     const contentNodes = Array.from(wrapper.childNodes);
     container.replaceChildren(...contentNodes);
-
-    if (previousFrameOverlay) {
-      container.appendChild(previousFrameOverlay);
-      void waitForImagesReady(container).finally(() => {
-        requestAnimationFrame(() => {
-          previousFrameOverlay.remove();
-        });
-      });
-    }
 
     resourceQueue.forEach((node) => {
       if (node.tagName.toLowerCase() === "style") {

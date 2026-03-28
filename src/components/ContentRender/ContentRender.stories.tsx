@@ -28,6 +28,70 @@ type Story = StoryObj<typeof meta>;
 // ==============================================================================
 
 const COMPREHENSIVE_MARKDOWN_SYNTAX = `# Complete Markdown Syntax Test
+<div class="w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-[4vmin] flex flex-col items-center justify-start">
+  <!-- 顶部标题区 -->
+  <div class="w-full max-w-6xl text-center mb-[6vmin]">
+    <h1 class="text-[6vmin] md:text-[5vmin] font-bold text-gray-900 mb-[2vmin]">三大考勤流程，一次搞定</h1>
+    <p class="text-[3vmin] md:text-[2.5vmin] text-gray-700">本节开场总览 · 明确学习目标</p>
+  </div>
+  <!-- 目标说明区 -->
+  <div class="w-full max-w-4xl bg-white rounded-[2vmin] shadow-lg p-[4vmin] mb-[6vmin] border-l-[1vmin] border-blue-500">
+    <h2 class="text-[4vmin] font-bold text-gray-800 mb-[2vmin]">🎯 本节目标</h2>
+    <p class="text-[2.5vmin] leading-[3.5vmin] text-gray-700">
+      学会在 <strong class="text-blue-600">UNKNOWN</strong> 系统内，熟练完成**请假、公出、加班**等核心考勤流程的发起与跟进，确保每一次申请都符合规范，做到“<strong>上级同意、当月务必发起流程、材料齐全</strong>”。
+    </p>
+  </div>
+  <!-- 三流程概览区 -->
+  <div class="w-full max-w-6xl mb-[6vmin]">
+    <h2 class="text-[4vmin] font-bold text-gray-800 text-center mb-[4vmin]">📋 三大核心流程概览</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-[3vmin]">
+      <!-- 请假流程 -->
+      <div class="bg-white rounded-[2vmin] shadow-md p-[3vmin] flex flex-col items-center text-center border-t-4 border-green-500">
+        <div class="text-[4vmin] mb-[2vmin]">🏖️</div>
+        <h3 class="text-[3vmin] font-bold text-gray-800 mb-[1.5vmin]">请假流程</h3>
+        <p class="text-[2.2vmin] text-gray-600 flex-grow">因个人事由或病假需要离开岗位时发起的申请。</p>
+        <div class="mt-[2vmin] text-[1.8vmin] text-gray-500 bg-gray-100 rounded-[1vmin] px-[2vmin] py-[1vmin]">需提前报备</div>
+      </div>
+      <!-- 公出流程 -->
+      <div class="bg-white rounded-[2vmin] shadow-md p-[3vmin] flex flex-col items-center text-center border-t-4 border-amber-500">
+        <div class="text-[4vmin] mb-[2vmin]">✈️</div>
+        <h3 class="text-[3vmin] font-bold text-gray-800 mb-[1.5vmin]">公出流程</h3>
+        <p class="text-[2.2vmin] text-gray-600 flex-grow">因公务需要外出（如拜访客户、参加会议）时发起的申请。</p>
+        <div class="mt-[2vmin] text-[1.8vmin] text-gray-500 bg-gray-100 rounded-[1vmin] px-[2vmin] py-[1vmin]">关联差旅</div>
+      </div>
+      <!-- 加班流程 -->
+      <div class="bg-white rounded-[2vmin] shadow-md p-[3vmin] flex flex-col items-center text-center border-t-4 border-purple-500">
+        <div class="text-[4vmin] mb-[2vmin]">💻</div>
+        <h3 class="text-[3vmin] font-bold text-gray-800 mb-[1.5vmin]">加班流程</h3>
+        <p class="text-[2.2vmin] text-gray-600 flex-grow">在标准工作时间外提供劳动，需申请确认与核算补贴。</p>
+        <div class="mt-[2vmin] text-[1.8vmin] text-gray-500 bg-gray-100 rounded-[1vmin] px-[2vmin] py-[1vmin]">需明确时长</div>
+      </div>
+    </div>
+  </div>
+  <!-- 核心原则区 -->
+  <div class="w-full max-w-4xl bg-gradient-to-r from-blue-600 to-indigo-700 rounded-[2vmin] shadow-xl p-[4vmin] text-white">
+    <h2 class="text-[4vmin] font-bold mb-[3vmin] text-center">✅ 成功发起流程的三大核心原则</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-[3vmin]">
+      <div class="bg-white/20 rounded-[1.5vmin] p-[2.5vmin] backdrop-blur-sm flex flex-col items-center text-center">
+        <div class="text-[3vmin] mb-[1.5vmin]">👨‍💼</div>
+        <h3 class="text-[2.5vmin] font-bold mb-[1vmin]">上级同意</h3>
+        <p class="text-[2vmin]">申请前务必与直接上级沟通并获得口头或书面同意。</p>
+      </div>
+      <div class="bg-white/20 rounded-[1.5vmin] p-[2.5vmin] backdrop-blur-sm flex flex-col items-center text-center">
+        <div class="text-[3vmin] mb-[1.5vmin]">📅</div>
+        <h3 class="text-[2.5vmin] font-bold mb-[1vmin]">当月务必发起</h3>
+        <p class="text-[2vmin]">流程需在考勤发生的当月内发起，跨月将无法处理。</p>
+      </div>
+      <div class="bg-white/20 rounded-[1.5vmin] p-[2.5vmin] backdrop-blur-sm flex flex-col items-center text-center">
+        <div class="text-[3vmin] mb-[1.5vmin]">📎</div>
+        <h3 class="text-[2.5vmin] font-bold mb-[1vmin]">材料齐全</h3>
+        <p class="text-[2vmin]">根据流程类型，提前准备好证明文件（如病假条、会议通知）。</p>
+      </div>
+    </div>
+    <p class="text-center text-[2.2vmin] mt-[4vmin] text-blue-100">牢记这三点，你在 UNKNOWN 的考勤之路将畅通无阻！</p>
+  </div>
+</div>
+
 ## Heading Levels
 ### H3 Heading
 #### H4 Heading

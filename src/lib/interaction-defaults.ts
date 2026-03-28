@@ -36,7 +36,60 @@ interface StructuredInteractionPayload {
 
 const interactionParser = createInteractionParser();
 const INTERACTION_TAG_PATTERN = /<custom-variable\b/i;
+const INTERACTION_SHORTCODE_PATTERN = /\?\[%\{\{([^}]+)\}\}([\s\S]*?)\]/;
 const JSON_LIKE_VALUE_PATTERN = /^[\[{]/;
+
+const parseInteractionShortcode = (
+  content?: string | null
+): InteractionParseResult | null => {
+  if (!content) {
+    return null;
+  }
+
+  const matched = content.match(INTERACTION_SHORTCODE_PATTERN);
+  const variableName = matched?.[1]?.trim();
+  const interactionBody = matched?.[2]?.trim();
+
+  if (!interactionBody) {
+    return null;
+  }
+
+  const isMultiSelect = interactionBody.includes("||");
+  const separator = isMultiSelect ? "||" : "|";
+  const rawOptions = interactionBody
+    .split(separator)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (!rawOptions.length) {
+    return null;
+  }
+
+  const buttonTexts: string[] = [];
+  const buttonValues: string[] = [];
+  let placeholder: string | undefined;
+
+  rawOptions.forEach((option) => {
+    if (option.startsWith("...")) {
+      const normalizedPlaceholder = option.replace(/^\.\.\./, "").trim();
+      if (normalizedPlaceholder) {
+        placeholder = normalizedPlaceholder;
+      }
+      return;
+    }
+
+    buttonTexts.push(option);
+    buttonValues.push(option);
+  });
+
+  return {
+    variableName,
+    buttonTexts: buttonTexts.length ? buttonTexts : undefined,
+    buttonValues: buttonValues.length ? buttonValues : undefined,
+    placeholder,
+    isMultiSelect,
+  };
+};
 
 const parseInteractionBlock = (
   content?: string | null
@@ -51,8 +104,9 @@ const parseInteractionBlock = (
     ) as InteractionParseResult;
   } catch (error) {
     console.warn("Failed to parse interaction block", error);
-    return null;
   }
+
+  return parseInteractionShortcode(content);
 };
 
 const normalizeButtonValue = (
@@ -139,7 +193,11 @@ const parseStructuredInteractionDefaults = (rawValue?: string | null) => {
 };
 
 const hasPotentialInteractionBlock = (content?: string | null) =>
-  Boolean(content && INTERACTION_TAG_PATTERN.test(content));
+  Boolean(
+    content &&
+      (INTERACTION_TAG_PATTERN.test(content) ||
+        INTERACTION_SHORTCODE_PATTERN.test(content))
+  );
 
 const resolveCustomInteractionDefaults = (
   content?: string | null,

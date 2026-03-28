@@ -578,8 +578,8 @@ const hasRunStreamAudioPayload = (
 ) =>
   Boolean(
     (element?.audio_url ?? "").trim() ||
-    (Array.isArray(element?.audio_segments) &&
-      element.audio_segments.length > 0)
+      (Array.isArray(element?.audio_segments) &&
+        element.audio_segments.length > 0)
   );
 
 const isRunStreamSpeakableTextElement = (
@@ -726,9 +726,9 @@ const resolveSubmittedUserInput = (content: OnSendContentParams) =>
 const isSameStoryElement = (currentElement: Element, targetElement?: Element) =>
   Boolean(
     targetElement &&
-    currentElement.type === targetElement.type &&
-    currentElement.sequence_number === targetElement.sequence_number &&
-    currentElement.content === targetElement.content
+      currentElement.type === targetElement.type &&
+      currentElement.sequence_number === targetElement.sequence_number &&
+      currentElement.content === targetElement.content
   );
 
 const applyInteractionSubmission = (
@@ -2296,13 +2296,14 @@ export const HistorySlides: Story = {
         sequence_number: 250,
         type: "interaction",
         content:
-          "?[%{{flow_quiz_1}} 月底流程可跨月补完 | 月底流程必须完结 | 只要口头请假就可不走系统]",
+          "?[%{{firework_aspects}} 起源与早期发展 || 文化意义与节日应用 || 现代技术与安全改进 || ...其他，请填写]",
         is_marker: true,
         is_renderable: false,
         is_new: true,
         blockBid: "b6fa05974cbf44a683018a16c21ab7bd",
         page: 7,
-        user_input: "",
+        user_input:
+          "起源与早期发展,文化意义与节日应用,现代技术与安全改进,11111",
         readonly: false,
       },
     ],

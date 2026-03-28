@@ -40,7 +40,6 @@ import {
   type RenderSegment,
 } from "./utils/split-content";
 import {
-  getInteractionDefaultSelectedValues,
   getInteractionDefaultValues,
   type InteractionDefaultValueOptions,
 } from "../../lib/interaction-defaults";
@@ -310,23 +309,23 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     [content, interactionDefaultValueOptions, userInput]
   );
 
-  const interactionDefaultSelectedValues = useMemo(
-    () =>
-      getInteractionDefaultSelectedValues(
-        content,
-        userInput,
-        interactionDefaultValueOptions
-      ),
-    [content, interactionDefaultValueOptions, userInput]
-  );
-
   const resolvedDefaultButtonText =
     defaultButtonText?.trim() || interactionDefaults.buttonText;
   const resolvedDefaultInputText =
     defaultInputText?.trim() || interactionDefaults.inputText;
+  const fallbackSelectedValues = useMemo(
+    () =>
+      userInput
+        ? userInput
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean)
+        : undefined,
+    [userInput]
+  );
   const resolvedDefaultSelectedValues = defaultSelectedValues?.length
     ? defaultSelectedValues
-    : interactionDefaultSelectedValues;
+    : interactionDefaults.selectedValues || fallbackSelectedValues;
 
   // Use custom Hook to handle typewriter effect
   const components: CustomComponents = {

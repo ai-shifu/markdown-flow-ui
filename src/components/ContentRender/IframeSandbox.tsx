@@ -1,8 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot, Root } from "react-dom/client";
-import { Loader2 } from "lucide-react";
 import SandboxApp from "./SandboxApp";
-import { splitContentSegments } from "./utils/split-content";
 import ContentRender from "./ContentRender";
 import {
   SANDBOX_INTERACTION_MESSAGE_SOURCE,
@@ -326,7 +324,6 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   content,
   type,
   className,
-  loadingText,
   styleLoadingText,
   scriptLoadingText,
   fullScreenButtonText,
@@ -337,27 +334,19 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const rootRef = useRef<Root | null>(null);
-  const docRef = useRef<Document | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
   const [height, setHeight] = useState(480);
   const lastSandboxInteractionTimeRef = useRef(0);
   const [resetToken, setResetToken] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [, setIsSandboxVendorReady] = useState(true);
   const shouldInjectSandboxVendor = type === "sandbox";
 
   const isBlackboardMode = mode === "blackboard";
   const prevHtmlRef = useRef<string>("");
-  const htmlContent = React.useMemo(() => {
-    const segments = splitContentSegments(content);
-    // console.log('segments=====', segments);
-    const sandboxSegments = segments.filter((seg) => seg.type === "sandbox");
-    const sandboxContent =
-      mode === "blackboard"
-        ? sandboxSegments[sandboxSegments.length - 1]?.value || ""
-        : sandboxSegments.map((seg) => seg.value).join("\n");
-    return sandboxContent || "";
-  }, [content, mode]);
+  const htmlContent = React.useMemo(
+    () => (type === "sandbox" ? content : ""),
+    [content, type]
+  );
   const normalizedHtmlContent = React.useMemo(
     () =>
       replaceRootScreenHeightWithFullClass(
@@ -486,7 +475,6 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         ? "100%"
         : (rootViewportHeightCss ?? `${height}px`)
       : undefined;
-  const shouldShowHtmlFallbackWhilePreparingSandbox = false;
   useEffect(() => {
     if (mode !== "blackboard") {
       prevHtmlRef.current = normalizedHtmlContent;
@@ -530,8 +518,6 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     doc.documentElement.setAttribute("data-theme", "light");
     doc.documentElement.style.colorScheme = "light";
     doc.body?.style.setProperty("color-scheme", "light");
-
-    docRef.current = doc;
 
     const shouldBridgeSandboxInteraction =
       isBlackboardMode && type === "sandbox";
@@ -670,9 +656,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     updateHeight();
     scheduleHeightUpdate();
 
-    if (!shouldInjectSandboxVendor) {
-      setIsSandboxVendorReady(true);
-    } else {
+    if (shouldInjectSandboxVendor) {
       // Inject Tailwind/DaisyUI/GSAP before rendering sandbox content to avoid FOUC.
       loadBlackboardVendorOnDemandWithMetrics()
         .then((inject) => {
@@ -680,13 +664,11 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
           inject(doc);
           requestAnimationFrame(() => {
             if (isDestroyed) return;
-            setIsSandboxVendorReady(true);
             scheduleHeightUpdate();
           });
         })
         .catch(() => {
           if (isDestroyed) return;
-          setIsSandboxVendorReady(true);
           scheduleHeightUpdate();
         });
     }
@@ -709,7 +691,6 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       setTimeout(() => {
         root.unmount();
         rootRef.current = null;
-        docRef.current = null;
         updateHeightRef.current = () => {};
       }, 0);
     };
@@ -743,11 +724,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     root.render(
       <SandboxApp
         html={renderHtmlContent}
-        loadingText={loadingText}
         styleLoadingText={styleLoadingText}
         scriptLoadingText={scriptLoadingText}
-        fullScreenButtonText={fullScreenButtonText}
-        hideFullScreen={hideFullScreen}
         resetToken={resetToken}
         hasRootVhHeight={hasRootVhHeight}
         mode={mode}
@@ -761,10 +739,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     });
   }, [
     renderHtmlContent,
-    loadingText,
     styleLoadingText,
     scriptLoadingText,
-    fullScreenButtonText,
     resetToken,
     mode,
   ]);
@@ -776,8 +752,6 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   ]
     .filter(Boolean)
     .join(" ");
-
-  const shouldShowSandboxLoading = false;
 
   return (
     <div
@@ -813,46 +787,21 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
           <ContentRender content={content} />
         </div>
       ) : (
-        <>
-          {shouldShowHtmlFallbackWhilePreparingSandbox ? (
-            <div
-              aria-hidden
-              className="absolute inset-0 z-10 overflow-hidden"
-              style={{
-                height: sandboxViewportHeight ?? "100%",
-                minHeight: sandboxViewportHeight,
-              }}
-            >
-              <div
-                className="h-full w-full"
-                dangerouslySetInnerHTML={{ __html: renderHtmlContent }}
-              />
-            </div>
-          ) : null}
-          <iframe
-            ref={iframeRef}
-            sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-            allow="fullscreen"
-            allowFullScreen
-            className={[className, "w-full h-full mx-auto my-auto block"]
-              .filter(Boolean)
-              .join(" ")}
-            style={{
-              height: sandboxViewportHeight ?? "100%",
-              minHeight: sandboxViewportHeight,
-              margin: "auto",
-              visibility: "visible",
-            }}
-          />
-          {shouldShowSandboxLoading ? (
-            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-              <Loader2
-                aria-label={loadingText || "Preparing sandbox styles"}
-                className="text-primary h-7 w-7 animate-spin"
-              />
-            </div>
-          ) : null}
-        </>
+        <iframe
+          ref={iframeRef}
+          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          allow="fullscreen"
+          allowFullScreen
+          className={[className, "w-full h-full mx-auto my-auto block"]
+            .filter(Boolean)
+            .join(" ")}
+          style={{
+            height: sandboxViewportHeight ?? "100%",
+            minHeight: sandboxViewportHeight,
+            margin: "auto",
+            visibility: "visible",
+          }}
+        />
       )}
     </div>
   );

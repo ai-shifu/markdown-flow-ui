@@ -3,11 +3,8 @@ import { Loader2 } from "lucide-react";
 
 export interface SandboxAppProps {
   html: string;
-  loadingText?: string;
   styleLoadingText?: string;
   scriptLoadingText?: string;
-  fullScreenButtonText?: string;
-  hideFullScreen?: boolean;
   resetToken?: number;
   mode?: "content" | "blackboard";
   hasRootVhHeight?: boolean;
@@ -101,9 +98,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   hasRootVhHeight = false,
   stretchRootHeight = false,
 }) => {
-  const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [, setIsWaitingFirstDiv] = useState(true);
   const [isGeneratingStyles, setIsGeneratingStyles] = useState(false);
   const [isGeneratingScripts, setIsGeneratingScripts] = useState(false);
   const appendedStylesRef = useRef<HTMLStyleElement[]>([]);
@@ -185,8 +180,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     appendedScriptsRef.current.forEach((node) => node.remove());
     appendedScriptsRef.current = [];
 
-    const hasRenderedBefore = hasRenderedContentRef.current;
-    setIsWaitingFirstDiv(!hasRenderedBefore);
+    // const hasRenderedBefore = hasRenderedContentRef.current;
     setIsGeneratingStyles(false);
     setIsGeneratingScripts(false);
     const wrapper = doc.createElement("div");
@@ -239,7 +233,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     }
 
     const hasFirstElement = !!wrapper.firstElementChild;
-    setIsWaitingFirstDiv(!hasFirstElement && !hasRenderedBefore);
     if (hasFirstElement) {
       hasRenderedContentRef.current = true;
     }
@@ -347,7 +340,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
 
   return (
     <div
-      ref={wrapperRef}
       data-root-vh={hasRootVhHeight ? "true" : "false"}
       className="sandbox-wrapper"
       style={sandboxWrapperStyle}

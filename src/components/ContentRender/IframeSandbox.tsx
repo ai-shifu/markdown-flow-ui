@@ -23,31 +23,6 @@ const loadBlackboardVendor = () => {
   return blackboardVendorPromise;
 };
 
-const loadBlackboardVendorOnDemandWithMetrics = () => {
-  const loadStart = performance.now();
-  const startedAt = new Date().toISOString();
-  console.log("[IframeSandbox][SandboxLoad] start", { startedAt });
-
-  return loadBlackboardVendor()
-    .then((inject) => {
-      console.log("[IframeSandbox][SandboxLoad] done", {
-        startedAt,
-        endedAt: new Date().toISOString(),
-        durationMs: Number((performance.now() - loadStart).toFixed(2)),
-      });
-      return inject;
-    })
-    .catch((error) => {
-      console.error("[IframeSandbox][SandboxLoad] failed", {
-        startedAt,
-        endedAt: new Date().toISOString(),
-        durationMs: Number((performance.now() - loadStart).toFixed(2)),
-        error,
-      });
-      throw error;
-    });
-};
-
 const COMPLETE_IMAGE_TAG_PATTERN = /<img\b[^>]*>/i;
 const POST_IMAGE_STREAM_DEBOUNCE_MS = 180;
 const SANDBOX_INTERACTION_THROTTLE_MS = 240;
@@ -553,7 +528,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
     if (shouldInjectSandboxVendor) {
       // Inject Tailwind/DaisyUI/GSAP before rendering sandbox content to avoid FOUC.
-      loadBlackboardVendorOnDemandWithMetrics()
+      loadBlackboardVendor()
         .then((inject) => {
           if (isDestroyed) return;
           inject(doc);

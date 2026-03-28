@@ -4,15 +4,6 @@ import ContentRender from "./components/ContentRender";
 import MarkdownFlowInput from "./components/ContentRender/MarkdownFlowInput";
 import IframeSandbox from "./components/ContentRender/IframeSandbox";
 import {
-  Player,
-  Slide as SlideComponent,
-  applyDiffElement,
-  applyUnifiedDiff,
-  parseUnifiedDiff,
-  splitDiffContent,
-  useSlide,
-} from "./components/Slide";
-import {
   getInteractionDefaultSelectedValues,
   getInteractionDefaultValues,
 } from "./lib/interaction-defaults";
@@ -27,13 +18,6 @@ import type {
 } from "./components/types";
 import type { IframeSandboxProps } from "./components/ContentRender/IframeSandbox";
 import type { SandboxAppProps } from "./components/ContentRender/SandboxApp";
-import type {
-  SlideProps,
-  SlideInteractionTexts,
-  Element,
-  PlayerProps,
-  UseSlideResult,
-} from "./components/Slide";
 export default ContentRender;
 
 export {
@@ -41,16 +25,9 @@ export {
   ContentRender,
   MarkdownFlowInput,
   IframeSandbox,
-  SlideComponent as Slide,
-  Player,
-  useSlide,
   getInteractionDefaultValues,
   getInteractionDefaultSelectedValues,
   splitContentSegments,
-  splitDiffContent,
-  parseUnifiedDiff,
-  applyUnifiedDiff,
-  applyDiffElement,
 };
 
 export type {
@@ -61,11 +38,6 @@ export type {
   MarkdownFlowInputProps,
   IframeSandboxProps,
   SandboxAppProps,
-  SlideProps,
-  SlideInteractionTexts,
-  Element,
-  PlayerProps,
-  UseSlideResult,
   RenderSegment,
 };
 export type {

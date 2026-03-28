@@ -168,10 +168,13 @@
       ],
       "renderer": [
         "dist/renderer.d.ts"
+      ],
+      "slide": [
+        "dist/slide.d.ts"
       ]
     }
   },
-  "version": "0.1.100-beta.44",
+  "version": "0.1.100-beta.45",
   "type": "module",
   "exports": {
     ".": {
@@ -193,6 +196,11 @@
       "types": "./dist/editor.d.ts",
       "import": "./dist/editor.es.js",
       "require": "./dist/editor.cjs.js"
+    },
+    "./slide": {
+      "types": "./dist/slide.d.ts",
+      "import": "./dist/slide.es.js",
+      "require": "./dist/slide.cjs.js"
     },
     "./dist/markdown-flow-ui.css": {
       "default": "./dist/assets/markdown-flow-ui.css"

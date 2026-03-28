@@ -459,24 +459,17 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   const hasCompleted = useRef(false);
 
   useEffect(() => {
-    // Reset completion state on each content update so streaming patches can emit completion again.
-    hasCompleted.current = false;
-  }, [content]);
-
-  useEffect(() => {
-    if (hasSandbox) {
-      if (!hasCompleted.current) {
-        hasCompleted.current = true;
-        onTypeFinished?.();
-      }
-      return;
-    }
-
+    if (hasSandbox) return;
     if (isComplete && !hasCompleted.current) {
       hasCompleted.current = true; // Mark as completed
       onTypeFinished?.(); // Call the passed callback
     }
   }, [hasSandbox, isComplete, onTypeFinished]);
+
+  useEffect(() => {
+    if (hasSandbox) return;
+    hasCompleted.current = false; // Reset completion status when content changes
+  }, [hasSandbox, content]);
 
   const renderMarkdownSegments = (raw: string, keyPrefix: string) => {
     const normalized = normalizeInlineHtml(raw);

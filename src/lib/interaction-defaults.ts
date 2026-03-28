@@ -195,8 +195,8 @@ const parseStructuredInteractionDefaults = (rawValue?: string | null) => {
 const hasPotentialInteractionBlock = (content?: string | null) =>
   Boolean(
     content &&
-      (INTERACTION_TAG_PATTERN.test(content) ||
-        INTERACTION_SHORTCODE_PATTERN.test(content))
+    (INTERACTION_TAG_PATTERN.test(content) ||
+      INTERACTION_SHORTCODE_PATTERN.test(content))
   );
 
 const resolveCustomInteractionDefaults = (

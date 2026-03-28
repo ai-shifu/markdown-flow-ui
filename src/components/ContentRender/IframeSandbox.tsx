@@ -52,21 +52,6 @@ const COMPLETE_IMAGE_TAG_PATTERN = /<img\b[^>]*>/i;
 const POST_IMAGE_STREAM_DEBOUNCE_MS = 180;
 const SANDBOX_INTERACTION_THROTTLE_MS = 240;
 
-interface SandboxHeightMeta {
-  viewportHeightCss: string | null;
-  hasFullViewportHeight: boolean;
-}
-
-interface SandboxRenderState {
-  html: string;
-  heightMeta: SandboxHeightMeta;
-}
-
-const EMPTY_SANDBOX_HEIGHT_META: SandboxHeightMeta = {
-  viewportHeightCss: null,
-  hasFullViewportHeight: false,
-};
-
 export interface IframeSandboxProps {
   content: string;
   className?: string;
@@ -128,101 +113,11 @@ const extractViewportHeightFromTailwindClass = (className: string) => {
   return `${matched[2]}${matched[3].toLowerCase()}`;
 };
 
-const SANDBOX_IGNORED_TAG_NAMES = new Set([
-  "base",
-  "link",
-  "meta",
-  "script",
-  "style",
-  "template",
-  "title",
-]);
-
-const isSandboxRenderableElement = (element: Element) =>
-  !SANDBOX_IGNORED_TAG_NAMES.has(element.tagName.toLowerCase());
-
-const getFirstRenderableElementChild = (root: ParentNode) =>
-  Array.from(root.childNodes).find(
-    (node): node is HTMLElement =>
-      node.nodeType === Node.ELEMENT_NODE &&
-      isSandboxRenderableElement(node as HTMLElement)
-  ) || null;
-
-const getInspectableSandboxElementChain = (root: ParentNode) => {
-  const chain: HTMLElement[] = [];
-  let current = getFirstRenderableElementChild(root);
-
-  while (current) {
-    chain.push(current);
-
-    const childElements = Array.from(current.children).filter(
-      (element): element is HTMLElement => isSandboxRenderableElement(element)
-    );
-
-    if (childElements.length !== 1) {
-      break;
-    }
-
-    current = childElements[0];
-  }
-
-  return chain;
-};
-
-const extractViewportHeightFromElement = (element: HTMLElement) => {
-  const heightAttrValue = element.getAttribute("height");
-  const attrViewportHeight = heightAttrValue
-    ? parseViewportHeightCss(heightAttrValue)
-    : null;
-
-  if (attrViewportHeight) {
-    return attrViewportHeight;
-  }
-
-  const styleHeightValue =
-    element.getAttribute("style")?.match(/\bheight\s*:\s*([^;]+)/i)?.[1] ||
-    null;
-  const styleViewportHeight = styleHeightValue
-    ? parseViewportHeightCss(styleHeightValue)
-    : null;
-
-  if (styleViewportHeight) {
-    return styleViewportHeight;
-  }
-
-  return extractViewportHeightFromTailwindClass(
-    element.getAttribute("class") || ""
-  );
-};
-
 const isFullViewportHeightCss = (value: string | null) =>
   value === "100vh" ||
   value === "100dvh" ||
   value === "100svh" ||
   value === "100lvh";
-
-const inspectSandboxPrimaryHeight = (root: ParentNode): SandboxHeightMeta => {
-  const inspectableElements = getInspectableSandboxElementChain(root);
-  let viewportHeightCss: string | null = null;
-  let hasFullViewportHeight = false;
-
-  inspectableElements.forEach((element) => {
-    const elementViewportHeight = extractViewportHeightFromElement(element);
-
-    if (!viewportHeightCss && elementViewportHeight) {
-      viewportHeightCss = elementViewportHeight;
-    }
-
-    if (isFullViewportHeightCss(elementViewportHeight)) {
-      hasFullViewportHeight = true;
-    }
-  });
-
-  return {
-    viewportHeightCss,
-    hasFullViewportHeight,
-  };
-};
 
 const inspectRootHeightFromHtmlString = (html: string) => {
   const normalized = html.trim();
@@ -253,23 +148,6 @@ const inspectRootHeightFromHtmlString = (html: string) => {
     viewportHeightCss,
     hasFullViewportHeight: isFullViewportHeightCss(viewportHeightCss),
   };
-};
-
-const inspectSandboxPrimaryHeightFromHtml = (html: string) => {
-  const normalized = html.trim();
-
-  if (!normalized) {
-    return EMPTY_SANDBOX_HEIGHT_META;
-  }
-
-  if (typeof document === "undefined") {
-    return inspectRootHeightFromHtmlString(normalized);
-  }
-
-  const template = document.createElement("template");
-  template.innerHTML = normalized;
-
-  return inspectSandboxPrimaryHeight(template.content);
 };
 
 const replaceRootScreenHeightToken = (className: string) =>
@@ -355,37 +233,27 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       ),
     [htmlContent, replaceRootScreenHeightWithFull]
   );
-  const originalHtmlHeightMeta = React.useMemo(
-    () => inspectSandboxPrimaryHeightFromHtml(htmlContent),
+  const originalRootHeightMeta = React.useMemo(
+    () => inspectRootHeightFromHtmlString(htmlContent),
     [htmlContent]
-  );
-  const normalizedHtmlHeightMeta = React.useMemo(
-    () => inspectSandboxPrimaryHeightFromHtml(normalizedHtmlContent),
-    [normalizedHtmlContent]
   );
   const shouldStretchRootHeight = React.useMemo(
     () =>
       replaceRootScreenHeightWithFull &&
-      originalHtmlHeightMeta.hasFullViewportHeight,
+      originalRootHeightMeta.hasFullViewportHeight,
     [
-      originalHtmlHeightMeta.hasFullViewportHeight,
+      originalRootHeightMeta.hasFullViewportHeight,
       replaceRootScreenHeightWithFull,
     ]
   );
-  const [renderState, setRenderState] = useState<SandboxRenderState>(() => ({
-    html: normalizedHtmlContent,
-    heightMeta: normalizedHtmlHeightMeta,
-  }));
+  const [renderHtmlContent, setRenderHtmlContent] = useState(
+    normalizedHtmlContent
+  );
   const prevIncomingHtmlRef = useRef(normalizedHtmlContent);
-  const pendingRenderStateRef = useRef<SandboxRenderState>({
-    html: normalizedHtmlContent,
-    heightMeta: normalizedHtmlHeightMeta,
-  });
+  const pendingHtmlRef = useRef(normalizedHtmlContent);
   const deferRenderTimerRef = useRef<number | null>(null);
   const initialPaintFrameRef = useRef<number | null>(null);
-  const renderViewportHeightCssRef = useRef<string | null>(
-    normalizedHtmlHeightMeta.viewportHeightCss
-  );
+  const renderViewportHeightCssRef = useRef<string | null>(null);
 
   const emitSandboxInteraction = useCallback((eventType: string) => {
     if (typeof window === "undefined") {
@@ -431,11 +299,6 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   );
 
   useEffect(() => {
-    renderViewportHeightCssRef.current =
-      renderState.heightMeta.viewportHeightCss;
-  }, [renderState.heightMeta.viewportHeightCss]);
-
-  useEffect(() => {
     const prevIncomingHtml = prevIncomingHtmlRef.current;
     prevIncomingHtmlRef.current = normalizedHtmlContent;
 
@@ -448,26 +311,49 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     );
     const shouldDeferRender = isAppendOnlyStream && containsCompleteImage;
 
-    const nextRenderState = {
-      html: normalizedHtmlContent,
-      heightMeta: normalizedHtmlHeightMeta,
-    };
-    pendingRenderStateRef.current = nextRenderState;
-    clearDeferredRenderTimer();
-
     if (!shouldDeferRender) {
-      setRenderState(nextRenderState);
+      clearDeferredRenderTimer();
+      pendingHtmlRef.current = normalizedHtmlContent;
+      setRenderHtmlContent(normalizedHtmlContent);
       return;
     }
 
+    pendingHtmlRef.current = normalizedHtmlContent;
+    clearDeferredRenderTimer();
     deferRenderTimerRef.current = window.setTimeout(() => {
-      setRenderState(pendingRenderStateRef.current);
+      setRenderHtmlContent(pendingHtmlRef.current);
       deferRenderTimerRef.current = null;
     }, POST_IMAGE_STREAM_DEBOUNCE_MS);
-  }, [normalizedHtmlContent, normalizedHtmlHeightMeta]);
+  }, [normalizedHtmlContent]);
 
-  const renderHtmlContent = renderState.html;
-  const rootViewportHeightCss = renderState.heightMeta.viewportHeightCss;
+  const rootViewportHeightCss = React.useMemo(() => {
+    const normalized = renderHtmlContent.trim();
+    if (!normalized) return null;
+    const rootMatch = normalized.match(/^<([a-zA-Z][\w:-]*)(\s[^>]*?)?>/);
+    if (!rootMatch) return null;
+    const attrs = rootMatch[2] || "";
+    const heightAttrMatch = attrs.match(/\bheight\s*=\s*["']([^"']+)["']/i);
+    if (heightAttrMatch) {
+      const explicitHeightCss = parseViewportHeightCss(heightAttrMatch[1]);
+      if (explicitHeightCss) return explicitHeightCss;
+    }
+    const styleAttrMatch = attrs.match(/\bstyle\s*=\s*["']([^"']+)["']/i)?.[1];
+    const styleHeightMatch = styleAttrMatch?.match(
+      /\bheight\s*:\s*([^;]+)/i
+    )?.[1];
+    if (styleHeightMatch) {
+      const styleHeightCss = parseViewportHeightCss(styleHeightMatch);
+      if (styleHeightCss) return styleHeightCss;
+    }
+    const classAttrMatch = attrs.match(/\bclass\s*=\s*["']([^"']+)["']/i)?.[1];
+    if (!classAttrMatch) return null;
+    return extractViewportHeightFromTailwindClass(classAttrMatch);
+  }, [renderHtmlContent]);
+
+  useEffect(() => {
+    renderViewportHeightCssRef.current = rootViewportHeightCss;
+  }, [rootViewportHeightCss]);
+
   const hasRootVhHeight = Boolean(rootViewportHeightCss);
   const sandboxViewportHeight =
     isBlackboardMode && type === "sandbox"
@@ -596,23 +482,14 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         return Math.ceil(parsed);
       }
 
-      const { viewportHeightCss } = inspectSandboxPrimaryHeight(doc.body);
-      const runtimeParsed = viewportHeightCss
-        ? parseExplicitHeight(viewportHeightCss, parentViewportHeight)
-        : null;
-
-      if (runtimeParsed !== null) {
-        return Math.ceil(runtimeParsed);
-      }
-
       const wrapper = doc.body.querySelector(
         ".sandbox-wrapper"
       ) as HTMLElement | null;
-      const target = wrapper?.querySelector(
-        ".sandbox-container > *"
-      ) as HTMLElement | null;
-
-      if (!target) return null;
+      const container = wrapper?.firstElementChild as HTMLElement | null;
+      if (!container) return null;
+      const elements = Array.from(container.children) as HTMLElement[];
+      if (elements.length !== 1) return null;
+      const target = elements[0];
 
       const heightValue = target.style.height || target.getAttribute("height");
       const explicitPixelHeight = heightValue

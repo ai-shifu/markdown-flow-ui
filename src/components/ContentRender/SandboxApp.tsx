@@ -77,11 +77,8 @@ const reuseRenderedImages = (
     const preservedImage = bucket?.shift();
     if (!preservedImage) return;
 
-    // Clone the already-rendered image instead of moving the live node out of
-    // the visible tree before the next DOM commit.
-    const clonedImage = preservedImage.cloneNode(true) as HTMLImageElement;
-    syncImageAttributes(nextImage, clonedImage);
-    nextImage.replaceWith(clonedImage);
+    syncImageAttributes(nextImage, preservedImage);
+    nextImage.replaceWith(preservedImage);
 
     if (bucket && bucket.length === 0) {
       imageMap.delete(key);

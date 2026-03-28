@@ -432,6 +432,11 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     typingSpeed,
     disabled: !enableTypewriter,
   });
+  // Render the full content synchronously when typewriter is disabled
+  // to avoid a first-paint flash where content appears after helper actions.
+  const resolvedDisplayContent = enableTypewriter
+    ? displayContent
+    : normalizedContent;
 
   const hasPotentialSandboxTags = useMemo(
     () => SANDBOX_TAG_HINT_PATTERN.test(content),
@@ -452,8 +457,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   );
 
   const segments = useMemo(
-    () => parseMarkdownSegments(displayContent),
-    [displayContent]
+    () => parseMarkdownSegments(resolvedDisplayContent),
+    [resolvedDisplayContent]
   );
 
   const hasCompleted = useRef(false);

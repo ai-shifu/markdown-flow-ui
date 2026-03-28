@@ -35,6 +35,8 @@ interface StructuredInteractionPayload {
 }
 
 const interactionParser = createInteractionParser();
+const INTERACTION_TAG_PATTERN = /<custom-variable\b/i;
+const JSON_LIKE_VALUE_PATTERN = /^[\[{]/;
 
 const parseInteractionBlock = (
   content?: string | null
@@ -124,6 +126,10 @@ const parseStructuredInteractionDefaults = (rawValue?: string | null) => {
     return null;
   }
 
+  if (!JSON_LIKE_VALUE_PATTERN.test(rawValue.trim())) {
+    return null;
+  }
+
   try {
     const parsed = JSON.parse(rawValue) as StructuredInteractionPayload;
     return normalizeStructuredInteractionDefaults(parsed);
@@ -131,6 +137,9 @@ const parseStructuredInteractionDefaults = (rawValue?: string | null) => {
     return null;
   }
 };
+
+const hasPotentialInteractionBlock = (content?: string | null) =>
+  Boolean(content && INTERACTION_TAG_PATTERN.test(content));
 
 const resolveCustomInteractionDefaults = (
   content?: string | null,
@@ -158,11 +167,16 @@ export const getInteractionDefaultValues = (
     return {};
   }
 
-  const interactionInfo = parseInteractionBlock(content);
+  const structuredDefaults = parseStructuredInteractionDefaults(normalized);
+
+  if (structuredDefaults) {
+    return structuredDefaults;
+  }
+
   const customDefaults = resolveCustomInteractionDefaults(
     content,
     normalized,
-    interactionInfo,
+    null,
     options
   );
 
@@ -170,10 +184,23 @@ export const getInteractionDefaultValues = (
     return customDefaults;
   }
 
-  const structuredDefaults = parseStructuredInteractionDefaults(normalized);
+  if (!hasPotentialInteractionBlock(content)) {
+    return {
+      buttonText: normalized,
+      inputText: normalized,
+    };
+  }
 
-  if (structuredDefaults) {
-    return structuredDefaults;
+  const interactionInfo = parseInteractionBlock(content);
+  const customDefaultsWithInteraction = resolveCustomInteractionDefaults(
+    content,
+    normalized,
+    interactionInfo,
+    options
+  );
+
+  if (customDefaultsWithInteraction) {
+    return customDefaultsWithInteraction;
   }
 
   if (!interactionInfo) {

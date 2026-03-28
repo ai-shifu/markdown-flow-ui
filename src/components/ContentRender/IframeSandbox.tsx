@@ -51,6 +51,10 @@ const loadBlackboardVendorOnDemandWithMetrics = () => {
 const COMPLETE_IMAGE_TAG_PATTERN = /<img\b[^>]*>/i;
 const POST_IMAGE_STREAM_DEBOUNCE_MS = 180;
 const SANDBOX_INTERACTION_THROTTLE_MS = 240;
+const EMPTY_ROOT_HEIGHT_META = {
+  viewportHeightCss: null,
+  hasFullViewportHeight: false,
+} as const;
 
 export interface IframeSandboxProps {
   content: string;
@@ -220,6 +224,9 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   const shouldInjectSandboxVendor = type === "sandbox";
 
   const isBlackboardMode = mode === "blackboard";
+  const shouldMeasureDynamicHeight = isBlackboardMode && type === "sandbox";
+  const shouldProcessRootScreenHeight =
+    shouldMeasureDynamicHeight && replaceRootScreenHeightWithFull;
   const prevHtmlRef = useRef<string>("");
   const htmlContent = React.useMemo(
     () => (type === "sandbox" ? content : ""),
@@ -229,21 +236,24 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     () =>
       replaceRootScreenHeightWithFullClass(
         htmlContent,
-        replaceRootScreenHeightWithFull
+        shouldProcessRootScreenHeight
       ),
-    [htmlContent, replaceRootScreenHeightWithFull]
+    [htmlContent, shouldProcessRootScreenHeight]
   );
   const originalRootHeightMeta = React.useMemo(
-    () => inspectRootHeightFromHtmlString(htmlContent),
-    [htmlContent]
+    () =>
+      shouldProcessRootScreenHeight
+        ? inspectRootHeightFromHtmlString(htmlContent)
+        : EMPTY_ROOT_HEIGHT_META,
+    [htmlContent, shouldProcessRootScreenHeight]
   );
   const shouldStretchRootHeight = React.useMemo(
     () =>
-      replaceRootScreenHeightWithFull &&
+      shouldProcessRootScreenHeight &&
       originalRootHeightMeta.hasFullViewportHeight,
     [
       originalRootHeightMeta.hasFullViewportHeight,
-      replaceRootScreenHeightWithFull,
+      shouldProcessRootScreenHeight,
     ]
   );
   const [renderHtmlContent, setRenderHtmlContent] = useState(
@@ -327,6 +337,10 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   }, [normalizedHtmlContent]);
 
   const rootViewportHeightCss = React.useMemo(() => {
+    if (!shouldMeasureDynamicHeight) {
+      return null;
+    }
+
     const normalized = renderHtmlContent.trim();
     if (!normalized) return null;
     const rootMatch = normalized.match(/^<([a-zA-Z][\w:-]*)(\s[^>]*?)?>/);
@@ -348,7 +362,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     const classAttrMatch = attrs.match(/\bclass\s*=\s*["']([^"']+)["']/i)?.[1];
     if (!classAttrMatch) return null;
     return extractViewportHeightFromTailwindClass(classAttrMatch);
-  }, [renderHtmlContent]);
+  }, [renderHtmlContent, shouldMeasureDynamicHeight]);
 
   useEffect(() => {
     renderViewportHeightCssRef.current = rootViewportHeightCss;
@@ -464,6 +478,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     };
 
     const resolveExplicitHeight = () => {
+      if (!shouldMeasureDynamicHeight) return null;
       if (!iframeRef.current || !doc.body) return null;
       const parentViewportHeight =
         iframeRef.current.ownerDocument?.documentElement?.clientHeight ||
@@ -509,6 +524,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     };
 
     const updateHeight = () => {
+      if (!shouldMeasureDynamicHeight) return;
       if (!iframeRef.current || !doc.body) return;
       const bodyRect = doc.body.getBoundingClientRect();
       const htmlRect = doc.documentElement?.getBoundingClientRect();
@@ -520,7 +536,9 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         200,
         explicitHeight ?? Math.ceil(contentHeight)
       );
-      setHeight(nextHeight);
+      setHeight((prevHeight) =>
+        prevHeight === nextHeight ? prevHeight : nextHeight
+      );
     };
     const scheduleHeightUpdate = () => {
       requestAnimationFrame(() => {

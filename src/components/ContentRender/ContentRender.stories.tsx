@@ -1612,6 +1612,174 @@ const STREAM_TABLE_IFRAME_CONTENT = `## Tables
 | Cell 1   | Cell 2   | Cell 3   |
 | Cell 4   | Cell 5   | Cell 6   |`;
 
+type ReadingModeStoryItem =
+  | {
+      id: string;
+      type: "content";
+      content: string;
+    }
+  | {
+      id: string;
+      type: "ask";
+      anchorId: string;
+      label: string;
+    };
+
+const READING_MODE_OVERVIEW_CONTENT = `
+<div class="w-full rounded-[28px] bg-slate-100 px-6 py-8 shadow-sm md:px-10">
+  <div class="mx-auto flex max-w-5xl flex-col gap-8">
+    <div class="text-center">
+      <h1 class="mb-3 text-4xl font-bold tracking-tight text-slate-800">三大考勤流程，一次搞定</h1>
+      <p class="text-base text-slate-600">本节开场总览 · 明确学习目标</p>
+    </div>
+
+    <div class="rounded-[24px] border-l-4 border-blue-500 bg-white px-6 py-5 shadow-md">
+      <h2 class="mb-3 text-2xl font-semibold text-slate-800">🎯 本节目标</h2>
+      <p class="m-0 text-base leading-7 text-slate-700">
+        学会在 <strong>UNKNOWN</strong> 系统中，熟练完成请假、公出、加班等核心考勤流程的发起与处理，
+        确保每一次申请都符合规范，做到“上级同意、当月务必发起流程、材料齐全”。
+      </p>
+    </div>
+
+    <div>
+      <h2 class="mb-5 text-center text-2xl font-semibold text-slate-800">📋 三大核心流程概览</h2>
+      <div class="grid gap-4 md:grid-cols-3">
+        <div class="rounded-[20px] bg-blue-100 px-5 py-5 shadow-sm">
+          <div class="mb-3 text-3xl">🏖️</div>
+          <h3 class="mb-3 text-xl font-semibold text-slate-800">请假流程</h3>
+          <ul class="m-0 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
+            <li>提前发起申请</li>
+            <li>明确请假类型与时长</li>
+            <li>等待上级审批</li>
+          </ul>
+        </div>
+        <div class="rounded-[20px] bg-emerald-100 px-5 py-5 shadow-sm">
+          <div class="mb-3 text-3xl">✈️</div>
+          <h3 class="mb-3 text-xl font-semibold text-slate-800">公出流程</h3>
+          <ul class="m-0 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
+            <li>填写外出事由与地点</li>
+            <li>预估外出时间</li>
+            <li>提交上级报备</li>
+          </ul>
+        </div>
+        <div class="rounded-[20px] bg-rose-100 px-5 py-5 shadow-sm">
+          <div class="mb-3 text-3xl">💼</div>
+          <h3 class="mb-3 text-xl font-semibold text-slate-800">加班流程</h3>
+          <ul class="m-0 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
+            <li>记录加班事由与时长</li>
+            <li>选择加班补偿方式</li>
+            <li>提交审批确认</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+const READING_MODE_GUIDE_CONTENT = `
+美少女大战哥斯拉，欢迎来到本节课程！
+
+这张图就是我们本节要攻克的“地图”。我们的目标非常明确：在 **UNKNOWN** 系统里，把 **请假、公出、加班** 这三大考勤流程弄得明明白白。
+
+无论你遇到哪种情况，记住三个“通关秘籍”：
+
+1. **上级同意**：行动前，先拿到“许可”。
+2. **当月务必发起流程**：千万别拖延，当月事当月毕。
+3. **材料齐全**：该有的证明、报告，一个都不能少。
+
+只要牢牢抓住这三点，所有考勤流程你都能轻松搞定。接下来，我们就一个流程一个流程地拆解学习。
+`;
+
+const READING_MODE_ROUTE_CONTENT = `
+先看钉钉路径，再练习钉钉公出与钉钉加班流程。
+`;
+
+const READING_MODE_PRIORITY_CONTENT = `
+本节优先看钉钉工作台路径、外勤打卡与请假提交流程。
+`;
+
+const READING_MODE_STORY_ITEMS: ReadingModeStoryItem[] = [
+  {
+    id: "lesson-overview",
+    type: "content",
+    content: READING_MODE_OVERVIEW_CONTENT,
+  },
+  {
+    id: "ask-after-overview",
+    type: "ask",
+    anchorId: "lesson-overview",
+    label: "追问",
+  },
+  {
+    id: "lesson-guide",
+    type: "content",
+    content: READING_MODE_GUIDE_CONTENT,
+  },
+  {
+    id: "ask-after-guide",
+    type: "ask",
+    anchorId: "lesson-guide",
+    label: "追问",
+  },
+  {
+    id: "lesson-route",
+    type: "content",
+    content: READING_MODE_ROUTE_CONTENT,
+  },
+  {
+    id: "ask-after-route",
+    type: "ask",
+    anchorId: "lesson-route",
+    label: "追问",
+  },
+  {
+    id: "lesson-priority",
+    type: "content",
+    content: READING_MODE_PRIORITY_CONTENT,
+  },
+  {
+    id: "ask-after-priority",
+    type: "ask",
+    anchorId: "lesson-priority",
+    label: "追问",
+  },
+];
+
+const ReadingModeAskPill = ({
+  anchorId,
+  label,
+}: {
+  anchorId: string;
+  label: string;
+}) => (
+  <button
+    type="button"
+    data-anchor-id={anchorId}
+    onClick={() => {
+      console.log("reading-mode-follow-up clicked", anchorId);
+    }}
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 6,
+      border: "none",
+      borderRadius: 999,
+      padding: "6px 12px",
+      background: "rgb(71 85 105)",
+      color: "rgb(255 255 255)",
+      fontSize: 13,
+      fontWeight: 600,
+      lineHeight: 1,
+      boxShadow: "0 6px 18px rgba(15, 23, 42, 0.12)",
+      cursor: "pointer",
+    }}
+  >
+    <span aria-hidden="true">🖐️</span>
+    <span>{label}</span>
+  </button>
+);
+
 export const HTMLDemo: Story = {
   name: "HTML Demo",
   args: {
@@ -1894,4 +2062,69 @@ export const HTMLDemoIframeOnly: Story = {
       </>
     );
   },
+};
+
+export const ReadingModeAppendedAskBlocks: Story = {
+  name: "Reading Mode Appended Ask Blocks",
+  args: {
+    enableTypewriter: false,
+  },
+  parameters: {
+    layout: "fullscreen",
+  },
+  render: (args) => (
+    <div
+      style={{
+        minHeight: "100dvh",
+        padding: "32px 24px 64px",
+        background:
+          "linear-gradient(180deg, rgb(248 250 252) 0%, rgb(239 246 255) 100%)",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 1040,
+          margin: "0 auto",
+          borderRadius: 32,
+          padding: "24px 0 32px",
+          background: "rgb(255 255 255)",
+          boxShadow: "0 24px 70px rgba(15, 23, 42, 0.08)",
+        }}
+      >
+        {READING_MODE_STORY_ITEMS.map((item) => {
+          if (item.type === "ask") {
+            return (
+              <div
+                key={item.id}
+                style={{
+                  padding: "0 28px 20px",
+                }}
+              >
+                <ReadingModeAskPill
+                  anchorId={item.anchorId}
+                  label={item.label}
+                />
+              </div>
+            );
+          }
+
+          return (
+            <div
+              key={item.id}
+              style={{
+                padding: "0 28px",
+              }}
+            >
+              <ContentRender
+                {...args}
+                content={item.content}
+                enableTypewriter={false}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  ),
 };

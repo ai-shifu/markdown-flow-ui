@@ -337,6 +337,14 @@ const CustomButtonInputVariable = ({
     return undefined;
   }, [defaultButtonText, singleSelectButtonTexts, singleSelectButtonValues]);
 
+  React.useEffect(() => {
+    setInputValue(defaultInputText || "");
+  }, [defaultInputText, node]);
+
+  React.useEffect(() => {
+    setSelectedValues(defaultSelectedValues || []);
+  }, [defaultSelectedValues, node]);
+
   return (
     <span className="custom-variable-container inline-flex items-center flex-wrap">
       {isMultiSelect && (

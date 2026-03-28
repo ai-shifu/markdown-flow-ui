@@ -47,10 +47,11 @@ interface InteractionOverlayCardProps {
   readonly?: boolean;
 }
 
-export interface SlideInteractionTexts extends Pick<
-  ContentRenderProps,
-  "confirmButtonText" | "copyButtonText" | "copiedButtonText"
-> {
+export interface SlideInteractionTexts
+  extends Pick<
+    ContentRenderProps,
+    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+  > {
   title?: string;
 }
 
@@ -390,7 +391,7 @@ const Slide: React.FC<SlideProps> = ({
 
   const hasResolvedCurrentInteraction = Boolean(
     currentInteractionElement?.readonly ||
-    currentInteractionElement?.user_input?.trim()
+      currentInteractionElement?.user_input?.trim()
   );
 
   const shouldBlockPlaybackForInteraction =
@@ -488,6 +489,11 @@ const Slide: React.FC<SlideProps> = ({
     const shouldOpenInteractionOverlayAfterAudio =
       pendingInteractionOverlayStepIndexRef.current === currentIndex &&
       Boolean(currentInteractionElement);
+    const shouldPresentInteractionOverlay =
+      Boolean(currentInteractionElement) &&
+      (shouldBlockPlaybackForInteraction ||
+        shouldOpenInteractionOverlayAfterAudio ||
+        hasResolvedCurrentInteraction);
 
     resetAudioSequence();
 
@@ -495,11 +501,8 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    if (
-      shouldBlockPlaybackForInteraction ||
-      shouldOpenInteractionOverlayAfterAudio
-    ) {
-      // Show the interaction gate before playing any follow-up audio.
+    if (shouldPresentInteractionOverlay) {
+      // Re-open history interaction checkpoints so manual prev/next still reveals the overlay.
       setActiveInteractionElement(currentInteractionElement);
       setIsInteractionOverlayOpen(true);
       pendingInteractionOverlayStepIndexRef.current = null;
@@ -542,6 +545,7 @@ const Slide: React.FC<SlideProps> = ({
     currentPlaybackResetKey,
     currentStepHasSpeakableElement,
     goNext,
+    hasResolvedCurrentInteraction,
     shouldBlockPlaybackForInteraction,
     resetAudioSequence,
     startCurrentAudioSequence,
@@ -613,12 +617,18 @@ const Slide: React.FC<SlideProps> = ({
       return {};
     }
 
+    const shouldPreferResolvedInteractionInput = Boolean(
+      activeInteractionElement.user_input?.trim()
+    );
+
     return getInteractionDefaultValues(
       typeof activeInteractionElement.content === "string"
         ? activeInteractionElement.content
         : undefined,
       activeInteractionElement.user_input,
-      interactionDefaultValueOptions
+      shouldPreferResolvedInteractionInput
+        ? undefined
+        : interactionDefaultValueOptions
     );
   }, [activeInteractionElement, interactionDefaultValueOptions]);
 
@@ -627,12 +637,18 @@ const Slide: React.FC<SlideProps> = ({
       return undefined;
     }
 
+    const shouldPreferResolvedInteractionInput = Boolean(
+      activeInteractionElement.user_input?.trim()
+    );
+
     return getInteractionDefaultSelectedValues(
       typeof activeInteractionElement.content === "string"
         ? activeInteractionElement.content
         : undefined,
       activeInteractionElement.user_input,
-      interactionDefaultValueOptions
+      shouldPreferResolvedInteractionInput
+        ? undefined
+        : interactionDefaultValueOptions
     );
   }, [activeInteractionElement, interactionDefaultValueOptions]);
 

@@ -39,25 +39,34 @@ import {
   splitContentSegments,
   type RenderSegment,
 } from "./utils/split-content";
+import {
+  getInteractionDefaultValues,
+  type InteractionDefaultValueOptions,
+} from "../../lib/interaction-defaults";
+
+const SANDBOX_TAG_HINT_PATTERN =
+  /<(script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)\b/i;
 // Define component Props type
 export interface ContentRenderProps {
   content: string;
   /**
-+   * Callback invoked when the custom button after content is clicked.
-+   * This button is rendered via the `<custom-button-after-content>` tag in markdown content.
-+   * @example
-+   * ```tsx
-+   * <ContentRender
-+   *   content="Hello <custom-button-after-content>Ask</custom-button-after-content>"
-+   *   onClickCustomButtonAfterContent={() => console.log('Button clicked')}
-+   * />
-+   * ```
-+   */
+   * Callback invoked when the custom button after content is clicked.
+   * This button is rendered via the `<custom-button-after-content>` tag in markdown content.
+   * @example
+   * ```tsx
+   * <ContentRender
+   *   content="Hello <custom-button-after-content>Ask</custom-button-after-content>"
+   *   onClickCustomButtonAfterContent={() => console.log('Button clicked')}
+   * />
+   * ```
+   */
   customRenderBar?: CustomRenderBarProps;
   onClickCustomButtonAfterContent?: () => void;
   onSend?: (content: OnSendContentParams) => void;
   typingSpeed?: number;
   enableTypewriter?: boolean;
+  userInput?: string;
+  interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   defaultButtonText?: string;
   defaultInputText?: string; // Text input by user
   defaultSelectedValues?: string[]; // Default selected values for multi-select
@@ -266,6 +275,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   onSend,
   typingSpeed = 30,
   enableTypewriter = false,
+  userInput,
+  interactionDefaultValueOptions,
   defaultButtonText,
   defaultInputText,
   defaultSelectedValues,
@@ -287,6 +298,34 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     () => normalizeInlineHtml(content),
     [content]
   );
+
+  const interactionDefaults = useMemo(
+    () =>
+      getInteractionDefaultValues(
+        content,
+        userInput,
+        interactionDefaultValueOptions
+      ),
+    [content, interactionDefaultValueOptions, userInput]
+  );
+
+  const resolvedDefaultButtonText =
+    defaultButtonText?.trim() || interactionDefaults.buttonText;
+  const resolvedDefaultInputText =
+    defaultInputText?.trim() || interactionDefaults.inputText;
+  const fallbackSelectedValues = useMemo(
+    () =>
+      userInput
+        ? userInput
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean)
+        : undefined,
+    [userInput]
+  );
+  const resolvedDefaultSelectedValues = defaultSelectedValues?.length
+    ? defaultSelectedValues
+    : interactionDefaults.selectedValues || fallbackSelectedValues;
 
   // Use custom Hook to handle typewriter effect
   const components: CustomComponents = {
@@ -310,9 +349,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       <CustomButtonInputVariable
         {...props}
         readonly={readonly}
-        defaultButtonText={defaultButtonText}
-        defaultInputText={defaultInputText}
-        defaultSelectedValues={defaultSelectedValues}
+        defaultButtonText={resolvedDefaultButtonText}
+        defaultInputText={resolvedDefaultInputText}
+        defaultSelectedValues={resolvedDefaultSelectedValues}
         onSend={onSend}
         beforeSend={beforeSend}
         confirmButtonText={confirmButtonText}
@@ -393,10 +432,20 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     typingSpeed,
     disabled: !enableTypewriter,
   });
+  // Render the full content synchronously when typewriter is disabled
+  // to avoid a first-paint flash where content appears after helper actions.
+  const resolvedDisplayContent = enableTypewriter
+    ? displayContent
+    : normalizedContent;
+
+  const hasPotentialSandboxTags = useMemo(
+    () => SANDBOX_TAG_HINT_PATTERN.test(content),
+    [content]
+  );
 
   const renderSegments = useMemo(
-    () => splitContentSegments(content, true),
-    [content]
+    () => (hasPotentialSandboxTags ? splitContentSegments(content, true) : []),
+    [content, hasPotentialSandboxTags]
   );
 
   const hasSandbox = renderSegments.some(
@@ -408,8 +457,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   );
 
   const segments = useMemo(
-    () => parseMarkdownSegments(displayContent),
-    [displayContent]
+    () => parseMarkdownSegments(resolvedDisplayContent),
+    [resolvedDisplayContent]
   );
 
   const hasCompleted = useRef(false);
@@ -466,6 +515,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
             <IframeSandbox
               key={`sandbox-${idx}`}
               hideFullScreen
+              type="sandbox"
               content={segment.value}
               className="content-render-iframe"
               loadingText={sandboxLoadingText}

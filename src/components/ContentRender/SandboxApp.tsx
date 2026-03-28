@@ -8,6 +8,7 @@ export interface SandboxAppProps {
   resetToken?: number;
   mode?: "content" | "blackboard";
   hasRootVhHeight?: boolean;
+  stretchRootHeight?: boolean;
 }
 
 const IMAGE_REUSE_ATTRIBUTES = [
@@ -23,6 +24,7 @@ const IMAGE_REUSE_ATTRIBUTES = [
   "decoding",
   "crossorigin",
   "referrerpolicy",
+  "fetchpriority",
 ];
 
 const getImageReuseKey = (image: HTMLImageElement) =>
@@ -91,10 +93,9 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   resetToken = 0,
   mode = "content",
   hasRootVhHeight = false,
+  stretchRootHeight = false,
 }) => {
-  const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [, setIsWaitingFirstDiv] = useState(true);
   const [isGeneratingStyles, setIsGeneratingStyles] = useState(false);
   const [isGeneratingScripts, setIsGeneratingScripts] = useState(false);
   const appendedStylesRef = useRef<HTMLStyleElement[]>([]);
@@ -145,7 +146,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     styleEl.textContent = `
       @keyframes sandbox-spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
       .sandbox-wrapper { align-items: center; }
-      .sandbox-container { width: 100%; }
+      .sandbox-container { position: relative; width: 100%; }
       .sandbox-container svg,
       .sandbox-container img { display: block; margin-left: auto; margin-right: auto; }
       .justify-\\[safe_center\\]{
@@ -176,8 +177,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     appendedScriptsRef.current.forEach((node) => node.remove());
     appendedScriptsRef.current = [];
 
-    const hasRenderedBefore = hasRenderedContentRef.current;
-    setIsWaitingFirstDiv(!hasRenderedBefore);
+    // const hasRenderedBefore = hasRenderedContentRef.current;
     setIsGeneratingStyles(false);
     setIsGeneratingScripts(false);
     const wrapper = doc.createElement("div");
@@ -230,14 +230,12 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     }
 
     const hasFirstElement = !!wrapper.firstElementChild;
-    setIsWaitingFirstDiv(!hasFirstElement && !hasRenderedBefore);
     if (hasFirstElement) {
       hasRenderedContentRef.current = true;
     }
 
-    container.innerHTML = "";
     const contentNodes = Array.from(wrapper.childNodes);
-    container.append(...contentNodes);
+    container.replaceChildren(...contentNodes);
 
     resourceQueue.forEach((node) => {
       if (node.tagName.toLowerCase() === "style") {
@@ -314,24 +312,31 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   })();
 
   const isBlackboard = mode === "blackboard";
+  const shouldStretchRootHeight = isBlackboard && stretchRootHeight;
   const sandboxWrapperStyle: React.CSSProperties = {
     position: "relative",
     width: "100%",
-    height: isBlackboard ? "100vh" : "100%",
+    height: "100%",
     display: "flex",
     flexDirection: "column",
     // Keep blackboard scroll behavior while centering content in non-blackboard mode
-    justifyContent: isBlackboard ? "space-around" : "flex-start",
+    justifyContent: shouldStretchRootHeight
+      ? "flex-start"
+      : isBlackboard
+        ? "space-around"
+        : "flex-start",
   };
   const sandboxContainerStyle: React.CSSProperties = {
     pointerEvents: overlayMessage ? "none" : undefined,
     margin: isBlackboard ? undefined : "auto 0",
     width: "100%",
+    height: shouldStretchRootHeight ? "100%" : undefined,
+    minHeight: shouldStretchRootHeight ? 0 : undefined,
+    flex: shouldStretchRootHeight ? "1 1 auto" : undefined,
   };
 
   return (
     <div
-      ref={wrapperRef}
       data-root-vh={hasRootVhHeight ? "true" : "false"}
       className="sandbox-wrapper"
       style={sandboxWrapperStyle}

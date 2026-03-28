@@ -3,6 +3,10 @@ import MarkdownFlow from "./components/MarkdownFlow";
 import ContentRender from "./components/ContentRender";
 import MarkdownFlowInput from "./components/ContentRender/MarkdownFlowInput";
 import IframeSandbox from "./components/ContentRender/IframeSandbox";
+import {
+  getInteractionDefaultSelectedValues,
+  getInteractionDefaultValues,
+} from "./lib/interaction-defaults";
 import { RenderSegment } from "./components/ContentRender/utils/split-content";
 import { splitContentSegments } from "./components/ContentRender/utils/split-content";
 import type { MarkdownFlowProps } from "./components/MarkdownFlow/MarkdownFlow";
@@ -21,6 +25,8 @@ export {
   ContentRender,
   MarkdownFlowInput,
   IframeSandbox,
+  getInteractionDefaultValues,
+  getInteractionDefaultSelectedValues,
   splitContentSegments,
 };
 
@@ -34,3 +40,10 @@ export type {
   SandboxAppProps,
   RenderSegment,
 };
+export type {
+  InteractionDefaultResolver,
+  InteractionDefaultResolverParams,
+  InteractionDefaultValueOptions,
+  InteractionDefaultValues,
+  InteractionParseResult,
+} from "./lib/interaction-defaults";

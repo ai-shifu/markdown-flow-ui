@@ -1,0 +1,265 @@
+.slide-player {
+  position: absolute;
+  display: flex;
+  min-height: 80px;
+  width: min(664px, calc(100vw - 48px));
+  align-items: flex-end;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .slide-player {
+    width: 100% !important;
+    min-height: 80px;
+    align-items: stretch;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    translate: 0 !important;
+    background: #fff !important;
+    border-top: 1px solid #e5e5e5;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .slide-player__controls {
+    display: grid !important;
+    width: 100%;
+    grid-template-columns: repeat(
+      var(--slide-player-mobile-control-count, 4),
+      minmax(0, 1fr)
+    );
+    align-items: center;
+    padding: 0 20px;
+    border: none !important;
+    background: #fff !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .slide-player__group {
+    display: contents !important;
+  }
+
+  .slide-player__action,
+  .slide-player__toggle {
+    justify-self: center;
+    margin: 0 !important;
+  }
+
+  .slide-player__separator {
+    display: none;
+  }
+
+  .slide-player__interaction-arrow {
+    /* Align to the center of the fourth action slot on mobile. */
+    left: auto !important;
+    right: calc(((100% + 48px - 40px) / 8) + 20px - 28px) !important;
+  }
+}
+.slide-player__controls {
+  display: inline-flex;
+  align-items: center;
+  height: 80px;
+  padding: 0 40px;
+  border-radius: 100px;
+  border: 2px solid var(--custom-dark-input, rgba(255, 255, 255, 0));
+  background: linear-gradient(
+    180deg,
+    #fff -69.32%,
+    #eff1fd 84.09%,
+    #fff 237.5%
+  );
+  box-shadow:
+    var(--shadow-sm-1-offset-x, 0) var(--shadow-sm-1-offset-y, 1px)
+      var(--shadow-sm-1-blur-radius, 3px) var(--shadow-sm-1-spread-radius, 0)
+      var(--shadow-sm-1-color, rgba(0, 0, 0, 0.1)),
+    var(--shadow-sm-2-offset-x, 0) var(--shadow-sm-2-offset-y, 1px)
+      var(--shadow-sm-2-blur-radius, 2px) var(--shadow-sm-2-spread-radius, -1px)
+      var(--shadow-sm-2-color, rgba(0, 0, 0, 0.1));
+}
+
+.slide-player__interaction {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  z-index: 4;
+  width: 100%;
+  padding-bottom: 16px;
+  transform: translateX(-50%);
+}
+
+.slide-player__interaction-card {
+  position: relative;
+  overflow: visible;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--background);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+.slide-player__interaction-arrow {
+  position: absolute;
+  left: calc(50% + var(--slide-player-notes-arrow-offset));
+  right: auto;
+  bottom: -9px;
+  width: 24px;
+  height: 12px;
+  transform: translateX(-50%);
+}
+
+.slide-player__interaction-arrow::before,
+.slide-player__interaction-arrow::after {
+  position: absolute;
+  left: 0;
+  width: 0;
+  height: 0;
+  content: "";
+}
+
+.slide-player__interaction-arrow::before {
+  bottom: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 12px solid var(--background);
+}
+
+.slide-player__interaction-arrow::after {
+  bottom: 1px;
+  left: 1px;
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-top: 11px solid var(--background);
+}
+
+.slide-player__interaction-header {
+  padding: 24px 24px 0;
+}
+
+.slide-player__interaction-title {
+  margin: 0;
+  color: color-mix(in srgb, var(--foreground) 65%, transparent);
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.slide-player__interaction-body {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 0 24px 12px;
+}
+
+.slide-player__group {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+.slide-player__action,
+.slide-player__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: color-mix(in srgb, var(--foreground) 80%, transparent);
+  transition: color 0.2s ease;
+}
+
+.slide-player__action {
+  width: 32px;
+  height: 32px;
+}
+
+.slide-player__toggle {
+  width: 40px;
+  height: 40px;
+  color: #0a0a0a;
+}
+
+.slide-player__action:hover,
+.slide-player__toggle:hover {
+  color: var(--foreground);
+}
+
+.slide-player__action:disabled,
+.slide-player__toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.2;
+}
+
+.slide-player__action--active,
+.slide-player__action--active:hover {
+  color: var(--primary);
+}
+
+.slide-player__icon {
+  width: 32px;
+  height: 32px;
+}
+
+.slide-player__toggle-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.slide-player__separator {
+  width: 1px;
+  min-width: 1px;
+  align-self: stretch;
+  height: auto;
+  margin: 0 40px;
+  background: var(--border);
+  flex: 0 0 1px;
+}
+
+.slide-interaction-overlay {
+  --slide-player-action-size: 32px;
+  --slide-player-toggle-size: 40px;
+  --slide-player-group-gap: 40px;
+  --slide-player-separator-gap: 40px;
+  --slide-player-separator-width: 1px;
+  --slide-player-custom-action-count: 0;
+  --slide-player-custom-action-offset: calc(
+    var(--slide-player-custom-action-count) *
+      (var(--slide-player-action-size) + var(--slide-player-group-gap))
+  );
+  --slide-player-notes-arrow-offset: calc(
+    (
+        var(--slide-player-action-size) + var(--slide-player-group-gap) +
+          var(--slide-player-toggle-size) + var(--slide-player-group-gap) +
+          var(--slide-player-action-size) + var(--slide-player-separator-gap) +
+          var(--slide-player-separator-width) +
+          var(--slide-player-separator-gap)
+      ) /
+      2 + var(--slide-player-custom-action-offset)
+  );
+  --slide-player-bottom-offset: 24px;
+  --slide-player-height: 80px;
+  --slide-interaction-gap: 16px;
+  position: absolute;
+  left: 50%;
+  z-index: 4;
+  width: min(664px, calc(100vw - 48px));
+  transform: translateX(-50%);
+}
+
+.slide-interaction-overlay--with-player {
+  bottom: calc(
+    var(--slide-player-bottom-offset) + var(--slide-player-height) +
+      var(--slide-interaction-gap)
+  );
+}
+
+.slide-interaction-overlay--standalone {
+  bottom: 24px;
+}
+
+@media (max-width: 640px) {
+  .slide-interaction-overlay {
+    --slide-player-bottom-offset: 0px;
+  }
+}

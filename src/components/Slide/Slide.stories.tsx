@@ -6,6 +6,13 @@ import historyFixtureText from "../../../../测试历史数据.json?raw";
 import runStreamFixtureText from "../../../../测试数据.json?raw";
 import runStreamFixtureText2 from "../../../../测试数据2.json?raw";
 import type { OnSendContentParams } from "../types";
+import {
+  buildRunStreamElementListFromEvents,
+  normalizeRunStreamElement,
+  upsertRunStreamElementList,
+  type RunStreamFixtureElement,
+  type RunStreamFixtureEvent,
+} from "./utils/listenModeElementList";
 
 import Slide from "./Slide";
 import type { Element } from "./Slide";
@@ -87,49 +94,51 @@ type Story = StoryObj<typeof meta>;
 //     </div>
 //   </div>
 // </div>`;
-const HTML_IFRAME_CONTENT = `
-<div class="w-full min-h-screen flex flex-col items-center justify-[safe_center] bg-gradient-to-br from-red-50 to-amber-50 p-[4vmin]">
-  <div class="w-full max-w-4xl flex flex-col items-center gap-[4vmin]">
-    <!-- 标题区域 -->
-    <div class="text-center">
-      <h1 class="text-[6vmin] font-bold text-red-600 mb-[2vmin]">春节文化之旅</h1>
-      <p class="text-[3vmin] text-gray-700">我是您的专属文化向导</p>
-    </div>
-    <!-- 主内容卡片 -->
-    <div class="card bg-base-100 shadow-xl w-full p-[5vmin]">
-      <div class="card-body items-center text-center gap-[3vmin]">
-        <p class="text-[2.5vmin] text-gray-800 leading-[3.5vmin]">
-          欢迎来到春节文化之旅！我是您的专属文化向导。在开始之前，请告诉我您对春节的了解程度，以便我为您提供最合适的讲解。
-        </p>
-        <!-- 了解程度选项 -->
-        <div class="w-full grid grid-cols-1 md:grid-cols-3 gap-[2vmin] mt-[2vmin]">
-          <button class="btn btn-outline btn-primary text-[2.5vmin] h-auto py-[2vmin]">
-            完全不了解
-          </button>
-          <button class="btn btn-outline btn-primary text-[2.5vmin] h-auto py-[2vmin]">
-            知道一些
-          </button>
-          <button class="btn btn-outline btn-primary text-[2.5vmin] h-auto py-[2vmin]">
-            非常熟悉
-          </button>
-        </div>
-        <!-- 提示 -->
-        <div class="alert alert-info shadow-lg mt-[3vmin]">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          <span class="text-[2vmin]">请点击上方按钮选择，或直接告诉我您的了解程度。</span>
-        </div>
-      </div>
-    </div>
-    <!-- 装饰元素 -->
-    <div class="flex items-center gap-[1vmin] mt-[3vmin]">
-      <span class="text-[4vmin]">🧧</span>
-      <span class="text-[4vmin]">🏮</span>
-      <span class="text-[4vmin]">🥟</span>
-      <span class="text-[4vmin]">🐉</span>
-    </div>
-  </div>
-</div>
-欢迎来到春节文化之旅！我是您的专属文化向导。在开始之前，请告诉我您对春节的了解程度，以便我为您提供最合适的讲解`;
+const HTML_IFRAME_CONTENT =
+  '<div id="ppt-container"></div>\n<script>\ndocument.getElementById(\'ppt-container\').innerHTML = `\n<div class="w-full min-h-screen bg-gradient-to-b from-gray-50 to-white p-[4vmin] flex flex-col items-center justify-start font-[\'system-ui\',\'-apple-system\',\'sans-serif\'] overflow-y-auto">\n  <!-- 主标题 -->\n  <div class="w-full max-w-6xl text-center mb-[6vmin]">\n    <h1 class="text-[5.5vmin] font-bold text-gray-800 mb-[2vmin]">三系统入口与操作路径图</h1>\n    <p class="text-[2.8vmin] text-gray-600">快速定位你的系统入口、查看项、流程发起路径与统一铁律</p>\n  </div>\n  <!-- 三个系统区块容器 -->\n  <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-[5vmin] mb-[6vmin]">\n    <!-- EHR 系统区块 -->\n    <div class="bg-white rounded-[2.5vmin] shadow-lg p-[4vmin] border-t-[0.5vmin] border-blue-500 flex flex-col">\n      <div class="mb-[3vmin]">\n        <h2 class="text-[4vmin] font-bold text-gray-800 mb-[1vmin] flex items-center gap-[2vmin]">\n          <span class="flex items-center justify-center w-[5vmin] h-[5vmin] bg-blue-100 text-blue-700 rounded-lg text-[2.8vmin]">1</span>\n          EHR系统\n        </h2>\n        <div class="h-[0.3vmin] w-full bg-gradient-to-r from-blue-500 to-transparent mb-[3vmin]"></div>\n      </div>\n      <div class="space-y-[3.5vmin] flex-grow">\n        <div>\n          <div class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">登录入口/使用路径</div>\n          <div class="text-[2.5vmin] text-gray-800 font-mono bg-gray-100 p-[2vmin] rounded-[1vmin] break-all">https://ehr.company.com</div>\n        </div>\n        <div>\n          <div class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">查看排班记录/查看规则</div>\n          <div class="text-[2.5vmin] text-gray-800">【考勤管理】→ 【我的考勤】</div>\n        </div>\n        <div>\n          <div class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">发起流程入口</div>\n          <div class="text-[2.5vmin] text-gray-800">【流程中心】→ 【新建流程】→ 选择对应申请</div>\n        </div>\n      </div>\n    </div>\n    <!-- 云EHR 系统区块 -->\n    <div class="bg-white rounded-[2.5vmin] shadow-lg p-[4vmin] border-t-[0.5vmin] border-green-500 flex flex-col">\n      <div class="mb-[3vmin]">\n        <h2 class="text-[4vmin] font-bold text-gray-800 mb-[1vmin] flex items-center gap-[2vmin]">\n          <span class="flex items-center justify-center w-[5vmin] h-[5vmin] bg-green-100 text-green-700 rounded-lg text-[2.8vmin]">2</span>\n          云EHR系统\n        </h2>\n        <div class="h-[0.3vmin] w-full bg-gradient-to-r from-green-500 to-transparent mb-[3vmin]"></div>\n      </div>\n      <div class="space-y-[3.5vmin] flex-grow">\n        <div>\n          <div class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">登录入口/使用路径</div>\n          <div class="text-[2.5vmin] text-gray-800 font-mono bg-gray-100 p-[2vmin] rounded-[1vmin] break-all">https://cloud-ehr.company.com</div>\n        </div>\n        <div>\n          <div class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">查看排班记录/查看规则</div>\n          <div class="text-[2.5vmin] text-gray-800">【自助平台】→ 【考勤查询】</div>\n        </div>\n        <div>\n          <div class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">发起流程入口</div>\n          <div class="text-[2.5vmin] text-gray-800">【我的申请】→ 【发起新申请】</div>\n        </div>\n      </div>\n    </div>\n    <!-- 钉钉 系统区块 -->\n    <div class="bg-white rounded-[2.5vmin] shadow-lg p-[4vmin] border-t-[0.5vmin] border-orange-500 flex flex-col">\n      <div class="mb-[3vmin]">\n        <h2 class="text-[4vmin] font-bold text-gray-800 mb-[1vmin] flex items-center gap-[2vmin]">\n          <span class="flex items-center justify-center w-[5vmin] h-[5vmin] bg-orange-100 text-orange-700 rounded-lg text-[2.8vmin]">3</span>\n          钉钉系统\n        </h2>\n        <div class="h-[0.3vmin] w-full bg-gradient-to-r from-orange-500 to-transparent mb-[3vmin]"></div>\n      </div>\n      <div class="space-y-[3.5vmin] flex-grow">\n        <div>\n          <div class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">登录入口/使用路径</div>\n          <div class="text-[2.5vmin] text-gray-800">钉钉App -> 工作台 -> 考勤打卡</div>\n        </div>\n        <div>\n          <div class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">查看排班记录/查看规则</div>\n          <div class="text-[2.5vmin] text-gray-800">【统计】→ 【我的考勤】</div>\n        </div>\n        <div>\n          <div class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">发起流程入口</div>\n          <div class="text-[2.5vmin] text-gray-800">【申请】→ 选择“请假”或“加班”</div>\n        </div>\n      </div>\n    </div>\n  </div>\n  <!-- 统一强调区块 -->\n  <div class="w-full max-w-6xl bg-gradient-to-r from-red-500 to-orange-500 rounded-[2.5vmin] shadow-xl p-[5vmin] text-white">\n    <div class="flex flex-col md:flex-row items-center justify-between gap-[4vmin]">\n      <div class="flex items-center gap-[3vmin]">\n        <div class="flex items-center justify-center w-[10vmin] h-[10vmin] bg-white/20 rounded-full">\n          <span class="text-[5vmin]">⚠️</span>\n        </div>\n        <div>\n          <h3 class="text-[4vmin] font-bold mb-[1vmin]">月底流程必须完结</h3>\n          <p class="text-[2.5vmin] opacity-95">所有考勤流程（请假/公出/加班）必须在<strong>发生当月内</strong>发起并完成审批，跨月将无法处理！</p>\n        </div>\n      </div>\n      <div class="text-center md:text-right">\n        <p class="text-[2.2vmin] italic opacity-90">适用于以上所有系统<br/>铁律，不可违反</p>\n      </div>\n    </div>\n  </div>\n</div>\n`;\n</script>\n<style>\n/* 确保在小屏幕上三个系统区块纵向堆叠 */\n@media (max-width: 1024px) {\n  #ppt-container .grid.lg\\\\:grid-cols-3 {\n    grid-template-columns: 1fr !important;\n  }\n}\n/* 基础字体和盒模型设置 */\n#ppt-container * {\n  box-sizing: border-box;\n}\n/* 确保长路径和URL自动换行 */\n#ppt-container .break-all {\n  word-break: break-all;\n  overflow-wrap: break-word;\n}\n</style>\n';
+// `
+// <div class="w-full min-h-screen flex flex-col items-center justify-[safe_center] bg-gradient-to-br from-red-50 to-amber-50 p-[4vmin]">
+//   <div class="w-full max-w-4xl flex flex-col items-center gap-[4vmin]">
+//     <!-- 标题区域 -->
+//     <div class="text-center">
+//       <h1 class="text-[6vmin] font-bold text-red-600 mb-[2vmin]">春节文化之旅</h1>
+//       <p class="text-[3vmin] text-gray-700">我是您的专属文化向导</p>
+//     </div>
+//     <!-- 主内容卡片 -->
+//     <div class="card bg-base-100 shadow-xl w-full p-[5vmin]">
+//       <div class="card-body items-center text-center gap-[3vmin]">
+//         <p class="text-[2.5vmin] text-gray-800 leading-[3.5vmin]">
+//           欢迎来到春节文化之旅！我是您的专属文化向导。在开始之前，请告诉我您对春节的了解程度，以便我为您提供最合适的讲解。
+//         </p>
+//         <!-- 了解程度选项 -->
+//         <div class="w-full grid grid-cols-1 md:grid-cols-3 gap-[2vmin] mt-[2vmin]">
+//           <button class="btn btn-outline btn-primary text-[2.5vmin] h-auto py-[2vmin]">
+//             完全不了解
+//           </button>
+//           <button class="btn btn-outline btn-primary text-[2.5vmin] h-auto py-[2vmin]">
+//             知道一些
+//           </button>
+//           <button class="btn btn-outline btn-primary text-[2.5vmin] h-auto py-[2vmin]">
+//             非常熟悉
+//           </button>
+//         </div>
+//         <!-- 提示 -->
+//         <div class="alert alert-info shadow-lg mt-[3vmin]">
+//           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+//           <span class="text-[2vmin]">请点击上方按钮选择，或直接告诉我您的了解程度。</span>
+//         </div>
+//       </div>
+//     </div>
+//     <!-- 装饰元素 -->
+//     <div class="flex items-center gap-[1vmin] mt-[3vmin]">
+//       <span class="text-[4vmin]">🧧</span>
+//       <span class="text-[4vmin]">🏮</span>
+//       <span class="text-[4vmin]">🥟</span>
+//       <span class="text-[4vmin]">🐉</span>
+//     </div>
+//   </div>
+// </div>
+// 欢迎来到春节文化之旅！我是您的专属文化向导。在开始之前，请告诉我您对春节的了解程度，以便我为您提供最合适的讲解`;
 // '<div id="ppt-container" class="w-full min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-[4vmin]">\n  <div class="w-full min-h-screen flex flex-col items-center justify-[safe_center] gap-[6vmin] p-[4vmin] overflow-y-auto">\n    <!-- 顶部标题区 -->\n    <div class="w-full max-w-[1400px] text-center">\n      <h1 class="text-[6vmin] font-bold text-[#0F63EE] mb-[2vmin]">三系统入口与操作路径图</h1>\n      <p class="text-[3vmin] text-gray-600">系统入口与流程入口说明图</p>\n    </div>\n\n    <!-- 三个系统信息区块 -->\n    <div class="w-full max-w-[1400px] grid grid-cols-1 lg:grid-cols-3 gap-[5vmin]">\n      <!-- EHR 系统区块 -->\n      <div class="bg-white rounded-[2vmin] shadow-lg p-[5vmin] flex flex-col">\n        <h2 class="text-[4vmin] font-bold text-gray-800 mb-[4vmin] text-center border-b pb-[2vmin]">EHR</h2>\n        <div class="space-y-[3.5vmin] flex-grow">\n          <div>\n            <div class="text-[2.8vmin] font-semibold text-gray-500 mb-[1vmin]">登录入口/使用路径</div>\n            <div class="text-[2.5vmin] text-gray-800 break-words">https://ehr.company.com</div>\n          </div>\n          <div>\n            <div class="text-[2.8vmin] font-semibold text-gray-500 mb-[1vmin]">查看排班记录/查看规则</div>\n            <div class="text-[2.5vmin] text-gray-800">考勤 -> 我的考勤 -> 月度详情</div>\n          </div>\n          <div>\n            <div class="text-[2.8vmin] font-semibold text-gray-500 mb-[1vmin]">发起流程入口</div>\n            <div class="text-[2.5vmin] text-gray-800">流程中心 -> 新建 -> 考勤类申请</div>\n          </div>\n        </div>\n        <!-- 强调区块 -->\n        <div class="mt-[5vmin] p-[3vmin] bg-red-50 border border-red-200 rounded-[1.5vmin]">\n          <div class="text-[2.8vmin] font-bold text-red-700 mb-[1vmin]">月底流程必须完结</div>\n          <div class="text-[2.5vmin] text-red-600">所有考勤流程须在当月最后一天前提交并审批完成。</div>\n        </div>\n      </div>\n\n      <!-- 云EHR 系统区块 -->\n      <div class="bg-white rounded-[2vmin] shadow-lg p-[5vmin] flex flex-col">\n        <h2 class="text-[4vmin] font-bold text-gray-800 mb-[4vmin] text-center border-b pb-[2vmin]">云EHR</h2>\n        <div class="space-y-[3.5vmin] flex-grow">\n          <div>\n            <div class="text-[2.8vmin] font-semibold text-gray-500 mb-[1vmin]">登录入口/使用路径</div>\n            <div class="text-[2.5vmin] text-gray-800 break-words">https://cloud-ehr.company.com</div>\n          </div>\n          <div>\n            <div class="text-[2.8vmin] font-semibold text-gray-500 mb-[1vmin]">查看排班记录/查看规则</div>\n            <div class="text-[2.5vmin] text-gray-800">个人中心 -> 考勤日历</div>\n          </div>\n          <div>\n            <div class="text-[2.8vmin] font-semibold text-gray-500 mb-[1vmin]">发起流程入口</div>\n            <div class="text-[2.5vmin] text-gray-800">应用 -> 流程 -> 新建申请</div>\n          </div>\n        </div>\n        <!-- 强调区块 -->\n        <div class="mt-[5vmin] p-[3vmin] bg-red-50 border border-red-200 rounded-[1.5vmin]">\n          <div class="text-[2.8vmin] font-bold text-red-700 mb-[1vmin]">月底流程必须完结</div>\n          <div class="text-[2.5vmin] text-red-600">所有考勤流程须在当月最后一天前提交并审批完成。</div>\n        </div>\n      </div>\n\n      <!-- 钉钉 系统区块 -->\n      <div class="bg-white rounded-[2vmin] shadow-lg p-[5vmin] flex flex-col">\n        <h2 class="text-[4vmin] font-bold text-gray-800 mb-[4vmin] text-center border-b pb-[2vmin]">钉钉</h2>\n        <div class="space-y-[3.5vmin] flex-grow">\n          <div>\n            <div class="text-[2.8vmin] font-semibold text-gray-500 mb-[1vmin]">登录入口/使用路径</div>\n            <div class="text-[2.5vmin] text-gray-800 break-words">钉钉App -> 工作台 -> 考勤打卡</div>\n          </div>\n          <div>\n            <div class="text-[2.8vmin] font-semibold text-gray-500 mb-[1vmin]">查看排班记录/查看规则</div>\n            <div class="text-[2.5vmin] text-gray-800">统计 -> 我的考勤</div>\n          </div>\n          <div>\n            <div class="text-[2.8vmin] font-semibold text-gray-500 mb-[1vmin]">发起流程入口</div>\n            <div class="text-[2.5vmin] text-gray-800">审批 -> 发起申请</div>\n          </div>\n        </div>\n        <!-- 强调区块 -->\n        <div class="mt-[5vmin] p-[3vmin] bg-red-50 border border-red-200 rounded-[1.5vmin]">\n          <div class="text-[2.8vmin] font-bold text-red-700 mb-[1vmin]">月底流程必须完结</div>\n          <div class="text-[2.5vmin] text-red-600">所有考勤流程须在当月最后一天前提交并审批完成。</div>\n        </div>\n      </div>\n    </div>\n  </div>\n</div>\n\n<style>\n  /* 确保窄屏下系统区块纵向堆叠 */\n  @media (max-width: 1024px) {\n    #ppt-container .lg\\:grid-cols-3 {\n      grid-template-columns: 1fr !important;\n    }\n  }\n  /* 基础滚动与盒模型设置 */\n  #ppt-container * {\n    box-sizing: border-box;\n  }\n  #ppt-container .overflow-y-auto {\n    scrollbar-width: thin;\n  }\n</style>\n\n';
 
 const SVG_CONTENT = `<svg width="420" height="180" xmlns="http://www.w3.org/2000/svg">
@@ -479,115 +488,7 @@ const StreamingSlidePreview = ({
   return <Slide {...props} elementList={streamedElementList} />;
 };
 
-type RunStreamFixtureRecord = {
-  element_bid?: string;
-  target_element_bid?: string;
-  generated_block_bid?: string;
-  element_type?: string;
-  content?: Element["content"];
-  is_marker?: boolean;
-  is_renderable?: boolean;
-  is_new?: boolean;
-  is_speakable?: boolean;
-  audio_url?: string;
-  audio_segments?: Element["audio_segments"];
-  user_input?: string;
-  readonly?: boolean;
-  page?: number;
-  sequence_number?: number;
-  run_event_seq?: number;
-};
-
-type RunStreamFixtureEvent = {
-  type?: string;
-  event_type?: string;
-  content?: RunStreamFixtureRecord | null;
-  run_event_seq?: number;
-  generated_block_bid?: string;
-};
-
-type RunStreamFixtureElement = Element & {
-  element_bid: string;
-  blockBid?: string;
-  page?: number;
-  run_event_seq?: number;
-};
-
-type RunStreamAudioSegment = NonNullable<Element["audio_segments"]>[number];
-
 const RUN_STREAM_EVENT_INTERVAL_MS = 180;
-
-const normalizeRunStreamAudioPosition = (position?: number | null) =>
-  Number(position ?? 0);
-
-const sortRunStreamAudioSegments = (segments: RunStreamAudioSegment[] = []) =>
-  [...segments].sort(
-    (prevSegment, nextSegment) =>
-      normalizeRunStreamAudioPosition(prevSegment.position) -
-        normalizeRunStreamAudioPosition(nextSegment.position) ||
-      Number(prevSegment.segment_index ?? 0) -
-        Number(nextSegment.segment_index ?? 0)
-  );
-
-const buildRunStreamAudioSegmentUniqueKey = (
-  elementBid: string,
-  segment: RunStreamAudioSegment
-) =>
-  [
-    elementBid,
-    String((segment as { element_id?: string | null }).element_id ?? ""),
-    normalizeRunStreamAudioPosition(segment.position),
-    Number(segment.segment_index ?? 0),
-  ].join(":");
-
-const mergeRunStreamAudioSegments = (
-  elementBid: string,
-  segments: RunStreamAudioSegment[] = []
-) => {
-  const mergedSegments = segments.reduce<RunStreamAudioSegment[]>(
-    (result, segment) => {
-      if (
-        segment?.segment_index === undefined ||
-        typeof segment?.audio_data !== "string" ||
-        !segment.audio_data
-      ) {
-        return result;
-      }
-
-      const segmentKey = buildRunStreamAudioSegmentUniqueKey(
-        elementBid,
-        segment
-      );
-      const hasDuplicatedSegment = result.some(
-        (currentSegment) =>
-          buildRunStreamAudioSegmentUniqueKey(elementBid, currentSegment) ===
-          segmentKey
-      );
-
-      if (hasDuplicatedSegment) {
-        return result;
-      }
-
-      return sortRunStreamAudioSegments([...result, segment]);
-    },
-    []
-  );
-
-  return mergedSegments;
-};
-
-const resolveRunStreamElementBid = (
-  record?: Pick<
-    RunStreamFixtureRecord,
-    "element_bid" | "generated_block_bid" | "target_element_bid"
-  > | null
-) =>
-  String(
-    record?.target_element_bid ||
-      record?.element_bid ||
-      record?.generated_block_bid ||
-      ""
-  ).trim();
 
 const parseRunStreamFixture = (rawText: string): RunStreamFixtureEvent[] =>
   rawText
@@ -654,9 +555,9 @@ const resolveSubmittedUserInput = (content: OnSendContentParams) =>
 const isSameStoryElement = (currentElement: Element, targetElement?: Element) =>
   Boolean(
     targetElement &&
-    currentElement.type === targetElement.type &&
-    currentElement.sequence_number === targetElement.sequence_number &&
-    currentElement.content === targetElement.content
+      currentElement.type === targetElement.type &&
+      currentElement.sequence_number === targetElement.sequence_number &&
+      currentElement.content === targetElement.content
   );
 
 const applyInteractionSubmission = (
@@ -715,268 +616,6 @@ const buildTriggeredRunStreamEvents = (events: RunStreamFixtureEvent[]) => {
   }
 
   return events.slice(triggerEventIndex);
-};
-
-const normalizeRunStreamElement = (
-  record: RunStreamFixtureRecord,
-  fallbackEventSeq: number
-): RunStreamFixtureElement | null => {
-  const elementBid = resolveRunStreamElementBid(record);
-  const type = String(record.element_type ?? "").trim();
-
-  if (!elementBid || !type) {
-    return null;
-  }
-
-  const normalizedAudioUrl = record.audio_url ?? "";
-  const normalizedAudioSegments = Array.isArray(record.audio_segments)
-    ? record.audio_segments
-    : [];
-
-  return {
-    sequence_number: Number(record.sequence_number ?? 0),
-    type: type as Element["type"],
-    content: record.content ?? "",
-    is_marker: record.is_marker ?? true,
-    is_renderable: record.is_renderable ?? true,
-    is_new: record.is_new ?? true,
-    is_speakable:
-      record.is_speakable ??
-      Boolean(normalizedAudioUrl || normalizedAudioSegments.length > 0),
-    audio_url: normalizedAudioUrl,
-    audio_segments: normalizedAudioSegments,
-    user_input: record.user_input ?? "",
-    readonly: Boolean(record.readonly),
-    element_bid: elementBid,
-    blockBid: elementBid,
-    page: Number(record.page ?? 0),
-    run_event_seq: Number(record.run_event_seq ?? fallbackEventSeq ?? 0),
-  };
-};
-
-type RunStreamStoryItemType = "content" | "interaction";
-
-const resolveRunStreamStoryItemType = (
-  elementType: Element["type"]
-): RunStreamStoryItemType =>
-  elementType === "interaction" ? "interaction" : "content";
-
-const normalizeRunStreamSequenceNumber = (sequenceNumber: unknown) => {
-  const normalizedSequenceNumber = Number(sequenceNumber);
-  return Number.isFinite(normalizedSequenceNumber) &&
-    normalizedSequenceNumber > 0
-    ? normalizedSequenceNumber
-    : null;
-};
-
-const buildRunStreamStreamKey = ({
-  itemType,
-  elementBid,
-  fallbackSequence,
-}: {
-  itemType: RunStreamStoryItemType;
-  elementBid: string;
-  fallbackSequence: number;
-}) =>
-  elementBid
-    ? `${itemType}:${elementBid}`
-    : `${itemType}:fallback-${fallbackSequence}`;
-
-const resolveRunStreamRenderSequence = ({
-  sequenceMap,
-  occupiedSequenceNumbers,
-  itemType,
-  elementBid,
-  incomingSequenceNumber,
-  fallbackSequence,
-}: {
-  sequenceMap: Map<string, number>;
-  occupiedSequenceNumbers: Set<number>;
-  itemType: RunStreamStoryItemType;
-  elementBid: string;
-  incomingSequenceNumber: number | null;
-  fallbackSequence: number;
-}) => {
-  const streamKey = buildRunStreamStreamKey({
-    itemType,
-    elementBid,
-    fallbackSequence,
-  });
-  const existingSequence = sequenceMap.get(streamKey);
-
-  if (typeof existingSequence === "number") {
-    occupiedSequenceNumbers.add(existingSequence);
-    return existingSequence;
-  }
-
-  const hasOccupiedSequenceNumber = (nextSequenceNumber: number) => {
-    if (occupiedSequenceNumbers.has(nextSequenceNumber)) {
-      return true;
-    }
-
-    for (const [
-      mappedStreamKey,
-      mappedSequenceNumber,
-    ] of sequenceMap.entries()) {
-      if (mappedStreamKey === streamKey) {
-        continue;
-      }
-      if (mappedSequenceNumber === nextSequenceNumber) {
-        return true;
-      }
-    }
-
-    return false;
-  };
-
-  let nextSequenceNumber = incomingSequenceNumber ?? fallbackSequence;
-  while (hasOccupiedSequenceNumber(nextSequenceNumber)) {
-    nextSequenceNumber += 1;
-  }
-
-  sequenceMap.set(streamKey, nextSequenceNumber);
-  occupiedSequenceNumbers.add(nextSequenceNumber);
-
-  return nextSequenceNumber;
-};
-
-const reindexRunStreamPagesLikeListenMode = (
-  elementList: RunStreamFixtureElement[]
-) => {
-  let pageCursor = 0;
-
-  return elementList.map((element) => {
-    if (element.type === "interaction") {
-      return {
-        ...element,
-        page: Math.max(pageCursor - 1, 0),
-      };
-    }
-
-    const nextElement = {
-      ...element,
-      page: pageCursor,
-    };
-    pageCursor += 1;
-    return nextElement;
-  });
-};
-
-const buildRunStreamActiveStreamKeys = (
-  elementList: RunStreamFixtureElement[]
-) =>
-  new Set(
-    elementList.map((element, index) =>
-      buildRunStreamStreamKey({
-        itemType: resolveRunStreamStoryItemType(element.type),
-        elementBid: String(element.element_bid ?? "").trim(),
-        fallbackSequence:
-          normalizeRunStreamSequenceNumber(element.sequence_number) ??
-          index + 1,
-      })
-    )
-  );
-
-const pruneRunStreamSequenceMap = (
-  sequenceMap: Map<string, number>,
-  activeStreamKeys: Set<string>
-) => {
-  for (const streamKey of Array.from(sequenceMap.keys())) {
-    if (activeStreamKeys.has(streamKey)) {
-      continue;
-    }
-    sequenceMap.delete(streamKey);
-  }
-};
-
-const upsertRunStreamElementList = ({
-  currentList,
-  nextElement,
-  sequenceMap,
-}: {
-  currentList: RunStreamFixtureElement[];
-  nextElement: RunStreamFixtureElement;
-  sequenceMap: Map<string, number>;
-}) => {
-  const hitIndex = currentList.findIndex(
-    (element) => element.element_bid === nextElement.element_bid
-  );
-  const nextList = [...currentList];
-  const previousElement = hitIndex >= 0 ? nextList[hitIndex] : null;
-  const previousAudioSegments = Array.isArray(previousElement?.audio_segments)
-    ? previousElement.audio_segments
-    : [];
-  const incomingAudioSegments = Array.isArray(nextElement.audio_segments)
-    ? nextElement.audio_segments
-    : [];
-  const mergedAudioSegments = mergeRunStreamAudioSegments(
-    nextElement.element_bid,
-    [...previousAudioSegments, ...incomingAudioSegments]
-  );
-  const occupiedSequenceNumbers = currentList.reduce<Set<number>>(
-    (result, element, index) => {
-      if (index === hitIndex) {
-        return result;
-      }
-
-      const sequenceNumber = normalizeRunStreamSequenceNumber(
-        element.sequence_number
-      );
-      if (sequenceNumber !== null) {
-        result.add(sequenceNumber);
-      }
-      return result;
-    },
-    new Set<number>()
-  );
-  const fallbackSequence = Math.max(
-    currentList.length + (hitIndex >= 0 ? 0 : 1),
-    1
-  );
-  const resolvedSequenceNumber = resolveRunStreamRenderSequence({
-    sequenceMap,
-    occupiedSequenceNumbers,
-    itemType: resolveRunStreamStoryItemType(nextElement.type),
-    elementBid: nextElement.element_bid,
-    incomingSequenceNumber: normalizeRunStreamSequenceNumber(
-      previousElement?.sequence_number ?? nextElement.sequence_number
-    ),
-    fallbackSequence,
-  });
-  const mergedElement: RunStreamFixtureElement = {
-    ...(previousElement ?? nextElement),
-    ...nextElement,
-    sequence_number: resolvedSequenceNumber,
-    audio_url: nextElement.audio_url || previousElement?.audio_url || "",
-    audio_segments:
-      mergedAudioSegments.length > 0
-        ? mergedAudioSegments
-        : previousElement?.audio_segments,
-    user_input: nextElement.user_input || previousElement?.user_input || "",
-    readonly: nextElement.readonly ?? previousElement?.readonly ?? false,
-  };
-
-  if (hitIndex >= 0) {
-    nextList[hitIndex] = mergedElement;
-  } else {
-    nextList.push(mergedElement);
-  }
-
-  const sortedList = nextList.sort(
-    (prevElement, nextItem) =>
-      Number(prevElement.sequence_number ?? 0) -
-        Number(nextItem.sequence_number ?? 0) ||
-      Number(prevElement.run_event_seq ?? 0) -
-        Number(nextItem.run_event_seq ?? 0)
-  );
-  const pageAlignedList = reindexRunStreamPagesLikeListenMode(sortedList);
-
-  pruneRunStreamSequenceMap(
-    sequenceMap,
-    buildRunStreamActiveStreamKeys(pageAlignedList)
-  );
-
-  return pageAlignedList;
 };
 
 const EMPTY_PPT_PLACEHOLDER_BLOCK_BID = "empty-ppt";
@@ -1039,33 +678,6 @@ const prependEmptyPptPlaceholderForLeadingText = (elementList: Element[]) => {
 type RunStreamSlidePreviewProps = React.ComponentProps<typeof Slide> & {
   prependEmptyPptPlaceholder?: boolean;
 };
-
-const buildRunStreamElementListFromEvents = ({
-  events,
-  sequenceMap = new Map<string, number>(),
-}: {
-  events: RunStreamFixtureEvent[];
-  sequenceMap?: Map<string, number>;
-}) =>
-  events.reduce<RunStreamFixtureElement[]>((elementList, event) => {
-    if (event?.type !== "element" || !event.content) {
-      return elementList;
-    }
-
-    const normalizedElement = normalizeRunStreamElement(
-      event.content,
-      Number(event.run_event_seq ?? 0)
-    );
-    if (!normalizedElement) {
-      return elementList;
-    }
-
-    return upsertRunStreamElementList({
-      currentList: elementList,
-      nextElement: normalizedElement,
-      sequenceMap,
-    });
-  }, []);
 
 const createRunStreamEventPlayback = ({
   events,

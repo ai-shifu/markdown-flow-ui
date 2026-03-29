@@ -25,6 +25,7 @@ import type { Element } from "./types";
 import useSlide from "./useSlide";
 import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
 import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
+import { getPlaybackSequenceTransition } from "./utils/playbackSequence";
 import { getPlayerCustomActionCount } from "./utils/playerCustomActions";
 import "./slide.css";
 export type { Element, ElementAudioSegment } from "./types";
@@ -48,10 +49,11 @@ interface InteractionOverlayCardProps {
   readonly?: boolean;
 }
 
-export interface SlideInteractionTexts extends Pick<
-  ContentRenderProps,
-  "confirmButtonText" | "copyButtonText" | "copiedButtonText"
-> {
+export interface SlideInteractionTexts
+  extends Pick<
+    ContentRenderProps,
+    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+  > {
   title?: string;
 }
 
@@ -152,6 +154,7 @@ const Slide: React.FC<SlideProps> = ({
   const prevRenderElementKeysRef = useRef<string[]>([]);
   const shouldScrollToBottomRef = useRef(false);
   const pendingInteractionOverlayStepIndexRef = useRef<number | null>(null);
+  const playbackResetKeyRef = useRef<string | null>(null);
   const {
     currentElementList,
     stepElementLists,
@@ -391,7 +394,7 @@ const Slide: React.FC<SlideProps> = ({
 
   const hasResolvedCurrentInteraction = Boolean(
     currentInteractionElement?.readonly ||
-    currentInteractionElement?.user_input?.trim()
+      currentInteractionElement?.user_input?.trim()
   );
 
   const shouldBlockPlaybackForInteraction =
@@ -486,6 +489,16 @@ const Slide: React.FC<SlideProps> = ({
   });
 
   useEffect(() => {
+    const { hasPlaybackContextChanged, shouldInitializeAudioSequence } =
+      getPlaybackSequenceTransition({
+        previousResetKey: playbackResetKeyRef.current,
+        nextResetKey: currentPlaybackResetKey,
+        currentAudioKey,
+        hasCompletedCurrentStepAudio,
+      });
+
+    playbackResetKeyRef.current = currentPlaybackResetKey;
+
     const shouldOpenInteractionOverlayAfterAudio =
       pendingInteractionOverlayStepIndexRef.current === currentIndex &&
       Boolean(currentInteractionElement);
@@ -497,7 +510,9 @@ const Slide: React.FC<SlideProps> = ({
       currentStepHasSpeakableElement,
     });
 
-    resetAudioSequence();
+    if (hasPlaybackContextChanged) {
+      resetAudioSequence();
+    }
 
     if (currentElementList.length === 0 && !currentInteractionElement) {
       return;
@@ -515,6 +530,10 @@ const Slide: React.FC<SlideProps> = ({
       setActiveInteractionElement(currentInteractionElement);
       setIsInteractionOverlayOpen(false);
       pendingInteractionOverlayStepIndexRef.current = null;
+    }
+
+    if (!shouldInitializeAudioSequence) {
+      return;
     }
 
     if (startCurrentAudioSequence()) {
@@ -544,9 +563,11 @@ const Slide: React.FC<SlideProps> = ({
     clearAutoAdvanceTimer,
     currentElementList.length,
     currentInteractionElement,
+    currentAudioKey,
     currentPlaybackResetKey,
     currentStepHasSpeakableElement,
     goNext,
+    hasCompletedCurrentStepAudio,
     hasResolvedCurrentInteraction,
     shouldBlockPlaybackForInteraction,
     resetAudioSequence,

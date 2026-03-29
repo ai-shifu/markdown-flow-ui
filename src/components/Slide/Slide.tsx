@@ -269,6 +269,7 @@ const Slide: React.FC<SlideProps> = ({
     () => currentAudioSequenceKeys[0] ?? "none",
     [currentAudioSequenceKeys]
   );
+  const hasAvailableStepAudio = currentAudioSequenceKeys.length > 0;
   const currentInteractionResetKey = useMemo(() => {
     if (!currentInteractionElement) {
       return "none";
@@ -585,11 +586,14 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    if (currentAudioSequenceKeys.length === 0) {
-      setIsAudioLoadingVisible(true);
+    if (hasAvailableStepAudio) {
+      setIsAudioLoadingVisible(false);
+      return;
     }
+
+    setIsAudioLoadingVisible(true);
   }, [
-    currentAudioSequenceKeys.length,
+    hasAvailableStepAudio,
     currentStepHasSpeakableElement,
     hasCompletedCurrentStepAudio,
     shouldBlockPlaybackForInteraction,
@@ -625,15 +629,6 @@ const Slide: React.FC<SlideProps> = ({
 
     setCurrentAudioKey(null);
   }, [currentAudioIndex, currentAudioKey]);
-
-  useEffect(() => {
-    if (!hasCurrentStepAudioUrl) {
-      return;
-    }
-
-    // Treat the arrived audio URL as ready and hide the buffering overlay.
-    setIsAudioLoadingVisible(false);
-  }, [hasCurrentStepAudioUrl]);
 
   const interactionDefaults = useMemo(() => {
     if (!activeInteractionElement) {
@@ -875,11 +870,6 @@ const Slide: React.FC<SlideProps> = ({
 
   const handlePlayerLoadingChange = useCallback(
     (loading: boolean) => {
-      if (hasCurrentStepAudioUrl) {
-        setIsAudioLoadingVisible(false);
-        return;
-      }
-
       if (!currentStepHasSpeakableElement || hasCompletedCurrentStepAudio) {
         setIsAudioLoadingVisible(false);
         return;
@@ -887,11 +877,7 @@ const Slide: React.FC<SlideProps> = ({
 
       setIsAudioLoadingVisible(loading);
     },
-    [
-      currentStepHasSpeakableElement,
-      hasCompletedCurrentStepAudio,
-      hasCurrentStepAudioUrl,
-    ]
+    [currentStepHasSpeakableElement, hasCompletedCurrentStepAudio]
   );
 
   const handlePlayerEnded = useCallback(

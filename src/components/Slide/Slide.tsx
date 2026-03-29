@@ -24,6 +24,7 @@ import type { PlayerProps } from "./Player";
 import type { Element } from "./types";
 import useSlide from "./useSlide";
 import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
+import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
 import { getPlayerCustomActionCount } from "./utils/playerCustomActions";
 import "./slide.css";
 export type { Element, ElementAudioSegment } from "./types";
@@ -47,10 +48,11 @@ interface InteractionOverlayCardProps {
   readonly?: boolean;
 }
 
-export interface SlideInteractionTexts extends Pick<
-  ContentRenderProps,
-  "confirmButtonText" | "copyButtonText" | "copiedButtonText"
-> {
+export interface SlideInteractionTexts
+  extends Pick<
+    ContentRenderProps,
+    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+  > {
   title?: string;
 }
 
@@ -390,7 +392,7 @@ const Slide: React.FC<SlideProps> = ({
 
   const hasResolvedCurrentInteraction = Boolean(
     currentInteractionElement?.readonly ||
-    currentInteractionElement?.user_input?.trim()
+      currentInteractionElement?.user_input?.trim()
   );
 
   const shouldBlockPlaybackForInteraction =
@@ -488,11 +490,13 @@ const Slide: React.FC<SlideProps> = ({
     const shouldOpenInteractionOverlayAfterAudio =
       pendingInteractionOverlayStepIndexRef.current === currentIndex &&
       Boolean(currentInteractionElement);
-    const shouldPresentInteractionOverlay =
-      Boolean(currentInteractionElement) &&
-      (shouldBlockPlaybackForInteraction ||
-        shouldOpenInteractionOverlayAfterAudio ||
-        hasResolvedCurrentInteraction);
+    const shouldPresentOverlay = shouldPresentInteractionOverlay({
+      hasInteraction: Boolean(currentInteractionElement),
+      shouldBlockPlaybackForInteraction,
+      shouldOpenInteractionOverlayAfterAudio,
+      hasResolvedCurrentInteraction,
+      currentStepHasSpeakableElement,
+    });
 
     resetAudioSequence();
 
@@ -500,7 +504,7 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    if (shouldPresentInteractionOverlay) {
+    if (shouldPresentOverlay) {
       // Re-open history interaction checkpoints so manual prev/next still reveals the overlay.
       setActiveInteractionElement(currentInteractionElement);
       setIsInteractionOverlayOpen(true);

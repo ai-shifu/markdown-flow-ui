@@ -218,8 +218,8 @@ const hasAudioContentInTrack = (
 ) =>
   Boolean(
     track?.audio_url ||
-      track?.is_audio_streaming ||
-      (track?.audio_segments?.length ?? 0) > 0
+    track?.is_audio_streaming ||
+    (track?.audio_segments?.length ?? 0) > 0
   );
 
 const getAudioSegmentDataListFromTracks = (

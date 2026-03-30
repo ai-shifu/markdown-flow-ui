@@ -1,0 +1,8 @@
+# Skills
+
+Distributed skills for `markdown-flow-ui`:
+
+- `content-render-first-paint`
+- `content-render-reading-mode-story`
+- `slide-display-preload`
+- `slide-story-streaming`

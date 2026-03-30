@@ -24,6 +24,7 @@ export default defineConfig({
         index: resolve(__dirname, "src/index.ts"),
         editor: resolve(__dirname, "src/editor.ts"),
         renderer: resolve(__dirname, "src/renderer.ts"),
+        slide: resolve(__dirname, "src/slide.ts"),
       },
     },
 

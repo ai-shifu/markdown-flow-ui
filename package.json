@@ -124,6 +124,7 @@
   },
   "main": "dist/index.cjs.js",
   "module": "dist/index.es.js",
+  "types": "dist/index.d.ts",
   "name": "markdown-flow-ui",
   "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748",
   "peerDependencies": {
@@ -154,9 +155,26 @@
     "prepublishOnly": "npm run build",
     "start": "next start",
     "storybook": "storybook dev -p 6006",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "echo \"No tests specified\" && exit 0",
+    "typecheck:exports": "pnpm exec tsc -p tsconfig.exports.json --pretty false"
   },
-  "version": "0.1.100",
+  "typesVersions": {
+    "*": {
+      "editor": [
+        "dist/editor.d.ts"
+      ],
+      "render": [
+        "dist/renderer.d.ts"
+      ],
+      "renderer": [
+        "dist/renderer.d.ts"
+      ],
+      "slide": [
+        "dist/slide.d.ts"
+      ]
+    }
+  },
+  "version": "0.1.101",
   "type": "module",
   "exports": {
     ".": {
@@ -178,6 +196,11 @@
       "types": "./dist/editor.d.ts",
       "import": "./dist/editor.es.js",
       "require": "./dist/editor.cjs.js"
+    },
+    "./slide": {
+      "types": "./dist/slide.d.ts",
+      "import": "./dist/slide.es.js",
+      "require": "./dist/slide.cjs.js"
     },
     "./dist/markdown-flow-ui.css": {
       "default": "./dist/assets/markdown-flow-ui.css"

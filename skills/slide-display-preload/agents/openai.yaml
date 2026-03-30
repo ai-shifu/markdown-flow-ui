@@ -1,0 +1,3 @@
+interface:
+  display_name: "幻灯片显示预加载"
+  short_description: "通过 display 切换保持幻灯片 iframe 常驻"

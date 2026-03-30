@@ -28,6 +28,70 @@ type Story = StoryObj<typeof meta>;
 // ==============================================================================
 
 const COMPREHENSIVE_MARKDOWN_SYNTAX = `# Complete Markdown Syntax Test
+<div class="w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-[4vmin] flex flex-col items-center justify-start">
+  <!-- 顶部标题区 -->
+  <div class="w-full max-w-6xl text-center mb-[6vmin]">
+    <h1 class="text-[6vmin] md:text-[5vmin] font-bold text-gray-900 mb-[2vmin]">三大考勤流程，一次搞定</h1>
+    <p class="text-[3vmin] md:text-[2.5vmin] text-gray-700">本节开场总览 · 明确学习目标</p>
+  </div>
+  <!-- 目标说明区 -->
+  <div class="w-full max-w-4xl bg-white rounded-[2vmin] shadow-lg p-[4vmin] mb-[6vmin] border-l-[1vmin] border-blue-500">
+    <h2 class="text-[4vmin] font-bold text-gray-800 mb-[2vmin]">🎯 本节目标</h2>
+    <p class="text-[2.5vmin] leading-[3.5vmin] text-gray-700">
+      学会在 <strong class="text-blue-600">UNKNOWN</strong> 系统内，熟练完成**请假、公出、加班**等核心考勤流程的发起与跟进，确保每一次申请都符合规范，做到“<strong>上级同意、当月务必发起流程、材料齐全</strong>”。
+    </p>
+  </div>
+  <!-- 三流程概览区 -->
+  <div class="w-full max-w-6xl mb-[6vmin]">
+    <h2 class="text-[4vmin] font-bold text-gray-800 text-center mb-[4vmin]">📋 三大核心流程概览</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-[3vmin]">
+      <!-- 请假流程 -->
+      <div class="bg-white rounded-[2vmin] shadow-md p-[3vmin] flex flex-col items-center text-center border-t-4 border-green-500">
+        <div class="text-[4vmin] mb-[2vmin]">🏖️</div>
+        <h3 class="text-[3vmin] font-bold text-gray-800 mb-[1.5vmin]">请假流程</h3>
+        <p class="text-[2.2vmin] text-gray-600 flex-grow">因个人事由或病假需要离开岗位时发起的申请。</p>
+        <div class="mt-[2vmin] text-[1.8vmin] text-gray-500 bg-gray-100 rounded-[1vmin] px-[2vmin] py-[1vmin]">需提前报备</div>
+      </div>
+      <!-- 公出流程 -->
+      <div class="bg-white rounded-[2vmin] shadow-md p-[3vmin] flex flex-col items-center text-center border-t-4 border-amber-500">
+        <div class="text-[4vmin] mb-[2vmin]">✈️</div>
+        <h3 class="text-[3vmin] font-bold text-gray-800 mb-[1.5vmin]">公出流程</h3>
+        <p class="text-[2.2vmin] text-gray-600 flex-grow">因公务需要外出（如拜访客户、参加会议）时发起的申请。</p>
+        <div class="mt-[2vmin] text-[1.8vmin] text-gray-500 bg-gray-100 rounded-[1vmin] px-[2vmin] py-[1vmin]">关联差旅</div>
+      </div>
+      <!-- 加班流程 -->
+      <div class="bg-white rounded-[2vmin] shadow-md p-[3vmin] flex flex-col items-center text-center border-t-4 border-purple-500">
+        <div class="text-[4vmin] mb-[2vmin]">💻</div>
+        <h3 class="text-[3vmin] font-bold text-gray-800 mb-[1.5vmin]">加班流程</h3>
+        <p class="text-[2.2vmin] text-gray-600 flex-grow">在标准工作时间外提供劳动，需申请确认与核算补贴。</p>
+        <div class="mt-[2vmin] text-[1.8vmin] text-gray-500 bg-gray-100 rounded-[1vmin] px-[2vmin] py-[1vmin]">需明确时长</div>
+      </div>
+    </div>
+  </div>
+  <!-- 核心原则区 -->
+  <div class="w-full max-w-4xl bg-gradient-to-r from-blue-600 to-indigo-700 rounded-[2vmin] shadow-xl p-[4vmin] text-white">
+    <h2 class="text-[4vmin] font-bold mb-[3vmin] text-center">✅ 成功发起流程的三大核心原则</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-[3vmin]">
+      <div class="bg-white/20 rounded-[1.5vmin] p-[2.5vmin] backdrop-blur-sm flex flex-col items-center text-center">
+        <div class="text-[3vmin] mb-[1.5vmin]">👨‍💼</div>
+        <h3 class="text-[2.5vmin] font-bold mb-[1vmin]">上级同意</h3>
+        <p class="text-[2vmin]">申请前务必与直接上级沟通并获得口头或书面同意。</p>
+      </div>
+      <div class="bg-white/20 rounded-[1.5vmin] p-[2.5vmin] backdrop-blur-sm flex flex-col items-center text-center">
+        <div class="text-[3vmin] mb-[1.5vmin]">📅</div>
+        <h3 class="text-[2.5vmin] font-bold mb-[1vmin]">当月务必发起</h3>
+        <p class="text-[2vmin]">流程需在考勤发生的当月内发起，跨月将无法处理。</p>
+      </div>
+      <div class="bg-white/20 rounded-[1.5vmin] p-[2.5vmin] backdrop-blur-sm flex flex-col items-center text-center">
+        <div class="text-[3vmin] mb-[1.5vmin]">📎</div>
+        <h3 class="text-[2.5vmin] font-bold mb-[1vmin]">材料齐全</h3>
+        <p class="text-[2vmin]">根据流程类型，提前准备好证明文件（如病假条、会议通知）。</p>
+      </div>
+    </div>
+    <p class="text-center text-[2.2vmin] mt-[4vmin] text-blue-100">牢记这三点，你在 UNKNOWN 的考勤之路将畅通无阻！</p>
+  </div>
+</div>
+
 ## Heading Levels
 ### H3 Heading
 #### H4 Heading
@@ -1034,438 +1098,440 @@ export const SVGDemo: Story = {
   },
 };
 
-const HTML_DEMO_STREAM_SOURCE = `
-<html>
-<body>
-<h3>工业用水水质金字塔（层级 -> 指标关注 -> 典型用途）</h3>
-<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
-  <thead>
-    <tr style="background-color: #0F63EE; color: white;">
-      <th>水质层级</th>
-      <th>一句话定义</th>
-      <th>关键指标关注点</th>
-      <th>典型用途</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>超纯水</td>
-      <td>几乎去除所有电解质、微粒、有机物、微生物的极致工艺水。</td>
-      <td>电阻率接近理论极限的 18.24 MΩ·cm，并同时严格控制颗粒数、TOC（如 < 0.05 mg/L）、微生物、溶解气体等。</td>
-      <td>半导体芯片制造中的清洗与刻蚀、高端生物制药、超临界锅炉。</td>
-    </tr>
-    <tr>
-      <td>高纯水</td>
-      <td>去除了电解质、部分气体和有机物的高纯度工艺用水。</td>
-      <td>电阻率通常 > 10 MΩ·cm，并开始关注有机物等。</td>
-      <td>制药工业（如透析用水）、高端清洗、部分电子制造。</td>
-    </tr>
-    <tr>
-      <td>纯水 / 去离子水</td>
-      <td>去除了绝大部分强电解质的工业用水。</td>
-      <td>电阻率约 0.1-1.0 MΩ·cm（电导率 1-10 μS/cm）。</td>
-      <td>锅炉补给水、一般化工、实验室基础用水。</td>
-    </tr>
-    <tr>
-      <td>原水</td>
-      <td>未经过处理或仅初步处理的自然或市政来水。</td>
-      <td>浊度、微生物、硬度、悬浮物等波动。</td>
-      <td>冷却、灌溉、一般供水、水处理系统进水。</td>
-    </tr>
-  </tbody>
-</table>
+// const HTML_DEMO_STREAM_SOURCE = `
+// <html>
+// <body>
+// <h3>工业用水水质金字塔（层级 -> 指标关注 -> 典型用途）</h3>
+// <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+//   <thead>
+//     <tr style="background-color: #0F63EE; color: white;">
+//       <th>水质层级</th>
+//       <th>一句话定义</th>
+//       <th>关键指标关注点</th>
+//       <th>典型用途</th>
+//     </tr>
+//   </thead>
+//   <tbody>
+//     <tr>
+//       <td>超纯水</td>
+//       <td>几乎去除所有电解质、微粒、有机物、微生物的极致工艺水。</td>
+//       <td>电阻率接近理论极限的 18.24 MΩ·cm，并同时严格控制颗粒数、TOC（如 < 0.05 mg/L）、微生物、溶解气体等。</td>
+//       <td>半导体芯片制造中的清洗与刻蚀、高端生物制药、超临界锅炉。</td>
+//     </tr>
+//     <tr>
+//       <td>高纯水</td>
+//       <td>去除了电解质、部分气体和有机物的高纯度工艺用水。</td>
+//       <td>电阻率通常 > 10 MΩ·cm，并开始关注有机物等。</td>
+//       <td>制药工业（如透析用水）、高端清洗、部分电子制造。</td>
+//     </tr>
+//     <tr>
+//       <td>纯水 / 去离子水</td>
+//       <td>去除了绝大部分强电解质的工业用水。</td>
+//       <td>电阻率约 0.1-1.0 MΩ·cm（电导率 1-10 μS/cm）。</td>
+//       <td>锅炉补给水、一般化工、实验室基础用水。</td>
+//     </tr>
+//     <tr>
+//       <td>原水</td>
+//       <td>未经过处理或仅初步处理的自然或市政来水。</td>
+//       <td>浊度、微生物、硬度、悬浮物等波动。</td>
+//       <td>冷却、灌溉、一般供水、水处理系统进水。</td>
+//     </tr>
+//   </tbody>
+// </table>
 
-<p><strong>数据来源：</strong></p>
-<ul>
-<li><a href="https://www.sciencedirect.com/science/article/abs/pii/S0015188209700345" target="_blank">《Filtration & Separation》期刊论文</a></li>
-<li><a href="http://jiankangjiadian.net/h-nd-966.html#_jcp=4_11" target="_blank">健康家电网</a></li>
-</ul>
-</body>
-</html>
-带a标签的html
-<div class=\"w-full overflow-x-auto my-[4vmin]\">\n  <table class=\"min-w-full divide-y divide-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-md\">\n    <thead class=\"bg-[#0F63EE]\">\n      <tr>\n        <th class=\"px-[3vmin] py-[2vmin] text-left text-[2.2vmin] font-bold text-white\">历史时期</th>\n        <th class=\"px-[3vmin] py-[2vmin] text-left text-[2.2vmin] font-bold text-white\">主要特点</th>\n        <th class=\"px-[3vmin] py-[2vmin] text-left text-[2.2vmin] font-bold text-white\">核心习俗（悬停查看详情）</th>\n      </tr>\n    </thead>\n    <tbody class=\"bg-white divide-y divide-gray-200\">\n      <tr class=\"hover:bg-amber-50 transition-colors\">\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] font-semibold text-gray-800 align-top\">古代<br/><span class=\"text-[1.6vmin] text-gray-500\">(唐宋及以前)</span></td>\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] text-gray-700 align-top\">驱邪避灾，祭祀祈福。节日氛围**庄严而神秘**，更像一场全民参与的“大型祈福仪式”。</td>\n        <td class=\"px-[3vmin] py-[2vmin] align-top\">\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">挂桃符 / 燃爆竹</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[40vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              <strong>挂桃符：</strong>在桃木板上写神名或画门神，挂在门上驱鬼，是**春联的前身**。<br/><br/>\n              <strong>燃爆竹：</strong>焚烧竹子，使其爆裂发出巨响来吓退“年”兽等邪祟，是**鞭炮的起源**。\n            </div>\n          </div>\n          <span class=\"mx-[1vmin]\">•</span>\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">守岁</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[30vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              全家团聚，终夜不眠，迎接新年到来，寓意**珍惜光阴、为长辈祈福延寿**。\n            </div>\n          </div>\n        </td>\n      </tr>\n      <tr class=\"hover:bg-amber-50 transition-colors\">\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] font-semibold text-gray-800 align-top\">近代<br/><span class=\"text-[1.6vmin] text-gray-500\">(明清至民国)</span></td>\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] text-gray-700 align-top\">家庭团圆，礼尚往来。习俗**逐渐世俗化和家庭化**，从敬神转向更重人情。</td>\n        <td class=\"px-[3vmin] py-[2vmin] align-top\">\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">贴春联 / 年画</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[40vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              <strong>贴春联：</strong>桃符演变为在红纸上写吉祥对联，表达美好祝愿。<br/><br/>\n              <strong>贴年画：</strong>门上贴门神（如秦琼、尉迟恭），屋里贴吉祥画，增添喜庆。\n            </div>\n          </div>\n          <span class=\"mx-[1vmin]\">•</span>\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">吃年夜饭 / 拜年</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[35vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              <strong>年夜饭：</strong>一年中最重要的一餐，讲究**全家到齐、菜肴丰盛**，寓意团圆美满。<br/><br/>\n              <strong>拜年：</strong>初一开始走亲访友，互道祝福，是维系亲情友情的重要活动。\n            </div>\n          </div>\n        </td>\n      </tr>\n      <tr class=\"hover:bg-amber-50 transition-colors\">\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] font-semibold text-gray-800 align-top\">现代<br/><span class=\"text-[1.6vmin] text-gray-500\">(当代)</span></td>\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] text-gray-700 align-top\">多元融合，新旧交织。在保留核心传统的同时，加入了**许多新时代的元素和方式**。</td>\n        <td class=\"px-[3vmin] py-[2vmin] align-top\">\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">看春晚 / 电子红包</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[40vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              <strong>看春晚：</strong>自1983年起，收看中央电视台春节联欢晚会成为**新的“守岁”方式**，是全家围坐的娱乐盛宴。<br/><br/>\n              <strong>电子红包：</strong>通过微信等平台发红包，让压岁钱的传递跨越时空，更加便捷有趣。\n            </div>\n          </div>\n          <span class=\"mx-[1vmin]\">•</span>\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">旅游过年</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[30vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              越来越多的家庭选择在春节期间外出旅行，体验不同的年味，**团圆的形式变得更加多样**。\n            </div>\n          </div>\n        </td>\n      </tr>\n    </tbody>\n  </table>\n</div>
-一个表格的div
-<div class=\"w-full h-screen overflow-hidden p-[4vmin] bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center\">\n  <div class=\"grid grid-cols-2 gap-[3vmin] w-full h-full\">\n    <!-- 左侧：能力惊人 -->\n    <div class=\"bg-gradient-to-br from-green-400 to-blue-500 rounded-[2vmin] p-[3vmin] flex flex-col items-center justify-center text-white shadow-xl\">\n      <div class=\"text-[8vmin] mb-[2vmin]\">🚀</div>\n      <h2 class=\"text-[5vmin] font-bold mb-[2vmin]\">神通广大</h2>\n      <ul class=\"text-[2.5vmin] leading-[4vmin] space-y-[1vmin]\">\n        <li>• 写诗作画样样行</li>\n        <li>• 上知天文下知地理</li>\n        <li>• 代码论文一键生成</li>\n      </ul>\n    </div>\n    <!-- 右侧：经常犯错 -->\n    <div class=\"bg-gradient-to-br from-red-400 to-orange-500 rounded-[2vmin] p-[3vmin] flex flex-col items-center justify-center text-white shadow-xl\">\n      <div class=\"text-[8vmin] mb-[2vmin]\">💥</div>\n      <h2 class=\"text-[5vmin] font-bold mb-[2vmin]\">低级错误</h2>\n      <ul class=\"text-[2.5vmin] leading-[4vmin] space-y-[1vmin]\">\n        <li>• 简单算数算不对</li>\n        <li>• 睁眼说瞎话</li>\n        <li>• 逻辑推理经常崩</li>\n      </ul>\n    </div>\n    <!-- 底部标题 -->\n    <div class=\"col-span-2 bg-white/80 backdrop-blur rounded-[2vmin] p-[3vmin] text-center shadow-lg\">\n      <h1 class=\"text-[5vmin] font-bold text-[#0F63EE]\">AI 的两面性</h1>\n    </div>\n  </div>\n</div>\n\n这张图很清楚地展示了 AI 的矛盾：左边是上天入地无所不能，让所有人惊呼 AI 竟然这么聪明；右边却连小学生都不会错的题，它能错得离谱，气得你直跺脚。\n\n咱有没有发现这个现象？每个人刚接触 AI 的时候，都会惊讶 AI 怎么懂那么多，但是用久了，就常常被 AI 的低级错误气得要命。**学好这门课，你就能明白这一切背后的原因，既不会对 AI 盲目崇拜，也不会因为出错就歇斯底里**。\n\n你有没有好奇过，为什么 ChatGPT 这些 AI 都是一个字一个字地输出答案，而不是一次把所有内容都给出来呢？猜猜可能是什么原因？
-<div style=\"width: 100%; max-width: 1200px; margin: 30px auto; padding: 50px 20px; background: linear-gradient(135deg, #0F63EE 0%, #0a4bb8 100%); border-radius: 12px; box-sizing: border-box;\">\n  <div style=\"text-align: center;\">\n    <div style=\"font-size: 42px; line-height: 1.4; color: #ffffff; font-weight: bold;\">\n      AI 能力定律\n    </div>\n    <div style=\"font-size: 32px; line-height: 1.6; color: #ffffff; margin-top: 20px; font-weight: 500;\">\n      AI 能力的上限，是使用者的判断力\n    </div>\n  </div>\n</div>\n\n这个定律告诉咱们：AI 时代，光指望 AI 自己输出好东西是不够的。你得尽可能提升自己在多个领域的判断力、审美，才能在这些领域和 AI 结成好联盟，一起做出真正有价值的创造。你判断得准，AI 才能帮你输出对的、好的结果；你判断力不行，再好的 AI 也出不了能用的活。\n\n给你留个思考题：你打算提升自己在哪些方面的判断力？\n\n给你一个提示：先从提升自己对下游岗位的判断力开始，这样能减少你对下游岗位人员的依赖，降低沟通成本；之后再去提升上游岗位的判断力，就能帮你实现岗位跃迁，一路成长为超级个体，甚至创办自己的一人公司。
-div长度
-<div style=\"display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: linear-gradient(to bottom right, #f8fafc, #e0e7ff); font-family: 'Arial', sans-serif; padding: 2rem;\">\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    AI 是一种工具\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    每种 AI 产品都需要<br>学习使用方法\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2;\">\n    打造 AI 产品是<br>技术高手的事情\n  </div>\n</div>
-测试一下
+// <p><strong>数据来源：</strong></p>
+// <ul>
+// <li><a href="https://www.sciencedirect.com/science/article/abs/pii/S0015188209700345" target="_blank">《Filtration & Separation》期刊论文</a></li>
+// <li><a href="http://jiankangjiadian.net/h-nd-966.html#_jcp=4_11" target="_blank">健康家电网</a></li>
+// </ul>
+// </body>
+// </html>
+// 带a标签的html
+// <div class=\"w-full overflow-x-auto my-[4vmin]\">\n  <table class=\"min-w-full divide-y divide-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-md\">\n    <thead class=\"bg-[#0F63EE]\">\n      <tr>\n        <th class=\"px-[3vmin] py-[2vmin] text-left text-[2.2vmin] font-bold text-white\">历史时期</th>\n        <th class=\"px-[3vmin] py-[2vmin] text-left text-[2.2vmin] font-bold text-white\">主要特点</th>\n        <th class=\"px-[3vmin] py-[2vmin] text-left text-[2.2vmin] font-bold text-white\">核心习俗（悬停查看详情）</th>\n      </tr>\n    </thead>\n    <tbody class=\"bg-white divide-y divide-gray-200\">\n      <tr class=\"hover:bg-amber-50 transition-colors\">\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] font-semibold text-gray-800 align-top\">古代<br/><span class=\"text-[1.6vmin] text-gray-500\">(唐宋及以前)</span></td>\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] text-gray-700 align-top\">驱邪避灾，祭祀祈福。节日氛围**庄严而神秘**，更像一场全民参与的“大型祈福仪式”。</td>\n        <td class=\"px-[3vmin] py-[2vmin] align-top\">\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">挂桃符 / 燃爆竹</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[40vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              <strong>挂桃符：</strong>在桃木板上写神名或画门神，挂在门上驱鬼，是**春联的前身**。<br/><br/>\n              <strong>燃爆竹：</strong>焚烧竹子，使其爆裂发出巨响来吓退“年”兽等邪祟，是**鞭炮的起源**。\n            </div>\n          </div>\n          <span class=\"mx-[1vmin]\">•</span>\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">守岁</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[30vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              全家团聚，终夜不眠，迎接新年到来，寓意**珍惜光阴、为长辈祈福延寿**。\n            </div>\n          </div>\n        </td>\n      </tr>\n      <tr class=\"hover:bg-amber-50 transition-colors\">\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] font-semibold text-gray-800 align-top\">近代<br/><span class=\"text-[1.6vmin] text-gray-500\">(明清至民国)</span></td>\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] text-gray-700 align-top\">家庭团圆，礼尚往来。习俗**逐渐世俗化和家庭化**，从敬神转向更重人情。</td>\n        <td class=\"px-[3vmin] py-[2vmin] align-top\">\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">贴春联 / 年画</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[40vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              <strong>贴春联：</strong>桃符演变为在红纸上写吉祥对联，表达美好祝愿。<br/><br/>\n              <strong>贴年画：</strong>门上贴门神（如秦琼、尉迟恭），屋里贴吉祥画，增添喜庆。\n            </div>\n          </div>\n          <span class=\"mx-[1vmin]\">•</span>\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">吃年夜饭 / 拜年</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[35vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              <strong>年夜饭：</strong>一年中最重要的一餐，讲究**全家到齐、菜肴丰盛**，寓意团圆美满。<br/><br/>\n              <strong>拜年：</strong>初一开始走亲访友，互道祝福，是维系亲情友情的重要活动。\n            </div>\n          </div>\n        </td>\n      </tr>\n      <tr class=\"hover:bg-amber-50 transition-colors\">\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] font-semibold text-gray-800 align-top\">现代<br/><span class=\"text-[1.6vmin] text-gray-500\">(当代)</span></td>\n        <td class=\"px-[3vmin] py-[2vmin] text-[2vmin] text-gray-700 align-top\">多元融合，新旧交织。在保留核心传统的同时，加入了**许多新时代的元素和方式**。</td>\n        <td class=\"px-[3vmin] py-[2vmin] align-top\">\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">看春晚 / 电子红包</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[40vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              <strong>看春晚：</strong>自1983年起，收看中央电视台春节联欢晚会成为**新的“守岁”方式**，是全家围坐的娱乐盛宴。<br/><br/>\n              <strong>电子红包：</strong>通过微信等平台发红包，让压岁钱的传递跨越时空，更加便捷有趣。\n            </div>\n          </div>\n          <span class=\"mx-[1vmin]\">•</span>\n          <div class=\"group relative inline-block\">\n            <span class=\"text-[2vmin] text-gray-700 cursor-help border-b border-dashed border-gray-400\">旅游过年</span>\n            <div class=\"absolute invisible group-hover:visible z-10 w-[30vmin] p-[2vmin] bg-white border border-gray-300 rounded-lg shadow-lg text-[1.8vmin] text-gray-700 left-1/2 transform -translate-x-1/2 mt-[1vmin]\">\n              越来越多的家庭选择在春节期间外出旅行，体验不同的年味，**团圆的形式变得更加多样**。\n            </div>\n          </div>\n        </td>\n      </tr>\n    </tbody>\n  </table>\n</div>
+// 一个表格的div
+// <div class=\"w-full h-screen overflow-hidden p-[4vmin] bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center\">\n  <div class=\"grid grid-cols-2 gap-[3vmin] w-full h-full\">\n    <!-- 左侧：能力惊人 -->\n    <div class=\"bg-gradient-to-br from-green-400 to-blue-500 rounded-[2vmin] p-[3vmin] flex flex-col items-center justify-center text-white shadow-xl\">\n      <div class=\"text-[8vmin] mb-[2vmin]\">🚀</div>\n      <h2 class=\"text-[5vmin] font-bold mb-[2vmin]\">神通广大</h2>\n      <ul class=\"text-[2.5vmin] leading-[4vmin] space-y-[1vmin]\">\n        <li>• 写诗作画样样行</li>\n        <li>• 上知天文下知地理</li>\n        <li>• 代码论文一键生成</li>\n      </ul>\n    </div>\n    <!-- 右侧：经常犯错 -->\n    <div class=\"bg-gradient-to-br from-red-400 to-orange-500 rounded-[2vmin] p-[3vmin] flex flex-col items-center justify-center text-white shadow-xl\">\n      <div class=\"text-[8vmin] mb-[2vmin]\">💥</div>\n      <h2 class=\"text-[5vmin] font-bold mb-[2vmin]\">低级错误</h2>\n      <ul class=\"text-[2.5vmin] leading-[4vmin] space-y-[1vmin]\">\n        <li>• 简单算数算不对</li>\n        <li>• 睁眼说瞎话</li>\n        <li>• 逻辑推理经常崩</li>\n      </ul>\n    </div>\n    <!-- 底部标题 -->\n    <div class=\"col-span-2 bg-white/80 backdrop-blur rounded-[2vmin] p-[3vmin] text-center shadow-lg\">\n      <h1 class=\"text-[5vmin] font-bold text-[#0F63EE]\">AI 的两面性</h1>\n    </div>\n  </div>\n</div>\n\n这张图很清楚地展示了 AI 的矛盾：左边是上天入地无所不能，让所有人惊呼 AI 竟然这么聪明；右边却连小学生都不会错的题，它能错得离谱，气得你直跺脚。\n\n咱有没有发现这个现象？每个人刚接触 AI 的时候，都会惊讶 AI 怎么懂那么多，但是用久了，就常常被 AI 的低级错误气得要命。**学好这门课，你就能明白这一切背后的原因，既不会对 AI 盲目崇拜，也不会因为出错就歇斯底里**。\n\n你有没有好奇过，为什么 ChatGPT 这些 AI 都是一个字一个字地输出答案，而不是一次把所有内容都给出来呢？猜猜可能是什么原因？
+// <div style=\"width: 100%; max-width: 1200px; margin: 30px auto; padding: 50px 20px; background: linear-gradient(135deg, #0F63EE 0%, #0a4bb8 100%); border-radius: 12px; box-sizing: border-box;\">\n  <div style=\"text-align: center;\">\n    <div style=\"font-size: 42px; line-height: 1.4; color: #ffffff; font-weight: bold;\">\n      AI 能力定律\n    </div>\n    <div style=\"font-size: 32px; line-height: 1.6; color: #ffffff; margin-top: 20px; font-weight: 500;\">\n      AI 能力的上限，是使用者的判断力\n    </div>\n  </div>\n</div>\n\n这个定律告诉咱们：AI 时代，光指望 AI 自己输出好东西是不够的。你得尽可能提升自己在多个领域的判断力、审美，才能在这些领域和 AI 结成好联盟，一起做出真正有价值的创造。你判断得准，AI 才能帮你输出对的、好的结果；你判断力不行，再好的 AI 也出不了能用的活。\n\n给你留个思考题：你打算提升自己在哪些方面的判断力？\n\n给你一个提示：先从提升自己对下游岗位的判断力开始，这样能减少你对下游岗位人员的依赖，降低沟通成本；之后再去提升上游岗位的判断力，就能帮你实现岗位跃迁，一路成长为超级个体，甚至创办自己的一人公司。
+// div长度
+// <div style=\"display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: linear-gradient(to bottom right, #f8fafc, #e0e7ff); font-family: 'Arial', sans-serif; padding: 2rem;\">\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    AI 是一种工具\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    每种 AI 产品都需要<br>学习使用方法\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2;\">\n    打造 AI 产品是<br>技术高手的事情\n  </div>\n</div>
+// 测试一下
 
-<div style=\"width: 100%; overflow-x: auto; margin: 20px 0; padding: 20px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;\">\n<svg width=\"600\" height=\"180\" viewBox=\"0 0 600 180\" xmlns=\"http://www.w3.org/2000/svg\">\n    <rect x=\"50\" y=\"30\" width=\"500\" height=\"120\" rx=\"12\" fill=\"#ffffff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n    <rect x=\"70\" y=\"60\" width=\"460\" height=\"60\" rx=\"6\" fill=\"#f0f9ff\" stroke=\"#0F63EE\" stroke-width=\"1\"/>\n    <text x=\"300\" y=\"95\" text-anchor=\"middle\" fill=\"#1e293b\" font-family=\"Arial, sans-serif\" font-size=\"14\" font-weight=\"bold\">题目：以下哪一项是“人工智能”的英文缩写？</text>\n    <text x=\"300\" y=\"120\" text-anchor=\"middle\" fill=\"#0F63EE\" font-family=\"Arial, sans-serif\" font-size=\"12\">A. IT  B. AI  C. VR  D. UI</text>\n    <rect x=\"250\" y=\"125\" width=\"20\" height=\"20\" rx=\"10\" fill=\"#d1fae5\" stroke=\"#10b981\" stroke-width=\"2\"/>\n    <text x=\"260\" y=\"140\" text-anchor=\"middle\" fill=\"#10b981\" font-family=\"Arial, sans-serif\" font-size=\"12\" font-weight=\"bold\">B</text>\n    <circle cx=\"540\" y=\"90\" r=\"12\" fill=\"#10b981\"/>\n    <text x=\"540\" y=\"95\" text-anchor=\"middle\" fill=\"#ffffff\" font-family=\"Arial, sans-serif\" font-size=\"12\" font-weight=\"bold\">✓</text>\n</svg>\n</div>\n\n你的答案 **“B”** 是正确的！\n\n**AI** 正是 “Artificial Intelligence” 的缩写。回答得很棒，kk！
+// <div style=\"width: 100%; overflow-x: auto; margin: 20px 0; padding: 20px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;\">\n<svg width=\"600\" height=\"180\" viewBox=\"0 0 600 180\" xmlns=\"http://www.w3.org/2000/svg\">\n    <rect x=\"50\" y=\"30\" width=\"500\" height=\"120\" rx=\"12\" fill=\"#ffffff\" stroke=\"#0F63EE\" stroke-width=\"2\"/>\n    <rect x=\"70\" y=\"60\" width=\"460\" height=\"60\" rx=\"6\" fill=\"#f0f9ff\" stroke=\"#0F63EE\" stroke-width=\"1\"/>\n    <text x=\"300\" y=\"95\" text-anchor=\"middle\" fill=\"#1e293b\" font-family=\"Arial, sans-serif\" font-size=\"14\" font-weight=\"bold\">题目：以下哪一项是“人工智能”的英文缩写？</text>\n    <text x=\"300\" y=\"120\" text-anchor=\"middle\" fill=\"#0F63EE\" font-family=\"Arial, sans-serif\" font-size=\"12\">A. IT  B. AI  C. VR  D. UI</text>\n    <rect x=\"250\" y=\"125\" width=\"20\" height=\"20\" rx=\"10\" fill=\"#d1fae5\" stroke=\"#10b981\" stroke-width=\"2\"/>\n    <text x=\"260\" y=\"140\" text-anchor=\"middle\" fill=\"#10b981\" font-family=\"Arial, sans-serif\" font-size=\"12\" font-weight=\"bold\">B</text>\n    <circle cx=\"540\" y=\"90\" r=\"12\" fill=\"#10b981\"/>\n    <text x=\"540\" y=\"95\" text-anchor=\"middle\" fill=\"#ffffff\" font-family=\"Arial, sans-serif\" font-size=\"12\" font-weight=\"bold\">✓</text>\n</svg>\n</div>\n\n你的答案 **“B”** 是正确的！\n\n**AI** 正是 “Artificial Intelligence” 的缩写。回答得很棒，kk！
 
-**提示词是：** \`// 这个函数用于\`
+// **提示词是：** \`// 这个函数用于\`
 
-“为了装得更像人”，这个猜想特别有意思！它触及了咱们对人机交互的一种直觉期待。不过，真相可能更底层、更本质：**这其实就是生成式 AI 本来的样子**，并非刻意模仿，也无关网络延迟。\n\n这种“一个字一个字”的生成方式，恰恰是 AI 智慧的源头活水。要理解它，咱们得先搞懂一个核心概念：**Token**。\n\n你可以把 Token 想象成 AI 理解世界的基本积木。对文字模型来说，一个 Token 通常不是一个完整的汉字或英文单词，而是一个更小的语义片段。\n\n下面这张图展示了同一句话，在不同语言里是如何被“切”成 Token 的：\n\n<div style=\"background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #0F63EE; margin: 20px 0;\">\n  <div style=\"display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;\">\n    <!-- 中文示例 -->\n    <div style=\"flex: 1; min-width: 250px;\">\n      <div style=\"font-weight: 600; color: #0F63EE; margin-bottom: 8px;\">中文例子</div>\n      <div style=\"background: white; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;\">\n        <div style=\"color: #64748b; font-size: 0.9em; margin-bottom: 5px;\">原句：人工智能很强大</div>\n        <div style=\"display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;\">\n          <span style=\"background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">人工</span>\n          <span style=\"background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">智能</span>\n          <span style=\"background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">很</span>\n          <span style=\"background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">强大</span>\n        </div>\n        <div style=\"color: #64748b; font-size: 0.85em; margin-top: 8px;\">被切分成 4 个 Token</div>\n      </div>\n    </div>\n\n    <!-- 英文示例 -->\n    <div style=\"flex: 1; min-width: 250px;\">\n      <div style=\"font-weight: 600; color: #0F63EE; margin-bottom: 8px;\">英文例子</div>\n      <div style=\"background: white; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;\">\n        <div style=\"color: #64748b; font-size: 0.9em; margin-bottom: 5px;\">原句：Artificial intelligence is powerful</div>\n        <div style=\"display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;\">\n          <span style=\"background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">Artificial</span>\n          <span style=\"background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\"> intelligence</span>\n          <span style=\"background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\"> is</span>\n          <span style=\"background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\"> powerful</span>\n        </div>\n        <div style=\"color: #64748b; font-size: 0.85em; margin-top: 8px;\">被切分成 4 个 Token</div>\n      </div>\n    </div>\n  </div>\n</div>\n\n你看，无论是中文还是英文，任何文章在 AI 眼里，都是由这样一块块 **Token 积木**组合而成的。它写作时，就是在玩一个超级复杂的“下一块积木猜猜看”游戏。\n\n这个逻辑可以推广。文生图模型，比如 Midjourney，它眼中的“Token”可能是图像的一个色块、一条线条；文生视频模型，它的“Token”可能就是视频的一帧画面或一个动作片段。**虽然在这些领域可能不直接叫“Token”，但核心理念相通：把复杂内容拆解成基础单元，再学习如何组合它们。**\n\n所以，AI 逐字输出，是因为它必须在生成当前 Token 后，才能基于它去预测下一个最可能的 Token。**这看似缓慢的“思考”过程，正是它创造力的来源。**
+// “为了装得更像人”，这个猜想特别有意思！它触及了咱们对人机交互的一种直觉期待。不过，真相可能更底层、更本质：**这其实就是生成式 AI 本来的样子**，并非刻意模仿，也无关网络延迟。\n\n这种“一个字一个字”的生成方式，恰恰是 AI 智慧的源头活水。要理解它，咱们得先搞懂一个核心概念：**Token**。\n\n你可以把 Token 想象成 AI 理解世界的基本积木。对文字模型来说，一个 Token 通常不是一个完整的汉字或英文单词，而是一个更小的语义片段。\n\n下面这张图展示了同一句话，在不同语言里是如何被“切”成 Token 的：\n\n<div style=\"background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #0F63EE; margin: 20px 0;\">\n  <div style=\"display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;\">\n    <!-- 中文示例 -->\n    <div style=\"flex: 1; min-width: 250px;\">\n      <div style=\"font-weight: 600; color: #0F63EE; margin-bottom: 8px;\">中文例子</div>\n      <div style=\"background: white; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;\">\n        <div style=\"color: #64748b; font-size: 0.9em; margin-bottom: 5px;\">原句：人工智能很强大</div>\n        <div style=\"display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;\">\n          <span style=\"background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">人工</span>\n          <span style=\"background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">智能</span>\n          <span style=\"background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">很</span>\n          <span style=\"background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">强大</span>\n        </div>\n        <div style=\"color: #64748b; font-size: 0.85em; margin-top: 8px;\">被切分成 4 个 Token</div>\n      </div>\n    </div>\n\n    <!-- 英文示例 -->\n    <div style=\"flex: 1; min-width: 250px;\">\n      <div style=\"font-weight: 600; color: #0F63EE; margin-bottom: 8px;\">英文例子</div>\n      <div style=\"background: white; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;\">\n        <div style=\"color: #64748b; font-size: 0.9em; margin-bottom: 5px;\">原句：Artificial intelligence is powerful</div>\n        <div style=\"display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;\">\n          <span style=\"background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\">Artificial</span>\n          <span style=\"background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\"> intelligence</span>\n          <span style=\"background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\"> is</span>\n          <span style=\"background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.9em;\"> powerful</span>\n        </div>\n        <div style=\"color: #64748b; font-size: 0.85em; margin-top: 8px;\">被切分成 4 个 Token</div>\n      </div>\n    </div>\n  </div>\n</div>\n\n你看，无论是中文还是英文，任何文章在 AI 眼里，都是由这样一块块 **Token 积木**组合而成的。它写作时，就是在玩一个超级复杂的“下一块积木猜猜看”游戏。\n\n这个逻辑可以推广。文生图模型，比如 Midjourney，它眼中的“Token”可能是图像的一个色块、一条线条；文生视频模型，它的“Token”可能就是视频的一帧画面或一个动作片段。**虽然在这些领域可能不直接叫“Token”，但核心理念相通：把复杂内容拆解成基础单元，再学习如何组合它们。**\n\n所以，AI 逐字输出，是因为它必须在生成当前 Token 后，才能基于它去预测下一个最可能的 Token。**这看似缓慢的“思考”过程，正是它创造力的来源。**
 
-下面这张图会动态展示 AI 是如何像“猜谜”一样，<custom-button-after-content><img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f680.svg" alt="icon" width="16" height="16" loading="lazy" /><span>点击自定义按钮</span></custom-button-after-content>一个 Token 一个 Token 地“猜”出完整句子的：
+// 下面这张图会动态展示 AI 是如何像“猜谜”一样，<custom-button-after-content><img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f680.svg" alt="icon" width="16" height="16" loading="lazy" /><span>点击自定义按钮</span></custom-button-after-content>一个 Token 一个 Token 地“猜”出完整句子的：
 
-<div id="token-demo" style="background: #f8fafc; padding: 25px; border-radius: 16px; border: 2px solid #e2e8f0; font-family: 'Segoe UI', system-ui, monospace; max-width: 800px; margin: 0 auto;">
-  <div style="color: #0F63EE; font-weight: 700; margin-bottom: 20px; font-size: 1.2em; text-align: center;">🧠 AI 的“猜词”生成过程（基于概率的 Token 预测）</div>
+// <div id="token-demo" style="background: #f8fafc; padding: 25px; border-radius: 16px; border: 2px solid #e2e8f0; font-family: 'Segoe UI', system-ui, monospace; max-width: 800px; margin: 0 auto;">
+//   <div style="color: #0F63EE; font-weight: 700; margin-bottom: 20px; font-size: 1.2em; text-align: center;">🧠 AI 的“猜词”生成过程（基于概率的 Token 预测）</div>
 
-  <!-- 提示词区域 -->
-  <div style="margin-bottom: 30px;">
-    <div style="color: #64748b; font-size: 0.95em; margin-bottom: 8px;">📝 初始提示词：</div>
-    <div style="background: white; padding: 15px; border-radius: 10px; border-left: 5px solid #94a3b8; font-size: 1.1em; color: #334155;">
-      <span id="current-prompt" style="color: #0F63EE; font-weight: 600;">// 这个函数用于</span>
-      <span id="generated-text" style="color: #10b981; font-weight: 600;"></span>
-      <span id="cursor" style="display: inline-block; width: 2px; height: 1.2em; background-color: #0F63EE; margin-left: 2px; vertical-align: middle; animation: blink 1s infinite;"></span>
-    </div>
-  </div>
+//   <!-- 提示词区域 -->
+//   <div style="margin-bottom: 30px;">
+//     <div style="color: #64748b; font-size: 0.95em; margin-bottom: 8px;">📝 初始提示词：</div>
+//     <div style="background: white; padding: 15px; border-radius: 10px; border-left: 5px solid #94a3b8; font-size: 1.1em; color: #334155;">
+//       <span id="current-prompt" style="color: #0F63EE; font-weight: 600;">// 这个函数用于</span>
+//       <span id="generated-text" style="color: #10b981; font-weight: 600;"></span>
+//       <span id="cursor" style="display: inline-block; width: 2px; height: 1.2em; background-color: #0F63EE; margin-left: 2px; vertical-align: middle; animation: blink 1s infinite;"></span>
+//     </div>
+//   </div>
 
-  <!-- 预测选择区域 -->
-  <div style="margin-bottom: 30px;">
-    <div style="color: #64748b; font-size: 0.95em; margin-bottom: 12px;">🎯 预测下一个 Token（猜哪个词接上去最合理？）：</div>
-    <div id="candidate-tokens" style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(15, 99, 238, 0.08);">
-      <!-- 候选Token将由JS动态生成 -->
-    </div>
-    <div id="selection-status" style="text-align: center; margin-top: 15px; color: #0F63EE; font-weight: 600; min-height: 24px;"></div>
-  </div>
+//   <!-- 预测选择区域 -->
+//   <div style="margin-bottom: 30px;">
+//     <div style="color: #64748b; font-size: 0.95em; margin-bottom: 12px;">🎯 预测下一个 Token（猜哪个词接上去最合理？）：</div>
+//     <div id="candidate-tokens" style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(15, 99, 238, 0.08);">
+//       <!-- 候选Token将由JS动态生成 -->
+//     </div>
+//     <div id="selection-status" style="text-align: center; margin-top: 15px; color: #0F63EE; font-weight: 600; min-height: 24px;"></div>
+//   </div>
 
-  <!-- 已生成序列区域 -->
-  <div>
-    <div style="color: #64748b; font-size: 0.95em; margin-bottom: 12px;">📜 已生成的 Token 序列：</div>
-    <div id="token-sequence" style="display: flex; flex-wrap: wrap; gap: 8px; padding: 18px; background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border-radius: 12px; border: 1px dashed #0F63EE; min-height: 60px; align-items: center; justify-content: center;">
-      <!-- 已生成的Token块将由JS动态添加 -->
-      <div class="token-tag" style="padding: 8px 14px; background: #0F63EE; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(15, 99, 238, 0.3);">//</div>
-      <div class="token-tag" style="padding: 8px 14px; background: #0F63EE; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(15, 99, 238, 0.3);">这个</div>
-      <div class="token-tag" style="padding: 8px 14px; background: #0F63EE; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(15, 99, 238, 0.3);">函数</div>
-      <div class="token-tag" style="padding: 8px 14px; background: #0F63EE; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(15, 99, 238, 0.3);">用于</div>
-    </div>
-  </div>
+//   <!-- 已生成序列区域 -->
+//   <div>
+//     <div style="color: #64748b; font-size: 0.95em; margin-bottom: 12px;">📜 已生成的 Token 序列：</div>
+//     <div id="token-sequence" style="display: flex; flex-wrap: wrap; gap: 8px; padding: 18px; background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border-radius: 12px; border: 1px dashed #0F63EE; min-height: 60px; align-items: center; justify-content: center;">
+//       <!-- 已生成的Token块将由JS动态添加 -->
+//       <div class="token-tag" style="padding: 8px 14px; background: #0F63EE; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(15, 99, 238, 0.3);">//</div>
+//       <div class="token-tag" style="padding: 8px 14px; background: #0F63EE; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(15, 99, 238, 0.3);">这个</div>
+//       <div class="token-tag" style="padding: 8px 14px; background: #0F63EE; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(15, 99, 238, 0.3);">函数</div>
+//       <div class="token-tag" style="padding: 8px 14px; background: #0F63EE; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(15, 99, 238, 0.3);">用于</div>
+//     </div>
+//   </div>
 
-  <!-- 控制按钮 -->
-  <div style="text-align: center; margin-top: 25px;">
-    <button id="next-step-btn" style="background: linear-gradient(135deg, #0F63EE, #3B82F6); color: white; border: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 1em; cursor: pointer; box-shadow: 0 4px 6px rgba(15, 99, 238, 0.3); transition: all 0.2s;">下一步：让 AI 猜下一个词</button>
-    <button id="reset-btn" style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 1em; cursor: pointer; margin-left: 15px; transition: all 0.2s;">重置演示</button>
-  </div>
+//   <!-- 控制按钮 -->
+//   <div style="text-align: center; margin-top: 25px;">
+//     <button id="next-step-btn" style="background: linear-gradient(135deg, #0F63EE, #3B82F6); color: white; border: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 1em; cursor: pointer; box-shadow: 0 4px 6px rgba(15, 99, 238, 0.3); transition: all 0.2s;">下一步：让 AI 猜下一个词</button>
+//     <button id="reset-btn" style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 1em; cursor: pointer; margin-left: 15px; transition: all 0.2s;">重置演示</button>
+//   </div>
 
-  <!-- 最终答案（初始隐藏） -->
-  <div id="final-result" style="display: none; margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 12px; border: 2px solid #0F63EE; text-align: center;">
-    <div style="color: #0F63EE; font-weight: 700; font-size: 1.1em; margin-bottom: 10px;">🎉 生成完毕！AI “猜”出的完整句子是：</div>
-    <div id="final-sentence" style="font-size: 1.3em; color: #1e293b; font-weight: 600; font-family: monospace; padding: 15px; background: white; border-radius: 8px; border-left: 5px solid #10b981;"></div>
-  </div>
-</div>
+//   <!-- 最终答案（初始隐藏） -->
+//   <div id="final-result" style="display: none; margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 12px; border: 2px solid #0F63EE; text-align: center;">
+//     <div style="color: #0F63EE; font-weight: 700; font-size: 1.1em; margin-bottom: 10px;">🎉 生成完毕！AI “猜”出的完整句子是：</div>
+//     <div id="final-sentence" style="font-size: 1.3em; color: #1e293b; font-weight: 600; font-family: monospace; padding: 15px; background: white; border-radius: 8px; border-left: 5px solid #10b981;"></div>
+//   </div>
+// </div>
 
-<style>
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-.token-candidate {
-  padding: 10px 18px;
-  background: #f1f5f9;
-  color: #475569;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
-  border: 2px solid transparent;
-  text-align: center;
-}
-.token-candidate:hover {
-  background: #e2e8f0;
-  transform: translateY(-2px);
-}
-.token-candidate.selected {
-  background: linear-gradient(135deg, #10b981, #34d399) !important;
-  color: white !important;
-  border-color: #10b981 !important;
-  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3) !important;
-}
-.token-candidate.high-prob {
-  background: #dbeafe;
-  color: #1e40af;
-  border: 2px solid #93c5fd;
-}
-</style>
+// <style>
+// @keyframes blink {
+//   0%, 100% { opacity: 1; }
+//   50% { opacity: 0; }
+// }
+// .token-candidate {
+//   padding: 10px 18px;
+//   background: #f1f5f9;
+//   color: #475569;
+//   border-radius: 8px;
+//   font-weight: 500;
+//   cursor: pointer;
+//   transition: all 0.3s;
+//   border: 2px solid transparent;
+//   text-align: center;
+// }
+// .token-candidate:hover {
+//   background: #e2e8f0;
+//   transform: translateY(-2px);
+// }
+// .token-candidate.selected {
+//   background: linear-gradient(135deg, #10b981, #34d399) !important;
+//   color: white !important;
+//   border-color: #10b981 !important;
+//   box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3) !important;
+// }
+// .token-candidate.high-prob {
+//   background: #dbeafe;
+//   color: #1e40af;
+//   border: 2px solid #93c5fd;
+// }
+// </style>
 
-<script>
-(function() {
-  // 演示数据：每一步的候选Token及其（模拟的）概率
-  const generationSteps = [
-    {
-      candidates: [
-        { text: '计算', prob: 0.35 },
-        { text: '处理', prob: 0.28 },
-        { text: '验证', prob: 0.15 },
-        { text: '获取', prob: 0.12 },
-        { text: '生成', prob: 0.10 }
-      ],
-      selected: '计算'
-    },
-    {
-      candidates: [
-        { text: '用户', prob: 0.40 },
-        { text: '数据', prob: 0.25 },
-        { text: '数组', prob: 0.18 },
-        { text: '输入', prob: 0.12 },
-        { text: '两个', prob: 0.05 }
-      ],
-      selected: '用户'
-    },
-    {
-      candidates: [
-        { text: '输入', prob: 0.55 },
-        { text: '的', prob: 0.20 },
-        { text: '信息', prob: 0.15 },
-        { text: 'ID', prob: 0.07 },
-        { text: '名', prob: 0.03 }
-      ],
-      selected: '输入'
-    },
-    {
-      candidates: [
-        { text: '的', prob: 0.60 },
-        { text: '。', prob: 0.25 },
-        { text: '，', prob: 0.10 },
-        { text: '并', prob: 0.04 },
-        { text: '然后', prob: 0.01 }
-      ],
-      selected: '的'
-    },
-    {
-      candidates: [
-        { text: '和', prob: 0.45 },
-        { text: '平均值', prob: 0.30 },
-        { text: '总和', prob: 0.15 },
-        { text: '有效性', prob: 0.07 },
-        { text: '长度', prob: 0.03 }
-      ],
-      selected: '和'
-    },
-    {
-      candidates: [
-        { text: '返回', prob: 0.50 },
-        { text: '输出', prob: 0.25 },
-        { text: '打印', prob: 0.15 },
-        { text: '保存', prob: 0.07 },
-        { text: '比较', prob: 0.03 }
-      ],
-      selected: '返回'
-    },
-    {
-      candidates: [
-        { text: '结果', prob: 0.65 },
-        { text: '它', prob: 0.20 },
-        { text: '。', prob: 0.10 },
-        { text: '值', prob: 0.04 },
-        { text: '状态', prob: 0.01 }
-      ],
-      selected: '结果'
-    },
-    {
-      candidates: [
-        { text: '。', prob: 0.90 },
-        { text: '，', prob: 0.05 },
-        { text: '；', prob: 0.03 },
-        { text: '并', prob: 0.01 },
-        { text: '然后', prob: 0.01 }
-      ],
-      selected: '。'
-    }
-  ];
+// <script>
+// (function() {
+//   // 演示数据：每一步的候选Token及其（模拟的）概率
+//   const generationSteps = [
+//     {
+//       candidates: [
+//         { text: '计算', prob: 0.35 },
+//         { text: '处理', prob: 0.28 },
+//         { text: '验证', prob: 0.15 },
+//         { text: '获取', prob: 0.12 },
+//         { text: '生成', prob: 0.10 }
+//       ],
+//       selected: '计算'
+//     },
+//     {
+//       candidates: [
+//         { text: '用户', prob: 0.40 },
+//         { text: '数据', prob: 0.25 },
+//         { text: '数组', prob: 0.18 },
+//         { text: '输入', prob: 0.12 },
+//         { text: '两个', prob: 0.05 }
+//       ],
+//       selected: '用户'
+//     },
+//     {
+//       candidates: [
+//         { text: '输入', prob: 0.55 },
+//         { text: '的', prob: 0.20 },
+//         { text: '信息', prob: 0.15 },
+//         { text: 'ID', prob: 0.07 },
+//         { text: '名', prob: 0.03 }
+//       ],
+//       selected: '输入'
+//     },
+//     {
+//       candidates: [
+//         { text: '的', prob: 0.60 },
+//         { text: '。', prob: 0.25 },
+//         { text: '，', prob: 0.10 },
+//         { text: '并', prob: 0.04 },
+//         { text: '然后', prob: 0.01 }
+//       ],
+//       selected: '的'
+//     },
+//     {
+//       candidates: [
+//         { text: '和', prob: 0.45 },
+//         { text: '平均值', prob: 0.30 },
+//         { text: '总和', prob: 0.15 },
+//         { text: '有效性', prob: 0.07 },
+//         { text: '长度', prob: 0.03 }
+//       ],
+//       selected: '和'
+//     },
+//     {
+//       candidates: [
+//         { text: '返回', prob: 0.50 },
+//         { text: '输出', prob: 0.25 },
+//         { text: '打印', prob: 0.15 },
+//         { text: '保存', prob: 0.07 },
+//         { text: '比较', prob: 0.03 }
+//       ],
+//       selected: '返回'
+//     },
+//     {
+//       candidates: [
+//         { text: '结果', prob: 0.65 },
+//         { text: '它', prob: 0.20 },
+//         { text: '。', prob: 0.10 },
+//         { text: '值', prob: 0.04 },
+//         { text: '状态', prob: 0.01 }
+//       ],
+//       selected: '结果'
+//     },
+//     {
+//       candidates: [
+//         { text: '。', prob: 0.90 },
+//         { text: '，', prob: 0.05 },
+//         { text: '；', prob: 0.03 },
+//         { text: '并', prob: 0.01 },
+//         { text: '然后', prob: 0.01 }
+//       ],
+//       selected: '。'
+//     }
+//   ];
 
-  let currentStep = 0;
-  const generatedTokens = ['//', '这个', '函数', '用于'];
-  const promptElement = document.getElementById('current-prompt');
-  const generatedTextElement = document.getElementById('generated-text');
-  const candidateContainer = document.getElementById('candidate-tokens');
-  const selectionStatusElement = document.getElementById('selection-status');
-  const tokenSequenceContainer = document.getElementById('token-sequence');
-  const nextStepBtn = document.getElementById('next-step-btn');
-  const resetBtn = document.getElementById('reset-btn');
-  const finalResultElement = document.getElementById('final-result');
-  const finalSentenceElement = document.getElementById('final-sentence');
+//   let currentStep = 0;
+//   const generatedTokens = ['//', '这个', '函数', '用于'];
+//   const promptElement = document.getElementById('current-prompt');
+//   const generatedTextElement = document.getElementById('generated-text');
+//   const candidateContainer = document.getElementById('candidate-tokens');
+//   const selectionStatusElement = document.getElementById('selection-status');
+//   const tokenSequenceContainer = document.getElementById('token-sequence');
+//   const nextStepBtn = document.getElementById('next-step-btn');
+//   const resetBtn = document.getElementById('reset-btn');
+//   const finalResultElement = document.getElementById('final-result');
+//   const finalSentenceElement = document.getElementById('final-sentence');
 
-  function renderCandidates() {
-    if (currentStep >= generationSteps.length) {
-      completeGeneration();
-      return;
-    }
+//   function renderCandidates() {
+//     if (currentStep >= generationSteps.length) {
+//       completeGeneration();
+//       return;
+//     }
 
-    const step = generationSteps[currentStep];
-    candidateContainer.innerHTML = '';
-    selectionStatusElement.textContent = '';
+//     const step = generationSteps[currentStep];
+//     candidateContainer.innerHTML = '';
+//     selectionStatusElement.textContent = '';
 
-    // 找出概率最高的候选词
-    const maxProb = Math.max(...step.candidates.map(c => c.prob));
-    const highProbCandidates = step.candidates.filter(c => c.prob === maxProb);
+//     // 找出概率最高的候选词
+//     const maxProb = Math.max(...step.candidates.map(c => c.prob));
+//     const highProbCandidates = step.candidates.filter(c => c.prob === maxProb);
 
-    step.candidates.forEach(candidate => {
-      const isHighProb = candidate.prob === maxProb;
-      const div = document.createElement('div');
-      div.className = \`token-candidate \${isHighProb ? 'high-prob' : ''}\`;
-      div.innerHTML = \`
-        <div>\${candidate.text}</div>
-        <div style="font-size: 0.85em; margin-top: 4px; color: \${isHighProb ? '#1e40af' : '#64748b'};">概率: \${(candidate.prob * 100).toFixed(1)}%</div>
-      \`;
+//     step.candidates.forEach(candidate => {
+//       const isHighProb = candidate.prob === maxProb;
+//       const div = document.createElement('div');
+//       div.className = \`token-candidate \${isHighProb ? 'high-prob' : ''}\`;
+//       div.innerHTML = \`
+//         <div>\${candidate.text}</div>
+//         <div style="font-size: 0.85em; margin-top: 4px; color: \${isHighProb ? '#1e40af' : '#64748b'};">概率: \${(candidate.prob * 100).toFixed(1)}%</div>
+//       \`;
 
-      // 如果当前候选词是概率最高的之一，添加特殊标记
-      if (isHighProb) {
-        const badge = document.createElement('div');
-        badge.style = 'position: absolute; top: -8px; right: -8px; background: #f59e0b; color: white; font-size: 0.7em; padding: 2px 6px; border-radius: 10px; font-weight: bold;';
-        badge.textContent = '最高';
-        div.style.position = 'relative';
-        div.appendChild(badge);
-      }
+//       // 如果当前候选词是概率最高的之一，添加特殊标记
+//       if (isHighProb) {
+//         const badge = document.createElement('div');
+//         badge.style = 'position: absolute; top: -8px; right: -8px; background: #f59e0b; color: white; font-size: 0.7em; padding: 2px 6px; border-radius: 10px; font-weight: bold;';
+//         badge.textContent = '最高';
+//         div.style.position = 'relative';
+//         div.appendChild(badge);
+//       }
 
-      div.addEventListener('click', () => selectCandidate(candidate.text, candidate.prob));
-      candidateContainer.appendChild(div);
-    });
+//       div.addEventListener('click', () => selectCandidate(candidate.text, candidate.prob));
+//       candidateContainer.appendChild(div);
+//     });
 
-    // 自动高亮并“选择”概率最高的候选词（模拟AI的选择）
-    setTimeout(() => {
-      autoSelectHighestProb(highProbCandidates[0].text);
-    }, 500);
-  }
+//     // 自动高亮并“选择”概率最高的候选词（模拟AI的选择）
+//     setTimeout(() => {
+//       autoSelectHighestProb(highProbCandidates[0].text);
+//     }, 500);
+//   }
 
-  function autoSelectHighestProb(candidateText) {
-    const candidates = document.querySelectorAll('.token-candidate');
-    candidates.forEach(cand => {
-      if (cand.textContent.includes(\`\${candidateText}\`\)) {
-        cand.classList.add('selected');
-        // 更新状态显示
-        selectionStatusElement.textContent = \`✅ AI 选择了概率最高的 Token：“\${candidateText}”\`;
-        selectionStatusElement.style.color = '#10b981';
-      }
-    });
-  }
+//   function autoSelectHighestProb(candidateText) {
+//     const candidates = document.querySelectorAll('.token-candidate');
+//     candidates.forEach(cand => {
+//       if (cand.textContent.includes(\`\${candidateText}\`\)) {
+//         cand.classList.add('selected');
+//         // 更新状态显示
+//         selectionStatusElement.textContent = \`✅ AI 选择了概率最高的 Token：“\${candidateText}”\`;
+//         selectionStatusElement.style.color = '#10b981';
+//       }
+//     });
+//   }
 
-  function selectCandidate(text, prob) {
-    // 添加到已生成序列
-    generatedTokens.push(text);
-    generatedTextElement.textContent = generatedTokens.slice(4).join(''); // 跳过前4个初始token
+//   function selectCandidate(text, prob) {
+//     // 添加到已生成序列
+//     generatedTokens.push(text);
+//     generatedTextElement.textContent = generatedTokens.slice(4).join(''); // 跳过前4个初始token
 
-    // 更新Token序列显示
-    const tokenTag = document.createElement('div');
-    tokenTag.className = 'token-tag';
-    tokenTag.style = 'padding: 8px 14px; background: #10b981; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);';
-    tokenTag.textContent = text;
-    tokenSequenceContainer.appendChild(tokenTag);
+//     // 更新Token序列显示
+//     const tokenTag = document.createElement('div');
+//     tokenTag.className = 'token-tag';
+//     tokenTag.style = 'padding: 8px 14px; background: #10b981; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);';
+//     tokenTag.textContent = text;
+//     tokenSequenceContainer.appendChild(tokenTag);
 
-    // 滚动到最新token
-    tokenTag.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+//     // 滚动到最新token
+//     tokenTag.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
 
-    currentStep++;
-    if (currentStep < generationSteps.length) {
-      setTimeout(renderCandidates, 800);
-    } else {
-      setTimeout(completeGeneration, 800);
-    }
-  }
+//     currentStep++;
+//     if (currentStep < generationSteps.length) {
+//       setTimeout(renderCandidates, 800);
+//     } else {
+//       setTimeout(completeGeneration, 800);
+//     }
+//   }
 
-  function completeGeneration() {
-    const fullSentence = '// 这个函数用于计算用户输入的和返回结果。';
-    generatedTextElement.textContent = generatedTokens.slice(4).join('');
-    candidateContainer.innerHTML = '<div style="padding: 20px; color: #0F63EE; font-weight: 600;">🎯 生成完成！AI 已基于概率“猜”出了整句话。</div>';
-    selectionStatusElement.textContent = '✅ 任务完成！整个过程没有“查找”或“匹配”，全是“预测”和“猜测”。';
-    nextStepBtn.disabled = true;
-    nextStepBtn.style.opacity = '0.6';
-    nextStepBtn.textContent = '演示完成';
+//   function completeGeneration() {
+//     const fullSentence = '// 这个函数用于计算用户输入的和返回结果。';
+//     generatedTextElement.textContent = generatedTokens.slice(4).join('');
+//     candidateContainer.innerHTML = '<div style="padding: 20px; color: #0F63EE; font-weight: 600;">🎯 生成完成！AI 已基于概率“猜”出了整句话。</div>';
+//     selectionStatusElement.textContent = '✅ 任务完成！整个过程没有“查找”或“匹配”，全是“预测”和“猜测”。';
+//     nextStepBtn.disabled = true;
+//     nextStepBtn.style.opacity = '0.6';
+//     nextStepBtn.textContent = '演示完成';
 
-    // 显示最终结果
-    finalSentenceElement.textContent = fullSentence;
-    finalResultElement.style.display = 'block';
-    finalResultElement.scrollIntoView({ behavior: 'smooth' });
-  }
+//     // 显示最终结果
+//     finalSentenceElement.textContent = fullSentence;
+//     finalResultElement.style.display = 'block';
+//     finalResultElement.scrollIntoView({ behavior: 'smooth' });
+//   }
 
-  function resetDemo() {
-    currentStep = 0;
-    generatedTokens.length = 4; // 重置为初始4个token
-    generatedTextElement.textContent = '';
-    selectionStatusElement.textContent = '';
-    nextStepBtn.disabled = false;
-    nextStepBtn.style.opacity = '1';
-    nextStepBtn.textContent = '下一步：让 AI 猜下一个词';
+//   function resetDemo() {
+//     currentStep = 0;
+//     generatedTokens.length = 4; // 重置为初始4个token
+//     generatedTextElement.textContent = '';
+//     selectionStatusElement.textContent = '';
+//     nextStepBtn.disabled = false;
+//     nextStepBtn.style.opacity = '1';
+//     nextStepBtn.textContent = '下一步：让 AI 猜下一个词';
 
-    // 重置Token序列显示（只保留前4个）
-    tokenSequenceContainer.innerHTML = '';
-    ['//', '这个', '函数', '用于'].forEach(token => {
-      const tokenTag = document.createElement('div');
-      tokenTag.className = 'token-tag';
-      tokenTag.style = 'padding: 8px 14px; background: #0F63EE; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(15, 99, 238, 0.3);';
-      tokenTag.textContent = token;
-      tokenSequenceContainer.appendChild(tokenTag);
-    });
+//     // 重置Token序列显示（只保留前4个）
+//     tokenSequenceContainer.innerHTML = '';
+//     ['//', '这个', '函数', '用于'].forEach(token => {
+//       const tokenTag = document.createElement('div');
+//       tokenTag.className = 'token-tag';
+//       tokenTag.style = 'padding: 8px 14px; background: #0F63EE; color: white; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(15, 99, 238, 0.3);';
+//       tokenTag.textContent = token;
+//       tokenSequenceContainer.appendChild(tokenTag);
+//     });
 
-    // 隐藏最终结果
-    finalResultElement.style.display = 'none';
+//     // 隐藏最终结果
+//     finalResultElement.style.display = 'none';
 
-    // 重新开始
-    renderCandidates();
-  }
+//     // 重新开始
+//     renderCandidates();
+//   }
 
-  // 初始化
-  nextStepBtn.addEventListener('click', () => {
-    if (currentStep < generationSteps.length) {
-      const step = generationSteps[currentStep];
-      selectCandidate(step.selected, step.candidates.find(c => c.text === step.selected).prob);
-    }
-  });
+//   // 初始化
+//   nextStepBtn.addEventListener('click', () => {
+//     if (currentStep < generationSteps.length) {
+//       const step = generationSteps[currentStep];
+//       selectCandidate(step.selected, step.candidates.find(c => c.text === step.selected).prob);
+//     }
+//   });
 
-  resetBtn.addEventListener('click', resetDemo);
+//   resetBtn.addEventListener('click', resetDemo);
 
-  // 开始演示
-  renderCandidates();
-})();
-</script>
-<custom-button-after-content><img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f680.svg" alt="icon" width="16" height="16" loading="lazy" /><span>点击自定义按钮</span></custom-button-after-content>
+//   // 开始演示
+//   renderCandidates();
+// })();
+// </script>
+// <custom-button-after-content><img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f680.svg" alt="icon" width="16" height="16" loading="lazy" /><span>点击自定义按钮</span></custom-button-after-content>
 
----
+// ---
 
-### 图解说明
+// ### 图解说明
 
-这个过程就像一场精心设计的“**概率接龙**”：
+// 这个过程就像一场精心设计的“**概率接龙**”：
 
-1.  **起点**：你给出了提示词 \`// 这个函数用于\`。AI 把它拆成 Token：\`//\`、\`这个\`、\`函数\`、\`用于\`。
-2.  **第一次“猜”**：AI 看着这个序列，开始计算后面接哪个 Token 概率最高。它“脑”中浮现出几个候选：\`计算\`（35%）、\`处理\`（28%）、\`验证\`（15%）…… **它选择了概率最高的 \`计算\`**。
-3.  **循环往复**：现在，提示词变成了 \`// 这个函数用于 计算\`。AI 再次基于**这个新的、更长的序列**，预测下一个 Token。候选可能是 \`用户\`、\`数据\`、\`数组\`…… 它再次选择概率最高的。
-4.  **步步为营**：每猜对一个 Token，就把它加到提示词后面，作为预测**下一个** Token 的上下文。如此循环，直到生成一个完整的句子（比如遇到句号\`.\`的概率足够高）。
-5.  **核心秘密**：**注意，AI 每次“猜”的时候，看的都是当前完整的上下文（即“提示词 + 已生成的所有 Token”）**。它没有在数据库里“搜索”标准答案，也没有进行“逻辑匹配”。它做的唯一一件事，就是基于海量数据训练出的“感觉”，计算**下一个词出现的概率**。
+// 1.  **起点**：你给出了提示词 \`// 这个函数用于\`。AI 把它拆成 Token：\`//\`、\`这个\`、\`函数\`、\`用于\`。
+// 2.  **第一次“猜”**：AI 看着这个序列，开始计算后面接哪个 Token 概率最高。它“脑”中浮现出几个候选：\`计算\`（35%）、\`处理\`（28%）、\`验证\`（15%）…… **它选择了概率最高的 \`计算\`**。
+// 3.  **循环往复**：现在，提示词变成了 \`// 这个函数用于 计算\`。AI 再次基于**这个新的、更长的序列**，预测下一个 Token。候选可能是 \`用户\`、\`数据\`、\`数组\`…… 它再次选择概率最高的。
+// 4.  **步步为营**：每猜对一个 Token，就把它加到提示词后面，作为预测**下一个** Token 的上下文。如此循环，直到生成一个完整的句子（比如遇到句号\`.\`的概率足够高）。
+// 5.  **核心秘密**：**注意，AI 每次“猜”的时候，看的都是当前完整的上下文（即“提示词 + 已生成的所有 Token”）**。它没有在数据库里“搜索”标准答案，也没有进行“逻辑匹配”。它做的唯一一件事，就是基于海量数据训练出的“感觉”，计算**下一个词出现的概率**。
 
-**整个过程，没有“查找”，没有“搜索”，没有“匹配”。有的，只是一次又一次的“猜测”。**
+// **整个过程，没有“查找”，没有“搜索”，没有“匹配”。有的，只是一次又一次的“猜测”。**
 
----
+// ---
 
-### 总结
+// ### 总结
 
-所以，咱们可以得出一个既简单又震撼的结论：
+// 所以，咱们可以得出一个既简单又震撼的结论：
 
-**AI 最基础、最核心的工作过程，就是基于概率预测下一个 Token。**
+// **AI 最基础、最核心的工作过程，就是基于概率预测下一个 Token。**
 
-它所有的“智慧”、所有的“胡言乱语”、所有的“惊人表现”和“低级错误”，都源于这个根本机制：
-*   **它不是在“检索”知识**，而是在“联想”概率。
-*   **它不是在“执行”逻辑**，而是在“模仿”模式。
-*   **它完全是用“猜”的**，只不过是在数十亿文本上训练后，猜得比较有根据。
+// 它所有的“智慧”、所有的“胡言乱语”、所有的“惊人表现”和“低级错误”，都源于这个根本机制：
+// *   **它不是在“检索”知识**，而是在“联想”概率。
+// *   **它不是在“执行”逻辑**，而是在“模仿”模式。
+// *   **它完全是用“猜”的**，只不过是在数十亿文本上训练后，猜得比较有根据。
 
-理解这一点，是你**摆脱对 AI 盲目恐惧或崇拜的关键第一步**。它既不是神，也不是鬼，它是一个极其复杂的**概率机器**。知道了它怎么“猜”，你才能明白它为何会“对”，更会明白它为何会“错”。
+// 理解这一点，是你**摆脱对 AI 盲目恐惧或崇拜的关键第一步**。它既不是神，也不是鬼，它是一个极其复杂的**概率机器**。知道了它怎么“猜”，你才能明白它为何会“对”，更会明白它为何会“错”。
 
+// **任何你看到的文章、代码，在 AI 眼里，都是一串特定顺序的 Token 组合。**\n\n这个逻辑可以推广到更广阔的领域：
+// *   **文生图模型**（比如 Midjourney）：它眼中的“Token”可能是图像的一块小色块、一种纹理模式，或者一个视觉概念。
+// * *   **文生视频模型**（比如 Sora）：它的“Token”可能是一帧画面中的动态片段，或者几帧之间的变化规律。
 
-**任何你看到的文章、代码，在 AI 眼里，都是一串特定顺序的 Token 组合。**\n\n这个逻辑可以推广到更广阔的领域：
-*   **文生图模型**（比如 Midjourney）：它眼中的“Token”可能是图像的一块小色块、一种纹理模式，或者一个视觉概念。
-* *   **文生视频模型**（比如 Sora）：它的“Token”可能是一帧画面中的动态片段，或者几帧之间的变化规律。
+// 虽然在文字以外的领域，工程师们可能不直接叫它“Token”，但**万变不离其宗，核心思想都是用更基础的“积木块”去组合、生成复杂内容**。
 
-虽然在文字以外的领域，工程师们可能不直接叫它“Token”，但**万变不离其宗，核心思想都是用更基础的“积木块”去组合、生成复杂内容**。
+// 所以，下次你看到 AI 一个字一个字地“蹦”答案时，其实正是在目睹它**拿起一块又一块“Token积木”，为你现场搭建答案大厦**。它的智慧与局限，都藏在这个搭建过程里。
 
-所以，下次你看到 AI 一个字一个字地“蹦”答案时，其实正是在目睹它**拿起一块又一块“Token积木”，为你现场搭建答案大厦**。它的智慧与局限，都藏在这个搭建过程里。
+// 好的，咱们用一个你熟悉的场景来画这个图。假设你让 AI 帮你写一段简单的 JavaScript 代码注释。
 
-好的，咱们用一个你熟悉的场景来画这个图。假设你让 AI 帮你写一段简单的 JavaScript 代码注释。
+// `;
 
-`;
+// const HTML_DEMO_STREAM_SOURCE_2 = `
+// <div class="w-full h-screen overflow-hidden flex flex-col items-center justify-[safe_center] bg-gradient-to-br from-blue-50 to-blue-100 p-[4vmin]">
+//   <div class="w-full max-w-[120vmin] bg-white rounded-[2vmin] shadow-lg p-[6vmin] flex flex-col gap-[4vmin]">
+//     <h1 class="text-[5vmin] font-bold text-[#0F63EE] text-center">哈喽美少女大战哥斯拉😉</h1>
+//     <div class="flex flex-col gap-[3vmin]">
+//       <p class="text-[3vmin] text-gray-800">现在麻烦你先扫码添加咱们BP刘谊的微信哦，同时需要跟你确认一下你的姓名和你使用的考勤方式，是EHR、钉钉还是云EHR呀？</p>
+//       <div class="flex justify-center w-full">
+//         <img src="https://resource.ai-shifu.cn/a428928668b744469e6c761d5249ecbf" alt="扫码添加微信" class="rounded-[1.5vmin] w-[50vmin] h-auto shadow-md" />
+//       </div>
+//       <p class="text-[3vmin] text-gray-800 font-medium text-center mt-[2vmin]">请选择你的考勤系统。</p>
+//     </div>
+//   </div>
+// </div>`;
 
-const HTML_DEMO_STREAM_SOURCE_2 = `
-<div class="w-full h-screen overflow-hidden flex flex-col items-center justify-[safe_center] bg-gradient-to-br from-blue-50 to-blue-100 p-[4vmin]">
-  <div class="w-full max-w-[120vmin] bg-white rounded-[2vmin] shadow-lg p-[6vmin] flex flex-col gap-[4vmin]">
-    <h1 class="text-[5vmin] font-bold text-[#0F63EE] text-center">哈喽美少女大战哥斯拉😉</h1>
-    <div class="flex flex-col gap-[3vmin]">
-      <p class="text-[3vmin] text-gray-800">现在麻烦你先扫码添加咱们BP刘谊的微信哦，同时需要跟你确认一下你的姓名和你使用的考勤方式，是EHR、钉钉还是云EHR呀？</p>
-      <div class="flex justify-center w-full">
-        <img src="https://resource.ai-shifu.cn/a428928668b744469e6c761d5249ecbf" alt="扫码添加微信" class="rounded-[1.5vmin] w-[50vmin] h-auto shadow-md" />
-      </div>
-      <p class="text-[3vmin] text-gray-800 font-medium text-center mt-[2vmin]">请选择你的考勤系统。</p>
-    </div>
-  </div>
-</div>`;
+const HTML_DEMO_STREAM_SOURCE =
+  '<div class="w-full h-screen flex flex-col items-center justify-[safe_center] bg-gradient-to-br from-blue-50 to-indigo-100 p-[4vmin]">\n  <div class="flex flex-col items-center justify-center flex-1 w-full max-w-[90vmin] text-center gap-[3vmin]">\n    <!-- 头像 -->\n    <div class="relative">\n      <img src="https://resource.ai-shifu.com/ac186b833d0e417fb02737910b3a5ae0" alt="孙志岗" class="w-[20vmin] h-[20vmin] rounded-full border-[0.5vmin] border-white shadow-xl object-cover">\n      <div class="absolute -bottom-[1vmin] -right-[1vmin] bg-[#0F63EE] text-white text-[1.8vmin] font-bold px-[1.5vmin] py-[0.5vmin] rounded-full">教师</div>\n    </div>\n    <!-- 课程名称 -->\n    <h1 class="text-[5.5vmin] font-bold text-gray-900 leading-tight">跟 AI 学 AI 通识</h1>\n    <!-- 主讲人 -->\n    <div class="text-[3.5vmin] font-semibold text-[#0F63EE]">主讲：孙志岗</div>\n    <!-- 个人目标 -->\n    <div class="text-[2.8vmin] text-gray-700 bg-white/80 backdrop-blur-sm rounded-[2vmin] p-[3vmin] shadow-lg border border-gray-200 max-w-[80vmin] leading-[3.8vmin]">\n      <span class="font-bold text-[#0F63EE]">个人目标：</span>帮助 100 万人顺利走进 AGI 时代\n    </div>\n    <!-- 专属授课提示 -->\n    <div class="text-[2.2vmin] text-gray-600 italic mt-[2vmin]">为你量身定制的 AI 通识之旅</div>\n  </div>\n</div>\n\n';
 
 const STREAM_CODE_IFRAME_CONTENT = `\`\`\`c
 int maze[5][5] = {
@@ -1546,6 +1612,174 @@ const STREAM_TABLE_IFRAME_CONTENT = `## Tables
 | Cell 1   | Cell 2   | Cell 3   |
 | Cell 4   | Cell 5   | Cell 6   |`;
 
+type ReadingModeStoryItem =
+  | {
+      id: string;
+      type: "content";
+      content: string;
+    }
+  | {
+      id: string;
+      type: "ask";
+      anchorId: string;
+      label: string;
+    };
+
+const READING_MODE_OVERVIEW_CONTENT = `
+<div class="w-full rounded-[28px] bg-slate-100 px-6 py-8 shadow-sm md:px-10">
+  <div class="mx-auto flex max-w-5xl flex-col gap-8">
+    <div class="text-center">
+      <h1 class="mb-3 text-4xl font-bold tracking-tight text-slate-800">三大考勤流程，一次搞定</h1>
+      <p class="text-base text-slate-600">本节开场总览 · 明确学习目标</p>
+    </div>
+
+    <div class="rounded-[24px] border-l-4 border-blue-500 bg-white px-6 py-5 shadow-md">
+      <h2 class="mb-3 text-2xl font-semibold text-slate-800">🎯 本节目标</h2>
+      <p class="m-0 text-base leading-7 text-slate-700">
+        学会在 <strong>UNKNOWN</strong> 系统中，熟练完成请假、公出、加班等核心考勤流程的发起与处理，
+        确保每一次申请都符合规范，做到“上级同意、当月务必发起流程、材料齐全”。
+      </p>
+    </div>
+
+    <div>
+      <h2 class="mb-5 text-center text-2xl font-semibold text-slate-800">📋 三大核心流程概览</h2>
+      <div class="grid gap-4 md:grid-cols-3">
+        <div class="rounded-[20px] bg-blue-100 px-5 py-5 shadow-sm">
+          <div class="mb-3 text-3xl">🏖️</div>
+          <h3 class="mb-3 text-xl font-semibold text-slate-800">请假流程</h3>
+          <ul class="m-0 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
+            <li>提前发起申请</li>
+            <li>明确请假类型与时长</li>
+            <li>等待上级审批</li>
+          </ul>
+        </div>
+        <div class="rounded-[20px] bg-emerald-100 px-5 py-5 shadow-sm">
+          <div class="mb-3 text-3xl">✈️</div>
+          <h3 class="mb-3 text-xl font-semibold text-slate-800">公出流程</h3>
+          <ul class="m-0 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
+            <li>填写外出事由与地点</li>
+            <li>预估外出时间</li>
+            <li>提交上级报备</li>
+          </ul>
+        </div>
+        <div class="rounded-[20px] bg-rose-100 px-5 py-5 shadow-sm">
+          <div class="mb-3 text-3xl">💼</div>
+          <h3 class="mb-3 text-xl font-semibold text-slate-800">加班流程</h3>
+          <ul class="m-0 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
+            <li>记录加班事由与时长</li>
+            <li>选择加班补偿方式</li>
+            <li>提交审批确认</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+const READING_MODE_GUIDE_CONTENT = `
+美少女大战哥斯拉，欢迎来到本节课程！
+
+这张图就是我们本节要攻克的“地图”。我们的目标非常明确：在 **UNKNOWN** 系统里，把 **请假、公出、加班** 这三大考勤流程弄得明明白白。
+
+无论你遇到哪种情况，记住三个“通关秘籍”：
+
+1. **上级同意**：行动前，先拿到“许可”。
+2. **当月务必发起流程**：千万别拖延，当月事当月毕。
+3. **材料齐全**：该有的证明、报告，一个都不能少。
+
+只要牢牢抓住这三点，所有考勤流程你都能轻松搞定。接下来，我们就一个流程一个流程地拆解学习。
+`;
+
+const READING_MODE_ROUTE_CONTENT = `
+先看钉钉路径，再练习钉钉公出与钉钉加班流程。
+`;
+
+const READING_MODE_PRIORITY_CONTENT = `
+本节优先看钉钉工作台路径、外勤打卡与请假提交流程。
+`;
+
+const READING_MODE_STORY_ITEMS: ReadingModeStoryItem[] = [
+  {
+    id: "lesson-overview",
+    type: "content",
+    content: READING_MODE_OVERVIEW_CONTENT,
+  },
+  {
+    id: "ask-after-overview",
+    type: "ask",
+    anchorId: "lesson-overview",
+    label: "追问",
+  },
+  {
+    id: "lesson-guide",
+    type: "content",
+    content: READING_MODE_GUIDE_CONTENT,
+  },
+  {
+    id: "ask-after-guide",
+    type: "ask",
+    anchorId: "lesson-guide",
+    label: "追问",
+  },
+  {
+    id: "lesson-route",
+    type: "content",
+    content: READING_MODE_ROUTE_CONTENT,
+  },
+  {
+    id: "ask-after-route",
+    type: "ask",
+    anchorId: "lesson-route",
+    label: "追问",
+  },
+  {
+    id: "lesson-priority",
+    type: "content",
+    content: READING_MODE_PRIORITY_CONTENT,
+  },
+  {
+    id: "ask-after-priority",
+    type: "ask",
+    anchorId: "lesson-priority",
+    label: "追问",
+  },
+];
+
+const ReadingModeAskPill = ({
+  anchorId,
+  label,
+}: {
+  anchorId: string;
+  label: string;
+}) => (
+  <button
+    type="button"
+    data-anchor-id={anchorId}
+    onClick={() => {
+      console.log("reading-mode-follow-up clicked", anchorId);
+    }}
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 6,
+      border: "none",
+      borderRadius: 999,
+      padding: "6px 12px",
+      background: "rgb(71 85 105)",
+      color: "rgb(255 255 255)",
+      fontSize: 13,
+      fontWeight: 600,
+      lineHeight: 1,
+      boxShadow: "0 6px 18px rgba(15, 23, 42, 0.12)",
+      cursor: "pointer",
+    }}
+  >
+    <span aria-hidden="true">🖐️</span>
+    <span>{label}</span>
+  </button>
+);
+
 export const HTMLDemo: Story = {
   name: "HTML Demo",
   args: {
@@ -1564,17 +1798,17 @@ export const HTMLDemo: Story = {
       let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
       const streamNext = () => {
-        if (currentIndex >= HTML_DEMO_STREAM_SOURCE_2.length) {
+        if (currentIndex >= HTML_DEMO_STREAM_SOURCE.length) {
           timeoutId = null;
           return;
         }
 
         const chunkSize = Math.floor(Math.random() * 30) + 1;
         const nextIndex = Math.min(
-          HTML_DEMO_STREAM_SOURCE_2.length,
+          HTML_DEMO_STREAM_SOURCE.length,
           currentIndex + chunkSize
         );
-        const nextChunk = HTML_DEMO_STREAM_SOURCE_2.slice(
+        const nextChunk = HTML_DEMO_STREAM_SOURCE.slice(
           currentIndex,
           nextIndex
         );
@@ -1813,7 +2047,8 @@ export const HTMLDemoIframeOnly: Story = {
         <div style={{ width: "100%", height: "700px", background: "#e0e0e0" }}>
           <IframeSandbox
             type="sandbox"
-            content={`<div style=\"display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: linear-gradient(to bottom right, #f8fafc, #e0e7ff); font-family: 'Arial', sans-serif; padding: 2rem;\">\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    AI 是一种工具\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    每种 AI 产品都需要<br>学习使用方法\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2;\">\n    打造 AI 产品是<br>技术高手的事情\n  </div>\n</div>`}
+            content={HTML_DEMO_STREAM_SOURCE}
+            // content={`<div style=\"display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: linear-gradient(to bottom right, #f8fafc, #e0e7ff); font-family: 'Arial', sans-serif; padding: 2rem;\">\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    AI 是一种工具\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2; margin-bottom: 3rem;\">\n    每种 AI 产品都需要<br>学习使用方法\n  </div>\n  <div style=\"font-size: 4.5rem; font-weight: 900; color: #0F63EE; text-align: center; line-height: 1.2;\">\n    打造 AI 产品是<br>技术高手的事情\n  </div>\n</div>`}
             // content={htmlContent}
             // content={`<div class=\"w-full h-screen overflow-hidden flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800 p-[4vmin] text-white\">\n  <div class=\"text-[3vmin] text-blue-300 mb-[3vmin] opacity-80\">OpenAI CEO Sam Altman 说：</div>\n  <blockquote class=\"text-[4.5vmin] font-light italic text-center leading-[6vmin] max-w-[90%]\">\n    \"I think there will be a one-person company that reaches a billion-dollar valuation.\"\n  </blockquote>\n  <div class=\"mt-[6vmin] w-[60%] h-[0.5vmin] bg-blue-500 rounded-full\"></div>\n</div>`}
             className="content-render-iframe"
@@ -1827,4 +2062,69 @@ export const HTMLDemoIframeOnly: Story = {
       </>
     );
   },
+};
+
+export const ReadingModeAppendedAskBlocks: Story = {
+  name: "Reading Mode Appended Ask Blocks",
+  args: {
+    enableTypewriter: false,
+  },
+  parameters: {
+    layout: "fullscreen",
+  },
+  render: (args) => (
+    <div
+      style={{
+        minHeight: "100dvh",
+        padding: "32px 24px 64px",
+        background:
+          "linear-gradient(180deg, rgb(248 250 252) 0%, rgb(239 246 255) 100%)",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 1040,
+          margin: "0 auto",
+          borderRadius: 32,
+          padding: "24px 0 32px",
+          background: "rgb(255 255 255)",
+          boxShadow: "0 24px 70px rgba(15, 23, 42, 0.08)",
+        }}
+      >
+        {READING_MODE_STORY_ITEMS.map((item) => {
+          if (item.type === "ask") {
+            return (
+              <div
+                key={item.id}
+                style={{
+                  padding: "0 28px 20px",
+                }}
+              >
+                <ReadingModeAskPill
+                  anchorId={item.anchorId}
+                  label={item.label}
+                />
+              </div>
+            );
+          }
+
+          return (
+            <div
+              key={item.id}
+              style={{
+                padding: "0 28px",
+              }}
+            >
+              <ContentRender
+                {...args}
+                content={item.content}
+                enableTypewriter={false}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  ),
 };

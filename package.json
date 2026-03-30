@@ -174,7 +174,7 @@
       ]
     }
   },
-  "version": "0.1.100-beta.53",
+  "version": "0.1.101",
   "type": "module",
   "exports": {
     ".": {

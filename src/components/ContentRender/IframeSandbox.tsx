@@ -325,29 +325,73 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
     const measureContentHeight = () => {
       if (!doc.body) return 0;
-      // Measure from multiple sources to get the true content height:
-      // 1. scrollHeight of body and html (includes overflowed content)
-      const bodyScrollH = doc.body.scrollHeight;
-      const htmlScrollH = doc.documentElement?.scrollHeight || 0;
-      // 2. Direct measurement of the sandbox-container if present
-      const sandboxContainer = doc.body.querySelector(
-        ".sandbox-container"
-      ) as HTMLElement | null;
-      const containerScrollH = sandboxContainer?.scrollHeight || 0;
-      // 3. BoundingClientRect of rootEl for rendered dimensions
-      const rootRect = rootEl?.getBoundingClientRect();
-      const rootH = rootRect ? Math.ceil(rootRect.height) : 0;
-      return Math.max(bodyScrollH, htmlScrollH, containerScrollH, rootH);
+      const iframe = iframeRef.current;
+      if (!iframe) return 0;
+
+      // Temporarily shrink the iframe to 0px to break the circular dependency
+      // with viewport-relative units (100vh, min-h-screen, 100dvh, etc.).
+      // When iframe height is 0, 100vh resolves to 0 inside the iframe,
+      // so we measure only the intrinsic content height.
+      // Since shrink and restore happen within the same synchronous JS
+      // execution (before the browser paints), there is no visual flicker.
+      // Note: savedHeight may be "" on first call (height comes from CSS class
+      // `h-full`), restoring "" correctly removes the inline override.
+      const savedHeight = iframe.style.height;
+      iframe.style.height = "0px";
+
+      let containerScrollH = 0;
+      let bodyScrollH = 0;
+      try {
+        const sandboxContainer = doc.body.querySelector(
+          ".sandbox-container"
+        ) as HTMLElement | null;
+        containerScrollH = sandboxContainer?.scrollHeight || 0;
+        bodyScrollH = doc.body.scrollHeight;
+      } finally {
+        // Restore immediately — must run even if measurement throws
+        iframe.style.height = savedHeight;
+      }
+
+      return Math.max(containerScrollH, bodyScrollH);
     };
+
+    let prevRawHeight = 200;
+    let consecutiveGrowthCount = 0;
+    const MAX_CONSECUTIVE_GROWTH = 5;
 
     const updateHeight = () => {
       if (!iframeRef.current || !doc.body) return;
       const measuredHeight = measureContentHeight();
       const explicitHeight = resolveExplicitHeight();
-      const nextHeight = Math.max(
-        200,
-        explicitHeight ?? Math.ceil(measuredHeight)
-      );
+
+      // When an explicit viewport height is declared (e.g. height="100vh"),
+      // the shrink-measure approach already handles it correctly.
+      // Skip the growth guard to avoid freezing intentional height changes.
+      if (explicitHeight !== null) {
+        const nextHeight = Math.max(200, explicitHeight);
+        consecutiveGrowthCount = 0;
+        prevRawHeight = nextHeight;
+        setContentHeight(nextHeight);
+        return;
+      }
+
+      const rawHeight = Math.max(200, Math.ceil(measuredHeight));
+
+      // Safety guard: if measured height keeps growing consecutively beyond
+      // a threshold, freeze at the last stable value to prevent any
+      // residual feedback loop. Always track the raw measurement so that
+      // legitimate future growth (e.g. user interaction) is not blocked.
+      let nextHeight = rawHeight;
+      if (rawHeight > prevRawHeight + 2) {
+        consecutiveGrowthCount++;
+        if (consecutiveGrowthCount > MAX_CONSECUTIVE_GROWTH) {
+          nextHeight = prevRawHeight;
+        }
+      } else {
+        consecutiveGrowthCount = 0;
+      }
+      prevRawHeight = rawHeight;
+
       setContentHeight(nextHeight);
     };
     const scheduleHeightUpdate = () => {
@@ -375,16 +419,31 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         scheduleHeightUpdate();
       });
 
-    const resizeObserver = new ResizeObserver(() => updateHeight());
+    let resizeRafPending = false;
+    const resizeObserver = new ResizeObserver(() => {
+      if (resizeRafPending) return;
+      resizeRafPending = true;
+      requestAnimationFrame(() => {
+        resizeRafPending = false;
+        if (!isDestroyed) updateHeight();
+      });
+    });
     resizeObserver.observe(doc.body);
     if (rootEl) {
       resizeObserver.observe(rootEl);
     }
 
     // MutationObserver as backup: detect DOM changes that ResizeObserver might miss
-    // (e.g. content injected by scripts, images loading, dynamic rendering)
+    // (e.g. content injected by scripts, images loading, dynamic rendering).
+    // Uses the same RAF deduplication pattern as ResizeObserver above.
+    let mutationRafPending = false;
     const mutationObserver = new MutationObserver(() => {
-      scheduleHeightUpdate();
+      if (mutationRafPending) return;
+      mutationRafPending = true;
+      requestAnimationFrame(() => {
+        mutationRafPending = false;
+        if (!isDestroyed) updateHeight();
+      });
     });
     mutationObserver.observe(doc.body, {
       childList: true,

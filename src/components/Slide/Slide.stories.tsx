@@ -52,7 +52,7 @@ const meta = {
       control: { type: "number", min: 0, step: 500 },
       description: "Auto-hide delay for player controls in milliseconds",
     },
-    checkpointAutoAdvanceDelay: {
+    markerAutoAdvanceDelay: {
       control: { type: "number", min: 0, step: 500 },
       description:
         "Auto-advance delay for silent marker-only steps in milliseconds",
@@ -81,7 +81,7 @@ const meta = {
       copiedButtonText: "Copied",
     },
     playerAutoHideDelay: 3000,
-    checkpointAutoAdvanceDelay: 2000,
+    markerAutoAdvanceDelay: 2000,
     playerAlwaysVisible: false,
   },
 } satisfies Meta<typeof Slide>;
@@ -2333,7 +2333,7 @@ export const HistoryInteractionTriggeredSSE: Story = {
     docs: {
       description: {
         story:
-          "Preloads the repo root history fixture, focuses the latest interaction checkpoint, and replays the updated run-stream fixture only after `onSend` fires.",
+          "Preloads the repo root history fixture, focuses the latest interaction marker, and replays the updated run-stream fixture only after `onSend` fires.",
       },
     },
   },

@@ -31,7 +31,7 @@ import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
 import "./slide.css";
 export type { Element, ElementAudioSegment } from "./types";
 
-const DEFAULT_CHECKPOINT_AUTO_ADVANCE_DELAY_MS = 2000;
+const DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS = 2000;
 
 type RenderSlideElementOptions = {
   replaceRootScreenHeightWithFull?: boolean;
@@ -122,7 +122,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   interactionTitle?: string;
   interactionTexts?: SlideInteractionTexts;
   playerAutoHideDelay?: number;
-  checkpointAutoAdvanceDelay?: number;
+  markerAutoAdvanceDelay?: number;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   onSend?: (content: OnSendContentParams, element?: Element) => void;
   onPlayerVisibilityChange?: (visible: boolean) => void;
@@ -139,7 +139,7 @@ const Slide: React.FC<SlideProps> = ({
   interactionTitle,
   interactionTexts,
   playerAutoHideDelay = 3000,
-  checkpointAutoAdvanceDelay = DEFAULT_CHECKPOINT_AUTO_ADVANCE_DELAY_MS,
+  markerAutoAdvanceDelay = DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS,
   interactionDefaultValueOptions,
   onSend,
   onPlayerVisibilityChange,
@@ -545,7 +545,7 @@ const Slide: React.FC<SlideProps> = ({
     }
 
     if (shouldPresentOverlay) {
-      // Re-open history interaction checkpoints so manual prev/next still reveals the overlay.
+      // Re-open history interaction markers so manual prev/next still reveals the overlay.
       setActiveInteractionElement(currentInteractionElement);
       setIsInteractionOverlayOpen(true);
       pendingInteractionOverlayStepIndexRef.current = null;
@@ -582,7 +582,7 @@ const Slide: React.FC<SlideProps> = ({
     autoAdvanceTimerRef.current = window.setTimeout(() => {
       autoAdvanceTimerRef.current = null;
       goNext();
-    }, checkpointAutoAdvanceDelay);
+    }, markerAutoAdvanceDelay);
 
     return () => {
       clearAutoAdvanceTimer();
@@ -595,7 +595,7 @@ const Slide: React.FC<SlideProps> = ({
     currentAudioKey,
     currentPlaybackResetKey,
     currentStepHasSpeakableElement,
-    checkpointAutoAdvanceDelay,
+    markerAutoAdvanceDelay,
     goNext,
     hasCompletedCurrentStepAudio,
     isAutoAdvanceEnabled,
@@ -743,7 +743,7 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    // Auto-close passive interaction checkpoints to keep playback moving.
+    // Auto-close passive interaction markers to keep playback moving.
     interactionAutoCloseTimerRef.current = window.setTimeout(() => {
       interactionAutoCloseTimerRef.current = null;
 

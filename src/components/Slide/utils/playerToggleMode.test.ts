@@ -25,7 +25,7 @@ describe("shouldUseAutoAdvanceToggle", () => {
     ).toBe(false);
   });
 
-  it("does not replace the toggle on interaction checkpoints", () => {
+  it("does not replace the toggle on interaction markers", () => {
     expect(
       shouldUseAutoAdvanceToggle({
         canGoNext: true,

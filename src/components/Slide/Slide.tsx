@@ -27,6 +27,7 @@ import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
 import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
 import { getPlaybackSequenceTransition } from "./utils/playbackSequence";
 import { getPlayerCustomActionCount } from "./utils/playerCustomActions";
+import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
 import "./slide.css";
 export type { Element, ElementAudioSegment } from "./types";
 
@@ -49,10 +50,11 @@ interface InteractionOverlayCardProps {
   readonly?: boolean;
 }
 
-export interface SlideInteractionTexts extends Pick<
-  ContentRenderProps,
-  "confirmButtonText" | "copyButtonText" | "copiedButtonText"
-> {
+export interface SlideInteractionTexts
+  extends Pick<
+    ContentRenderProps,
+    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+  > {
   title?: string;
 }
 
@@ -193,6 +195,7 @@ const Slide: React.FC<SlideProps> = ({
   );
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
   const [hasPlayerInteracted, setHasPlayerInteracted] = useState(false);
+  const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(true);
   const [currentAudioKey, setCurrentAudioKey] = useState<string | null>(null);
   const [isAudioLoadingVisible, setIsAudioLoadingVisible] = useState(false);
   const [hasCompletedCurrentStepAudio, setHasCompletedCurrentStepAudio] =
@@ -297,6 +300,21 @@ const Slide: React.FC<SlideProps> = ({
     return currentStepAudioItem?.audioUrl?.trim() ?? "";
   }, [audioList, currentAudioSequenceStartKey]);
   const hasCurrentStepAudioUrl = Boolean(currentStepAudioUrl);
+  const shouldUseSilentStepAutoAdvanceToggle = useMemo(
+    () =>
+      shouldUseAutoAdvanceToggle({
+        canGoNext,
+        currentAudioIndex,
+        currentStepHasSpeakableElement,
+        hasInteraction: Boolean(currentInteractionElement),
+      }),
+    [
+      canGoNext,
+      currentAudioIndex,
+      currentInteractionElement,
+      currentStepHasSpeakableElement,
+    ]
+  );
 
   const clearPlayerHideTimer = useCallback(() => {
     if (playerHideTimerRef.current === null) {
@@ -394,11 +412,16 @@ const Slide: React.FC<SlideProps> = ({
 
   const hasResolvedCurrentInteraction = Boolean(
     currentInteractionElement?.readonly ||
-    currentInteractionElement?.user_input?.trim()
+      currentInteractionElement?.user_input?.trim()
   );
 
   const shouldBlockPlaybackForInteraction =
     Boolean(currentInteractionElement) && !hasResolvedCurrentInteraction;
+
+  useEffect(() => {
+    // Reset silent-step autoplay toggle whenever navigation lands on a new step.
+    setIsAutoAdvanceEnabled(true);
+  }, [currentIndex]);
 
   useEffect(() => {
     return () => {
@@ -549,6 +572,10 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
+    if (shouldUseSilentStepAutoAdvanceToggle && !isAutoAdvanceEnabled) {
+      return;
+    }
+
     // Auto-advance silent marker-only steps so playback flow does not stall.
     autoAdvanceTimerRef.current = window.setTimeout(() => {
       autoAdvanceTimerRef.current = null;
@@ -568,10 +595,12 @@ const Slide: React.FC<SlideProps> = ({
     currentStepHasSpeakableElement,
     goNext,
     hasCompletedCurrentStepAudio,
+    isAutoAdvanceEnabled,
     hasResolvedCurrentInteraction,
     shouldBlockPlaybackForInteraction,
     resetAudioSequence,
     startCurrentAudioSequence,
+    shouldUseSilentStepAutoAdvanceToggle,
   ]);
 
   useEffect(() => {
@@ -1134,8 +1163,10 @@ const Slide: React.FC<SlideProps> = ({
           )}
           currentAudioIndex={currentAudioIndex}
           defaultPlaying
+          isAutoAdvanceEnabled={isAutoAdvanceEnabled}
           hasInteraction={Boolean(activeInteractionElement)}
           isInteractionOpen={isInteractionOverlayOpen}
+          onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
           onLoadingChange={handlePlayerLoadingChange}
           nextDisabled={!canGoNext}
           onEnded={handlePlayerEnded}
@@ -1146,6 +1177,7 @@ const Slide: React.FC<SlideProps> = ({
           prevDisabled={!canGoPrev}
           showControls={playerVisible}
           customActions={playerCustomActions}
+          useAutoAdvanceToggle={shouldUseSilentStepAutoAdvanceToggle}
         />
       ) : null}
     </section>

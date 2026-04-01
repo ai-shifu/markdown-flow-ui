@@ -45,11 +45,14 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   audioList?: SlideAudioItem[];
   currentAudioIndex?: number;
   defaultPlaying?: boolean;
+  isAutoAdvanceEnabled?: boolean;
+  useAutoAdvanceToggle?: boolean;
   onLoadingChange?: (loading: boolean) => void;
   onPrev?: () => void;
   onNext?: () => void;
   onFullscreen?: () => void;
   onEnded?: (audioIndex: number) => void;
+  onAutoAdvanceToggle?: (enabled: boolean) => void;
   onInteractionToggle?: () => void;
   hasInteraction?: boolean;
   isInteractionOpen?: boolean;
@@ -96,11 +99,14 @@ const Player: React.FC<PlayerProps> = ({
   className,
   currentAudioIndex = -1,
   defaultPlaying = true,
+  isAutoAdvanceEnabled = true,
+  useAutoAdvanceToggle = false,
   onLoadingChange,
   onPrev,
   onNext,
   onFullscreen,
   onEnded,
+  onAutoAdvanceToggle,
   onInteractionToggle,
   hasInteraction = false,
   isInteractionOpen = false,
@@ -163,6 +169,16 @@ const Player: React.FC<PlayerProps> = ({
       `${String(currentAudio.sequenceNumber ?? "none")}:${String(currentAudio.audioUrl ?? "")}`
     );
   }, [currentAudio]);
+  const isTogglePlaying = useAutoAdvanceToggle
+    ? isAutoAdvanceEnabled
+    : isPlaying;
+  const toggleAriaLabel = useAutoAdvanceToggle
+    ? isAutoAdvanceEnabled
+      ? "Pause autoplay"
+      : "Play autoplay"
+    : isPlaying
+      ? "Pause"
+      : "Play";
 
   useEffect(() => {
     currentAudioRef.current = currentAudio;
@@ -675,9 +691,14 @@ const Player: React.FC<PlayerProps> = ({
               <RotateCcw className="slide-player__icon" strokeWidth={2.25} />
             </button>
             <button
-              aria-label={isPlaying ? "Pause" : "Play"}
+              aria-label={toggleAriaLabel}
               className="slide-player__toggle"
               onClick={() => {
+                if (useAutoAdvanceToggle) {
+                  onAutoAdvanceToggle?.(!isAutoAdvanceEnabled);
+                  return;
+                }
+
                 const audioElement = audioRef.current;
 
                 if (!audioElement || !currentAudio) {
@@ -730,7 +751,7 @@ const Player: React.FC<PlayerProps> = ({
               }}
               type="button"
             >
-              {isPlaying ? <PauseIcon /> : <PlayIcon />}
+              {isTogglePlaying ? <PauseIcon /> : <PlayIcon />}
             </button>
             <button
               aria-label="Forward"

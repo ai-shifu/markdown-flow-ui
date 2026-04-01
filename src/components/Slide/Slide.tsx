@@ -27,10 +27,11 @@ import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
 import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
 import { getPlaybackSequenceTransition } from "./utils/playbackSequence";
 import { getPlayerCustomActionCount } from "./utils/playerCustomActions";
+import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
 import "./slide.css";
 export type { Element, ElementAudioSegment } from "./types";
 
-const CHECKPOINT_AUTO_ADVANCE_DELAY_MS = 1000;
+const DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS = 2000;
 
 type RenderSlideElementOptions = {
   replaceRootScreenHeightWithFull?: boolean;
@@ -120,6 +121,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   interactionTitle?: string;
   interactionTexts?: SlideInteractionTexts;
   playerAutoHideDelay?: number;
+  markerAutoAdvanceDelay?: number;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   onSend?: (content: OnSendContentParams, element?: Element) => void;
   onPlayerVisibilityChange?: (visible: boolean) => void;
@@ -136,6 +138,7 @@ const Slide: React.FC<SlideProps> = ({
   interactionTitle,
   interactionTexts,
   playerAutoHideDelay = 3000,
+  markerAutoAdvanceDelay = DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS,
   interactionDefaultValueOptions,
   onSend,
   onPlayerVisibilityChange,
@@ -193,6 +196,7 @@ const Slide: React.FC<SlideProps> = ({
   );
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
   const [hasPlayerInteracted, setHasPlayerInteracted] = useState(false);
+  const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(true);
   const [currentAudioKey, setCurrentAudioKey] = useState<string | null>(null);
   const [isAudioLoadingVisible, setIsAudioLoadingVisible] = useState(false);
   const [hasCompletedCurrentStepAudio, setHasCompletedCurrentStepAudio] =
@@ -297,6 +301,21 @@ const Slide: React.FC<SlideProps> = ({
     return currentStepAudioItem?.audioUrl?.trim() ?? "";
   }, [audioList, currentAudioSequenceStartKey]);
   const hasCurrentStepAudioUrl = Boolean(currentStepAudioUrl);
+  const shouldUseSilentStepAutoAdvanceToggle = useMemo(
+    () =>
+      shouldUseAutoAdvanceToggle({
+        canGoNext,
+        currentAudioIndex,
+        currentStepHasSpeakableElement,
+        hasInteraction: Boolean(currentInteractionElement),
+      }),
+    [
+      canGoNext,
+      currentAudioIndex,
+      currentInteractionElement,
+      currentStepHasSpeakableElement,
+    ]
+  );
 
   const clearPlayerHideTimer = useCallback(() => {
     if (playerHideTimerRef.current === null) {
@@ -399,6 +418,11 @@ const Slide: React.FC<SlideProps> = ({
 
   const shouldBlockPlaybackForInteraction =
     Boolean(currentInteractionElement) && !hasResolvedCurrentInteraction;
+
+  useEffect(() => {
+    // Reset silent-step autoplay toggle whenever navigation lands on a new step.
+    setIsAutoAdvanceEnabled(true);
+  }, [currentIndex]);
 
   useEffect(() => {
     return () => {
@@ -520,7 +544,7 @@ const Slide: React.FC<SlideProps> = ({
     }
 
     if (shouldPresentOverlay) {
-      // Re-open history interaction checkpoints so manual prev/next still reveals the overlay.
+      // Re-open history interaction markers so manual prev/next still reveals the overlay.
       setActiveInteractionElement(currentInteractionElement);
       setIsInteractionOverlayOpen(true);
       pendingInteractionOverlayStepIndexRef.current = null;
@@ -549,11 +573,15 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
+    if (shouldUseSilentStepAutoAdvanceToggle && !isAutoAdvanceEnabled) {
+      return;
+    }
+
     // Auto-advance silent marker-only steps so playback flow does not stall.
     autoAdvanceTimerRef.current = window.setTimeout(() => {
       autoAdvanceTimerRef.current = null;
       goNext();
-    }, CHECKPOINT_AUTO_ADVANCE_DELAY_MS);
+    }, markerAutoAdvanceDelay);
 
     return () => {
       clearAutoAdvanceTimer();
@@ -566,12 +594,15 @@ const Slide: React.FC<SlideProps> = ({
     currentAudioKey,
     currentPlaybackResetKey,
     currentStepHasSpeakableElement,
+    markerAutoAdvanceDelay,
     goNext,
     hasCompletedCurrentStepAudio,
+    isAutoAdvanceEnabled,
     hasResolvedCurrentInteraction,
     shouldBlockPlaybackForInteraction,
     resetAudioSequence,
     startCurrentAudioSequence,
+    shouldUseSilentStepAutoAdvanceToggle,
   ]);
 
   useEffect(() => {
@@ -711,7 +742,7 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    // Auto-close passive interaction checkpoints to keep playback moving.
+    // Auto-close passive interaction markers to keep playback moving.
     interactionAutoCloseTimerRef.current = window.setTimeout(() => {
       interactionAutoCloseTimerRef.current = null;
 
@@ -1134,8 +1165,10 @@ const Slide: React.FC<SlideProps> = ({
           )}
           currentAudioIndex={currentAudioIndex}
           defaultPlaying
+          isAutoAdvanceEnabled={isAutoAdvanceEnabled}
           hasInteraction={Boolean(activeInteractionElement)}
           isInteractionOpen={isInteractionOverlayOpen}
+          onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
           onLoadingChange={handlePlayerLoadingChange}
           nextDisabled={!canGoNext}
           onEnded={handlePlayerEnded}
@@ -1146,6 +1179,7 @@ const Slide: React.FC<SlideProps> = ({
           prevDisabled={!canGoPrev}
           showControls={playerVisible}
           customActions={playerCustomActions}
+          useAutoAdvanceToggle={shouldUseSilentStepAutoAdvanceToggle}
         />
       ) : null}
     </section>

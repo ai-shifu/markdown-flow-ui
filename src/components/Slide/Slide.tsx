@@ -531,6 +531,7 @@ const Slide: React.FC<SlideProps> = ({
       hasInteraction: Boolean(currentInteractionElement),
       shouldBlockPlaybackForInteraction,
       shouldOpenInteractionOverlayAfterAudio,
+      hasPlaybackContextChanged,
       hasResolvedCurrentInteraction,
       currentStepHasSpeakableElement,
     });
@@ -553,7 +554,6 @@ const Slide: React.FC<SlideProps> = ({
 
     if (currentInteractionElement) {
       setActiveInteractionElement(currentInteractionElement);
-      setIsInteractionOverlayOpen(false);
       pendingInteractionOverlayStepIndexRef.current = null;
     }
 

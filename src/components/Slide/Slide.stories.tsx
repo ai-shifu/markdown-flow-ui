@@ -52,6 +52,11 @@ const meta = {
       control: { type: "number", min: 0, step: 500 },
       description: "Auto-hide delay for player controls in milliseconds",
     },
+    checkpointAutoAdvanceDelay: {
+      control: { type: "number", min: 0, step: 500 },
+      description:
+        "Auto-advance delay for silent marker-only steps in milliseconds",
+    },
     playerAlwaysVisible: {
       control: "boolean",
       description: "Keep the player controls visible without auto hiding",
@@ -76,6 +81,7 @@ const meta = {
       copiedButtonText: "Copied",
     },
     playerAutoHideDelay: 3000,
+    checkpointAutoAdvanceDelay: 2000,
     playerAlwaysVisible: false,
   },
 } satisfies Meta<typeof Slide>;
@@ -555,9 +561,9 @@ const resolveSubmittedUserInput = (content: OnSendContentParams) =>
 const isSameStoryElement = (currentElement: Element, targetElement?: Element) =>
   Boolean(
     targetElement &&
-    currentElement.type === targetElement.type &&
-    currentElement.sequence_number === targetElement.sequence_number &&
-    currentElement.content === targetElement.content
+      currentElement.type === targetElement.type &&
+      currentElement.sequence_number === targetElement.sequence_number &&
+      currentElement.content === targetElement.content
   );
 
 const applyInteractionSubmission = (

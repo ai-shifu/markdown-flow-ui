@@ -31,7 +31,7 @@ import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
 import "./slide.css";
 export type { Element, ElementAudioSegment } from "./types";
 
-const CHECKPOINT_AUTO_ADVANCE_DELAY_MS = 1000;
+const DEFAULT_CHECKPOINT_AUTO_ADVANCE_DELAY_MS = 2000;
 
 type RenderSlideElementOptions = {
   replaceRootScreenHeightWithFull?: boolean;
@@ -122,6 +122,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   interactionTitle?: string;
   interactionTexts?: SlideInteractionTexts;
   playerAutoHideDelay?: number;
+  checkpointAutoAdvanceDelay?: number;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   onSend?: (content: OnSendContentParams, element?: Element) => void;
   onPlayerVisibilityChange?: (visible: boolean) => void;
@@ -138,6 +139,7 @@ const Slide: React.FC<SlideProps> = ({
   interactionTitle,
   interactionTexts,
   playerAutoHideDelay = 3000,
+  checkpointAutoAdvanceDelay = DEFAULT_CHECKPOINT_AUTO_ADVANCE_DELAY_MS,
   interactionDefaultValueOptions,
   onSend,
   onPlayerVisibilityChange,
@@ -580,7 +582,7 @@ const Slide: React.FC<SlideProps> = ({
     autoAdvanceTimerRef.current = window.setTimeout(() => {
       autoAdvanceTimerRef.current = null;
       goNext();
-    }, CHECKPOINT_AUTO_ADVANCE_DELAY_MS);
+    }, checkpointAutoAdvanceDelay);
 
     return () => {
       clearAutoAdvanceTimer();
@@ -593,6 +595,7 @@ const Slide: React.FC<SlideProps> = ({
     currentAudioKey,
     currentPlaybackResetKey,
     currentStepHasSpeakableElement,
+    checkpointAutoAdvanceDelay,
     goNext,
     hasCompletedCurrentStepAudio,
     isAutoAdvanceEnabled,

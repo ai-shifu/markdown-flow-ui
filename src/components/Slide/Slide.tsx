@@ -476,7 +476,11 @@ const Slide: React.FC<SlideProps> = ({
   useEffect(() => {
     // Reset silent-step autoplay toggle whenever navigation lands on a new step.
     setIsAutoAdvanceEnabled(true);
-  }, [currentIndex]);
+
+    if (playerCustomActionPauseOnActive) {
+      setIsPlayerCustomActionActive(false);
+    }
+  }, [currentIndex, playerCustomActionPauseOnActive]);
 
   useEffect(() => {
     return () => {

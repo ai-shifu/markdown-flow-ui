@@ -6,10 +6,10 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { LoaderCircle } from "lucide-react";
 
 import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
+import LoadingOverlayCard from "../ui/loading-overlay-card";
 import ContentRender from "../ContentRender";
 import type { ContentRenderProps } from "../ContentRender/ContentRender";
 import IframeSandbox from "../ContentRender/IframeSandbox";
@@ -1191,10 +1191,10 @@ const Slide: React.FC<SlideProps> = ({
       </div>
 
       {isAudioLoadingVisible ? (
-        <div className="pointer-events-none absolute left-1/2 top-1/2 z-[3] flex size-28 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-2 rounded-2xl bg-foreground/65 px-3 py-4 text-center text-xs leading-4 font-medium text-background shadow-lg backdrop-blur-sm">
-          <LoaderCircle className="size-5 animate-spin text-background" />
-          <span>{bufferingText}</span>
-        </div>
+        <LoadingOverlayCard
+          message={bufferingText}
+          className="absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2"
+        />
       ) : null}
 
       {shouldShowInteractionOverlay ? (

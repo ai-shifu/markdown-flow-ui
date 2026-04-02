@@ -45,6 +45,9 @@ export interface SlidePlayerCustomActionContext {
   currentElement?: Element;
   currentIndex: number;
   currentStepElement?: Element;
+  isActive: boolean;
+  setActive: (active: boolean) => void;
+  toggleActive: () => void;
 }
 
 export type SlidePlayerCustomActions =

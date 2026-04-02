@@ -6,9 +6,15 @@ import type {
 } from "../types";
 import type { SlideAudioItem } from "../useSlide";
 
+const noop = () => {};
+
 const DEFAULT_PLAYER_CUSTOM_ACTION_CONTEXT: SlidePlayerCustomActionContext = {
   currentElement: undefined,
   currentIndex: -1,
+  currentStepElement: undefined,
+  isActive: false,
+  setActive: noop,
+  toggleActive: noop,
 };
 
 const resolvePlayerCustomActions = (

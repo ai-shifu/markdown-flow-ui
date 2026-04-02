@@ -69,9 +69,14 @@ const meta = {
       table: {
         type: {
           summary:
-            "ReactNode | ((context: { currentElement?: Element; currentIndex: number }) => ReactNode)",
+            "ReactNode | ((context: { currentElement?: Element; currentIndex: number; currentStepElement?: Element; isActive: boolean; setActive: (active: boolean) => void; toggleActive: () => void }) => ReactNode)",
         },
       },
+    },
+    playerCustomActionPauseOnActive: {
+      control: "boolean",
+      description:
+        "Automatically pause audio and autoplay while the custom player action stays active",
     },
   },
   args: {
@@ -1222,36 +1227,41 @@ const CustomPlayerActionSlidePreview = ({
   elementList = [],
   ...props
 }: React.ComponentProps<typeof Slide>) => {
-  const [isCustomActionActive, setIsCustomActionActive] = useState(false);
-
   const handleCustomActionClick = useCallback((element?: Element) => {
-    setIsCustomActionActive((previous) => !previous);
     console.log("custom-player-action-clicked", element);
   }, []);
 
   const customPlayerAction = useCallback(
-    ({ currentElement }: SlidePlayerCustomActionContext) => (
+    ({
+      currentElement,
+      isActive,
+      toggleActive,
+    }: SlidePlayerCustomActionContext) => (
       <button
         aria-label="Custom player action"
         className={[
           "slide-player__action",
-          isCustomActionActive ? "slide-player__action--active" : "",
+          isActive ? "slide-player__action--active" : "",
         ]
           .filter(Boolean)
           .join(" ")}
-        onClick={() => handleCustomActionClick(currentElement)}
+        onClick={() => {
+          toggleActive();
+          handleCustomActionClick(currentElement);
+        }}
         type="button"
       >
         <Sparkles className="slide-player__icon" strokeWidth={2.25} />
       </button>
     ),
-    [handleCustomActionClick, isCustomActionActive]
+    [handleCustomActionClick]
   );
 
   return (
     <Slide
       {...props}
       elementList={elementList}
+      playerCustomActionPauseOnActive
       playerCustomActions={customPlayerAction}
     />
   );

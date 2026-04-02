@@ -126,6 +126,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   playerAlwaysVisible?: boolean;
   playerClassName?: string;
   playerCustomActions?: PlayerProps["customActions"];
+  playerCustomActionPauseOnActive?: boolean;
   bufferingText?: string;
   interactionTitle?: string;
   interactionTexts?: SlideInteractionTexts;
@@ -143,6 +144,7 @@ const Slide: React.FC<SlideProps> = ({
   playerAlwaysVisible = false,
   playerClassName,
   playerCustomActions,
+  playerCustomActionPauseOnActive = true,
   bufferingText = "Buffering...",
   interactionTitle,
   interactionTexts,
@@ -210,6 +212,8 @@ const Slide: React.FC<SlideProps> = ({
   const [isAudioLoadingVisible, setIsAudioLoadingVisible] = useState(false);
   const [hasCompletedCurrentStepAudio, setHasCompletedCurrentStepAudio] =
     useState(false);
+  const [isPlayerCustomActionActive, setIsPlayerCustomActionActive] =
+    useState(false);
   const [activeInteractionElement, setActiveInteractionElement] = useState<
     Element | undefined
   >();
@@ -217,6 +221,12 @@ const Slide: React.FC<SlideProps> = ({
     useState(false);
   const playerVisible =
     shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
+  const setPlayerCustomActionActive = useCallback((active: boolean) => {
+    setIsPlayerCustomActionActive(active);
+  }, []);
+  const togglePlayerCustomActionActive = useCallback(() => {
+    setIsPlayerCustomActionActive((previous) => !previous);
+  }, []);
   const { mountedStepStates, currentMountedStateIndex } = useMemo(() => {
     const nextMountedStepStates: Array<{
       elementList: Element[];
@@ -281,6 +291,9 @@ const Slide: React.FC<SlideProps> = ({
       }),
       currentIndex,
       currentStepElement,
+      isActive: isPlayerCustomActionActive,
+      setActive: setPlayerCustomActionActive,
+      toggleActive: togglePlayerCustomActionActive,
     }),
     [
       activeInteractionElement,
@@ -289,6 +302,9 @@ const Slide: React.FC<SlideProps> = ({
       currentAudioSequenceIndexes,
       currentIndex,
       currentStepElement,
+      isPlayerCustomActionActive,
+      setPlayerCustomActionActive,
+      togglePlayerCustomActionActive,
     ]
   );
   const playerCustomActionCount = useMemo(
@@ -335,6 +351,10 @@ const Slide: React.FC<SlideProps> = ({
     return currentStepAudioItem?.audioUrl?.trim() ?? "";
   }, [audioList, currentAudioSequenceStartKey]);
   const hasCurrentStepAudioUrl = Boolean(currentStepAudioUrl);
+  const shouldPausePlaybackForCustomAction =
+    playerCustomActionPauseOnActive &&
+    Boolean(playerCustomActions) &&
+    isPlayerCustomActionActive;
   const shouldUseSilentStepAutoAdvanceToggle = useMemo(
     () =>
       shouldUseAutoAdvanceToggle({
@@ -577,6 +597,10 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
+    if (shouldPausePlaybackForCustomAction) {
+      return;
+    }
+
     if (shouldPresentOverlay) {
       // Re-open history interaction markers so manual prev/next still reveals the overlay.
       setActiveInteractionElement(currentInteractionElement);
@@ -636,11 +660,16 @@ const Slide: React.FC<SlideProps> = ({
     shouldBlockPlaybackForInteraction,
     resetAudioSequence,
     startCurrentAudioSequence,
+    shouldPausePlaybackForCustomAction,
     shouldUseSilentStepAutoAdvanceToggle,
   ]);
 
   useEffect(() => {
-    if (!currentStepHasSpeakableElement || shouldBlockPlaybackForInteraction) {
+    if (
+      shouldPausePlaybackForCustomAction ||
+      !currentStepHasSpeakableElement ||
+      shouldBlockPlaybackForInteraction
+    ) {
       setIsAudioLoadingVisible(false);
       return;
     }
@@ -660,6 +689,7 @@ const Slide: React.FC<SlideProps> = ({
     hasAvailableStepAudio,
     currentStepHasSpeakableElement,
     hasCompletedCurrentStepAudio,
+    shouldPausePlaybackForCustomAction,
     shouldBlockPlaybackForInteraction,
   ]);
 
@@ -668,7 +698,11 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    if (!currentStepHasSpeakableElement || shouldBlockPlaybackForInteraction) {
+    if (
+      shouldPausePlaybackForCustomAction ||
+      !currentStepHasSpeakableElement ||
+      shouldBlockPlaybackForInteraction
+    ) {
       return;
     }
 
@@ -682,6 +716,7 @@ const Slide: React.FC<SlideProps> = ({
     currentAudioSequenceKeys,
     currentStepHasSpeakableElement,
     hasCompletedCurrentStepAudio,
+    shouldPausePlaybackForCustomAction,
     shouldBlockPlaybackForInteraction,
     startCurrentAudioSequence,
   ]);
@@ -1199,6 +1234,7 @@ const Slide: React.FC<SlideProps> = ({
           )}
           currentAudioIndex={currentAudioIndex}
           defaultPlaying
+          isPlaybackPaused={shouldPausePlaybackForCustomAction}
           isAutoAdvanceEnabled={isAutoAdvanceEnabled}
           hasInteraction={Boolean(activeInteractionElement)}
           isInteractionOpen={isInteractionOverlayOpen}

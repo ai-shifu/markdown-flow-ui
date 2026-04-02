@@ -16,6 +16,9 @@ const mockContext: SlidePlayerCustomActionContext = {
   currentElement: mockElement,
   currentIndex: 2,
   currentStepElement: mockElement,
+  isActive: false,
+  setActive: () => {},
+  toggleActive: () => {},
 };
 
 describe("playerCustomActions", () => {

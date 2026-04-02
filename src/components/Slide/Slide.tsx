@@ -26,10 +26,18 @@ import useSlide from "./useSlide";
 import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
 import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
 import { getPlaybackSequenceTransition } from "./utils/playbackSequence";
-import { getPlayerCustomActionCount } from "./utils/playerCustomActions";
+import {
+  getPlayerCustomActionCount,
+  resolvePlayerCustomActionElement,
+} from "./utils/playerCustomActions";
 import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
 import "./slide.css";
-export type { Element, ElementAudioSegment } from "./types";
+export type {
+  Element,
+  ElementAudioSegment,
+  SlidePlayerCustomActionContext,
+  SlidePlayerCustomActions,
+} from "./types";
 
 const DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS = 2000;
 
@@ -50,10 +58,11 @@ interface InteractionOverlayCardProps {
   readonly?: boolean;
 }
 
-export interface SlideInteractionTexts extends Pick<
-  ContentRenderProps,
-  "confirmButtonText" | "copyButtonText" | "copiedButtonText"
-> {
+export interface SlideInteractionTexts
+  extends Pick<
+    ContentRenderProps,
+    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+  > {
   title?: string;
 }
 
@@ -208,17 +217,6 @@ const Slide: React.FC<SlideProps> = ({
     useState(false);
   const playerVisible =
     shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
-  const playerCustomActionCount = useMemo(
-    () => getPlayerCustomActionCount(playerCustomActions),
-    [playerCustomActions]
-  );
-  const interactionOverlayStyle = useMemo(
-    () =>
-      ({
-        "--slide-player-custom-action-count": String(playerCustomActionCount),
-      }) as React.CSSProperties,
-    [playerCustomActionCount]
-  );
   const { mountedStepStates, currentMountedStateIndex } = useMemo(() => {
     const nextMountedStepStates: Array<{
       elementList: Element[];
@@ -271,6 +269,42 @@ const Slide: React.FC<SlideProps> = ({
   const currentAudioSequenceStartKey = useMemo(
     () => currentAudioSequenceKeys[0] ?? "none",
     [currentAudioSequenceKeys]
+  );
+  const playerCustomActionContext = useMemo(
+    () => ({
+      currentElement: resolvePlayerCustomActionElement({
+        currentAudioIndex,
+        currentAudioSequenceIndexes,
+        audioList,
+        currentInteractionElement: activeInteractionElement,
+        currentStepElement,
+      }),
+      currentIndex,
+      currentStepElement,
+    }),
+    [
+      activeInteractionElement,
+      audioList,
+      currentAudioIndex,
+      currentAudioSequenceIndexes,
+      currentIndex,
+      currentStepElement,
+    ]
+  );
+  const playerCustomActionCount = useMemo(
+    () =>
+      getPlayerCustomActionCount(
+        playerCustomActions,
+        playerCustomActionContext
+      ),
+    [playerCustomActionContext, playerCustomActions]
+  );
+  const interactionOverlayStyle = useMemo(
+    () =>
+      ({
+        "--slide-player-custom-action-count": String(playerCustomActionCount),
+      }) as React.CSSProperties,
+    [playerCustomActionCount]
   );
   const hasAvailableStepAudio = currentAudioSequenceKeys.length > 0;
   const currentInteractionResetKey = useMemo(() => {
@@ -413,7 +447,7 @@ const Slide: React.FC<SlideProps> = ({
 
   const hasResolvedCurrentInteraction = Boolean(
     currentInteractionElement?.readonly ||
-    currentInteractionElement?.user_input?.trim()
+      currentInteractionElement?.user_input?.trim()
   );
 
   const shouldBlockPlaybackForInteraction =
@@ -1178,6 +1212,7 @@ const Slide: React.FC<SlideProps> = ({
           onPrev={handlePrev}
           prevDisabled={!canGoPrev}
           showControls={playerVisible}
+          customActionContext={playerCustomActionContext}
           customActions={playerCustomActions}
           useAutoAdvanceToggle={shouldUseSilentStepAutoAdvanceToggle}
         />

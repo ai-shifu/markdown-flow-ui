@@ -16,6 +16,10 @@ import {
 
 import { cn } from "../../lib/utils";
 import type { SlideAudioItem } from "./useSlide";
+import type {
+  SlidePlayerCustomActionContext,
+  SlidePlayerCustomActions,
+} from "./types";
 import { toPlayerCustomActionList } from "./utils/playerCustomActions";
 import "./player.css";
 
@@ -59,7 +63,8 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   prevDisabled?: boolean;
   nextDisabled?: boolean;
   showControls?: boolean;
-  customActions?: React.ReactNode;
+  customActions?: SlidePlayerCustomActions;
+  customActionContext?: SlidePlayerCustomActionContext;
 };
 
 const PauseIcon = () => (
@@ -114,6 +119,7 @@ const Player: React.FC<PlayerProps> = ({
   nextDisabled = false,
   showControls = true,
   customActions,
+  customActionContext,
   ...props
 }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -148,8 +154,8 @@ const Player: React.FC<PlayerProps> = ({
     [currentAudio?.audioSegments]
   );
   const customActionList = useMemo(
-    () => toPlayerCustomActionList(customActions),
-    [customActions]
+    () => toPlayerCustomActionList(customActions, customActionContext),
+    [customActionContext, customActions]
   );
   const mobileVisibleActionCount = customActionList.length + 4;
   const controlsStyle = useMemo(

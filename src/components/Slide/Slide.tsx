@@ -6,10 +6,10 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { LoaderCircle } from "lucide-react";
 
 import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
+import LoadingOverlayCard from "../ui/loading-overlay-card";
 import ContentRender from "../ContentRender";
 import type { ContentRenderProps } from "../ContentRender/ContentRender";
 import IframeSandbox from "../ContentRender/IframeSandbox";
@@ -26,10 +26,18 @@ import useSlide from "./useSlide";
 import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
 import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
 import { getPlaybackSequenceTransition } from "./utils/playbackSequence";
-import { getPlayerCustomActionCount } from "./utils/playerCustomActions";
+import {
+  getPlayerCustomActionCount,
+  resolvePlayerCustomActionElement,
+} from "./utils/playerCustomActions";
 import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
 import "./slide.css";
-export type { Element, ElementAudioSegment } from "./types";
+export type {
+  Element,
+  ElementAudioSegment,
+  SlidePlayerCustomActionContext,
+  SlidePlayerCustomActions,
+} from "./types";
 
 const DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS = 2000;
 
@@ -117,6 +125,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   playerAlwaysVisible?: boolean;
   playerClassName?: string;
   playerCustomActions?: PlayerProps["customActions"];
+  playerCustomActionPauseOnActive?: boolean;
   bufferingText?: string;
   interactionTitle?: string;
   interactionTexts?: SlideInteractionTexts;
@@ -134,6 +143,7 @@ const Slide: React.FC<SlideProps> = ({
   playerAlwaysVisible = false,
   playerClassName,
   playerCustomActions,
+  playerCustomActionPauseOnActive = true,
   bufferingText = "Buffering...",
   interactionTitle,
   interactionTexts,
@@ -201,6 +211,8 @@ const Slide: React.FC<SlideProps> = ({
   const [isAudioLoadingVisible, setIsAudioLoadingVisible] = useState(false);
   const [hasCompletedCurrentStepAudio, setHasCompletedCurrentStepAudio] =
     useState(false);
+  const [isPlayerCustomActionActive, setIsPlayerCustomActionActive] =
+    useState(false);
   const [activeInteractionElement, setActiveInteractionElement] = useState<
     Element | undefined
   >();
@@ -208,17 +220,12 @@ const Slide: React.FC<SlideProps> = ({
     useState(false);
   const playerVisible =
     shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
-  const playerCustomActionCount = useMemo(
-    () => getPlayerCustomActionCount(playerCustomActions),
-    [playerCustomActions]
-  );
-  const interactionOverlayStyle = useMemo(
-    () =>
-      ({
-        "--slide-player-custom-action-count": String(playerCustomActionCount),
-      }) as React.CSSProperties,
-    [playerCustomActionCount]
-  );
+  const setPlayerCustomActionActive = useCallback((active: boolean) => {
+    setIsPlayerCustomActionActive(active);
+  }, []);
+  const togglePlayerCustomActionActive = useCallback(() => {
+    setIsPlayerCustomActionActive((previous) => !previous);
+  }, []);
   const { mountedStepStates, currentMountedStateIndex } = useMemo(() => {
     const nextMountedStepStates: Array<{
       elementList: Element[];
@@ -272,6 +279,48 @@ const Slide: React.FC<SlideProps> = ({
     () => currentAudioSequenceKeys[0] ?? "none",
     [currentAudioSequenceKeys]
   );
+  const playerCustomActionContext = useMemo(
+    () => ({
+      currentElement: resolvePlayerCustomActionElement({
+        currentAudioIndex,
+        currentAudioSequenceIndexes,
+        audioList,
+        currentInteractionElement: activeInteractionElement,
+        currentStepElement,
+      }),
+      currentIndex,
+      currentStepElement,
+      isActive: isPlayerCustomActionActive,
+      setActive: setPlayerCustomActionActive,
+      toggleActive: togglePlayerCustomActionActive,
+    }),
+    [
+      activeInteractionElement,
+      audioList,
+      currentAudioIndex,
+      currentAudioSequenceIndexes,
+      currentIndex,
+      currentStepElement,
+      isPlayerCustomActionActive,
+      setPlayerCustomActionActive,
+      togglePlayerCustomActionActive,
+    ]
+  );
+  const playerCustomActionCount = useMemo(
+    () =>
+      getPlayerCustomActionCount(
+        playerCustomActions,
+        playerCustomActionContext
+      ),
+    [playerCustomActionContext, playerCustomActions]
+  );
+  const interactionOverlayStyle = useMemo(
+    () =>
+      ({
+        "--slide-player-custom-action-count": String(playerCustomActionCount),
+      }) as React.CSSProperties,
+    [playerCustomActionCount]
+  );
   const hasAvailableStepAudio = currentAudioSequenceKeys.length > 0;
   const currentInteractionResetKey = useMemo(() => {
     if (!currentInteractionElement) {
@@ -301,6 +350,10 @@ const Slide: React.FC<SlideProps> = ({
     return currentStepAudioItem?.audioUrl?.trim() ?? "";
   }, [audioList, currentAudioSequenceStartKey]);
   const hasCurrentStepAudioUrl = Boolean(currentStepAudioUrl);
+  const shouldPausePlaybackForCustomAction =
+    playerCustomActionPauseOnActive &&
+    Boolean(playerCustomActions) &&
+    isPlayerCustomActionActive;
   const shouldUseSilentStepAutoAdvanceToggle = useMemo(
     () =>
       shouldUseAutoAdvanceToggle({
@@ -422,7 +475,11 @@ const Slide: React.FC<SlideProps> = ({
   useEffect(() => {
     // Reset silent-step autoplay toggle whenever navigation lands on a new step.
     setIsAutoAdvanceEnabled(true);
-  }, [currentIndex]);
+
+    if (playerCustomActionPauseOnActive) {
+      setIsPlayerCustomActionActive(false);
+    }
+  }, [currentIndex, playerCustomActionPauseOnActive]);
 
   useEffect(() => {
     return () => {
@@ -543,6 +600,10 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
+    if (shouldPausePlaybackForCustomAction) {
+      return;
+    }
+
     if (shouldPresentOverlay) {
       // Re-open history interaction markers so manual prev/next still reveals the overlay.
       setActiveInteractionElement(currentInteractionElement);
@@ -602,11 +663,16 @@ const Slide: React.FC<SlideProps> = ({
     shouldBlockPlaybackForInteraction,
     resetAudioSequence,
     startCurrentAudioSequence,
+    shouldPausePlaybackForCustomAction,
     shouldUseSilentStepAutoAdvanceToggle,
   ]);
 
   useEffect(() => {
-    if (!currentStepHasSpeakableElement || shouldBlockPlaybackForInteraction) {
+    if (
+      shouldPausePlaybackForCustomAction ||
+      !currentStepHasSpeakableElement ||
+      shouldBlockPlaybackForInteraction
+    ) {
       setIsAudioLoadingVisible(false);
       return;
     }
@@ -626,6 +692,7 @@ const Slide: React.FC<SlideProps> = ({
     hasAvailableStepAudio,
     currentStepHasSpeakableElement,
     hasCompletedCurrentStepAudio,
+    shouldPausePlaybackForCustomAction,
     shouldBlockPlaybackForInteraction,
   ]);
 
@@ -634,7 +701,11 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    if (!currentStepHasSpeakableElement || shouldBlockPlaybackForInteraction) {
+    if (
+      shouldPausePlaybackForCustomAction ||
+      !currentStepHasSpeakableElement ||
+      shouldBlockPlaybackForInteraction
+    ) {
       return;
     }
 
@@ -648,6 +719,7 @@ const Slide: React.FC<SlideProps> = ({
     currentAudioSequenceKeys,
     currentStepHasSpeakableElement,
     hasCompletedCurrentStepAudio,
+    shouldPausePlaybackForCustomAction,
     shouldBlockPlaybackForInteraction,
     startCurrentAudioSequence,
   ]);
@@ -1118,10 +1190,10 @@ const Slide: React.FC<SlideProps> = ({
       </div>
 
       {isAudioLoadingVisible ? (
-        <div className="pointer-events-none absolute left-1/2 top-1/2 z-[3] flex size-28 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-2 rounded-2xl bg-foreground/65 px-3 py-4 text-center text-xs leading-4 font-medium text-background shadow-lg backdrop-blur-sm">
-          <LoaderCircle className="size-5 animate-spin text-background" />
-          <span>{bufferingText}</span>
-        </div>
+        <LoadingOverlayCard
+          message={bufferingText}
+          className="absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2"
+        />
       ) : null}
 
       {shouldShowInteractionOverlay ? (
@@ -1165,6 +1237,7 @@ const Slide: React.FC<SlideProps> = ({
           )}
           currentAudioIndex={currentAudioIndex}
           defaultPlaying
+          isPlaybackPaused={shouldPausePlaybackForCustomAction}
           isAutoAdvanceEnabled={isAutoAdvanceEnabled}
           hasInteraction={Boolean(activeInteractionElement)}
           isInteractionOpen={isInteractionOverlayOpen}
@@ -1178,6 +1251,7 @@ const Slide: React.FC<SlideProps> = ({
           onPrev={handlePrev}
           prevDisabled={!canGoPrev}
           showControls={playerVisible}
+          customActionContext={playerCustomActionContext}
           customActions={playerCustomActions}
           useAutoAdvanceToggle={shouldUseSilentStepAutoAdvanceToggle}
         />

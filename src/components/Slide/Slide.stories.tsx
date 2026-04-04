@@ -6,6 +6,7 @@ import historyFixtureText from "../../../../测试历史数据.json?raw";
 import runStreamFixtureText from "../../../../测试数据.json?raw";
 import runStreamFixtureText2 from "../../../../测试数据2.json?raw";
 import type { OnSendContentParams } from "../types";
+import type { SlidePlayerCustomActionContext } from "./types";
 import {
   buildRunStreamElementListFromEvents,
   normalizeRunStreamElement,
@@ -67,9 +68,15 @@ const meta = {
         "Custom player action nodes rendered before the default notes action",
       table: {
         type: {
-          summary: "ReactNode",
+          summary:
+            "ReactNode | ((context: { currentElement?: Element; currentIndex: number; currentStepElement?: Element; isActive: boolean; setActive: (active: boolean) => void; toggleActive: () => void }) => ReactNode)",
         },
       },
+    },
+    playerCustomActionPauseOnActive: {
+      control: "boolean",
+      description:
+        "Automatically pause audio and autoplay while the custom player action stays active",
     },
   },
   args: {
@@ -1220,36 +1227,41 @@ const CustomPlayerActionSlidePreview = ({
   elementList = [],
   ...props
 }: React.ComponentProps<typeof Slide>) => {
-  const [isCustomActionActive, setIsCustomActionActive] = useState(false);
-
-  const handleCustomActionClick = useCallback(() => {
-    setIsCustomActionActive((previous) => !previous);
-    console.log("custom-player-action-clicked");
+  const handleCustomActionClick = useCallback((element?: Element) => {
+    console.log("custom-player-action-clicked", element);
   }, []);
 
-  const customPlayerAction = useMemo(
-    () => (
+  const customPlayerAction = useCallback(
+    ({
+      currentElement,
+      isActive,
+      toggleActive,
+    }: SlidePlayerCustomActionContext) => (
       <button
         aria-label="Custom player action"
         className={[
           "slide-player__action",
-          isCustomActionActive ? "slide-player__action--active" : "",
+          isActive ? "slide-player__action--active" : "",
         ]
           .filter(Boolean)
           .join(" ")}
-        onClick={handleCustomActionClick}
+        onClick={() => {
+          toggleActive();
+          handleCustomActionClick(currentElement);
+        }}
         type="button"
       >
         <Sparkles className="slide-player__icon" strokeWidth={2.25} />
       </button>
     ),
-    [handleCustomActionClick, isCustomActionActive]
+    [handleCustomActionClick]
   );
 
   return (
     <Slide
       {...props}
       elementList={elementList}
+      playerCustomActionPauseOnActive
       playerCustomActions={customPlayerAction}
     />
   );
@@ -1265,12 +1277,375 @@ export const CustomPlayerActionButton: Story = {
   args: {
     playerAlwaysVisible: true,
     elementList: [
-      createExampleElement({
-        sequenceNumber: 1,
+      {
+        sequence_number: 90,
+        type: "html",
+        content:
+          '<div id="ppt-container" class="w-full min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-[4vmin]">\n  <div class="w-full h-screen flex flex-col items-center justify-[safe_center] gap-[4vmin] p-[4vmin] overflow-y-auto">\n    <!-- 顶部标题区 -->\n    <div class="w-full max-w-[1200px] text-center">\n      <h1 class="text-[6vmin] font-bold text-gray-800 mb-[2vmin]">三大考勤流程，一次搞定</h1>\n      <p class="text-[3vmin] text-gray-600">本节目标总览</p>\n    </div>\n\n    <!-- 目标说明区 -->\n    <div class="w-full max-w-[1200px] bg-white rounded-[2vmin] shadow-lg p-[5vmin] border-l-[1vmin] border-[#0F63EE]">\n      <h2 class="text-[4vmin] font-bold text-gray-800 mb-[3vmin]">🎯 本节目标</h2>\n      <p class="text-[2.5vmin] text-gray-700 leading-[3.5vmin]">\n        学会在 <strong>UNKNOWN</strong> 系统内，一站式完成 <strong>请假、公出、加班</strong> 三大核心考勤流程的发起与处理，确保每一次申请都符合规范，避免后续麻烦。\n      </p>\n    </div>\n\n    <!-- 三流程概览区 -->\n    <div class="w-full max-w-[1200px]">\n      <h2 class="text-[4vmin] font-bold text-gray-800 mb-[4vmin] text-center">📋 三大核心流程概览</h2>\n      <div class="grid grid-cols-1 md:grid-cols-3 gap-[4vmin]">\n        <!-- 请假流程卡片 -->\n        <div class="bg-white rounded-[2vmin] shadow-lg p-[4vmin] flex flex-col items-center text-center border-t-[0.5vmin] border-blue-200">\n          <div class="w-[8vmin] h-[8vmin] bg-blue-100 rounded-full flex items-center justify-center mb-[3vmin]">\n            <span class="text-[4vmin]">🏖️</span>\n          </div>\n          <h3 class="text-[3.5vmin] font-bold text-gray-800 mb-[2vmin]">请假流程</h3>\n          <p class="text-[2.5vmin] text-gray-600 flex-grow">因个人事由或病假需要离开岗位时发起的申请流程。</p>\n        </div>\n        <!-- 公出流程卡片 -->\n        <div class="bg-white rounded-[2vmin] shadow-lg p-[4vmin] flex flex-col items-center text-center border-t-[0.5vmin] border-green-200">\n          <div class="w-[8vmin] h-[8vmin] bg-green-100 rounded-full flex items-center justify-center mb-[3vmin]">\n            <span class="text-[4vmin]">✈️</span>\n          </div>\n          <h3 class="text-[3.5vmin] font-bold text-gray-800 mb-[2vmin]">公出流程</h3>\n          <p class="text-[2.5vmin] text-gray-600 flex-grow">因公务需要外出（如拜访客户、参加会议）时发起的申请流程。</p>\n        </div>\n        <!-- 加班流程卡片 -->\n        <div class="bg-white rounded-[2vmin] shadow-lg p-[4vmin] flex flex-col items-center text-center border-t-[0.5vmin] border-purple-200">\n          <div class="w-[8vmin] h-[8vmin] bg-purple-100 rounded-full flex items-center justify-center mb-[3vmin]">\n            <span class="text-[4vmin]">💻</span>\n          </div>\n          <h3 class="text-[3.5vmin] font-bold text-gray-800 mb-[2vmin]">加班流程</h3>\n          <p class="text-[2.5vmin] text-gray-600 flex-grow">在标准工作时间外继续工作，需要申请确认与记录时发起的流程。</p>\n        </div>\n      </div>\n    </div>\n\n    <!-- 核心原则区 -->\n    <div class="w-full max-w-[1200px] bg-gradient-to-r from-blue-600 to-[#0F63EE] rounded-[2vmin] shadow-xl p-[5vmin] text-white">\n      <h2 class="text-[4vmin] font-bold mb-[4vmin] text-center">✅ 成功发起流程的三大核心原则</h2>\n      <div class="grid grid-cols-1 md:grid-cols-3 gap-[4vmin]">\n        <div class="bg-white/20 rounded-[1.5vmin] p-[3vmin] backdrop-blur-sm flex flex-col items-center text-center">\n          <div class="text-[5vmin] mb-[2vmin]">👨‍💼</div>\n          <h3 class="text-[3vmin] font-bold mb-[1.5vmin]">上级同意</h3>\n          <p class="text-[2.2vmin]">流程发起前，务必获得直接上级的知晓与同意，这是流程得以推进的第一步。</p>\n        </div>\n        <div class="bg-white/20 rounded-[1.5vmin] p-[3vmin] backdrop-blur-sm flex flex-col items-center text-center">\n          <div class="text-[5vmin] mb-[2vmin]">📅</div>\n          <h3 class="text-[3vmin] font-bold mb-[1.5vmin]">当月务必发起</h3>\n          <p class="text-[2.2vmin]">所有考勤申请务必在事件发生的当月内发起流程，逾期可能无法补办，影响考勤结果。</p>\n        </div>\n        <div class="bg-white/20 rounded-[1.5vmin] p-[3vmin] backdrop-blur-sm flex flex-col items-center text-center">\n          <div class="text-[5vmin] mb-[2vmin]">📎</div>\n          <h3 class="text-[3vmin] font-bold mb-[1.5vmin]">材料齐全</h3>\n          <p class="text-[2.2vmin]">根据流程类型，提前准备好必要的证明文件（如病假条、会议通知等），并随流程一并提交。</p>\n        </div>\n      </div>\n      <p class="text-[2.5vmin] text-center mt-[4vmin] text-blue-100 font-medium">牢记这三点，kk，你就能在 UNKNOWN 系统里游刃有余，轻松搞定所有考勤事宜！</p>\n    </div>\n  </div>\n</div>\n\n<style>\n  /* 确保窄屏下流程卡片纵向堆叠 */\n  @media (max-width: 768px) {\n    #ppt-container .grid-cols-3 {\n      grid-template-columns: 1fr;\n    }\n  }\n  /* 基础滚动与盒模型设定 */\n  #ppt-container * {\n    box-sizing: border-box;\n  }\n</style>\n',
+        is_marker: true,
+        is_renderable: true,
+        is_new: true,
+        is_speakable: false,
+        audio_url: "",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        ask_list: [
+          {
+            element_bid: "87ef9f9bc23248288807a35ce2de67d4",
+            generated_block_bid: "92ab6b7ce4d4468db5d2703de4a4903c",
+            parent_element_bid: "7418289a9bf64f60aee46e6b0929e300",
+            type: "ask",
+            content: "第一张图",
+            readonly: true,
+            user_input: "",
+            isHistory: true,
+            parent_block_bid: "7418289a9bf64f60aee46e6b0929e300",
+          },
+          {
+            element_bid: "eb2cc46c2ae941db9702c54cde9150c6",
+            generated_block_bid: "a8fc2c3191474b2aa755a84c6490927c",
+            parent_element_bid: "7418289a9bf64f60aee46e6b0929e300",
+            type: "answer",
+            content:
+              "根据已学内容，第一张图是**三系统入口与操作路径图**，它展示了EHR、云EHR和钉钉三大考勤系统的登录入口、查看路径和流程发起入口，并强调了“月底流程必须完结”的统一规则。",
+            readonly: true,
+            user_input: "",
+            isHistory: true,
+            parent_block_bid: "7418289a9bf64f60aee46e6b0929e300",
+          },
+        ],
+        blockBid: "7418289a9bf64f60aee46e6b0929e300",
+        page: 0,
+      },
+      {
+        sequence_number: 91,
         type: "text",
         content:
-          "This story demonstrates how a custom player action button can be provided from outside the Slide component.",
-      }),
+          "\n好了kk，这就是我们本节要攻克的“山头地图”！别看考勤流程听起来有点枯燥，但掌握了这套“三大流程+三大原则”的组合拳，你在**UNKNOWN**系统里就能像老司机一样丝滑操作了。我们的目标很明确：**请假、公出、加班**，这三件事，以后都得在系统里走得明明白白、漂漂亮亮。\n\n记住那句口诀：**上级同意、当月务必发起流程、材料齐全**。这可不是随便说说的，这是保证你的申请不被“打回来”的免死金牌。咱们接下来就一个个流程拆开看，保证你学完就能立刻用上。",
+        is_marker: false,
+        is_renderable: false,
+        is_new: true,
+        is_speakable: true,
+        audio_url:
+          "https://res.ai-shifu.cn/tts-audio/fe7725223a9941f1890e5c2a4f80a39f.mp3",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        ask_list: [
+          {
+            element_bid: "676f853c4c334efd81c7b40d7ef85527",
+            generated_block_bid: "d25e3337f1384fef9508823631ad35a5",
+            parent_element_bid: "ffb9eac65b9b41febffd2f5efeb116e5",
+            type: "ask",
+            content: "第一句话",
+            readonly: true,
+            user_input: "",
+            isHistory: true,
+            parent_block_bid: "ffb9eac65b9b41febffd2f5efeb116e5",
+          },
+          {
+            element_bid: "3ff82d9f5fcd4992a80ad2cf2a11034c",
+            generated_block_bid: "66eecfc2de774b5a8377e44016523031",
+            parent_element_bid: "ffb9eac65b9b41febffd2f5efeb116e5",
+            type: "answer",
+            content:
+              "根据已学内容，关于钉钉系统的操作路径，原文明确要求是：**打开钉钉App -> 进入工作台 -> 找到考勤打卡**。这是发起请假、加班等流程的统一入口。",
+            readonly: true,
+            user_input: "",
+            isHistory: true,
+            parent_block_bid: "ffb9eac65b9b41febffd2f5efeb116e5",
+          },
+        ],
+        blockBid: "ffb9eac65b9b41febffd2f5efeb116e5",
+        page: 1,
+      },
+      {
+        sequence_number: 95,
+        type: "text",
+        content: "先看钉钉路径，再练习钉钉公出与钉钉加班流程。",
+        is_marker: false,
+        is_renderable: false,
+        is_new: true,
+        is_speakable: true,
+        audio_url:
+          "https://res.ai-shifu.cn/tts-audio/6106d540914f4362bb9be0b2663012f9.mp3",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        ask_list: [
+          {
+            element_bid: "b21bd5426abc48129313d69e001b825c",
+            generated_block_bid: "6c3bed74a3a444fda769513d3daee9e0",
+            parent_element_bid: "1ed3a8a4e4b143dfbfa7f2485458cca2",
+            type: "ask",
+            content: "第二句话",
+            readonly: true,
+            user_input: "",
+            isHistory: true,
+            parent_block_bid: "1ed3a8a4e4b143dfbfa7f2485458cca2",
+          },
+          {
+            element_bid: "391e7197ea6d4514954b7cfa3742318f",
+            generated_block_bid: "d09d1ee748274b039d84b75802cd6921",
+            parent_element_bid: "1ed3a8a4e4b143dfbfa7f2485458cca2",
+            type: "answer",
+            content:
+              "根据已学内容，关于钉钉系统的操作路径，原文明确要求的第二句话是：**你的排班、打卡记录都藏在“统计”里的“我的考勤”**。这是查看个人考勤详情的位置。",
+            readonly: true,
+            user_input: "",
+            isHistory: true,
+            parent_block_bid: "1ed3a8a4e4b143dfbfa7f2485458cca2",
+          },
+        ],
+        blockBid: "1ed3a8a4e4b143dfbfa7f2485458cca2",
+        page: 2,
+      },
+      {
+        sequence_number: 99,
+        type: "text",
+        content: "本节优先看钉钉工作台路径、外勤打卡与请假提交流程。",
+        is_marker: false,
+        is_renderable: false,
+        is_new: true,
+        is_speakable: true,
+        audio_url:
+          "https://res.ai-shifu.cn/tts-audio/6a4a673bdec547a1bf5f9a4218afb898.mp3",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        ask_list: [
+          {
+            element_bid: "514e42c329514eff8d6a09413e1dbae4",
+            generated_block_bid: "8da63a07d3f84f5b8b33aca7f8f6a04e",
+            parent_element_bid: "f14622b12d3c43d79b1e38989ffb4e4e",
+            type: "ask",
+            content: "第三句话",
+            readonly: true,
+            user_input: "",
+            isHistory: true,
+            parent_block_bid: "f14622b12d3c43d79b1e38989ffb4e4e",
+          },
+          {
+            element_bid: "86b92e0a30af423d9532e7c7c2a09340",
+            generated_block_bid: "4f8bec6488e8493aa8cd54d2c3af5488",
+            parent_element_bid: "f14622b12d3c43d79b1e38989ffb4e4e",
+            type: "answer",
+            content:
+              "根据已学内容，关于钉钉系统的操作路径，原文明确要求的第三句话是：**而发起请假、加班这些流程，统一入口在“审批”里**。这是提交各类考勤申请的起点。",
+            readonly: true,
+            user_input: "",
+            isHistory: true,
+            parent_block_bid: "f14622b12d3c43d79b1e38989ffb4e4e",
+          },
+        ],
+        blockBid: "f14622b12d3c43d79b1e38989ffb4e4e",
+        page: 3,
+      },
+      {
+        sequence_number: 213,
+        type: "html",
+        content:
+          '<div id="ppt-container" class="w-full min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-[4vmin]">\n  <div class="w-full h-screen flex flex-col items-center justify-[safe_center] gap-[4vmin] p-[4vmin] overflow-y-auto">\n    <!-- 顶部标题区 -->\n    <div class="w-full max-w-[1400px] text-center mb-[2vmin]">\n      <h1 class="text-[6vmin] font-bold text-gray-800 mb-[2vmin]">三系统入口与操作路径图</h1>\n      <p class="text-[3vmin] text-gray-600">快速定位你的系统入口、查看项与流程起点</p>\n    </div>\n\n    <!-- 三个系统信息区块 -->\n    <div class="w-full max-w-[1400px] grid grid-cols-1 lg:grid-cols-3 gap-[5vmin]">\n      <!-- EHR 系统区块 -->\n      <div class="bg-white rounded-[2vmin] shadow-lg p-[4vmin] border-t-[0.5vmin] border-blue-500 flex flex-col">\n        <h2 class="text-[4vmin] font-bold text-gray-800 mb-[3vmin] text-center">1) EHR系统</h2>\n        <div class="space-y-[3vmin] flex-grow">\n          <div>\n            <p class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">登录入口/使用路径</p>\n            <p class="text-[2.5vmin] text-gray-800 break-words">https://ehr.company.com</p>\n          </div>\n          <div>\n            <p class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">查看排班记录/查看规则</p>\n            <p class="text-[2.5vmin] text-gray-800">考勤 -> 我的考勤 -> 月度详情</p>\n          </div>\n          <div>\n            <p class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">发起流程入口</p>\n            <p class="text-[2.5vmin] text-gray-800">流程中心 -> 新建 -> 考勤类申请</p>\n          </div>\n        </div>\n        <!-- 强调区块 -->\n        <div class="mt-[4vmin] p-[3vmin] bg-red-50 border border-red-200 rounded-[1.5vmin]">\n          <p class="text-[2.5vmin] font-bold text-red-700 text-center">月底流程必须完结</p>\n          <p class="text-[2.2vmin] text-red-600 mt-[1vmin] text-center">所有申请需在当月内提交并审批完成</p>\n        </div>\n      </div>\n\n      <!-- 云EHR 系统区块 -->\n      <div class="bg-white rounded-[2vmin] shadow-lg p-[4vmin] border-t-[0.5vmin] border-green-500 flex flex-col">\n        <h2 class="text-[4vmin] font-bold text-gray-800 mb-[3vmin] text-center">2) 云EHR系统</h2>\n        <div class="space-y-[3vmin] flex-grow">\n          <div>\n            <p class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">登录入口/使用路径</p>\n            <p class="text-[2.5vmin] text-gray-800 break-words">https://cloud-ehr.company.com</p>\n          </div>\n          <div>\n            <p class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">查看排班记录/查看规则</p>\n            <p class="text-[2.5vmin] text-gray-800">个人中心 -> 考勤统计</p>\n          </div>\n          <div>\n            <p class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">发起流程入口</p>\n            <p class="text-[2.5vmin] text-gray-800">应用 -> 考勤流程申请</p>\n          </div>\n        </div>\n        <!-- 强调区块 -->\n        <div class="mt-[4vmin] p-[3vmin] bg-red-50 border border-red-200 rounded-[1.5vmin]">\n          <p class="text-[2.5vmin] font-bold text-red-700 text-center">月底流程必须完结</p>\n          <p class="text-[2.2vmin] text-red-600 mt-[1vmin] text-center">所有申请需在当月内提交并审批完成</p>\n        </div>\n      </div>\n\n      <!-- 钉钉 系统区块 -->\n      <div class="bg-white rounded-[2vmin] shadow-lg p-[4vmin] border-t-[0.5vmin] border-purple-500 flex flex-col">\n        <h2 class="text-[4vmin] font-bold text-gray-800 mb-[3vmin] text-center">3) 钉钉系统</h2>\n        <div class="space-y-[3vmin] flex-grow">\n          <div>\n            <p class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">登录入口/使用路径</p>\n            <p class="text-[2.5vmin] text-gray-800 break-words">钉钉App -> 工作台</p>\n            <p class="text-[2.5vmin] text-gray-800 break-words">-> 考勤打卡</p>\n          </div>\n          <div>\n            <p class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">查看排班记录/查看规则</p>\n            <p class="text-[2.5vmin] text-gray-800">统计 -> 我的考勤</p>\n          </div>\n          <div>\n            <p class="text-[2.2vmin] font-semibold text-gray-500 mb-[1vmin]">发起流程入口</p>\n            <p class="text-[2.5vmin] text-gray-800">审批 -> 发起申请</p>\n          </div>\n        </div>\n        <!-- 强调区块 -->\n        <div class="mt-[4vmin] p-[3vmin] bg-red-50 border border-red-200 rounded-[1.5vmin]">\n          <p class="text-[2.5vmin] font-bold text-red-700 text-center">月底流程必须完结</p>\n          <p class="text-[2.2vmin] text-red-600 mt-[1vmin] text-center">所有申请需在当月内提交并审批完成</p>\n        </div>\n      </div>\n    </div>\n\n    <!-- 底部统一规则提示 -->\n    <div class="w-full max-w-[1400px] mt-[3vmin] p-[3vmin] bg-blue-50 border border-blue-200 rounded-[2vmin]">\n      <p class="text-[2.5vmin] text-gray-700 text-center"><strong>统一规则：</strong>无论使用哪个系统，发起任何考勤流程前，请务必确认<strong>上级已同意</strong>，并准备好<strong>齐全的证明材料</strong>。</p>\n    </div>\n  </div>\n</div>\n\n<style>\n  /* 确保窄屏下纵向堆叠 */\n  @media (max-width: 1024px) {\n    #ppt-container .lg\\:grid-cols-3 {\n      grid-template-columns: 1fr;\n    }\n  }\n  #ppt-container * {\n    box-sizing: border-box;\n  }\n</style>\n',
+        is_marker: true,
+        is_renderable: true,
+        is_new: true,
+        is_speakable: false,
+        audio_url: "",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        blockBid: "458ac6c111b341c5bce33d3b6462ca3b",
+        page: 4,
+      },
+      {
+        sequence_number: 214,
+        type: "text",
+        content:
+          "\n看明白这张“寻宝图”了吗，kk？虽然我们这次主攻**钉钉**，但把三个系统的入口都摆在这里，是为了让你心里有个全局地图，万一以后需要切换或者帮同事看看，也不至于抓瞎。\n\n对于你选择的**钉钉**，核心路径就锁死这条：**打开钉钉App -> 进入工作台 -> 找到考勤打卡**。你的排班、打卡记录都藏在“统计”里的“我的考勤”。而发起请假、加班这些流程，统一入口在“审批”里。\n\n**千万要盯住那个红底警告**：“月底流程必须完结”。这不是建议，是死命令！比如你10月31号才想起来提交9月的加班，系统很可能直接给你个“闭门羹”。所以，养成习惯，**发生考勤变动的当月，就立刻在钉钉里把流程走掉**。\n\n记住，无论系统怎么变，**上级同意**和**材料齐全**这两条铁律永远不变。接下来，我们就钻进钉钉，看看具体怎么操作。",
+        is_marker: false,
+        is_renderable: false,
+        is_new: true,
+        is_speakable: true,
+        audio_url:
+          "https://res.ai-shifu.cn/tts-audio/651358c977a046f68536017a92452d0a.mp3",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        blockBid: "96fb5ed4397149ea9c15ac037d5a159c",
+        page: 5,
+      },
+      {
+        sequence_number: 219,
+        type: "text",
+        content:
+          "路径为钉钉App -> 工作台 -> 考勤打卡；功能为查看规则、查看排班表、申请请假。",
+        is_marker: false,
+        is_renderable: false,
+        is_new: true,
+        is_speakable: true,
+        audio_url:
+          "https://res.ai-shifu.cn/tts-audio/9386e65e3a17469bada1e097391d90cb.mp3",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        blockBid: "8aa8b612381c4f3ead736e596398f744",
+        page: 6,
+      },
+      {
+        sequence_number: 223,
+        type: "text",
+        content: "题目 1：哪项是原文明确要求？",
+        is_marker: false,
+        is_renderable: false,
+        is_new: true,
+        is_speakable: true,
+        audio_url:
+          "https://res.ai-shifu.cn/tts-audio/d3e1edd1401e4b99b5e33bc563eb28dc.mp3",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        blockBid: "6b45a7def3b74826a5f5bc852618487e",
+        page: 7,
+      },
+      {
+        sequence_number: 224,
+        type: "interaction",
+        content:
+          "?[%{{flow_quiz_1}} 月底流程可跨月补完 | 月底流程必须完结 | 只要口头请假就可不走系统]",
+        is_marker: true,
+        is_renderable: false,
+        is_new: true,
+        blockBid: "a0ef1e34b94b4f75860b901319b70f19",
+        page: 7,
+        user_input: "月底流程可跨月补完",
+        readonly: true,
+      },
+      {
+        sequence_number: 4,
+        type: "text",
+        content: "原文口径为“月底流程必须完结”。",
+        is_marker: false,
+        is_renderable: false,
+        is_new: true,
+        is_speakable: true,
+        audio_url:
+          "https://res.ai-shifu.cn/tts-audio/7dcdcfdabf9f460ba2105dba82eed686.mp3",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        blockBid: "1390c577c9ae492eaa17e795a3b1fd29",
+        page: 8,
+      },
+      {
+        sequence_number: 116,
+        type: "html",
+        content:
+          '<div id="ppt-container" class="w-full min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-[4vmin]">\n  <div class="w-full h-screen flex flex-col items-center justify-[safe_center] gap-[4vmin] p-[4vmin] overflow-y-auto">\n    <!-- 顶部标题区 -->\n    <div class="w-full max-w-[1600px] text-center mb-[3vmin]">\n      <h1 class="text-[6vmin] font-bold text-gray-800 mb-[2vmin]">公出与加班判定矩阵</h1>\n      <p class="text-[3vmin] text-gray-600">高频扣款风险点，务必对照执行</p>\n    </div>\n\n    <!-- 矩阵表格容器 -->\n    <div class="w-full max-w-[1600px] overflow-x-auto rounded-[2vmin] shadow-2xl border border-gray-200">\n      <table class="w-full border-collapse bg-white">\n        <!-- 表头行 -->\n        <thead class="bg-gradient-to-r from-blue-600 to-[#0F63EE] text-white">\n          <tr>\n            <th scope="col" class="text-[3vmin] font-bold p-[3vmin] text-left w-[15%] min-w-[120px]">适用场景</th>\n            <th scope="col" class="text-[3vmin] font-bold p-[3vmin] text-left w-[40%] min-w-[200px]">必须动作</th>\n            <th scope="col" class="text-[3vmin] font-bold p-[3vmin] text-left w-[20%] min-w-[150px]">审批结果</th>\n            <th scope="col" class="text-[3vmin] font-bold p-[3vmin] text-left w-[25%] min-w-[150px]">不合规后果</th>\n          </tr>\n        </thead>\n        <tbody>\n          <!-- 公出 行 -->\n          <tr class="border-b border-gray-200 hover:bg-blue-50/30">\n            <td class="p-[3vmin] align-top border-r border-gray-100">\n              <div class="text-[3.5vmin] font-bold text-gray-800">公出</div>\n              <div class="text-[2.5vmin] text-gray-600 mt-[1vmin]">因公务需要离开办公地点</div>\n            </td>\n            <td class="p-[3vmin] align-top border-r border-gray-100">\n              <ul class="space-y-[1.5vmin] text-[2.5vmin] text-gray-800 list-disc pl-[3vmin]">\n                <li><strong>完整说明：</strong>时间、地点、工作事项</li>\n                <li><strong>上传照片：</strong>公出场地照片</li>\n                <li><strong>异地证明：</strong>往返车票/打车记录/自驾记录</li>\n              </ul>\n            </td>\n            <td class="p-[3vmin] align-top border-r border-gray-100">\n              <div class="bg-green-100 border border-green-300 rounded-[1vmin] p-[2vmin]">\n                <p class="text-[2.5vmin] font-bold text-green-800 text-center">审批通过</p>\n                <p class="text-[2.2vmin] text-green-700 mt-[1vmin] text-center">计入正常出勤</p>\n              </div>\n            </td>\n            <td class="p-[3vmin] align-top">\n              <div class="bg-red-100 border border-red-300 rounded-[1vmin] p-[2vmin]">\n                <p class="text-[2.5vmin] font-bold text-red-800 text-center">按旷工处理</p>\n                <p class="text-[2.2vmin] text-red-700 mt-[1vmin] text-center">扣款并影响绩效</p>\n              </div>\n            </td>\n          </tr>\n          <!-- 加班 行 -->\n          <tr class="hover:bg-blue-50/30">\n            <td class="p-[3vmin] align-top border-r border-gray-100">\n              <div class="text-[3.5vmin] font-bold text-gray-800">加班</div>\n              <div class="text-[2.5vmin] text-gray-600 mt-[1vmin]">标准工时外继续工作</div>\n            </td>\n            <td class="p-[3vmin] align-top border-r border-gray-100">\n              <div class="space-y-[2vmin]">\n                <div>\n                  <p class="text-[2.5vmin] font-semibold text-gray-800 mb-[0.5vmin]">提前申请：</p>\n                  <p class="text-[2.5vmin] text-gray-800">钉钉提交加班申请流程</p>\n                </div>\n                <div>\n                  <p class="text-[2.5vmin] font-semibold text-gray-800 mb-[0.5vmin]">判定阈值：</p>\n                  <ul class="space-y-[1vmin] text-[2.5vmin] text-gray-800 list-disc pl-[3vmin]">\n                    <li><strong>0.5天：</strong>4.5h打卡工时 + 至少4h室内工时</li>\n                    <li><strong>1天：</strong>9h打卡工时 + 至少8h室内工时</li>\n                  </ul>\n                </div>\n              </div>\n            </td>\n            <td class="p-[3vmin] align-top border-r border-gray-100">\n              <div class="bg-green-100 border border-green-300 rounded-[1vmin] p-[2vmin]">\n                <p class="text-[2.5vmin] font-bold text-green-800 text-center">审批通过</p>\n                <p class="text-[2.2vmin] text-green-700 mt-[1vmin] text-center">计入加班工时</p>\n              </div>\n            </td>\n            <td class="p-[3vmin] align-top">\n              <div class="bg-red-100 border border-red-300 rounded-[1vmin] p-[2vmin]">\n                <p class="text-[2.5vmin] font-bold text-red-800 text-center">不计加班</p>\n                <p class="text-[2.2vmin] text-red-700 mt-[1vmin] text-center">无补贴或调休</p>\n              </div>\n            </td>\n          </tr>\n        </tbody>\n      </table>\n    </div>\n\n    <!-- 底部风险提示 -->\n    <div class="w-full max-w-[1600px] mt-[3vmin] p-[3vmin] bg-amber-50 border border-amber-200 rounded-[2vmin]">\n      <p class="text-[2.5vmin] text-gray-700 text-center"><strong>核心风险提示：</strong>公出与加班是考勤扣款的两大“重灾区”。务必<strong>提前申请、材料齐全、符合阈值</strong>，否则辛苦付出可能无法被认可。</p>\n    </div>\n  </div>\n</div>\n\n<style>\n  /* 基础表格样式与响应式 */\n  #ppt-container table {\n    table-layout: fixed;\n  }\n  #ppt-container th, #ppt-container td {\n    word-wrap: break-word;\n    overflow-wrap: break-word;\n  }\n  /* 确保手机端仍为表格，允许横向滚动 */\n  @media (max-width: 768px) {\n    #ppt-container .overflow-x-auto {\n      border-radius: 1vmin;\n    }\n    #ppt-container th, #ppt-container td {\n      padding: 2.5vmin;\n    }\n  }\n  #ppt-container * {\n    box-sizing: border-box;\n  }\n</style>',
+        is_marker: true,
+        is_renderable: true,
+        is_new: true,
+        is_speakable: false,
+        audio_url: "",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        blockBid: "e03b68de24f64351bb58bbf28123eb83",
+        page: 9,
+      },
+      {
+        sequence_number: 123,
+        type: "text",
+        content:
+          "适用工作原因外出不能打卡；每日进行钉钉外勤打卡；走钉钉公出流程；审核通过按公出发薪，否则按事假处理。",
+        is_marker: false,
+        is_renderable: false,
+        is_new: true,
+        is_speakable: true,
+        audio_url:
+          "https://res.ai-shifu.cn/tts-audio/59eb252eec4141bfae13800f3398f341.mp3",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        blockBid: "48a463157d14409faedd8f4aa1123bcc",
+        page: 10,
+      },
+      {
+        sequence_number: 132,
+        type: "title",
+        content: "## 公出三要素：\n",
+        is_marker: true,
+        is_renderable: true,
+        is_new: true,
+        is_speakable: false,
+        audio_url: "",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        blockBid: "3d49341e7f6e426db36103867f9bfe24",
+        page: 11,
+      },
+      {
+        sequence_number: 133,
+        type: "text",
+        content:
+          "1) 时间、地点、工作事项完整说明；\n2) 上传公出场地照片；\n3) 异地公出提供往返车票/打车记录/自驾记录。",
+        is_marker: false,
+        is_renderable: false,
+        is_new: true,
+        is_speakable: true,
+        audio_url:
+          "https://res.ai-shifu.cn/tts-audio/0aa2033f910641d2a91b99a2edb7e5c8.mp3",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        blockBid: "30d1fc2f89e04f8784d5244804b7ec7e",
+        page: 12,
+      },
+      {
+        sequence_number: 153,
+        type: "title",
+        content: "## 加班流程：\n",
+        is_marker: true,
+        is_renderable: true,
+        is_new: true,
+        is_speakable: false,
+        audio_url: "",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        blockBid: "c7aaae2b2156404880b0d30c97d77a4f",
+        page: 13,
+      },
+      {
+        sequence_number: 154,
+        type: "text",
+        content:
+          "- 适用：系统排班休息日因工作安排需上班；\n- 至少0.5天；\n- 0.5天判定：有4.5h打卡工时（上下班卡间隔）且至少4h室内工时；\n- 1天判定：有9h打卡工时且至少8h室内工时；\n- 走钉钉加班流程。\n- 审核通过后释放调休额度；\n- 经领导批准才可申请加班流程。",
+        is_marker: false,
+        is_renderable: false,
+        is_new: true,
+        is_speakable: true,
+        audio_url:
+          "https://res.ai-shifu.cn/tts-audio/84f50e22663c4b13ad2352018d4392a7.mp3",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        blockBid: "87318d8c715240068ec10014208e6aaa",
+        page: 14,
+      },
+      {
+        sequence_number: 158,
+        type: "text",
+        content: "题目 2：公出缺少外勤与照片，结果应按什么处理？",
+        is_marker: false,
+        is_renderable: false,
+        is_new: true,
+        is_speakable: true,
+        audio_url:
+          "https://res.ai-shifu.cn/tts-audio/ef46b278eeca4cef83c64823ff422341.mp3",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        blockBid: "77ba4d661c564ddf95a62665ab4f5f73",
+        page: 15,
+      },
+      {
+        sequence_number: 159,
+        type: "interaction",
+        content: "?[%{{flow_quiz_2}} 公出发薪 | 按事假处理 | 自动转加班]",
+        is_marker: true,
+        is_renderable: false,
+        is_new: true,
+        blockBid: "9b2cbf60a37e472bbc5a7900682509ca",
+        page: 15,
+        user_input: "",
+        readonly: false,
+      },
     ],
   },
   parameters: {

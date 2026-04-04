@@ -9,6 +9,7 @@ export interface SlideAudioItem {
   audioUrl?: string;
   audioSegments?: ElementAudioSegment[];
   isAudioStreaming?: boolean;
+  element?: Element;
 }
 
 export interface UseSlideResult {
@@ -76,6 +77,7 @@ const getAudioList = (elementList: Element[]) =>
         audioUrl: hasAudioSegments ? "" : element.audio_url,
         audioSegments: normalizedAudioSegments,
         isAudioStreaming: isStreamingAudio(normalizedAudioSegments),
+        element,
       });
     }
 

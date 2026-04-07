@@ -1138,11 +1138,14 @@ const Slide: React.FC<SlideProps> = ({
   const handleSurfacePointerDown = useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
       onPointerDown?.(event);
-      setHasPlayerInteracted(true);
-      showPlayerControls(true);
     },
-    [onPointerDown, showPlayerControls]
+    [onPointerDown]
   );
+
+  const handleSurfaceClick = useCallback(() => {
+    setHasPlayerInteracted(true);
+    showPlayerControls(true);
+  }, [showPlayerControls]);
 
   const shouldShowInteractionOverlay =
     Boolean(activeInteractionElement) && isInteractionOverlayOpen;
@@ -1227,6 +1230,7 @@ const Slide: React.FC<SlideProps> = ({
         isMobileLandscape && "slide--mobile-landscape",
         className
       )}
+      onClick={handleSurfaceClick}
       onPointerDown={handleSurfacePointerDown}
       {...props}
     >

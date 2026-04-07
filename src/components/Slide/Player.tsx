@@ -163,8 +163,7 @@ const Player: React.FC<PlayerProps> = ({
     () => toPlayerCustomActionList(customActions, customActionContext),
     [customActionContext, customActions]
   );
-  const mobileVisibleActionCount =
-    customActionList.length + 4 + Number(Boolean(onFullscreen));
+  const mobileVisibleActionCount = customActionList.length + 4;
   const controlsStyle = useMemo(
     () =>
       ({
@@ -862,7 +861,7 @@ const Player: React.FC<PlayerProps> = ({
                 aria-label={
                   isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
                 }
-                className="slide-player__action"
+                className="slide-player__action slide-player__action--fullscreen"
                 onClick={onFullscreen}
                 type="button"
               >

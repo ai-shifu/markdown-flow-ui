@@ -321,7 +321,7 @@ const Slide: React.FC<SlideProps> = ({
       ({
         "--slide-player-custom-action-count": String(playerCustomActionCount),
         "--slide-player-mobile-control-count": String(
-          playerCustomActionCount + 5
+          playerCustomActionCount + 4
         ),
       }) as React.CSSProperties,
     [playerCustomActionCount]

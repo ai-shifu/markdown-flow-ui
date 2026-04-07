@@ -50,6 +50,10 @@
     display: none;
   }
 
+  .slide-player__action--fullscreen {
+    display: none !important;
+  }
+
   .slide-player__interaction-arrow {
     /* Align to the center of the trailing notes slot on mobile. */
     left: auto !important;

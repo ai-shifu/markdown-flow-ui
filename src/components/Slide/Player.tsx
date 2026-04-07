@@ -11,6 +11,7 @@ import {
   Maximize,
   RotateCcw,
   RotateCw,
+  ScanLine,
   Volume2,
 } from "lucide-react";
 
@@ -56,6 +57,7 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   onPrev?: () => void;
   onNext?: () => void;
   onFullscreen?: () => void;
+  isFullscreen?: boolean;
   onEnded?: (audioIndex: number) => void;
   onAutoAdvanceToggle?: (enabled: boolean) => void;
   onInteractionToggle?: () => void;
@@ -112,6 +114,7 @@ const Player: React.FC<PlayerProps> = ({
   onPrev,
   onNext,
   onFullscreen,
+  isFullscreen = false,
   onEnded,
   onAutoAdvanceToggle,
   onInteractionToggle,
@@ -160,7 +163,8 @@ const Player: React.FC<PlayerProps> = ({
     () => toPlayerCustomActionList(customActions, customActionContext),
     [customActionContext, customActions]
   );
-  const mobileVisibleActionCount = customActionList.length + 4;
+  const mobileVisibleActionCount =
+    customActionList.length + 4 + Number(Boolean(onFullscreen));
   const controlsStyle = useMemo(
     () =>
       ({
@@ -476,10 +480,10 @@ const Player: React.FC<PlayerProps> = ({
     if (isPlaybackPaused) {
       wasPlayingBeforeExternalPauseRef.current = Boolean(
         currentAudioRef.current &&
-        !isPausedByUserRef.current &&
-        (!audioElement.paused ||
-          pendingAutoPlayRef.current ||
-          waitingSegmentIndexRef.current !== null)
+          !isPausedByUserRef.current &&
+          (!audioElement.paused ||
+            pendingAutoPlayRef.current ||
+            waitingSegmentIndexRef.current !== null)
       );
 
       pendingAutoPlayRef.current = false;
@@ -853,14 +857,22 @@ const Player: React.FC<PlayerProps> = ({
             >
               <RotateCw className="slide-player__icon" strokeWidth={2.25} />
             </button>
-            <button
-              aria-label="Fullscreen"
-              className="hidden"
-              onClick={onFullscreen}
-              type="button"
-            >
-              <Maximize className="slide-player__icon" strokeWidth={2.25} />
-            </button>
+            {onFullscreen ? (
+              <button
+                aria-label={
+                  isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
+                }
+                className="slide-player__action"
+                onClick={onFullscreen}
+                type="button"
+              >
+                {isFullscreen ? (
+                  <ScanLine className="slide-player__icon" strokeWidth={2.25} />
+                ) : (
+                  <Maximize className="slide-player__icon" strokeWidth={2.25} />
+                )}
+              </button>
+            ) : null}
           </div>
 
           <div className="slide-player__separator" />

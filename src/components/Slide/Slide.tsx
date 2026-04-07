@@ -58,10 +58,11 @@ interface InteractionOverlayCardProps {
   readonly?: boolean;
 }
 
-export interface SlideInteractionTexts extends Pick<
-  ContentRenderProps,
-  "confirmButtonText" | "copyButtonText" | "copiedButtonText"
-> {
+export interface SlideInteractionTexts
+  extends Pick<
+    ContentRenderProps,
+    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+  > {
   title?: string;
 }
 
@@ -218,6 +219,7 @@ const Slide: React.FC<SlideProps> = ({
   >();
   const [isInteractionOverlayOpen, setIsInteractionOverlayOpen] =
     useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const playerVisible =
     shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
   const setPlayerCustomActionActive = useCallback((active: boolean) => {
@@ -318,6 +320,9 @@ const Slide: React.FC<SlideProps> = ({
     () =>
       ({
         "--slide-player-custom-action-count": String(playerCustomActionCount),
+        "--slide-player-mobile-control-count": String(
+          playerCustomActionCount + 5
+        ),
       }) as React.CSSProperties,
     [playerCustomActionCount]
   );
@@ -466,7 +471,7 @@ const Slide: React.FC<SlideProps> = ({
 
   const hasResolvedCurrentInteraction = Boolean(
     currentInteractionElement?.readonly ||
-    currentInteractionElement?.user_input?.trim()
+      currentInteractionElement?.user_input?.trim()
   );
 
   const shouldBlockPlaybackForInteraction =
@@ -808,6 +813,20 @@ const Slide: React.FC<SlideProps> = ({
   );
 
   useEffect(() => {
+    // Keep the player icon in sync with the actual fullscreen owner.
+    const syncFullscreenState = () => {
+      setIsFullscreen(document.fullscreenElement === sectionRef.current);
+    };
+
+    syncFullscreenState();
+    document.addEventListener("fullscreenchange", syncFullscreenState);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreenState);
+    };
+  }, []);
+
+  useEffect(() => {
     clearInteractionAutoCloseTimer();
 
     if (!isInteractionOverlayOpen || !shouldAutoContinueInteraction) {
@@ -924,17 +943,19 @@ const Slide: React.FC<SlideProps> = ({
     );
   };
 
-  const handleFullscreen = () => {
+  const handleFullscreen = useCallback(() => {
     const target = sectionRef.current;
-    if (!target) return;
+    if (!target) {
+      return;
+    }
 
-    if (document.fullscreenElement) {
+    if (document.fullscreenElement === target) {
       document.exitFullscreen().catch(() => {});
       return;
     }
 
     target.requestFullscreen?.().catch(() => {});
-  };
+  }, []);
 
   const scrollStageToBottom = useCallback(() => {
     const stageLayerElement = stageLayerRef.current;
@@ -1246,6 +1267,7 @@ const Slide: React.FC<SlideProps> = ({
           nextDisabled={!canGoNext}
           onEnded={handlePlayerEnded}
           onFullscreen={handleFullscreen}
+          isFullscreen={isFullscreen}
           onInteractionToggle={handleInteractionToggle}
           onNext={handleNext}
           onPrev={handlePrev}

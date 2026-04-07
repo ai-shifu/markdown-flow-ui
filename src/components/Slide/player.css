@@ -51,9 +51,15 @@
   }
 
   .slide-player__interaction-arrow {
-    /* Align to the center of the fourth action slot on mobile. */
+    /* Align to the center of the trailing notes slot on mobile. */
     left: auto !important;
-    right: calc(((100% + 48px - 40px) / 8) + 20px - 28px) !important;
+    right: calc(
+      (
+          (100% + 48px - 40px) /
+            (var(--slide-player-mobile-control-count, 5) * 2)
+        ) +
+        20px - 28px
+    ) !important;
   }
 }
 .slide-player__controls {
@@ -231,6 +237,7 @@
     (
         var(--slide-player-action-size) + var(--slide-player-group-gap) +
           var(--slide-player-toggle-size) + var(--slide-player-group-gap) +
+          var(--slide-player-action-size) + var(--slide-player-group-gap) +
           var(--slide-player-action-size) + var(--slide-player-separator-gap) +
           var(--slide-player-separator-width) +
           var(--slide-player-separator-gap)

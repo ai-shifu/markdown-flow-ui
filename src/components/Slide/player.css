@@ -46,6 +46,10 @@
     margin: 0 !important;
   }
 
+  .slide-player__action--mobile-more {
+    display: flex !important;
+  }
+
   .slide-player__separator {
     display: none;
   }
@@ -182,6 +186,10 @@
 .slide-player__action {
   width: 32px;
   height: 32px;
+}
+
+.slide-player__action--mobile-more {
+  display: none;
 }
 
 .slide-player__toggle {

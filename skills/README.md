@@ -6,4 +6,5 @@ Distributed skills for `markdown-flow-ui`:
 - `content-render-loading-overlay`
 - `content-render-reading-mode-story`
 - `slide-display-preload`
+- `slide-mobile-player-custom-action-slot`
 - `slide-story-streaming`

@@ -163,7 +163,7 @@ const Player: React.FC<PlayerProps> = ({
     () => toPlayerCustomActionList(customActions, customActionContext),
     [customActionContext, customActions]
   );
-  const mobileVisibleActionCount = customActionList.length + 4;
+  const mobileVisibleActionCount = customActionList.length + 5;
   const controlsStyle = useMemo(
     () =>
       ({
@@ -766,7 +766,11 @@ const Player: React.FC<PlayerProps> = ({
       {showControls ? (
         <div className="slide-player__controls" style={controlsStyle}>
           <div className="slide-player__group">
-            <button aria-label="More options" className="hidden" type="button">
+            <button
+              aria-label="More options"
+              className="slide-player__action slide-player__action--mobile-more"
+              type="button"
+            >
               <EllipsisVertical
                 className="slide-player__icon"
                 strokeWidth={2.25}

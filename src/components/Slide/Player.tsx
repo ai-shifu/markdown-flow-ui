@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "../../lib/utils";
+import MobilePlayerSettingsSheet from "./MobilePlayerSettingsSheet";
 import type { SlideAudioItem } from "./useSlide";
 import type {
   SlidePlayerCustomActionContext,
@@ -25,6 +26,31 @@ import { toPlayerCustomActionList } from "./utils/playerCustomActions";
 import "./player.css";
 
 const audioPreloadElementCache = new Map<string, HTMLAudioElement>();
+
+const MOBILE_PLAYER_MENU_LABELS = {
+  "en-US": {
+    title: "Settings",
+    screen: "Screen",
+    portrait: "Portrait",
+    landscape: "Landscape",
+  },
+  "zh-CN": {
+    title: "\u8bbe\u7f6e",
+    screen: "\u5c4f\u5e55",
+    portrait: "\u7ad6\u5c4f",
+    landscape: "\u6a2a\u5c4f",
+  },
+} as const;
+
+const resolveMobilePlayerMenuLocale = () => {
+  if (typeof document === "undefined") {
+    return "en-US";
+  }
+
+  return document.documentElement.lang.toLowerCase().startsWith("zh")
+    ? "zh-CN"
+    : "en-US";
+};
 
 const preloadAudioUrl = (url?: string) => {
   if (typeof window === "undefined" || !url) {
@@ -128,6 +154,7 @@ const Player: React.FC<PlayerProps> = ({
   ...props
 }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previousInteractionOpenRef = useRef(isInteractionOpen);
   const audioSrcRef = useRef<string | null>(null);
   const currentAudioKeyRef = useRef<string | null>(null);
   const currentSegmentIndexRef = useRef(0);
@@ -148,6 +175,7 @@ const Player: React.FC<PlayerProps> = ({
     "unknown" | "auto" | "manual" | "blocked"
   >("unknown");
   const [isPlaying, setIsPlaying] = useState(defaultPlaying);
+  const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
   const currentAudio =
     currentAudioIndex >= 0 ? audioList[currentAudioIndex] : undefined;
   const currentAudioUrl = currentAudio?.audioUrl;
@@ -171,6 +199,8 @@ const Player: React.FC<PlayerProps> = ({
       }) as React.CSSProperties,
     [mobileVisibleActionCount]
   );
+  const mobilePlayerMenuLabels =
+    MOBILE_PLAYER_MENU_LABELS[resolveMobilePlayerMenuLocale()];
   const currentAudioKey = useMemo(() => {
     if (!currentAudio) {
       return "none";
@@ -195,6 +225,22 @@ const Player: React.FC<PlayerProps> = ({
   useEffect(() => {
     currentAudioRef.current = currentAudio;
   }, [currentAudio]);
+
+  useEffect(() => {
+    if (showControls) {
+      return;
+    }
+
+    setIsMobileMoreOpen(false);
+  }, [showControls]);
+
+  useEffect(() => {
+    if (!previousInteractionOpenRef.current && isInteractionOpen) {
+      setIsMobileMoreOpen(false);
+    }
+
+    previousInteractionOpenRef.current = isInteractionOpen;
+  }, [isInteractionOpen]);
 
   useEffect(() => {
     currentAudioSegmentsRef.current = currentAudioSegments;
@@ -748,6 +794,16 @@ const Player: React.FC<PlayerProps> = ({
     setIsPlaying(false);
     updateLoading(false);
   }, [updateLoading]);
+  const handleMobileScreenModeChange = useCallback(
+    (nextIsFullscreen: boolean) => {
+      if (nextIsFullscreen !== isFullscreen) {
+        onFullscreen?.();
+      }
+
+      setIsMobileMoreOpen(false);
+    },
+    [isFullscreen, onFullscreen]
+  );
 
   return (
     <div className={cn("slide-player", className)} {...props}>
@@ -764,142 +820,171 @@ const Player: React.FC<PlayerProps> = ({
       />
 
       {showControls ? (
-        <div className="slide-player__controls" style={controlsStyle}>
-          <div className="slide-player__group">
-            <button
-              aria-label="More options"
-              className="slide-player__action slide-player__action--mobile-more"
-              type="button"
-            >
-              <EllipsisVertical
-                className="slide-player__icon"
-                strokeWidth={2.25}
-              />
-            </button>
-            <button aria-label="Volume" className="hidden" type="button">
-              <Volume2 className="slide-player__icon" strokeWidth={2.25} />
-            </button>
-            <button
-              aria-label="Rewind"
-              className="slide-player__action"
-              disabled={prevDisabled}
-              onClick={onPrev}
-              type="button"
-            >
-              <RotateCcw className="slide-player__icon" strokeWidth={2.25} />
-            </button>
-            <button
-              aria-label={toggleAriaLabel}
-              className="slide-player__toggle"
-              onClick={() => {
-                if (useAutoAdvanceToggle) {
-                  onAutoAdvanceToggle?.(!isAutoAdvanceEnabled);
-                  return;
-                }
+        <>
+          <MobilePlayerSettingsSheet
+            isFullscreen={isFullscreen}
+            labels={mobilePlayerMenuLabels}
+            onClose={() => setIsMobileMoreOpen(false)}
+            onOpenChange={setIsMobileMoreOpen}
+            onScreenModeChange={handleMobileScreenModeChange}
+            open={isMobileMoreOpen}
+          />
 
-                const audioElement = audioRef.current;
+          <div className="slide-player__controls" style={controlsStyle}>
+            <div className="slide-player__group">
+              <button
+                aria-expanded={isMobileMoreOpen}
+                aria-haspopup="dialog"
+                aria-label="More options"
+                className="slide-player__action slide-player__action--mobile-more"
+                onClick={() => {
+                  if (!isMobileMoreOpen && isInteractionOpen) {
+                    onInteractionToggle?.();
+                  }
 
-                if (isPlaybackPaused || !audioElement || !currentAudio) {
-                  return;
-                }
-
-                if (waitingSegmentIndexRef.current !== null) {
-                  if (isPlaying) {
-                    pendingAutoPlayRef.current = false;
-                    isPausedByUserRef.current = true;
-                    waitingSegmentIndexRef.current = null;
-                    isWaitingForSegmentRef.current = false;
-                    setIsPlaying(false);
-                    updateLoading(false);
-                    audioElement.pause();
+                  setIsMobileMoreOpen((prevOpen) => !prevOpen);
+                }}
+                type="button"
+              >
+                <EllipsisVertical
+                  className="slide-player__icon"
+                  strokeWidth={2.25}
+                />
+              </button>
+              <button aria-label="Volume" className="hidden" type="button">
+                <Volume2 className="slide-player__icon" strokeWidth={2.25} />
+              </button>
+              <button
+                aria-label="Rewind"
+                className="slide-player__action"
+                disabled={prevDisabled}
+                onClick={onPrev}
+                type="button"
+              >
+                <RotateCcw className="slide-player__icon" strokeWidth={2.25} />
+              </button>
+              <button
+                aria-label={toggleAriaLabel}
+                className="slide-player__toggle"
+                onClick={() => {
+                  if (useAutoAdvanceToggle) {
+                    onAutoAdvanceToggle?.(!isAutoAdvanceEnabled);
                     return;
                   }
 
-                  playbackAccessModeRef.current = "manual";
-                  isPausedByUserRef.current = false;
-                  pendingAutoPlayRef.current = true;
-                  updateLoading(true);
-                  return;
-                }
+                  const audioElement = audioRef.current;
 
-                if (!audioElement.src && currentAudioSegments.length > 0) {
-                  playbackAccessModeRef.current = "manual";
-                  isPausedByUserRef.current = false;
-                  startSegmentPlayback(
-                    Math.min(
-                      currentSegmentIndexRef.current,
-                      currentAudioSegments.length - 1
-                    ),
-                    "toggle"
-                  );
-                  return;
-                }
+                  if (isPlaybackPaused || !audioElement || !currentAudio) {
+                    return;
+                  }
 
-                if (audioElement.paused) {
-                  playbackAccessModeRef.current = "manual";
-                  isPausedByUserRef.current = false;
-                  pendingAutoPlayRef.current = true;
-                  tryPlayCurrentAudio("toggle-resume");
-                  return;
-                }
+                  if (waitingSegmentIndexRef.current !== null) {
+                    if (isPlaying) {
+                      pendingAutoPlayRef.current = false;
+                      isPausedByUserRef.current = true;
+                      waitingSegmentIndexRef.current = null;
+                      isWaitingForSegmentRef.current = false;
+                      setIsPlaying(false);
+                      updateLoading(false);
+                      audioElement.pause();
+                      return;
+                    }
 
-                pendingAutoPlayRef.current = false;
-                isPausedByUserRef.current = true;
-                audioElement.pause();
-              }}
-              type="button"
-            >
-              {isTogglePlaying ? <PauseIcon /> : <PlayIcon />}
-            </button>
-            <button
-              aria-label="Forward"
-              className="slide-player__action"
-              disabled={nextDisabled}
-              onClick={onNext}
-              type="button"
-            >
-              <RotateCw className="slide-player__icon" strokeWidth={2.25} />
-            </button>
-            {onFullscreen ? (
-              <button
-                aria-label={
-                  isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
-                }
-                className="slide-player__action slide-player__action--fullscreen"
-                onClick={onFullscreen}
+                    playbackAccessModeRef.current = "manual";
+                    isPausedByUserRef.current = false;
+                    pendingAutoPlayRef.current = true;
+                    updateLoading(true);
+                    return;
+                  }
+
+                  if (!audioElement.src && currentAudioSegments.length > 0) {
+                    playbackAccessModeRef.current = "manual";
+                    isPausedByUserRef.current = false;
+                    startSegmentPlayback(
+                      Math.min(
+                        currentSegmentIndexRef.current,
+                        currentAudioSegments.length - 1
+                      ),
+                      "toggle"
+                    );
+                    return;
+                  }
+
+                  if (audioElement.paused) {
+                    playbackAccessModeRef.current = "manual";
+                    isPausedByUserRef.current = false;
+                    pendingAutoPlayRef.current = true;
+                    tryPlayCurrentAudio("toggle-resume");
+                    return;
+                  }
+
+                  pendingAutoPlayRef.current = false;
+                  isPausedByUserRef.current = true;
+                  audioElement.pause();
+                }}
                 type="button"
               >
-                {isFullscreen ? (
-                  <ScanLine className="slide-player__icon" strokeWidth={2.25} />
-                ) : (
-                  <Maximize className="slide-player__icon" strokeWidth={2.25} />
-                )}
+                {isTogglePlaying ? <PauseIcon /> : <PlayIcon />}
               </button>
-            ) : null}
-          </div>
+              <button
+                aria-label="Forward"
+                className="slide-player__action"
+                disabled={nextDisabled}
+                onClick={onNext}
+                type="button"
+              >
+                <RotateCw className="slide-player__icon" strokeWidth={2.25} />
+              </button>
+              {onFullscreen ? (
+                <button
+                  aria-label={
+                    isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
+                  }
+                  className="slide-player__action slide-player__action--fullscreen"
+                  onClick={onFullscreen}
+                  type="button"
+                >
+                  {isFullscreen ? (
+                    <ScanLine
+                      className="slide-player__icon"
+                      strokeWidth={2.25}
+                    />
+                  ) : (
+                    <Maximize
+                      className="slide-player__icon"
+                      strokeWidth={2.25}
+                    />
+                  )}
+                </button>
+              ) : null}
+            </div>
 
-          <div className="slide-player__separator" />
+            <div className="slide-player__separator" />
 
-          <div className="slide-player__group">
-            {customActionList.map((customAction, customActionIndex) => (
-              <React.Fragment key={`custom-action-${customActionIndex}`}>
-                {customAction}
-              </React.Fragment>
-            ))}
-            <button
-              aria-label="Notes"
-              className={cn(
-                "slide-player__action",
-                isInteractionOpen && "slide-player__action--active"
-              )}
-              disabled={!hasInteraction}
-              onClick={onInteractionToggle}
-              type="button"
-            >
-              <FilePenLine className="slide-player__icon" strokeWidth={2.25} />
-            </button>
+            <div className="slide-player__group">
+              {customActionList.map((customAction, customActionIndex) => (
+                <React.Fragment key={`custom-action-${customActionIndex}`}>
+                  {customAction}
+                </React.Fragment>
+              ))}
+              <button
+                aria-label="Notes"
+                className={cn(
+                  "slide-player__action",
+                  isInteractionOpen && "slide-player__action--active"
+                )}
+                disabled={!hasInteraction}
+                onClick={onInteractionToggle}
+                type="button"
+              >
+                <FilePenLine
+                  className="slide-player__icon"
+                  strokeWidth={2.25}
+                />
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       ) : null}
     </div>
   );

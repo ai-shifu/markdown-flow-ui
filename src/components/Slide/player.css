@@ -12,6 +12,7 @@
     width: 100% !important;
     min-height: 80px;
     align-items: stretch;
+    overflow: visible;
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;

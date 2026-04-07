@@ -249,6 +249,7 @@ const Slide: React.FC<SlideProps> = ({
   const shouldApplyLandscapeViewportPadding =
     isMobileLandscape && playerVisible;
   const handleLandscapeHeaderBack = useCallback(() => {
+    handleFullscreen();
     setMobileScreenMode(DEFAULT_MOBILE_SCREEN_MODE);
     landscapeHeader?.onBack?.();
   }, [landscapeHeader]);

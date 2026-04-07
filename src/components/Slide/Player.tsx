@@ -802,6 +802,7 @@ const Player: React.FC<PlayerProps> = ({
   }, [updateLoading]);
   const handleMobileScreenModeChange = useCallback(
     (nextScreenMode: MobileScreenMode) => {
+      onFullscreen?.();
       onMobileScreenModeChange?.(nextScreenMode);
       setIsMobileMoreOpen(false);
     },

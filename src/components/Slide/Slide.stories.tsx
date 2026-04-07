@@ -56,7 +56,7 @@ const meta = {
     landscapeHeader: {
       control: "object",
       description:
-        "Landscape-only mobile header with teacher avatar, teacher name, course title, and optional back action",
+        "Landscape-only mobile header with a built-in back button and optional custom content slot",
     },
     playerAutoHideDelay: {
       control: { type: "number", min: 0, step: 500 },
@@ -2221,9 +2221,17 @@ export const HistorySlides: Story = {
   args: {
     // playerAlwaysVisible: true,
     landscapeHeader: {
-      teacherAvatarSrc: LANDSCAPE_HEADER_AVATAR,
-      teacherName: "Nike老师",
-      courseTitle: "这是课程标题内容内容内容",
+      content: (
+        <div className="flex min-w-0 items-center gap-2 overflow-hidden text-[16px] font-bold leading-6 text-white">
+          <img
+            alt="Nike老师"
+            className="h-8 w-8 shrink-0 rounded-full object-cover"
+            src={LANDSCAPE_HEADER_AVATAR}
+          />
+          <span className="shrink-0">Nike老师</span>
+          <span className="truncate">这是课程标题内容内容内容</span>
+        </div>
+      ),
       backAriaLabel: "返回",
     },
     playerTexts: {

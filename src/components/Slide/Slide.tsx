@@ -72,14 +72,11 @@ export interface SlideInteractionTexts
   title?: string;
 }
 
-export interface SlideLandscapeHeader {
-  teacherAvatarSrc: string;
-  teacherAvatarAlt?: string;
-  teacherName: string;
-  courseTitle: string;
+export type SlideLandscapeHeader = {
+  content?: React.ReactNode;
   backAriaLabel?: string;
   onBack?: () => void;
-}
+};
 
 const InteractionOverlayCard = memo(
   ({
@@ -246,8 +243,11 @@ const Slide: React.FC<SlideProps> = ({
   const playerVisible =
     shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
   const isMobileLandscape = isLandscapeMobileScreenMode(mobileScreenMode);
-  const shouldShowLandscapeHeader =
-    isMobileLandscape && Boolean(landscapeHeader);
+  const shouldShowLandscapeHeader = isMobileLandscape;
+  const handleLandscapeHeaderBack = useCallback(() => {
+    setMobileScreenMode(DEFAULT_MOBILE_SCREEN_MODE);
+    landscapeHeader?.onBack?.();
+  }, [landscapeHeader]);
   const setPlayerCustomActionActive = useCallback((active: boolean) => {
     setIsPlayerCustomActionActive(active);
   }, []);
@@ -1235,31 +1235,22 @@ const Slide: React.FC<SlideProps> = ({
           isMobileLandscape && "slide__viewport--mobile-landscape"
         )}
       >
-        {shouldShowLandscapeHeader && landscapeHeader ? (
+        {shouldShowLandscapeHeader ? (
           <div className="slide-landscape-header">
             <button
-              aria-label={landscapeHeader.backAriaLabel ?? "Back"}
+              aria-label={landscapeHeader?.backAriaLabel ?? "Back"}
               className="slide-landscape-header__back"
-              onClick={landscapeHeader.onBack}
+              onClick={handleLandscapeHeaderBack}
               type="button"
             >
               <ChevronLeft className="h-6 w-6 text-white" strokeWidth={2.25} />
             </button>
 
-            <img
-              alt={
-                landscapeHeader.teacherAvatarAlt ?? landscapeHeader.teacherName
-              }
-              className="h-8 w-8 shrink-0 rounded-full object-cover"
-              height={32}
-              src={landscapeHeader.teacherAvatarSrc}
-              width={32}
-            />
-
-            <div className="flex min-w-0 items-center gap-1 overflow-hidden text-[16px] font-bold leading-6 text-white">
-              <span className="shrink-0">{landscapeHeader.teacherName}</span>
-              <span className="truncate">{landscapeHeader.courseTitle}</span>
-            </div>
+            {landscapeHeader?.content ? (
+              <div className="min-w-0 flex-1 overflow-hidden">
+                {landscapeHeader.content}
+              </div>
+            ) : null}
           </div>
         ) : null}
 

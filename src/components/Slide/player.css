@@ -24,6 +24,7 @@
   .slide-player__controls {
     display: grid !important;
     width: 100%;
+    padding: 0 20px !important;
     grid-template-columns: repeat(
       var(--slide-player-mobile-control-count, 4),
       minmax(0, 1fr)

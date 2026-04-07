@@ -568,9 +568,9 @@ const resolveSubmittedUserInput = (content: OnSendContentParams) =>
 const isSameStoryElement = (currentElement: Element, targetElement?: Element) =>
   Boolean(
     targetElement &&
-    currentElement.type === targetElement.type &&
-    currentElement.sequence_number === targetElement.sequence_number &&
-    currentElement.content === targetElement.content
+      currentElement.type === targetElement.type &&
+      currentElement.sequence_number === targetElement.sequence_number &&
+      currentElement.content === targetElement.content
   );
 
 const applyInteractionSubmission = (
@@ -2195,7 +2195,7 @@ export const FullViewportSingleSlideWithEmptyPpt: Story = {
 
 export const HistorySlides: Story = {
   args: {
-    playerAlwaysVisible: false,
+    playerAlwaysVisible: true,
     elementList: focusHistoryOnLatestInteraction([
       {
         sequence_number: 6,

@@ -20,7 +20,7 @@ import {
   type InteractionDefaultValueOptions,
 } from "../../lib/interaction-defaults";
 import Player from "./Player";
-import type { PlayerProps } from "./Player";
+import type { PlayerProps, SlidePlayerTexts } from "./Player";
 import type { Element } from "./types";
 import useSlide from "./useSlide";
 import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
@@ -130,6 +130,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   bufferingText?: string;
   interactionTitle?: string;
   interactionTexts?: SlideInteractionTexts;
+  playerTexts?: SlidePlayerTexts;
   playerAutoHideDelay?: number;
   markerAutoAdvanceDelay?: number;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
@@ -148,6 +149,7 @@ const Slide: React.FC<SlideProps> = ({
   bufferingText = "Buffering...",
   interactionTitle,
   interactionTexts,
+  playerTexts,
   playerAutoHideDelay = 3000,
   markerAutoAdvanceDelay = DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS,
   interactionDefaultValueOptions,
@@ -1273,6 +1275,7 @@ const Slide: React.FC<SlideProps> = ({
           onPrev={handlePrev}
           prevDisabled={!canGoPrev}
           showControls={playerVisible}
+          texts={playerTexts}
           customActionContext={playerCustomActionContext}
           customActions={playerCustomActions}
           useAutoAdvanceToggle={shouldUseSilentStepAutoAdvanceToggle}

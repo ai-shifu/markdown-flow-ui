@@ -38,5 +38,5 @@ export type {
   SlidePlayerCustomActionContext,
   SlidePlayerCustomActions,
 } from "./types";
-export type { PlayerProps } from "./Player";
+export type { PlayerProps, SlidePlayerTexts } from "./Player";
 export type { UseSlideResult } from "./useSlide";

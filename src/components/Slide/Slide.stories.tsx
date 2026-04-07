@@ -49,6 +49,10 @@ const meta = {
       control: "object",
       description: "I18n-ready interaction overlay UI texts",
     },
+    playerTexts: {
+      control: "object",
+      description: "I18n-ready player settings sheet texts",
+    },
     playerAutoHideDelay: {
       control: { type: "number", min: 0, step: 500 },
       description: "Auto-hide delay for player controls in milliseconds",
@@ -86,6 +90,12 @@ const meta = {
       confirmButtonText: "Submit",
       copyButtonText: "Copy",
       copiedButtonText: "Copied",
+    },
+    playerTexts: {
+      settingsTitle: "Settings",
+      screenLabel: "Screen",
+      portraitLabel: "Portrait",
+      landscapeLabel: "Landscape",
     },
     playerAutoHideDelay: 3000,
     markerAutoAdvanceDelay: 2000,
@@ -2196,6 +2206,12 @@ export const FullViewportSingleSlideWithEmptyPpt: Story = {
 export const HistorySlides: Story = {
   args: {
     playerAlwaysVisible: true,
+    playerTexts: {
+      settingsTitle: "设置",
+      screenLabel: "屏幕",
+      portraitLabel: "竖屏",
+      landscapeLabel: "横屏",
+    },
     elementList: focusHistoryOnLatestInteraction([
       {
         sequence_number: 6,

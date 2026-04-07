@@ -27,29 +27,18 @@ import "./player.css";
 
 const audioPreloadElementCache = new Map<string, HTMLAudioElement>();
 
-const MOBILE_PLAYER_MENU_LABELS = {
-  "en-US": {
-    title: "Settings",
-    screen: "Screen",
-    portrait: "Portrait",
-    landscape: "Landscape",
-  },
-  "zh-CN": {
-    title: "\u8bbe\u7f6e",
-    screen: "\u5c4f\u5e55",
-    portrait: "\u7ad6\u5c4f",
-    landscape: "\u6a2a\u5c4f",
-  },
-} as const;
+export interface SlidePlayerTexts {
+  settingsTitle?: string;
+  screenLabel?: string;
+  portraitLabel?: string;
+  landscapeLabel?: string;
+}
 
-const resolveMobilePlayerMenuLocale = () => {
-  if (typeof document === "undefined") {
-    return "en-US";
-  }
-
-  return document.documentElement.lang.toLowerCase().startsWith("zh")
-    ? "zh-CN"
-    : "en-US";
+const DEFAULT_PLAYER_TEXTS: Required<SlidePlayerTexts> = {
+  settingsTitle: "Settings",
+  screenLabel: "Screen",
+  portraitLabel: "Portrait",
+  landscapeLabel: "Landscape",
 };
 
 const preloadAudioUrl = (url?: string) => {
@@ -94,6 +83,7 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   showControls?: boolean;
   customActions?: SlidePlayerCustomActions;
   customActionContext?: SlidePlayerCustomActionContext;
+  texts?: SlidePlayerTexts;
 };
 
 const PauseIcon = () => (
@@ -151,6 +141,7 @@ const Player: React.FC<PlayerProps> = ({
   showControls = true,
   customActions,
   customActionContext,
+  texts,
   ...props
 }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -199,8 +190,13 @@ const Player: React.FC<PlayerProps> = ({
       }) as React.CSSProperties,
     [mobileVisibleActionCount]
   );
-  const mobilePlayerMenuLabels =
-    MOBILE_PLAYER_MENU_LABELS[resolveMobilePlayerMenuLocale()];
+  const playerTexts = useMemo(
+    () => ({
+      ...DEFAULT_PLAYER_TEXTS,
+      ...texts,
+    }),
+    [texts]
+  );
   const currentAudioKey = useMemo(() => {
     if (!currentAudio) {
       return "none";
@@ -823,7 +819,12 @@ const Player: React.FC<PlayerProps> = ({
         <>
           <MobilePlayerSettingsSheet
             isFullscreen={isFullscreen}
-            labels={mobilePlayerMenuLabels}
+            labels={{
+              landscape: playerTexts.landscapeLabel,
+              portrait: playerTexts.portraitLabel,
+              screen: playerTexts.screenLabel,
+              title: playerTexts.settingsTitle,
+            }}
             onClose={() => setIsMobileMoreOpen(false)}
             onOpenChange={setIsMobileMoreOpen}
             onScreenModeChange={handleMobileScreenModeChange}

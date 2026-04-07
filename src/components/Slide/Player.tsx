@@ -861,7 +861,7 @@ const Player: React.FC<PlayerProps> = ({
               </button>
               <button
                 aria-label="Rewind"
-                className="slide-player__action"
+                className="slide-player__action slide-player__action--prev"
                 disabled={prevDisabled}
                 onClick={onPrev}
                 type="button"
@@ -870,7 +870,7 @@ const Player: React.FC<PlayerProps> = ({
               </button>
               <button
                 aria-label={toggleAriaLabel}
-                className="slide-player__toggle"
+                className="slide-player__toggle slide-player__toggle--playback"
                 onClick={() => {
                   if (useAutoAdvanceToggle) {
                     onAutoAdvanceToggle?.(!isAutoAdvanceEnabled);
@@ -933,7 +933,7 @@ const Player: React.FC<PlayerProps> = ({
               </button>
               <button
                 aria-label="Forward"
-                className="slide-player__action"
+                className="slide-player__action slide-player__action--next"
                 disabled={nextDisabled}
                 onClick={onNext}
                 type="button"
@@ -975,7 +975,7 @@ const Player: React.FC<PlayerProps> = ({
               <button
                 aria-label="Notes"
                 className={cn(
-                  "slide-player__action",
+                  "slide-player__action slide-player__action--notes",
                   isInteractionOpen && "slide-player__action--active"
                 )}
                 disabled={!hasInteraction}

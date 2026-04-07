@@ -71,6 +71,88 @@
         20px - 28px
     ) !important;
   }
+
+  .slide--mobile-landscape .slide-player {
+    min-height: 48px;
+    background: transparent !important;
+    border-top: none;
+    border-bottom: none;
+  }
+
+  .slide--mobile-landscape .slide-player__controls {
+    position: relative;
+    display: flex !important;
+    height: 48px;
+    justify-content: center;
+    padding: 0 20px !important;
+    background: linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.8) 0%,
+      rgba(102, 102, 102, 0.6) 100%
+    ) !important;
+  }
+
+  .slide--mobile-landscape .slide-player__group {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .slide--mobile-landscape .slide-player__group:first-child {
+    gap: 24px;
+  }
+
+  .slide--mobile-landscape .slide-player__group:last-child {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+  }
+
+  .slide--mobile-landscape .slide-player__action,
+  .slide--mobile-landscape .slide-player__toggle {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    color: #fff;
+  }
+
+  .slide--mobile-landscape .slide-player__toggle svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .slide--mobile-landscape .slide-player__toggle--playback {
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    border-radius: 9999px;
+  }
+
+  .slide--mobile-landscape .slide-player__toggle svg path:first-child {
+    fill: transparent;
+  }
+
+  .slide--mobile-landscape .slide-player__toggle svg path:last-child {
+    fill: #fff;
+  }
+
+  .slide--mobile-landscape .slide-player__action:hover,
+  .slide--mobile-landscape .slide-player__toggle:hover,
+  .slide--mobile-landscape .slide-player__action--active,
+  .slide--mobile-landscape .slide-player__action--active:hover {
+    color: #fff;
+  }
+
+  .slide--mobile-landscape .slide-player__action--mobile-more {
+    position: absolute;
+    top: 50%;
+    left: 20px;
+    justify-self: auto;
+    transform: translateY(-50%);
+  }
+
+  .slide--mobile-landscape .slide-player__action--notes {
+    justify-self: auto;
+  }
 }
 .slide-player__controls {
   display: inline-flex;
@@ -282,5 +364,9 @@
 @media (max-width: 640px) {
   .slide-interaction-overlay {
     --slide-player-bottom-offset: 0px;
+  }
+
+  .slide--mobile-landscape .slide-interaction-overlay {
+    --slide-player-height: 48px;
   }
 }

@@ -243,7 +243,9 @@ const Slide: React.FC<SlideProps> = ({
   const playerVisible =
     shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
   const isMobileLandscape = isLandscapeMobileScreenMode(mobileScreenMode);
-  const shouldShowLandscapeHeader = isMobileLandscape;
+  const shouldShowLandscapeHeader = isMobileLandscape && playerVisible;
+  const shouldApplyLandscapeViewportPadding =
+    isMobileLandscape && playerVisible;
   const handleLandscapeHeaderBack = useCallback(() => {
     setMobileScreenMode(DEFAULT_MOBILE_SCREEN_MODE);
     landscapeHeader?.onBack?.();
@@ -1257,7 +1259,8 @@ const Slide: React.FC<SlideProps> = ({
         <div
           className={cn(
             "h-full min-h-0 w-full",
-            shouldShowLandscapeHeader && "slide__viewport-content--with-header",
+            shouldApplyLandscapeViewportPadding &&
+              "slide__viewport-content--with-header",
             isSingleSlide ? "slide-content--single" : "grid gap-4"
           )}
         >

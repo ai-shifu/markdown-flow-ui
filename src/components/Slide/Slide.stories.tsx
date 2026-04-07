@@ -2219,7 +2219,7 @@ export const FullViewportSingleSlideWithEmptyPpt: Story = {
 
 export const HistorySlides: Story = {
   args: {
-    playerAlwaysVisible: true,
+    // playerAlwaysVisible: true,
     landscapeHeader: {
       content: (
         <div className="flex min-w-0 items-center gap-2 overflow-hidden text-[16px] font-bold leading-6 text-white">

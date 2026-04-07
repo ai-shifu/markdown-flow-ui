@@ -40,7 +40,7 @@
 
 .slide__viewport-content--with-header {
   box-sizing: border-box;
-  padding-top: 48px;
+  padding: 60px 24px 12px;
 }
 
 .slide-content--single {

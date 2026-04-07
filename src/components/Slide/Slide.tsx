@@ -24,6 +24,11 @@ import type { PlayerProps, SlidePlayerTexts } from "./Player";
 import type { Element } from "./types";
 import useSlide from "./useSlide";
 import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
+import {
+  DEFAULT_MOBILE_SCREEN_MODE,
+  isLandscapeMobileScreenMode,
+  type MobileScreenMode,
+} from "./utils/mobileScreenMode";
 import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
 import { getPlaybackSequenceTransition } from "./utils/playbackSequence";
 import {
@@ -222,8 +227,12 @@ const Slide: React.FC<SlideProps> = ({
   const [isInteractionOverlayOpen, setIsInteractionOverlayOpen] =
     useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [mobileScreenMode, setMobileScreenMode] = useState<MobileScreenMode>(
+    DEFAULT_MOBILE_SCREEN_MODE
+  );
   const playerVisible =
     shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
+  const isMobileLandscape = isLandscapeMobileScreenMode(mobileScreenMode);
   const setPlayerCustomActionActive = useCallback((active: boolean) => {
     setIsPlayerCustomActionActive(active);
   }, []);
@@ -829,6 +838,31 @@ const Slide: React.FC<SlideProps> = ({
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return;
+    }
+
+    const mobileMediaQuery = window.matchMedia("(max-width: 640px)");
+
+    if (!mobileMediaQuery.matches || !isMobileLandscape) {
+      return;
+    }
+
+    const { style } = document.body;
+    const previousOverflow = style.overflow;
+    const previousOverscrollBehavior = style.overscrollBehavior;
+
+    // Lock the page scroll while the rotated slide takes over the viewport.
+    style.overflow = "hidden";
+    style.overscrollBehavior = "none";
+
+    return () => {
+      style.overflow = previousOverflow;
+      style.overscrollBehavior = previousOverscrollBehavior;
+    };
+  }, [isMobileLandscape]);
+
+  useEffect(() => {
     clearInteractionAutoCloseTimer();
 
     if (!isInteractionOverlayOpen || !shouldAutoContinueInteraction) {
@@ -1171,116 +1205,129 @@ const Slide: React.FC<SlideProps> = ({
   return (
     <section
       ref={sectionRef}
-      className={cn("relative h-full w-full", className)}
+      className={cn(
+        "relative h-full w-full",
+        isMobileLandscape && "slide--mobile-landscape",
+        className
+      )}
       onPointerDown={handleSurfacePointerDown}
       {...props}
     >
       <div
         className={cn(
-          "h-full min-h-0 w-full",
-          isSingleSlide ? "slide-content--single" : "grid gap-4"
+          "slide__viewport relative h-full min-h-0 w-full",
+          isMobileLandscape && "slide__viewport--mobile-landscape"
         )}
       >
-        {currentElementList.length > 0 ? (
-          <div className="slide-stage">
-            <div ref={stageLayerRef} className="slide-stage__layer w-full">
-              {mountedStepStates.map(
-                (mountedStepState, mountedStepStateIndex) => {
-                  const isActiveStep =
-                    mountedStepStateIndex === currentMountedStateIndex;
-
-                  return (
-                    <div
-                      key={
-                        mountedStepState.sourceStepIndexes[0] ??
-                        mountedStepStateIndex
-                      }
-                      aria-hidden={!isActiveStep || undefined}
-                      className="w-full h-full"
-                      style={{ display: isActiveStep ? undefined : "none" }}
-                    >
-                      {renderSlideElementList(
-                        mountedStepState.elementList,
-                        isActiveStep
-                      )}
-                    </div>
-                  );
-                }
-              )}
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      {isAudioLoadingVisible ? (
-        <LoadingOverlayCard
-          message={bufferingText}
-          className="absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2"
-        />
-      ) : null}
-
-      {shouldShowInteractionOverlay ? (
         <div
           className={cn(
-            "slide-interaction-overlay",
-            playerVisible && shouldRenderPlayer
-              ? "slide-interaction-overlay--with-player"
-              : "slide-interaction-overlay--standalone"
+            "h-full min-h-0 w-full",
+            isSingleSlide ? "slide-content--single" : "grid gap-4"
           )}
-          onClick={stopOverlayPropagation}
-          onPointerDown={stopOverlayPropagation}
-          style={interactionOverlayStyle}
         >
-          <InteractionOverlayCard
-            content={String(activeInteractionElement?.content ?? "")}
-            defaultButtonText={interactionDefaults.buttonText ?? ""}
-            defaultInputText={interactionDefaults.inputText ?? ""}
-            defaultSelectedValues={interactionDefaultSelectedValues}
-            confirmButtonText={interactionTexts?.confirmButtonText}
-            copyButtonText={interactionTexts?.copyButtonText}
-            copiedButtonText={interactionTexts?.copiedButtonText}
-            onSend={handleInteractionSend}
-            readonly={isInteractionReadonly}
-            title={
-              interactionTexts?.title ??
-              interactionTitle ??
-              "Submit the content below to continue."
-            }
-          />
-        </div>
-      ) : null}
+          {currentElementList.length > 0 ? (
+            <div className="slide-stage">
+              <div ref={stageLayerRef} className="slide-stage__layer w-full">
+                {mountedStepStates.map(
+                  (mountedStepState, mountedStepStateIndex) => {
+                    const isActiveStep =
+                      mountedStepStateIndex === currentMountedStateIndex;
 
-      {shouldRenderPlayer ? (
-        <Player
-          audioList={audioList}
-          className={cn(
-            "absolute left-1/2 bottom-6 z-[2] -translate-x-1/2",
-            playerClassName,
-            !playerVisible && "pointer-events-none opacity-0"
-          )}
-          currentAudioIndex={currentAudioIndex}
-          defaultPlaying
-          isPlaybackPaused={shouldPausePlaybackForCustomAction}
-          isAutoAdvanceEnabled={isAutoAdvanceEnabled}
-          hasInteraction={Boolean(activeInteractionElement)}
-          isInteractionOpen={isInteractionOverlayOpen}
-          onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
-          onLoadingChange={handlePlayerLoadingChange}
-          nextDisabled={!canGoNext}
-          onEnded={handlePlayerEnded}
-          onFullscreen={handleFullscreen}
-          isFullscreen={isFullscreen}
-          onInteractionToggle={handleInteractionToggle}
-          onNext={handleNext}
-          onPrev={handlePrev}
-          prevDisabled={!canGoPrev}
-          showControls={playerVisible}
-          texts={playerTexts}
-          customActionContext={playerCustomActionContext}
-          customActions={playerCustomActions}
-          useAutoAdvanceToggle={shouldUseSilentStepAutoAdvanceToggle}
-        />
-      ) : null}
+                    return (
+                      <div
+                        key={
+                          mountedStepState.sourceStepIndexes[0] ??
+                          mountedStepStateIndex
+                        }
+                        aria-hidden={!isActiveStep || undefined}
+                        className="w-full h-full"
+                        style={{ display: isActiveStep ? undefined : "none" }}
+                      >
+                        {renderSlideElementList(
+                          mountedStepState.elementList,
+                          isActiveStep
+                        )}
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        {isAudioLoadingVisible ? (
+          <LoadingOverlayCard
+            message={bufferingText}
+            className="absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2"
+          />
+        ) : null}
+
+        {shouldShowInteractionOverlay ? (
+          <div
+            className={cn(
+              "slide-interaction-overlay",
+              playerVisible && shouldRenderPlayer
+                ? "slide-interaction-overlay--with-player"
+                : "slide-interaction-overlay--standalone"
+            )}
+            onClick={stopOverlayPropagation}
+            onPointerDown={stopOverlayPropagation}
+            style={interactionOverlayStyle}
+          >
+            <InteractionOverlayCard
+              content={String(activeInteractionElement?.content ?? "")}
+              defaultButtonText={interactionDefaults.buttonText ?? ""}
+              defaultInputText={interactionDefaults.inputText ?? ""}
+              defaultSelectedValues={interactionDefaultSelectedValues}
+              confirmButtonText={interactionTexts?.confirmButtonText}
+              copyButtonText={interactionTexts?.copyButtonText}
+              copiedButtonText={interactionTexts?.copiedButtonText}
+              onSend={handleInteractionSend}
+              readonly={isInteractionReadonly}
+              title={
+                interactionTexts?.title ??
+                interactionTitle ??
+                "Submit the content below to continue."
+              }
+            />
+          </div>
+        ) : null}
+
+        {shouldRenderPlayer ? (
+          <Player
+            audioList={audioList}
+            className={cn(
+              "absolute left-1/2 bottom-6 z-[2] -translate-x-1/2",
+              playerClassName,
+              !playerVisible && "pointer-events-none opacity-0"
+            )}
+            currentAudioIndex={currentAudioIndex}
+            defaultPlaying
+            isPlaybackPaused={shouldPausePlaybackForCustomAction}
+            isAutoAdvanceEnabled={isAutoAdvanceEnabled}
+            hasInteraction={Boolean(activeInteractionElement)}
+            isInteractionOpen={isInteractionOverlayOpen}
+            onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
+            onLoadingChange={handlePlayerLoadingChange}
+            nextDisabled={!canGoNext}
+            onEnded={handlePlayerEnded}
+            onFullscreen={handleFullscreen}
+            isFullscreen={isFullscreen}
+            mobileScreenMode={mobileScreenMode}
+            onMobileScreenModeChange={setMobileScreenMode}
+            onInteractionToggle={handleInteractionToggle}
+            onNext={handleNext}
+            onPrev={handlePrev}
+            prevDisabled={!canGoPrev}
+            showControls={playerVisible}
+            texts={playerTexts}
+            customActionContext={playerCustomActionContext}
+            customActions={playerCustomActions}
+            useAutoAdvanceToggle={shouldUseSilentStepAutoAdvanceToggle}
+          />
+        ) : null}
+      </div>
     </section>
   );
 };

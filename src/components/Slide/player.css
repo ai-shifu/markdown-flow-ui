@@ -264,7 +264,7 @@
   position: absolute;
   left: 50%;
   z-index: 4;
-  width: min(664px, calc(100vw - 48px));
+  width: min(664px, calc(var(--slide-mobile-viewport-width, 100dvw) - 48px));
   transform: translateX(-50%);
 }
 

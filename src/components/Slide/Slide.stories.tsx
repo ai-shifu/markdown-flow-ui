@@ -2542,7 +2542,7 @@ export const HistorySlides: Story = {
     docs: {
       description: {
         story:
-          "All slide iframe steps stay mounted and switch visibility with CSS display, while single active iframe roots can fit the host container height.",
+          "All slide iframe steps stay mounted and switch visibility with CSS display, while single active iframe roots can fit the host container height. On mobile, the player settings sheet can also rotate the whole slide viewport into landscape mode.",
       },
     },
   },

@@ -22,6 +22,10 @@ import type {
   SlidePlayerCustomActionContext,
   SlidePlayerCustomActions,
 } from "./types";
+import {
+  DEFAULT_MOBILE_SCREEN_MODE,
+  type MobileScreenMode,
+} from "./utils/mobileScreenMode";
 import { toPlayerCustomActionList } from "./utils/playerCustomActions";
 import "./player.css";
 
@@ -73,6 +77,8 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   onNext?: () => void;
   onFullscreen?: () => void;
   isFullscreen?: boolean;
+  mobileScreenMode?: MobileScreenMode;
+  onMobileScreenModeChange?: (screenMode: MobileScreenMode) => void;
   onEnded?: (audioIndex: number) => void;
   onAutoAdvanceToggle?: (enabled: boolean) => void;
   onInteractionToggle?: () => void;
@@ -131,6 +137,8 @@ const Player: React.FC<PlayerProps> = ({
   onNext,
   onFullscreen,
   isFullscreen = false,
+  mobileScreenMode = DEFAULT_MOBILE_SCREEN_MODE,
+  onMobileScreenModeChange,
   onEnded,
   onAutoAdvanceToggle,
   onInteractionToggle,
@@ -791,14 +799,11 @@ const Player: React.FC<PlayerProps> = ({
     updateLoading(false);
   }, [updateLoading]);
   const handleMobileScreenModeChange = useCallback(
-    (nextIsFullscreen: boolean) => {
-      if (nextIsFullscreen !== isFullscreen) {
-        onFullscreen?.();
-      }
-
+    (nextScreenMode: MobileScreenMode) => {
+      onMobileScreenModeChange?.(nextScreenMode);
       setIsMobileMoreOpen(false);
     },
-    [isFullscreen, onFullscreen]
+    [onMobileScreenModeChange]
   );
 
   return (
@@ -818,7 +823,6 @@ const Player: React.FC<PlayerProps> = ({
       {showControls ? (
         <>
           <MobilePlayerSettingsSheet
-            isFullscreen={isFullscreen}
             labels={{
               landscape: playerTexts.landscapeLabel,
               portrait: playerTexts.portraitLabel,
@@ -829,6 +833,7 @@ const Player: React.FC<PlayerProps> = ({
             onOpenChange={setIsMobileMoreOpen}
             onScreenModeChange={handleMobileScreenModeChange}
             open={isMobileMoreOpen}
+            screenMode={mobileScreenMode}
           />
 
           <div className="slide-player__controls" style={controlsStyle}>

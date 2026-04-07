@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 
 import { cn } from "../../lib/utils";
 import { Dialog, DialogOverlay, DialogPortal, DialogTitle } from "../ui/dialog";
+import type { MobileScreenMode } from "./utils/mobileScreenMode";
 
 export type MobilePlayerSettingsSheetLabels = {
   title: string;
@@ -14,16 +15,16 @@ export type MobilePlayerSettingsSheetLabels = {
 export type MobilePlayerSettingsSheetProps = {
   open: boolean;
   labels: MobilePlayerSettingsSheetLabels;
-  isFullscreen: boolean;
+  screenMode: MobileScreenMode;
   onClose: () => void;
   onOpenChange: (open: boolean) => void;
-  onScreenModeChange: (nextIsFullscreen: boolean) => void;
+  onScreenModeChange: (nextScreenMode: MobileScreenMode) => void;
 };
 
 const MobilePlayerSettingsSheet = ({
   open,
   labels,
-  isFullscreen,
+  screenMode,
   onClose,
   onOpenChange,
   onScreenModeChange,
@@ -65,24 +66,24 @@ const MobilePlayerSettingsSheet = ({
               role="radiogroup"
             >
               <button
-                aria-checked={!isFullscreen}
+                aria-checked={screenMode === "portrait"}
                 className={cn(
                   "border-none bg-transparent p-0 text-[15px] leading-5 text-foreground/70 transition-colors",
-                  !isFullscreen && "font-semibold text-primary"
+                  screenMode === "portrait" && "font-semibold text-primary"
                 )}
-                onClick={() => onScreenModeChange(false)}
+                onClick={() => onScreenModeChange("portrait")}
                 role="radio"
                 type="button"
               >
                 {labels.portrait}
               </button>
               <button
-                aria-checked={isFullscreen}
+                aria-checked={screenMode === "landscape"}
                 className={cn(
                   "border-none bg-transparent p-0 text-[15px] leading-5 text-foreground/70 transition-colors",
-                  isFullscreen && "font-semibold text-primary"
+                  screenMode === "landscape" && "font-semibold text-primary"
                 )}
-                onClick={() => onScreenModeChange(true)}
+                onClick={() => onScreenModeChange("landscape")}
                 role="radio"
                 type="button"
               >

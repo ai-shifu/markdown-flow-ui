@@ -2205,7 +2205,7 @@ export const FullViewportSingleSlideWithEmptyPpt: Story = {
 
 export const HistorySlides: Story = {
   args: {
-    playerAlwaysVisible: true,
+    // playerAlwaysVisible: true,
     playerTexts: {
       settingsTitle: "设置",
       screenLabel: "屏幕",

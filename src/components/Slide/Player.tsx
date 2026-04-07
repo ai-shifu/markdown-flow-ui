@@ -78,6 +78,7 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   onFullscreen?: () => void;
   isFullscreen?: boolean;
   mobileScreenMode?: MobileScreenMode;
+  settingsPortalContainer?: HTMLElement | null;
   onMobileScreenModeChange?: (screenMode: MobileScreenMode) => void;
   onEnded?: (audioIndex: number) => void;
   onAutoAdvanceToggle?: (enabled: boolean) => void;
@@ -138,6 +139,7 @@ const Player: React.FC<PlayerProps> = ({
   onFullscreen,
   isFullscreen = false,
   mobileScreenMode = DEFAULT_MOBILE_SCREEN_MODE,
+  settingsPortalContainer,
   onMobileScreenModeChange,
   onEnded,
   onAutoAdvanceToggle,
@@ -823,6 +825,7 @@ const Player: React.FC<PlayerProps> = ({
       {showControls ? (
         <>
           <MobilePlayerSettingsSheet
+            container={settingsPortalContainer}
             labels={{
               landscape: playerTexts.landscapeLabel,
               portrait: playerTexts.portraitLabel,
@@ -844,10 +847,6 @@ const Player: React.FC<PlayerProps> = ({
                 aria-label="More options"
                 className="slide-player__action slide-player__action--mobile-more"
                 onClick={() => {
-                  if (!isMobileMoreOpen && isInteractionOpen) {
-                    onInteractionToggle?.();
-                  }
-
                   setIsMobileMoreOpen((prevOpen) => !prevOpen);
                 }}
                 type="button"

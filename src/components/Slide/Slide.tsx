@@ -166,6 +166,7 @@ const Slide: React.FC<SlideProps> = ({
   ...props
 }) => {
   const sectionRef = useRef<HTMLElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   const stageLayerRef = useRef<HTMLDivElement | null>(null);
   const lastElementRef = useRef<HTMLDivElement | null>(null);
   const playerHideTimerRef = useRef<number | null>(null);
@@ -1214,6 +1215,7 @@ const Slide: React.FC<SlideProps> = ({
       {...props}
     >
       <div
+        ref={viewportRef}
         className={cn(
           "slide__viewport relative h-full min-h-0 w-full",
           isMobileLandscape && "slide__viewport--mobile-landscape"
@@ -1315,6 +1317,7 @@ const Slide: React.FC<SlideProps> = ({
             onFullscreen={handleFullscreen}
             isFullscreen={isFullscreen}
             mobileScreenMode={mobileScreenMode}
+            settingsPortalContainer={viewportRef.current}
             onMobileScreenModeChange={setMobileScreenMode}
             onInteractionToggle={handleInteractionToggle}
             onNext={handleNext}

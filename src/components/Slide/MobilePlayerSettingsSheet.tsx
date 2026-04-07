@@ -16,6 +16,7 @@ export type MobilePlayerSettingsSheetProps = {
   open: boolean;
   labels: MobilePlayerSettingsSheetLabels;
   screenMode: MobileScreenMode;
+  container?: HTMLElement | null;
   onClose: () => void;
   onOpenChange: (open: boolean) => void;
   onScreenModeChange: (nextScreenMode: MobileScreenMode) => void;
@@ -25,13 +26,14 @@ const MobilePlayerSettingsSheet = ({
   open,
   labels,
   screenMode,
+  container,
   onClose,
   onOpenChange,
   onScreenModeChange,
 }: MobilePlayerSettingsSheetProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogPortal>
+      <DialogPortal container={container}>
         <DialogOverlay className="z-[60] bg-black/35 sm:hidden" />
         <DialogPrimitive.Content
           aria-describedby={undefined}

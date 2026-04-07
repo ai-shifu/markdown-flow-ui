@@ -53,6 +53,11 @@ const meta = {
       control: "object",
       description: "I18n-ready player settings sheet texts",
     },
+    landscapeHeader: {
+      control: "object",
+      description:
+        "Landscape-only mobile header with teacher avatar, teacher name, course title, and optional back action",
+    },
     playerAutoHideDelay: {
       control: { type: "number", min: 0, step: 500 },
       description: "Auto-hide delay for player controls in milliseconds",
@@ -97,6 +102,7 @@ const meta = {
       portraitLabel: "Portrait",
       landscapeLabel: "Landscape",
     },
+    landscapeHeader: undefined,
     playerAutoHideDelay: 3000,
     markerAutoAdvanceDelay: 2000,
     playerAlwaysVisible: false,
@@ -106,6 +112,14 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+const LANDSCAPE_HEADER_AVATAR = `data:image/svg+xml;utf8,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+    <circle cx="16" cy="16" r="16" fill="#FFFFFF"/>
+    <circle cx="16" cy="12" r="5" fill="#111827"/>
+    <path d="M7 26.2C8.9 21.7 12 19.5 16 19.5C20 19.5 23.1 21.7 25 26.2" fill="#111827"/>
+  </svg>`
+)}`;
 
 // const HTML_IFRAME_CONTENT = `
 // <div class="w-full overflow-hidden flex flex-col items-center bg-gradient-to-br from-blue-50 to-blue-100 p-6">
@@ -2206,6 +2220,12 @@ export const FullViewportSingleSlideWithEmptyPpt: Story = {
 export const HistorySlides: Story = {
   args: {
     // playerAlwaysVisible: true,
+    landscapeHeader: {
+      teacherAvatarSrc: LANDSCAPE_HEADER_AVATAR,
+      teacherName: "Nike老师",
+      courseTitle: "这是课程标题内容内容内容",
+      backAriaLabel: "返回",
+    },
     playerTexts: {
       settingsTitle: "设置",
       screenLabel: "屏幕",

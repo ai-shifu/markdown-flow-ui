@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { ChevronLeft } from "lucide-react";
 
 import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
@@ -71,6 +72,15 @@ export interface SlideInteractionTexts
   title?: string;
 }
 
+export interface SlideLandscapeHeader {
+  teacherAvatarSrc: string;
+  teacherAvatarAlt?: string;
+  teacherName: string;
+  courseTitle: string;
+  backAriaLabel?: string;
+  onBack?: () => void;
+}
+
 const InteractionOverlayCard = memo(
   ({
     content,
@@ -130,6 +140,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   showPlayer?: boolean;
   playerAlwaysVisible?: boolean;
   playerClassName?: string;
+  landscapeHeader?: SlideLandscapeHeader;
   playerCustomActions?: PlayerProps["customActions"];
   playerCustomActionPauseOnActive?: boolean;
   bufferingText?: string;
@@ -149,6 +160,7 @@ const Slide: React.FC<SlideProps> = ({
   showPlayer = true,
   playerAlwaysVisible = false,
   playerClassName,
+  landscapeHeader,
   playerCustomActions,
   playerCustomActionPauseOnActive = true,
   bufferingText = "Buffering...",
@@ -234,6 +246,8 @@ const Slide: React.FC<SlideProps> = ({
   const playerVisible =
     shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
   const isMobileLandscape = isLandscapeMobileScreenMode(mobileScreenMode);
+  const shouldShowLandscapeHeader =
+    isMobileLandscape && Boolean(landscapeHeader);
   const setPlayerCustomActionActive = useCallback((active: boolean) => {
     setIsPlayerCustomActionActive(active);
   }, []);
@@ -1221,9 +1235,38 @@ const Slide: React.FC<SlideProps> = ({
           isMobileLandscape && "slide__viewport--mobile-landscape"
         )}
       >
+        {shouldShowLandscapeHeader && landscapeHeader ? (
+          <div className="slide-landscape-header">
+            <button
+              aria-label={landscapeHeader.backAriaLabel ?? "Back"}
+              className="slide-landscape-header__back"
+              onClick={landscapeHeader.onBack}
+              type="button"
+            >
+              <ChevronLeft className="h-6 w-6 text-white" strokeWidth={2.25} />
+            </button>
+
+            <img
+              alt={
+                landscapeHeader.teacherAvatarAlt ?? landscapeHeader.teacherName
+              }
+              className="h-8 w-8 shrink-0 rounded-full object-cover"
+              height={32}
+              src={landscapeHeader.teacherAvatarSrc}
+              width={32}
+            />
+
+            <div className="flex min-w-0 items-center gap-1 overflow-hidden text-[16px] font-bold leading-6 text-white">
+              <span className="shrink-0">{landscapeHeader.teacherName}</span>
+              <span className="truncate">{landscapeHeader.courseTitle}</span>
+            </div>
+          </div>
+        ) : null}
+
         <div
           className={cn(
             "h-full min-h-0 w-full",
+            shouldShowLandscapeHeader && "slide__viewport-content--with-header",
             isSingleSlide ? "slide-content--single" : "grid gap-4"
           )}
         >

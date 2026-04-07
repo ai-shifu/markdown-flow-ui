@@ -53,6 +53,11 @@ const meta = {
       control: "object",
       description: "I18n-ready player settings sheet texts",
     },
+    onMobileScreenModeChange: {
+      control: false,
+      description:
+        "Callback fired whenever the mobile screen mode changes between portrait and landscape",
+    },
     landscapeHeader: {
       control: "object",
       description:

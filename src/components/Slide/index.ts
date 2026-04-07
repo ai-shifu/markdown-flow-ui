@@ -44,3 +44,4 @@ export type {
 } from "./types";
 export type { PlayerProps, SlidePlayerTexts } from "./Player";
 export type { UseSlideResult } from "./useSlide";
+export type { MobileScreenMode } from "./utils/mobileScreenMode";

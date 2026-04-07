@@ -149,6 +149,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   onSend?: (content: OnSendContentParams, element?: Element) => void;
   onPlayerVisibilityChange?: (visible: boolean) => void;
+  onMobileScreenModeChange?: (screenMode: MobileScreenMode) => void;
   onStepChange?: (element: Element | undefined, index: number) => void;
 }
 
@@ -169,6 +170,7 @@ const Slide: React.FC<SlideProps> = ({
   interactionDefaultValueOptions,
   onSend,
   onPlayerVisibilityChange,
+  onMobileScreenModeChange,
   onStepChange,
   className,
   onPointerDown,
@@ -533,6 +535,10 @@ const Slide: React.FC<SlideProps> = ({
       onPlayerVisibilityChange?.(false);
     };
   }, [onPlayerVisibilityChange, playerVisible]);
+
+  useEffect(() => {
+    onMobileScreenModeChange?.(mobileScreenMode);
+  }, [mobileScreenMode, onMobileScreenModeChange]);
 
   useEffect(() => {
     onStepChange?.(currentStepElement, currentIndex);

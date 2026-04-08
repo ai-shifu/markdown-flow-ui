@@ -385,7 +385,7 @@
 }
 
 .slide-interaction-overlay--standalone {
-  bottom: 24px;
+  bottom: 24px !important;
 }
 
 .slide--mobile-device .slide-interaction-overlay {

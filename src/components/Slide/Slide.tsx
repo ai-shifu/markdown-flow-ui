@@ -650,11 +650,15 @@ const Slide: React.FC<SlideProps> = ({
         return;
       }
 
+      if (event.data.eventType !== "click") {
+        return;
+      }
+
       if (!shouldRenderPlayer) {
         return;
       }
 
-      // Restore player controls without blocking native iframe scrolling.
+      // Restore player controls on explicit click/tap without waking on scroll start.
       setHasPlayerInteracted(true);
       showPlayerControls(true);
     };

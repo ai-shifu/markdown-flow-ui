@@ -350,56 +350,57 @@
 .content-render-iframe-sandbox {
   justify-content: safe center;
 }
-/* Responsive when content-render width <= 640 px */
-@media (max-width: 640px) {
-  /* @container (max-width: 640px) { */
-  .content-render {
-    max-width: 100%;
-  }
-  .content-render .multi-select-container {
-    flex-direction: column;
-    align-items: stretch;
-  }
+.slide--mobile-device .content-render {
+  max-width: 100%;
+}
 
-  .content-render .multi-select-input-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
+.slide--mobile-device .content-render .multi-select-container {
+  flex-direction: column;
+  align-items: stretch;
+}
 
-  .content-render .multi-select-input-row .multi-select-confirm-wrapper,
-  .content-render .multi-select-confirm-wrapper--stacked,
-  .content-render .multi-select-confirm-wrapper {
-    width: 100%;
-    padding-left: 0;
-  }
+.slide--mobile-device .content-render .multi-select-input-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
 
-  .content-render .multi-select-confirm-button {
-    width: 100%;
-    border-radius: 48px;
-    border: var(--border-width-border, 1px) solid var(--base-border, #e5e5e5);
-    background-color: var(--primary, #2563eb);
-    color: var(--base-primary-foreground, #fafafa);
-    font-family: inherit;
-    font-size: 14px;
-    font-style: normal;
-    font-weight: var(--font-weight-semibold, 600);
-    line-height: var(--text-xs-line-height, 16px);
-    padding: 10px 0;
-  }
+.slide--mobile-device
+  .content-render
+  .multi-select-input-row
+  .multi-select-confirm-wrapper,
+.slide--mobile-device .content-render .multi-select-confirm-wrapper--stacked,
+.slide--mobile-device .content-render .multi-select-confirm-wrapper {
+  width: 100%;
+  padding-left: 0;
+}
 
-  .content-render .multi-select-confirm-button:disabled {
-    background-color: color-mix(
-      in srgb,
-      var(--primary, #2563eb) 50%,
-      transparent
-    );
-  }
-  /*
+.slide--mobile-device .content-render .multi-select-confirm-button {
+  width: 100%;
+  border-radius: 48px;
+  border: var(--border-width-border, 1px) solid var(--base-border, #e5e5e5);
+  background-color: var(--primary, #2563eb);
+  color: var(--base-primary-foreground, #fafafa);
+  font-family: inherit;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: var(--text-xs-line-height, 16px);
+  padding: 10px 0;
+}
+
+.slide--mobile-device .content-render .multi-select-confirm-button:disabled {
+  background-color: color-mix(
+    in srgb,
+    var(--primary, #2563eb) 50%,
+    transparent
+  );
+}
+
+/*
   .content-render-iframe-sandbox {
     justify-content: safe center !important;
   } */
-}
 .markdown-body p,
 .markdown-body blockquote,
 .markdown-body ul,

@@ -20,6 +20,7 @@ import {
   getInteractionDefaultValues,
   type InteractionDefaultValueOptions,
 } from "../../lib/interaction-defaults";
+import { isMobileDevice as getIsMobileDevice } from "../../lib/mobileDevice";
 import Player from "./Player";
 import type { PlayerProps, SlidePlayerTexts } from "./Player";
 import type { Element } from "./types";
@@ -239,12 +240,15 @@ const Slide: React.FC<SlideProps> = ({
   const [isInteractionOverlayOpen, setIsInteractionOverlayOpen] =
     useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const isMobileDevice = useMemo(() => getIsMobileDevice(), []);
+  console.log("navigator.userAgent", navigator.userAgent);
   const [mobileScreenMode, setMobileScreenMode] = useState<MobileScreenMode>(
     DEFAULT_MOBILE_SCREEN_MODE
   );
   const playerVisible =
     shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
-  const isMobileLandscape = isLandscapeMobileScreenMode(mobileScreenMode);
+  const isMobileLandscape =
+    isMobileDevice && isLandscapeMobileScreenMode(mobileScreenMode);
   const shouldShowLandscapeHeader = isMobileLandscape && playerVisible;
   const shouldApplyLandscapeViewportPadding =
     isMobileLandscape && playerVisible;
@@ -535,6 +539,14 @@ const Slide: React.FC<SlideProps> = ({
       onPlayerVisibilityChange?.(false);
     };
   }, [onPlayerVisibilityChange, playerVisible]);
+
+  useEffect(() => {
+    if (isMobileDevice || mobileScreenMode === DEFAULT_MOBILE_SCREEN_MODE) {
+      return;
+    }
+
+    setMobileScreenMode(DEFAULT_MOBILE_SCREEN_MODE);
+  }, [isMobileDevice, mobileScreenMode]);
 
   useEffect(() => {
     onMobileScreenModeChange?.(mobileScreenMode);
@@ -859,31 +871,6 @@ const Slide: React.FC<SlideProps> = ({
       document.removeEventListener("fullscreenchange", syncFullscreenState);
     };
   }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof document === "undefined") {
-      return;
-    }
-
-    const mobileMediaQuery = window.matchMedia("(max-width: 640px)");
-
-    if (!mobileMediaQuery.matches || !isMobileLandscape) {
-      return;
-    }
-
-    const { style } = document.body;
-    const previousOverflow = style.overflow;
-    const previousOverscrollBehavior = style.overscrollBehavior;
-
-    // Lock the page scroll while the rotated slide takes over the viewport.
-    style.overflow = "hidden";
-    style.overscrollBehavior = "none";
-
-    return () => {
-      style.overflow = previousOverflow;
-      style.overscrollBehavior = previousOverscrollBehavior;
-    };
-  }, [isMobileLandscape]);
 
   useEffect(() => {
     clearInteractionAutoCloseTimer();
@@ -1233,6 +1220,7 @@ const Slide: React.FC<SlideProps> = ({
       ref={sectionRef}
       className={cn(
         "relative h-full w-full",
+        isMobileDevice && "slide--mobile-device",
         isMobileLandscape && "slide--mobile-landscape",
         className
       )}

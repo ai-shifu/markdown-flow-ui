@@ -249,16 +249,26 @@ const Slide: React.FC<SlideProps> = ({
   const [mobileScreenMode, setMobileScreenMode] = useState<MobileScreenMode>(
     DEFAULT_MOBILE_SCREEN_MODE
   );
+  const [hasManualMobileScreenMode, setHasManualMobileScreenMode] =
+    useState(false);
   const [isViewportLandscape, setIsViewportLandscape] = useState(() =>
     isMobileDevice ? getIsLandscapeViewport() : false
   );
   const effectiveMobileScreenMode = useMemo<MobileScreenMode>(
     () =>
-      isMobileDevice &&
-      (isLandscapeMobileScreenMode(mobileScreenMode) || isViewportLandscape)
-        ? "landscape"
-        : DEFAULT_MOBILE_SCREEN_MODE,
-    [isMobileDevice, isViewportLandscape, mobileScreenMode]
+      !isMobileDevice
+        ? DEFAULT_MOBILE_SCREEN_MODE
+        : hasManualMobileScreenMode
+          ? mobileScreenMode
+          : isViewportLandscape
+            ? "landscape"
+            : DEFAULT_MOBILE_SCREEN_MODE,
+    [
+      hasManualMobileScreenMode,
+      isMobileDevice,
+      isViewportLandscape,
+      mobileScreenMode,
+    ]
   );
   const playerVisible =
     shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
@@ -269,10 +279,17 @@ const Slide: React.FC<SlideProps> = ({
   const shouldShowLandscapeHeader = isMobileLandscape && playerVisible;
   const shouldApplyLandscapeViewportPadding =
     isMobileLandscape && playerVisible;
+  const handleMobileScreenModeSelect = useCallback(
+    (nextScreenMode: MobileScreenMode) => {
+      setHasManualMobileScreenMode(true);
+      setMobileScreenMode(nextScreenMode);
+    },
+    []
+  );
   const handleLandscapeHeaderBack = useCallback(() => {
-    setMobileScreenMode(DEFAULT_MOBILE_SCREEN_MODE);
+    handleMobileScreenModeSelect(DEFAULT_MOBILE_SCREEN_MODE);
     landscapeHeader?.onBack?.();
-  }, [landscapeHeader]);
+  }, [handleMobileScreenModeSelect, landscapeHeader]);
   const setPlayerCustomActionActive = useCallback((active: boolean) => {
     setIsPlayerCustomActionActive(active);
   }, []);
@@ -562,6 +579,7 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
+    setHasManualMobileScreenMode(false);
     setMobileScreenMode(DEFAULT_MOBILE_SCREEN_MODE);
   }, [isMobileDevice, mobileScreenMode]);
 
@@ -1388,7 +1406,7 @@ const Slide: React.FC<SlideProps> = ({
             isFullscreen={isFullscreen}
             mobileScreenMode={effectiveMobileScreenMode}
             settingsPortalContainer={viewportRef.current}
-            onMobileScreenModeChange={setMobileScreenMode}
+            onMobileScreenModeChange={handleMobileScreenModeSelect}
             onInteractionToggle={handleInteractionToggle}
             onNext={handleNext}
             onPrev={handlePrev}

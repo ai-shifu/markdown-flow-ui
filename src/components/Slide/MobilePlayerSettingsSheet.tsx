@@ -34,14 +34,13 @@ const MobilePlayerSettingsSheet = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal container={container}>
-        <DialogOverlay className="z-[60] bg-black/35 sm:hidden" />
+        <DialogOverlay className="z-[60] bg-black/35" />
         <DialogPrimitive.Content
           aria-describedby={undefined}
           className={cn(
             "fixed inset-x-0 bottom-0 z-[61] flex max-h-[min(360px,calc(100dvh-32px))] flex-col overflow-hidden rounded-t-[24px] border-t border-border bg-background shadow-[0_-12px_32px_rgba(28,44,64,0.16)] outline-none",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=open]:slide-in-from-bottom-full data-[state=closed]:slide-out-to-bottom-full",
-            "sm:hidden"
+            "data-[state=open]:slide-in-from-bottom-full data-[state=closed]:slide-out-to-bottom-full"
           )}
         >
           <div className="flex min-h-14 items-center justify-between border-b border-border px-6">

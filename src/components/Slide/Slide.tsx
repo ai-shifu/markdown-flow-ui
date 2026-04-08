@@ -32,7 +32,7 @@ import useSlide from "./useSlide";
 import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
 import {
   DEFAULT_MOBILE_SCREEN_MODE,
-  isLandscapeMobileScreenMode,
+  resolveMobileScreenModeState,
   type MobileScreenMode,
 } from "./utils/mobileScreenMode";
 import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
@@ -254,15 +254,19 @@ const Slide: React.FC<SlideProps> = ({
   const [isViewportLandscape, setIsViewportLandscape] = useState(() =>
     isMobileDevice ? getIsLandscapeViewport() : false
   );
-  const effectiveMobileScreenMode = useMemo<MobileScreenMode>(
+  const {
+    effectiveMobileScreenMode,
+    isImmersiveMobileLandscape,
+    isNativeMobileLandscape,
+    shouldRotateLandscapeViewport,
+  } = useMemo(
     () =>
-      !isMobileDevice
-        ? DEFAULT_MOBILE_SCREEN_MODE
-        : hasManualMobileScreenMode
-          ? mobileScreenMode
-          : isViewportLandscape
-            ? "landscape"
-            : DEFAULT_MOBILE_SCREEN_MODE,
+      resolveMobileScreenModeState({
+        hasManualMobileScreenMode,
+        isMobileDevice,
+        isViewportLandscape,
+        mobileScreenMode,
+      }),
     [
       hasManualMobileScreenMode,
       isMobileDevice,
@@ -272,13 +276,9 @@ const Slide: React.FC<SlideProps> = ({
   );
   const playerVisible =
     shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
-  const isMobileLandscape =
-    isMobileDevice && isLandscapeMobileScreenMode(effectiveMobileScreenMode);
-  const shouldRotateLandscapeViewport =
-    isMobileLandscape && !isViewportLandscape;
-  const shouldShowLandscapeHeader = isMobileLandscape && playerVisible;
+  const shouldShowLandscapeHeader = isImmersiveMobileLandscape && playerVisible;
   const shouldApplyLandscapeViewportPadding =
-    isMobileLandscape && playerVisible;
+    isImmersiveMobileLandscape && playerVisible;
   const handleMobileScreenModeSelect = useCallback(
     (nextScreenMode: MobileScreenMode) => {
       setHasManualMobileScreenMode(true);
@@ -286,10 +286,15 @@ const Slide: React.FC<SlideProps> = ({
     },
     []
   );
+  const handleMobileScreenModeReset = useCallback(() => {
+    // Clear manual override so the effective mode falls back to native viewport orientation.
+    setHasManualMobileScreenMode(false);
+    setMobileScreenMode(DEFAULT_MOBILE_SCREEN_MODE);
+  }, []);
   const handleLandscapeHeaderBack = useCallback(() => {
-    handleMobileScreenModeSelect(DEFAULT_MOBILE_SCREEN_MODE);
+    handleMobileScreenModeReset();
     landscapeHeader?.onBack?.();
-  }, [handleMobileScreenModeSelect, landscapeHeader]);
+  }, [handleMobileScreenModeReset, landscapeHeader]);
   const setPlayerCustomActionActive = useCallback((active: boolean) => {
     setIsPlayerCustomActionActive(active);
   }, []);
@@ -1271,7 +1276,8 @@ const Slide: React.FC<SlideProps> = ({
       className={cn(
         "relative h-full w-full",
         isMobileDevice && "slide--mobile-device",
-        isMobileLandscape && "slide--mobile-landscape",
+        isImmersiveMobileLandscape && "slide--mobile-landscape",
+        isNativeMobileLandscape && "slide--mobile-landscape-native",
         className
       )}
       onClick={handleSurfaceClick}
@@ -1282,8 +1288,8 @@ const Slide: React.FC<SlideProps> = ({
         ref={viewportRef}
         className={cn(
           "slide__viewport relative h-full min-h-0 w-full",
-          isMobileLandscape && "slide__viewport--mobile-landscape",
-          isMobileLandscape &&
+          isImmersiveMobileLandscape && "slide__viewport--mobile-landscape",
+          isImmersiveMobileLandscape &&
             !shouldRotateLandscapeViewport &&
             "slide__viewport--mobile-landscape-native"
         )}

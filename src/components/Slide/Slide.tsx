@@ -20,7 +20,11 @@ import {
   getInteractionDefaultValues,
   type InteractionDefaultValueOptions,
 } from "../../lib/interaction-defaults";
-import { isMobileDevice as getIsMobileDevice } from "../../lib/mobileDevice";
+import {
+  isLandscapeViewport as getIsLandscapeViewport,
+  isMobileDevice as getIsMobileDevice,
+  subscribeMobileDeviceChange,
+} from "../../lib/mobileDevice";
 import Player from "./Player";
 import type { PlayerProps, SlidePlayerTexts } from "./Player";
 import type { Element } from "./types";
@@ -245,10 +249,23 @@ const Slide: React.FC<SlideProps> = ({
   const [mobileScreenMode, setMobileScreenMode] = useState<MobileScreenMode>(
     DEFAULT_MOBILE_SCREEN_MODE
   );
+  const [isViewportLandscape, setIsViewportLandscape] = useState(() =>
+    isMobileDevice ? getIsLandscapeViewport() : false
+  );
+  const effectiveMobileScreenMode = useMemo<MobileScreenMode>(
+    () =>
+      isMobileDevice &&
+      (isLandscapeMobileScreenMode(mobileScreenMode) || isViewportLandscape)
+        ? "landscape"
+        : DEFAULT_MOBILE_SCREEN_MODE,
+    [isMobileDevice, isViewportLandscape, mobileScreenMode]
+  );
   const playerVisible =
     shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
   const isMobileLandscape =
-    isMobileDevice && isLandscapeMobileScreenMode(mobileScreenMode);
+    isMobileDevice && isLandscapeMobileScreenMode(effectiveMobileScreenMode);
+  const shouldRotateLandscapeViewport =
+    isMobileLandscape && !isViewportLandscape;
   const shouldShowLandscapeHeader = isMobileLandscape && playerVisible;
   const shouldApplyLandscapeViewportPadding =
     isMobileLandscape && playerVisible;
@@ -549,8 +566,23 @@ const Slide: React.FC<SlideProps> = ({
   }, [isMobileDevice, mobileScreenMode]);
 
   useEffect(() => {
-    onMobileScreenModeChange?.(mobileScreenMode);
-  }, [mobileScreenMode, onMobileScreenModeChange]);
+    if (!isMobileDevice) {
+      setIsViewportLandscape(false);
+      return;
+    }
+
+    const syncViewportLandscape = () => {
+      setIsViewportLandscape(getIsLandscapeViewport());
+    };
+
+    syncViewportLandscape();
+
+    return subscribeMobileDeviceChange(syncViewportLandscape);
+  }, [isMobileDevice]);
+
+  useEffect(() => {
+    onMobileScreenModeChange?.(effectiveMobileScreenMode);
+  }, [effectiveMobileScreenMode, onMobileScreenModeChange]);
 
   useEffect(() => {
     onStepChange?.(currentStepElement, currentIndex);
@@ -1232,7 +1264,10 @@ const Slide: React.FC<SlideProps> = ({
         ref={viewportRef}
         className={cn(
           "slide__viewport relative h-full min-h-0 w-full",
-          isMobileLandscape && "slide__viewport--mobile-landscape"
+          isMobileLandscape && "slide__viewport--mobile-landscape",
+          isMobileLandscape &&
+            !shouldRotateLandscapeViewport &&
+            "slide__viewport--mobile-landscape-native"
         )}
       >
         {shouldShowLandscapeHeader ? (
@@ -1351,7 +1386,7 @@ const Slide: React.FC<SlideProps> = ({
             onEnded={handlePlayerEnded}
             onFullscreen={handleFullscreen}
             isFullscreen={isFullscreen}
-            mobileScreenMode={mobileScreenMode}
+            mobileScreenMode={effectiveMobileScreenMode}
             settingsPortalContainer={viewportRef.current}
             onMobileScreenModeChange={setMobileScreenMode}
             onInteractionToggle={handleInteractionToggle}

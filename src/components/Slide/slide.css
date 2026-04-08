@@ -111,3 +111,12 @@
   transform-origin: center;
   background: var(--background);
 }
+
+.slide--mobile-device .slide__viewport--mobile-landscape-native {
+  --slide-mobile-viewport-width: 100dvw;
+  top: 0;
+  left: 0;
+  width: 100dvw;
+  height: 100dvh;
+  transform: none;
+}

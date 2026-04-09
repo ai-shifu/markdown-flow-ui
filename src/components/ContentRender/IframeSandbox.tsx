@@ -449,7 +449,56 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
           // eslint-disable-next-line @typescript-eslint/no-unused-expressions
           doc.body.offsetHeight; // force layout
 
-          const measuredH = doc.body.scrollHeight;
+          let measuredH = doc.body.scrollHeight;
+
+          // Detect inner elements that clip overflowing content behind a
+          // scrollbar (e.g. <div style="height:100vh; overflow-y:auto"> whose
+          // content is taller than the iframe). body.scrollHeight won't see
+          // that overflow, so we walk the tree and factor in each scrollable
+          // element's full scroll height based on its position in the iframe.
+          const iframeWin = doc.defaultView;
+          if (iframeWin) {
+            // Returns the max natural bottom of inner elements that clip
+            // content via overflow:auto/scroll (i.e. internal scrollbars).
+            const getInnerScrollableHeight = (root: Element): number => {
+              let maxH = 0;
+              const walk = (el: Element) => {
+                if (el !== root && el.scrollHeight > el.clientHeight + 1) {
+                  const oy = iframeWin.getComputedStyle(el).overflowY;
+                  if (oy === "auto" || oy === "scroll") {
+                    const rect = el.getBoundingClientRect();
+                    if (rect.top >= 0) {
+                      maxH = Math.max(
+                        maxH,
+                        Math.ceil(rect.top + el.scrollHeight)
+                      );
+                    }
+                  }
+                }
+                for (const child of el.children) walk(child);
+              };
+              walk(root);
+              return maxH;
+            };
+
+            measuredH = Math.max(measuredH, getInnerScrollableHeight(doc.body));
+
+            // Content that uses vh-relative sizing grows as the viewport
+            // expands. Measure up to 8 more times at the expanded height so
+            // we capture the full content height in a single updateHeight()
+            // call rather than waiting for external re-triggers.
+            for (let i = 0; i < 8 && measuredH > minH; i++) {
+              iframe.style.height = measuredH + "px";
+              // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+              doc.body.offsetHeight; // force layout at expanded size
+              const nextH = Math.max(
+                doc.body.scrollHeight,
+                getInnerScrollableHeight(doc.body)
+              );
+              if (nextH <= measuredH + 1) break; // stable — stop iterating
+              measuredH = nextH;
+            }
+          }
 
           // Restore iframe to let React control it via contentModeStyle
           iframe.style.height = prevH;

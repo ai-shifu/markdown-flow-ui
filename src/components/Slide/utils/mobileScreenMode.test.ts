@@ -22,7 +22,7 @@ describe("resolveMobileViewModeState", () => {
     });
   });
 
-  it("syncs the selected view mode to fullscreen when the device rotates without manual override", () => {
+  it("keeps the default mode non-fullscreen when the device rotates without manual override", () => {
     expect(
       resolveMobileViewModeState({
         hasManualMobileViewMode: false,
@@ -31,9 +31,9 @@ describe("resolveMobileViewModeState", () => {
         mobileViewMode: DEFAULT_MOBILE_VIEW_MODE,
       })
     ).toEqual({
-      effectiveMobileViewMode: "fullscreen",
+      effectiveMobileViewMode: DEFAULT_MOBILE_VIEW_MODE,
       isImmersiveMobileFullscreen: false,
-      isNativeMobileFullscreen: true,
+      isNativeMobileFullscreen: false,
       shouldRotateFullscreenViewport: false,
     });
   });

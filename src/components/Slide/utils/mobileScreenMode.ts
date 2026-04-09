@@ -25,24 +25,17 @@ export const resolveMobileViewModeState = ({
   isMobileDevice,
   hasManualMobileViewMode,
   mobileViewMode,
-  isViewportFullscreenPreferred,
 }: ResolveMobileViewModeStateOptions): ResolvedMobileViewModeState => {
   const effectiveMobileViewMode = !isMobileDevice
     ? DEFAULT_MOBILE_VIEW_MODE
     : hasManualMobileViewMode
       ? mobileViewMode
-      : isViewportFullscreenPreferred
-        ? "fullscreen"
-        : DEFAULT_MOBILE_VIEW_MODE;
+      : DEFAULT_MOBILE_VIEW_MODE;
   const isImmersiveMobileFullscreen =
     isMobileDevice &&
     hasManualMobileViewMode &&
     isFullscreenMobileViewMode(effectiveMobileViewMode);
-  const isNativeMobileFullscreen =
-    isMobileDevice &&
-    !hasManualMobileViewMode &&
-    isViewportFullscreenPreferred &&
-    isFullscreenMobileViewMode(effectiveMobileViewMode);
+  const isNativeMobileFullscreen = false;
 
   return {
     effectiveMobileViewMode,

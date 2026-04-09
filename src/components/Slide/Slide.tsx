@@ -297,7 +297,7 @@ const Slide: React.FC<SlideProps> = ({
     []
   );
   const handleMobileViewModeReset = useCallback(() => {
-    // Clear manual override so the effective mode falls back to native viewport preference.
+    // Clear manual override so the effective mode returns to the default non-fullscreen state.
     setHasManualMobileViewMode(false);
     setMobileViewMode(DEFAULT_MOBILE_VIEW_MODE);
   }, []);

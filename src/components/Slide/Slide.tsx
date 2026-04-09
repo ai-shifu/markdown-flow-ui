@@ -624,6 +624,8 @@ const Slide: React.FC<SlideProps> = ({
     const previousMode = previousEffectiveMobileViewModeRef.current;
     const hasEnteredFullscreen =
       previousMode !== "fullscreen" && effectiveMobileViewMode === "fullscreen";
+    const shouldShowFullscreenHint =
+      hasEnteredFullscreen && !isViewportFullscreenPreferred;
 
     previousEffectiveMobileViewModeRef.current = effectiveMobileViewMode;
 
@@ -632,7 +634,7 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    if (hasEnteredFullscreen) {
+    if (shouldShowFullscreenHint) {
       setIsFullscreenHintOpen(true);
       return;
     }
@@ -640,7 +642,7 @@ const Slide: React.FC<SlideProps> = ({
     if (effectiveMobileViewMode !== "fullscreen") {
       setIsFullscreenHintOpen(false);
     }
-  }, [effectiveMobileViewMode, isMobileDevice]);
+  }, [effectiveMobileViewMode, isMobileDevice, isViewportFullscreenPreferred]);
 
   useEffect(() => {
     onStepChange?.(currentStepElement, currentIndex);

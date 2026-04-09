@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import LoadingOverlayCard from "../ui/loading-overlay-card";
 
 export interface SandboxAppProps {
   html: string;
@@ -144,7 +144,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       doc.head?.appendChild(styleEl);
     }
     styleEl.textContent = `
-      @keyframes sandbox-spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
       .sandbox-wrapper { align-items: center; }
       .sandbox-container { position: relative; width: 100%; }
       .sandbox-container svg,
@@ -352,24 +351,14 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
           style={{
             position: "absolute",
             inset: 0,
+            zIndex: 20,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "rgba(51, 51, 51, 0.80)",
-            color: "#ffffff",
-            fontSize: 16,
-            fontWeight: 700,
-            gap: 10,
-            pointerEvents: "auto",
-            zIndex: 20,
+            pointerEvents: "none",
           }}
         >
-          <Loader2
-            aria-hidden
-            size={20}
-            style={{ animation: "sandbox-spin 1s linear infinite" }}
-          />
-          {overlayMessage}
+          <LoadingOverlayCard message={overlayMessage} />
         </div>
       )}
     </div>

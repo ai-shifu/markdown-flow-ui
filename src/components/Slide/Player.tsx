@@ -16,6 +16,10 @@ import {
 
 import { cn } from "../../lib/utils";
 import type { SlideAudioItem } from "./useSlide";
+import type {
+  SlidePlayerCustomActionContext,
+  SlidePlayerCustomActions,
+} from "./types";
 import { toPlayerCustomActionList } from "./utils/playerCustomActions";
 import "./player.css";
 
@@ -45,6 +49,7 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   audioList?: SlideAudioItem[];
   currentAudioIndex?: number;
   defaultPlaying?: boolean;
+  isPlaybackPaused?: boolean;
   isAutoAdvanceEnabled?: boolean;
   useAutoAdvanceToggle?: boolean;
   onLoadingChange?: (loading: boolean) => void;
@@ -59,7 +64,8 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   prevDisabled?: boolean;
   nextDisabled?: boolean;
   showControls?: boolean;
-  customActions?: React.ReactNode;
+  customActions?: SlidePlayerCustomActions;
+  customActionContext?: SlidePlayerCustomActionContext;
 };
 
 const PauseIcon = () => (
@@ -99,6 +105,7 @@ const Player: React.FC<PlayerProps> = ({
   className,
   currentAudioIndex = -1,
   defaultPlaying = true,
+  isPlaybackPaused = false,
   isAutoAdvanceEnabled = true,
   useAutoAdvanceToggle = false,
   onLoadingChange,
@@ -114,6 +121,7 @@ const Player: React.FC<PlayerProps> = ({
   nextDisabled = false,
   showControls = true,
   customActions,
+  customActionContext,
   ...props
 }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -125,6 +133,7 @@ const Player: React.FC<PlayerProps> = ({
   const currentAudioSegmentsRef = useRef<
     NonNullable<SlideAudioItem["audioSegments"]>
   >([]);
+  const wasPlayingBeforeExternalPauseRef = useRef(false);
   const isLoadingRef = useRef(false);
   const isPausedByUserRef = useRef(false);
   const activeSourceTypeRef = useRef<"url" | "segment" | null>(null);
@@ -148,8 +157,8 @@ const Player: React.FC<PlayerProps> = ({
     [currentAudio?.audioSegments]
   );
   const customActionList = useMemo(
-    () => toPlayerCustomActionList(customActions),
-    [customActions]
+    () => toPlayerCustomActionList(customActions, customActionContext),
+    [customActionContext, customActions]
   );
   const mobileVisibleActionCount = customActionList.length + 4;
   const controlsStyle = useMemo(
@@ -222,10 +231,11 @@ const Player: React.FC<PlayerProps> = ({
   const canStartPlaybackAutomatically = useCallback(() => {
     return (
       defaultPlaying &&
+      !isPlaybackPaused &&
       !isPausedByUserRef.current &&
       playbackAccessModeRef.current !== "blocked"
     );
-  }, [defaultPlaying]);
+  }, [defaultPlaying, isPlaybackPaused]);
 
   const getSegmentSrc = useCallback((audioData: string) => {
     if (!audioData) {
@@ -266,6 +276,7 @@ const Player: React.FC<PlayerProps> = ({
 
     pendingAutoPlayRef.current = false;
     isPausedByUserRef.current = false;
+    wasPlayingBeforeExternalPauseRef.current = false;
     activeSourceTypeRef.current = null;
     pendingSeekTimeRef.current = null;
     isWaitingForSegmentRef.current = false;
@@ -430,6 +441,7 @@ const Player: React.FC<PlayerProps> = ({
     waitingSegmentIndexRef.current = null;
     isWaitingForSegmentRef.current = false;
     isPausedByUserRef.current = false;
+    wasPlayingBeforeExternalPauseRef.current = false;
     pendingAutoPlayRef.current = false;
     isSwitchingSegmentRef.current = false;
     activeSourceTypeRef.current = null;
@@ -461,8 +473,86 @@ const Player: React.FC<PlayerProps> = ({
       return;
     }
 
+    if (isPlaybackPaused) {
+      wasPlayingBeforeExternalPauseRef.current = Boolean(
+        currentAudioRef.current &&
+          !isPausedByUserRef.current &&
+          (!audioElement.paused ||
+            pendingAutoPlayRef.current ||
+            waitingSegmentIndexRef.current !== null)
+      );
+
+      pendingAutoPlayRef.current = false;
+      updateLoading(false);
+      audioElement.pause();
+      setIsPlaying(false);
+      return;
+    }
+
+    if (
+      !wasPlayingBeforeExternalPauseRef.current ||
+      !currentAudioRef.current ||
+      isPausedByUserRef.current
+    ) {
+      return;
+    }
+
+    wasPlayingBeforeExternalPauseRef.current = false;
+
+    if (waitingSegmentIndexRef.current !== null) {
+      if (
+        waitingSegmentIndexRef.current < currentAudioSegmentsRef.current.length
+      ) {
+        startSegmentPlayback(waitingSegmentIndexRef.current, "external-resume");
+        return;
+      }
+
+      pendingAutoPlayRef.current = true;
+      updateLoading(true);
+      return;
+    }
+
+    if (!audioSrcRef.current && currentAudioSegmentsRef.current.length > 0) {
+      startSegmentPlayback(
+        Math.min(
+          currentSegmentIndexRef.current,
+          currentAudioSegmentsRef.current.length - 1
+        ),
+        "external-resume-init"
+      );
+      return;
+    }
+
+    if (!audioElement.paused) {
+      return;
+    }
+
+    pendingAutoPlayRef.current = true;
+    tryPlayCurrentAudio("external-resume");
+  }, [
+    isPlaybackPaused,
+    startSegmentPlayback,
+    tryPlayCurrentAudio,
+    updateLoading,
+  ]);
+
+  useEffect(() => {
+    const audioElement = audioRef.current;
+
+    if (!audioElement) {
+      return;
+    }
+
     if (!currentAudio) {
       resetAudio();
+      return;
+    }
+
+    if (isPlaybackPaused) {
+      pendingAutoPlayRef.current = false;
+      updateLoading(false);
+      audioElement.pause();
+      setIsPlaying(false);
       return;
     }
 
@@ -588,6 +678,7 @@ const Player: React.FC<PlayerProps> = ({
     currentAudioSegments,
     currentAudioUrl,
     defaultPlaying,
+    isPlaybackPaused,
     canStartPlaybackAutomatically,
     resetAudio,
     startSegmentPlayback,
@@ -701,7 +792,7 @@ const Player: React.FC<PlayerProps> = ({
 
                 const audioElement = audioRef.current;
 
-                if (!audioElement || !currentAudio) {
+                if (isPlaybackPaused || !audioElement || !currentAudio) {
                   return;
                 }
 

@@ -40,3 +40,16 @@ export interface Element {
   readonly?: boolean;
   audio_segments?: ElementAudioSegment[];
 }
+
+export interface SlidePlayerCustomActionContext {
+  currentElement?: Element;
+  currentIndex: number;
+  currentStepElement?: Element;
+  isActive: boolean;
+  setActive: (active: boolean) => void;
+  toggleActive: () => void;
+}
+
+export type SlidePlayerCustomActions =
+  | React.ReactNode
+  | ((context: SlidePlayerCustomActionContext) => React.ReactNode);

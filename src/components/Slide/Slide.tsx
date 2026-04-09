@@ -27,6 +27,8 @@ import {
 } from "../../lib/mobileDevice";
 import Player from "./Player";
 import type { PlayerProps, SlidePlayerTexts } from "./Player";
+import { DEFAULT_SLIDE_PLAYER_TEXTS } from "./constants";
+import SlideFullscreenHint from "./SlideFullscreenHint";
 import type { Element } from "./types";
 import useSlide from "./useSlide";
 import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
@@ -254,6 +256,7 @@ const Slide: React.FC<SlideProps> = ({
     useState(() =>
       isMobileDevice ? getIsFullscreenPreferredViewport() : false
     );
+  const [isFullscreenHintOpen, setIsFullscreenHintOpen] = useState(false);
   const {
     effectiveMobileViewMode,
     isImmersiveMobileFullscreen,
@@ -274,12 +277,16 @@ const Slide: React.FC<SlideProps> = ({
       mobileViewMode,
     ]
   );
+  const previousEffectiveMobileViewModeRef = useRef(effectiveMobileViewMode);
   const playerVisible =
     shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
   const shouldShowFullscreenHeader =
     isImmersiveMobileFullscreen && playerVisible;
   const shouldApplyFullscreenViewportPadding =
     isImmersiveMobileFullscreen && playerVisible;
+  const fullscreenHintText =
+    playerTexts?.fullscreenHintText ??
+    DEFAULT_SLIDE_PLAYER_TEXTS.fullscreenHintText;
   const handleMobileViewModeSelect = useCallback(
     (nextViewMode: MobileViewMode) => {
       setHasManualMobileViewMode(true);
@@ -296,6 +303,9 @@ const Slide: React.FC<SlideProps> = ({
     handleMobileViewModeReset();
     fullscreenHeader?.onBack?.();
   }, [fullscreenHeader, handleMobileViewModeReset]);
+  const handleFullscreenHintClose = useCallback(() => {
+    setIsFullscreenHintOpen(false);
+  }, []);
   const setPlayerCustomActionActive = useCallback((active: boolean) => {
     setIsPlayerCustomActionActive(active);
   }, []);
@@ -607,6 +617,28 @@ const Slide: React.FC<SlideProps> = ({
   useEffect(() => {
     onMobileViewModeChange?.(effectiveMobileViewMode);
   }, [effectiveMobileViewMode, onMobileViewModeChange]);
+
+  useEffect(() => {
+    const previousMode = previousEffectiveMobileViewModeRef.current;
+    const hasEnteredFullscreen =
+      previousMode !== "fullscreen" && effectiveMobileViewMode === "fullscreen";
+
+    previousEffectiveMobileViewModeRef.current = effectiveMobileViewMode;
+
+    if (!isMobileDevice) {
+      setIsFullscreenHintOpen(false);
+      return;
+    }
+
+    if (hasEnteredFullscreen) {
+      setIsFullscreenHintOpen(true);
+      return;
+    }
+
+    if (effectiveMobileViewMode !== "fullscreen") {
+      setIsFullscreenHintOpen(false);
+    }
+  }, [effectiveMobileViewMode, isMobileDevice]);
 
   useEffect(() => {
     onStepChange?.(currentStepElement, currentIndex);
@@ -1363,6 +1395,12 @@ const Slide: React.FC<SlideProps> = ({
             className="absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2"
           />
         ) : null}
+
+        <SlideFullscreenHint
+          onClose={handleFullscreenHintClose}
+          open={isFullscreenHintOpen}
+          text={fullscreenHintText}
+        />
 
         {shouldShowInteractionOverlay ? (
           <div

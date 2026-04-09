@@ -17,6 +17,7 @@ import {
 
 import { cn } from "../../lib/utils";
 import MobilePlayerSettingsSheet from "./MobilePlayerSettingsSheet";
+import { DEFAULT_SLIDE_PLAYER_TEXTS } from "./constants";
 import type { SlideAudioItem } from "./useSlide";
 import type {
   SlidePlayerCustomActionContext,
@@ -36,14 +37,8 @@ export interface SlidePlayerTexts {
   screenLabel?: string;
   nonFullscreenLabel?: string;
   fullscreenLabel?: string;
+  fullscreenHintText?: string;
 }
-
-const DEFAULT_PLAYER_TEXTS: Required<SlidePlayerTexts> = {
-  settingsTitle: "Settings",
-  screenLabel: "Screen",
-  nonFullscreenLabel: "Non-fullscreen",
-  fullscreenLabel: "Fullscreen",
-};
 
 const preloadAudioUrl = (url?: string) => {
   if (typeof window === "undefined" || !url) {
@@ -202,7 +197,7 @@ const Player: React.FC<PlayerProps> = ({
   );
   const playerTexts = useMemo(
     () => ({
-      ...DEFAULT_PLAYER_TEXTS,
+      ...DEFAULT_SLIDE_PLAYER_TEXTS,
       ...texts,
     }),
     [texts]

@@ -51,7 +51,7 @@ const meta = {
     },
     playerTexts: {
       control: "object",
-      description: "I18n-ready player settings sheet texts",
+      description: "I18n-ready player settings sheet and fullscreen hint texts",
     },
     onMobileViewModeChange: {
       control: false,
@@ -106,6 +106,7 @@ const meta = {
       screenLabel: "Screen",
       nonFullscreenLabel: "Non-fullscreen",
       fullscreenLabel: "Fullscreen",
+      fullscreenHintText: "Rotate your screen for the best experience.",
     },
     fullscreenHeader: undefined,
     playerAutoHideDelay: 3000,
@@ -2244,6 +2245,7 @@ export const HistorySlides: Story = {
       screenLabel: "屏幕",
       nonFullscreenLabel: "非全屏",
       fullscreenLabel: "全屏",
+      fullscreenHintText: "请旋转屏幕以获得最佳体验",
     },
     elementList: focusHistoryOnLatestInteraction([
       {

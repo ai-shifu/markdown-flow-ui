@@ -284,6 +284,8 @@ const Slide: React.FC<SlideProps> = ({
     isImmersiveMobileFullscreen && playerVisible;
   const shouldApplyFullscreenViewportPadding =
     isImmersiveMobileFullscreen && playerVisible;
+  const shouldShowMobileFullscreenMask =
+    isImmersiveMobileFullscreen || isNativeMobileFullscreen;
   const fullscreenHintText =
     playerTexts?.fullscreenHintText ??
     DEFAULT_SLIDE_PLAYER_TEXTS.fullscreenHintText;
@@ -1321,6 +1323,13 @@ const Slide: React.FC<SlideProps> = ({
       onPointerDown={handleSurfacePointerDown}
       {...props}
     >
+      {shouldShowMobileFullscreenMask ? (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed left-0 top-0 z-[9999] h-[100vh] max-h-[100vh] w-[100vw]"
+        />
+      ) : null}
+
       <div
         ref={viewportRef}
         className={cn(

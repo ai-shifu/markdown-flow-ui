@@ -151,6 +151,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       .justify-\\[safe_center\\]{
         justify-content: safe center;
       }
+      .overflow-y-auto { overflow-y: visible !important; }
     `;
   }, []);
 

@@ -49,7 +49,7 @@ export const resolveMobileScreenModeState = ({
     effectiveMobileScreenMode,
     isImmersiveMobileLandscape,
     isNativeMobileLandscape,
-    shouldRotateLandscapeViewport:
-      isImmersiveMobileLandscape && !isViewportLandscape,
+    // Manual landscape keeps the current viewport orientation and only swaps the UI layout mode.
+    shouldRotateLandscapeViewport: false,
   };
 };

@@ -50,7 +50,7 @@ describe("resolveMobileScreenModeState", () => {
       effectiveMobileScreenMode: "landscape",
       isImmersiveMobileLandscape: true,
       isNativeMobileLandscape: false,
-      shouldRotateLandscapeViewport: true,
+      shouldRotateLandscapeViewport: false,
     });
   });
 

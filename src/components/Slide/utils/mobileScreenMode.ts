@@ -1,55 +1,54 @@
-export const MOBILE_SCREEN_MODES = ["portrait", "landscape"] as const;
+export const MOBILE_VIEW_MODES = ["nonFullscreen", "fullscreen"] as const;
 
-export type MobileScreenMode = (typeof MOBILE_SCREEN_MODES)[number];
+export type MobileViewMode = (typeof MOBILE_VIEW_MODES)[number];
 
-export const DEFAULT_MOBILE_SCREEN_MODE: MobileScreenMode =
-  MOBILE_SCREEN_MODES[0];
+export const DEFAULT_MOBILE_VIEW_MODE: MobileViewMode = MOBILE_VIEW_MODES[0];
 
-export const isLandscapeMobileScreenMode = (screenMode: MobileScreenMode) =>
-  screenMode === "landscape";
+export const isFullscreenMobileViewMode = (viewMode: MobileViewMode) =>
+  viewMode === "fullscreen";
 
-export type ResolveMobileScreenModeStateOptions = {
+export type ResolveMobileViewModeStateOptions = {
   isMobileDevice: boolean;
-  hasManualMobileScreenMode: boolean;
-  mobileScreenMode: MobileScreenMode;
-  isViewportLandscape: boolean;
+  hasManualMobileViewMode: boolean;
+  mobileViewMode: MobileViewMode;
+  isViewportFullscreenPreferred: boolean;
 };
 
-export type ResolvedMobileScreenModeState = {
-  effectiveMobileScreenMode: MobileScreenMode;
-  isImmersiveMobileLandscape: boolean;
-  isNativeMobileLandscape: boolean;
-  shouldRotateLandscapeViewport: boolean;
+export type ResolvedMobileViewModeState = {
+  effectiveMobileViewMode: MobileViewMode;
+  isImmersiveMobileFullscreen: boolean;
+  isNativeMobileFullscreen: boolean;
+  shouldRotateFullscreenViewport: boolean;
 };
 
-export const resolveMobileScreenModeState = ({
+export const resolveMobileViewModeState = ({
   isMobileDevice,
-  hasManualMobileScreenMode,
-  mobileScreenMode,
-  isViewportLandscape,
-}: ResolveMobileScreenModeStateOptions): ResolvedMobileScreenModeState => {
-  const effectiveMobileScreenMode = !isMobileDevice
-    ? DEFAULT_MOBILE_SCREEN_MODE
-    : hasManualMobileScreenMode
-      ? mobileScreenMode
-      : isViewportLandscape
-        ? "landscape"
-        : DEFAULT_MOBILE_SCREEN_MODE;
-  const isImmersiveMobileLandscape =
+  hasManualMobileViewMode,
+  mobileViewMode,
+  isViewportFullscreenPreferred,
+}: ResolveMobileViewModeStateOptions): ResolvedMobileViewModeState => {
+  const effectiveMobileViewMode = !isMobileDevice
+    ? DEFAULT_MOBILE_VIEW_MODE
+    : hasManualMobileViewMode
+      ? mobileViewMode
+      : isViewportFullscreenPreferred
+        ? "fullscreen"
+        : DEFAULT_MOBILE_VIEW_MODE;
+  const isImmersiveMobileFullscreen =
     isMobileDevice &&
-    hasManualMobileScreenMode &&
-    isLandscapeMobileScreenMode(effectiveMobileScreenMode);
-  const isNativeMobileLandscape =
+    hasManualMobileViewMode &&
+    isFullscreenMobileViewMode(effectiveMobileViewMode);
+  const isNativeMobileFullscreen =
     isMobileDevice &&
-    !hasManualMobileScreenMode &&
-    isViewportLandscape &&
-    isLandscapeMobileScreenMode(effectiveMobileScreenMode);
+    !hasManualMobileViewMode &&
+    isViewportFullscreenPreferred &&
+    isFullscreenMobileViewMode(effectiveMobileViewMode);
 
   return {
-    effectiveMobileScreenMode,
-    isImmersiveMobileLandscape,
-    isNativeMobileLandscape,
-    // Manual landscape keeps the current viewport orientation and only swaps the UI layout mode.
-    shouldRotateLandscapeViewport: false,
+    effectiveMobileViewMode,
+    isImmersiveMobileFullscreen,
+    isNativeMobileFullscreen,
+    // Manual fullscreen keeps the current viewport orientation and only swaps the UI layout mode.
+    shouldRotateFullscreenViewport: false,
   };
 };

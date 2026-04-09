@@ -26,7 +26,7 @@ export {
 };
 export type {
   SlideInteractionTexts,
-  SlideLandscapeHeader,
+  SlideFullscreenHeader,
   SlideProps,
 } from "./Slide";
 export type {
@@ -44,4 +44,4 @@ export type {
 } from "./types";
 export type { PlayerProps, SlidePlayerTexts } from "./Player";
 export type { UseSlideResult } from "./useSlide";
-export type { MobileScreenMode } from "./utils/mobileScreenMode";
+export type { MobileViewMode } from "./utils/mobileScreenMode";

@@ -21,7 +21,7 @@ import {
   type InteractionDefaultValueOptions,
 } from "../../lib/interaction-defaults";
 import {
-  isLandscapeViewport as getIsLandscapeViewport,
+  isLandscapeViewport as getIsFullscreenPreferredViewport,
   isMobileDevice as getIsMobileDevice,
   subscribeMobileDeviceChange,
 } from "../../lib/mobileDevice";
@@ -31,9 +31,9 @@ import type { Element } from "./types";
 import useSlide from "./useSlide";
 import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
 import {
-  DEFAULT_MOBILE_SCREEN_MODE,
-  resolveMobileScreenModeState,
-  type MobileScreenMode,
+  DEFAULT_MOBILE_VIEW_MODE,
+  resolveMobileViewModeState,
+  type MobileViewMode,
 } from "./utils/mobileScreenMode";
 import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
 import { getPlaybackSequenceTransition } from "./utils/playbackSequence";
@@ -77,7 +77,7 @@ export interface SlideInteractionTexts
   title?: string;
 }
 
-export type SlideLandscapeHeader = {
+export type SlideFullscreenHeader = {
   content?: React.ReactNode;
   backAriaLabel?: string;
   onBack?: () => void;
@@ -142,7 +142,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   showPlayer?: boolean;
   playerAlwaysVisible?: boolean;
   playerClassName?: string;
-  landscapeHeader?: SlideLandscapeHeader;
+  fullscreenHeader?: SlideFullscreenHeader;
   playerCustomActions?: PlayerProps["customActions"];
   playerCustomActionPauseOnActive?: boolean;
   bufferingText?: string;
@@ -154,7 +154,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   onSend?: (content: OnSendContentParams, element?: Element) => void;
   onPlayerVisibilityChange?: (visible: boolean) => void;
-  onMobileScreenModeChange?: (screenMode: MobileScreenMode) => void;
+  onMobileViewModeChange?: (viewMode: MobileViewMode) => void;
   onStepChange?: (element: Element | undefined, index: number) => void;
 }
 
@@ -163,7 +163,7 @@ const Slide: React.FC<SlideProps> = ({
   showPlayer = true,
   playerAlwaysVisible = false,
   playerClassName,
-  landscapeHeader,
+  fullscreenHeader,
   playerCustomActions,
   playerCustomActionPauseOnActive = true,
   bufferingText = "Buffering...",
@@ -175,7 +175,7 @@ const Slide: React.FC<SlideProps> = ({
   interactionDefaultValueOptions,
   onSend,
   onPlayerVisibilityChange,
-  onMobileScreenModeChange,
+  onMobileViewModeChange,
   onStepChange,
   className,
   onPointerDown,
@@ -243,58 +243,59 @@ const Slide: React.FC<SlideProps> = ({
   >();
   const [isInteractionOverlayOpen, setIsInteractionOverlayOpen] =
     useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isBrowserFullscreen, setIsBrowserFullscreen] = useState(false);
   const isMobileDevice = useMemo(() => getIsMobileDevice(), []);
   console.log("navigator.userAgent", navigator.userAgent);
-  const [mobileScreenMode, setMobileScreenMode] = useState<MobileScreenMode>(
-    DEFAULT_MOBILE_SCREEN_MODE
+  const [mobileViewMode, setMobileViewMode] = useState<MobileViewMode>(
+    DEFAULT_MOBILE_VIEW_MODE
   );
-  const [hasManualMobileScreenMode, setHasManualMobileScreenMode] =
-    useState(false);
-  const [isViewportLandscape, setIsViewportLandscape] = useState(() =>
-    isMobileDevice ? getIsLandscapeViewport() : false
-  );
+  const [hasManualMobileViewMode, setHasManualMobileViewMode] = useState(false);
+  const [isViewportFullscreenPreferred, setIsViewportFullscreenPreferred] =
+    useState(() =>
+      isMobileDevice ? getIsFullscreenPreferredViewport() : false
+    );
   const {
-    effectiveMobileScreenMode,
-    isImmersiveMobileLandscape,
-    isNativeMobileLandscape,
-    shouldRotateLandscapeViewport,
+    effectiveMobileViewMode,
+    isImmersiveMobileFullscreen,
+    isNativeMobileFullscreen,
+    shouldRotateFullscreenViewport,
   } = useMemo(
     () =>
-      resolveMobileScreenModeState({
-        hasManualMobileScreenMode,
+      resolveMobileViewModeState({
+        hasManualMobileViewMode,
         isMobileDevice,
-        isViewportLandscape,
-        mobileScreenMode,
+        isViewportFullscreenPreferred,
+        mobileViewMode,
       }),
     [
-      hasManualMobileScreenMode,
+      hasManualMobileViewMode,
       isMobileDevice,
-      isViewportLandscape,
-      mobileScreenMode,
+      isViewportFullscreenPreferred,
+      mobileViewMode,
     ]
   );
   const playerVisible =
     shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
-  const shouldShowLandscapeHeader = isImmersiveMobileLandscape && playerVisible;
-  const shouldApplyLandscapeViewportPadding =
-    isImmersiveMobileLandscape && playerVisible;
-  const handleMobileScreenModeSelect = useCallback(
-    (nextScreenMode: MobileScreenMode) => {
-      setHasManualMobileScreenMode(true);
-      setMobileScreenMode(nextScreenMode);
+  const shouldShowFullscreenHeader =
+    isImmersiveMobileFullscreen && playerVisible;
+  const shouldApplyFullscreenViewportPadding =
+    isImmersiveMobileFullscreen && playerVisible;
+  const handleMobileViewModeSelect = useCallback(
+    (nextViewMode: MobileViewMode) => {
+      setHasManualMobileViewMode(true);
+      setMobileViewMode(nextViewMode);
     },
     []
   );
-  const handleMobileScreenModeReset = useCallback(() => {
-    // Clear manual override so the effective mode falls back to native viewport orientation.
-    setHasManualMobileScreenMode(false);
-    setMobileScreenMode(DEFAULT_MOBILE_SCREEN_MODE);
+  const handleMobileViewModeReset = useCallback(() => {
+    // Clear manual override so the effective mode falls back to native viewport preference.
+    setHasManualMobileViewMode(false);
+    setMobileViewMode(DEFAULT_MOBILE_VIEW_MODE);
   }, []);
-  const handleLandscapeHeaderBack = useCallback(() => {
-    handleMobileScreenModeReset();
-    landscapeHeader?.onBack?.();
-  }, [handleMobileScreenModeReset, landscapeHeader]);
+  const handleFullscreenHeaderBack = useCallback(() => {
+    handleMobileViewModeReset();
+    fullscreenHeader?.onBack?.();
+  }, [fullscreenHeader, handleMobileViewModeReset]);
   const setPlayerCustomActionActive = useCallback((active: boolean) => {
     setIsPlayerCustomActionActive(active);
   }, []);
@@ -580,32 +581,32 @@ const Slide: React.FC<SlideProps> = ({
   }, [onPlayerVisibilityChange, playerVisible]);
 
   useEffect(() => {
-    if (isMobileDevice || mobileScreenMode === DEFAULT_MOBILE_SCREEN_MODE) {
+    if (isMobileDevice || mobileViewMode === DEFAULT_MOBILE_VIEW_MODE) {
       return;
     }
 
-    setHasManualMobileScreenMode(false);
-    setMobileScreenMode(DEFAULT_MOBILE_SCREEN_MODE);
-  }, [isMobileDevice, mobileScreenMode]);
+    setHasManualMobileViewMode(false);
+    setMobileViewMode(DEFAULT_MOBILE_VIEW_MODE);
+  }, [isMobileDevice, mobileViewMode]);
 
   useEffect(() => {
     if (!isMobileDevice) {
-      setIsViewportLandscape(false);
+      setIsViewportFullscreenPreferred(false);
       return;
     }
 
-    const syncViewportLandscape = () => {
-      setIsViewportLandscape(getIsLandscapeViewport());
+    const syncViewportFullscreenPreference = () => {
+      setIsViewportFullscreenPreferred(getIsFullscreenPreferredViewport());
     };
 
-    syncViewportLandscape();
+    syncViewportFullscreenPreference();
 
-    return subscribeMobileDeviceChange(syncViewportLandscape);
+    return subscribeMobileDeviceChange(syncViewportFullscreenPreference);
   }, [isMobileDevice]);
 
   useEffect(() => {
-    onMobileScreenModeChange?.(effectiveMobileScreenMode);
-  }, [effectiveMobileScreenMode, onMobileScreenModeChange]);
+    onMobileViewModeChange?.(effectiveMobileViewMode);
+  }, [effectiveMobileViewMode, onMobileViewModeChange]);
 
   useEffect(() => {
     onStepChange?.(currentStepElement, currentIndex);
@@ -920,7 +921,7 @@ const Slide: React.FC<SlideProps> = ({
   useEffect(() => {
     // Keep the player icon in sync with the actual fullscreen owner.
     const syncFullscreenState = () => {
-      setIsFullscreen(document.fullscreenElement === sectionRef.current);
+      setIsBrowserFullscreen(document.fullscreenElement === sectionRef.current);
     };
 
     syncFullscreenState();
@@ -1280,8 +1281,8 @@ const Slide: React.FC<SlideProps> = ({
       className={cn(
         "relative h-full w-full",
         isMobileDevice && "slide--mobile-device",
-        isImmersiveMobileLandscape && "slide--mobile-landscape",
-        isNativeMobileLandscape && "slide--mobile-landscape-native",
+        isImmersiveMobileFullscreen && "slide--mobile-landscape",
+        isNativeMobileFullscreen && "slide--mobile-landscape-native",
         className
       )}
       onClick={handleSurfaceClick}
@@ -1292,26 +1293,26 @@ const Slide: React.FC<SlideProps> = ({
         ref={viewportRef}
         className={cn(
           "slide__viewport relative h-full min-h-0 w-full",
-          isImmersiveMobileLandscape && "slide__viewport--mobile-landscape",
-          isImmersiveMobileLandscape &&
-            !shouldRotateLandscapeViewport &&
+          isImmersiveMobileFullscreen && "slide__viewport--mobile-landscape",
+          isImmersiveMobileFullscreen &&
+            !shouldRotateFullscreenViewport &&
             "slide__viewport--mobile-landscape-native"
         )}
       >
-        {shouldShowLandscapeHeader ? (
+        {shouldShowFullscreenHeader ? (
           <div className="slide-landscape-header">
             <button
-              aria-label={landscapeHeader?.backAriaLabel ?? "Back"}
+              aria-label={fullscreenHeader?.backAriaLabel ?? "Back"}
               className="slide-landscape-header__back"
-              onClick={handleLandscapeHeaderBack}
+              onClick={handleFullscreenHeaderBack}
               type="button"
             >
               <ChevronLeft className="h-6 w-6 text-white" strokeWidth={2.25} />
             </button>
 
-            {landscapeHeader?.content ? (
+            {fullscreenHeader?.content ? (
               <div className="min-w-0 flex-1 overflow-hidden">
-                {landscapeHeader.content}
+                {fullscreenHeader.content}
               </div>
             ) : null}
           </div>
@@ -1320,7 +1321,7 @@ const Slide: React.FC<SlideProps> = ({
         <div
           className={cn(
             "h-full min-h-0 w-full",
-            shouldApplyLandscapeViewportPadding &&
+            shouldApplyFullscreenViewportPadding &&
               "slide__viewport-content--with-header",
             isSingleSlide ? "slide-content--single" : "grid gap-4"
           )}
@@ -1413,10 +1414,10 @@ const Slide: React.FC<SlideProps> = ({
             nextDisabled={!canGoNext}
             onEnded={handlePlayerEnded}
             onFullscreen={handleFullscreen}
-            isFullscreen={isFullscreen}
-            mobileScreenMode={effectiveMobileScreenMode}
+            isFullscreen={isBrowserFullscreen}
+            mobileViewMode={effectiveMobileViewMode}
             settingsPortalContainer={viewportRef.current}
-            onMobileScreenModeChange={handleMobileScreenModeSelect}
+            onMobileViewModeChange={handleMobileViewModeSelect}
             onInteractionToggle={handleInteractionToggle}
             onNext={handleNext}
             onPrev={handlePrev}

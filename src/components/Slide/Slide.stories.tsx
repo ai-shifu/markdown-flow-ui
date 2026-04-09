@@ -53,15 +53,15 @@ const meta = {
       control: "object",
       description: "I18n-ready player settings sheet texts",
     },
-    onMobileScreenModeChange: {
+    onMobileViewModeChange: {
       control: false,
       description:
-        "Callback fired whenever the mobile screen mode changes between portrait and landscape",
+        "Callback fired whenever the mobile view mode changes between non-fullscreen and fullscreen",
     },
-    landscapeHeader: {
+    fullscreenHeader: {
       control: "object",
       description:
-        "Landscape-only mobile header with a built-in back button and optional custom content slot",
+        "Fullscreen-only mobile header with a built-in back button and optional custom content slot",
     },
     playerAutoHideDelay: {
       control: { type: "number", min: 0, step: 500 },
@@ -104,10 +104,10 @@ const meta = {
     playerTexts: {
       settingsTitle: "Settings",
       screenLabel: "Screen",
-      portraitLabel: "Portrait",
-      landscapeLabel: "Landscape",
+      nonFullscreenLabel: "Non-fullscreen",
+      fullscreenLabel: "Fullscreen",
     },
-    landscapeHeader: undefined,
+    fullscreenHeader: undefined,
     playerAutoHideDelay: 3000,
     markerAutoAdvanceDelay: 2000,
     playerAlwaysVisible: false,
@@ -118,7 +118,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const LANDSCAPE_HEADER_AVATAR = `data:image/svg+xml;utf8,${encodeURIComponent(
+const FULLSCREEN_HEADER_AVATAR = `data:image/svg+xml;utf8,${encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
     <circle cx="16" cy="16" r="16" fill="#FFFFFF"/>
     <circle cx="16" cy="12" r="5" fill="#111827"/>
@@ -2225,13 +2225,13 @@ export const FullViewportSingleSlideWithEmptyPpt: Story = {
 export const HistorySlides: Story = {
   args: {
     // playerAlwaysVisible: true,
-    landscapeHeader: {
+    fullscreenHeader: {
       content: (
         <div className="flex min-w-0 items-center gap-2 overflow-hidden text-[16px] font-bold leading-6 text-white">
           <img
             alt="Nike老师"
             className="h-8 w-8 shrink-0 rounded-full object-cover"
-            src={LANDSCAPE_HEADER_AVATAR}
+            src={FULLSCREEN_HEADER_AVATAR}
           />
           <span className="shrink-0">Nike老师</span>
           <span className="truncate">这是课程标题内容内容内容</span>
@@ -2242,8 +2242,8 @@ export const HistorySlides: Story = {
     playerTexts: {
       settingsTitle: "设置",
       screenLabel: "屏幕",
-      portraitLabel: "竖屏",
-      landscapeLabel: "横屏",
+      nonFullscreenLabel: "非全屏",
+      fullscreenLabel: "全屏",
     },
     elementList: focusHistoryOnLatestInteraction([
       {
@@ -2575,7 +2575,7 @@ export const HistorySlides: Story = {
     docs: {
       description: {
         story:
-          "All slide iframe steps stay mounted and switch visibility with CSS display, while single active iframe roots can fit the host container height. On mobile, the player settings sheet can also rotate the whole slide viewport into landscape mode.",
+          "All slide iframe steps stay mounted and switch visibility with CSS display, while single active iframe roots can fit the host container height. On mobile, the player settings sheet can also switch the whole slide viewport into fullscreen mode.",
       },
     },
   },

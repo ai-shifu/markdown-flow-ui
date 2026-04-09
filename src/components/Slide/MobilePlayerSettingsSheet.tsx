@@ -3,33 +3,33 @@ import { X } from "lucide-react";
 
 import { cn } from "../../lib/utils";
 import { Dialog, DialogOverlay, DialogPortal, DialogTitle } from "../ui/dialog";
-import type { MobileScreenMode } from "./utils/mobileScreenMode";
+import type { MobileViewMode } from "./utils/mobileScreenMode";
 
 export type MobilePlayerSettingsSheetLabels = {
   title: string;
   screen: string;
-  portrait: string;
-  landscape: string;
+  nonFullscreen: string;
+  fullscreen: string;
 };
 
 export type MobilePlayerSettingsSheetProps = {
   open: boolean;
   labels: MobilePlayerSettingsSheetLabels;
-  screenMode: MobileScreenMode;
+  viewMode: MobileViewMode;
   container?: HTMLElement | null;
   onClose: () => void;
   onOpenChange: (open: boolean) => void;
-  onScreenModeChange: (nextScreenMode: MobileScreenMode) => void;
+  onViewModeChange: (nextViewMode: MobileViewMode) => void;
 };
 
 const MobilePlayerSettingsSheet = ({
   open,
   labels,
-  screenMode,
+  viewMode,
   container,
   onClose,
   onOpenChange,
-  onScreenModeChange,
+  onViewModeChange,
 }: MobilePlayerSettingsSheetProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -62,33 +62,33 @@ const MobilePlayerSettingsSheet = ({
               {labels.screen}
             </span>
             <div
-              aria-label="Screen orientation"
+              aria-label="Screen mode"
               className="flex items-center gap-8"
               role="radiogroup"
             >
               <button
-                aria-checked={screenMode === "portrait"}
+                aria-checked={viewMode === "nonFullscreen"}
                 className={cn(
                   "border-none bg-transparent p-0 text-[15px] leading-5 text-foreground/70 transition-colors",
-                  screenMode === "portrait" && "font-semibold text-primary"
+                  viewMode === "nonFullscreen" && "font-semibold text-primary"
                 )}
-                onClick={() => onScreenModeChange("portrait")}
+                onClick={() => onViewModeChange("nonFullscreen")}
                 role="radio"
                 type="button"
               >
-                {labels.portrait}
+                {labels.nonFullscreen}
               </button>
               <button
-                aria-checked={screenMode === "landscape"}
+                aria-checked={viewMode === "fullscreen"}
                 className={cn(
                   "border-none bg-transparent p-0 text-[15px] leading-5 text-foreground/70 transition-colors",
-                  screenMode === "landscape" && "font-semibold text-primary"
+                  viewMode === "fullscreen" && "font-semibold text-primary"
                 )}
-                onClick={() => onScreenModeChange("landscape")}
+                onClick={() => onViewModeChange("fullscreen")}
                 role="radio"
                 type="button"
               >
-                {labels.landscape}
+                {labels.fullscreen}
               </button>
             </div>
           </div>

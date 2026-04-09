@@ -1,72 +1,72 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  DEFAULT_MOBILE_SCREEN_MODE,
-  resolveMobileScreenModeState,
+  DEFAULT_MOBILE_VIEW_MODE,
+  resolveMobileViewModeState,
 } from "./mobileScreenMode";
 
-describe("resolveMobileScreenModeState", () => {
-  it("keeps desktop environments in portrait mode", () => {
+describe("resolveMobileViewModeState", () => {
+  it("keeps desktop environments in non-fullscreen mode", () => {
     expect(
-      resolveMobileScreenModeState({
-        hasManualMobileScreenMode: false,
+      resolveMobileViewModeState({
+        hasManualMobileViewMode: false,
         isMobileDevice: false,
-        isViewportLandscape: true,
-        mobileScreenMode: "landscape",
+        isViewportFullscreenPreferred: true,
+        mobileViewMode: "fullscreen",
       })
     ).toEqual({
-      effectiveMobileScreenMode: DEFAULT_MOBILE_SCREEN_MODE,
-      isImmersiveMobileLandscape: false,
-      isNativeMobileLandscape: false,
-      shouldRotateLandscapeViewport: false,
+      effectiveMobileViewMode: DEFAULT_MOBILE_VIEW_MODE,
+      isImmersiveMobileFullscreen: false,
+      isNativeMobileFullscreen: false,
+      shouldRotateFullscreenViewport: false,
     });
   });
 
-  it("syncs the selected screen mode to landscape when the device rotates without manual override", () => {
+  it("syncs the selected view mode to fullscreen when the device rotates without manual override", () => {
     expect(
-      resolveMobileScreenModeState({
-        hasManualMobileScreenMode: false,
+      resolveMobileViewModeState({
+        hasManualMobileViewMode: false,
         isMobileDevice: true,
-        isViewportLandscape: true,
-        mobileScreenMode: DEFAULT_MOBILE_SCREEN_MODE,
+        isViewportFullscreenPreferred: true,
+        mobileViewMode: DEFAULT_MOBILE_VIEW_MODE,
       })
     ).toEqual({
-      effectiveMobileScreenMode: "landscape",
-      isImmersiveMobileLandscape: false,
-      isNativeMobileLandscape: true,
-      shouldRotateLandscapeViewport: false,
+      effectiveMobileViewMode: "fullscreen",
+      isImmersiveMobileFullscreen: false,
+      isNativeMobileFullscreen: true,
+      shouldRotateFullscreenViewport: false,
     });
   });
 
-  it("uses immersive landscape when the user explicitly switches to landscape on a portrait viewport", () => {
+  it("uses immersive fullscreen when the user explicitly switches to fullscreen on a non-fullscreen viewport", () => {
     expect(
-      resolveMobileScreenModeState({
-        hasManualMobileScreenMode: true,
+      resolveMobileViewModeState({
+        hasManualMobileViewMode: true,
         isMobileDevice: true,
-        isViewportLandscape: false,
-        mobileScreenMode: "landscape",
+        isViewportFullscreenPreferred: false,
+        mobileViewMode: "fullscreen",
       })
     ).toEqual({
-      effectiveMobileScreenMode: "landscape",
-      isImmersiveMobileLandscape: true,
-      isNativeMobileLandscape: false,
-      shouldRotateLandscapeViewport: false,
+      effectiveMobileViewMode: "fullscreen",
+      isImmersiveMobileFullscreen: true,
+      isNativeMobileFullscreen: false,
+      shouldRotateFullscreenViewport: false,
     });
   });
 
-  it("allows manual portrait override even when the device stays in physical landscape", () => {
+  it("allows manual non-fullscreen override even when the device stays in a fullscreen-preferred viewport", () => {
     expect(
-      resolveMobileScreenModeState({
-        hasManualMobileScreenMode: true,
+      resolveMobileViewModeState({
+        hasManualMobileViewMode: true,
         isMobileDevice: true,
-        isViewportLandscape: true,
-        mobileScreenMode: "portrait",
+        isViewportFullscreenPreferred: true,
+        mobileViewMode: "nonFullscreen",
       })
     ).toEqual({
-      effectiveMobileScreenMode: "portrait",
-      isImmersiveMobileLandscape: false,
-      isNativeMobileLandscape: false,
-      shouldRotateLandscapeViewport: false,
+      effectiveMobileViewMode: "nonFullscreen",
+      isImmersiveMobileFullscreen: false,
+      isNativeMobileFullscreen: false,
+      shouldRotateFullscreenViewport: false,
     });
   });
 });

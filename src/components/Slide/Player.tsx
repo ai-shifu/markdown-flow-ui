@@ -23,8 +23,8 @@ import type {
   SlidePlayerCustomActions,
 } from "./types";
 import {
-  DEFAULT_MOBILE_SCREEN_MODE,
-  type MobileScreenMode,
+  DEFAULT_MOBILE_VIEW_MODE,
+  type MobileViewMode,
 } from "./utils/mobileScreenMode";
 import { toPlayerCustomActionList } from "./utils/playerCustomActions";
 import "./player.css";
@@ -34,15 +34,15 @@ const audioPreloadElementCache = new Map<string, HTMLAudioElement>();
 export interface SlidePlayerTexts {
   settingsTitle?: string;
   screenLabel?: string;
-  portraitLabel?: string;
-  landscapeLabel?: string;
+  nonFullscreenLabel?: string;
+  fullscreenLabel?: string;
 }
 
 const DEFAULT_PLAYER_TEXTS: Required<SlidePlayerTexts> = {
   settingsTitle: "Settings",
   screenLabel: "Screen",
-  portraitLabel: "Portrait",
-  landscapeLabel: "Landscape",
+  nonFullscreenLabel: "Non-fullscreen",
+  fullscreenLabel: "Fullscreen",
 };
 
 const preloadAudioUrl = (url?: string) => {
@@ -77,9 +77,9 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   onNext?: () => void;
   onFullscreen?: () => void;
   isFullscreen?: boolean;
-  mobileScreenMode?: MobileScreenMode;
+  mobileViewMode?: MobileViewMode;
   settingsPortalContainer?: HTMLElement | null;
-  onMobileScreenModeChange?: (screenMode: MobileScreenMode) => void;
+  onMobileViewModeChange?: (viewMode: MobileViewMode) => void;
   onEnded?: (audioIndex: number) => void;
   onAutoAdvanceToggle?: (enabled: boolean) => void;
   onInteractionToggle?: () => void;
@@ -138,9 +138,9 @@ const Player: React.FC<PlayerProps> = ({
   onNext,
   onFullscreen,
   isFullscreen = false,
-  mobileScreenMode = DEFAULT_MOBILE_SCREEN_MODE,
+  mobileViewMode = DEFAULT_MOBILE_VIEW_MODE,
   settingsPortalContainer,
-  onMobileScreenModeChange,
+  onMobileViewModeChange,
   onEnded,
   onAutoAdvanceToggle,
   onInteractionToggle,
@@ -800,12 +800,12 @@ const Player: React.FC<PlayerProps> = ({
     setIsPlaying(false);
     updateLoading(false);
   }, [updateLoading]);
-  const handleMobileScreenModeChange = useCallback(
-    (nextScreenMode: MobileScreenMode) => {
-      onMobileScreenModeChange?.(nextScreenMode);
+  const handleMobileViewModeChange = useCallback(
+    (nextViewMode: MobileViewMode) => {
+      onMobileViewModeChange?.(nextViewMode);
       setIsMobileMoreOpen(false);
     },
-    [onMobileScreenModeChange]
+    [onMobileViewModeChange]
   );
 
   return (
@@ -827,16 +827,16 @@ const Player: React.FC<PlayerProps> = ({
           <MobilePlayerSettingsSheet
             container={settingsPortalContainer}
             labels={{
-              landscape: playerTexts.landscapeLabel,
-              portrait: playerTexts.portraitLabel,
+              fullscreen: playerTexts.fullscreenLabel,
+              nonFullscreen: playerTexts.nonFullscreenLabel,
               screen: playerTexts.screenLabel,
               title: playerTexts.settingsTitle,
             }}
             onClose={() => setIsMobileMoreOpen(false)}
             onOpenChange={setIsMobileMoreOpen}
-            onScreenModeChange={handleMobileScreenModeChange}
+            onViewModeChange={handleMobileViewModeChange}
             open={isMobileMoreOpen}
-            screenMode={mobileScreenMode}
+            viewMode={mobileViewMode}
           />
 
           <div className="slide-player__controls" style={controlsStyle}>

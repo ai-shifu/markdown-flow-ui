@@ -174,7 +174,7 @@
       ]
     }
   },
-  "version": "0.1.107-alpha.6",
+  "version": "0.1.107",
   "type": "module",
   "exports": {
     ".": {

@@ -24,7 +24,11 @@ export {
   getInteractionDefaultValues,
   getInteractionDefaultSelectedValues,
 };
-export type { SlideInteractionTexts, SlideProps } from "./Slide";
+export type {
+  SlideInteractionTexts,
+  SlideFullscreenHeader,
+  SlideProps,
+} from "./Slide";
 export type {
   InteractionDefaultResolver,
   InteractionDefaultResolverParams,
@@ -38,5 +42,6 @@ export type {
   SlidePlayerCustomActionContext,
   SlidePlayerCustomActions,
 } from "./types";
-export type { PlayerProps } from "./Player";
+export type { PlayerProps, SlidePlayerTexts } from "./Player";
 export type { UseSlideResult } from "./useSlide";
+export type { MobileViewMode } from "./utils/mobileScreenMode";

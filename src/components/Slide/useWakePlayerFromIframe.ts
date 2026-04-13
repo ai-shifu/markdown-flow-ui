@@ -73,17 +73,7 @@ const useWakePlayerFromIframe = ({
       };
 
       iframeDocument.addEventListener(
-        "pointerdown",
-        handleIframeDocumentInteraction,
-        true
-      );
-      iframeDocument.addEventListener(
-        "mousedown",
-        handleIframeDocumentInteraction,
-        true
-      );
-      iframeDocument.addEventListener(
-        "touchstart",
+        "click",
         handleIframeDocumentInteraction,
         true
       );
@@ -91,17 +81,7 @@ const useWakePlayerFromIframe = ({
       cleanupMap.set(iframeElement, {
         cleanup: () => {
           iframeDocument.removeEventListener(
-            "pointerdown",
-            handleIframeDocumentInteraction,
-            true
-          );
-          iframeDocument.removeEventListener(
-            "mousedown",
-            handleIframeDocumentInteraction,
-            true
-          );
-          iframeDocument.removeEventListener(
-            "touchstart",
+            "click",
             handleIframeDocumentInteraction,
             true
           );

@@ -49,6 +49,20 @@ const meta = {
       control: "object",
       description: "I18n-ready interaction overlay UI texts",
     },
+    playerTexts: {
+      control: "object",
+      description: "I18n-ready player settings sheet and fullscreen hint texts",
+    },
+    onMobileViewModeChange: {
+      control: false,
+      description:
+        "Callback fired whenever the mobile view mode changes between non-fullscreen and fullscreen",
+    },
+    fullscreenHeader: {
+      control: "object",
+      description:
+        "Fullscreen-only mobile header with a built-in back button and optional custom content slot",
+    },
     playerAutoHideDelay: {
       control: { type: "number", min: 0, step: 500 },
       description: "Auto-hide delay for player controls in milliseconds",
@@ -87,6 +101,14 @@ const meta = {
       copyButtonText: "Copy",
       copiedButtonText: "Copied",
     },
+    playerTexts: {
+      settingsTitle: "Settings",
+      screenLabel: "Screen",
+      nonFullscreenLabel: "Non-fullscreen",
+      fullscreenLabel: "Fullscreen",
+      fullscreenHintText: "Rotate your screen for the best experience.",
+    },
+    fullscreenHeader: undefined,
     playerAutoHideDelay: 3000,
     markerAutoAdvanceDelay: 2000,
     playerAlwaysVisible: false,
@@ -96,6 +118,14 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+const FULLSCREEN_HEADER_AVATAR = `data:image/svg+xml;utf8,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+    <circle cx="16" cy="16" r="16" fill="#FFFFFF"/>
+    <circle cx="16" cy="12" r="5" fill="#111827"/>
+    <path d="M7 26.2C8.9 21.7 12 19.5 16 19.5C20 19.5 23.1 21.7 25 26.2" fill="#111827"/>
+  </svg>`
+)}`;
 
 // const HTML_IFRAME_CONTENT = `
 // <div class="w-full overflow-hidden flex flex-col items-center bg-gradient-to-br from-blue-50 to-blue-100 p-6">
@@ -2195,7 +2225,28 @@ export const FullViewportSingleSlideWithEmptyPpt: Story = {
 
 export const HistorySlides: Story = {
   args: {
-    playerAlwaysVisible: false,
+    // playerAlwaysVisible: true,
+    fullscreenHeader: {
+      content: (
+        <div className="flex min-w-0 items-center gap-2 overflow-hidden text-[16px] font-bold leading-6 text-white">
+          <img
+            alt="Nike老师"
+            className="h-8 w-8 shrink-0 rounded-full object-cover"
+            src={FULLSCREEN_HEADER_AVATAR}
+          />
+          <span className="shrink-0">Nike老师</span>
+          <span className="truncate">这是课程标题内容内容内容</span>
+        </div>
+      ),
+      backAriaLabel: "返回",
+    },
+    playerTexts: {
+      settingsTitle: "设置",
+      screenLabel: "屏幕",
+      nonFullscreenLabel: "非全屏",
+      fullscreenLabel: "全屏",
+      fullscreenHintText: "请旋转屏幕以获得最佳体验",
+    },
     elementList: focusHistoryOnLatestInteraction([
       {
         sequence_number: 6,
@@ -2526,7 +2577,7 @@ export const HistorySlides: Story = {
     docs: {
       description: {
         story:
-          "All slide iframe steps stay mounted and switch visibility with CSS display, while single active iframe roots can fit the host container height.",
+          "All slide iframe steps stay mounted and switch visibility with CSS display, while single active iframe roots can fit the host container height. On mobile, the player settings sheet can also switch the whole slide viewport into fullscreen mode.",
       },
     },
   },

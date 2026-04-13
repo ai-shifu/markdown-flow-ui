@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { ChevronLeft } from "lucide-react";
 
 import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
@@ -19,11 +20,23 @@ import {
   getInteractionDefaultValues,
   type InteractionDefaultValueOptions,
 } from "../../lib/interaction-defaults";
+import {
+  isLandscapeViewport as getIsFullscreenPreferredViewport,
+  isMobileDevice as getIsMobileDevice,
+  subscribeMobileDeviceChange,
+} from "../../lib/mobileDevice";
 import Player from "./Player";
-import type { PlayerProps } from "./Player";
+import type { PlayerProps, SlidePlayerTexts } from "./Player";
+import { DEFAULT_SLIDE_PLAYER_TEXTS } from "./constants";
+import SlideFullscreenHint from "./SlideFullscreenHint";
 import type { Element } from "./types";
 import useSlide from "./useSlide";
 import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
+import {
+  DEFAULT_MOBILE_VIEW_MODE,
+  resolveMobileViewModeState,
+  type MobileViewMode,
+} from "./utils/mobileScreenMode";
 import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
 import { getPlaybackSequenceTransition } from "./utils/playbackSequence";
 import {
@@ -64,6 +77,12 @@ export interface SlideInteractionTexts extends Pick<
 > {
   title?: string;
 }
+
+export type SlideFullscreenHeader = {
+  content?: React.ReactNode;
+  backAriaLabel?: string;
+  onBack?: () => void;
+};
 
 const InteractionOverlayCard = memo(
   ({
@@ -124,16 +143,19 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   showPlayer?: boolean;
   playerAlwaysVisible?: boolean;
   playerClassName?: string;
+  fullscreenHeader?: SlideFullscreenHeader;
   playerCustomActions?: PlayerProps["customActions"];
   playerCustomActionPauseOnActive?: boolean;
   bufferingText?: string;
   interactionTitle?: string;
   interactionTexts?: SlideInteractionTexts;
+  playerTexts?: SlidePlayerTexts;
   playerAutoHideDelay?: number;
   markerAutoAdvanceDelay?: number;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   onSend?: (content: OnSendContentParams, element?: Element) => void;
   onPlayerVisibilityChange?: (visible: boolean) => void;
+  onMobileViewModeChange?: (viewMode: MobileViewMode) => void;
   onStepChange?: (element: Element | undefined, index: number) => void;
   enableIframeScaling?: boolean;
 }
@@ -143,16 +165,19 @@ const Slide: React.FC<SlideProps> = ({
   showPlayer = true,
   playerAlwaysVisible = false,
   playerClassName,
+  fullscreenHeader,
   playerCustomActions,
   playerCustomActionPauseOnActive = true,
   bufferingText = "Buffering...",
   interactionTitle,
   interactionTexts,
+  playerTexts,
   playerAutoHideDelay = 3000,
   markerAutoAdvanceDelay = DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS,
   interactionDefaultValueOptions,
   onSend,
   onPlayerVisibilityChange,
+  onMobileViewModeChange,
   onStepChange,
   enableIframeScaling = true,
   className,
@@ -160,6 +185,7 @@ const Slide: React.FC<SlideProps> = ({
   ...props
 }) => {
   const sectionRef = useRef<HTMLElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   const stageLayerRef = useRef<HTMLDivElement | null>(null);
   const lastElementRef = useRef<HTMLDivElement | null>(null);
   const playerHideTimerRef = useRef<number | null>(null);
@@ -220,8 +246,68 @@ const Slide: React.FC<SlideProps> = ({
   >();
   const [isInteractionOverlayOpen, setIsInteractionOverlayOpen] =
     useState(false);
+  const [isBrowserFullscreen, setIsBrowserFullscreen] = useState(false);
+  const isMobileDevice = useMemo(() => getIsMobileDevice(), []);
+  const [mobileViewMode, setMobileViewMode] = useState<MobileViewMode>(
+    DEFAULT_MOBILE_VIEW_MODE
+  );
+  const [hasManualMobileViewMode, setHasManualMobileViewMode] = useState(false);
+  const [isViewportFullscreenPreferred, setIsViewportFullscreenPreferred] =
+    useState(() =>
+      isMobileDevice ? getIsFullscreenPreferredViewport() : false
+    );
+  const [isFullscreenHintOpen, setIsFullscreenHintOpen] = useState(false);
+  const {
+    effectiveMobileViewMode,
+    isImmersiveMobileFullscreen,
+    isNativeMobileFullscreen,
+    shouldRotateFullscreenViewport,
+  } = useMemo(
+    () =>
+      resolveMobileViewModeState({
+        hasManualMobileViewMode,
+        isMobileDevice,
+        isViewportFullscreenPreferred,
+        mobileViewMode,
+      }),
+    [
+      hasManualMobileViewMode,
+      isMobileDevice,
+      isViewportFullscreenPreferred,
+      mobileViewMode,
+    ]
+  );
+  const previousEffectiveMobileViewModeRef = useRef(effectiveMobileViewMode);
   const playerVisible =
     shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
+  const shouldShowFullscreenHeader =
+    isImmersiveMobileFullscreen && playerVisible;
+  const shouldApplyFullscreenViewportPadding =
+    isImmersiveMobileFullscreen && playerVisible;
+  const shouldShowMobileFullscreenMask =
+    isImmersiveMobileFullscreen || isNativeMobileFullscreen;
+  const fullscreenHintText =
+    playerTexts?.fullscreenHintText ??
+    DEFAULT_SLIDE_PLAYER_TEXTS.fullscreenHintText;
+  const handleMobileViewModeSelect = useCallback(
+    (nextViewMode: MobileViewMode) => {
+      setHasManualMobileViewMode(true);
+      setMobileViewMode(nextViewMode);
+    },
+    []
+  );
+  const handleMobileViewModeReset = useCallback(() => {
+    // Clear manual override so the effective mode returns to the default non-fullscreen state.
+    setHasManualMobileViewMode(false);
+    setMobileViewMode(DEFAULT_MOBILE_VIEW_MODE);
+  }, []);
+  const handleFullscreenHeaderBack = useCallback(() => {
+    handleMobileViewModeReset();
+    fullscreenHeader?.onBack?.();
+  }, [fullscreenHeader, handleMobileViewModeReset]);
+  const handleFullscreenHintClose = useCallback(() => {
+    setIsFullscreenHintOpen(false);
+  }, []);
   const setPlayerCustomActionActive = useCallback((active: boolean) => {
     setIsPlayerCustomActionActive(active);
   }, []);
@@ -320,6 +406,9 @@ const Slide: React.FC<SlideProps> = ({
     () =>
       ({
         "--slide-player-custom-action-count": String(playerCustomActionCount),
+        "--slide-player-mobile-control-count": String(
+          playerCustomActionCount + 4
+        ),
       }) as React.CSSProperties,
     [playerCustomActionCount]
   );
@@ -504,6 +593,58 @@ const Slide: React.FC<SlideProps> = ({
   }, [onPlayerVisibilityChange, playerVisible]);
 
   useEffect(() => {
+    if (isMobileDevice || mobileViewMode === DEFAULT_MOBILE_VIEW_MODE) {
+      return;
+    }
+
+    setHasManualMobileViewMode(false);
+    setMobileViewMode(DEFAULT_MOBILE_VIEW_MODE);
+  }, [isMobileDevice, mobileViewMode]);
+
+  useEffect(() => {
+    if (!isMobileDevice) {
+      setIsViewportFullscreenPreferred(false);
+      return;
+    }
+
+    const syncViewportFullscreenPreference = () => {
+      setIsViewportFullscreenPreferred(getIsFullscreenPreferredViewport());
+    };
+
+    syncViewportFullscreenPreference();
+
+    return subscribeMobileDeviceChange(syncViewportFullscreenPreference);
+  }, [isMobileDevice]);
+
+  useEffect(() => {
+    onMobileViewModeChange?.(effectiveMobileViewMode);
+  }, [effectiveMobileViewMode, onMobileViewModeChange]);
+
+  useEffect(() => {
+    const previousMode = previousEffectiveMobileViewModeRef.current;
+    const hasEnteredFullscreen =
+      previousMode !== "fullscreen" && effectiveMobileViewMode === "fullscreen";
+    const shouldShowFullscreenHint =
+      hasEnteredFullscreen && !isViewportFullscreenPreferred;
+
+    previousEffectiveMobileViewModeRef.current = effectiveMobileViewMode;
+
+    if (!isMobileDevice) {
+      setIsFullscreenHintOpen(false);
+      return;
+    }
+
+    if (shouldShowFullscreenHint) {
+      setIsFullscreenHintOpen(true);
+      return;
+    }
+
+    if (effectiveMobileViewMode !== "fullscreen") {
+      setIsFullscreenHintOpen(false);
+    }
+  }, [effectiveMobileViewMode, isMobileDevice, isViewportFullscreenPreferred]);
+
+  useEffect(() => {
     onStepChange?.(currentStepElement, currentIndex);
   }, [currentIndex, currentStepElement, onStepChange]);
 
@@ -546,11 +687,15 @@ const Slide: React.FC<SlideProps> = ({
         return;
       }
 
+      if (event.data.eventType !== "click") {
+        return;
+      }
+
       if (!shouldRenderPlayer) {
         return;
       }
 
-      // Restore player controls without blocking native iframe scrolling.
+      // Restore player controls on explicit click/tap without waking on scroll start.
       setHasPlayerInteracted(true);
       showPlayerControls(true);
     };
@@ -810,6 +955,20 @@ const Slide: React.FC<SlideProps> = ({
   );
 
   useEffect(() => {
+    // Keep the player icon in sync with the actual fullscreen owner.
+    const syncFullscreenState = () => {
+      setIsBrowserFullscreen(document.fullscreenElement === sectionRef.current);
+    };
+
+    syncFullscreenState();
+    document.addEventListener("fullscreenchange", syncFullscreenState);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreenState);
+    };
+  }, []);
+
+  useEffect(() => {
     clearInteractionAutoCloseTimer();
 
     if (!isInteractionOverlayOpen || !shouldAutoContinueInteraction) {
@@ -927,17 +1086,19 @@ const Slide: React.FC<SlideProps> = ({
     );
   };
 
-  const handleFullscreen = () => {
+  const handleFullscreen = useCallback(() => {
     const target = sectionRef.current;
-    if (!target) return;
+    if (!target) {
+      return;
+    }
 
-    if (document.fullscreenElement) {
+    if (document.fullscreenElement === target) {
       document.exitFullscreen().catch(() => {});
       return;
     }
 
     target.requestFullscreen?.().catch(() => {});
-  };
+  }, []);
 
   const scrollStageToBottom = useCallback(() => {
     const stageLayerElement = stageLayerRef.current;
@@ -1067,11 +1228,14 @@ const Slide: React.FC<SlideProps> = ({
   const handleSurfacePointerDown = useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
       onPointerDown?.(event);
-      setHasPlayerInteracted(true);
-      showPlayerControls(true);
     },
-    [onPointerDown, showPlayerControls]
+    [onPointerDown]
   );
+
+  const handleSurfaceClick = useCallback(() => {
+    setHasPlayerInteracted(true);
+    showPlayerControls(true);
+  }, [showPlayerControls]);
 
   const shouldShowInteractionOverlay =
     Boolean(activeInteractionElement) && isInteractionOverlayOpen;
@@ -1151,114 +1315,171 @@ const Slide: React.FC<SlideProps> = ({
   return (
     <section
       ref={sectionRef}
-      className={cn("relative h-full w-full", className)}
+      className={cn(
+        "relative h-full w-full",
+        isMobileDevice && "slide--mobile-device",
+        isImmersiveMobileFullscreen && "slide--mobile-landscape",
+        isNativeMobileFullscreen && "slide--mobile-landscape-native",
+        className
+      )}
+      onClick={handleSurfaceClick}
       onPointerDown={handleSurfacePointerDown}
       {...props}
     >
+      {shouldShowMobileFullscreenMask ? (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed left-0 top-0 z-[9999] h-[100vh] max-h-[100vh] w-[100vw]"
+        />
+      ) : null}
+
       <div
+        ref={viewportRef}
         className={cn(
-          "h-full min-h-0 w-full",
-          isSingleSlide ? "slide-content--single" : "grid gap-4"
+          "slide__viewport relative h-full min-h-0 w-full",
+          isImmersiveMobileFullscreen && "slide__viewport--mobile-landscape",
+          isImmersiveMobileFullscreen &&
+            !shouldRotateFullscreenViewport &&
+            "slide__viewport--mobile-landscape-native"
         )}
       >
-        {currentElementList.length > 0 ? (
-          <div className="slide-stage">
-            <div ref={stageLayerRef} className="slide-stage__layer w-full">
-              {mountedStepStates.map(
-                (mountedStepState, mountedStepStateIndex) => {
-                  const isActiveStep =
-                    mountedStepStateIndex === currentMountedStateIndex;
+        {shouldShowFullscreenHeader ? (
+          <div className="slide-landscape-header">
+            <button
+              aria-label={fullscreenHeader?.backAriaLabel ?? "Back"}
+              className="slide-landscape-header__back"
+              onClick={handleFullscreenHeaderBack}
+              type="button"
+            >
+              <ChevronLeft className="h-6 w-6 text-white" strokeWidth={2.25} />
+            </button>
 
-                  return (
-                    <div
-                      key={
-                        mountedStepState.sourceStepIndexes[0] ??
-                        mountedStepStateIndex
-                      }
-                      aria-hidden={!isActiveStep || undefined}
-                      className="w-full h-full"
-                      style={{ display: isActiveStep ? undefined : "none" }}
-                    >
-                      {renderSlideElementList(
-                        mountedStepState.elementList,
-                        isActiveStep
-                      )}
-                    </div>
-                  );
-                }
-              )}
-            </div>
+            {fullscreenHeader?.content ? (
+              <div className="min-w-0 flex-1 overflow-hidden">
+                {fullscreenHeader.content}
+              </div>
+            ) : null}
           </div>
         ) : null}
-      </div>
 
-      {isAudioLoadingVisible ? (
-        <LoadingOverlayCard
-          message={bufferingText}
-          className="absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2"
-        />
-      ) : null}
-
-      {shouldShowInteractionOverlay ? (
         <div
           className={cn(
-            "slide-interaction-overlay",
-            playerVisible && shouldRenderPlayer
-              ? "slide-interaction-overlay--with-player"
-              : "slide-interaction-overlay--standalone"
+            "h-full min-h-0 w-full",
+            shouldApplyFullscreenViewportPadding &&
+              "slide__viewport-content--with-header",
+            isSingleSlide ? "slide-content--single" : "grid gap-4"
           )}
-          onClick={stopOverlayPropagation}
-          onPointerDown={stopOverlayPropagation}
-          style={interactionOverlayStyle}
         >
-          <InteractionOverlayCard
-            content={String(activeInteractionElement?.content ?? "")}
-            defaultButtonText={interactionDefaults.buttonText ?? ""}
-            defaultInputText={interactionDefaults.inputText ?? ""}
-            defaultSelectedValues={interactionDefaultSelectedValues}
-            confirmButtonText={interactionTexts?.confirmButtonText}
-            copyButtonText={interactionTexts?.copyButtonText}
-            copiedButtonText={interactionTexts?.copiedButtonText}
-            onSend={handleInteractionSend}
-            readonly={isInteractionReadonly}
-            title={
-              interactionTexts?.title ??
-              interactionTitle ??
-              "Submit the content below to continue."
-            }
-          />
-        </div>
-      ) : null}
+          {currentElementList.length > 0 ? (
+            <div className="slide-stage">
+              <div ref={stageLayerRef} className="slide-stage__layer w-full">
+                {mountedStepStates.map(
+                  (mountedStepState, mountedStepStateIndex) => {
+                    const isActiveStep =
+                      mountedStepStateIndex === currentMountedStateIndex;
 
-      {shouldRenderPlayer ? (
-        <Player
-          audioList={audioList}
-          className={cn(
-            "absolute left-1/2 bottom-6 z-[2] -translate-x-1/2",
-            playerClassName,
-            !playerVisible && "pointer-events-none opacity-0"
-          )}
-          currentAudioIndex={currentAudioIndex}
-          defaultPlaying
-          isPlaybackPaused={shouldPausePlaybackForCustomAction}
-          isAutoAdvanceEnabled={isAutoAdvanceEnabled}
-          hasInteraction={Boolean(activeInteractionElement)}
-          isInteractionOpen={isInteractionOverlayOpen}
-          onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
-          onLoadingChange={handlePlayerLoadingChange}
-          nextDisabled={!canGoNext}
-          onEnded={handlePlayerEnded}
-          onFullscreen={handleFullscreen}
-          onInteractionToggle={handleInteractionToggle}
-          onNext={handleNext}
-          onPrev={handlePrev}
-          prevDisabled={!canGoPrev}
-          showControls={playerVisible}
-          customActionContext={playerCustomActionContext}
-          customActions={playerCustomActions}
-          useAutoAdvanceToggle={shouldUseSilentStepAutoAdvanceToggle}
+                    return (
+                      <div
+                        key={
+                          mountedStepState.sourceStepIndexes[0] ??
+                          mountedStepStateIndex
+                        }
+                        aria-hidden={!isActiveStep || undefined}
+                        className="w-full h-full"
+                        style={{ display: isActiveStep ? undefined : "none" }}
+                      >
+                        {renderSlideElementList(
+                          mountedStepState.elementList,
+                          isActiveStep
+                        )}
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        {isAudioLoadingVisible ? (
+          <LoadingOverlayCard
+            message={bufferingText}
+            className="absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2"
+          />
+        ) : null}
+
+        <SlideFullscreenHint
+          onClose={handleFullscreenHintClose}
+          open={isFullscreenHintOpen}
+          text={fullscreenHintText}
         />
-      ) : null}
+
+        {shouldShowInteractionOverlay ? (
+          <div
+            className={cn(
+              "slide-interaction-overlay",
+              playerVisible && shouldRenderPlayer
+                ? "slide-interaction-overlay--with-player"
+                : "slide-interaction-overlay--standalone"
+            )}
+            onClick={stopOverlayPropagation}
+            onPointerDown={stopOverlayPropagation}
+            style={interactionOverlayStyle}
+          >
+            <InteractionOverlayCard
+              content={String(activeInteractionElement?.content ?? "")}
+              defaultButtonText={interactionDefaults.buttonText ?? ""}
+              defaultInputText={interactionDefaults.inputText ?? ""}
+              defaultSelectedValues={interactionDefaultSelectedValues}
+              confirmButtonText={interactionTexts?.confirmButtonText}
+              copyButtonText={interactionTexts?.copyButtonText}
+              copiedButtonText={interactionTexts?.copiedButtonText}
+              onSend={handleInteractionSend}
+              readonly={isInteractionReadonly}
+              title={
+                interactionTexts?.title ??
+                interactionTitle ??
+                "Submit the content below to continue."
+              }
+            />
+          </div>
+        ) : null}
+
+        {shouldRenderPlayer ? (
+          <Player
+            audioList={audioList}
+            className={cn(
+              "absolute left-1/2 bottom-6 z-[2] -translate-x-1/2",
+              playerClassName,
+              !playerVisible && "pointer-events-none opacity-0"
+            )}
+            currentAudioIndex={currentAudioIndex}
+            defaultPlaying
+            isPlaybackPaused={shouldPausePlaybackForCustomAction}
+            isAutoAdvanceEnabled={isAutoAdvanceEnabled}
+            hasInteraction={Boolean(activeInteractionElement)}
+            isInteractionOpen={isInteractionOverlayOpen}
+            onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
+            onLoadingChange={handlePlayerLoadingChange}
+            nextDisabled={!canGoNext}
+            onEnded={handlePlayerEnded}
+            onFullscreen={handleFullscreen}
+            isFullscreen={isBrowserFullscreen}
+            mobileViewMode={effectiveMobileViewMode}
+            settingsPortalContainer={viewportRef.current}
+            onMobileViewModeChange={handleMobileViewModeSelect}
+            onInteractionToggle={handleInteractionToggle}
+            onNext={handleNext}
+            onPrev={handlePrev}
+            prevDisabled={!canGoPrev}
+            showControls={playerVisible}
+            texts={playerTexts}
+            customActionContext={playerCustomActionContext}
+            customActions={playerCustomActions}
+            useAutoAdvanceToggle={shouldUseSilentStepAutoAdvanceToggle}
+          />
+        ) : null}
+      </div>
     </section>
   );
 };

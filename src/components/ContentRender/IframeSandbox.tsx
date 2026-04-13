@@ -326,15 +326,10 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
     const shouldBridgeSandboxInteraction =
       isBlackboardMode && type === "sandbox";
-    const handleSandboxPointerDown = () =>
-      emitSandboxInteraction("pointerdown");
-    const handleSandboxMouseDown = () => emitSandboxInteraction("mousedown");
-    const handleSandboxTouchStart = () => emitSandboxInteraction("touchstart");
+    const handleSandboxClick = () => emitSandboxInteraction("click");
 
     if (shouldBridgeSandboxInteraction) {
-      doc.addEventListener("pointerdown", handleSandboxPointerDown, true);
-      doc.addEventListener("mousedown", handleSandboxMouseDown, true);
-      doc.addEventListener("touchstart", handleSandboxTouchStart, true);
+      doc.addEventListener("click", handleSandboxClick, true);
     }
 
     const rootEl = doc.getElementById("root");
@@ -599,9 +594,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         iframeWin?.__mdf_cleanupScaling?.();
       }
       if (shouldBridgeSandboxInteraction) {
-        doc.removeEventListener("pointerdown", handleSandboxPointerDown, true);
-        doc.removeEventListener("mousedown", handleSandboxMouseDown, true);
-        doc.removeEventListener("touchstart", handleSandboxTouchStart, true);
+        doc.removeEventListener("click", handleSandboxClick, true);
       }
       // Defer unmount to avoid React warning when parent is mid-render
       setTimeout(() => {
@@ -731,11 +724,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         </button>
       )}
       {mode === "blackboard" && type === "markdown" ? (
-        <div
-          onMouseDown={() => emitSandboxInteraction("mousedown")}
-          onPointerDown={() => emitSandboxInteraction("pointerdown")}
-          onTouchStart={() => emitSandboxInteraction("touchstart")}
-        >
+        <div onClick={() => emitSandboxInteraction("click")}>
           <ContentRender content={content} />
         </div>
       ) : (

@@ -71,10 +71,11 @@ interface InteractionOverlayCardProps {
   readonly?: boolean;
 }
 
-export interface SlideInteractionTexts extends Pick<
-  ContentRenderProps,
-  "confirmButtonText" | "copyButtonText" | "copiedButtonText"
-> {
+export interface SlideInteractionTexts
+  extends Pick<
+    ContentRenderProps,
+    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+  > {
   title?: string;
 }
 
@@ -248,7 +249,6 @@ const Slide: React.FC<SlideProps> = ({
     useState(false);
   const [isBrowserFullscreen, setIsBrowserFullscreen] = useState(false);
   const isMobileDevice = useMemo(() => getIsMobileDevice(), []);
-  console.log("navigator.userAgent", navigator.userAgent);
   const [mobileViewMode, setMobileViewMode] = useState<MobileViewMode>(
     DEFAULT_MOBILE_VIEW_MODE
   );
@@ -558,7 +558,7 @@ const Slide: React.FC<SlideProps> = ({
 
   const hasResolvedCurrentInteraction = Boolean(
     currentInteractionElement?.readonly ||
-    currentInteractionElement?.user_input?.trim()
+      currentInteractionElement?.user_input?.trim()
   );
 
   const shouldBlockPlaybackForInteraction =

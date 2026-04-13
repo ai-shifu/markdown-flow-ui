@@ -158,6 +158,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   onPlayerVisibilityChange?: (visible: boolean) => void;
   onMobileViewModeChange?: (viewMode: MobileViewMode) => void;
   onStepChange?: (element: Element | undefined, index: number) => void;
+  enableIframeScaling?: boolean;
 }
 
 const Slide: React.FC<SlideProps> = ({
@@ -179,6 +180,7 @@ const Slide: React.FC<SlideProps> = ({
   onPlayerVisibilityChange,
   onMobileViewModeChange,
   onStepChange,
+  enableIframeScaling = true,
   className,
   onPointerDown,
   ...props
@@ -1015,6 +1017,7 @@ const Slide: React.FC<SlideProps> = ({
           }
           type="sandbox"
           content={element.content as string}
+          enableScaling={enableIframeScaling}
         />
       );
     }

@@ -19,6 +19,10 @@
   --slide-subtitle-gap: 16px;
 }
 
+.slide-subtitle-overlay--player-hidden {
+  bottom: var(--slide-player-bottom-offset);
+}
+
 .slide-subtitle-overlay__surface {
   width: fit-content;
   max-width: 100%;

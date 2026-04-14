@@ -44,6 +44,7 @@ import {
   getPlayerCustomActionCount,
   resolvePlayerCustomActionElement,
 } from "./utils/playerCustomActions";
+import { getVisibleSubtitleText } from "./utils/subtitleCue";
 import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
 import "./slide.css";
 export type {
@@ -372,6 +373,13 @@ const Slide: React.FC<SlideProps> = ({
     [audioList, currentAudioIndex]
   );
   const currentSubtitleCues = currentAudioItem?.element?.subtitle_cues ?? [];
+  const hasVisibleSubtitle = useMemo(
+    () =>
+      Boolean(
+        getVisibleSubtitleText(currentSubtitleCues, currentPlaybackTimeMs)
+      ),
+    [currentPlaybackTimeMs, currentSubtitleCues]
+  );
   const currentAudioSequenceStartKey = useMemo(
     () => currentAudioSequenceKeys[0] ?? "none",
     [currentAudioSequenceKeys]
@@ -1010,6 +1018,19 @@ const Slide: React.FC<SlideProps> = ({
     shouldAutoContinueInteraction,
   ]);
 
+  useEffect(() => {
+    if (!isInteractionOverlayOpen || !hasVisibleSubtitle) {
+      return;
+    }
+
+    clearInteractionAutoCloseTimer();
+    setIsInteractionOverlayOpen(false);
+  }, [
+    clearInteractionAutoCloseTimer,
+    hasVisibleSubtitle,
+    isInteractionOverlayOpen,
+  ]);
+
   const renderSlideElement = (
     element?: Element,
     options: RenderSlideElementOptions = {}
@@ -1435,6 +1456,7 @@ const Slide: React.FC<SlideProps> = ({
         <SubtitleOverlay
           currentTimeMs={currentPlaybackTimeMs}
           hasPlayerGap={playerVisible}
+          isPlayerHidden={shouldRenderPlayer && !playerVisible}
           subtitleCues={currentSubtitleCues}
         />
 

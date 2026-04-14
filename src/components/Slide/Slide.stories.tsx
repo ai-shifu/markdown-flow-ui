@@ -37,7 +37,7 @@ const meta = {
       table: {
         type: {
           summary:
-            "{ content: ReactNode; type: string; is_renderable?: boolean; is_new?: boolean; is_marker?: boolean; sequence_number?: number; is_speakable?: boolean; audio_url?: string; audio_segments?: ElementAudioSegment[]; }[]",
+            "{ content: ReactNode; type: string; is_renderable?: boolean; is_new?: boolean; is_marker?: boolean; sequence_number?: number; is_speakable?: boolean; audio_url?: string; audio_segments?: ElementAudioSegment[]; subtitle_cues?: ElementSubtitleCue[]; }[]",
         },
       },
     },
@@ -598,9 +598,9 @@ const resolveSubmittedUserInput = (content: OnSendContentParams) =>
 const isSameStoryElement = (currentElement: Element, targetElement?: Element) =>
   Boolean(
     targetElement &&
-    currentElement.type === targetElement.type &&
-    currentElement.sequence_number === targetElement.sequence_number &&
-    currentElement.content === targetElement.content
+      currentElement.type === targetElement.type &&
+      currentElement.sequence_number === targetElement.sequence_number &&
+      currentElement.content === targetElement.content
   );
 
 const applyInteractionSubmission = (

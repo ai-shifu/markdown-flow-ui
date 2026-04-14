@@ -27,6 +27,14 @@ export interface ElementAudioSegment {
   av_contract?: Record<string, unknown> | null;
 }
 
+export interface ElementSubtitleCue {
+  text: string;
+  start_ms: number;
+  end_ms: number;
+  segment_index: number;
+  position?: number;
+}
+
 export interface Element {
   content: React.ReactNode;
   type: ElementType;
@@ -39,6 +47,7 @@ export interface Element {
   user_input?: string;
   readonly?: boolean;
   audio_segments?: ElementAudioSegment[];
+  subtitle_cues?: ElementSubtitleCue[];
 }
 
 export interface SlidePlayerCustomActionContext {

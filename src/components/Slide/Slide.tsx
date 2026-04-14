@@ -26,6 +26,7 @@ import {
   subscribeMobileDeviceChange,
 } from "../../lib/mobileDevice";
 import Player from "./Player";
+import SubtitleOverlay from "./SubtitleOverlay";
 import type { PlayerProps, SlidePlayerTexts } from "./Player";
 import { DEFAULT_SLIDE_PLAYER_TEXTS } from "./constants";
 import SlideFullscreenHint from "./SlideFullscreenHint";
@@ -235,6 +236,7 @@ const Slide: React.FC<SlideProps> = ({
     [audioList, currentAudioSequenceIndexes]
   );
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
+  const [currentPlaybackTimeMs, setCurrentPlaybackTimeMs] = useState(0);
   const [hasPlayerInteracted, setHasPlayerInteracted] = useState(false);
   const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(true);
   const [currentAudioKey, setCurrentAudioKey] = useState<string | null>(null);
@@ -365,6 +367,11 @@ const Slide: React.FC<SlideProps> = ({
       (audioItem) => (audioItem.audioKey ?? "") === currentAudioKey
     );
   }, [audioList, currentAudioKey]);
+  const currentAudioItem = useMemo(
+    () => (currentAudioIndex >= 0 ? audioList[currentAudioIndex] : undefined),
+    [audioList, currentAudioIndex]
+  );
+  const currentSubtitleCues = currentAudioItem?.element?.subtitle_cues ?? [];
   const currentAudioSequenceStartKey = useMemo(
     () => currentAudioSequenceKeys[0] ?? "none",
     [currentAudioSequenceKeys]
@@ -494,6 +501,7 @@ const Slide: React.FC<SlideProps> = ({
     clearAutoAdvanceTimer();
     clearInteractionAutoCloseTimer();
     setCurrentAudioKey(null);
+    setCurrentPlaybackTimeMs(0);
     setIsAudioLoadingVisible(false);
     setHasCompletedCurrentStepAudio(false);
     setActiveInteractionElement(undefined);
@@ -880,6 +888,14 @@ const Slide: React.FC<SlideProps> = ({
 
     setCurrentAudioKey(null);
   }, [currentAudioIndex, currentAudioKey]);
+
+  useEffect(() => {
+    if (currentAudioIndex >= 0) {
+      return;
+    }
+
+    setCurrentPlaybackTimeMs(0);
+  }, [currentAudioIndex]);
 
   const interactionDefaults = useMemo(() => {
     if (!activeInteractionElement) {
@@ -1416,6 +1432,12 @@ const Slide: React.FC<SlideProps> = ({
           text={fullscreenHintText}
         />
 
+        <SubtitleOverlay
+          currentTimeMs={currentPlaybackTimeMs}
+          hasPlayerGap={playerVisible}
+          subtitleCues={currentSubtitleCues}
+        />
+
         {shouldShowInteractionOverlay ? (
           <div
             className={cn(
@@ -1463,6 +1485,7 @@ const Slide: React.FC<SlideProps> = ({
             isInteractionOpen={isInteractionOverlayOpen}
             onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
             onLoadingChange={handlePlayerLoadingChange}
+            onPlaybackTimeChange={setCurrentPlaybackTimeMs}
             nextDisabled={!canGoNext}
             onEnded={handlePlayerEnded}
             onFullscreen={handleFullscreen}

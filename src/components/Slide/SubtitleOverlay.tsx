@@ -7,6 +7,7 @@ import "./subtitle-overlay.css";
 export interface SubtitleOverlayProps
   extends Omit<React.ComponentProps<"div">, "children"> {
   currentTimeMs?: number;
+  hasPlayerGap?: boolean;
   subtitleCues?: ElementSubtitleCue[];
 }
 
@@ -42,6 +43,7 @@ const getVisibleSubtitleText = (
 const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({
   className,
   currentTimeMs = 0,
+  hasPlayerGap = false,
   subtitleCues = [],
   ...props
 }) => {
@@ -61,11 +63,15 @@ const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({
   return (
     <div
       aria-live="off"
-      className={cn("slide-player__subtitle", className)}
+      className={cn(
+        "slide-subtitle-overlay",
+        hasPlayerGap && "slide-subtitle-overlay--with-player-gap",
+        className
+      )}
       {...props}
     >
-      <div className="slide-player__subtitle-surface">
-        <p className="slide-player__subtitle-text">{visibleSubtitleText}</p>
+      <div className="slide-subtitle-overlay__surface">
+        <p className="slide-subtitle-overlay__text">{visibleSubtitleText}</p>
       </div>
     </div>
   );

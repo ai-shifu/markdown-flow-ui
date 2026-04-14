@@ -17,7 +17,6 @@ import {
 
 import { cn } from "../../lib/utils";
 import MobilePlayerSettingsSheet from "./MobilePlayerSettingsSheet";
-import SubtitleOverlay from "./SubtitleOverlay";
 import { DEFAULT_SLIDE_PLAYER_TEXTS } from "./constants";
 import type { SlideAudioItem } from "./useSlide";
 import type {
@@ -69,6 +68,7 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   isAutoAdvanceEnabled?: boolean;
   useAutoAdvanceToggle?: boolean;
   onLoadingChange?: (loading: boolean) => void;
+  onPlaybackTimeChange?: (timeMs: number) => void;
   onPrev?: () => void;
   onNext?: () => void;
   onFullscreen?: () => void;
@@ -130,6 +130,7 @@ const Player: React.FC<PlayerProps> = ({
   isAutoAdvanceEnabled = true,
   useAutoAdvanceToggle = false,
   onLoadingChange,
+  onPlaybackTimeChange,
   onPrev,
   onNext,
   onFullscreen,
@@ -936,6 +937,11 @@ const Player: React.FC<PlayerProps> = ({
   );
 
   console.log("SubtitleOverlay", currentSubtitleCues);
+
+  useEffect(() => {
+    onPlaybackTimeChange?.(playbackTimeMs);
+  }, [onPlaybackTimeChange, playbackTimeMs]);
+
   return (
     <div className={cn("slide-player", className)} {...props}>
       <audio
@@ -951,11 +957,6 @@ const Player: React.FC<PlayerProps> = ({
         onTimeUpdate={handleAudioTimeUpdate}
         onEnded={handleAudioEnded}
         onError={handleAudioError}
-      />
-
-      <SubtitleOverlay
-        currentTimeMs={playbackTimeMs}
-        subtitleCues={currentSubtitleCues}
       />
 
       {showControls ? (

@@ -1,54 +1,69 @@
-.slide-player__subtitle {
+.slide-subtitle-overlay {
+  --slide-player-bottom-offset: 24px;
+  --slide-player-height: 80px;
+  --slide-subtitle-gap: 0px;
   pointer-events: none;
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 18px);
-  z-index: 1;
-  width: min(560px, calc(var(--slide-mobile-viewport-width, 100dvw) - 96px));
+  bottom: calc(
+    var(--slide-player-bottom-offset) + var(--slide-player-height) +
+      var(--slide-subtitle-gap)
+  );
+  z-index: 3;
+  width: calc(var(--slide-mobile-viewport-width, 100dvw) - 96px);
+  max-width: 100%;
   transform: translateX(-50%);
 }
 
-.slide-player__subtitle-surface {
+.slide-subtitle-overlay--with-player-gap {
+  --slide-subtitle-gap: 16px;
+}
+
+.slide-subtitle-overlay__surface {
   width: fit-content;
   max-width: 100%;
   margin: 0 auto;
   padding: 14px 24px;
-  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--background) 78%, rgba(15, 23, 42, 0.12));
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
-  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
 }
 
-.slide-player__subtitle-text {
+.slide-subtitle-overlay__text {
   margin: 0;
-  color: color-mix(in srgb, var(--foreground) 92%, transparent);
-  font-size: 16px;
-  font-weight: 500;
-  line-height: 24px;
+  color: #000;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 48px;
   text-align: center;
-  white-space: pre-line;
+  white-space: normal;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 
-.slide--mobile-device .slide-player__subtitle {
+.slide--mobile-device .slide-subtitle-overlay {
+  --slide-player-bottom-offset: 0px;
   left: 12px;
   right: 12px;
-  bottom: calc(100% + 12px);
   width: auto;
   transform: none;
 }
 
-.slide--mobile-device .slide-player__subtitle-surface {
-  padding: 12px 16px;
-  border-radius: 12px;
+.slide--mobile-device .slide-subtitle-overlay__surface {
+  padding: 14px 24px;
+  border-radius: 16px;
 }
 
-.slide--mobile-device .slide-player__subtitle-text {
-  font-size: 14px;
-  line-height: 20px;
+.slide--mobile-device .slide-subtitle-overlay__text {
+  font-size: 24px;
+  line-height: 48px;
 }
 
-.slide--mobile-device.slide--mobile-landscape .slide-player__subtitle {
-  bottom: calc(100% + 10px);
+.slide--mobile-device.slide--mobile-landscape .slide-subtitle-overlay {
+  --slide-player-height: 48px;
+}
+
+.slide--mobile-device.slide--mobile-landscape-native .slide-subtitle-overlay {
+  --slide-player-height: 60px;
 }

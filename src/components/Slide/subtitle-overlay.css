@@ -28,18 +28,19 @@
   max-width: 100%;
   margin: 0 auto;
   padding: 14px 24px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid color-mix(in srgb, var(--background) 18%, transparent);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.6);
+  background: color-mix(in srgb, var(--foreground) 72%, var(--background) 28%);
   backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--foreground) 18%, transparent);
 }
 
 .slide-subtitle-overlay__text {
   margin: 0;
-  color: #000;
-  font-size: 24px;
+  color: var(--primary-foreground);
+  font-size: 20px;
   font-weight: 400;
-  line-height: 48px;
+  line-height: 36px;
   text-align: center;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -60,12 +61,12 @@
 }
 
 .slide--mobile-device .slide-subtitle-overlay__text {
-  font-size: 24px;
-  line-height: 48px;
+  font-size: 20px;
+  line-height: 36px;
 }
 
 .slide--mobile-device.slide--mobile-landscape .slide-subtitle-overlay {
-  --slide-player-height: 48px;
+  --slide-player-height: 36px;
 }
 
 .slide--mobile-device.slide--mobile-landscape-native .slide-subtitle-overlay {

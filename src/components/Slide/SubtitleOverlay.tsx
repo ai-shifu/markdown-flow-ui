@@ -1,30 +1,40 @@
-import React, { useMemo } from "react";
+import React, { memo, useEffect, useMemo } from "react";
 
 import { cn } from "../../lib/utils";
 import { getVisibleSubtitleText } from "./utils/subtitleCue";
+import { usePlaybackTimeStore } from "./utils/playbackTimeStore";
+import type { PlaybackTimeStore } from "./utils/playbackTimeStore";
 import type { ElementSubtitleCue } from "./types";
 import "./subtitle-overlay.css";
 
 export interface SubtitleOverlayProps
   extends Omit<React.ComponentProps<"div">, "children"> {
-  currentTimeMs?: number;
   hasPlayerGap?: boolean;
   isPlayerHidden?: boolean;
+  onVisibilityChange?: (visible: boolean) => void;
+  playbackTimeStore: PlaybackTimeStore;
   subtitleCues?: ElementSubtitleCue[];
 }
 
-const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({
+const SubtitleOverlay = ({
   className,
-  currentTimeMs = 0,
   hasPlayerGap = false,
   isPlayerHidden = false,
+  onVisibilityChange,
+  playbackTimeStore,
   subtitleCues = [],
   ...props
-}) => {
+}: SubtitleOverlayProps) => {
+  const currentTimeMs = usePlaybackTimeStore(playbackTimeStore);
   const visibleSubtitleText = useMemo(
     () => getVisibleSubtitleText(subtitleCues, currentTimeMs),
     [currentTimeMs, subtitleCues]
   );
+  const hasVisibleSubtitle = Boolean(visibleSubtitleText);
+
+  useEffect(() => {
+    onVisibilityChange?.(hasVisibleSubtitle);
+  }, [hasVisibleSubtitle, onVisibilityChange]);
 
   if (!visibleSubtitleText) {
     return null;
@@ -48,4 +58,8 @@ const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({
   );
 };
 
-export default SubtitleOverlay;
+const MemoizedSubtitleOverlay = memo(SubtitleOverlay);
+
+MemoizedSubtitleOverlay.displayName = "SubtitleOverlay";
+
+export default MemoizedSubtitleOverlay;

@@ -44,7 +44,7 @@ import {
   getPlayerCustomActionCount,
   resolvePlayerCustomActionElement,
 } from "./utils/playerCustomActions";
-import { getVisibleSubtitleText } from "./utils/subtitleCue";
+import { createPlaybackTimeStore } from "./utils/playbackTimeStore";
 import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
 import "./slide.css";
 export type {
@@ -237,7 +237,6 @@ const Slide: React.FC<SlideProps> = ({
     [audioList, currentAudioSequenceIndexes]
   );
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
-  const [currentPlaybackTimeMs, setCurrentPlaybackTimeMs] = useState(0);
   const [hasPlayerInteracted, setHasPlayerInteracted] = useState(false);
   const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(true);
   const [currentAudioKey, setCurrentAudioKey] = useState<string | null>(null);
@@ -262,6 +261,7 @@ const Slide: React.FC<SlideProps> = ({
       isMobileDevice ? getIsFullscreenPreferredViewport() : false
     );
   const [isFullscreenHintOpen, setIsFullscreenHintOpen] = useState(false);
+  const playbackTimeStore = useMemo(() => createPlaybackTimeStore(), []);
   const {
     effectiveMobileViewMode,
     isImmersiveMobileFullscreen,
@@ -373,13 +373,6 @@ const Slide: React.FC<SlideProps> = ({
     [audioList, currentAudioIndex]
   );
   const currentSubtitleCues = currentAudioItem?.element?.subtitle_cues ?? [];
-  const hasVisibleSubtitle = useMemo(
-    () =>
-      Boolean(
-        getVisibleSubtitleText(currentSubtitleCues, currentPlaybackTimeMs)
-      ),
-    [currentPlaybackTimeMs, currentSubtitleCues]
-  );
   const currentAudioSequenceStartKey = useMemo(
     () => currentAudioSequenceKeys[0] ?? "none",
     [currentAudioSequenceKeys]
@@ -509,12 +502,16 @@ const Slide: React.FC<SlideProps> = ({
     clearAutoAdvanceTimer();
     clearInteractionAutoCloseTimer();
     setCurrentAudioKey(null);
-    setCurrentPlaybackTimeMs(0);
+    playbackTimeStore.reset();
     setIsAudioLoadingVisible(false);
     setHasCompletedCurrentStepAudio(false);
     setActiveInteractionElement(undefined);
     setIsInteractionOverlayOpen(false);
-  }, [clearAutoAdvanceTimer, clearInteractionAutoCloseTimer]);
+  }, [
+    clearAutoAdvanceTimer,
+    clearInteractionAutoCloseTimer,
+    playbackTimeStore,
+  ]);
 
   const startCurrentAudioSequence = useCallback(() => {
     const nextAudioKey = currentAudioSequenceKeys[0];
@@ -902,8 +899,8 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    setCurrentPlaybackTimeMs(0);
-  }, [currentAudioIndex]);
+    playbackTimeStore.reset();
+  }, [currentAudioIndex, playbackTimeStore]);
 
   const interactionDefaults = useMemo(() => {
     if (!activeInteractionElement) {
@@ -1018,18 +1015,19 @@ const Slide: React.FC<SlideProps> = ({
     shouldAutoContinueInteraction,
   ]);
 
-  useEffect(() => {
-    if (!isInteractionOverlayOpen || !hasVisibleSubtitle) {
-      return;
-    }
+  const handleSubtitleVisibilityChange = useCallback(
+    (visible: boolean) => {
+      if (!visible) {
+        return;
+      }
 
-    clearInteractionAutoCloseTimer();
-    setIsInteractionOverlayOpen(false);
-  }, [
-    clearInteractionAutoCloseTimer,
-    hasVisibleSubtitle,
-    isInteractionOverlayOpen,
-  ]);
+      clearInteractionAutoCloseTimer();
+      setIsInteractionOverlayOpen((previousOpen) =>
+        previousOpen ? false : previousOpen
+      );
+    },
+    [clearInteractionAutoCloseTimer]
+  );
 
   const renderSlideElement = (
     element?: Element,
@@ -1454,9 +1452,10 @@ const Slide: React.FC<SlideProps> = ({
         />
 
         <SubtitleOverlay
-          currentTimeMs={currentPlaybackTimeMs}
           hasPlayerGap={playerVisible}
           isPlayerHidden={shouldRenderPlayer && !playerVisible}
+          onVisibilityChange={handleSubtitleVisibilityChange}
+          playbackTimeStore={playbackTimeStore}
           subtitleCues={currentSubtitleCues}
         />
 
@@ -1507,7 +1506,7 @@ const Slide: React.FC<SlideProps> = ({
             isInteractionOpen={isInteractionOverlayOpen}
             onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
             onLoadingChange={handlePlayerLoadingChange}
-            onPlaybackTimeChange={setCurrentPlaybackTimeMs}
+            onPlaybackTimeChange={playbackTimeStore.setTime}
             nextDisabled={!canGoNext}
             onEnded={handlePlayerEnded}
             onFullscreen={handleFullscreen}

@@ -123,7 +123,6 @@ const InteractionOverlayCard = memo(
           sandboxMode="content"
         />
       </div>
-      <div className="slide-player__interaction-arrow" />
     </div>
   )
 );
@@ -250,6 +249,7 @@ const Slide: React.FC<SlideProps> = ({
     useState(false);
   const [hasCurrentAudioPlaybackStarted, setHasCurrentAudioPlaybackStarted] =
     useState(false);
+  const [isSubtitleEnabled, setIsSubtitleEnabled] = useState(true);
   const [isPlayerCustomActionActive, setIsPlayerCustomActionActive] =
     useState(false);
   const [activeInteractionElement, setActiveInteractionElement] = useState<
@@ -1548,7 +1548,7 @@ const Slide: React.FC<SlideProps> = ({
         <SubtitleOverlay
           extraBottomOffset={interactionOverlaySubtitleOffset}
           hasPlayerGap={playerVisible}
-          isEnabled={hasCurrentAudioPlaybackStarted}
+          isEnabled={isSubtitleEnabled && hasCurrentAudioPlaybackStarted}
           isPlayerHidden={shouldRenderPlayer && !playerVisible}
           playbackTimeStore={playbackTimeStore}
           subtitleCues={currentSubtitleCues}
@@ -1600,12 +1600,16 @@ const Slide: React.FC<SlideProps> = ({
             isAutoAdvanceEnabled={isAutoAdvanceEnabled}
             hasInteraction={Boolean(activeInteractionElement)}
             isInteractionOpen={isInteractionOverlayOpen}
+            isSubtitleEnabled={isSubtitleEnabled}
             onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
             onLoadingChange={handlePlayerLoadingChange}
             onPlaybackStarted={() => {
               setHasCurrentAudioPlaybackStarted(true);
             }}
             onPlaybackTimeChange={playbackTimeStore.setTime}
+            onSubtitleToggle={() => {
+              setIsSubtitleEnabled((previousEnabled) => !previousEnabled);
+            }}
             nextDisabled={!canGoNext}
             onEnded={handlePlayerEnded}
             onFullscreen={handleFullscreen}

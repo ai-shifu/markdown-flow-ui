@@ -7,6 +7,8 @@ import React, {
   useState,
 } from "react";
 import {
+  Captions,
+  CaptionsOff,
   EllipsisVertical,
   FilePenLine,
   Maximize,
@@ -35,6 +37,8 @@ const audioPreloadElementCache = new Map<string, HTMLAudioElement>();
 
 export interface SlidePlayerTexts {
   settingsTitle?: string;
+  subtitleLabel?: string;
+  subtitleToggleAriaLabel?: string;
   screenLabel?: string;
   nonFullscreenLabel?: string;
   fullscreenLabel?: string;
@@ -71,6 +75,7 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   onLoadingChange?: (loading: boolean) => void;
   onPlaybackStarted?: () => void;
   onPlaybackTimeChange?: (timeMs: number) => void;
+  onSubtitleToggle?: () => void;
   onPrev?: () => void;
   onNext?: () => void;
   onFullscreen?: () => void;
@@ -83,6 +88,7 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   onInteractionToggle?: () => void;
   hasInteraction?: boolean;
   isInteractionOpen?: boolean;
+  isSubtitleEnabled?: boolean;
   prevDisabled?: boolean;
   nextDisabled?: boolean;
   showControls?: boolean;
@@ -134,6 +140,7 @@ const Player = ({
   onLoadingChange,
   onPlaybackStarted,
   onPlaybackTimeChange,
+  onSubtitleToggle,
   onPrev,
   onNext,
   onFullscreen,
@@ -146,6 +153,7 @@ const Player = ({
   onInteractionToggle,
   hasInteraction = false,
   isInteractionOpen = false,
+  isSubtitleEnabled = true,
   prevDisabled = false,
   nextDisabled = false,
   showControls = true,
@@ -994,10 +1002,14 @@ const Player = ({
               fullscreen: playerTexts.fullscreenLabel,
               nonFullscreen: playerTexts.nonFullscreenLabel,
               screen: playerTexts.screenLabel,
+              subtitle: playerTexts.subtitleLabel,
+              subtitleToggle: playerTexts.subtitleToggleAriaLabel,
               title: playerTexts.settingsTitle,
             }}
+            isSubtitleEnabled={isSubtitleEnabled}
             onClose={() => setIsMobileMoreOpen(false)}
             onOpenChange={setIsMobileMoreOpen}
+            onSubtitleToggle={onSubtitleToggle ?? (() => {})}
             onViewModeChange={handleMobileViewModeChange}
             open={isMobileMoreOpen}
             viewMode={mobileViewMode}
@@ -1022,6 +1034,22 @@ const Player = ({
               </button>
               <button aria-label="Volume" className="hidden" type="button">
                 <Volume2 className="slide-player__icon" strokeWidth={2.25} />
+              </button>
+              <button
+                aria-label={playerTexts.subtitleToggleAriaLabel}
+                aria-pressed={isSubtitleEnabled}
+                className="slide-player__action slide-player__action--subtitle"
+                onClick={onSubtitleToggle}
+                type="button"
+              >
+                {isSubtitleEnabled ? (
+                  <Captions className="slide-player__icon" strokeWidth={2.25} />
+                ) : (
+                  <CaptionsOff
+                    className="slide-player__icon"
+                    strokeWidth={2.25}
+                  />
+                )}
               </button>
               <button
                 aria-label="Rewind"

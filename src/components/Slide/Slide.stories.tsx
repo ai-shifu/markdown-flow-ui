@@ -2242,6 +2242,8 @@ export const HistorySlides: Story = {
     },
     playerTexts: {
       settingsTitle: "设置",
+      subtitleLabel: "字幕",
+      subtitleToggleAriaLabel: "切换字幕",
       screenLabel: "屏幕",
       nonFullscreenLabel: "非全屏",
       fullscreenLabel: "全屏",

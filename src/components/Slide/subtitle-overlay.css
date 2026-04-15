@@ -59,19 +59,19 @@
 }
 
 .slide--mobile-device .slide-subtitle-overlay__surface {
-  padding: 14px 24px;
+  padding: 7px 16px;
   border-radius: 16px;
 }
 
 .slide--mobile-device .slide-subtitle-overlay__text {
-  font-size: 20px;
-  line-height: 36px;
+  font-size: 16px;
+  line-height: 28px;
 }
 
 .slide--mobile-device.slide--mobile-landscape .slide-subtitle-overlay {
-  --slide-player-height: 36px;
+  --slide-player-height: 28px;
 }
 
 .slide--mobile-device.slide--mobile-landscape-native .slide-subtitle-overlay {
-  --slide-player-height: 60px;
+  --slide-player-height: 36px;
 }

@@ -118,10 +118,10 @@ const normalizeRunStreamSubtitleCues = (
       .filter((subtitleCue): subtitleCue is ElementSubtitleCue =>
         Boolean(
           subtitleCue &&
-            subtitleCue.end_ms >= subtitleCue.start_ms &&
-            Number.isFinite(subtitleCue.start_ms) &&
-            Number.isFinite(subtitleCue.end_ms) &&
-            Number.isFinite(subtitleCue.segment_index)
+          subtitleCue.end_ms >= subtitleCue.start_ms &&
+          Number.isFinite(subtitleCue.start_ms) &&
+          Number.isFinite(subtitleCue.end_ms) &&
+          Number.isFinite(subtitleCue.segment_index)
         )
       )
   );
@@ -308,8 +308,8 @@ const normalizeRunStreamAudioTracks = (
       audio_url: track.audio_url ?? track.audioUrl ?? previousTrack?.audio_url,
       is_audio_streaming: Boolean(
         track.is_audio_streaming ??
-          track.isAudioStreaming ??
-          previousTrack?.is_audio_streaming
+        track.isAudioStreaming ??
+        previousTrack?.is_audio_streaming
       ),
       audio_segments: mergeRunStreamAudioSegments("", [
         ...(previousTrack?.audio_segments ?? []),
@@ -333,8 +333,8 @@ const hasAudioContentInTrack = (
 ) =>
   Boolean(
     track?.audio_url ||
-      track?.is_audio_streaming ||
-      (track?.audio_segments?.length ?? 0) > 0
+    track?.is_audio_streaming ||
+    (track?.audio_segments?.length ?? 0) > 0
   );
 
 const getAudioSegmentDataListFromTracks = (

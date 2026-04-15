@@ -69,6 +69,7 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   isAutoAdvanceEnabled?: boolean;
   useAutoAdvanceToggle?: boolean;
   onLoadingChange?: (loading: boolean) => void;
+  onPlaybackStarted?: () => void;
   onPlaybackTimeChange?: (timeMs: number) => void;
   onPrev?: () => void;
   onNext?: () => void;
@@ -131,6 +132,7 @@ const Player = ({
   isAutoAdvanceEnabled = true,
   useAutoAdvanceToggle = false,
   onLoadingChange,
+  onPlaybackStarted,
   onPlaybackTimeChange,
   onPrev,
   onNext,
@@ -872,7 +874,13 @@ const Player = ({
     startPlaybackTimeLoop();
     setIsPlaying(true);
     updateLoading(false);
-  }, [startPlaybackTimeLoop, syncPlaybackTime, updateLoading]);
+    onPlaybackStarted?.();
+  }, [
+    onPlaybackStarted,
+    startPlaybackTimeLoop,
+    syncPlaybackTime,
+    updateLoading,
+  ]);
 
   const handleAudioPause = useCallback(() => {
     if (isWaitingForSegmentRef.current || isSwitchingSegmentRef.current) {

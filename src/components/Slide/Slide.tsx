@@ -248,6 +248,8 @@ const Slide: React.FC<SlideProps> = ({
   const [isAudioLoadingVisible, setIsAudioLoadingVisible] = useState(false);
   const [hasCompletedCurrentStepAudio, setHasCompletedCurrentStepAudio] =
     useState(false);
+  const [hasCurrentAudioPlaybackStarted, setHasCurrentAudioPlaybackStarted] =
+    useState(false);
   const [isPlayerCustomActionActive, setIsPlayerCustomActionActive] =
     useState(false);
   const [activeInteractionElement, setActiveInteractionElement] = useState<
@@ -445,6 +447,15 @@ const Slide: React.FC<SlideProps> = ({
     () => [currentStepKey, currentInteractionResetKey].join("|"),
     [currentInteractionResetKey, currentStepKey]
   );
+  const currentPlaybackStartedResetKey = useMemo(
+    () =>
+      [
+        currentPlaybackResetKey,
+        currentAudioItem?.audioKey ?? "none",
+        String(currentAudioIndex),
+      ].join("|"),
+    [currentAudioIndex, currentAudioItem?.audioKey, currentPlaybackResetKey]
+  );
   const currentStepAudioUrl = useMemo(() => {
     if (
       !currentAudioSequenceStartKey ||
@@ -524,6 +535,7 @@ const Slide: React.FC<SlideProps> = ({
     playbackTimeStore.reset();
     setIsAudioLoadingVisible(false);
     setHasCompletedCurrentStepAudio(false);
+    setHasCurrentAudioPlaybackStarted(false);
     setActiveInteractionElement(undefined);
     setIsInteractionOverlayOpen(false);
     setInteractionOverlaySubtitleOffset(0);
@@ -954,6 +966,10 @@ const Slide: React.FC<SlideProps> = ({
 
     playbackTimeStore.reset();
   }, [currentAudioIndex, playbackTimeStore]);
+
+  useEffect(() => {
+    setHasCurrentAudioPlaybackStarted(false);
+  }, [currentPlaybackStartedResetKey]);
 
   const interactionDefaults = useMemo(() => {
     if (!activeInteractionElement) {
@@ -1532,6 +1548,7 @@ const Slide: React.FC<SlideProps> = ({
         <SubtitleOverlay
           extraBottomOffset={interactionOverlaySubtitleOffset}
           hasPlayerGap={playerVisible}
+          isEnabled={hasCurrentAudioPlaybackStarted}
           isPlayerHidden={shouldRenderPlayer && !playerVisible}
           playbackTimeStore={playbackTimeStore}
           subtitleCues={currentSubtitleCues}
@@ -1585,6 +1602,9 @@ const Slide: React.FC<SlideProps> = ({
             isInteractionOpen={isInteractionOverlayOpen}
             onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
             onLoadingChange={handlePlayerLoadingChange}
+            onPlaybackStarted={() => {
+              setHasCurrentAudioPlaybackStarted(true);
+            }}
             onPlaybackTimeChange={playbackTimeStore.setTime}
             nextDisabled={!canGoNext}
             onEnded={handlePlayerEnded}

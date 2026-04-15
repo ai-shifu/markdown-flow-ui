@@ -11,6 +11,7 @@ export interface SubtitleOverlayProps
   extends Omit<React.ComponentProps<"div">, "children"> {
   extraBottomOffset?: number;
   hasPlayerGap?: boolean;
+  isEnabled?: boolean;
   isPlayerHidden?: boolean;
   onVisibilityChange?: (visible: boolean) => void;
   playbackTimeStore: PlaybackTimeStore;
@@ -21,6 +22,7 @@ const SubtitleOverlay = ({
   className,
   extraBottomOffset = 0,
   hasPlayerGap = false,
+  isEnabled = true,
   isPlayerHidden = false,
   onVisibilityChange,
   playbackTimeStore,
@@ -36,10 +38,10 @@ const SubtitleOverlay = ({
   const hasVisibleSubtitle = Boolean(visibleSubtitleText);
 
   useEffect(() => {
-    onVisibilityChange?.(hasVisibleSubtitle);
-  }, [hasVisibleSubtitle, onVisibilityChange]);
+    onVisibilityChange?.(isEnabled && hasVisibleSubtitle);
+  }, [hasVisibleSubtitle, isEnabled, onVisibilityChange]);
 
-  if (!visibleSubtitleText) {
+  if (!isEnabled || !visibleSubtitleText) {
     return null;
   }
 

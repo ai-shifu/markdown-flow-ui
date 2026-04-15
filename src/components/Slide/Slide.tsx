@@ -56,6 +56,9 @@ export type {
 } from "./types";
 
 const DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS = 2000;
+const DEFAULT_INTERACTION_OVERLAY_OPEN_DELAY_MS = 300;
+const DEFAULT_INTERACTION_OVERLAY_FALLBACK_OFFSET_PX = 160;
+const DEFAULT_INTERACTION_SUBTITLE_GAP_PX = 16;
 
 type RenderSlideElementOptions = {
   replaceRootScreenHeightWithFull?: boolean;
@@ -195,6 +198,8 @@ const Slide: React.FC<SlideProps> = ({
   const playerHideTimerRef = useRef<number | null>(null);
   const autoAdvanceTimerRef = useRef<number | null>(null);
   const interactionAutoCloseTimerRef = useRef<number | null>(null);
+  const interactionOverlayOpenTimerRef = useRef<number | null>(null);
+  const interactionOverlayRef = useRef<HTMLDivElement | null>(null);
   const prevRenderElementKeysRef = useRef<string[]>([]);
   const shouldScrollToBottomRef = useRef(false);
   const pendingInteractionOverlayStepIndexRef = useRef<number | null>(null);
@@ -250,6 +255,10 @@ const Slide: React.FC<SlideProps> = ({
   >();
   const [isInteractionOverlayOpen, setIsInteractionOverlayOpen] =
     useState(false);
+  const [
+    interactionOverlaySubtitleOffset,
+    setInteractionOverlaySubtitleOffset,
+  ] = useState(0);
   const [isBrowserFullscreen, setIsBrowserFullscreen] = useState(false);
   const isMobileDevice = useMemo(() => getIsMobileDevice(), []);
   const [mobileViewMode, setMobileViewMode] = useState<MobileViewMode>(
@@ -489,6 +498,15 @@ const Slide: React.FC<SlideProps> = ({
     interactionAutoCloseTimerRef.current = null;
   }, []);
 
+  const clearInteractionOverlayOpenTimer = useCallback(() => {
+    if (interactionOverlayOpenTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(interactionOverlayOpenTimerRef.current);
+    interactionOverlayOpenTimerRef.current = null;
+  }, []);
+
   const clearAutoAdvanceTimer = useCallback(() => {
     if (autoAdvanceTimerRef.current === null) {
       return;
@@ -501,15 +519,18 @@ const Slide: React.FC<SlideProps> = ({
   const resetAudioSequence = useCallback(() => {
     clearAutoAdvanceTimer();
     clearInteractionAutoCloseTimer();
+    clearInteractionOverlayOpenTimer();
     setCurrentAudioKey(null);
     playbackTimeStore.reset();
     setIsAudioLoadingVisible(false);
     setHasCompletedCurrentStepAudio(false);
     setActiveInteractionElement(undefined);
     setIsInteractionOverlayOpen(false);
+    setInteractionOverlaySubtitleOffset(0);
   }, [
     clearAutoAdvanceTimer,
     clearInteractionAutoCloseTimer,
+    clearInteractionOverlayOpenTimer,
     playbackTimeStore,
   ]);
 
@@ -527,7 +548,9 @@ const Slide: React.FC<SlideProps> = ({
 
   const continueAfterInteraction = useCallback(() => {
     clearInteractionAutoCloseTimer();
+    clearInteractionOverlayOpenTimer();
     setIsInteractionOverlayOpen(false);
+    setInteractionOverlaySubtitleOffset(0);
 
     if (startCurrentAudioSequence()) {
       return;
@@ -539,9 +562,35 @@ const Slide: React.FC<SlideProps> = ({
   }, [
     canGoNext,
     clearInteractionAutoCloseTimer,
+    clearInteractionOverlayOpenTimer,
     goNext,
     startCurrentAudioSequence,
   ]);
+
+  const scheduleInteractionOverlayOpen = useCallback(
+    (interactionElement?: Element) => {
+      clearInteractionOverlayOpenTimer();
+
+      if (!interactionElement) {
+        return;
+      }
+
+      const openOverlay = () => {
+        interactionOverlayOpenTimerRef.current = null;
+        setInteractionOverlaySubtitleOffset(
+          DEFAULT_INTERACTION_OVERLAY_FALLBACK_OFFSET_PX
+        );
+        setIsInteractionOverlayOpen(true);
+        pendingInteractionOverlayStepIndexRef.current = null;
+      };
+
+      interactionOverlayOpenTimerRef.current = window.setTimeout(
+        openOverlay,
+        DEFAULT_INTERACTION_OVERLAY_OPEN_DELAY_MS
+      );
+    },
+    [clearInteractionOverlayOpenTimer]
+  );
 
   const showPlayerControls = useCallback(
     (enableAutoHide = hasPlayerInteracted) => {
@@ -592,10 +641,12 @@ const Slide: React.FC<SlideProps> = ({
       clearAutoAdvanceTimer();
       clearPlayerHideTimer();
       clearInteractionAutoCloseTimer();
+      clearInteractionOverlayOpenTimer();
     };
   }, [
     clearAutoAdvanceTimer,
     clearInteractionAutoCloseTimer,
+    clearInteractionOverlayOpenTimer,
     clearPlayerHideTimer,
   ]);
 
@@ -766,18 +817,18 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    if (shouldPresentOverlay) {
-      // Re-open history interaction markers so manual prev/next still reveals the overlay.
+    if (currentInteractionElement) {
       setActiveInteractionElement(currentInteractionElement);
-      setIsInteractionOverlayOpen(true);
-      pendingInteractionOverlayStepIndexRef.current = null;
+    }
+
+    if (shouldPresentOverlay) {
+      // Delay auto-presenting the overlay so subtitles can settle above it.
+      scheduleInteractionOverlayOpen(currentInteractionElement);
       return;
     }
 
-    if (currentInteractionElement) {
-      setActiveInteractionElement(currentInteractionElement);
-      pendingInteractionOverlayStepIndexRef.current = null;
-    }
+    clearInteractionOverlayOpenTimer();
+    pendingInteractionOverlayStepIndexRef.current = null;
 
     if (!shouldInitializeAudioSequence) {
       return;
@@ -823,7 +874,9 @@ const Slide: React.FC<SlideProps> = ({
     isAutoAdvanceEnabled,
     hasResolvedCurrentInteraction,
     shouldBlockPlaybackForInteraction,
+    clearInteractionOverlayOpenTimer,
     resetAudioSequence,
+    scheduleInteractionOverlayOpen,
     startCurrentAudioSequence,
     shouldPausePlaybackForCustomAction,
     shouldUseSilentStepAutoAdvanceToggle,
@@ -950,6 +1003,8 @@ const Slide: React.FC<SlideProps> = ({
     Boolean(activeInteractionElement?.readonly) || hasResolvedInteractionInput;
   const shouldAutoContinueInteraction =
     isInteractionReadonly || hasResolvedInteractionInput;
+  const shouldShowInteractionOverlay =
+    Boolean(activeInteractionElement) && isInteractionOverlayOpen;
 
   const handleInteractionSend = useCallback(
     (content: OnSendContentParams) => {
@@ -992,6 +1047,45 @@ const Slide: React.FC<SlideProps> = ({
   }, []);
 
   useEffect(() => {
+    if (!shouldShowInteractionOverlay) {
+      setInteractionOverlaySubtitleOffset(0);
+      return;
+    }
+
+    const interactionOverlayElement = interactionOverlayRef.current;
+
+    if (!interactionOverlayElement) {
+      return;
+    }
+
+    const updateSubtitleOffset = () => {
+      const overlayHeight = Math.ceil(
+        interactionOverlayElement.getBoundingClientRect().height
+      );
+
+      setInteractionOverlaySubtitleOffset(
+        overlayHeight + DEFAULT_INTERACTION_SUBTITLE_GAP_PX
+      );
+    };
+
+    updateSubtitleOffset();
+
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateSubtitleOffset();
+    });
+
+    resizeObserver.observe(interactionOverlayElement);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [shouldShowInteractionOverlay]);
+
+  useEffect(() => {
     clearInteractionAutoCloseTimer();
 
     if (!isInteractionOverlayOpen || !shouldAutoContinueInteraction) {
@@ -1014,20 +1108,6 @@ const Slide: React.FC<SlideProps> = ({
     isInteractionOverlayOpen,
     shouldAutoContinueInteraction,
   ]);
-
-  const handleSubtitleVisibilityChange = useCallback(
-    (visible: boolean) => {
-      if (!visible) {
-        return;
-      }
-
-      clearInteractionAutoCloseTimer();
-      setIsInteractionOverlayOpen((previousOpen) =>
-        previousOpen ? false : previousOpen
-      );
-    },
-    [clearInteractionAutoCloseTimer]
-  );
 
   const renderSlideElement = (
     element?: Element,
@@ -1274,8 +1354,6 @@ const Slide: React.FC<SlideProps> = ({
     showPlayerControls(true);
   }, [showPlayerControls]);
 
-  const shouldShowInteractionOverlay =
-    Boolean(activeInteractionElement) && isInteractionOverlayOpen;
   const currentRenderElementKeys = useMemo(
     () =>
       currentElementList.map(
@@ -1452,15 +1530,16 @@ const Slide: React.FC<SlideProps> = ({
         />
 
         <SubtitleOverlay
+          extraBottomOffset={interactionOverlaySubtitleOffset}
           hasPlayerGap={playerVisible}
           isPlayerHidden={shouldRenderPlayer && !playerVisible}
-          onVisibilityChange={handleSubtitleVisibilityChange}
           playbackTimeStore={playbackTimeStore}
           subtitleCues={currentSubtitleCues}
         />
 
         {shouldShowInteractionOverlay ? (
           <div
+            ref={interactionOverlayRef}
             className={cn(
               "slide-interaction-overlay",
               playerVisible && shouldRenderPlayer

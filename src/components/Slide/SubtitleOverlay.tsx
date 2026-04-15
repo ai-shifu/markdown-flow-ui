@@ -9,6 +9,7 @@ import "./subtitle-overlay.css";
 
 export interface SubtitleOverlayProps
   extends Omit<React.ComponentProps<"div">, "children"> {
+  extraBottomOffset?: number;
   hasPlayerGap?: boolean;
   isPlayerHidden?: boolean;
   onVisibilityChange?: (visible: boolean) => void;
@@ -18,10 +19,12 @@ export interface SubtitleOverlayProps
 
 const SubtitleOverlay = ({
   className,
+  extraBottomOffset = 0,
   hasPlayerGap = false,
   isPlayerHidden = false,
   onVisibilityChange,
   playbackTimeStore,
+  style,
   subtitleCues = [],
   ...props
 }: SubtitleOverlayProps) => {
@@ -49,6 +52,12 @@ const SubtitleOverlay = ({
         isPlayerHidden && "slide-subtitle-overlay--player-hidden",
         className
       )}
+      style={
+        {
+          ...style,
+          "--slide-subtitle-extra-offset": `${Math.max(extraBottomOffset, 0)}px`,
+        } as React.CSSProperties
+      }
       {...props}
     >
       <div className="slide-subtitle-overlay__surface">

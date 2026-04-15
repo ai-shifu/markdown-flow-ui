@@ -17,7 +17,12 @@ export type {
   UploadProps,
   ImageResource,
 } from "./MarkdownFlowEditor";
-export type { Element, SlideInteractionTexts, SlideProps } from "./Slide";
+export type {
+  Element,
+  ElementSubtitleCue,
+  SlideInteractionTexts,
+  SlideProps,
+} from "./Slide";
 export type {
   InteractionDefaultResolver,
   InteractionDefaultResolverParams,

@@ -2,6 +2,8 @@ export const DEFAULT_FULLSCREEN_HINT_DURATION_MS = 3000;
 
 export const DEFAULT_SLIDE_PLAYER_TEXTS = {
   settingsTitle: "Settings",
+  subtitleLabel: "Subtitles",
+  subtitleToggleAriaLabel: "Toggle subtitles",
   screenLabel: "Screen",
   nonFullscreenLabel: "Non-fullscreen",
   fullscreenLabel: "Fullscreen",

@@ -7,6 +7,8 @@ import type { MobileViewMode } from "./utils/mobileScreenMode";
 
 export type MobilePlayerSettingsSheetLabels = {
   title: string;
+  subtitle: string;
+  subtitleToggle: string;
   screen: string;
   nonFullscreen: string;
   fullscreen: string;
@@ -15,22 +17,29 @@ export type MobilePlayerSettingsSheetLabels = {
 export type MobilePlayerSettingsSheetProps = {
   open: boolean;
   labels: MobilePlayerSettingsSheetLabels;
+  isSubtitleEnabled: boolean;
   viewMode: MobileViewMode;
   container?: HTMLElement | null;
   onClose: () => void;
   onOpenChange: (open: boolean) => void;
+  onSubtitleToggle: () => void;
   onViewModeChange: (nextViewMode: MobileViewMode) => void;
 };
 
 const MobilePlayerSettingsSheet = ({
   open,
   labels,
+  isSubtitleEnabled,
   viewMode,
   container,
   onClose,
   onOpenChange,
+  onSubtitleToggle,
   onViewModeChange,
 }: MobilePlayerSettingsSheetProps) => {
+  const insetDividerClassName =
+    "after:pointer-events-none after:absolute after:bottom-0 after:left-4 after:right-4 after:border-b after:border-border after:content-['']";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal container={container}>
@@ -43,7 +52,7 @@ const MobilePlayerSettingsSheet = ({
             "data-[state=open]:slide-in-from-bottom-full data-[state=closed]:slide-out-to-bottom-full"
           )}
         >
-          <div className="flex min-h-14 items-center justify-between border-b border-border px-6">
+          <div className="flex min-h-14 items-center justify-between border-b border-border px-4">
             <DialogTitle className="text-[15px] font-semibold leading-5 text-foreground">
               {labels.title}
             </DialogTitle>
@@ -57,7 +66,42 @@ const MobilePlayerSettingsSheet = ({
             </button>
           </div>
 
-          <div className="flex min-h-[72px] items-center gap-6 px-6">
+          <div
+            className={cn(
+              "relative flex min-h-[72px] items-center justify-between gap-6 px-4",
+              insetDividerClassName
+            )}
+          >
+            <span className="shrink-0 text-[15px] font-semibold leading-5 text-foreground">
+              {labels.subtitle}
+            </span>
+
+            <button
+              aria-label={labels.subtitleToggle}
+              aria-pressed={isSubtitleEnabled}
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center p-0"
+              onClick={onSubtitleToggle}
+              type="button"
+            >
+              <span
+                className={cn(
+                  "relative block h-4 w-6 rounded-full border-2 border-foreground transition-colors",
+                  isSubtitleEnabled && "border-primary"
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute left-[2px] top-1/2 block h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-foreground transition-transform",
+                    isSubtitleEnabled
+                      ? "translate-x-[10px] bg-primary"
+                      : "translate-x-0"
+                  )}
+                />
+              </span>
+            </button>
+          </div>
+
+          <div className="flex min-h-[72px] items-center gap-6 px-4">
             <span className="shrink-0 text-[15px] font-semibold leading-5 text-foreground">
               {labels.screen}
             </span>

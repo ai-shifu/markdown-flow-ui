@@ -39,6 +39,7 @@ export type {
 export type {
   Element,
   ElementAudioSegment,
+  ElementSubtitleCue,
   SlidePlayerCustomActionContext,
   SlidePlayerCustomActions,
 } from "./types";

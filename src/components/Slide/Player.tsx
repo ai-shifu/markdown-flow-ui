@@ -190,7 +190,6 @@ const Player = ({
   const currentAudio =
     currentAudioIndex >= 0 ? audioList[currentAudioIndex] : undefined;
   const currentAudioUrl = currentAudio?.audioUrl;
-  const currentSubtitleCues = currentAudio?.element?.subtitle_cues ?? [];
   const currentAudioSegments = useMemo(
     () =>
       [...(currentAudio?.audioSegments ?? [])].sort(
@@ -970,8 +969,6 @@ const Player = ({
     },
     [onMobileViewModeChange]
   );
-
-  console.log("SubtitleOverlay", currentSubtitleCues);
 
   useEffect(() => {
     onPlaybackTimeChange?.(playbackTimeMsRef.current);

@@ -26,7 +26,6 @@ describe("resolveNextSlideIndexAfterMarkerAppend", () => {
     expect(
       resolveNextSlideIndexAfterMarkerAppend({
         previousIndex: 0,
-        previousStepHasSpeakableElement: false,
         previousSlideElementList: [resolvedInteraction],
         nextSlideElementList: [resolvedInteraction, appendedHtmlMarker],
       })
@@ -42,7 +41,6 @@ describe("resolveNextSlideIndexAfterMarkerAppend", () => {
     expect(
       resolveNextSlideIndexAfterMarkerAppend({
         previousIndex: 0,
-        previousStepHasSpeakableElement: false,
         previousSlideElementList: [htmlMarker],
         nextSlideElementList: [htmlMarker],
       })
@@ -64,49 +62,8 @@ describe("resolveNextSlideIndexAfterMarkerAppend", () => {
     expect(
       resolveNextSlideIndexAfterMarkerAppend({
         previousIndex: 0,
-        previousStepHasSpeakableElement: false,
         previousSlideElementList: [pendingInteraction],
         nextSlideElementList: [pendingInteraction, appendedHtmlMarker],
-      })
-    ).toBe(0);
-  });
-
-  it("jumps into an appended marker when the previous last step is a silent html marker", () => {
-    const silentHtmlMarker = createMarkerElement({
-      type: "html",
-      content: "<div>first</div>",
-    });
-    const appendedHtmlMarker = createMarkerElement({
-      type: "html",
-      content: "<div>second</div>",
-    });
-
-    expect(
-      resolveNextSlideIndexAfterMarkerAppend({
-        previousIndex: 0,
-        previousStepHasSpeakableElement: false,
-        previousSlideElementList: [silentHtmlMarker],
-        nextSlideElementList: [silentHtmlMarker, appendedHtmlMarker],
-      })
-    ).toBe(1);
-  });
-
-  it("keeps the current index when the previous last step still has speakable content", () => {
-    const speakableHtmlMarker = createMarkerElement({
-      type: "html",
-      content: "<div>first</div>",
-    });
-    const appendedHtmlMarker = createMarkerElement({
-      type: "html",
-      content: "<div>second</div>",
-    });
-
-    expect(
-      resolveNextSlideIndexAfterMarkerAppend({
-        previousIndex: 0,
-        previousStepHasSpeakableElement: true,
-        previousSlideElementList: [speakableHtmlMarker],
-        nextSlideElementList: [speakableHtmlMarker, appendedHtmlMarker],
       })
     ).toBe(0);
   });

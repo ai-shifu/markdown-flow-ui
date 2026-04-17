@@ -245,13 +245,11 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
     () => getMarkerElementList(stableElementList),
     [stableElementList]
   );
-  const previousStableElementListRef = useRef(stableElementList);
   const previousSlideElementListRef = useRef(slideElementList);
   const markerElementIndexes = useMemo(
     () => getMarkerElementIndexes(stableElementList),
     [stableElementList]
   );
-  const previousMarkerElementIndexesRef = useRef(markerElementIndexes);
   const audioList = useMemo(
     () => getAudioList(stableElementList),
     [stableElementList]
@@ -274,20 +272,11 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
   );
 
   useEffect(() => {
-    const previousStableElementList = previousStableElementListRef.current;
     const previousSlideElementList = previousSlideElementListRef.current;
-    const previousMarkerElementIndexes =
-      previousMarkerElementIndexesRef.current;
 
     setCurrentIndex((prevIndex) => {
-      const previousStepHasSpeakableElement = getStepHasSpeakableElement(
-        previousStableElementList,
-        previousMarkerElementIndexes,
-        prevIndex
-      );
       const resolvedNextIndex = resolveNextSlideIndexAfterMarkerAppend({
         previousIndex: prevIndex,
-        previousStepHasSpeakableElement,
         previousSlideElementList,
         nextSlideElementList: slideElementList,
       });
@@ -299,10 +288,8 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
       return getInitialSlideIndex(slideElementList);
     });
 
-    previousStableElementListRef.current = stableElementList;
     previousSlideElementListRef.current = slideElementList;
-    previousMarkerElementIndexesRef.current = markerElementIndexes;
-  }, [markerElementIndexes, slideElementList, stableElementList]);
+  }, [slideElementList]);
 
   const handlePrev = useCallback(() => {
     setCurrentIndex((prevIndex) => {

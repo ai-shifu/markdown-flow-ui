@@ -4,6 +4,7 @@ interface ResolveNextSlideIndexParams {
   previousIndex: number;
   previousSlideElementList: Element[];
   nextSlideElementList: Element[];
+  previousStepHasSpeakableElement: boolean;
 }
 
 const isResolvedInteractionElement = (element?: Element) =>
@@ -25,6 +26,7 @@ export const resolveNextSlideIndexAfterMarkerAppend = ({
   previousIndex,
   previousSlideElementList,
   nextSlideElementList,
+  previousStepHasSpeakableElement,
 }: ResolveNextSlideIndexParams) => {
   if (nextSlideElementList.length === 0) {
     return -1;
@@ -45,7 +47,9 @@ export const resolveNextSlideIndexAfterMarkerAppend = ({
   if (
     hasAppendedMarkers &&
     wasFocusedOnPreviousLastMarker &&
-    isResolvedInteractionElement(previousCurrentElement)
+    (isResolvedInteractionElement(previousCurrentElement) ||
+      (!previousStepHasSpeakableElement &&
+        previousCurrentElement?.type !== "interaction"))
   ) {
     return previousSlideElementList.length;
   }

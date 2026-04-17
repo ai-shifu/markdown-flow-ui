@@ -39,6 +39,7 @@ import {
   type MobileViewMode,
 } from "./utils/mobileScreenMode";
 import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
+import { shouldAutoAdvanceIntoAppendedMarker } from "./utils/appendedMarkerAdvance";
 import { getPlaybackSequenceTransition } from "./utils/playbackSequence";
 import {
   getPlayerCustomActionCount,
@@ -202,6 +203,11 @@ const Slide: React.FC<SlideProps> = ({
   const shouldScrollToBottomRef = useRef(false);
   const pendingInteractionOverlayStepIndexRef = useRef<number | null>(null);
   const playbackResetKeyRef = useRef<string | null>(null);
+  const appendedMarkerAdvanceStateRef = useRef({
+    markerCount: 0,
+    currentIndex: -1,
+    canGoNext: false,
+  });
   const {
     currentElementList,
     stepElementLists,
@@ -724,6 +730,50 @@ const Slide: React.FC<SlideProps> = ({
   useEffect(() => {
     onStepChange?.(currentStepElement, currentIndex);
   }, [currentIndex, currentStepElement, onStepChange]);
+
+  useEffect(() => {
+    const previousState = appendedMarkerAdvanceStateRef.current;
+    const shouldAdvanceIntoAppendedMarker = shouldAutoAdvanceIntoAppendedMarker(
+      {
+        previousMarkerCount: previousState.markerCount,
+        nextMarkerCount: slideElementList.length,
+        previousIndex: previousState.currentIndex,
+        previousCanGoNext: previousState.canGoNext,
+        nextCanGoNext: canGoNext,
+        currentAudioKey,
+        hasCompletedCurrentStepAudio,
+        hasResolvedCurrentInteraction,
+        currentStepHasSpeakableElement,
+        currentInteractionElement,
+        isAutoAdvanceEnabled,
+        shouldUseSilentStepAutoAdvanceToggle,
+      }
+    );
+
+    appendedMarkerAdvanceStateRef.current = {
+      markerCount: slideElementList.length,
+      currentIndex,
+      canGoNext,
+    };
+
+    if (!shouldAdvanceIntoAppendedMarker) {
+      return;
+    }
+
+    goNext();
+  }, [
+    canGoNext,
+    currentAudioKey,
+    currentIndex,
+    currentInteractionElement,
+    currentStepHasSpeakableElement,
+    goNext,
+    hasCompletedCurrentStepAudio,
+    hasResolvedCurrentInteraction,
+    isAutoAdvanceEnabled,
+    shouldUseSilentStepAutoAdvanceToggle,
+    slideElementList.length,
+  ]);
 
   useEffect(() => {
     if (!shouldRenderPlayer) {

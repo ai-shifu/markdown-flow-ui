@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { applyDiffElement } from "./diff-utils";
 import type { Element, ElementAudioSegment } from "./types";
+import { resolveNextSlideIndexAfterMarkerAppend } from "./utils/streamingNavigation";
 
 export interface SlideAudioItem {
   audioKey?: string;
@@ -244,6 +245,7 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
     () => getMarkerElementList(stableElementList),
     [stableElementList]
   );
+  const previousSlideElementListRef = useRef(slideElementList);
   const markerElementIndexes = useMemo(
     () => getMarkerElementIndexes(stableElementList),
     [stableElementList]
@@ -270,17 +272,23 @@ const useSlide = (elementList: Element[] = []): UseSlideResult => {
   );
 
   useEffect(() => {
-    setCurrentIndex((prevIndex) => {
-      if (slideElementList.length === 0) {
-        return -1;
-      }
+    const previousSlideElementList = previousSlideElementListRef.current;
 
-      if (prevIndex >= 0 && prevIndex < slideElementList.length) {
-        return prevIndex;
+    setCurrentIndex((prevIndex) => {
+      const resolvedNextIndex = resolveNextSlideIndexAfterMarkerAppend({
+        previousIndex: prevIndex,
+        previousSlideElementList,
+        nextSlideElementList: slideElementList,
+      });
+
+      if (resolvedNextIndex >= 0) {
+        return resolvedNextIndex;
       }
 
       return getInitialSlideIndex(slideElementList);
     });
+
+    previousSlideElementListRef.current = slideElementList;
   }, [slideElementList]);
 
   const handlePrev = useCallback(() => {

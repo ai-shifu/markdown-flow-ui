@@ -642,8 +642,73 @@ const applyRunStreamInteractionSubmission = (
     submittedUserInput
   ) as RunStreamFixtureElement[];
 
-const buildTriggeredRunStreamEvents = (events: RunStreamFixtureEvent[]) => {
-  const triggerEventIndex = events.findIndex((event) => {
+const getInteractionVariableName = (element?: Element) => {
+  if (typeof element?.content !== "string") {
+    return "";
+  }
+
+  const matchedVariable = element.content.match(/\{\{\s*([^}\s]+)\s*\}\}/);
+
+  return matchedVariable?.[1]?.trim() ?? "";
+};
+
+const getLatestInteractionVariableName = (elementList: Element[]) => {
+  const latestInteractionIndex = getLatestInteractionIndex(elementList);
+
+  return latestInteractionIndex >= 0
+    ? getInteractionVariableName(elementList[latestInteractionIndex])
+    : "";
+};
+
+const getRunStreamVariableName = (event: RunStreamFixtureEvent) => {
+  const eventContent = event.content as
+    | { variable_name?: string; variableName?: string }
+    | null
+    | undefined;
+
+  if (typeof eventContent?.variable_name === "string") {
+    return eventContent.variable_name.trim();
+  }
+
+  if (typeof eventContent?.variableName === "string") {
+    return eventContent.variableName.trim();
+  }
+
+  return "";
+};
+
+const buildTriggeredRunStreamEvents = ({
+  events,
+  variableName,
+}: {
+  events: RunStreamFixtureEvent[];
+  variableName?: string;
+}) => {
+  const normalizedVariableName = variableName?.trim() ?? "";
+  const variableUpdateIndex = normalizedVariableName
+    ? events.findIndex(
+        (event) =>
+          event?.type === "variable_update" &&
+          getRunStreamVariableName(event) === normalizedVariableName
+      )
+    : -1;
+
+  // Prefer the interaction variable_update boundary so fixture copy changes
+  // do not silently break the submit-to-stream story trigger.
+  if (variableUpdateIndex >= 0) {
+    const firstElementAfterVariableUpdateIndex = events.findIndex(
+      (event, index) =>
+        index > variableUpdateIndex &&
+        event?.type === "element" &&
+        Boolean(event.content)
+    );
+
+    if (firstElementAfterVariableUpdateIndex >= 0) {
+      return events.slice(firstElementAfterVariableUpdateIndex);
+    }
+  }
+
+  const legacyTriggerEventIndex = events.findIndex((event) => {
     const eventContent = event.content;
 
     return (
@@ -654,11 +719,11 @@ const buildTriggeredRunStreamEvents = (events: RunStreamFixtureEvent[]) => {
     );
   });
 
-  if (triggerEventIndex < 0) {
+  if (legacyTriggerEventIndex < 0) {
     return [];
   }
 
-  return events.slice(triggerEventIndex);
+  return events.slice(legacyTriggerEventIndex);
 };
 
 const EMPTY_PPT_PLACEHOLDER_BLOCK_BID = "empty-ppt";
@@ -839,10 +904,14 @@ const RunStreamSlidePreview = ({
 const historyInteractionFixtureElementList = focusHistoryOnLatestInteraction(
   parseHistoryFixture(historyFixtureText)
 );
-
-const triggeredRunStreamEvents = buildTriggeredRunStreamEvents(
-  parseRunStreamFixture(runStreamFixtureText)
+const historyInteractionVariableName = getLatestInteractionVariableName(
+  historyInteractionFixtureElementList
 );
+
+const triggeredRunStreamEvents = buildTriggeredRunStreamEvents({
+  events: parseRunStreamFixture(runStreamFixtureText),
+  variableName: historyInteractionVariableName,
+});
 
 const hasAudioDataSegments = (audioSegments: Element["audio_segments"]) =>
   Boolean(

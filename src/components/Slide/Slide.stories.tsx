@@ -37,7 +37,7 @@ const meta = {
       table: {
         type: {
           summary:
-            "{ content: ReactNode; type: string; is_renderable?: boolean; is_new?: boolean; is_marker?: boolean; sequence_number?: number; is_speakable?: boolean; audio_url?: string; audio_segments?: ElementAudioSegment[]; }[]",
+            "{ content: ReactNode; type: string; is_renderable?: boolean; is_new?: boolean; is_marker?: boolean; sequence_number?: number; is_speakable?: boolean; audio_url?: string; audio_segments?: ElementAudioSegment[]; subtitle_cues?: ElementSubtitleCue[]; }[]",
         },
       },
     },
@@ -642,8 +642,73 @@ const applyRunStreamInteractionSubmission = (
     submittedUserInput
   ) as RunStreamFixtureElement[];
 
-const buildTriggeredRunStreamEvents = (events: RunStreamFixtureEvent[]) => {
-  const triggerEventIndex = events.findIndex((event) => {
+const getInteractionVariableName = (element?: Element) => {
+  if (typeof element?.content !== "string") {
+    return "";
+  }
+
+  const matchedVariable = element.content.match(/\{\{\s*([^}\s]+)\s*\}\}/);
+
+  return matchedVariable?.[1]?.trim() ?? "";
+};
+
+const getLatestInteractionVariableName = (elementList: Element[]) => {
+  const latestInteractionIndex = getLatestInteractionIndex(elementList);
+
+  return latestInteractionIndex >= 0
+    ? getInteractionVariableName(elementList[latestInteractionIndex])
+    : "";
+};
+
+const getRunStreamVariableName = (event: RunStreamFixtureEvent) => {
+  const eventContent = event.content as
+    | { variable_name?: string; variableName?: string }
+    | null
+    | undefined;
+
+  if (typeof eventContent?.variable_name === "string") {
+    return eventContent.variable_name.trim();
+  }
+
+  if (typeof eventContent?.variableName === "string") {
+    return eventContent.variableName.trim();
+  }
+
+  return "";
+};
+
+const buildTriggeredRunStreamEvents = ({
+  events,
+  variableName,
+}: {
+  events: RunStreamFixtureEvent[];
+  variableName?: string;
+}) => {
+  const normalizedVariableName = variableName?.trim() ?? "";
+  const variableUpdateIndex = normalizedVariableName
+    ? events.findIndex(
+        (event) =>
+          event?.type === "variable_update" &&
+          getRunStreamVariableName(event) === normalizedVariableName
+      )
+    : -1;
+
+  // Prefer the interaction variable_update boundary so fixture copy changes
+  // do not silently break the submit-to-stream story trigger.
+  if (variableUpdateIndex >= 0) {
+    const firstElementAfterVariableUpdateIndex = events.findIndex(
+      (event, index) =>
+        index > variableUpdateIndex &&
+        event?.type === "element" &&
+        Boolean(event.content)
+    );
+
+    if (firstElementAfterVariableUpdateIndex >= 0) {
+      return events.slice(firstElementAfterVariableUpdateIndex);
+    }
+  }
+
+  const legacyTriggerEventIndex = events.findIndex((event) => {
     const eventContent = event.content;
 
     return (
@@ -654,11 +719,11 @@ const buildTriggeredRunStreamEvents = (events: RunStreamFixtureEvent[]) => {
     );
   });
 
-  if (triggerEventIndex < 0) {
+  if (legacyTriggerEventIndex < 0) {
     return [];
   }
 
-  return events.slice(triggerEventIndex);
+  return events.slice(legacyTriggerEventIndex);
 };
 
 const EMPTY_PPT_PLACEHOLDER_BLOCK_BID = "empty-ppt";
@@ -839,10 +904,14 @@ const RunStreamSlidePreview = ({
 const historyInteractionFixtureElementList = focusHistoryOnLatestInteraction(
   parseHistoryFixture(historyFixtureText)
 );
-
-const triggeredRunStreamEvents = buildTriggeredRunStreamEvents(
-  parseRunStreamFixture(runStreamFixtureText)
+const historyInteractionVariableName = getLatestInteractionVariableName(
+  historyInteractionFixtureElementList
 );
+
+const triggeredRunStreamEvents = buildTriggeredRunStreamEvents({
+  events: parseRunStreamFixture(runStreamFixtureText),
+  variableName: historyInteractionVariableName,
+});
 
 const hasAudioDataSegments = (audioSegments: Element["audio_segments"]) =>
   Boolean(
@@ -2242,95 +2311,14 @@ export const HistorySlides: Story = {
     },
     playerTexts: {
       settingsTitle: "设置",
+      subtitleLabel: "字幕",
+      subtitleToggleAriaLabel: "切换字幕",
       screenLabel: "屏幕",
       nonFullscreenLabel: "非全屏",
       fullscreenLabel: "全屏",
       fullscreenHintText: "请旋转屏幕以获得最佳体验",
     },
-    elementList: focusHistoryOnLatestInteraction([
-      {
-        sequence_number: 6,
-        type: "slot",
-        content: "empty-ppt",
-        is_marker: true,
-        is_renderable: true,
-        is_new: true,
-        blockBid: "empty-ppt",
-        page: 0,
-      },
-      {
-        sequence_number: 7,
-        type: "text",
-        content:
-          "欢迎来到春节文化之旅！我是您的专属文化向导。\n在开始之前，请告诉我您对春节的了解程度，以便我为您提供最合适的讲解。",
-        is_marker: false,
-        is_renderable: false,
-        is_new: true,
-        is_speakable: true,
-        audio_url:
-          "https://res.ai-shifu.cn/tts-audio/2616f1f4393344e7a02e1e6b65aa1e78.mp3",
-        is_audio_streaming: false,
-        isAudioStreaming: false,
-        blockBid: "c7f95bc3c77e47c3b8e3ff418487af94",
-        page: 0,
-      },
-      {
-        sequence_number: 8,
-        type: "interaction",
-        content:
-          "?[%{{knowledge_level}} 完全不了解 | 略知一二 | 比较熟悉 | 非常了解]",
-        is_marker: true,
-        is_renderable: true,
-        is_new: true,
-        blockBid: "c02e5b1b4a0142ad8364185b7fa12c74",
-        page: 0,
-        user_input: "略知一二",
-        readonly: true,
-      },
-      {
-        sequence_number: 9,
-        type: "text",
-        content:
-          "好的，**略知一二**。了解您的背景是开启个性化讲解的第一步。\n接下来，我将根据您的了解程度，带您探索春节的由来、传统历史和各地风俗。",
-        is_marker: false,
-        is_renderable: false,
-        is_new: true,
-        is_speakable: true,
-        audio_url:
-          "https://res.ai-shifu.cn/tts-audio/59cf82fed56c4682aa8e1da3609295ce.mp3",
-        is_audio_streaming: false,
-        isAudioStreaming: false,
-        blockBid: "397ddb30b0d840928e6c887db15d9995",
-        page: 1,
-      },
-      {
-        sequence_number: 123,
-        type: "svg",
-        content:
-          '<svg width="100%" viewBox="0 0 1200 675" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; aspect-ratio: 1200 / 675;">\n  <rect width="100%" height="100%" fill="#f8f9fa"/>\n  <g transform="translate(60, 100)">\n    <!-- 时间轴线 -->\n    <line x1="0" y1="0" x2="1080" y2="0" stroke="#0F63EE" stroke-width="4"/>\n    <line x1="0" y1="-10" x2="0" y2="10" stroke="#0F63EE" stroke-width="4"/>\n    <line x1="270" y1="-10" x2="270" y2="10" stroke="#0F63EE" stroke-width="4"/>\n    <line x1="540" y1="-10" x2="540" y2="10" stroke="#0F63EE" stroke-width="4"/>\n    <line x1="810" y1="-10" x2="810" y2="10" stroke="#0F63EE" stroke-width="4"/>\n    <line x1="1080" y1="-10" x2="1080" y2="10" stroke="#0F63EE" stroke-width="4"/>\n    <!-- 节点卡片 - 商周 -->\n    <g transform="translate(0, 60)">\n      <rect x="-80" y="-40" width="160" height="80" rx="8" fill="white" stroke="#0F63EE" stroke-width="2"/>\n      <text x="0" y="-10" text-anchor="middle" font-family="system-ui" font-size="22" fill="#111">商周时期</text>\n      <text x="0" y="15" text-anchor="middle" font-family="system-ui" font-size="18" fill="#666">岁首祈年祭祀</text>\n    </g>\n    <text x="0" y="120" text-anchor="middle" font-family="system-ui" font-size="20" fill="#111">上古</text>\n    <!-- 节点卡片 - 汉代 -->\n    <g transform="translate(270, 60)">\n      <rect x="-80" y="-40" width="160" height="80" rx="8" fill="white" stroke="#0F63EE" stroke-width="2"/>\n      <text x="0" y="-10" text-anchor="middle" font-family="system-ui" font-size="22" fill="#111">汉代</text>\n      <text x="0" y="15" text-anchor="middle" font-family="system-ui" font-size="18" fill="#666">定型为正月初一</text>\n    </g>\n    <text x="270" y="120" text-anchor="middle" font-family="system-ui" font-size="20" fill="#111">定型</text>\n    <!-- 节点卡片 - 唐宋 -->\n    <g transform="translate(540, 60)">\n      <rect x="-80" y="-40" width="160" height="80" rx="8" fill="white" stroke="#0F63EE" stroke-width="2"/>\n      <text x="0" y="-10" text-anchor="middle" font-family="system-ui" font-size="22" fill="#111">唐宋</text>\n      <text x="0" y="15" text-anchor="middle" font-family="system-ui" font-size="18" fill="#666">爆竹、守岁、拜年盛行</text>\n    </g>\n    <text x="540" y="120" text-anchor="middle" font-family="system-ui" font-size="20" fill="#111">兴盛</text>\n    <!-- 节点卡片 - 明清 -->\n    <g transform="translate(810, 60)">\n      <rect x="-80" y="-40" width="160" height="80" rx="8" fill="white" stroke="#0F63EE" stroke-width="2"/>\n      <text x="0" y="-10" text-anchor="middle" font-family="system-ui" font-size="22" fill="#111">明清</text>\n      <text x="0" y="15" text-anchor="middle" font-family="system-ui" font-size="18" fill="#666">贴春联、逛庙会</text>\n    </g>\n    <text x="810" y="120" text-anchor="middle" font-family="system-ui" font-size="20" fill="#111">丰富</text>\n    <!-- 节点卡片 - 现代 -->\n    <g transform="translate(1080, 60)">\n      <rect x="-80" y="-40" width="160" height="80" rx="8" fill="white" stroke="#0F63EE" stroke-width="2"/>\n      <text x="0" y="-10" text-anchor="middle" font-family="system-ui" font-size="22" fill="#111">现代</text>\n      <text x="0" y="15" text-anchor="middle" font-family="system-ui" font-size="18" fill="#666">春晚、电子红包、旅游过年</text>\n    </g>\n    <text x="1080" y="120" text-anchor="middle" font-family="system-ui" font-size="20" fill="#111">当代</text>\n  </g>\n  <text x="600" y="40" text-anchor="middle" font-family="system-ui" font-size="30" fill="#0F63EE" font-weight="bold">春节习俗演变时间线</text>\n</svg>\n',
-        is_marker: true,
-        is_renderable: true,
-        is_new: true,
-        is_speakable: false,
-        audio_url: "",
-        is_audio_streaming: false,
-        isAudioStreaming: false,
-        blockBid: "3ad6776bda674ae5aae8d700af63955c",
-        page: 2,
-      },
-      {
-        sequence_number: 359,
-        type: "interaction",
-        content: "?[%{{年夜饭}}...请输入]",
-        is_marker: true,
-        is_renderable: false,
-        is_new: true,
-        blockBid: "97628a41db04459daf6b11f31c1e1d4d",
-        page: 32,
-        user_input: "",
-        readonly: false,
-      },
-    ]),
+    elementList: historyInteractionFixtureElementList,
     // elementList: [
     //   {
     //     sequence_number: 110,

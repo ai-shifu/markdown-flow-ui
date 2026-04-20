@@ -1,4 +1,8 @@
-import type { Element, ElementAudioSegment } from "../types";
+import type {
+  Element,
+  ElementAudioSegment,
+  ElementSubtitleCue,
+} from "../types";
 
 const DEFAULT_AUDIO_POSITION = 0;
 
@@ -19,6 +23,15 @@ export type RunStreamAudioTrack = {
   isAudioStreaming?: boolean;
   audio_segments?: RunStreamRawAudioSegment[];
   audioSegments?: RunStreamRawAudioSegment[];
+  subtitle_cues?: ElementSubtitleCue[];
+  subtitleCues?: ElementSubtitleCue[];
+};
+
+export type RunStreamPayload = {
+  audio?: RunStreamAudioTrack | null;
+  audio_tracks?: RunStreamAudioTrack[];
+  audioTracks?: RunStreamAudioTrack[];
+  previous_visuals?: unknown[];
 };
 
 export type RunStreamFixtureRecord = {
@@ -38,6 +51,8 @@ export type RunStreamFixtureRecord = {
   audio_tracks?: RunStreamAudioTrack[];
   is_audio_streaming?: boolean;
   isAudioStreaming?: boolean;
+  subtitle_cues?: ElementSubtitleCue[];
+  payload?: RunStreamPayload | null;
   user_input?: string;
   readonly?: boolean;
   page?: number;
@@ -62,6 +77,79 @@ export type RunStreamFixtureElement = Element & {
   isAudioStreaming?: boolean;
 };
 
+const sortRunStreamSubtitleCues = (subtitleCues: ElementSubtitleCue[] = []) =>
+  [...subtitleCues].sort(
+    (prevCue, nextCue) =>
+      Number(prevCue.start_ms ?? 0) - Number(nextCue.start_ms ?? 0) ||
+      Number(prevCue.end_ms ?? 0) - Number(nextCue.end_ms ?? 0) ||
+      Number(prevCue.position ?? 0) - Number(nextCue.position ?? 0) ||
+      Number(prevCue.segment_index ?? 0) - Number(nextCue.segment_index ?? 0)
+  );
+
+const normalizeRunStreamSubtitleCue = (
+  subtitleCue?: ElementSubtitleCue | null
+): ElementSubtitleCue | null => {
+  if (!subtitleCue || typeof subtitleCue.text !== "string") {
+    return null;
+  }
+
+  const normalizedText = subtitleCue.text.trim();
+
+  if (!normalizedText) {
+    return null;
+  }
+
+  return {
+    text: normalizedText,
+    start_ms: Math.max(Number(subtitleCue.start_ms ?? 0), 0),
+    end_ms: Math.max(Number(subtitleCue.end_ms ?? 0), 0),
+    segment_index: Number(subtitleCue.segment_index ?? 0),
+    position:
+      subtitleCue.position == null ? undefined : Number(subtitleCue.position),
+  };
+};
+
+const normalizeRunStreamSubtitleCues = (
+  subtitleCues?: ElementSubtitleCue[] | null
+) =>
+  sortRunStreamSubtitleCues(
+    (Array.isArray(subtitleCues) ? subtitleCues : [])
+      .map((subtitleCue) => normalizeRunStreamSubtitleCue(subtitleCue))
+      .filter((subtitleCue): subtitleCue is ElementSubtitleCue =>
+        Boolean(
+          subtitleCue &&
+          subtitleCue.end_ms >= subtitleCue.start_ms &&
+          Number.isFinite(subtitleCue.start_ms) &&
+          Number.isFinite(subtitleCue.end_ms) &&
+          Number.isFinite(subtitleCue.segment_index)
+        )
+      )
+  );
+
+const buildRunStreamSubtitleCueUniqueKey = (subtitleCue: ElementSubtitleCue) =>
+  [
+    subtitleCue.text,
+    String(subtitleCue.start_ms),
+    String(subtitleCue.end_ms),
+    String(subtitleCue.segment_index),
+    String(subtitleCue.position ?? ""),
+  ].join(":");
+
+const mergeRunStreamSubtitleCues = (
+  subtitleCues: ElementSubtitleCue[] = []
+) => {
+  const mergedSubtitleCueMap = new Map<string, ElementSubtitleCue>();
+
+  normalizeRunStreamSubtitleCues(subtitleCues).forEach((subtitleCue) => {
+    mergedSubtitleCueMap.set(
+      buildRunStreamSubtitleCueUniqueKey(subtitleCue),
+      subtitleCue
+    );
+  });
+
+  return sortRunStreamSubtitleCues(Array.from(mergedSubtitleCueMap.values()));
+};
+
 type RunStreamAudioSegment = RunStreamRawAudioSegment;
 
 type NormalizedRunStreamAudioTrack = {
@@ -70,6 +158,7 @@ type NormalizedRunStreamAudioTrack = {
   audio_url?: string;
   is_audio_streaming?: boolean;
   audio_segments: RunStreamAudioSegment[];
+  subtitle_cues: ElementSubtitleCue[];
 };
 
 type RunStreamStoryItemType = "content" | "interaction";
@@ -185,25 +274,51 @@ const getTrackAudioSegments = (track?: RunStreamAudioTrack | null) =>
     ...(Array.isArray(track?.audio_segments) ? track.audio_segments : []),
   ] as RunStreamAudioSegment[]);
 
+const getTrackSubtitleCues = (track?: RunStreamAudioTrack | null) =>
+  mergeRunStreamSubtitleCues([
+    ...(Array.isArray(track?.subtitleCues) ? track.subtitleCues : []),
+    ...(Array.isArray(track?.subtitle_cues) ? track.subtitle_cues : []),
+  ]);
+
 const normalizeRunStreamAudioTracks = (
-  record: Pick<RunStreamFixtureRecord, "audioTracks" | "audio_tracks">
+  record: Pick<
+    RunStreamFixtureRecord,
+    "audioTracks" | "audio_tracks" | "payload"
+  >
 ) => {
   const trackByPosition = new Map<number, NormalizedRunStreamAudioTrack>();
   const rawTracks = [
     ...(Array.isArray(record.audioTracks) ? record.audioTracks : []),
     ...(Array.isArray(record.audio_tracks) ? record.audio_tracks : []),
+    ...(record.payload?.audio ? [record.payload.audio] : []),
+    ...(Array.isArray(record.payload?.audioTracks)
+      ? record.payload.audioTracks
+      : []),
+    ...(Array.isArray(record.payload?.audio_tracks)
+      ? record.payload.audio_tracks
+      : []),
   ];
 
   rawTracks.forEach((track) => {
     const position = normalizeRunStreamAudioPosition(track.position);
+    const previousTrack = trackByPosition.get(position);
     trackByPosition.set(position, {
       position,
-      slide_id: track.slide_id ?? track.slideId,
-      audio_url: track.audio_url ?? track.audioUrl,
+      slide_id: track.slide_id ?? track.slideId ?? previousTrack?.slide_id,
+      audio_url: track.audio_url ?? track.audioUrl ?? previousTrack?.audio_url,
       is_audio_streaming: Boolean(
-        track.is_audio_streaming ?? track.isAudioStreaming
+        track.is_audio_streaming ??
+        track.isAudioStreaming ??
+        previousTrack?.is_audio_streaming
       ),
-      audio_segments: getTrackAudioSegments(track),
+      audio_segments: mergeRunStreamAudioSegments("", [
+        ...(previousTrack?.audio_segments ?? []),
+        ...getTrackAudioSegments(track),
+      ]),
+      subtitle_cues: mergeRunStreamSubtitleCues([
+        ...(previousTrack?.subtitle_cues ?? []),
+        ...getTrackSubtitleCues(track),
+      ]),
     });
   });
 
@@ -225,6 +340,10 @@ const hasAudioContentInTrack = (
 const getAudioSegmentDataListFromTracks = (
   tracks: NormalizedRunStreamAudioTrack[] = []
 ) => sortRunStreamAudioTracks(tracks).flatMap((track) => track.audio_segments);
+
+const getSubtitleCueDataListFromTracks = (
+  tracks: NormalizedRunStreamAudioTrack[] = []
+) => sortRunStreamAudioTracks(tracks).flatMap((track) => track.subtitle_cues);
 
 const resolveRunStreamElementBid = (
   record?: Pick<
@@ -337,11 +456,16 @@ const resolveListenModeLikeAudioSource = (
       elementBid,
       getAudioSegmentDataListFromTracks(playableTracks)
     );
+    const trackSubtitleCues = mergeRunStreamSubtitleCues(
+      getSubtitleCueDataListFromTracks(playableTracks)
+    );
 
     return {
       audioUrl: playableTracks.find((track) => track.audio_url)?.audio_url,
       audioSegments:
         trackAudioSegments.length > 0 ? trackAudioSegments : undefined,
+      subtitleCues:
+        trackSubtitleCues.length > 0 ? trackSubtitleCues : undefined,
       isAudioStreaming: playableTracks.some((track) =>
         Boolean(track.is_audio_streaming)
       ),
@@ -359,6 +483,15 @@ const resolveListenModeLikeAudioSource = (
     audioUrl: record.audio_url ?? record.audioUrl ?? "",
     audioSegments:
       legacyAudioSegments.length > 0 ? legacyAudioSegments : undefined,
+    subtitleCues: mergeRunStreamSubtitleCues([
+      ...(Array.isArray(record.subtitle_cues) ? record.subtitle_cues : []),
+      ...(Array.isArray(record.payload?.audio?.subtitleCues)
+        ? record.payload.audio.subtitleCues
+        : []),
+      ...(Array.isArray(record.payload?.audio?.subtitle_cues)
+        ? record.payload.audio.subtitle_cues
+        : []),
+    ]),
     isAudioStreaming:
       typeof record.isAudioStreaming === "boolean"
         ? record.isAudioStreaming
@@ -442,7 +575,7 @@ export const normalizeRunStreamElement = (
     return null;
   }
 
-  const { audioUrl, audioSegments, isAudioStreaming } =
+  const { audioUrl, audioSegments, subtitleCues, isAudioStreaming } =
     resolveListenModeLikeAudioSource(record, elementBid);
 
   return {
@@ -456,6 +589,7 @@ export const normalizeRunStreamElement = (
       record.is_speakable ?? Boolean(audioUrl || audioSegments?.length),
     audio_url: audioUrl,
     audio_segments: audioSegments,
+    subtitle_cues: subtitleCues,
     user_input: record.user_input ?? "",
     readonly: Boolean(record.readonly),
     element_bid: elementBid,
@@ -533,6 +667,10 @@ export const upsertRunStreamElementList = ({
         : previousElement?.audio_segments,
     user_input: nextElement.user_input || previousElement?.user_input || "",
     readonly: nextElement.readonly ?? previousElement?.readonly ?? false,
+    subtitle_cues: mergeRunStreamSubtitleCues([
+      ...(previousElement?.subtitle_cues ?? []),
+      ...(nextElement.subtitle_cues ?? []),
+    ]),
   };
 
   if (hitIndex >= 0) {

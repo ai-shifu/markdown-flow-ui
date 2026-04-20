@@ -1,4 +1,5 @@
 import React, {
+  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -6,6 +7,8 @@ import React, {
   useState,
 } from "react";
 import {
+  Captions,
+  CaptionsOff,
   EllipsisVertical,
   FilePenLine,
   Maximize,
@@ -34,6 +37,8 @@ const audioPreloadElementCache = new Map<string, HTMLAudioElement>();
 
 export interface SlidePlayerTexts {
   settingsTitle?: string;
+  subtitleLabel?: string;
+  subtitleToggleAriaLabel?: string;
   screenLabel?: string;
   nonFullscreenLabel?: string;
   fullscreenLabel?: string;
@@ -68,6 +73,9 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   isAutoAdvanceEnabled?: boolean;
   useAutoAdvanceToggle?: boolean;
   onLoadingChange?: (loading: boolean) => void;
+  onPlaybackStarted?: () => void;
+  onPlaybackTimeChange?: (timeMs: number) => void;
+  onSubtitleToggle?: () => void;
   onPrev?: () => void;
   onNext?: () => void;
   onFullscreen?: () => void;
@@ -80,6 +88,7 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   onInteractionToggle?: () => void;
   hasInteraction?: boolean;
   isInteractionOpen?: boolean;
+  isSubtitleEnabled?: boolean;
   prevDisabled?: boolean;
   nextDisabled?: boolean;
   showControls?: boolean;
@@ -120,7 +129,7 @@ const PlayIcon = () => (
   </svg>
 );
 
-const Player: React.FC<PlayerProps> = ({
+const Player = ({
   audioList = [],
   className,
   currentAudioIndex = -1,
@@ -129,6 +138,9 @@ const Player: React.FC<PlayerProps> = ({
   isAutoAdvanceEnabled = true,
   useAutoAdvanceToggle = false,
   onLoadingChange,
+  onPlaybackStarted,
+  onPlaybackTimeChange,
+  onSubtitleToggle,
   onPrev,
   onNext,
   onFullscreen,
@@ -141,6 +153,7 @@ const Player: React.FC<PlayerProps> = ({
   onInteractionToggle,
   hasInteraction = false,
   isInteractionOpen = false,
+  isSubtitleEnabled = true,
   prevDisabled = false,
   nextDisabled = false,
   showControls = true,
@@ -148,7 +161,7 @@ const Player: React.FC<PlayerProps> = ({
   customActionContext,
   texts,
   ...props
-}) => {
+}: PlayerProps) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previousInteractionOpenRef = useRef(isInteractionOpen);
   const audioSrcRef = useRef<string | null>(null);
@@ -167,6 +180,8 @@ const Player: React.FC<PlayerProps> = ({
   const pendingAutoPlayRef = useRef(false);
   const pendingSeekTimeRef = useRef<number | null>(null);
   const isSwitchingSegmentRef = useRef(false);
+  const playbackAnimationFrameRef = useRef<number | null>(null);
+  const playbackTimeMsRef = useRef(0);
   const playbackAccessModeRef = useRef<
     "unknown" | "auto" | "manual" | "blocked"
   >("unknown");
@@ -317,6 +332,99 @@ const Player: React.FC<PlayerProps> = ({
     );
   }, []);
 
+  const getSegmentStartTimeMs = useCallback((segmentIndex: number) => {
+    if (segmentIndex <= 0) {
+      return 0;
+    }
+
+    return currentAudioSegmentsRef.current
+      .slice(0, segmentIndex)
+      .reduce(
+        (totalDurationMs, segment) =>
+          totalDurationMs + Math.max(Number(segment.duration_ms ?? 0), 0),
+        0
+      );
+  }, []);
+
+  const getCurrentPlaybackTimeMs = useCallback(() => {
+    const audioElement = audioRef.current;
+
+    if (!audioElement) {
+      return waitingSegmentIndexRef.current != null
+        ? getSegmentStartTimeMs(waitingSegmentIndexRef.current)
+        : 0;
+    }
+
+    if (activeSourceTypeRef.current === "segment") {
+      return (
+        getSegmentStartTimeMs(currentSegmentIndexRef.current) +
+        Math.max(audioElement.currentTime, 0) * 1000
+      );
+    }
+
+    if (pendingSeekTimeRef.current !== null && audioElement.readyState === 0) {
+      return pendingSeekTimeRef.current * 1000;
+    }
+
+    return Math.max(audioElement.currentTime, 0) * 1000;
+  }, [getSegmentStartTimeMs]);
+
+  const publishPlaybackTime = useCallback(
+    (timeMs: number) => {
+      const nextPlaybackTimeMs = Math.max(timeMs, 0);
+
+      if (playbackTimeMsRef.current === nextPlaybackTimeMs) {
+        return;
+      }
+
+      playbackTimeMsRef.current = nextPlaybackTimeMs;
+      onPlaybackTimeChange?.(nextPlaybackTimeMs);
+    },
+    [onPlaybackTimeChange]
+  );
+
+  const syncPlaybackTime = useCallback(() => {
+    publishPlaybackTime(getCurrentPlaybackTimeMs());
+  }, [getCurrentPlaybackTimeMs, publishPlaybackTime]);
+
+  const stopPlaybackTimeLoop = useCallback(() => {
+    if (
+      typeof window === "undefined" ||
+      playbackAnimationFrameRef.current === null
+    ) {
+      return;
+    }
+
+    window.cancelAnimationFrame(playbackAnimationFrameRef.current);
+    playbackAnimationFrameRef.current = null;
+  }, []);
+
+  const startPlaybackTimeLoop = useCallback(() => {
+    if (
+      typeof window === "undefined" ||
+      playbackAnimationFrameRef.current !== null
+    ) {
+      return;
+    }
+
+    const updateFrame = () => {
+      syncPlaybackTime();
+
+      const audioElement = audioRef.current;
+
+      if (!audioElement || audioElement.paused || audioElement.ended) {
+        playbackAnimationFrameRef.current = null;
+        return;
+      }
+
+      playbackAnimationFrameRef.current =
+        window.requestAnimationFrame(updateFrame);
+    };
+
+    playbackAnimationFrameRef.current =
+      window.requestAnimationFrame(updateFrame);
+  }, [syncPlaybackTime]);
+
   const resetAudio = useCallback(() => {
     const audioElement = audioRef.current;
 
@@ -324,6 +432,7 @@ const Player: React.FC<PlayerProps> = ({
       return;
     }
 
+    stopPlaybackTimeLoop();
     pendingAutoPlayRef.current = false;
     isPausedByUserRef.current = false;
     wasPlayingBeforeExternalPauseRef.current = false;
@@ -337,9 +446,10 @@ const Player: React.FC<PlayerProps> = ({
     audioSrcRef.current = null;
     currentSegmentIndexRef.current = 0;
     waitingSegmentIndexRef.current = null;
+    publishPlaybackTime(0);
     setIsPlaying(false);
     updateLoading(false);
-  }, [updateLoading]);
+  }, [publishPlaybackTime, stopPlaybackTimeLoop, updateLoading]);
 
   const tryPlayCurrentAudio = useCallback(
     (_reason: string) => {
@@ -397,6 +507,7 @@ const Player: React.FC<PlayerProps> = ({
       waitingSegmentIndexRef.current = null;
       isWaitingForSegmentRef.current = false;
       isSwitchingSegmentRef.current = true;
+      publishPlaybackTime(getSegmentStartTimeMs(segmentIndex));
       const shouldAutoResume = canStartPlaybackAutomatically();
 
       pendingAutoPlayRef.current = shouldAutoResume;
@@ -435,6 +546,8 @@ const Player: React.FC<PlayerProps> = ({
     [
       canStartPlaybackAutomatically,
       getSegmentSrc,
+      getSegmentStartTimeMs,
+      publishPlaybackTime,
       tryPlayCurrentAudio,
       updateLoading,
     ]
@@ -442,9 +555,11 @@ const Player: React.FC<PlayerProps> = ({
 
   const finishAudioItem = useCallback(
     (_reason?: string) => {
+      stopPlaybackTimeLoop();
       pendingAutoPlayRef.current = false;
       isWaitingForSegmentRef.current = false;
       isSwitchingSegmentRef.current = false;
+      syncPlaybackTime();
       setIsPlaying(false);
       updateLoading(false);
 
@@ -452,7 +567,13 @@ const Player: React.FC<PlayerProps> = ({
         onEnded?.(currentAudioIndex);
       }
     },
-    [currentAudioIndex, onEnded, updateLoading]
+    [
+      currentAudioIndex,
+      onEnded,
+      stopPlaybackTimeLoop,
+      syncPlaybackTime,
+      updateLoading,
+    ]
   );
 
   const handleSegmentEnded = useCallback(() => {
@@ -472,6 +593,7 @@ const Player: React.FC<PlayerProps> = ({
       waitingSegmentIndexRef.current = nextSegmentIndex;
       isWaitingForSegmentRef.current = true;
       pendingAutoPlayRef.current = defaultPlaying;
+      publishPlaybackTime(getSegmentStartTimeMs(nextSegmentIndex));
       setIsPlaying(false);
       updateLoading(true);
 
@@ -479,7 +601,14 @@ const Player: React.FC<PlayerProps> = ({
     }
 
     finishAudioItem("segments-completed");
-  }, [defaultPlaying, finishAudioItem, startSegmentPlayback, updateLoading]);
+  }, [
+    defaultPlaying,
+    finishAudioItem,
+    getSegmentStartTimeMs,
+    publishPlaybackTime,
+    startSegmentPlayback,
+    updateLoading,
+  ]);
 
   useEffect(() => {
     if (currentAudioKeyRef.current === currentAudioKey) {
@@ -496,6 +625,8 @@ const Player: React.FC<PlayerProps> = ({
     isSwitchingSegmentRef.current = false;
     activeSourceTypeRef.current = null;
     audioSrcRef.current = null;
+    stopPlaybackTimeLoop();
+    publishPlaybackTime(0);
     updateLoading(false);
 
     const audioElement = audioRef.current;
@@ -513,6 +644,8 @@ const Player: React.FC<PlayerProps> = ({
     currentAudioKey,
     currentAudioSegments.length,
     currentAudioUrl,
+    publishPlaybackTime,
+    stopPlaybackTimeLoop,
     updateLoading,
   ]);
 
@@ -644,6 +777,7 @@ const Player: React.FC<PlayerProps> = ({
         audioElement.src = currentAudioUrl;
         audioElement.load();
         pendingSeekTimeRef.current = nextSeekTime;
+        publishPlaybackTime(nextSeekTime * 1000);
 
         if (audioElement.readyState > 0) {
           audioElement.currentTime = nextSeekTime;
@@ -730,6 +864,7 @@ const Player: React.FC<PlayerProps> = ({
     defaultPlaying,
     isPlaybackPaused,
     canStartPlaybackAutomatically,
+    publishPlaybackTime,
     resetAudio,
     startSegmentPlayback,
     tryPlayCurrentAudio,
@@ -739,18 +874,30 @@ const Player: React.FC<PlayerProps> = ({
 
   useEffect(() => resetAudio, [resetAudio]);
 
+  useEffect(() => stopPlaybackTimeLoop, [stopPlaybackTimeLoop]);
+
   const handleAudioPlay = useCallback(() => {
+    syncPlaybackTime();
+    startPlaybackTimeLoop();
     setIsPlaying(true);
     updateLoading(false);
-  }, [updateLoading]);
+    onPlaybackStarted?.();
+  }, [
+    onPlaybackStarted,
+    startPlaybackTimeLoop,
+    syncPlaybackTime,
+    updateLoading,
+  ]);
 
   const handleAudioPause = useCallback(() => {
     if (isWaitingForSegmentRef.current || isSwitchingSegmentRef.current) {
       return;
     }
 
+    stopPlaybackTimeLoop();
+    syncPlaybackTime();
     setIsPlaying(false);
-  }, [currentAudioIndex]);
+  }, [currentAudioIndex, stopPlaybackTimeLoop, syncPlaybackTime]);
 
   const handleAudioCanPlay = useCallback(() => {
     const audioElement = audioRef.current;
@@ -760,12 +907,19 @@ const Player: React.FC<PlayerProps> = ({
       pendingSeekTimeRef.current = null;
     }
 
+    syncPlaybackTime();
+
     if (!pendingAutoPlayRef.current || !defaultPlaying) {
       return;
     }
 
     tryPlayCurrentAudio("canplay");
-  }, [currentAudioIndex, defaultPlaying, tryPlayCurrentAudio]);
+  }, [
+    currentAudioIndex,
+    defaultPlaying,
+    syncPlaybackTime,
+    tryPlayCurrentAudio,
+  ]);
 
   const handleLoadedMetadata = useCallback(() => {
     const audioElement = audioRef.current;
@@ -774,13 +928,24 @@ const Player: React.FC<PlayerProps> = ({
       audioElement.currentTime = pendingSeekTimeRef.current;
       pendingSeekTimeRef.current = null;
     }
-  }, [currentAudioIndex]);
+
+    syncPlaybackTime();
+  }, [currentAudioIndex, syncPlaybackTime]);
+
+  const handleAudioTimeUpdate = useCallback(() => {
+    syncPlaybackTime();
+  }, [syncPlaybackTime]);
+
+  const handleAudioSeeking = useCallback(() => {
+    syncPlaybackTime();
+  }, [syncPlaybackTime]);
 
   const handleAudioEnded = useCallback(() => {
     const shouldFinishAsUrl =
       activeSourceTypeRef.current === "url" ||
       currentAudioSegmentsRef.current.length === 0;
 
+    stopPlaybackTimeLoop();
     isSwitchingSegmentRef.current = false;
 
     if (shouldFinishAsUrl) {
@@ -789,12 +954,14 @@ const Player: React.FC<PlayerProps> = ({
     }
 
     handleSegmentEnded();
-  }, [finishAudioItem, handleSegmentEnded]);
+  }, [finishAudioItem, handleSegmentEnded, stopPlaybackTimeLoop]);
 
   const handleAudioError = useCallback(() => {
+    stopPlaybackTimeLoop();
+    syncPlaybackTime();
     setIsPlaying(false);
     updateLoading(false);
-  }, [updateLoading]);
+  }, [stopPlaybackTimeLoop, syncPlaybackTime, updateLoading]);
   const handleMobileViewModeChange = useCallback(
     (nextViewMode: MobileViewMode) => {
       onMobileViewModeChange?.(nextViewMode);
@@ -802,6 +969,10 @@ const Player: React.FC<PlayerProps> = ({
     },
     [onMobileViewModeChange]
   );
+
+  useEffect(() => {
+    onPlaybackTimeChange?.(playbackTimeMsRef.current);
+  }, [onPlaybackTimeChange]);
 
   return (
     <div className={cn("slide-player", className)} {...props}>
@@ -813,6 +984,9 @@ const Player: React.FC<PlayerProps> = ({
         onCanPlay={handleAudioCanPlay}
         onPlay={handleAudioPlay}
         onPause={handleAudioPause}
+        onSeeking={handleAudioSeeking}
+        onSeeked={handleAudioSeeking}
+        onTimeUpdate={handleAudioTimeUpdate}
         onEnded={handleAudioEnded}
         onError={handleAudioError}
       />
@@ -825,10 +999,14 @@ const Player: React.FC<PlayerProps> = ({
               fullscreen: playerTexts.fullscreenLabel,
               nonFullscreen: playerTexts.nonFullscreenLabel,
               screen: playerTexts.screenLabel,
+              subtitle: playerTexts.subtitleLabel,
+              subtitleToggle: playerTexts.subtitleToggleAriaLabel,
               title: playerTexts.settingsTitle,
             }}
+            isSubtitleEnabled={isSubtitleEnabled}
             onClose={() => setIsMobileMoreOpen(false)}
             onOpenChange={setIsMobileMoreOpen}
+            onSubtitleToggle={onSubtitleToggle ?? (() => {})}
             onViewModeChange={handleMobileViewModeChange}
             open={isMobileMoreOpen}
             viewMode={mobileViewMode}
@@ -853,6 +1031,22 @@ const Player: React.FC<PlayerProps> = ({
               </button>
               <button aria-label="Volume" className="hidden" type="button">
                 <Volume2 className="slide-player__icon" strokeWidth={2.25} />
+              </button>
+              <button
+                aria-label={playerTexts.subtitleToggleAriaLabel}
+                aria-pressed={isSubtitleEnabled}
+                className="slide-player__action slide-player__action--subtitle"
+                onClick={onSubtitleToggle}
+                type="button"
+              >
+                {isSubtitleEnabled ? (
+                  <Captions className="slide-player__icon" strokeWidth={2.25} />
+                ) : (
+                  <CaptionsOff
+                    className="slide-player__icon"
+                    strokeWidth={2.25}
+                  />
+                )}
               </button>
               <button
                 aria-label="Rewind"
@@ -990,4 +1184,8 @@ const Player: React.FC<PlayerProps> = ({
   );
 };
 
-export default Player;
+const MemoizedPlayer = memo(Player);
+
+MemoizedPlayer.displayName = "Player";
+
+export default MemoizedPlayer;

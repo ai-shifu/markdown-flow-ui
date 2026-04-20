@@ -2,14 +2,24 @@
 .tag-video {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   cursor: pointer;
-  color: #0e46fb;
   font-family: inherit;
   font-size: 14px;
   font-style: normal;
   font-weight: 400;
   line-height: 20px;
+}
+
+.tag-placeholder-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: #0e46fb;
+}
+
+.tag-fixed-output-marker {
+  color: #800080;
 }
 .tag-image,
 .tag-video,
@@ -23,6 +33,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  color: inherit;
 }
 
 .tag-placeholder-icon svg {

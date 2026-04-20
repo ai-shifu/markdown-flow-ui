@@ -72,6 +72,7 @@ class PlaceholderWidget extends WidgetType {
       title?: string;
       url?: string;
       scalePercent?: number;
+      fixedOutput?: boolean;
     },
     private styleClass: string,
     private type: SelectedOption,
@@ -107,7 +108,10 @@ class PlaceholderWidget extends WidgetType {
   toDOM() {
     const container = document.createElement("span");
     container.className = this.styleClass;
+    const content = document.createElement("span");
+    content.className = "tag-placeholder-content";
     const span = document.createElement("span");
+    span.className = "tag-placeholder-label";
     span.textContent = this.text;
     span.dataset["tag"] = this.dataset.tag || "";
     span.dataset["url"] = this.dataset.url || "";
@@ -124,7 +128,7 @@ class PlaceholderWidget extends WidgetType {
     //     });
     //   }
     // });
-    span.addEventListener("click", (e) => {
+    content.addEventListener("click", (e) => {
       const [from, to] = this.getPosition() ?? [-1, -1];
       const event = new CustomEvent("globalTagClick", {
         detail: {
@@ -139,6 +143,14 @@ class PlaceholderWidget extends WidgetType {
       });
       window.dispatchEvent(event);
     });
+
+    if (this.dataset.fixedOutput) {
+      const prefix = document.createElement("span");
+      prefix.className = "tag-fixed-output-marker";
+      prefix.textContent = "===";
+      container.appendChild(prefix);
+    }
+
     if (this.dataset.tag === "image" || this.dataset.tag === "video") {
       const iconWrapper = document.createElement("span");
       iconWrapper.className = "tag-placeholder-icon";
@@ -146,9 +158,18 @@ class PlaceholderWidget extends WidgetType {
       const icon =
         this.dataset.tag === "image" ? buildImageIcon() : buildVideoIcon();
       iconWrapper.appendChild(icon);
-      container.appendChild(iconWrapper);
+      content.appendChild(iconWrapper);
     }
-    container.appendChild(span);
+    content.appendChild(span);
+    container.appendChild(content);
+
+    if (this.dataset.fixedOutput) {
+      const suffix = document.createElement("span");
+      suffix.className = "tag-fixed-output-marker";
+      suffix.textContent = "===";
+      container.appendChild(suffix);
+    }
+
     // container.appendChild(icon);
     return container;
   }

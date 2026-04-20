@@ -7,10 +7,11 @@ import {
   MatchDecorator,
 } from "@codemirror/view";
 import { SelectedOption } from "../types";
+import { unwrapFixedOutput } from "../utils";
 import PlaceholderWidget from "./PlaceholderWidget";
 
 const biliVideoContextRegexp =
-  /<iframe\s[^>]*data-tag="video"[^>]*><\/iframe>/gi;
+  /===\s*<iframe\s[^>]*data-tag="video"[^>]*><\/iframe>\s*===|<iframe\s[^>]*data-tag="video"[^>]*><\/iframe>/gi;
 
 const extractAttrValue = (markup: string, attr: string) => {
   const escapedAttr = attr.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -25,7 +26,9 @@ const decodeHtmlEntities = (value: string) =>
 const biliUrlMatcher = new MatchDecorator({
   regexp: biliVideoContextRegexp,
   decoration: (match, view) => {
-    const iframeMarkup = match?.[0] || "";
+    const source = match?.[0] || "";
+    const iframeMarkup = unwrapFixedOutput(source);
+    const fixedOutput = /^\s*===/.test(source);
     const srcValueRaw = extractAttrValue(iframeMarkup, "src");
     const titleAttrRaw = extractAttrValue(iframeMarkup, "data-title");
     const dataUrlAttrRaw = extractAttrValue(iframeMarkup, "data-url");
@@ -55,6 +58,7 @@ const biliUrlMatcher = new MatchDecorator({
           tag: "video",
           url: originalUrl, // Decoded original Bilibili URL
           title: titleAttr, // title from data-title attribute
+          fixedOutput,
         },
         "tag-video",
         SelectedOption.Video,

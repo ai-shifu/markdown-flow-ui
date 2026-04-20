@@ -32,6 +32,7 @@ import "./markdownFlowEditor.css";
 import {
   createSlashCommands,
   parseContentInfo,
+  getImageContentToInsert,
   getVideoContentToInsert,
   extractVariableNames,
   createVariableExpressionRegexp,
@@ -725,29 +726,11 @@ const Editor: React.FC<EditorProps> = ({
       scalePercent?: number;
     }) => {
       if (!resourceUrl || disabled) return;
-      const sanitizedHtmlUrl = resourceUrl.replace(/"/g, "&quot;");
-      const clampedScale =
-        typeof scalePercent === "number"
-          ? Math.max(1, Math.min(1000, Math.round(scalePercent)))
-          : undefined;
-      const sanitizedTitle = resourceTitle?.replace(/"/g, "&quot;");
-      const escapeMarkdownText = (text: string) =>
-        text.replace(/([\[\]\\])/g, "\\$1");
-      const markdownTitle = resourceTitle
-        ? escapeMarkdownText(resourceTitle)
-        : "";
-      const widthAttribute =
-        typeof clampedScale === "number" && clampedScale !== 100
-          ? ` width="${clampedScale}%"`
-          : "";
-      const htmlTitleAttributes = sanitizedTitle
-        ? ` alt="${sanitizedTitle}" title="${sanitizedTitle}"`
-        : "";
-
-      const textToInsert =
-        !clampedScale || clampedScale === 100
-          ? `![${markdownTitle}](${resourceUrl})`
-          : `<img src="${sanitizedHtmlUrl}"${htmlTitleAttributes}${widthAttribute} />`;
+      const textToInsert = getImageContentToInsert({
+        resourceUrl,
+        resourceTitle,
+        scalePercent,
+      });
       if (selectContentInfo?.type === SelectedOption.Image) {
         deleteSelectedContent();
         if (!editorViewRef.current) return;
@@ -760,7 +743,7 @@ const Editor: React.FC<EditorProps> = ({
       }
       setDialogOpen(false);
     },
-    [insertText, selectedOption, disabled]
+    [deleteSelectedContent, disabled, insertText, selectContentInfo]
   );
 
   const handleSelectVideo = useCallback(
@@ -787,7 +770,7 @@ const Editor: React.FC<EditorProps> = ({
       }
       setDialogOpen(false);
     },
-    [insertText, selectedOption, disabled]
+    [deleteSelectedContent, disabled, insertText, selectContentInfo]
   );
 
   const handleSelectVariable = useCallback(

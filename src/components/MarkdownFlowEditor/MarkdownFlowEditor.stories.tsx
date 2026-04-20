@@ -111,13 +111,13 @@ Link:
 
 Image:
 
-![Image Description](https://ai-shifu.cn/imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/height:2000/https:/cdn.gamma.app/51wyzvm6tssdgg1/c8d63919f06741bb8967fa6af3a299f2/original/Cai-Se-logo-Dai-Wen-Zi-Gao-Du-Liu-Bai-h110.png)
+=== ![Image Description](https://ai-shifu.cn/imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/height:2000/https:/cdn.gamma.app/51wyzvm6tssdgg1/c8d63919f06741bb8967fa6af3a299f2/original/Cai-Se-logo-Dai-Wen-Zi-Gao-Du-Liu-Bai-h110.png) ===
 
 ## Video
 
-<iframe data-tag="video" data-title="哔哩哔哩视频" data-url="https://www.bilibili.com/video/BV1ry4y1y7KZ/" class="w-full aspect-video rounded-lg border-0" src="https://player.bilibili.com/player.html?bvid=BV1ry4y1y7KZ&autoplay=0" allowfullscreen="" allow="autoplay; encrypted-media"></iframe>
+=== <iframe data-tag="video" data-title="哔哩哔哩视频" data-url="https://www.bilibili.com/video/BV1ry4y1y7KZ/" class="w-full aspect-video rounded-lg border-0" src="https://player.bilibili.com/player.html?bvid=BV1ry4y1y7KZ&autoplay=0" allowfullscreen="" allow="autoplay; encrypted-media"></iframe> ===
 
-<iframe data-tag="video" data-title="YouTube Video" src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen="" allow="autoplay; encrypted-media" title="youtube-video" class="w-full aspect-video rounded-lg border-0"></iframe>
+=== <iframe data-tag="video" data-title="YouTube Video" src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen="" allow="autoplay; encrypted-media" title="youtube-video" class="w-full aspect-video rounded-lg border-0"></iframe> ===
 
 ## Blockquotes
 > This is a blockquote
@@ -260,8 +260,8 @@ const mockUploadProps: UploadProps = {
 
 export const MarkdownFlowEditorWithImage: Story = {
   args: {
-    content: `Img tag with size: <img src="https://ai-shifu.cn/imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/height:2000/https:/cdn.gamma.app/51wyzvm6tssdgg1/c8d63919f06741bb8967fa6af3a299f2/original/Cai-Se-logo-Dai-Wen-Zi-Gao-Du-Liu-Bai-h110.png" width="50%"/>
-Markdown image: ![Markdown image](https://ai-shifu.cn/imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/height:2000/https:/cdn.gamma.app/51wyzvm6tssdgg1/c8d63919f06741bb8967fa6af3a299f2/original/Cai-Se-logo-Dai-Wen-Zi-Gao-Du-Liu-Bai-h110.png)`,
+    content: `Img tag with size: === <img src="https://ai-shifu.cn/imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/height:2000/https:/cdn.gamma.app/51wyzvm6tssdgg1/c8d63919f06741bb8967fa6af3a299f2/original/Cai-Se-logo-Dai-Wen-Zi-Gao-Du-Liu-Bai-h110.png" width="50%"/> ===
+Markdown image: === ![Markdown image](https://ai-shifu.cn/imgproxy.gamma.app/resize/quality:80/resizing_type:fit/width:2000/height:2000/https:/cdn.gamma.app/51wyzvm6tssdgg1/c8d63919f06741bb8967fa6af3a299f2/original/Cai-Se-logo-Dai-Wen-Zi-Gao-Du-Liu-Bai-h110.png) ===`,
     editMode: EditMode.QuickEdit,
     uploadProps: mockUploadProps,
     onChange: (value) => {

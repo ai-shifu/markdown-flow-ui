@@ -7,9 +7,12 @@ import {
   MatchDecorator,
 } from "@codemirror/view";
 import { SelectedOption } from "../types";
+import { unwrapFixedOutput } from "../utils";
 import PlaceholderWidget from "./PlaceholderWidget";
 
-const agiImgContextRegexp = /!\[([^\]]*)\]\(([^)]+)\)|<img\b[^>]*>/gi;
+const imageMarkupRegexp = /!\[([^\]]*)\]\(([^)]+)\)|<img\b[^>]*>/i;
+const agiImgContextRegexp =
+  /===\s*(?:!\[[^\]]*\]\([^)]+\)|<img\b[^>]*>)\s*===|!\[[^\]]*\]\([^)]+\)|<img\b[^>]*>/gi;
 
 const extractAttributeValue = (tag: string, attribute: string) => {
   const regexp = new RegExp(
@@ -25,7 +28,9 @@ const clampScalePercent = (value: number) =>
   Math.max(1, Math.min(1000, Math.round(value)));
 
 const getImageMatchInfo = (match: RegExpMatchArray) => {
-  const raw = match?.[0] ?? "";
+  const source = match?.[0] ?? "";
+  const raw = unwrapFixedOutput(source);
+  const fixedOutput = /^\s*===/.test(source);
   if (/^<img\b/i.test(raw)) {
     const src = extractAttributeValue(raw, "src") ?? "";
     const alt =
@@ -45,15 +50,18 @@ const getImageMatchInfo = (match: RegExpMatchArray) => {
       url: src,
       title: alt,
       scalePercent,
+      fixedOutput,
     };
   }
-  const title = match?.[1] ?? "";
-  const url = match?.[2] ?? "";
+  const markdownMatch = raw.match(imageMarkupRegexp);
+  const title = markdownMatch?.[1] ?? "";
+  const url = markdownMatch?.[2] ?? "";
   return {
     text: title,
     url,
     title,
     scalePercent: undefined,
+    fixedOutput,
   };
 };
 
@@ -69,6 +77,7 @@ const imageUrlMatcher = new MatchDecorator({
           url: info.url,
           title: info.title,
           scalePercent: info.scalePercent,
+          fixedOutput: info.fixedOutput,
         },
         "tag-image",
         SelectedOption.Image,

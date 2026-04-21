@@ -27,8 +27,6 @@ export {
 export type {
   SlideInteractionTexts,
   SlideFullscreenHeader,
-  SlideErrorCode,
-  SlideErrorContext,
   SlideProps,
 } from "./Slide";
 export type {
@@ -48,4 +46,3 @@ export type {
 export type { PlayerProps, SlidePlayerTexts } from "./Player";
 export type { UseSlideResult } from "./useSlide";
 export type { MobileViewMode } from "./utils/mobileScreenMode";
-export { SLIDE_ERROR_CODES } from "./constants";

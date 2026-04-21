@@ -3,7 +3,7 @@ export { default as MarkdownFlow } from "./MarkdownFlow";
 export { default as ScrollableMarkdown } from "./MarkdownFlow/ScrollableMarkdownFlow";
 export { default as MarkdownFlowEditor } from "./MarkdownFlowEditor";
 export { default as Slide } from "./Slide";
-export { Player, useSlide, SLIDE_ERROR_CODES } from "./Slide";
+export { Player, useSlide } from "./Slide";
 export {
   getInteractionDefaultValues,
   getInteractionDefaultSelectedValues,
@@ -21,8 +21,6 @@ export type {
   Element,
   ElementSubtitleCue,
   SlideInteractionTexts,
-  SlideErrorCode,
-  SlideErrorContext,
   SlideProps,
 } from "./Slide";
 export type {

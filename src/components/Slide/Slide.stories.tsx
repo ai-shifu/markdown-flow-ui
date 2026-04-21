@@ -53,16 +53,6 @@ const meta = {
       control: "object",
       description: "I18n-ready player settings sheet and fullscreen hint texts",
     },
-    isStreaming: {
-      control: "boolean",
-      description:
-        "Marks the current elementList as a live stream so inactivity timeout handling can be enabled",
-    },
-    streamInactivityTimeoutMs: {
-      control: { type: "number", min: 0, step: 1000 },
-      description:
-        "Timeout for stream inactivity in milliseconds before buffering is dismissed",
-    },
     onMobileViewModeChange: {
       control: false,
       description:
@@ -590,8 +580,6 @@ const buildStuckRunStreamEvents = (events: RunStreamFixtureEvent[]) => {
       continue;
     }
 
-    // Freeze the fixture at the last speakable snapshot that still has no
-    // playable audio so the player stays buffering without any terminal signal.
     return events.slice(0, pendingEventIndex + 1);
   }
 
@@ -834,21 +822,18 @@ const prependEmptyPptPlaceholderForLeadingText = (elementList: Element[]) => {
 type RunStreamSlidePreviewProps = React.ComponentProps<typeof Slide> & {
   prependEmptyPptPlaceholder?: boolean;
   runStreamEvents?: RunStreamFixtureEvent[];
-  keepStreamingAliveAfterLastEvent?: boolean;
 };
 
 const createRunStreamEventPlayback = ({
   events,
   sequenceMapRef,
   setElementList,
-  onCompleted,
 }: {
   events: RunStreamFixtureEvent[];
   sequenceMapRef: React.MutableRefObject<Map<string, number>>;
   setElementList: React.Dispatch<
     React.SetStateAction<RunStreamFixtureElement[]>
   >;
-  onCompleted?: () => void;
 }) => {
   let currentEventIndex = 0;
   let timerId: number | null = null;
@@ -883,7 +868,6 @@ const createRunStreamEventPlayback = ({
     }
 
     if (currentEventIndex >= events.length) {
-      onCompleted?.();
       return;
     }
 
@@ -905,14 +889,11 @@ const RunStreamSlidePreview = ({
   elementList = [],
   prependEmptyPptPlaceholder = true,
   runStreamEvents: injectedRunStreamEvents,
-  keepStreamingAliveAfterLastEvent = false,
   ...props
 }: RunStreamSlidePreviewProps) => {
   const [streamedElementList, setStreamedElementList] = useState<
     RunStreamFixtureElement[]
   >([]);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [streamErrorCode, setStreamErrorCode] = useState("");
   const runStreamSequenceByKeyRef = useRef<Map<string, number>>(new Map());
   const runStreamEvents = useMemo(
     () =>
@@ -944,47 +925,19 @@ const RunStreamSlidePreview = ({
   useEffect(() => {
     if (runStreamEvents.length === 0) {
       setStreamedElementList([]);
-      setIsStreaming(false);
       return;
     }
-
-    setStreamErrorCode("");
-    setIsStreaming(true);
 
     return createRunStreamEventPlayback({
       events: runStreamEvents,
       sequenceMapRef: runStreamSequenceByKeyRef,
       setElementList: setStreamedElementList,
-      onCompleted: () => {
-        if (keepStreamingAliveAfterLastEvent) {
-          return;
-        }
-
-        setIsStreaming(false);
-      },
     });
-  }, [keepStreamingAliveAfterLastEvent, runStreamEvents]);
+  }, [runStreamEvents]);
 
   console.log("streamedElementList", displayElementList);
 
-  return (
-    <>
-      <Slide
-        {...props}
-        elementList={displayElementList}
-        isStreaming={isStreaming}
-        onError={(error) => {
-          setStreamErrorCode(error.code);
-          props.onError?.(error);
-        }}
-      />
-      {streamErrorCode ? (
-        <div className="pointer-events-none fixed right-4 top-4 z-[100] rounded-lg border border-destructive/20 bg-background px-4 py-3 text-sm text-destructive shadow-lg">
-          {streamErrorCode}
-        </div>
-      ) : null}
-    </>
-  );
+  return <Slide {...props} elementList={displayElementList} />;
 };
 
 const historyInteractionFixtureElementList = focusHistoryOnLatestInteraction(
@@ -998,7 +951,6 @@ const triggeredRunStreamEvents = buildTriggeredRunStreamEvents({
   events: parseRunStreamFixture(runStreamFixtureText),
   variableName: historyInteractionVariableName,
 });
-
 const stuckRunStreamEvents = buildStuckRunStreamEvents(
   parseRunStreamFixture(runStreamFixtureText)
 );
@@ -2385,14 +2337,13 @@ export const FullViewportSingleSlideWithEmptyPpt: Story = {
 export const StuckSpeakableFixtureSSE: Story = {
   args: {
     bufferingText: "Audio buffering...",
-    streamInactivityTimeoutMs: 3000,
     playerAlwaysVisible: false,
   },
   parameters: {
     docs: {
       description: {
         story:
-          "Replays `测试数据.json` only up to the last speakable-without-audio snapshot, intentionally omitting the follow-up audio and terminal events so the listen-mode buffering state can stay stuck on a single element.",
+          "Replays `测试数据.json` only up to the last speakable-without-audio snapshot so the listen-mode fixture can stay stuck on a buffering element.",
       },
     },
   },
@@ -2400,7 +2351,6 @@ export const StuckSpeakableFixtureSSE: Story = {
     <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
       <RunStreamSlidePreview
         className="w-full"
-        keepStreamingAliveAfterLastEvent
         prependEmptyPptPlaceholder
         runStreamEvents={stuckRunStreamEvents}
         {...args}

@@ -28,7 +28,11 @@ import {
 import Player from "./Player";
 import SubtitleOverlay from "./SubtitleOverlay";
 import type { PlayerProps, SlidePlayerTexts } from "./Player";
-import { DEFAULT_SLIDE_PLAYER_TEXTS } from "./constants";
+import {
+  DEFAULT_SLIDE_PLAYER_TEXTS,
+  DEFAULT_STREAM_INACTIVITY_TIMEOUT_MS,
+  SLIDE_ERROR_CODES,
+} from "./constants";
 import SlideFullscreenHint from "./SlideFullscreenHint";
 import type { Element } from "./types";
 import useSlide from "./useSlide";
@@ -78,11 +82,19 @@ interface InteractionOverlayCardProps {
   readonly?: boolean;
 }
 
-export interface SlideInteractionTexts extends Pick<
-  ContentRenderProps,
-  "confirmButtonText" | "copyButtonText" | "copiedButtonText"
-> {
+export interface SlideInteractionTexts
+  extends Pick<
+    ContentRenderProps,
+    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+  > {
   title?: string;
+}
+
+export type SlideErrorCode =
+  (typeof SLIDE_ERROR_CODES)[keyof typeof SLIDE_ERROR_CODES];
+
+export interface SlideErrorContext {
+  code: SlideErrorCode;
 }
 
 export type SlideFullscreenHeader = {
@@ -144,8 +156,66 @@ const areStepElementListsEqual = (
     );
   });
 
+const getStreamContentActivityKey = (content: Element["content"]) => {
+  if (typeof content === "string") {
+    return `string:${content.length}:${content.slice(-32)}`;
+  }
+
+  if (typeof content === "number" || typeof content === "boolean") {
+    return `primitive:${String(content)}`;
+  }
+
+  if (React.isValidElement(content)) {
+    return `element:${String(content.key ?? "")}`;
+  }
+
+  if (Array.isArray(content)) {
+    return `array:${content.length}`;
+  }
+
+  if (content == null) {
+    return "null";
+  }
+
+  return `object:${typeof content}`;
+};
+
+const getStreamAudioSegmentsActivityKey = (
+  audioSegments: Element["audio_segments"]
+) =>
+  (audioSegments ?? [])
+    .map((segment) =>
+      [
+        String(segment.segment_index ?? "none"),
+        segment.is_final ? "1" : "0",
+        String(segment.duration_ms ?? 0),
+        String(segment.audio_url ?? ""),
+        String(segment.audio_data?.length ?? 0),
+      ].join(":")
+    )
+    .join(",");
+
+const getStreamActivityKey = (elementList: Element[]) =>
+  elementList
+    .map((element, index) =>
+      [
+        String(element.sequence_number ?? index),
+        String(element.type),
+        getStreamContentActivityKey(element.content),
+        String(element.audio_url ?? ""),
+        getStreamAudioSegmentsActivityKey(element.audio_segments),
+        element.is_renderable === false ? "hidden" : "visible",
+        element.is_new ? "new" : "stable",
+        element.is_speakable ? "speakable" : "silent",
+        String(element.user_input ?? ""),
+        element.readonly ? "readonly" : "editable",
+      ].join("|")
+    )
+    .join("||");
+
 export interface SlideProps extends React.ComponentProps<"section"> {
   elementList?: Element[];
+  isStreaming?: boolean;
   showPlayer?: boolean;
   playerAlwaysVisible?: boolean;
   playerClassName?: string;
@@ -158,16 +228,19 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   playerTexts?: SlidePlayerTexts;
   playerAutoHideDelay?: number;
   markerAutoAdvanceDelay?: number;
+  streamInactivityTimeoutMs?: number;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   onSend?: (content: OnSendContentParams, element?: Element) => void;
   onPlayerVisibilityChange?: (visible: boolean) => void;
   onMobileViewModeChange?: (viewMode: MobileViewMode) => void;
+  onError?: (error: SlideErrorContext) => void;
   onStepChange?: (element: Element | undefined, index: number) => void;
   enableIframeScaling?: boolean;
 }
 
 const Slide: React.FC<SlideProps> = ({
   elementList = [],
+  isStreaming = false,
   showPlayer = true,
   playerAlwaysVisible = false,
   playerClassName,
@@ -180,10 +253,12 @@ const Slide: React.FC<SlideProps> = ({
   playerTexts,
   playerAutoHideDelay = 3000,
   markerAutoAdvanceDelay = DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS,
+  streamInactivityTimeoutMs = DEFAULT_STREAM_INACTIVITY_TIMEOUT_MS,
   interactionDefaultValueOptions,
   onSend,
   onPlayerVisibilityChange,
   onMobileViewModeChange,
+  onError,
   onStepChange,
   enableIframeScaling = true,
   className,
@@ -198,9 +273,13 @@ const Slide: React.FC<SlideProps> = ({
   const autoAdvanceTimerRef = useRef<number | null>(null);
   const interactionAutoCloseTimerRef = useRef<number | null>(null);
   const interactionOverlayOpenTimerRef = useRef<number | null>(null);
+  const streamInactivityTimerRef = useRef<number | null>(null);
   const interactionOverlayRef = useRef<HTMLDivElement | null>(null);
   const prevRenderElementKeysRef = useRef<string[]>([]);
+  const lastStreamActivityKeyRef = useRef<string | null>(null);
   const shouldScrollToBottomRef = useRef(false);
+  const hasStreamStartedRef = useRef(false);
+  const hasStreamInactivityTimedOutRef = useRef(false);
   const pendingInteractionOverlayStepIndexRef = useRef<number | null>(null);
   const playbackResetKeyRef = useRef<string | null>(null);
   const appendedMarkerAdvanceStateRef = useRef({
@@ -250,6 +329,8 @@ const Slide: React.FC<SlideProps> = ({
   const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(true);
   const [currentAudioKey, setCurrentAudioKey] = useState<string | null>(null);
   const [isAudioLoadingVisible, setIsAudioLoadingVisible] = useState(false);
+  const [hasStreamInactivityTimedOut, setHasStreamInactivityTimedOut] =
+    useState(false);
   const [hasCompletedCurrentStepAudio, setHasCompletedCurrentStepAudio] =
     useState(false);
   const [hasCurrentAudioPlaybackStarted, setHasCurrentAudioPlaybackStarted] =
@@ -310,6 +391,10 @@ const Slide: React.FC<SlideProps> = ({
   const fullscreenHintText =
     playerTexts?.fullscreenHintText ??
     DEFAULT_SLIDE_PLAYER_TEXTS.fullscreenHintText;
+  const streamActivityKey = useMemo(
+    () => getStreamActivityKey(elementList),
+    [elementList]
+  );
   const handleMobileViewModeSelect = useCallback(
     (nextViewMode: MobileViewMode) => {
       setHasManualMobileViewMode(true);
@@ -532,6 +617,15 @@ const Slide: React.FC<SlideProps> = ({
     autoAdvanceTimerRef.current = null;
   }, []);
 
+  const clearStreamInactivityTimer = useCallback(() => {
+    if (streamInactivityTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(streamInactivityTimerRef.current);
+    streamInactivityTimerRef.current = null;
+  }, []);
+
   const resetAudioSequence = useCallback(() => {
     clearAutoAdvanceTimer();
     clearInteractionAutoCloseTimer();
@@ -638,7 +732,7 @@ const Slide: React.FC<SlideProps> = ({
 
   const hasResolvedCurrentInteraction = Boolean(
     currentInteractionElement?.readonly ||
-    currentInteractionElement?.user_input?.trim()
+      currentInteractionElement?.user_input?.trim()
   );
 
   const shouldBlockPlaybackForInteraction =
@@ -659,12 +753,67 @@ const Slide: React.FC<SlideProps> = ({
       clearPlayerHideTimer();
       clearInteractionAutoCloseTimer();
       clearInteractionOverlayOpenTimer();
+      clearStreamInactivityTimer();
     };
   }, [
     clearAutoAdvanceTimer,
     clearInteractionAutoCloseTimer,
     clearInteractionOverlayOpenTimer,
     clearPlayerHideTimer,
+    clearStreamInactivityTimer,
+  ]);
+
+  useEffect(() => {
+    if (!isStreaming || streamInactivityTimeoutMs <= 0) {
+      clearStreamInactivityTimer();
+      lastStreamActivityKeyRef.current = null;
+      hasStreamStartedRef.current = false;
+      hasStreamInactivityTimedOutRef.current = false;
+      setHasStreamInactivityTimedOut(false);
+      return;
+    }
+
+    const hasStreamingStarted = !hasStreamStartedRef.current;
+    const hasStreamActivityChanged =
+      lastStreamActivityKeyRef.current !== streamActivityKey;
+
+    hasStreamStartedRef.current = true;
+
+    if (hasStreamingStarted || hasStreamActivityChanged) {
+      lastStreamActivityKeyRef.current = streamActivityKey;
+
+      if (hasStreamInactivityTimedOutRef.current) {
+        hasStreamInactivityTimedOutRef.current = false;
+        setHasStreamInactivityTimedOut(false);
+      }
+    }
+
+    clearStreamInactivityTimer();
+
+    streamInactivityTimerRef.current = window.setTimeout(() => {
+      streamInactivityTimerRef.current = null;
+
+      if (hasStreamInactivityTimedOutRef.current) {
+        return;
+      }
+
+      hasStreamInactivityTimedOutRef.current = true;
+      setHasStreamInactivityTimedOut(true);
+      setIsAudioLoadingVisible(false);
+      onError?.({
+        code: SLIDE_ERROR_CODES.STREAM_INACTIVITY_TIMEOUT,
+      });
+    }, streamInactivityTimeoutMs);
+
+    return () => {
+      clearStreamInactivityTimer();
+    };
+  }, [
+    clearStreamInactivityTimer,
+    isStreaming,
+    onError,
+    streamActivityKey,
+    streamInactivityTimeoutMs,
   ]);
 
   useEffect(() => {
@@ -900,6 +1049,11 @@ const Slide: React.FC<SlideProps> = ({
     }
 
     if (currentStepHasSpeakableElement) {
+      if (hasStreamInactivityTimedOut) {
+        setIsAudioLoadingVisible(false);
+        return;
+      }
+
       setIsAudioLoadingVisible(true);
       return;
     }
@@ -932,6 +1086,7 @@ const Slide: React.FC<SlideProps> = ({
     markerAutoAdvanceDelay,
     goNext,
     hasCompletedCurrentStepAudio,
+    hasStreamInactivityTimedOut,
     isAutoAdvanceEnabled,
     hasResolvedCurrentInteraction,
     shouldBlockPlaybackForInteraction,
@@ -945,6 +1100,7 @@ const Slide: React.FC<SlideProps> = ({
 
   useEffect(() => {
     if (
+      hasStreamInactivityTimedOut ||
       shouldPausePlaybackForCustomAction ||
       !currentStepHasSpeakableElement ||
       shouldBlockPlaybackForInteraction
@@ -965,6 +1121,7 @@ const Slide: React.FC<SlideProps> = ({
 
     setIsAudioLoadingVisible(true);
   }, [
+    hasStreamInactivityTimedOut,
     hasAvailableStepAudio,
     currentStepHasSpeakableElement,
     hasCompletedCurrentStepAudio,
@@ -1318,14 +1475,22 @@ const Slide: React.FC<SlideProps> = ({
 
   const handlePlayerLoadingChange = useCallback(
     (loading: boolean) => {
-      if (!currentStepHasSpeakableElement || hasCompletedCurrentStepAudio) {
+      if (
+        hasStreamInactivityTimedOut ||
+        !currentStepHasSpeakableElement ||
+        hasCompletedCurrentStepAudio
+      ) {
         setIsAudioLoadingVisible(false);
         return;
       }
 
       setIsAudioLoadingVisible(loading);
     },
-    [currentStepHasSpeakableElement, hasCompletedCurrentStepAudio]
+    [
+      currentStepHasSpeakableElement,
+      hasCompletedCurrentStepAudio,
+      hasStreamInactivityTimedOut,
+    ]
   );
 
   const handlePlayerEnded = useCallback(

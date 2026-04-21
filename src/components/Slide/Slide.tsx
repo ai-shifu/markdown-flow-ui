@@ -95,6 +95,7 @@ export type SlideErrorCode =
 
 export interface SlideErrorContext {
   code: SlideErrorCode;
+  setBufferingLoadingVisible: (visible: boolean) => void;
 }
 
 export type SlideFullscreenHeader = {
@@ -401,35 +402,20 @@ const Slide: React.FC<SlideProps> = ({
       reason: string,
       detail?: Record<string, unknown>
     ) => {
-      // Centralize buffering logs so every visibility toggle reports
-      // the caller reason with the same playback context.
-      setIsAudioLoadingVisible((previousVisible) => {
-        console.log("[Slide buffering loading]", {
-          reason,
-          previousVisible,
-          nextVisible,
-          currentIndex,
-          currentAudioKey,
-          currentStepHasSpeakableElement,
-          hasCompletedCurrentStepAudio,
-          hasStreamInactivityTimedOut,
-          isStreaming,
-          streamActivityKey,
-          ...detail,
-        });
-
-        return nextVisible;
-      });
+      void reason;
+      void detail;
+      setIsAudioLoadingVisible(nextVisible);
     },
-    [
-      currentAudioKey,
-      currentIndex,
-      currentStepHasSpeakableElement,
-      hasCompletedCurrentStepAudio,
-      hasStreamInactivityTimedOut,
-      isStreaming,
-      streamActivityKey,
-    ]
+    []
+  );
+  const setBufferingLoadingVisible = useCallback(
+    (visible: boolean) => {
+      updateAudioLoadingVisibility(
+        visible,
+        visible ? "external-show-buffering" : "external-hide-buffering"
+      );
+    },
+    [updateAudioLoadingVisibility]
   );
   const handleMobileViewModeSelect = useCallback(
     (nextViewMode: MobileViewMode) => {
@@ -839,6 +825,7 @@ const Slide: React.FC<SlideProps> = ({
       updateAudioLoadingVisibility(false, "stream-inactivity-timeout");
       onError?.({
         code: SLIDE_ERROR_CODES.STREAM_INACTIVITY_TIMEOUT,
+        setBufferingLoadingVisible,
       });
     }, streamInactivityTimeoutMs);
 
@@ -849,6 +836,7 @@ const Slide: React.FC<SlideProps> = ({
     clearStreamInactivityTimer,
     isStreaming,
     onError,
+    setBufferingLoadingVisible,
     streamActivityKey,
     streamInactivityTimeoutMs,
     updateAudioLoadingVisibility,

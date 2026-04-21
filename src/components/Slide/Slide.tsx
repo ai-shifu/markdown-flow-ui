@@ -395,6 +395,42 @@ const Slide: React.FC<SlideProps> = ({
     () => getStreamActivityKey(elementList),
     [elementList]
   );
+  const updateAudioLoadingVisibility = useCallback(
+    (
+      nextVisible: boolean,
+      reason: string,
+      detail?: Record<string, unknown>
+    ) => {
+      // Centralize buffering logs so every visibility toggle reports
+      // the caller reason with the same playback context.
+      setIsAudioLoadingVisible((previousVisible) => {
+        console.log("[Slide buffering loading]", {
+          reason,
+          previousVisible,
+          nextVisible,
+          currentIndex,
+          currentAudioKey,
+          currentStepHasSpeakableElement,
+          hasCompletedCurrentStepAudio,
+          hasStreamInactivityTimedOut,
+          isStreaming,
+          streamActivityKey,
+          ...detail,
+        });
+
+        return nextVisible;
+      });
+    },
+    [
+      currentAudioKey,
+      currentIndex,
+      currentStepHasSpeakableElement,
+      hasCompletedCurrentStepAudio,
+      hasStreamInactivityTimedOut,
+      isStreaming,
+      streamActivityKey,
+    ]
+  );
   const handleMobileViewModeSelect = useCallback(
     (nextViewMode: MobileViewMode) => {
       setHasManualMobileViewMode(true);
@@ -632,7 +668,7 @@ const Slide: React.FC<SlideProps> = ({
     clearInteractionOverlayOpenTimer();
     setCurrentAudioKey(null);
     playbackTimeStore.reset();
-    setIsAudioLoadingVisible(false);
+    updateAudioLoadingVisibility(false, "reset-audio-sequence");
     setHasCompletedCurrentStepAudio(false);
     setHasCurrentAudioPlaybackStarted(false);
     setActiveInteractionElement(undefined);
@@ -643,6 +679,7 @@ const Slide: React.FC<SlideProps> = ({
     clearInteractionAutoCloseTimer,
     clearInteractionOverlayOpenTimer,
     playbackTimeStore,
+    updateAudioLoadingVisibility,
   ]);
 
   const startCurrentAudioSequence = useCallback(() => {
@@ -799,7 +836,7 @@ const Slide: React.FC<SlideProps> = ({
 
       hasStreamInactivityTimedOutRef.current = true;
       setHasStreamInactivityTimedOut(true);
-      setIsAudioLoadingVisible(false);
+      updateAudioLoadingVisibility(false, "stream-inactivity-timeout");
       onError?.({
         code: SLIDE_ERROR_CODES.STREAM_INACTIVITY_TIMEOUT,
       });
@@ -814,6 +851,7 @@ const Slide: React.FC<SlideProps> = ({
     onError,
     streamActivityKey,
     streamInactivityTimeoutMs,
+    updateAudioLoadingVisibility,
   ]);
 
   useEffect(() => {
@@ -1050,11 +1088,14 @@ const Slide: React.FC<SlideProps> = ({
 
     if (currentStepHasSpeakableElement) {
       if (hasStreamInactivityTimedOut) {
-        setIsAudioLoadingVisible(false);
+        updateAudioLoadingVisibility(
+          false,
+          "step-wait-suppressed-after-timeout"
+        );
         return;
       }
 
-      setIsAudioLoadingVisible(true);
+      updateAudioLoadingVisibility(true, "step-waiting-for-first-audio");
       return;
     }
 
@@ -1096,6 +1137,7 @@ const Slide: React.FC<SlideProps> = ({
     startCurrentAudioSequence,
     shouldPausePlaybackForCustomAction,
     shouldUseSilentStepAutoAdvanceToggle,
+    updateAudioLoadingVisibility,
   ]);
 
   useEffect(() => {
@@ -1105,21 +1147,27 @@ const Slide: React.FC<SlideProps> = ({
       !currentStepHasSpeakableElement ||
       shouldBlockPlaybackForInteraction
     ) {
-      setIsAudioLoadingVisible(false);
+      updateAudioLoadingVisibility(false, "loading-hidden-blocked-state", {
+        shouldPausePlaybackForCustomAction,
+        shouldBlockPlaybackForInteraction,
+      });
       return;
     }
 
     if (hasCompletedCurrentStepAudio) {
-      setIsAudioLoadingVisible(false);
+      updateAudioLoadingVisibility(
+        false,
+        "loading-hidden-step-audio-completed"
+      );
       return;
     }
 
     if (hasAvailableStepAudio) {
-      setIsAudioLoadingVisible(false);
+      updateAudioLoadingVisibility(false, "loading-hidden-audio-available");
       return;
     }
 
-    setIsAudioLoadingVisible(true);
+    updateAudioLoadingVisibility(true, "loading-visible-awaiting-step-audio");
   }, [
     hasStreamInactivityTimedOut,
     hasAvailableStepAudio,
@@ -1127,6 +1175,7 @@ const Slide: React.FC<SlideProps> = ({
     hasCompletedCurrentStepAudio,
     shouldPausePlaybackForCustomAction,
     shouldBlockPlaybackForInteraction,
+    updateAudioLoadingVisibility,
   ]);
 
   useEffect(() => {
@@ -1457,21 +1506,31 @@ const Slide: React.FC<SlideProps> = ({
     shouldScrollToBottomRef.current = true;
     pendingInteractionOverlayStepIndexRef.current = null;
     setHasPlayerInteracted(true);
-    setIsAudioLoadingVisible(false);
+    updateAudioLoadingVisibility(false, "player-prev");
     showPlayerControls(true);
     resetAudioSequence();
     goPrev();
-  }, [goPrev, resetAudioSequence, showPlayerControls]);
+  }, [
+    goPrev,
+    resetAudioSequence,
+    showPlayerControls,
+    updateAudioLoadingVisibility,
+  ]);
 
   const handleNext = useCallback(() => {
     shouldScrollToBottomRef.current = true;
     pendingInteractionOverlayStepIndexRef.current = null;
     setHasPlayerInteracted(true);
-    setIsAudioLoadingVisible(false);
+    updateAudioLoadingVisibility(false, "player-next");
     showPlayerControls(true);
     resetAudioSequence();
     goNext();
-  }, [goNext, resetAudioSequence, showPlayerControls]);
+  }, [
+    goNext,
+    resetAudioSequence,
+    showPlayerControls,
+    updateAudioLoadingVisibility,
+  ]);
 
   const handlePlayerLoadingChange = useCallback(
     (loading: boolean) => {
@@ -1480,16 +1539,22 @@ const Slide: React.FC<SlideProps> = ({
         !currentStepHasSpeakableElement ||
         hasCompletedCurrentStepAudio
       ) {
-        setIsAudioLoadingVisible(false);
+        updateAudioLoadingVisibility(false, "player-loading-change-ignored", {
+          loading,
+        });
         return;
       }
 
-      setIsAudioLoadingVisible(loading);
+      updateAudioLoadingVisibility(
+        loading,
+        loading ? "player-reported-loading" : "player-reported-ready"
+      );
     },
     [
       currentStepHasSpeakableElement,
       hasCompletedCurrentStepAudio,
       hasStreamInactivityTimedOut,
+      updateAudioLoadingVisibility,
     ]
   );
 
@@ -1523,7 +1588,7 @@ const Slide: React.FC<SlideProps> = ({
 
       setCurrentAudioKey(null);
       setHasCompletedCurrentStepAudio(true);
-      setIsAudioLoadingVisible(false);
+      updateAudioLoadingVisibility(false, "player-ended-step-complete");
 
       if (canGoNext) {
         const nextStepIndex = currentIndex + 1;
@@ -1545,6 +1610,7 @@ const Slide: React.FC<SlideProps> = ({
       goNext,
       hasCurrentStepAudioUrl,
       slideElementList,
+      updateAudioLoadingVisibility,
     ]
   );
 

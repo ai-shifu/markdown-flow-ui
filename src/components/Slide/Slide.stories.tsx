@@ -5,6 +5,7 @@ import { Sparkles } from "lucide-react";
 import historyFixtureText from "../../../../测试历史数据.json?raw";
 import runStreamFixtureText from "../../../../测试数据.json?raw";
 import runStreamFixtureText2 from "../../../../测试数据2.json?raw";
+import ContentRender from "../ContentRender";
 import type { OnSendContentParams } from "../types";
 import type { SlidePlayerCustomActionContext } from "./types";
 import {
@@ -634,9 +635,9 @@ const resolveSubmittedUserInput = (content: OnSendContentParams) =>
 const isSameStoryElement = (currentElement: Element, targetElement?: Element) =>
   Boolean(
     targetElement &&
-    currentElement.type === targetElement.type &&
-    currentElement.sequence_number === targetElement.sequence_number &&
-    currentElement.content === targetElement.content
+      currentElement.type === targetElement.type &&
+      currentElement.sequence_number === targetElement.sequence_number &&
+      currentElement.content === targetElement.content
   );
 
 const applyInteractionSubmission = (
@@ -885,11 +886,10 @@ const createRunStreamEventPlayback = ({
   };
 };
 
-const RunStreamSlidePreview = ({
+const useRunStreamStoryElementList = ({
   elementList = [],
   prependEmptyPptPlaceholder = true,
   runStreamEvents: injectedRunStreamEvents,
-  ...props
 }: RunStreamSlidePreviewProps) => {
   const [streamedElementList, setStreamedElementList] = useState<
     RunStreamFixtureElement[]
@@ -937,7 +937,186 @@ const RunStreamSlidePreview = ({
 
   console.log("streamedElementList", displayElementList);
 
-  return <Slide {...props} elementList={displayElementList} />;
+  return displayElementList;
+};
+
+type StoryPreviewMode = "slide" | "contentrender";
+
+const STORY_PREVIEW_MODES = [
+  {
+    mode: "slide",
+    label: "Slide",
+  },
+  {
+    mode: "contentrender",
+    label: "ContentRender",
+  },
+] as const satisfies ReadonlyArray<{
+  mode: StoryPreviewMode;
+  label: string;
+}>;
+
+const getStoryElementKey = (element: Element, index: number) =>
+  [
+    element.sequence_number ?? index,
+    element.type,
+    typeof element.content === "string" ? element.content : `node-${index}`,
+  ].join("-");
+
+const shouldRenderInContentPreview = (element: Element) =>
+  !isEmptyPptPlaceholderElement(element) &&
+  (typeof element.content !== "string" || element.content.trim().length > 0);
+
+const SimpleElementContentRenderPreview = ({
+  elementList,
+  onSend,
+}: {
+  elementList: Element[];
+  onSend?: RunStreamSlidePreviewProps["onSend"];
+}) => {
+  const renderableElementList = useMemo(
+    () => elementList.filter(shouldRenderInContentPreview),
+    [elementList]
+  );
+
+  if (renderableElementList.length === 0) {
+    return (
+      <div className="flex h-full w-full items-center justify-center px-6 py-12 text-sm text-muted-foreground">
+        Waiting for content...
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full w-full overflow-y-auto px-4 pb-6">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+        {renderableElementList.map((element, index) => {
+          const elementKey = getStoryElementKey(element, index);
+
+          if (typeof element.content === "string") {
+            return (
+              <div
+                key={elementKey}
+                className="rounded-3xl bg-background p-5 shadow-sm ring-1 ring-border/60"
+              >
+                <ContentRender
+                  content={element.content}
+                  enableTypewriter={false}
+                  onSend={(content) => {
+                    console.log(
+                      "content render story onSend",
+                      content,
+                      element
+                    );
+                    onSend?.(content, element);
+                  }}
+                  readonly={element.readonly}
+                  sandboxMode="content"
+                  userInput={element.user_input}
+                />
+              </div>
+            );
+          }
+
+          return (
+            <div
+              key={elementKey}
+              className="rounded-3xl bg-background p-5 shadow-sm ring-1 ring-border/60"
+            >
+              {element.content}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const StoryPreviewModeSwitch = ({
+  mode,
+  onModeChange,
+}: {
+  mode: StoryPreviewMode;
+  onModeChange: (mode: StoryPreviewMode) => void;
+}) => (
+  <div className="inline-flex items-center rounded-full bg-secondary p-1 shadow-sm ring-1 ring-border/70">
+    {STORY_PREVIEW_MODES.map((option) => {
+      const isActive = option.mode === mode;
+
+      return (
+        <button
+          key={option.mode}
+          className={[
+            "rounded-full px-4 py-2 text-sm leading-none transition-colors",
+            isActive
+              ? "bg-background font-medium text-foreground shadow-sm ring-1 ring-border/70"
+              : "text-muted-foreground hover:text-foreground",
+          ].join(" ")}
+          onClick={() => onModeChange(option.mode)}
+          type="button"
+        >
+          {option.label}
+        </button>
+      );
+    })}
+  </div>
+);
+
+const RunStreamPreviewWithModeSwitch = ({
+  className,
+  onSend,
+  elementList = [],
+  prependEmptyPptPlaceholder = true,
+  runStreamEvents,
+  ...slideProps
+}: RunStreamSlidePreviewProps) => {
+  const [mode, setMode] = useState<StoryPreviewMode>("contentrender");
+  const displayElementList = useRunStreamStoryElementList({
+    elementList,
+    prependEmptyPptPlaceholder,
+    runStreamEvents,
+  });
+  const slideClassName = [className, "w-full"].filter(Boolean).join(" ");
+
+  return (
+    <div className="flex h-[100dvh] w-full flex-col border-b border-dashed border-border bg-muted/20">
+      <div className="flex w-full justify-end px-4 py-4">
+        <StoryPreviewModeSwitch mode={mode} onModeChange={setMode} />
+      </div>
+      <div className="min-h-0 flex-1">
+        {mode === "slide" ? (
+          <div className="flex h-full w-full items-center justify-center">
+            <Slide
+              {...slideProps}
+              className={slideClassName}
+              elementList={displayElementList}
+              onSend={onSend}
+            />
+          </div>
+        ) : (
+          <SimpleElementContentRenderPreview
+            elementList={displayElementList}
+            onSend={onSend}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const RunStreamSlidePreview = ({
+  elementList = [],
+  prependEmptyPptPlaceholder = true,
+  runStreamEvents,
+  ...slideProps
+}: RunStreamSlidePreviewProps) => {
+  const displayElementList = useRunStreamStoryElementList({
+    elementList,
+    prependEmptyPptPlaceholder,
+    runStreamEvents,
+  });
+
+  return <Slide {...slideProps} elementList={displayElementList} />;
 };
 
 const historyInteractionFixtureElementList = focusHistoryOnLatestInteraction(
@@ -2343,19 +2522,17 @@ export const StuckSpeakableFixtureSSE: Story = {
     docs: {
       description: {
         story:
-          "Replays `测试数据.json` only up to the last speakable-without-audio snapshot so the listen-mode fixture can stay stuck on a buffering element.",
+          "Replays `测试数据.json` only up to the last speakable-without-audio snapshot so the listen-mode fixture can stay stuck on a buffering element, while also letting Storybook switch between Slide and a simple ContentRender list preview.",
       },
     },
   },
   render: (args) => (
-    <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
-      <RunStreamSlidePreview
-        className="w-full"
-        prependEmptyPptPlaceholder
-        runStreamEvents={stuckRunStreamEvents}
-        {...args}
-      />
-    </div>
+    <RunStreamPreviewWithModeSwitch
+      className="w-full"
+      prependEmptyPptPlaceholder
+      runStreamEvents={stuckRunStreamEvents}
+      {...args}
+    />
   ),
 };
 

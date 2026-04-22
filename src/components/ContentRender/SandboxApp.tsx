@@ -11,6 +11,7 @@ export interface SandboxAppProps {
   hasRootVhHeight?: boolean;
   stretchRootHeight?: boolean;
   enableScaling?: boolean;
+  disableLoadingOverlay?: boolean;
 }
 
 const IMAGE_REUSE_ATTRIBUTES = [
@@ -97,6 +98,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   hasRootVhHeight = false,
   stretchRootHeight = false,
   enableScaling = false,
+  disableLoadingOverlay = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isGeneratingStyles, setIsGeneratingStyles] = useState(false);
@@ -311,7 +313,24 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     []
   );
 
+  useEffect(() => {
+    if (!disableLoadingOverlay) {
+      return;
+    }
+
+    clearTimer(styleTimerRef);
+    clearTimer(scriptTimerRef);
+    hasStylesRef.current = false;
+    hasScriptsRef.current = false;
+    setIsGeneratingStyles(false);
+    setIsGeneratingScripts(false);
+  }, [disableLoadingOverlay]);
+
   const overlayMessage = (() => {
+    if (disableLoadingOverlay) {
+      return null;
+    }
+
     if (isGeneratingScripts || hasScriptsRef.current)
       return scriptLoadingText || "Building scripts cache...";
     if (isGeneratingStyles || hasStylesRef.current)

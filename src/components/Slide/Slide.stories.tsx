@@ -5,6 +5,7 @@ import { Sparkles } from "lucide-react";
 import historyFixtureText from "../../../../测试历史数据.json?raw";
 import runStreamFixtureText from "../../../../测试数据.json?raw";
 import runStreamFixtureText2 from "../../../../测试数据2.json?raw";
+import ContentRender from "../ContentRender";
 import type { OnSendContentParams } from "../types";
 import type { SlidePlayerCustomActionContext } from "./types";
 import {
@@ -550,6 +551,42 @@ const parseRunStreamFixture = (rawText: string): RunStreamFixtureEvent[] =>
       }
     });
 
+const hasPlayableFixtureAudio = (
+  record?: RunStreamFixtureEvent["content"] | null
+) => Boolean(record?.audio_url || (record?.audio_segments?.length ?? 0) > 0);
+
+const buildStuckRunStreamEvents = (events: RunStreamFixtureEvent[]) => {
+  const pendingSpeakableEventIndexByElementBid = new Map<string, number>();
+
+  for (const [eventIndex, event] of events.entries()) {
+    if (event?.type !== "element" || !event.content?.element_bid) {
+      continue;
+    }
+
+    const currentElementBid = event.content.element_bid;
+
+    if (event.content.is_speakable && !hasPlayableFixtureAudio(event.content)) {
+      pendingSpeakableEventIndexByElementBid.set(currentElementBid, eventIndex);
+      continue;
+    }
+
+    if (!hasPlayableFixtureAudio(event.content)) {
+      continue;
+    }
+
+    const pendingEventIndex =
+      pendingSpeakableEventIndexByElementBid.get(currentElementBid);
+
+    if (pendingEventIndex === undefined) {
+      continue;
+    }
+
+    return events.slice(0, pendingEventIndex + 1);
+  }
+
+  return events;
+};
+
 const parseHistoryFixture = (rawText: string): Element[] => {
   try {
     const parsedFixture = JSON.parse(rawText) as Element[];
@@ -785,25 +822,63 @@ const prependEmptyPptPlaceholderForLeadingText = (elementList: Element[]) => {
 
 type RunStreamSlidePreviewProps = React.ComponentProps<typeof Slide> & {
   prependEmptyPptPlaceholder?: boolean;
+  runStreamEvents?: RunStreamFixtureEvent[];
+  streamTimeoutMs?: number;
+};
+
+type RunStreamStoryState = {
+  displayElementList: Element[];
+  streamErrorMessage: string | null;
 };
 
 const createRunStreamEventPlayback = ({
   events,
   sequenceMapRef,
   setElementList,
+  timeoutMs,
+  onTimeout,
 }: {
   events: RunStreamFixtureEvent[];
   sequenceMapRef: React.MutableRefObject<Map<string, number>>;
   setElementList: React.Dispatch<
     React.SetStateAction<RunStreamFixtureElement[]>
   >;
+  timeoutMs?: number;
+  onTimeout?: () => void;
 }) => {
   let currentEventIndex = 0;
   let timerId: number | null = null;
+  let timeoutId: number | null = null;
   let isCancelled = false;
 
   sequenceMapRef.current.clear();
   setElementList([]);
+
+  const scheduleTimeout = () => {
+    if (!timeoutMs || timeoutMs <= 0) {
+      return;
+    }
+
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId);
+    }
+
+    timeoutId = window.setTimeout(() => {
+      if (isCancelled) {
+        return;
+      }
+
+      isCancelled = true;
+
+      if (timerId !== null) {
+        window.clearTimeout(timerId);
+      }
+
+      onTimeout?.();
+    }, timeoutMs);
+  };
+
+  scheduleTimeout();
 
   const emitNextEvent = () => {
     if (isCancelled || currentEventIndex >= events.length) {
@@ -830,6 +905,8 @@ const createRunStreamEventPlayback = ({
       }
     }
 
+    scheduleTimeout();
+
     if (currentEventIndex >= events.length) {
       return;
     }
@@ -845,21 +922,30 @@ const createRunStreamEventPlayback = ({
     if (timerId !== null) {
       window.clearTimeout(timerId);
     }
+
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId);
+    }
   };
 };
 
-const RunStreamSlidePreview = ({
+const useRunStreamStoryElementList = ({
   elementList = [],
   prependEmptyPptPlaceholder = true,
-  ...props
-}: RunStreamSlidePreviewProps) => {
+  runStreamEvents: injectedRunStreamEvents,
+  streamTimeoutMs,
+}: RunStreamSlidePreviewProps): RunStreamStoryState => {
   const [streamedElementList, setStreamedElementList] = useState<
     RunStreamFixtureElement[]
   >([]);
+  const [streamErrorMessage, setStreamErrorMessage] = useState<string | null>(
+    null
+  );
   const runStreamSequenceByKeyRef = useRef<Map<string, number>>(new Map());
   const runStreamEvents = useMemo(
-    () => parseRunStreamFixture(runStreamFixtureText),
-    []
+    () =>
+      injectedRunStreamEvents ?? parseRunStreamFixture(runStreamFixtureText),
+    [injectedRunStreamEvents]
   );
   const fallbackElementList = useMemo(() => elementList, [elementList]);
   const applyRunStreamElementListTransform = useCallback(
@@ -886,19 +972,240 @@ const RunStreamSlidePreview = ({
   useEffect(() => {
     if (runStreamEvents.length === 0) {
       setStreamedElementList([]);
+      setStreamErrorMessage(null);
       return;
     }
+
+    setStreamErrorMessage(null);
 
     return createRunStreamEventPlayback({
       events: runStreamEvents,
       sequenceMapRef: runStreamSequenceByKeyRef,
       setElementList: setStreamedElementList,
+      timeoutMs: streamTimeoutMs,
+      onTimeout: () => {
+        setStreamErrorMessage("系统服务超时，请刷新重试");
+      },
     });
-  }, [runStreamEvents]);
+  }, [runStreamEvents, streamTimeoutMs]);
 
   console.log("streamedElementList", displayElementList);
 
-  return <Slide {...props} elementList={displayElementList} />;
+  return {
+    displayElementList,
+    streamErrorMessage,
+  };
+};
+
+type StoryPreviewMode = "slide" | "contentrender";
+
+const STORY_PREVIEW_MODES = [
+  {
+    mode: "slide",
+    label: "Slide",
+  },
+  {
+    mode: "contentrender",
+    label: "ContentRender",
+  },
+] as const satisfies ReadonlyArray<{
+  mode: StoryPreviewMode;
+  label: string;
+}>;
+
+const getStoryElementKey = (element: Element, index: number) =>
+  [
+    element.sequence_number ?? index,
+    element.type,
+    typeof element.content === "string" ? element.content : `node-${index}`,
+  ].join("-");
+
+const shouldRenderInContentPreview = (element: Element) =>
+  !isEmptyPptPlaceholderElement(element) &&
+  (typeof element.content !== "string" || element.content.trim().length > 0);
+
+const SimpleElementContentRenderPreview = ({
+  elementList,
+  onSend,
+  streamErrorMessage,
+}: {
+  elementList: Element[];
+  onSend?: RunStreamSlidePreviewProps["onSend"];
+  streamErrorMessage?: string | null;
+}) => {
+  const renderableElementList = useMemo(
+    () => elementList.filter(shouldRenderInContentPreview),
+    [elementList]
+  );
+  const hasErrorElement = Boolean(streamErrorMessage);
+
+  if (renderableElementList.length === 0) {
+    return (
+      <div className="flex h-full w-full items-center justify-center px-6 py-12 text-sm text-muted-foreground">
+        Waiting for content...
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full w-full overflow-y-auto px-4 pb-6">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+        {renderableElementList.map((element, index) => {
+          const elementKey = getStoryElementKey(element, index);
+
+          if (typeof element.content === "string") {
+            return (
+              <div
+                key={elementKey}
+                className="rounded-3xl bg-background p-5 shadow-sm ring-1 ring-border/60"
+              >
+                <ContentRender
+                  content={element.content}
+                  disableSandboxLoadingOverlay={hasErrorElement}
+                  enableTypewriter={false}
+                  onSend={(content) => {
+                    console.log(
+                      "content render story onSend",
+                      content,
+                      element
+                    );
+                    onSend?.(content, element);
+                  }}
+                  readonly={element.readonly}
+                  sandboxMode="content"
+                  userInput={element.user_input}
+                />
+              </div>
+            );
+          }
+
+          return (
+            <div
+              key={elementKey}
+              className="rounded-3xl bg-background p-5 shadow-sm ring-1 ring-border/60"
+            >
+              {element.content}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const StoryPreviewModeSwitch = ({
+  mode,
+  onModeChange,
+}: {
+  mode: StoryPreviewMode;
+  onModeChange: (mode: StoryPreviewMode) => void;
+}) => (
+  <div className="inline-flex items-center rounded-full bg-secondary p-1 shadow-sm ring-1 ring-border/70">
+    {STORY_PREVIEW_MODES.map((option) => {
+      const isActive = option.mode === mode;
+
+      return (
+        <button
+          key={option.mode}
+          className={[
+            "rounded-full px-4 py-2 text-sm leading-none transition-colors",
+            isActive
+              ? "bg-background font-medium text-foreground shadow-sm ring-1 ring-border/70"
+              : "text-muted-foreground hover:text-foreground",
+          ].join(" ")}
+          onClick={() => onModeChange(option.mode)}
+          type="button"
+        >
+          {option.label}
+        </button>
+      );
+    })}
+  </div>
+);
+
+const StoryStreamErrorAlert = ({ message }: { message: string }) => (
+  <div
+    className="mx-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive shadow-sm"
+    role="alert"
+  >
+    {message}
+  </div>
+);
+
+const RunStreamPreviewWithModeSwitch = ({
+  className,
+  onSend,
+  elementList = [],
+  prependEmptyPptPlaceholder = true,
+  runStreamEvents,
+  streamTimeoutMs,
+  ...slideProps
+}: RunStreamSlidePreviewProps) => {
+  const [mode, setMode] = useState<StoryPreviewMode>("contentrender");
+  const { displayElementList, streamErrorMessage } =
+    useRunStreamStoryElementList({
+      elementList,
+      prependEmptyPptPlaceholder,
+      runStreamEvents,
+      streamTimeoutMs,
+    });
+  const slideClassName = [className, "w-full"].filter(Boolean).join(" ");
+
+  return (
+    <div className="flex h-[100dvh] w-full flex-col border-b border-dashed border-border bg-muted/20">
+      <div className="flex w-full justify-end px-4 py-4">
+        <StoryPreviewModeSwitch mode={mode} onModeChange={setMode} />
+      </div>
+      {streamErrorMessage ? (
+        <div className="pb-4">
+          <StoryStreamErrorAlert message={streamErrorMessage} />
+        </div>
+      ) : null}
+      <div className="min-h-0 flex-1">
+        {mode === "slide" ? (
+          <div className="flex h-full w-full items-center justify-center">
+            <Slide
+              {...slideProps}
+              className={slideClassName}
+              disableLoadingOverlay={Boolean(streamErrorMessage)}
+              elementList={displayElementList}
+              onSend={onSend}
+            />
+          </div>
+        ) : (
+          <SimpleElementContentRenderPreview
+            elementList={displayElementList}
+            onSend={onSend}
+            streamErrorMessage={streamErrorMessage}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const RunStreamSlidePreview = ({
+  elementList = [],
+  prependEmptyPptPlaceholder = true,
+  runStreamEvents,
+  streamTimeoutMs,
+  ...slideProps
+}: RunStreamSlidePreviewProps) => {
+  const { displayElementList, streamErrorMessage } =
+    useRunStreamStoryElementList({
+      elementList,
+      prependEmptyPptPlaceholder,
+      runStreamEvents,
+      streamTimeoutMs,
+    });
+
+  return (
+    <Slide
+      {...slideProps}
+      disableLoadingOverlay={Boolean(streamErrorMessage)}
+      elementList={displayElementList}
+    />
+  );
 };
 
 const historyInteractionFixtureElementList = focusHistoryOnLatestInteraction(
@@ -912,6 +1219,9 @@ const triggeredRunStreamEvents = buildTriggeredRunStreamEvents({
   events: parseRunStreamFixture(runStreamFixtureText),
   variableName: historyInteractionVariableName,
 });
+const stuckRunStreamEvents = buildStuckRunStreamEvents(
+  parseRunStreamFixture(runStreamFixtureText)
+);
 
 const hasAudioDataSegments = (audioSegments: Element["audio_segments"]) =>
   Boolean(
@@ -2289,6 +2599,30 @@ export const FullViewportSingleSlideWithEmptyPpt: Story = {
         {...args}
       />
     </div>
+  ),
+};
+
+export const StuckSpeakableFixtureSSE: Story = {
+  args: {
+    bufferingText: "Audio buffering...",
+    playerAlwaysVisible: false,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Replays `测试数据.json` only up to the last speakable-without-audio snapshot so the listen-mode fixture can stay stuck on a buffering element, while also letting Storybook switch between Slide and a simple ContentRender list preview.",
+      },
+    },
+  },
+  render: (args) => (
+    <RunStreamPreviewWithModeSwitch
+      className="w-full"
+      prependEmptyPptPlaceholder
+      runStreamEvents={stuckRunStreamEvents}
+      streamTimeoutMs={3000}
+      {...args}
+    />
   ),
 };
 

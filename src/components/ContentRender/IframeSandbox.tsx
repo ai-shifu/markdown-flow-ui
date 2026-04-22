@@ -56,6 +56,7 @@ export interface IframeSandboxProps {
   type: "sandbox" | "markdown";
   replaceRootScreenHeightWithFull?: boolean;
   enableScaling?: boolean;
+  disableLoadingOverlay?: boolean;
 }
 
 const replaceRootScreenHeightToken = (className: string) =>
@@ -117,6 +118,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   mode = "content",
   replaceRootScreenHeightWithFull = false,
   enableScaling = false,
+  disableLoadingOverlay = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -656,6 +658,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         html={renderHtmlContent}
         styleLoadingText={styleLoadingText}
         scriptLoadingText={scriptLoadingText}
+        disableLoadingOverlay={disableLoadingOverlay}
         resetToken={resetToken}
         hasRootVhHeight={hasRootVhHeight}
         mode={mode}
@@ -725,7 +728,10 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       )}
       {mode === "blackboard" && type === "markdown" ? (
         <div onClick={() => emitSandboxInteraction("click")}>
-          <ContentRender content={content} />
+          <ContentRender
+            content={content}
+            disableSandboxLoadingOverlay={disableLoadingOverlay}
+          />
         </div>
       ) : (
         <iframe

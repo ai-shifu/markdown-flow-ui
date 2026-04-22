@@ -33,8 +33,7 @@
   padding: 14px 24px;
   border: 1px solid color-mix(in srgb, var(--background) 18%, transparent);
   border-radius: 16px;
-  background: color-mix(in srgb, var(--foreground) 72%, var(--background) 28%);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.6);
   box-shadow: 0 10px 30px color-mix(in srgb, var(--foreground) 18%, transparent);
 }
 

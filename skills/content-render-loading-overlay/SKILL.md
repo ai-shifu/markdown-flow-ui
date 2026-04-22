@@ -16,6 +16,7 @@ description: 统一 `markdown-flow-ui` 中 `ContentRender`、`IframeSandbox`、`
 3. 保持 loading 文案来源可配置，但卡片尺寸、圆角、模糊、阴影、图标动画等视觉规则应统一。
 4. 若场景运行在 iframe 或隔离容器中，优先使用对宿主样式依赖更低的实现，避免因为 Tailwind 或主题注入时序导致 loading 闪烁或失效。
 5. 修改后重点检查 `Slide bufferingText`、`Building styles...`、`Building scripts cache...` 等状态是否仍能正确切换与居中显示。
+6. 若渲染链路已进入明确错误态（例如 `element.type === "error"`），应立即关闭对应 `Slide` / `IframeSandbox` / `ContentRender` 的短时 loading 遮罩，不要让 buffering、style loading、script loading 继续盖在错误态之上。
 
 ## 约束
 

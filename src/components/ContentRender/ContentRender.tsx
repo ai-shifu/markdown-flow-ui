@@ -86,6 +86,8 @@ export interface ContentRenderProps {
   sandboxStyleLoadingText?: string;
   // Loading text while scripts are being cached/executed inside iframe
   sandboxScriptLoadingText?: string;
+  // Disable sandbox loading overlays when upper layers have already entered an error state
+  disableSandboxLoadingOverlay?: boolean;
   // Fullscreen button text for iframe sandbox
   sandboxFullscreenButtonText?: string;
   // Sandbox render mode
@@ -288,6 +290,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   sandboxLoadingText,
   sandboxStyleLoadingText,
   sandboxScriptLoadingText,
+  disableSandboxLoadingOverlay = false,
   sandboxFullscreenButtonText,
   sandboxMode = "content",
   onClickCustomButtonAfterContent,
@@ -521,6 +524,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               loadingText={sandboxLoadingText}
               styleLoadingText={sandboxStyleLoadingText}
               scriptLoadingText={sandboxScriptLoadingText}
+              disableLoadingOverlay={disableSandboxLoadingOverlay}
               fullScreenButtonText={sandboxFullscreenButtonText}
               mode={sandboxMode}
             />

@@ -78,10 +78,11 @@ interface InteractionOverlayCardProps {
   readonly?: boolean;
 }
 
-export interface SlideInteractionTexts extends Pick<
-  ContentRenderProps,
-  "confirmButtonText" | "copyButtonText" | "copiedButtonText"
-> {
+export interface SlideInteractionTexts
+  extends Pick<
+    ContentRenderProps,
+    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+  > {
   title?: string;
 }
 
@@ -164,6 +165,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   onMobileViewModeChange?: (viewMode: MobileViewMode) => void;
   onStepChange?: (element: Element | undefined, index: number) => void;
   enableIframeScaling?: boolean;
+  disableLoadingOverlay?: boolean;
 }
 
 const Slide: React.FC<SlideProps> = ({
@@ -186,6 +188,7 @@ const Slide: React.FC<SlideProps> = ({
   onMobileViewModeChange,
   onStepChange,
   enableIframeScaling = true,
+  disableLoadingOverlay = false,
   className,
   onPointerDown,
   ...props
@@ -638,7 +641,7 @@ const Slide: React.FC<SlideProps> = ({
 
   const hasResolvedCurrentInteraction = Boolean(
     currentInteractionElement?.readonly ||
-    currentInteractionElement?.user_input?.trim()
+      currentInteractionElement?.user_input?.trim()
   );
 
   const shouldBlockPlaybackForInteraction =
@@ -900,6 +903,11 @@ const Slide: React.FC<SlideProps> = ({
     }
 
     if (currentStepHasSpeakableElement) {
+      if (disableLoadingOverlay) {
+        setIsAudioLoadingVisible(false);
+        return;
+      }
+
       setIsAudioLoadingVisible(true);
       return;
     }
@@ -932,6 +940,7 @@ const Slide: React.FC<SlideProps> = ({
     markerAutoAdvanceDelay,
     goNext,
     hasCompletedCurrentStepAudio,
+    disableLoadingOverlay,
     isAutoAdvanceEnabled,
     hasResolvedCurrentInteraction,
     shouldBlockPlaybackForInteraction,
@@ -945,6 +954,7 @@ const Slide: React.FC<SlideProps> = ({
 
   useEffect(() => {
     if (
+      disableLoadingOverlay ||
       shouldPausePlaybackForCustomAction ||
       !currentStepHasSpeakableElement ||
       shouldBlockPlaybackForInteraction
@@ -968,6 +978,7 @@ const Slide: React.FC<SlideProps> = ({
     hasAvailableStepAudio,
     currentStepHasSpeakableElement,
     hasCompletedCurrentStepAudio,
+    disableLoadingOverlay,
     shouldPausePlaybackForCustomAction,
     shouldBlockPlaybackForInteraction,
   ]);
@@ -1190,6 +1201,7 @@ const Slide: React.FC<SlideProps> = ({
       return (
         <IframeSandbox
           className="content-render-iframe"
+          disableLoadingOverlay={disableLoadingOverlay}
           hideFullScreen
           mode="blackboard"
           replaceRootScreenHeightWithFull={
@@ -1205,6 +1217,7 @@ const Slide: React.FC<SlideProps> = ({
     return (
       <IframeSandbox
         className="content-render-iframe"
+        disableLoadingOverlay={disableLoadingOverlay}
         hideFullScreen
         mode="blackboard"
         type="markdown"
@@ -1318,6 +1331,11 @@ const Slide: React.FC<SlideProps> = ({
 
   const handlePlayerLoadingChange = useCallback(
     (loading: boolean) => {
+      if (disableLoadingOverlay) {
+        setIsAudioLoadingVisible(false);
+        return;
+      }
+
       if (!currentStepHasSpeakableElement || hasCompletedCurrentStepAudio) {
         setIsAudioLoadingVisible(false);
         return;
@@ -1325,8 +1343,20 @@ const Slide: React.FC<SlideProps> = ({
 
       setIsAudioLoadingVisible(loading);
     },
-    [currentStepHasSpeakableElement, hasCompletedCurrentStepAudio]
+    [
+      currentStepHasSpeakableElement,
+      hasCompletedCurrentStepAudio,
+      disableLoadingOverlay,
+    ]
   );
+
+  useEffect(() => {
+    if (!disableLoadingOverlay) {
+      return;
+    }
+
+    setIsAudioLoadingVisible(false);
+  }, [disableLoadingOverlay]);
 
   const handlePlayerEnded = useCallback(
     (audioIndex: number) => {

@@ -54,8 +54,8 @@
 }
 
 .slide--mobile-device .slide-subtitle-overlay__surface {
-  padding: 7px 16px;
-  border-radius: 16px;
+  padding: 7px 9px;
+  border-radius: 8px;
 }
 
 .slide--mobile-device .slide-subtitle-overlay__text {
@@ -64,9 +64,13 @@
 }
 
 .slide--mobile-device.slide--mobile-landscape .slide-subtitle-overlay {
-  --slide-player-height: 28px;
+  left: var(--slide-mobile-fullscreen-content-padding-x, 24px);
+  right: var(--slide-mobile-fullscreen-content-padding-x, 24px);
+  --slide-player-height: 48px;
 }
 
 .slide--mobile-device.slide--mobile-landscape-native .slide-subtitle-overlay {
-  --slide-player-height: 36px;
+  left: var(--slide-mobile-fullscreen-content-padding-x, 24px);
+  right: var(--slide-mobile-fullscreen-content-padding-x, 24px);
+  --slide-player-height: 60px;
 }

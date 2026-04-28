@@ -258,8 +258,6 @@
 }
 
 .slide-player__interaction-body {
-  max-height: 240px;
-  overflow-y: auto;
   padding: 0 24px 12px;
 }
 
@@ -400,19 +398,10 @@
 .slide--mobile-device.slide--mobile-landscape-native
   .slide-player__interaction-card {
   pointer-events: auto;
-  display: flex;
-  max-height: calc(
-    100dvh - 60px - var(--slide-interaction-player-space) -
-      var(--slide-interaction-gap) - 16px
-  );
-  flex-direction: column;
 }
 
 .slide--mobile-device.slide--mobile-landscape .slide-player__interaction-body,
 .slide--mobile-device.slide--mobile-landscape-native
   .slide-player__interaction-body {
-  max-height: none;
-  min-height: 0;
-  flex: 1 1 auto;
-  overflow-y: auto;
+  overflow-y: visible;
 }

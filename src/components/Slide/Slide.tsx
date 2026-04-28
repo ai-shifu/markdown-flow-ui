@@ -1561,7 +1561,10 @@ const Slide: React.FC<SlideProps> = ({
               onClick={handleFullscreenHeaderBack}
               type="button"
             >
-              <ChevronLeft className="h-6 w-6 text-white" strokeWidth={2.25} />
+              <ChevronLeft
+                className="slide-landscape-header__icon h-6 w-6"
+                strokeWidth={2.25}
+              />
             </button>
 
             {fullscreenHeader?.content ? (

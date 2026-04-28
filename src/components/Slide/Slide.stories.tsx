@@ -635,9 +635,9 @@ const resolveSubmittedUserInput = (content: OnSendContentParams) =>
 const isSameStoryElement = (currentElement: Element, targetElement?: Element) =>
   Boolean(
     targetElement &&
-    currentElement.type === targetElement.type &&
-    currentElement.sequence_number === targetElement.sequence_number &&
-    currentElement.content === targetElement.content
+      currentElement.type === targetElement.type &&
+      currentElement.sequence_number === targetElement.sequence_number &&
+      currentElement.content === targetElement.content
   );
 
 const applyInteractionSubmission = (
@@ -2631,7 +2631,7 @@ export const HistorySlides: Story = {
     // playerAlwaysVisible: true,
     fullscreenHeader: {
       content: (
-        <div className="flex min-w-0 items-center gap-2 overflow-hidden text-[16px] font-bold leading-6 text-white">
+        <div className="flex min-w-0 items-center gap-2 overflow-hidden text-[16px] font-bold leading-6 text-black">
           <img
             alt="Nike老师"
             className="h-8 w-8 shrink-0 rounded-full object-cover"

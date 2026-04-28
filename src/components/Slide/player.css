@@ -296,7 +296,7 @@
   --slide-player-separator-gap: 40px;
   --slide-player-separator-width: 1px;
   --slide-player-custom-action-count: 0;
-  --slide-player-bottom-offset: 24px;
+  --slide-player-bottom-offset: -12px;
   --slide-player-height: 80px;
   --slide-interaction-gap: 16px;
   position: absolute;

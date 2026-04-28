@@ -78,10 +78,11 @@ interface InteractionOverlayCardProps {
   readonly?: boolean;
 }
 
-export interface SlideInteractionTexts extends Pick<
-  ContentRenderProps,
-  "confirmButtonText" | "copyButtonText" | "copiedButtonText"
-> {
+export interface SlideInteractionTexts
+  extends Pick<
+    ContentRenderProps,
+    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+  > {
   title?: string;
 }
 
@@ -640,7 +641,7 @@ const Slide: React.FC<SlideProps> = ({
 
   const hasResolvedCurrentInteraction = Boolean(
     currentInteractionElement?.readonly ||
-    currentInteractionElement?.user_input?.trim()
+      currentInteractionElement?.user_input?.trim()
   );
 
   const shouldBlockPlaybackForInteraction =
@@ -1668,7 +1669,7 @@ const Slide: React.FC<SlideProps> = ({
           <Player
             audioList={audioList}
             className={cn(
-              "absolute left-1/2 bottom-6 z-[2] -translate-x-1/2",
+              "absolute left-1/2 -bottom-3 z-[2] -translate-x-1/2",
               playerClassName,
               !playerVisible && "pointer-events-none opacity-0"
             )}

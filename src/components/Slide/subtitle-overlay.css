@@ -1,19 +1,17 @@
 .slide-subtitle-overlay {
-  --slide-player-bottom-offset: 24px;
+  --slide-player-bottom-offset: -12px;
   --slide-player-height: 80px;
   --slide-subtitle-gap: 0px;
   --slide-subtitle-extra-offset: 0px;
   pointer-events: none;
   position: absolute;
-  left: 50%;
+  left: 24px;
+  right: 24px;
   bottom: calc(
     var(--slide-player-bottom-offset) + var(--slide-player-height) +
       var(--slide-subtitle-gap) + var(--slide-subtitle-extra-offset)
   );
   z-index: 5;
-  width: calc(var(--slide-mobile-viewport-width, 100dvw) - 96px);
-  max-width: 100%;
-  transform: translateX(-50%);
 }
 
 .slide-subtitle-overlay--with-player-gap {
@@ -53,8 +51,6 @@
   --slide-player-bottom-offset: 0px;
   left: 12px;
   right: 12px;
-  width: auto;
-  transform: none;
 }
 
 .slide--mobile-device .slide-subtitle-overlay__surface {

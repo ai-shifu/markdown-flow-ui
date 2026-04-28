@@ -307,6 +307,7 @@ const Slide: React.FC<SlideProps> = ({
     isImmersiveMobileFullscreen && playerVisible;
   const shouldShowMobileFullscreenMask =
     isImmersiveMobileFullscreen || isNativeMobileFullscreen;
+  const isDesktopBrowserFullscreen = isBrowserFullscreen && !isMobileDevice;
   const handleMobileViewModeSelect = useCallback(
     (nextViewMode: MobileViewMode) => {
       setHasManualMobileViewMode(true);
@@ -1499,6 +1500,7 @@ const Slide: React.FC<SlideProps> = ({
       className={cn(
         "relative h-full w-full",
         isMobileDevice && "slide--mobile-device",
+        isDesktopBrowserFullscreen && "slide--browser-fullscreen",
         isImmersiveMobileFullscreen && "slide--mobile-landscape",
         isNativeMobileFullscreen && "slide--mobile-landscape-native",
         className
@@ -1637,7 +1639,8 @@ const Slide: React.FC<SlideProps> = ({
           <Player
             audioList={audioList}
             className={cn(
-              "absolute left-1/2 -bottom-3 z-[2] -translate-x-1/2",
+              "absolute left-1/2 z-[2] -translate-x-1/2",
+              isDesktopBrowserFullscreen ? "bottom-3" : "-bottom-3",
               playerClassName,
               !playerVisible && "pointer-events-none opacity-0"
             )}

@@ -355,6 +355,11 @@
       var(--slide-interaction-gap)
   );
 }
+
+.slide--browser-fullscreen .slide-interaction-overlay {
+  --slide-player-bottom-offset: 12px;
+}
+
 .slide--mobile-device.slide--mobile-landscape-native
   .slide-interaction-overlay {
   --slide-interaction-player-space: 60px;

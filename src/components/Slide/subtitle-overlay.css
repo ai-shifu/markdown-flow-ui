@@ -18,6 +18,10 @@
   --slide-subtitle-gap: 16px;
 }
 
+.slide--browser-fullscreen .slide-subtitle-overlay {
+  --slide-player-bottom-offset: 12px;
+}
+
 .slide-subtitle-overlay--player-hidden {
   bottom: calc(
     var(--slide-player-bottom-offset) + var(--slide-subtitle-extra-offset)

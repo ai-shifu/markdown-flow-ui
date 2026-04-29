@@ -43,7 +43,7 @@ const getMarkerElementIndexes = (elementList: Element[]) =>
 const hasPlayableAudio = (element?: Element) =>
   Boolean(
     element?.is_speakable &&
-      (element.audio_url || (element.audio_segments?.length ?? 0) > 0)
+    (element.audio_url || (element.audio_segments?.length ?? 0) > 0)
   );
 
 const isStreamingAudio = (segments: ElementAudioSegment[] = []) =>

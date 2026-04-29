@@ -8,6 +8,10 @@
   width: 100%;
 }
 
+.sb-show-main.sb-main-padded {
+  padding: 0;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

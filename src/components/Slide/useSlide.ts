@@ -43,11 +43,22 @@ const getMarkerElementIndexes = (elementList: Element[]) =>
 const hasPlayableAudio = (element?: Element) =>
   Boolean(
     element?.is_speakable &&
-    (element.audio_url || (element.audio_segments?.length ?? 0) > 0)
+      (element.audio_url || (element.audio_segments?.length ?? 0) > 0)
   );
 
 const isStreamingAudio = (segments: ElementAudioSegment[] = []) =>
   segments.length > 0 && !segments.some((segment) => segment.is_final);
+
+export const resolveSlideAudioItemSource = (element: Element) => {
+  const audioUrl = element.audio_url?.trim() ?? "";
+  const audioSegments = element.audio_segments ?? [];
+
+  return {
+    audioUrl,
+    audioSegments,
+    isAudioStreaming: !audioUrl && isStreamingAudio(audioSegments),
+  };
+};
 
 const getElementAudioKey = (element: Element, index: number) => {
   const candidateElement = element as Element & {
@@ -67,17 +78,16 @@ const getElementAudioKey = (element: Element, index: number) => {
 const getAudioList = (elementList: Element[]) =>
   elementList.reduce<SlideAudioItem[]>((list, element, elementIndex) => {
     if (hasPlayableAudio(element)) {
-      const normalizedAudioSegments = element.audio_segments ?? [];
-      const hasAudioSegments = normalizedAudioSegments.length > 0;
+      const { audioUrl, audioSegments, isAudioStreaming } =
+        resolveSlideAudioItemSource(element);
 
       list.push({
         audioKey: getElementAudioKey(element, elementIndex),
         sequenceNumber: element.sequence_number,
-        // Keep one canonical source to avoid duplicated playback resets.
-        // When streaming segments exist, keep playback on the segment source.
-        audioUrl: hasAudioSegments ? "" : element.audio_url,
-        audioSegments: normalizedAudioSegments,
-        isAudioStreaming: isStreamingAudio(normalizedAudioSegments),
+        // Keep the completed URL available once it arrives so loading can end.
+        audioUrl,
+        audioSegments,
+        isAudioStreaming,
         element,
       });
     }

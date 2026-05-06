@@ -1449,6 +1449,8 @@ const TextAudioSubtitleDebugPreview = ({
 }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const pendingSeekMsRef = useRef<number | null>(null);
+  const [resolvedAudioUrlSrc, setResolvedAudioUrlSrc] = useState("");
+  const [audioUrlLoadError, setAudioUrlLoadError] = useState("");
   const textElement = useMemo(
     () =>
       elementList.find((element) => element.type === "text") ?? elementList[0],
@@ -1480,7 +1482,16 @@ const TextAudioSubtitleDebugPreview = ({
       textElement ? buildTextAudioDebugSourceList(textElement, sourceMode) : [],
     [sourceMode, textElement]
   );
-  const activeAudioSource = audioSourceList[activeSourceIndex];
+  const rawActiveAudioSource = audioSourceList[activeSourceIndex];
+  const activeAudioSource =
+    sourceMode === "audio_url" && rawActiveAudioSource
+      ? resolvedAudioUrlSrc
+        ? {
+            ...rawActiveAudioSource,
+            src: resolvedAudioUrlSrc,
+          }
+        : undefined
+      : rawActiveAudioSource;
   const subtitleCueList = useMemo(
     () => getSortedSubtitleCues(textElement?.subtitle_cues),
     [textElement]
@@ -1522,6 +1533,58 @@ const TextAudioSubtitleDebugPreview = ({
       Math.round(activeAudioSource.offsetMs + audioElement.currentTime * 1000)
     );
   }, [activeAudioSource]);
+
+  useEffect(() => {
+    if (sourceMode !== "audio_url" || !rawActiveAudioSource?.src) {
+      setResolvedAudioUrlSrc("");
+      setAudioUrlLoadError("");
+      return;
+    }
+
+    const controller = new AbortController();
+    let objectUrl = "";
+    let isCancelled = false;
+
+    setResolvedAudioUrlSrc("");
+    setAudioUrlLoadError("");
+
+    fetch(rawActiveAudioSource.src, { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Audio request failed with ${response.status}`);
+        }
+
+        return response.blob();
+      })
+      .then((blob) => {
+        if (isCancelled) {
+          return;
+        }
+
+        objectUrl = URL.createObjectURL(blob);
+        setResolvedAudioUrlSrc(objectUrl);
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        console.log("textAudioSubtitleDebugAudioUrlFetchError", error);
+        setAudioUrlLoadError(
+          "Failed to preload audio_url as a blob. Falling back to the original URL."
+        );
+        setResolvedAudioUrlSrc(rawActiveAudioSource.src);
+      });
+
+    return () => {
+      isCancelled = true;
+      controller.abort();
+
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [rawActiveAudioSource?.src, sourceMode]);
 
   const seekToProgress = useCallback(
     (nextTimeMs: number) => {
@@ -1668,12 +1731,12 @@ const TextAudioSubtitleDebugPreview = ({
 
         {activeAudioSource ? (
           <audio
-            key={activeAudioSource.id}
+            key={`${activeAudioSource.id}-${activeAudioSource.src}`}
             ref={audioRef}
             autoPlay={isPlaying}
             className="mt-4 w-full"
             controls
-            preload="metadata"
+            preload="auto"
             src={activeAudioSource.src}
             onEnded={() => {
               if (activeSourceIndex < audioSourceList.length - 1) {
@@ -1707,9 +1770,16 @@ const TextAudioSubtitleDebugPreview = ({
           </audio>
         ) : (
           <div className="mt-4 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-            No playable source found for the selected mode.
+            {sourceMode === "audio_url" && rawActiveAudioSource
+              ? "Preloading audio_url for stable seeking..."
+              : "No playable source found for the selected mode."}
           </div>
         )}
+        {audioUrlLoadError ? (
+          <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            {audioUrlLoadError}
+          </div>
+        ) : null}
       </section>
 
       <section className="rounded-lg border border-border bg-card p-4">
@@ -3583,246 +3653,267 @@ export const TextAudioSubtitleSyncDebug: Story = {
   args: {
     elementList: [
       {
-        sequence_number: 47,
+        sequence_number: 129,
         type: "text",
         content:
-          "好，Kk，咱们接着聊。\n\n前面咱们说，那些“穷举”和“知识图谱”的路子，虽然逻辑严密、一丝不苟，但效果却总差那么点意思。你有没有想过，这是为什么？\n\n其实啊，**真正有智能的东西，不管是人还是动物，都有一个共同的特点——就是不像机器那么“死心眼”**。\n\n就拿你熟悉的“个性化教学”来说吧。一个最顶尖的人类教师，他教学生的时候，是严格按照一套“如果A，则B”的算法来教的吗？绝对不是。他可能会根据学生今天的心情、一个不经意的哈欠、甚至窗外飞过的一只鸟，临时调整讲课的节奏和例子。他会犯错，会讲个跑题的冷笑话，会突然灵光一闪。这种“不严密”，恰恰是教学艺术的精髓。**机器可以精准地执行教案，但只有人能“因材施教”**。\n\n所以，聪明的学者们就想：**既然“严密”走不通，那咱们就试试“不严密”的路子呗。**\n\n于是，就有了我们今天的主角——**「神经网络」** 和 **「机器学习」**。它们本质上就是一套“不严密”的、甚至“偶尔会犯错”的人工智能系统。\n\n它的核心思路，就是**模拟人脑的构造**。咱们的大脑里，有大约860亿个神经元，它们之间通过“突触”连接。你听、看、闻、触，每一次信息的输入，都会改变这些突触连接的强弱。有的连接变强了，有的变弱了，甚至有的断了，新的连接又长出来了。你看，**记忆，本质上就是神经网络结构的改变**。\n\n当你思考的时候，电化学信号就在这个网络里流淌。突触强的地方，信号就传得快、传得多；突触弱的地方，信号就绕道走。**智能，就这么在信号的流淌中诞生了。**\n\n人工神经网络，就是照葫芦画瓢。我们用 **「计算单元」** 来模拟神经元，用计算单元之间连接的 **「权重」** 来模拟突触。\n\n那 **「机器学习」** 的过程呢？说白了，就是模拟人类的学习过程——**通过不断地修改这些“权重”，来改变整个网络的功能**。\n\n这个过程，我们给它起了个很形象的名字，叫 **「训练」**。\n\n训练完了，产出的那个成品，就叫 **「模型」**。\n\n这个模型，其实就是一个文件。里面存着所有训练好的“权重”和一些其他决定模型能力的参数，它们被统称为 **「模型参数」**。\n\n你看，从“严密”到“不严密”，从“规则”到“模拟”，人工智能的这条路，是不是也挺有意思的？",
+          "Kk，咱们接着聊。你有没有想过，当人类面对一大堆新知识的时候，会怎么做？比如你拿到一本 500 页的《米其林餐厅运营手册》，你会从头读到尾吗？肯定不会。你肯定是先翻到“如何应对卫生检查”那一章，找到你当下需要的答案。\n\n**AI 应用面对大量新知识时，思路完全一样**——只把相关的知识放到提示词里，就能又快、又便宜、又准确地解决问题。\n\n这个做法其实很直观，但技术人嘛，总喜欢起一些**让人听不懂的名字**。他们管这叫 **RAG**，全称是 Retrieval-Augmented Generation。别被吓到，你把它理解成 **「知识库」** 就好多了。\n\nRAG 就是创建一个知识库，把你那些私有的、领域专属的知识都存进去。遇到问题时，到知识库里检索相关知识，然后拿出来放到提示词里。注意，**检索这件事不是大模型干的**——大模型除了生成下一个 token，什么都不会。检索要靠应用程序来完成。\n\n这就像**开卷考试**，两个能力决定了你答得好不好：\n\n第一，**能不能准确找到相关知识**，而且要找得全。  \n第二，**现学现卖的能力**怎么样，也就是脑袋的基础智商。\n\n基础智商靠选不同的模型就能调整。但**准确找到相关知识**，更多依赖知识是如何组织和查找的。\n\n一种自然能想到的方式就是**关键词搜索**——就像你用百度一样，从问题里提炼几个关键词，去搜索引擎里找匹配的资料。关键词选得好，就能找得到。但**同义词**不好处理，而且很多不相关的资料里也常常有这些关键词，会被一起找出来。\n\n所以，给大模型用的知识库，一般会优先选择**向量检索**的方式找答案。  \n「向量检索」又是个不明觉厉的名字。更好理解的话，可以叫 **「语义检索」**——就是通过语义相似性做检索。\n\n我给你举个例子。假设在你的领域里，有这 5 句话：\n\n1. 这道菜的火候要控制在 65 度。  \n2. 这道菜的温度需要保持在 65 摄氏度。  \n3. 这道菜的烹饪温度是 65°C。  \n4. This dish should be cooked at 65 degrees.  \n5. Ce plat doit être cuit à 65 degrés.\n\n你看，第 1、2、3 句**字面不同但意思完全相同**，第 4 句是英文，第 5 句是法文，意思也一样。\n\n如果用其中任何一句话到知识库里做**向量检索**，都能把其它 4 句话也找出来。这就是**语义检索**，而且是可以**跨语言**的。\n\n语义检索的技术核心是使用 **embedding 模型**。至于 embedding、向量的细节，咱们这节课就不展开了，感兴趣的可以追问。\n\n---\n\n现在，给你看这页 PPT：\n",
         is_marker: false,
         is_renderable: false,
         is_new: true,
         is_speakable: true,
         audio_url:
-          "https://res.ai-shifu.cn/tts-audio/1c04bd2fc5344b449a8244adb64771e6.mp3",
+          "https://res.ai-shifu.cn/tts-audio/a208563e9bb84e47ad16e7bf46a35721.mp3",
         is_audio_streaming: false,
         isAudioStreaming: false,
         subtitle_cues: [
           {
-            text: "好，Kk，咱们接着聊",
+            text: "Kk，咱们接着聊",
             start_ms: 0,
-            end_ms: 1595,
+            end_ms: 1488,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "前面咱们说，那些“穷举”和“知识图谱”的路子，虽然逻辑严密、一丝不苟，但效果却总差那么点意思",
-            start_ms: 1795,
-            end_ms: 9392,
+            text: "你有没有想过，当人类面对一大堆新知识的时候，会怎么做？",
+            start_ms: 1488,
+            end_ms: 5951,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "你有没有想过，这是为什么？",
-            start_ms: 9592,
-            end_ms: 11443,
+            text: "比如你拿到一本 500 页的《米其林餐厅运营手册》，你会从头读到尾吗？",
+            start_ms: 5951,
+            end_ms: 11736,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "其实啊，真正有智能的东西，不管是人还是动物，都有一个共同的特点——就是不像机器那么“死心眼”",
-            start_ms: 11643,
-            end_ms: 19206,
+            text: "肯定不会",
+            start_ms: 11736,
+            end_ms: 12562,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "就拿你熟悉的“个性化教学”来说吧",
-            start_ms: 19406,
-            end_ms: 21604,
+            text: "你肯定是先翻到“如何应对卫生检查”那一章，找到你当下需要的答案",
+            start_ms: 12562,
+            end_ms: 17851,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "一个最顶尖的人类教师，他教学生的时候，是严格按照一套“如果A，则B”的算法来教的吗？",
-            start_ms: 21804,
-            end_ms: 29471,
+            text: "AI 应用面对大量新知识时，思路完全一样——只把相关的知识放到提示词里，就能又快、又便宜、又准确地解决问题",
+            start_ms: 17851,
+            end_ms: 26777,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "绝对不是",
-            start_ms: 29671,
-            end_ms: 30628,
+            text: "这个做法其实很直观，但技术人嘛，总喜欢起一些让人听不懂的名字",
+            start_ms: 26777,
+            end_ms: 31901,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "他可能会根据学生今天的心情、一个不经意的哈欠、甚至窗外飞过的一只鸟，临时调整讲课的节奏和例子",
-            start_ms: 30828,
-            end_ms: 38495,
+            text: "他们管这叫 RAG，全称是 Retrieval-Augmented Generation",
+            start_ms: 31901,
+            end_ms: 39339,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "他会犯错，会讲个跑题的冷笑话，会突然灵光一闪",
-            start_ms: 38695,
-            end_ms: 43448,
+            text: "别被吓到，你把它理解成 「知识库」 就好多了",
+            start_ms: 39339,
+            end_ms: 43141,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "这种“不严密”，恰恰是教学艺术的精髓",
-            start_ms: 43648,
-            end_ms: 47019,
+            text: "RAG 就是创建一个知识库，把你那些私有的、领域专属的知识都存进去",
+            start_ms: 43141,
+            end_ms: 48761,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "机器可以精准地执行教案，但只有人能“因材施教”",
-            start_ms: 47219,
-            end_ms: 51299,
+            text: "遇到问题时，到知识库里检索相关知识，然后拿出来放到提示词里",
+            start_ms: 48761,
+            end_ms: 53720,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "所以，聪明的学者们就想：既然“严密”走不通，那咱们就试试“不严密”的路子呗",
-            start_ms: 51499,
-            end_ms: 57924,
+            text: "注意，检索这件事不是大模型干的——大模型除了生成下一个 token，什么都不会",
+            start_ms: 53720,
+            end_ms: 60332,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "于是，就有了我们今天的主角——「神经网络」 和 「机器学习」",
-            start_ms: 58124,
-            end_ms: 63028,
+            text: "检索要靠应用程序来完成",
+            start_ms: 60332,
+            end_ms: 62316,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "它们本质上就是一套“不严密”的、甚至“偶尔会犯错”的人工智能系统",
-            start_ms: 63228,
-            end_ms: 68840,
+            text: "这就像开卷考试，两个能力决定了你答得好不好：\n\n第一，能不能准确找到相关知识，而且要找得全",
+            start_ms: 62316,
+            end_ms: 69920,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "它的核心思路，就是模拟人脑的构造",
-            start_ms: 69040,
-            end_ms: 72411,
+            text: "第二，现学现卖的能力怎么样，也就是脑袋的基础智商",
+            start_ms: 69920,
+            end_ms: 74052,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "咱们的大脑里，有大约860亿个神经元，它们之间通过“突触”连接",
-            start_ms: 72611,
-            end_ms: 78711,
+            text: "基础智商靠选不同的模型就能调整",
+            start_ms: 74052,
+            end_ms: 76697,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "你听、看、闻、触，每一次信息的输入，都会改变这些突触连接的强弱",
-            start_ms: 78911,
-            end_ms: 84767,
+            text: "但准确找到相关知识，更多依赖知识是如何组织和查找的",
+            start_ms: 76697,
+            end_ms: 80995,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "有的连接变强了，有的变弱了，甚至有的断了，新的连接又长出来了",
-            start_ms: 84967,
-            end_ms: 91066,
+            text: "一种自然能想到的方式就是关键词搜索——就像你用百度一样，从问题里提炼几个关键词，去搜索引擎里找匹配的资料",
+            start_ms: 80995,
+            end_ms: 89756,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "你看，记忆，本质上就是神经网络结构的改变",
-            start_ms: 91266,
-            end_ms: 95950,
+            text: "关键词选得好，就能找得到",
+            start_ms: 89756,
+            end_ms: 91905,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "当你思考的时候，电化学信号就在这个网络里流淌",
-            start_ms: 96150,
-            end_ms: 99916,
+            text: "但同义词不好处理，而且很多不相关的资料里也常常有这些关键词，会被一起找出来",
+            start_ms: 91905,
+            end_ms: 98186,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "突触强的地方，信号就传得快、传得多",
-            start_ms: 100116,
-            end_ms: 104555,
+            text: "所以，给大模型用的知识库，一般会优先选择向量检索的方式找答案",
+            start_ms: 98186,
+            end_ms: 103310,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "突触弱的地方，信号就绕道走",
-            start_ms: 104755,
-            end_ms: 107279,
+            text: "「向量检索」又是个不明觉厉的名字",
+            start_ms: 103310,
+            end_ms: 106120,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "智能，就这么在信号的流淌中诞生了",
-            start_ms: 107479,
-            end_ms: 111106,
+            text: "更好理解的话，可以叫 「语义检索」——就是通过语义相似性做检索",
+            start_ms: 106120,
+            end_ms: 111409,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "人工神经网络，就是照葫芦画瓢",
-            start_ms: 111306,
-            end_ms: 114329,
+            text: "我给你举个例子",
+            start_ms: 111409,
+            end_ms: 112731,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "我们用 「计算单元」 来模拟神经元，用计算单元之间连接的 「权重」 来模拟突触",
-            start_ms: 114529,
-            end_ms: 120420,
+            text: "假设在你的领域里，有这 5 句话：\n这道菜的火候要控制在 65 度",
+            start_ms: 112731,
+            end_ms: 118351,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "那 「机器学习」 的过程呢？",
-            start_ms: 120620,
-            end_ms: 122110,
+            text: "这道菜的温度需要保持在 65 摄氏度",
+            start_ms: 118351,
+            end_ms: 121492,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "说白了，就是模拟人类的学习过程——通过不断地修改这些“权重”，来改变整个网络的功能",
-            start_ms: 122310,
-            end_ms: 128735,
+            text: "这道菜的烹饪温度是 65°C",
+            start_ms: 121492,
+            end_ms: 123971,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "这个过程，我们给它起了个很形象的名字，叫 「训练」",
-            start_ms: 128935,
-            end_ms: 132736,
+            text: "This dish should be cooked at 65 degrees",
+            start_ms: 123971,
+            end_ms: 130748,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "训练完了，产出的那个成品，就叫 「模型」",
-            start_ms: 132936,
-            end_ms: 137016,
+            text: "Ce plat doit être cuit à 65 degrés",
+            start_ms: 130748,
+            end_ms: 136534,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "这个模型，其实就是一个文件",
-            start_ms: 137216,
-            end_ms: 139484,
+            text: "你看，第 1、2、3 句字面不同但意思完全相同，第 4 句是英文，第 5 句是法文，意思也一样",
+            start_ms: 136534,
+            end_ms: 144468,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "里面存着所有训练好的“权重”和一些其他决定模型能力的参数，它们被统称为 「模型参数」",
-            start_ms: 139684,
-            end_ms: 146608,
+            text: "如果用其中任何一句话到知识库里做向量检索，都能把其它 4 句话也找出来",
+            start_ms: 144468,
+            end_ms: 150419,
             segment_index: 0,
             position: 0,
           },
           {
-            text: "你看，从“严密”到“不严密”，从“规则”到“模拟”，人工智能的这条路，是不是也挺有意思的？",
-            start_ms: 146808,
-            end_ms: 155218,
+            text: "这就是语义检索，而且是可以跨语言的",
+            start_ms: 150419,
+            end_ms: 153394,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "语义检索的技术核心是使用 embedding 模型",
+            start_ms: 153394,
+            end_ms: 157692,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "至于 embedding、向量的细节，咱们这节课就不展开了，感兴趣的可以追问",
+            start_ms: 157692,
+            end_ms: 164139,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "---\n\n现在，给你看这页 PPT",
+            start_ms: 164139,
+            end_ms: 167114,
             segment_index: 0,
             position: 0,
           },
         ],
-        blockBid: "37bf761edb1f432dba6545510628eff3",
-        page: 0,
+        blockBid: "b2f9e7a120f34d36b24d4b75a9f8dec9",
+        page: 1,
       },
     ],
   },

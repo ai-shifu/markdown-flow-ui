@@ -8,6 +8,7 @@ import runStreamFixtureText2 from "../../../../测试数据2.json?raw";
 import ContentRender from "../ContentRender";
 import type { OnSendContentParams } from "../types";
 import type { SlidePlayerCustomActionContext } from "./types";
+import { getVisibleSubtitleText } from "./utils/subtitleCue";
 import {
   buildRunStreamElementListFromEvents,
   normalizeRunStreamElement,
@@ -635,9 +636,9 @@ const resolveSubmittedUserInput = (content: OnSendContentParams) =>
 const isSameStoryElement = (currentElement: Element, targetElement?: Element) =>
   Boolean(
     targetElement &&
-    currentElement.type === targetElement.type &&
-    currentElement.sequence_number === targetElement.sequence_number &&
-    currentElement.content === targetElement.content
+      currentElement.type === targetElement.type &&
+      currentElement.sequence_number === targetElement.sequence_number &&
+      currentElement.content === targetElement.content
   );
 
 const applyInteractionSubmission = (
@@ -1276,6 +1277,16 @@ type AudioSegmentsPlaybackItem = {
   audioSrc: string;
 };
 
+type TextAudioDebugSourceMode = "audio_url" | "audio_segments";
+
+type TextAudioDebugSource = {
+  id: string;
+  label: string;
+  src: string;
+  offsetMs: number;
+  durationMs: number;
+};
+
 const AudioSegmentsPlaybackPreview = ({
   elementList = [],
 }: {
@@ -1354,6 +1365,428 @@ const AudioSegmentsPlaybackPreview = ({
           ) : null}
         </section>
       ))}
+    </div>
+  );
+};
+
+const getTextAudioDebugSourceModes = (
+  element?: Element
+): TextAudioDebugSourceMode[] => {
+  if (!element) {
+    return [];
+  }
+
+  return [
+    element.audio_url?.trim() ? "audio_url" : null,
+    hasAudioDataSegments(element.audio_segments) ? "audio_segments" : null,
+  ].filter((mode): mode is TextAudioDebugSourceMode => Boolean(mode));
+};
+
+const buildTextAudioDebugSourceList = (
+  element: Element,
+  sourceMode: TextAudioDebugSourceMode
+): TextAudioDebugSource[] => {
+  if (sourceMode === "audio_url") {
+    const audioUrl = element.audio_url?.trim() ?? "";
+
+    return audioUrl
+      ? [
+          {
+            id: "audio-url",
+            label: "audio_url",
+            src: audioUrl,
+            offsetMs: 0,
+            durationMs: 0,
+          },
+        ]
+      : [];
+  }
+
+  let offsetMs = 0;
+
+  return (element.audio_segments ?? [])
+    .map((segment, segmentOrder) => {
+      const audioSrc = getAudioDataSrc(segment.audio_data ?? "");
+      const durationMs = Math.max(Number(segment.duration_ms ?? 0), 0);
+      const source: TextAudioDebugSource = {
+        id: `audio-segment-${segmentOrder}-${segment.segment_index ?? segmentOrder}`,
+        label: `segment #${segment.segment_index ?? segmentOrder}`,
+        src: audioSrc,
+        offsetMs,
+        durationMs,
+      };
+
+      offsetMs += durationMs;
+
+      return source;
+    })
+    .filter((source) => Boolean(source.src));
+};
+
+const getSortedSubtitleCues = (subtitleCues: Element["subtitle_cues"] = []) =>
+  [...subtitleCues].sort(
+    (prevCue, nextCue) =>
+      prevCue.start_ms - nextCue.start_ms ||
+      prevCue.end_ms - nextCue.end_ms ||
+      (prevCue.position ?? 0) - (nextCue.position ?? 0) ||
+      prevCue.segment_index - nextCue.segment_index
+  );
+
+const getActiveSubtitleCueList = (
+  subtitleCues: Element["subtitle_cues"] = [],
+  currentTimeMs: number
+) =>
+  subtitleCues.filter(
+    (subtitleCue) =>
+      currentTimeMs >= subtitleCue.start_ms &&
+      currentTimeMs < subtitleCue.end_ms
+  );
+
+const TextAudioSubtitleDebugPreview = ({
+  elementList = [],
+}: {
+  elementList?: Element[];
+}) => {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const pendingSeekMsRef = useRef<number | null>(null);
+  const textElement = useMemo(
+    () =>
+      elementList.find((element) => element.type === "text") ?? elementList[0],
+    [elementList]
+  );
+  const availableSourceModes = useMemo(
+    () => getTextAudioDebugSourceModes(textElement),
+    [textElement]
+  );
+  const [sourceMode, setSourceMode] =
+    useState<TextAudioDebugSourceMode>("audio_url");
+  const [activeSourceIndex, setActiveSourceIndex] = useState(0);
+  const [currentTimeMs, setCurrentTimeMs] = useState(0);
+  const [nativeDurationMs, setNativeDurationMs] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    const nextSourceMode = availableSourceModes.includes(sourceMode)
+      ? sourceMode
+      : availableSourceModes[0];
+
+    if (nextSourceMode) {
+      setSourceMode(nextSourceMode);
+    }
+  }, [availableSourceModes, sourceMode]);
+
+  const audioSourceList = useMemo(
+    () =>
+      textElement ? buildTextAudioDebugSourceList(textElement, sourceMode) : [],
+    [sourceMode, textElement]
+  );
+  const activeAudioSource = audioSourceList[activeSourceIndex];
+  const subtitleCueList = useMemo(
+    () => getSortedSubtitleCues(textElement?.subtitle_cues),
+    [textElement]
+  );
+  const activeSubtitleCueList = useMemo(
+    () => getActiveSubtitleCueList(subtitleCueList, currentTimeMs),
+    [currentTimeMs, subtitleCueList]
+  );
+  const visibleSubtitleText = useMemo(
+    () => getVisibleSubtitleText(subtitleCueList, currentTimeMs),
+    [currentTimeMs, subtitleCueList]
+  );
+  const audioSegmentsDurationMs = useMemo(
+    () =>
+      audioSourceList.reduce(
+        (totalDurationMs, source) => totalDurationMs + source.durationMs,
+        0
+      ),
+    [audioSourceList]
+  );
+  const totalDurationMs =
+    sourceMode === "audio_segments" && audioSegmentsDurationMs > 0
+      ? audioSegmentsDurationMs
+      : nativeDurationMs;
+  const progressPercent =
+    totalDurationMs > 0
+      ? Math.min((currentTimeMs / totalDurationMs) * 100, 100)
+      : 0;
+
+  const updateCurrentTimeFromAudio = useCallback(() => {
+    const audioElement = audioRef.current;
+
+    if (!audioElement || !activeAudioSource) {
+      setCurrentTimeMs(0);
+      return;
+    }
+
+    setCurrentTimeMs(
+      Math.round(activeAudioSource.offsetMs + audioElement.currentTime * 1000)
+    );
+  }, [activeAudioSource]);
+
+  const seekToProgress = useCallback(
+    (nextTimeMs: number) => {
+      const audioElement = audioRef.current;
+
+      if (!audioElement || audioSourceList.length === 0) {
+        return;
+      }
+
+      if (sourceMode === "audio_url") {
+        audioElement.currentTime = Math.max(nextTimeMs, 0) / 1000;
+        updateCurrentTimeFromAudio();
+        return;
+      }
+
+      const nextSourceIndex = audioSourceList.findIndex((source, index) => {
+        const nextSource = audioSourceList[index + 1];
+        const endMs =
+          nextSource?.offsetMs ?? source.offsetMs + source.durationMs;
+
+        return nextTimeMs >= source.offsetMs && nextTimeMs < endMs;
+      });
+      const resolvedSourceIndex =
+        nextSourceIndex >= 0
+          ? nextSourceIndex
+          : Math.max(audioSourceList.length - 1, 0);
+      const resolvedSource = audioSourceList[resolvedSourceIndex];
+      const nextSegmentTimeMs = Math.max(
+        nextTimeMs - (resolvedSource?.offsetMs ?? 0),
+        0
+      );
+
+      pendingSeekMsRef.current = nextSegmentTimeMs;
+      setActiveSourceIndex(resolvedSourceIndex);
+
+      if (resolvedSourceIndex === activeSourceIndex && resolvedSource) {
+        audioElement.currentTime = nextSegmentTimeMs / 1000;
+        updateCurrentTimeFromAudio();
+      }
+    },
+    [activeSourceIndex, audioSourceList, sourceMode, updateCurrentTimeFromAudio]
+  );
+
+  useEffect(() => {
+    setActiveSourceIndex(0);
+    setCurrentTimeMs(0);
+    setNativeDurationMs(0);
+    setIsPlaying(false);
+    pendingSeekMsRef.current = null;
+  }, [sourceMode, textElement]);
+
+  useEffect(() => {
+    const audioElement = audioRef.current;
+
+    if (!audioElement || pendingSeekMsRef.current === null) {
+      return;
+    }
+
+    audioElement.currentTime = pendingSeekMsRef.current / 1000;
+    pendingSeekMsRef.current = null;
+  }, [activeAudioSource?.src]);
+
+  if (!textElement) {
+    return (
+      <div className="flex min-h-[100dvh] w-full items-center justify-center px-6 text-sm text-muted-foreground">
+        No text element found in elementList.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-4 px-4 py-6 md:px-6">
+      <section className="rounded-lg border border-border bg-card p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">
+              Text audio subtitle sync debug
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Paste a type=text element into Storybook Controls to compare audio
+              progress with subtitle cue windows.
+            </p>
+          </div>
+          <div className="flex rounded-md border border-border bg-background p-1">
+            {(
+              ["audio_url", "audio_segments"] as TextAudioDebugSourceMode[]
+            ).map((mode) => (
+              <button
+                key={mode}
+                className={[
+                  "rounded px-3 py-1 text-xs font-medium transition-colors",
+                  sourceMode === mode
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                ].join(" ")}
+                disabled={!availableSourceModes.includes(mode)}
+                type="button"
+                onClick={() => setSourceMode(mode)}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <div className="rounded-md border border-border bg-background p-3">
+            <div className="text-xs text-muted-foreground">Progress</div>
+            <div className="mt-1 font-mono text-2xl font-semibold text-foreground">
+              {`${currentTimeMs}ms`}
+            </div>
+          </div>
+          <div className="rounded-md border border-border bg-background p-3">
+            <div className="text-xs text-muted-foreground">Duration</div>
+            <div className="mt-1 font-mono text-2xl font-semibold text-foreground">
+              {totalDurationMs > 0 ? `${Math.round(totalDurationMs)}ms` : "-"}
+            </div>
+          </div>
+          <div className="rounded-md border border-border bg-background p-3">
+            <div className="text-xs text-muted-foreground">Current source</div>
+            <div className="mt-1 truncate font-mono text-sm font-semibold text-foreground">
+              {activeAudioSource?.label ?? "-"}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full bg-primary"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+        <input
+          aria-label="Seek audio progress"
+          className="mt-3 w-full accent-primary"
+          disabled={totalDurationMs <= 0 || audioSourceList.length === 0}
+          max={Math.max(totalDurationMs, 0)}
+          min={0}
+          step={1}
+          type="range"
+          value={Math.min(currentTimeMs, Math.max(totalDurationMs, 0))}
+          onChange={(event) => seekToProgress(Number(event.target.value))}
+        />
+
+        {activeAudioSource ? (
+          <audio
+            key={activeAudioSource.id}
+            ref={audioRef}
+            autoPlay={isPlaying}
+            className="mt-4 w-full"
+            controls
+            preload="metadata"
+            src={activeAudioSource.src}
+            onEnded={() => {
+              if (activeSourceIndex < audioSourceList.length - 1) {
+                setIsPlaying(true);
+                setActiveSourceIndex((previousIndex) => previousIndex + 1);
+                return;
+              }
+
+              setIsPlaying(false);
+              updateCurrentTimeFromAudio();
+            }}
+            onLoadedMetadata={(event) => {
+              const durationMs = Number.isFinite(event.currentTarget.duration)
+                ? Math.round(event.currentTarget.duration * 1000)
+                : 0;
+
+              setNativeDurationMs(
+                sourceMode === "audio_url" ? durationMs : totalDurationMs
+              );
+              updateCurrentTimeFromAudio();
+            }}
+            onPause={() => setIsPlaying(false)}
+            onPlay={() => {
+              setIsPlaying(true);
+              updateCurrentTimeFromAudio();
+            }}
+            onSeeked={updateCurrentTimeFromAudio}
+            onTimeUpdate={updateCurrentTimeFromAudio}
+          >
+            Your browser does not support the audio element.
+          </audio>
+        ) : (
+          <div className="mt-4 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+            No playable source found for the selected mode.
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-lg border border-border bg-card p-4">
+        <div className="mb-2 text-sm font-medium text-foreground">
+          Current subtitle
+        </div>
+        <div className="min-h-20 rounded-md border border-border bg-background p-4 text-xl font-semibold leading-relaxed text-foreground">
+          {visibleSubtitleText || (
+            <span className="text-sm font-normal text-muted-foreground">
+              No subtitle cue is active at the current progress.
+            </span>
+          )}
+        </div>
+        {activeSubtitleCueList.length > 0 ? (
+          <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+            {activeSubtitleCueList.map((subtitleCue) => (
+              <span
+                key={`${subtitleCue.start_ms}-${subtitleCue.end_ms}-${subtitleCue.text}`}
+                className="rounded-md border border-primary/20 bg-primary/10 px-2 py-1 text-primary"
+              >
+                {`${subtitleCue.start_ms}ms -> ${subtitleCue.end_ms}ms`}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="rounded-lg border border-border bg-card p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-medium text-foreground">Subtitle cues</h3>
+          <span className="text-xs text-muted-foreground">
+            {`${subtitleCueList.length} cues`}
+          </span>
+        </div>
+        <div className="max-h-[48dvh] overflow-auto rounded-md border border-border">
+          <table className="w-full min-w-[720px] border-collapse text-left text-sm">
+            <thead className="sticky top-0 bg-muted text-xs text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2 font-medium">#</th>
+                <th className="px-3 py-2 font-medium">start_ms</th>
+                <th className="px-3 py-2 font-medium">end_ms</th>
+                <th className="px-3 py-2 font-medium">segment</th>
+                <th className="px-3 py-2 font-medium">text</th>
+              </tr>
+            </thead>
+            <tbody>
+              {subtitleCueList.map((subtitleCue, index) => {
+                const isActive =
+                  currentTimeMs >= subtitleCue.start_ms &&
+                  currentTimeMs < subtitleCue.end_ms;
+
+                return (
+                  <tr
+                    key={`${subtitleCue.start_ms}-${subtitleCue.end_ms}-${index}`}
+                    className={[
+                      "border-t border-border",
+                      isActive ? "bg-primary/10 text-primary" : "bg-card",
+                    ].join(" ")}
+                  >
+                    <td className="px-3 py-2 font-mono">{index}</td>
+                    <td className="px-3 py-2 font-mono">
+                      {subtitleCue.start_ms}
+                    </td>
+                    <td className="px-3 py-2 font-mono">
+                      {subtitleCue.end_ms}
+                    </td>
+                    <td className="px-3 py-2 font-mono">
+                      {subtitleCue.segment_index}
+                    </td>
+                    <td className="px-3 py-2">{subtitleCue.text}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 };
@@ -3143,6 +3576,266 @@ export const AudioSegmentsPlayback: Story = {
   },
   render: ({ elementList = [] }) => (
     <AudioSegmentsPlaybackPreview elementList={elementList} />
+  ),
+};
+
+export const TextAudioSubtitleSyncDebug: Story = {
+  args: {
+    elementList: [
+      {
+        sequence_number: 47,
+        type: "text",
+        content:
+          "好，Kk，咱们接着聊。\n\n前面咱们说，那些“穷举”和“知识图谱”的路子，虽然逻辑严密、一丝不苟，但效果却总差那么点意思。你有没有想过，这是为什么？\n\n其实啊，**真正有智能的东西，不管是人还是动物，都有一个共同的特点——就是不像机器那么“死心眼”**。\n\n就拿你熟悉的“个性化教学”来说吧。一个最顶尖的人类教师，他教学生的时候，是严格按照一套“如果A，则B”的算法来教的吗？绝对不是。他可能会根据学生今天的心情、一个不经意的哈欠、甚至窗外飞过的一只鸟，临时调整讲课的节奏和例子。他会犯错，会讲个跑题的冷笑话，会突然灵光一闪。这种“不严密”，恰恰是教学艺术的精髓。**机器可以精准地执行教案，但只有人能“因材施教”**。\n\n所以，聪明的学者们就想：**既然“严密”走不通，那咱们就试试“不严密”的路子呗。**\n\n于是，就有了我们今天的主角——**「神经网络」** 和 **「机器学习」**。它们本质上就是一套“不严密”的、甚至“偶尔会犯错”的人工智能系统。\n\n它的核心思路，就是**模拟人脑的构造**。咱们的大脑里，有大约860亿个神经元，它们之间通过“突触”连接。你听、看、闻、触，每一次信息的输入，都会改变这些突触连接的强弱。有的连接变强了，有的变弱了，甚至有的断了，新的连接又长出来了。你看，**记忆，本质上就是神经网络结构的改变**。\n\n当你思考的时候，电化学信号就在这个网络里流淌。突触强的地方，信号就传得快、传得多；突触弱的地方，信号就绕道走。**智能，就这么在信号的流淌中诞生了。**\n\n人工神经网络，就是照葫芦画瓢。我们用 **「计算单元」** 来模拟神经元，用计算单元之间连接的 **「权重」** 来模拟突触。\n\n那 **「机器学习」** 的过程呢？说白了，就是模拟人类的学习过程——**通过不断地修改这些“权重”，来改变整个网络的功能**。\n\n这个过程，我们给它起了个很形象的名字，叫 **「训练」**。\n\n训练完了，产出的那个成品，就叫 **「模型」**。\n\n这个模型，其实就是一个文件。里面存着所有训练好的“权重”和一些其他决定模型能力的参数，它们被统称为 **「模型参数」**。\n\n你看，从“严密”到“不严密”，从“规则”到“模拟”，人工智能的这条路，是不是也挺有意思的？",
+        is_marker: false,
+        is_renderable: false,
+        is_new: true,
+        is_speakable: true,
+        audio_url:
+          "https://res.ai-shifu.cn/tts-audio/1c04bd2fc5344b449a8244adb64771e6.mp3",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        subtitle_cues: [
+          {
+            text: "好，Kk，咱们接着聊",
+            start_ms: 0,
+            end_ms: 1595,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "前面咱们说，那些“穷举”和“知识图谱”的路子，虽然逻辑严密、一丝不苟，但效果却总差那么点意思",
+            start_ms: 1795,
+            end_ms: 9392,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "你有没有想过，这是为什么？",
+            start_ms: 9592,
+            end_ms: 11443,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "其实啊，真正有智能的东西，不管是人还是动物，都有一个共同的特点——就是不像机器那么“死心眼”",
+            start_ms: 11643,
+            end_ms: 19206,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "就拿你熟悉的“个性化教学”来说吧",
+            start_ms: 19406,
+            end_ms: 21604,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "一个最顶尖的人类教师，他教学生的时候，是严格按照一套“如果A，则B”的算法来教的吗？",
+            start_ms: 21804,
+            end_ms: 29471,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "绝对不是",
+            start_ms: 29671,
+            end_ms: 30628,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "他可能会根据学生今天的心情、一个不经意的哈欠、甚至窗外飞过的一只鸟，临时调整讲课的节奏和例子",
+            start_ms: 30828,
+            end_ms: 38495,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "他会犯错，会讲个跑题的冷笑话，会突然灵光一闪",
+            start_ms: 38695,
+            end_ms: 43448,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "这种“不严密”，恰恰是教学艺术的精髓",
+            start_ms: 43648,
+            end_ms: 47019,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "机器可以精准地执行教案，但只有人能“因材施教”",
+            start_ms: 47219,
+            end_ms: 51299,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "所以，聪明的学者们就想：既然“严密”走不通，那咱们就试试“不严密”的路子呗",
+            start_ms: 51499,
+            end_ms: 57924,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "于是，就有了我们今天的主角——「神经网络」 和 「机器学习」",
+            start_ms: 58124,
+            end_ms: 63028,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "它们本质上就是一套“不严密”的、甚至“偶尔会犯错”的人工智能系统",
+            start_ms: 63228,
+            end_ms: 68840,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "它的核心思路，就是模拟人脑的构造",
+            start_ms: 69040,
+            end_ms: 72411,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "咱们的大脑里，有大约860亿个神经元，它们之间通过“突触”连接",
+            start_ms: 72611,
+            end_ms: 78711,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "你听、看、闻、触，每一次信息的输入，都会改变这些突触连接的强弱",
+            start_ms: 78911,
+            end_ms: 84767,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "有的连接变强了，有的变弱了，甚至有的断了，新的连接又长出来了",
+            start_ms: 84967,
+            end_ms: 91066,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "你看，记忆，本质上就是神经网络结构的改变",
+            start_ms: 91266,
+            end_ms: 95950,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "当你思考的时候，电化学信号就在这个网络里流淌",
+            start_ms: 96150,
+            end_ms: 99916,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "突触强的地方，信号就传得快、传得多",
+            start_ms: 100116,
+            end_ms: 104555,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "突触弱的地方，信号就绕道走",
+            start_ms: 104755,
+            end_ms: 107279,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "智能，就这么在信号的流淌中诞生了",
+            start_ms: 107479,
+            end_ms: 111106,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "人工神经网络，就是照葫芦画瓢",
+            start_ms: 111306,
+            end_ms: 114329,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "我们用 「计算单元」 来模拟神经元，用计算单元之间连接的 「权重」 来模拟突触",
+            start_ms: 114529,
+            end_ms: 120420,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "那 「机器学习」 的过程呢？",
+            start_ms: 120620,
+            end_ms: 122110,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "说白了，就是模拟人类的学习过程——通过不断地修改这些“权重”，来改变整个网络的功能",
+            start_ms: 122310,
+            end_ms: 128735,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "这个过程，我们给它起了个很形象的名字，叫 「训练」",
+            start_ms: 128935,
+            end_ms: 132736,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "训练完了，产出的那个成品，就叫 「模型」",
+            start_ms: 132936,
+            end_ms: 137016,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "这个模型，其实就是一个文件",
+            start_ms: 137216,
+            end_ms: 139484,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "里面存着所有训练好的“权重”和一些其他决定模型能力的参数，它们被统称为 「模型参数」",
+            start_ms: 139684,
+            end_ms: 146608,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "你看，从“严密”到“不严密”，从“规则”到“模拟”，人工智能的这条路，是不是也挺有意思的？",
+            start_ms: 146808,
+            end_ms: 155218,
+            segment_index: 0,
+            position: 0,
+          },
+        ],
+        blockBid: "37bf761edb1f432dba6545510628eff3",
+        page: 0,
+      },
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Debugs a type=text element by playing audio_url or audio_segments while showing millisecond progress and the active subtitle_cues window.",
+      },
+    },
+  },
+  render: ({ elementList = [] }) => (
+    <TextAudioSubtitleDebugPreview elementList={elementList} />
   ),
 };
 

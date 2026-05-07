@@ -30,6 +30,7 @@ import {
   DEFAULT_MOBILE_VIEW_MODE,
   type MobileViewMode,
 } from "./utils/mobileScreenMode";
+import { hasReachedAudioEnd } from "./utils/audioCompletion";
 import { toPlayerCustomActionList } from "./utils/playerCustomActions";
 import "./player.css";
 
@@ -584,6 +585,31 @@ const Player = ({
     ]
   );
 
+  const finishUrlAudioIfSeekedToEnd = useCallback(
+    (_reason: string) => {
+      const audioElement = audioRef.current;
+
+      if (!audioElement || activeSourceTypeRef.current !== "url") {
+        return false;
+      }
+
+      if (
+        !hasReachedAudioEnd({
+          currentTimeSeconds: Math.max(audioElement.currentTime, 0),
+          durationSeconds: audioElement.duration,
+        })
+      ) {
+        return false;
+      }
+
+      pendingAutoPlayRef.current = false;
+      audioElement.pause();
+      finishAudioItem(_reason);
+      return true;
+    },
+    [finishAudioItem]
+  );
+
   const handleSegmentEnded = useCallback(() => {
     const nextSegmentIndex = currentSegmentIndexRef.current + 1;
     const segments = currentAudioSegmentsRef.current;
@@ -917,6 +943,10 @@ const Player = ({
 
     syncPlaybackTime();
 
+    if (finishUrlAudioIfSeekedToEnd("canplay-seek-finished")) {
+      return;
+    }
+
     if (!pendingAutoPlayRef.current || !defaultPlaying) {
       return;
     }
@@ -925,6 +955,7 @@ const Player = ({
   }, [
     currentAudioIndex,
     defaultPlaying,
+    finishUrlAudioIfSeekedToEnd,
     syncPlaybackTime,
     tryPlayCurrentAudio,
   ]);
@@ -938,7 +969,9 @@ const Player = ({
     }
 
     syncPlaybackTime();
-  }, [currentAudioIndex, syncPlaybackTime]);
+
+    finishUrlAudioIfSeekedToEnd("metadata-seek-finished");
+  }, [currentAudioIndex, finishUrlAudioIfSeekedToEnd, syncPlaybackTime]);
 
   const handleAudioTimeUpdate = useCallback(() => {
     syncPlaybackTime();

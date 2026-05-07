@@ -693,10 +693,10 @@ const Player = ({
     if (isPlaybackPaused) {
       wasPlayingBeforeExternalPauseRef.current = Boolean(
         currentAudioRef.current &&
-          !isPausedByUserRef.current &&
-          (!audioElement.paused ||
-            pendingAutoPlayRef.current ||
-            waitingSegmentIndexRef.current !== null)
+        !isPausedByUserRef.current &&
+        (!audioElement.paused ||
+          pendingAutoPlayRef.current ||
+          waitingSegmentIndexRef.current !== null)
       );
 
       pendingAutoPlayRef.current = false;

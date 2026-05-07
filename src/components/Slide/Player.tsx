@@ -45,6 +45,8 @@ export interface SlidePlayerTexts {
   fullscreenHintText?: string;
 }
 
+export type SlidePlayerLoadingReason = "loadingAudio" | "waitingForMoreAudio";
+
 const preloadAudioUrl = (url?: string) => {
   if (typeof window === "undefined" || !url) {
     return;
@@ -72,7 +74,10 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   isPlaybackPaused?: boolean;
   isAutoAdvanceEnabled?: boolean;
   useAutoAdvanceToggle?: boolean;
-  onLoadingChange?: (loading: boolean) => void;
+  onLoadingChange?: (state: {
+    loading: boolean;
+    reason: SlidePlayerLoadingReason | null;
+  }) => void;
   onPlaybackStarted?: () => void;
   onPlaybackTimeChange?: (timeMs: number) => void;
   onSubtitleToggle?: () => void;
@@ -274,13 +279,16 @@ const Player = ({
   }, [audioList, currentAudio?.audioUrl, currentAudioIndex]);
 
   const updateLoading = useCallback(
-    (loading: boolean) => {
-      if (isLoadingRef.current === loading) {
+    (loading: boolean, reason: SlidePlayerLoadingReason | null = null) => {
+      if (isLoadingRef.current === loading && (!loading || reason === null)) {
         return;
       }
 
       isLoadingRef.current = loading;
-      onLoadingChange?.(loading);
+      onLoadingChange?.({
+        loading,
+        reason: loading ? reason : null,
+      });
     },
     [onLoadingChange]
   );
@@ -595,7 +603,7 @@ const Player = ({
       pendingAutoPlayRef.current = defaultPlaying;
       publishPlaybackTime(getSegmentStartTimeMs(nextSegmentIndex));
       setIsPlaying(false);
-      updateLoading(true);
+      updateLoading(true, "waitingForMoreAudio");
 
       return;
     }
@@ -659,10 +667,10 @@ const Player = ({
     if (isPlaybackPaused) {
       wasPlayingBeforeExternalPauseRef.current = Boolean(
         currentAudioRef.current &&
-        !isPausedByUserRef.current &&
-        (!audioElement.paused ||
-          pendingAutoPlayRef.current ||
-          waitingSegmentIndexRef.current !== null)
+          !isPausedByUserRef.current &&
+          (!audioElement.paused ||
+            pendingAutoPlayRef.current ||
+            waitingSegmentIndexRef.current !== null)
       );
 
       pendingAutoPlayRef.current = false;
@@ -691,7 +699,7 @@ const Player = ({
       }
 
       pendingAutoPlayRef.current = true;
-      updateLoading(true);
+      updateLoading(true, "waitingForMoreAudio");
       return;
     }
 
@@ -936,6 +944,23 @@ const Player = ({
     syncPlaybackTime();
   }, [syncPlaybackTime]);
 
+  const handleAudioLoadStart = useCallback(() => {
+    if (isWaitingForSegmentRef.current) {
+      return;
+    }
+
+    updateLoading(true, "loadingAudio");
+  }, [updateLoading]);
+
+  const handleAudioWaiting = useCallback(() => {
+    if (isWaitingForSegmentRef.current) {
+      updateLoading(true, "waitingForMoreAudio");
+      return;
+    }
+
+    updateLoading(true, "loadingAudio");
+  }, [updateLoading]);
+
   const handleAudioSeeking = useCallback(() => {
     syncPlaybackTime();
   }, [syncPlaybackTime]);
@@ -980,10 +1005,12 @@ const Player = ({
         ref={audioRef}
         preload="auto"
         playsInline
+        onLoadStart={handleAudioLoadStart}
         onLoadedMetadata={handleLoadedMetadata}
         onCanPlay={handleAudioCanPlay}
         onPlay={handleAudioPlay}
         onPause={handleAudioPause}
+        onWaiting={handleAudioWaiting}
         onSeeking={handleAudioSeeking}
         onSeeked={handleAudioSeeking}
         onTimeUpdate={handleAudioTimeUpdate}
@@ -1087,7 +1114,7 @@ const Player = ({
                     playbackAccessModeRef.current = "manual";
                     isPausedByUserRef.current = false;
                     pendingAutoPlayRef.current = true;
-                    updateLoading(true);
+                    updateLoading(true, "waitingForMoreAudio");
                     return;
                   }
 

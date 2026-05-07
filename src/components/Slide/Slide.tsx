@@ -28,6 +28,7 @@ import {
 import Player from "./Player";
 import SubtitleOverlay from "./SubtitleOverlay";
 import type { PlayerProps, SlidePlayerTexts } from "./Player";
+import type { SlidePlayerLoadingReason } from "./Player";
 import type { Element } from "./types";
 import useSlide from "./useSlide";
 import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
@@ -58,6 +59,46 @@ const DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS = 2000;
 const DEFAULT_INTERACTION_OVERLAY_OPEN_DELAY_MS = 300;
 const DEFAULT_INTERACTION_OVERLAY_FALLBACK_OFFSET_PX = 160;
 const DEFAULT_INTERACTION_SUBTITLE_GAP_PX = 16;
+const DEFAULT_BUFFERING_REASON = "waitingForAudio";
+
+export type SlideBufferingReason = "waitingForAudio" | SlidePlayerLoadingReason;
+
+export type SlideBufferingTextConfig =
+  | string
+  | Partial<Record<SlideBufferingReason, string>>;
+
+const DEFAULT_SLIDE_BUFFERING_TEXTS: Record<SlideBufferingReason, string> = {
+  waitingForAudio: "Waiting for current slide audio...",
+  loadingAudio: "Loading current slide audio...",
+  waitingForMoreAudio: "Waiting for more current slide audio...",
+};
+
+const resolveBufferingTextByReason = (
+  bufferingText: SlideBufferingTextConfig,
+  reason: SlideBufferingReason
+) => {
+  if (typeof bufferingText === "string") {
+    return bufferingText;
+  }
+
+  return (
+    bufferingText[reason] ??
+    bufferingText[DEFAULT_BUFFERING_REASON] ??
+    DEFAULT_SLIDE_BUFFERING_TEXTS[reason]
+  );
+};
+
+const shouldShowBufferingOverlay = (
+  reason: SlideBufferingReason | null,
+  loading: boolean
+) => {
+  if (!loading) {
+    return false;
+  }
+
+  // Keep the silent preload/loading phase invisible until audio is actually playable.
+  return reason !== "loadingAudio";
+};
 
 type RenderSlideElementOptions = {
   replaceRootScreenHeightWithFull?: boolean;
@@ -76,10 +117,11 @@ interface InteractionOverlayCardProps {
   readonly?: boolean;
 }
 
-export interface SlideInteractionTexts extends Pick<
-  ContentRenderProps,
-  "confirmButtonText" | "copyButtonText" | "copiedButtonText"
-> {
+export interface SlideInteractionTexts
+  extends Pick<
+    ContentRenderProps,
+    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+  > {
   title?: string;
 }
 
@@ -150,7 +192,7 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   fullscreenHeader?: SlideFullscreenHeader;
   playerCustomActions?: PlayerProps["customActions"];
   playerCustomActionPauseOnActive?: boolean;
-  bufferingText?: string;
+  bufferingText?: SlideBufferingTextConfig;
   interactionTitle?: string;
   interactionTexts?: SlideInteractionTexts;
   playerTexts?: SlidePlayerTexts;
@@ -173,7 +215,7 @@ const Slide: React.FC<SlideProps> = ({
   fullscreenHeader,
   playerCustomActions,
   playerCustomActionPauseOnActive = true,
-  bufferingText = "Buffering...",
+  bufferingText = DEFAULT_SLIDE_BUFFERING_TEXTS,
   interactionTitle,
   interactionTexts,
   playerTexts,
@@ -250,6 +292,8 @@ const Slide: React.FC<SlideProps> = ({
   const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(true);
   const [currentAudioKey, setCurrentAudioKey] = useState<string | null>(null);
   const [isAudioLoadingVisible, setIsAudioLoadingVisible] = useState(false);
+  const [audioLoadingReason, setAudioLoadingReason] =
+    useState<SlideBufferingReason>(DEFAULT_BUFFERING_REASON);
   const [hasCompletedCurrentStepAudio, setHasCompletedCurrentStepAudio] =
     useState(false);
   const [hasCurrentAudioPlaybackStarted, setHasCurrentAudioPlaybackStarted] =
@@ -533,6 +577,7 @@ const Slide: React.FC<SlideProps> = ({
     setCurrentAudioKey(null);
     playbackTimeStore.reset();
     setIsAudioLoadingVisible(false);
+    setAudioLoadingReason(DEFAULT_BUFFERING_REASON);
     setHasCompletedCurrentStepAudio(false);
     setHasCurrentAudioPlaybackStarted(false);
     setActiveInteractionElement(undefined);
@@ -632,7 +677,7 @@ const Slide: React.FC<SlideProps> = ({
 
   const hasResolvedCurrentInteraction = Boolean(
     currentInteractionElement?.readonly ||
-    currentInteractionElement?.user_input?.trim()
+      currentInteractionElement?.user_input?.trim()
   );
 
   const shouldBlockPlaybackForInteraction =
@@ -944,6 +989,7 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
+    setAudioLoadingReason("waitingForAudio");
     setIsAudioLoadingVisible(true);
   }, [
     hasAvailableStepAudio,
@@ -1301,7 +1347,13 @@ const Slide: React.FC<SlideProps> = ({
   }, [goNext, resetAudioSequence, showPlayerControls]);
 
   const handlePlayerLoadingChange = useCallback(
-    (loading: boolean) => {
+    ({
+      loading,
+      reason,
+    }: {
+      loading: boolean;
+      reason: SlidePlayerLoadingReason | null;
+    }) => {
       if (disableLoadingOverlay) {
         setIsAudioLoadingVisible(false);
         return;
@@ -1312,7 +1364,10 @@ const Slide: React.FC<SlideProps> = ({
         return;
       }
 
-      setIsAudioLoadingVisible(loading);
+      if (loading && reason) {
+        setAudioLoadingReason(reason);
+      }
+      setIsAudioLoadingVisible(shouldShowBufferingOverlay(reason, loading));
     },
     [
       currentStepHasSpeakableElement,
@@ -1370,6 +1425,7 @@ const Slide: React.FC<SlideProps> = ({
         }
 
         goNext();
+        return;
       }
     },
     [
@@ -1588,7 +1644,10 @@ const Slide: React.FC<SlideProps> = ({
 
         {isAudioLoadingVisible ? (
           <LoadingOverlayCard
-            message={bufferingText}
+            message={resolveBufferingTextByReason(
+              bufferingText,
+              audioLoadingReason
+            )}
             className="absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2"
           />
         ) : null}

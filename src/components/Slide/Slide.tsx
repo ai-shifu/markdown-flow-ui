@@ -39,7 +39,10 @@ import {
 } from "./utils/mobileScreenMode";
 import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
 import { shouldAutoAdvanceIntoAppendedMarker } from "./utils/appendedMarkerAdvance";
-import { getPlaybackSequenceTransition } from "./utils/playbackSequence";
+import {
+  getPlaybackSequenceTransition,
+  resolveNextPendingAudioKey,
+} from "./utils/playbackSequence";
 import {
   getPlayerCustomActionCount,
   resolvePlayerCustomActionElement,
@@ -296,6 +299,9 @@ const Slide: React.FC<SlideProps> = ({
     useState<SlideBufferingReason>(DEFAULT_BUFFERING_REASON);
   const [hasCompletedCurrentStepAudio, setHasCompletedCurrentStepAudio] =
     useState(false);
+  const [lastCompletedStepAudioKey, setLastCompletedStepAudioKey] = useState<
+    string | null
+  >(null);
   const [hasCurrentAudioPlaybackStarted, setHasCurrentAudioPlaybackStarted] =
     useState(false);
   const [isSubtitleEnabled, setIsSubtitleEnabled] = useState(true);
@@ -430,6 +436,14 @@ const Slide: React.FC<SlideProps> = ({
   const currentAudioSequenceStartKey = useMemo(
     () => currentAudioSequenceKeys[0] ?? "none",
     [currentAudioSequenceKeys]
+  );
+  const nextPendingAudioKey = useMemo(
+    () =>
+      resolveNextPendingAudioKey({
+        audioSequenceKeys: currentAudioSequenceKeys,
+        lastCompletedAudioKey: lastCompletedStepAudioKey,
+      }),
+    [currentAudioSequenceKeys, lastCompletedStepAudioKey]
   );
   const playerCustomActionContext = useMemo(
     () => ({
@@ -579,6 +593,7 @@ const Slide: React.FC<SlideProps> = ({
     setIsAudioLoadingVisible(false);
     setAudioLoadingReason(DEFAULT_BUFFERING_REASON);
     setHasCompletedCurrentStepAudio(false);
+    setLastCompletedStepAudioKey(null);
     setHasCurrentAudioPlaybackStarted(false);
     setActiveInteractionElement(undefined);
     setIsInteractionOverlayOpen(false);
@@ -591,16 +606,16 @@ const Slide: React.FC<SlideProps> = ({
   ]);
 
   const startCurrentAudioSequence = useCallback(() => {
-    const nextAudioKey = currentAudioSequenceKeys[0];
-
-    if (!nextAudioKey) {
+    if (!nextPendingAudioKey) {
       return false;
     }
 
-    // Start the first audio segment for the current step immediately.
-    setCurrentAudioKey(nextAudioKey);
+    // Resume from the next unplayed audio item when streaming appends more
+    // speakable content to the current marker after earlier audio finished.
+    setHasCompletedCurrentStepAudio(false);
+    setCurrentAudioKey(nextPendingAudioKey);
     return true;
-  }, [currentAudioSequenceKeys]);
+  }, [nextPendingAudioKey]);
 
   const continueAfterInteraction = useCallback(() => {
     clearInteractionAutoCloseTimer();
@@ -979,7 +994,7 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    if (hasCompletedCurrentStepAudio) {
+    if (hasCompletedCurrentStepAudio && !nextPendingAudioKey) {
       setIsAudioLoadingVisible(false);
       return;
     }
@@ -995,13 +1010,14 @@ const Slide: React.FC<SlideProps> = ({
     hasAvailableStepAudio,
     currentStepHasSpeakableElement,
     hasCompletedCurrentStepAudio,
+    nextPendingAudioKey,
     disableLoadingOverlay,
     shouldPausePlaybackForCustomAction,
     shouldBlockPlaybackForInteraction,
   ]);
 
   useEffect(() => {
-    if (currentAudioKey || currentAudioSequenceKeys.length === 0) {
+    if (currentAudioKey || !nextPendingAudioKey) {
       return;
     }
 
@@ -1013,16 +1029,11 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    if (hasCompletedCurrentStepAudio) {
-      return;
-    }
-
     startCurrentAudioSequence();
   }, [
     currentAudioKey,
-    currentAudioSequenceKeys,
+    nextPendingAudioKey,
     currentStepHasSpeakableElement,
-    hasCompletedCurrentStepAudio,
     shouldPausePlaybackForCustomAction,
     shouldBlockPlaybackForInteraction,
     startCurrentAudioSequence,
@@ -1413,6 +1424,7 @@ const Slide: React.FC<SlideProps> = ({
       }
 
       setCurrentAudioKey(null);
+      setLastCompletedStepAudioKey(endedAudioKey);
       setHasCompletedCurrentStepAudio(true);
       setIsAudioLoadingVisible(false);
 

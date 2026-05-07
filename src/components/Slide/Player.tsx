@@ -31,6 +31,10 @@ import {
   type MobileViewMode,
 } from "./utils/mobileScreenMode";
 import { hasReachedAudioEnd } from "./utils/audioCompletion";
+import {
+  resolveAudioPlaybackSourceType,
+  type AudioPlaybackSourceType,
+} from "./utils/playbackSource";
 import { toPlayerCustomActionList } from "./utils/playerCustomActions";
 import "./player.css";
 
@@ -182,6 +186,7 @@ const Player = ({
   const isLoadingRef = useRef(false);
   const isPausedByUserRef = useRef(false);
   const activeSourceTypeRef = useRef<"url" | "segment" | null>(null);
+  const preferredSourceTypeRef = useRef<AudioPlaybackSourceType | null>(null);
   const isWaitingForSegmentRef = useRef(false);
   const pendingAutoPlayRef = useRef(false);
   const pendingSeekTimeRef = useRef<number | null>(null);
@@ -449,6 +454,7 @@ const Player = ({
     pendingSeekTimeRef.current = null;
     isWaitingForSegmentRef.current = false;
     isSwitchingSegmentRef.current = false;
+    preferredSourceTypeRef.current = null;
     audioElement.pause();
     audioElement.removeAttribute("src");
     audioElement.load();
@@ -516,6 +522,7 @@ const Player = ({
       waitingSegmentIndexRef.current = null;
       isWaitingForSegmentRef.current = false;
       isSwitchingSegmentRef.current = true;
+      preferredSourceTypeRef.current = "segment";
       publishPlaybackTime(getSegmentStartTimeMs(segmentIndex));
       const shouldAutoResume = canStartPlaybackAutomatically();
 
@@ -658,6 +665,7 @@ const Player = ({
     pendingAutoPlayRef.current = false;
     isSwitchingSegmentRef.current = false;
     activeSourceTypeRef.current = null;
+    preferredSourceTypeRef.current = null;
     audioSrcRef.current = null;
     stopPlaybackTimeLoop();
     publishPlaybackTime(0);
@@ -773,29 +781,24 @@ const Player = ({
       return;
     }
 
-    if (currentAudioUrl) {
+    const resolvedSourceType = resolveAudioPlaybackSourceType({
+      activeSourceType: activeSourceTypeRef.current,
+      hasAudioUrl: Boolean(currentAudioUrl),
+      segmentCount: currentAudioSegments.length,
+      preferredSourceType: preferredSourceTypeRef.current,
+      waitingSegmentIndex: waitingSegmentIndexRef.current,
+    });
+
+    if (
+      resolvedSourceType &&
+      preferredSourceTypeRef.current !== resolvedSourceType
+    ) {
+      preferredSourceTypeRef.current = resolvedSourceType;
+    }
+
+    if (resolvedSourceType === "url" && currentAudioUrl) {
       const hasNewSrc = audioSrcRef.current !== currentAudioUrl;
       const shouldAutoResume = canStartPlaybackAutomatically();
-      const shouldKeepSegmentSource =
-        activeSourceTypeRef.current === "segment" &&
-        Boolean(audioSrcRef.current) &&
-        waitingSegmentIndexRef.current === null;
-
-      if (shouldKeepSegmentSource) {
-        if (!shouldAutoResume) {
-          pendingAutoPlayRef.current = false;
-          audioElement.pause();
-          setIsPlaying(false);
-          return;
-        }
-
-        if (audioElement.paused) {
-          pendingAutoPlayRef.current = true;
-          tryPlayCurrentAudio("keep-segment-source");
-        }
-
-        return;
-      }
 
       if (hasNewSrc) {
         const nextSeekTime =
@@ -835,7 +838,10 @@ const Player = ({
       return;
     }
 
-    if (waitingSegmentIndexRef.current !== null) {
+    if (
+      resolvedSourceType === "segment" &&
+      waitingSegmentIndexRef.current !== null
+    ) {
       if (waitingSegmentIndexRef.current < currentAudioSegments.length) {
         if (isPausedByUserRef.current) {
           setIsPlaying(false);
@@ -854,7 +860,7 @@ const Player = ({
       return;
     }
 
-    if (!currentAudioSegments.length) {
+    if (resolvedSourceType === "segment" && !currentAudioSegments.length) {
       if (currentAudio.isAudioStreaming) {
         waitingSegmentIndexRef.current = currentSegmentIndexRef.current;
         isWaitingForSegmentRef.current = true;
@@ -868,7 +874,7 @@ const Player = ({
       return;
     }
 
-    if (!audioSrcRef.current) {
+    if (resolvedSourceType === "segment" && !audioSrcRef.current) {
       startSegmentPlayback(
         Math.min(
           currentSegmentIndexRef.current,
@@ -876,6 +882,11 @@ const Player = ({
         ),
         "effect-init"
       );
+      return;
+    }
+
+    if (resolvedSourceType !== "segment") {
+      resetAudio();
       return;
     }
 

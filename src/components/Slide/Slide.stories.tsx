@@ -8,6 +8,7 @@ import runStreamFixtureText2 from "../../../../测试数据2.json?raw";
 import ContentRender from "../ContentRender";
 import type { OnSendContentParams } from "../types";
 import type { SlidePlayerCustomActionContext } from "./types";
+import { getVisibleSubtitleText } from "./utils/subtitleCue";
 import {
   buildRunStreamElementListFromEvents,
   normalizeRunStreamElement,
@@ -1276,6 +1277,16 @@ type AudioSegmentsPlaybackItem = {
   audioSrc: string;
 };
 
+type TextAudioDebugSourceMode = "audio_url" | "audio_segments";
+
+type TextAudioDebugSource = {
+  id: string;
+  label: string;
+  src: string;
+  offsetMs: number;
+  durationMs: number;
+};
+
 const AudioSegmentsPlaybackPreview = ({
   elementList = [],
 }: {
@@ -1354,6 +1365,498 @@ const AudioSegmentsPlaybackPreview = ({
           ) : null}
         </section>
       ))}
+    </div>
+  );
+};
+
+const getTextAudioDebugSourceModes = (
+  element?: Element
+): TextAudioDebugSourceMode[] => {
+  if (!element) {
+    return [];
+  }
+
+  return [
+    element.audio_url?.trim() ? "audio_url" : null,
+    hasAudioDataSegments(element.audio_segments) ? "audio_segments" : null,
+  ].filter((mode): mode is TextAudioDebugSourceMode => Boolean(mode));
+};
+
+const buildTextAudioDebugSourceList = (
+  element: Element,
+  sourceMode: TextAudioDebugSourceMode
+): TextAudioDebugSource[] => {
+  if (sourceMode === "audio_url") {
+    const audioUrl = element.audio_url?.trim() ?? "";
+
+    return audioUrl
+      ? [
+          {
+            id: "audio-url",
+            label: "audio_url",
+            src: audioUrl,
+            offsetMs: 0,
+            durationMs: 0,
+          },
+        ]
+      : [];
+  }
+
+  let offsetMs = 0;
+
+  return (element.audio_segments ?? [])
+    .map((segment, segmentOrder) => {
+      const audioSrc = getAudioDataSrc(segment.audio_data ?? "");
+      const durationMs = Math.max(Number(segment.duration_ms ?? 0), 0);
+      const source: TextAudioDebugSource = {
+        id: `audio-segment-${segmentOrder}-${segment.segment_index ?? segmentOrder}`,
+        label: `segment #${segment.segment_index ?? segmentOrder}`,
+        src: audioSrc,
+        offsetMs,
+        durationMs,
+      };
+
+      offsetMs += durationMs;
+
+      return source;
+    })
+    .filter((source) => Boolean(source.src));
+};
+
+const getSortedSubtitleCues = (subtitleCues: Element["subtitle_cues"] = []) =>
+  [...subtitleCues].sort(
+    (prevCue, nextCue) =>
+      prevCue.start_ms - nextCue.start_ms ||
+      prevCue.end_ms - nextCue.end_ms ||
+      (prevCue.position ?? 0) - (nextCue.position ?? 0) ||
+      prevCue.segment_index - nextCue.segment_index
+  );
+
+const getActiveSubtitleCueList = (
+  subtitleCues: Element["subtitle_cues"] = [],
+  currentTimeMs: number
+) =>
+  subtitleCues.filter(
+    (subtitleCue) =>
+      currentTimeMs >= subtitleCue.start_ms &&
+      currentTimeMs < subtitleCue.end_ms
+  );
+
+const TextAudioSubtitleDebugPreview = ({
+  elementList = [],
+}: {
+  elementList?: Element[];
+}) => {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const pendingSeekMsRef = useRef<number | null>(null);
+  const [resolvedAudioUrlSrc, setResolvedAudioUrlSrc] = useState("");
+  const [audioUrlLoadError, setAudioUrlLoadError] = useState("");
+  const textElement = useMemo(
+    () =>
+      elementList.find((element) => element.type === "text") ?? elementList[0],
+    [elementList]
+  );
+  const availableSourceModes = useMemo(
+    () => getTextAudioDebugSourceModes(textElement),
+    [textElement]
+  );
+  const [sourceMode, setSourceMode] =
+    useState<TextAudioDebugSourceMode>("audio_url");
+  const [activeSourceIndex, setActiveSourceIndex] = useState(0);
+  const [currentTimeMs, setCurrentTimeMs] = useState(0);
+  const [nativeDurationMs, setNativeDurationMs] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    const nextSourceMode = availableSourceModes.includes(sourceMode)
+      ? sourceMode
+      : availableSourceModes[0];
+
+    if (nextSourceMode) {
+      setSourceMode(nextSourceMode);
+    }
+  }, [availableSourceModes, sourceMode]);
+
+  const audioSourceList = useMemo(
+    () =>
+      textElement ? buildTextAudioDebugSourceList(textElement, sourceMode) : [],
+    [sourceMode, textElement]
+  );
+  const rawActiveAudioSource = audioSourceList[activeSourceIndex];
+  const activeAudioSource =
+    sourceMode === "audio_url" && rawActiveAudioSource
+      ? resolvedAudioUrlSrc
+        ? {
+            ...rawActiveAudioSource,
+            src: resolvedAudioUrlSrc,
+          }
+        : undefined
+      : rawActiveAudioSource;
+  const subtitleCueList = useMemo(
+    () => getSortedSubtitleCues(textElement?.subtitle_cues),
+    [textElement]
+  );
+  const activeSubtitleCueList = useMemo(
+    () => getActiveSubtitleCueList(subtitleCueList, currentTimeMs),
+    [currentTimeMs, subtitleCueList]
+  );
+  const visibleSubtitleText = useMemo(
+    () => getVisibleSubtitleText(subtitleCueList, currentTimeMs),
+    [currentTimeMs, subtitleCueList]
+  );
+  const audioSegmentsDurationMs = useMemo(
+    () =>
+      audioSourceList.reduce(
+        (totalDurationMs, source) => totalDurationMs + source.durationMs,
+        0
+      ),
+    [audioSourceList]
+  );
+  const totalDurationMs =
+    sourceMode === "audio_segments" && audioSegmentsDurationMs > 0
+      ? audioSegmentsDurationMs
+      : nativeDurationMs;
+  const progressPercent =
+    totalDurationMs > 0
+      ? Math.min((currentTimeMs / totalDurationMs) * 100, 100)
+      : 0;
+
+  const updateCurrentTimeFromAudio = useCallback(() => {
+    const audioElement = audioRef.current;
+
+    if (!audioElement || !activeAudioSource) {
+      setCurrentTimeMs(0);
+      return;
+    }
+
+    setCurrentTimeMs(
+      Math.round(activeAudioSource.offsetMs + audioElement.currentTime * 1000)
+    );
+  }, [activeAudioSource]);
+
+  useEffect(() => {
+    if (sourceMode !== "audio_url" || !rawActiveAudioSource?.src) {
+      setResolvedAudioUrlSrc("");
+      setAudioUrlLoadError("");
+      return;
+    }
+
+    const controller = new AbortController();
+    let objectUrl = "";
+    let isCancelled = false;
+
+    setResolvedAudioUrlSrc("");
+    setAudioUrlLoadError("");
+
+    fetch(rawActiveAudioSource.src, { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Audio request failed with ${response.status}`);
+        }
+
+        return response.blob();
+      })
+      .then((blob) => {
+        if (isCancelled) {
+          return;
+        }
+
+        objectUrl = URL.createObjectURL(blob);
+        setResolvedAudioUrlSrc(objectUrl);
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        console.log("textAudioSubtitleDebugAudioUrlFetchError", error);
+        setAudioUrlLoadError(
+          "Failed to preload audio_url as a blob. Falling back to the original URL."
+        );
+        setResolvedAudioUrlSrc(rawActiveAudioSource.src);
+      });
+
+    return () => {
+      isCancelled = true;
+      controller.abort();
+
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [rawActiveAudioSource?.src, sourceMode]);
+
+  const seekToProgress = useCallback(
+    (nextTimeMs: number) => {
+      const audioElement = audioRef.current;
+
+      if (!audioElement || audioSourceList.length === 0) {
+        return;
+      }
+
+      if (sourceMode === "audio_url") {
+        audioElement.currentTime = Math.max(nextTimeMs, 0) / 1000;
+        updateCurrentTimeFromAudio();
+        return;
+      }
+
+      const nextSourceIndex = audioSourceList.findIndex((source, index) => {
+        const nextSource = audioSourceList[index + 1];
+        const endMs =
+          nextSource?.offsetMs ?? source.offsetMs + source.durationMs;
+
+        return nextTimeMs >= source.offsetMs && nextTimeMs < endMs;
+      });
+      const resolvedSourceIndex =
+        nextSourceIndex >= 0
+          ? nextSourceIndex
+          : Math.max(audioSourceList.length - 1, 0);
+      const resolvedSource = audioSourceList[resolvedSourceIndex];
+      const nextSegmentTimeMs = Math.max(
+        nextTimeMs - (resolvedSource?.offsetMs ?? 0),
+        0
+      );
+
+      pendingSeekMsRef.current = nextSegmentTimeMs;
+      setActiveSourceIndex(resolvedSourceIndex);
+
+      if (resolvedSourceIndex === activeSourceIndex && resolvedSource) {
+        audioElement.currentTime = nextSegmentTimeMs / 1000;
+        updateCurrentTimeFromAudio();
+      }
+    },
+    [activeSourceIndex, audioSourceList, sourceMode, updateCurrentTimeFromAudio]
+  );
+
+  useEffect(() => {
+    setActiveSourceIndex(0);
+    setCurrentTimeMs(0);
+    setNativeDurationMs(0);
+    setIsPlaying(false);
+    pendingSeekMsRef.current = null;
+  }, [sourceMode, textElement]);
+
+  useEffect(() => {
+    const audioElement = audioRef.current;
+
+    if (!audioElement || pendingSeekMsRef.current === null) {
+      return;
+    }
+
+    audioElement.currentTime = pendingSeekMsRef.current / 1000;
+    pendingSeekMsRef.current = null;
+  }, [activeAudioSource?.src]);
+
+  if (!textElement) {
+    return (
+      <div className="flex min-h-[100dvh] w-full items-center justify-center px-6 text-sm text-muted-foreground">
+        No text element found in elementList.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col gap-4 px-4 py-6 md:px-6">
+      <section className="rounded-lg border border-border bg-card p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">
+              Text audio subtitle sync debug
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Paste a type=text element into Storybook Controls to compare audio
+              progress with subtitle cue windows.
+            </p>
+          </div>
+          <div className="flex rounded-md border border-border bg-background p-1">
+            {(
+              ["audio_url", "audio_segments"] as TextAudioDebugSourceMode[]
+            ).map((mode) => (
+              <button
+                key={mode}
+                className={[
+                  "rounded px-3 py-1 text-xs font-medium transition-colors",
+                  sourceMode === mode
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                ].join(" ")}
+                disabled={!availableSourceModes.includes(mode)}
+                type="button"
+                onClick={() => setSourceMode(mode)}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <div className="rounded-md border border-border bg-background p-3">
+            <div className="text-xs text-muted-foreground">Progress</div>
+            <div className="mt-1 font-mono text-2xl font-semibold text-foreground">
+              {`${currentTimeMs}ms`}
+            </div>
+          </div>
+          <div className="rounded-md border border-border bg-background p-3">
+            <div className="text-xs text-muted-foreground">Duration</div>
+            <div className="mt-1 font-mono text-2xl font-semibold text-foreground">
+              {totalDurationMs > 0 ? `${Math.round(totalDurationMs)}ms` : "-"}
+            </div>
+          </div>
+          <div className="rounded-md border border-border bg-background p-3">
+            <div className="text-xs text-muted-foreground">Current source</div>
+            <div className="mt-1 truncate font-mono text-sm font-semibold text-foreground">
+              {activeAudioSource?.label ?? "-"}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full bg-primary"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+        <input
+          aria-label="Seek audio progress"
+          className="mt-3 w-full accent-primary"
+          disabled={totalDurationMs <= 0 || audioSourceList.length === 0}
+          max={Math.max(totalDurationMs, 0)}
+          min={0}
+          step={1}
+          type="range"
+          value={Math.min(currentTimeMs, Math.max(totalDurationMs, 0))}
+          onChange={(event) => seekToProgress(Number(event.target.value))}
+        />
+
+        {activeAudioSource ? (
+          <audio
+            key={`${activeAudioSource.id}-${activeAudioSource.src}`}
+            ref={audioRef}
+            autoPlay={isPlaying}
+            className="mt-4 w-full"
+            controls
+            preload="auto"
+            src={activeAudioSource.src}
+            onEnded={() => {
+              if (activeSourceIndex < audioSourceList.length - 1) {
+                setIsPlaying(true);
+                setActiveSourceIndex((previousIndex) => previousIndex + 1);
+                return;
+              }
+
+              setIsPlaying(false);
+              updateCurrentTimeFromAudio();
+            }}
+            onLoadedMetadata={(event) => {
+              const durationMs = Number.isFinite(event.currentTarget.duration)
+                ? Math.round(event.currentTarget.duration * 1000)
+                : 0;
+
+              setNativeDurationMs(
+                sourceMode === "audio_url" ? durationMs : totalDurationMs
+              );
+              updateCurrentTimeFromAudio();
+            }}
+            onPause={() => setIsPlaying(false)}
+            onPlay={() => {
+              setIsPlaying(true);
+              updateCurrentTimeFromAudio();
+            }}
+            onSeeked={updateCurrentTimeFromAudio}
+            onTimeUpdate={updateCurrentTimeFromAudio}
+          >
+            Your browser does not support the audio element.
+          </audio>
+        ) : (
+          <div className="mt-4 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+            {sourceMode === "audio_url" && rawActiveAudioSource
+              ? "Preloading audio_url for stable seeking..."
+              : "No playable source found for the selected mode."}
+          </div>
+        )}
+        {audioUrlLoadError ? (
+          <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            {audioUrlLoadError}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="rounded-lg border border-border bg-card p-4">
+        <div className="mb-2 text-sm font-medium text-foreground">
+          Current subtitle
+        </div>
+        <div className="min-h-20 rounded-md border border-border bg-background p-4 text-xl font-semibold leading-relaxed text-foreground">
+          {visibleSubtitleText || (
+            <span className="text-sm font-normal text-muted-foreground">
+              No subtitle cue is active at the current progress.
+            </span>
+          )}
+        </div>
+        {activeSubtitleCueList.length > 0 ? (
+          <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+            {activeSubtitleCueList.map((subtitleCue) => (
+              <span
+                key={`${subtitleCue.start_ms}-${subtitleCue.end_ms}-${subtitleCue.text}`}
+                className="rounded-md border border-primary/20 bg-primary/10 px-2 py-1 text-primary"
+              >
+                {`${subtitleCue.start_ms}ms -> ${subtitleCue.end_ms}ms`}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="rounded-lg border border-border bg-card p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-medium text-foreground">Subtitle cues</h3>
+          <span className="text-xs text-muted-foreground">
+            {`${subtitleCueList.length} cues`}
+          </span>
+        </div>
+        <div className="max-h-[48dvh] overflow-auto rounded-md border border-border">
+          <table className="w-full min-w-[720px] border-collapse text-left text-sm">
+            <thead className="sticky top-0 bg-muted text-xs text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2 font-medium">#</th>
+                <th className="px-3 py-2 font-medium">start_ms</th>
+                <th className="px-3 py-2 font-medium">end_ms</th>
+                <th className="px-3 py-2 font-medium">segment</th>
+                <th className="px-3 py-2 font-medium">text</th>
+              </tr>
+            </thead>
+            <tbody>
+              {subtitleCueList.map((subtitleCue, index) => {
+                const isActive =
+                  currentTimeMs >= subtitleCue.start_ms &&
+                  currentTimeMs < subtitleCue.end_ms;
+
+                return (
+                  <tr
+                    key={`${subtitleCue.start_ms}-${subtitleCue.end_ms}-${index}`}
+                    className={[
+                      "border-t border-border",
+                      isActive ? "bg-primary/10 text-primary" : "bg-card",
+                    ].join(" ")}
+                  >
+                    <td className="px-3 py-2 font-mono">{index}</td>
+                    <td className="px-3 py-2 font-mono">
+                      {subtitleCue.start_ms}
+                    </td>
+                    <td className="px-3 py-2 font-mono">
+                      {subtitleCue.end_ms}
+                    </td>
+                    <td className="px-3 py-2 font-mono">
+                      {subtitleCue.segment_index}
+                    </td>
+                    <td className="px-3 py-2">{subtitleCue.text}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 };
@@ -3143,6 +3646,287 @@ export const AudioSegmentsPlayback: Story = {
   },
   render: ({ elementList = [] }) => (
     <AudioSegmentsPlaybackPreview elementList={elementList} />
+  ),
+};
+
+export const TextAudioSubtitleSyncDebug: Story = {
+  args: {
+    elementList: [
+      {
+        sequence_number: 129,
+        type: "text",
+        content:
+          "Kk，咱们接着聊。你有没有想过，当人类面对一大堆新知识的时候，会怎么做？比如你拿到一本 500 页的《米其林餐厅运营手册》，你会从头读到尾吗？肯定不会。你肯定是先翻到“如何应对卫生检查”那一章，找到你当下需要的答案。\n\n**AI 应用面对大量新知识时，思路完全一样**——只把相关的知识放到提示词里，就能又快、又便宜、又准确地解决问题。\n\n这个做法其实很直观，但技术人嘛，总喜欢起一些**让人听不懂的名字**。他们管这叫 **RAG**，全称是 Retrieval-Augmented Generation。别被吓到，你把它理解成 **「知识库」** 就好多了。\n\nRAG 就是创建一个知识库，把你那些私有的、领域专属的知识都存进去。遇到问题时，到知识库里检索相关知识，然后拿出来放到提示词里。注意，**检索这件事不是大模型干的**——大模型除了生成下一个 token，什么都不会。检索要靠应用程序来完成。\n\n这就像**开卷考试**，两个能力决定了你答得好不好：\n\n第一，**能不能准确找到相关知识**，而且要找得全。  \n第二，**现学现卖的能力**怎么样，也就是脑袋的基础智商。\n\n基础智商靠选不同的模型就能调整。但**准确找到相关知识**，更多依赖知识是如何组织和查找的。\n\n一种自然能想到的方式就是**关键词搜索**——就像你用百度一样，从问题里提炼几个关键词，去搜索引擎里找匹配的资料。关键词选得好，就能找得到。但**同义词**不好处理，而且很多不相关的资料里也常常有这些关键词，会被一起找出来。\n\n所以，给大模型用的知识库，一般会优先选择**向量检索**的方式找答案。  \n「向量检索」又是个不明觉厉的名字。更好理解的话，可以叫 **「语义检索」**——就是通过语义相似性做检索。\n\n我给你举个例子。假设在你的领域里，有这 5 句话：\n\n1. 这道菜的火候要控制在 65 度。  \n2. 这道菜的温度需要保持在 65 摄氏度。  \n3. 这道菜的烹饪温度是 65°C。  \n4. This dish should be cooked at 65 degrees.  \n5. Ce plat doit être cuit à 65 degrés.\n\n你看，第 1、2、3 句**字面不同但意思完全相同**，第 4 句是英文，第 5 句是法文，意思也一样。\n\n如果用其中任何一句话到知识库里做**向量检索**，都能把其它 4 句话也找出来。这就是**语义检索**，而且是可以**跨语言**的。\n\n语义检索的技术核心是使用 **embedding 模型**。至于 embedding、向量的细节，咱们这节课就不展开了，感兴趣的可以追问。\n\n---\n\n现在，给你看这页 PPT：\n",
+        is_marker: false,
+        is_renderable: false,
+        is_new: true,
+        is_speakable: true,
+        audio_url:
+          "https://res.ai-shifu.cn/tts-audio/a208563e9bb84e47ad16e7bf46a35721.mp3",
+        is_audio_streaming: false,
+        isAudioStreaming: false,
+        subtitle_cues: [
+          {
+            text: "Kk，咱们接着聊",
+            start_ms: 0,
+            end_ms: 1488,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "你有没有想过，当人类面对一大堆新知识的时候，会怎么做？",
+            start_ms: 1488,
+            end_ms: 5951,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "比如你拿到一本 500 页的《米其林餐厅运营手册》，你会从头读到尾吗？",
+            start_ms: 5951,
+            end_ms: 11736,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "肯定不会",
+            start_ms: 11736,
+            end_ms: 12562,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "你肯定是先翻到“如何应对卫生检查”那一章，找到你当下需要的答案",
+            start_ms: 12562,
+            end_ms: 17851,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "AI 应用面对大量新知识时，思路完全一样——只把相关的知识放到提示词里，就能又快、又便宜、又准确地解决问题",
+            start_ms: 17851,
+            end_ms: 26777,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "这个做法其实很直观，但技术人嘛，总喜欢起一些让人听不懂的名字",
+            start_ms: 26777,
+            end_ms: 31901,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "他们管这叫 RAG，全称是 Retrieval-Augmented Generation",
+            start_ms: 31901,
+            end_ms: 39339,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "别被吓到，你把它理解成 「知识库」 就好多了",
+            start_ms: 39339,
+            end_ms: 43141,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "RAG 就是创建一个知识库，把你那些私有的、领域专属的知识都存进去",
+            start_ms: 43141,
+            end_ms: 48761,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "遇到问题时，到知识库里检索相关知识，然后拿出来放到提示词里",
+            start_ms: 48761,
+            end_ms: 53720,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "注意，检索这件事不是大模型干的——大模型除了生成下一个 token，什么都不会",
+            start_ms: 53720,
+            end_ms: 60332,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "检索要靠应用程序来完成",
+            start_ms: 60332,
+            end_ms: 62316,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "这就像开卷考试，两个能力决定了你答得好不好：\n\n第一，能不能准确找到相关知识，而且要找得全",
+            start_ms: 62316,
+            end_ms: 69920,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "第二，现学现卖的能力怎么样，也就是脑袋的基础智商",
+            start_ms: 69920,
+            end_ms: 74052,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "基础智商靠选不同的模型就能调整",
+            start_ms: 74052,
+            end_ms: 76697,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "但准确找到相关知识，更多依赖知识是如何组织和查找的",
+            start_ms: 76697,
+            end_ms: 80995,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "一种自然能想到的方式就是关键词搜索——就像你用百度一样，从问题里提炼几个关键词，去搜索引擎里找匹配的资料",
+            start_ms: 80995,
+            end_ms: 89756,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "关键词选得好，就能找得到",
+            start_ms: 89756,
+            end_ms: 91905,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "但同义词不好处理，而且很多不相关的资料里也常常有这些关键词，会被一起找出来",
+            start_ms: 91905,
+            end_ms: 98186,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "所以，给大模型用的知识库，一般会优先选择向量检索的方式找答案",
+            start_ms: 98186,
+            end_ms: 103310,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "「向量检索」又是个不明觉厉的名字",
+            start_ms: 103310,
+            end_ms: 106120,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "更好理解的话，可以叫 「语义检索」——就是通过语义相似性做检索",
+            start_ms: 106120,
+            end_ms: 111409,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "我给你举个例子",
+            start_ms: 111409,
+            end_ms: 112731,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "假设在你的领域里，有这 5 句话：\n这道菜的火候要控制在 65 度",
+            start_ms: 112731,
+            end_ms: 118351,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "这道菜的温度需要保持在 65 摄氏度",
+            start_ms: 118351,
+            end_ms: 121492,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "这道菜的烹饪温度是 65°C",
+            start_ms: 121492,
+            end_ms: 123971,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "This dish should be cooked at 65 degrees",
+            start_ms: 123971,
+            end_ms: 130748,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "Ce plat doit être cuit à 65 degrés",
+            start_ms: 130748,
+            end_ms: 136534,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "你看，第 1、2、3 句字面不同但意思完全相同，第 4 句是英文，第 5 句是法文，意思也一样",
+            start_ms: 136534,
+            end_ms: 144468,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "如果用其中任何一句话到知识库里做向量检索，都能把其它 4 句话也找出来",
+            start_ms: 144468,
+            end_ms: 150419,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "这就是语义检索，而且是可以跨语言的",
+            start_ms: 150419,
+            end_ms: 153394,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "语义检索的技术核心是使用 embedding 模型",
+            start_ms: 153394,
+            end_ms: 157692,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "至于 embedding、向量的细节，咱们这节课就不展开了，感兴趣的可以追问",
+            start_ms: 157692,
+            end_ms: 164139,
+            segment_index: 0,
+            position: 0,
+          },
+          {
+            text: "---\n\n现在，给你看这页 PPT",
+            start_ms: 164139,
+            end_ms: 167114,
+            segment_index: 0,
+            position: 0,
+          },
+        ],
+        blockBid: "b2f9e7a120f34d36b24d4b75a9f8dec9",
+        page: 1,
+      },
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Debugs a type=text element by playing audio_url or audio_segments while showing millisecond progress and the active subtitle_cues window.",
+      },
+    },
+  },
+  render: ({ elementList = [] }) => (
+    <TextAudioSubtitleDebugPreview elementList={elementList} />
   ),
 };
 

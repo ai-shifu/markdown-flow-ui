@@ -17,6 +17,7 @@ description: 统一 `markdown-flow-ui` 中 `ContentRender`、`IframeSandbox`、`
 4. 若场景运行在 iframe 或隔离容器中，优先使用对宿主样式依赖更低的实现，避免因为 Tailwind 或主题注入时序导致 loading 闪烁或失效。
 5. 修改后重点检查 `Slide bufferingText`、`Building styles...`、`Building scripts cache...` 等状态是否仍能正确切换与居中显示。
 6. 若渲染链路已进入明确错误态（例如 `element.type === "error"`），应立即关闭对应 `Slide` / `IframeSandbox` / `ContentRender` 的短时 loading 遮罩，不要让 buffering、style loading、script loading 继续盖在错误态之上。
+7. `Slide` 音频默认自动 preload / autoplay 时，若浏览器仅进入 `loadstart` 或首帧 `waiting`、但尚未真实开始播放，不要展示“正在加载音频”这一类偏播放中的文案；优先隐藏该遮罩或继续使用更中性的等待态。
 
 ## 约束
 

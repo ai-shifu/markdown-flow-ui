@@ -30,6 +30,7 @@ import {
   DEFAULT_MOBILE_VIEW_MODE,
   type MobileViewMode,
 } from "./utils/mobileScreenMode";
+import { hasReachedAudioEnd } from "./utils/audioCompletion";
 import { toPlayerCustomActionList } from "./utils/playerCustomActions";
 import "./player.css";
 
@@ -44,6 +45,8 @@ export interface SlidePlayerTexts {
   fullscreenLabel?: string;
   fullscreenHintText?: string;
 }
+
+export type SlidePlayerLoadingReason = "loadingAudio" | "waitingForMoreAudio";
 
 const preloadAudioUrl = (url?: string) => {
   if (typeof window === "undefined" || !url) {
@@ -72,7 +75,10 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   isPlaybackPaused?: boolean;
   isAutoAdvanceEnabled?: boolean;
   useAutoAdvanceToggle?: boolean;
-  onLoadingChange?: (loading: boolean) => void;
+  onLoadingChange?: (state: {
+    loading: boolean;
+    reason: SlidePlayerLoadingReason | null;
+  }) => void;
   onPlaybackStarted?: () => void;
   onPlaybackTimeChange?: (timeMs: number) => void;
   onSubtitleToggle?: () => void;
@@ -274,13 +280,16 @@ const Player = ({
   }, [audioList, currentAudio?.audioUrl, currentAudioIndex]);
 
   const updateLoading = useCallback(
-    (loading: boolean) => {
-      if (isLoadingRef.current === loading) {
+    (loading: boolean, reason: SlidePlayerLoadingReason | null = null) => {
+      if (isLoadingRef.current === loading && (!loading || reason === null)) {
         return;
       }
 
       isLoadingRef.current = loading;
-      onLoadingChange?.(loading);
+      onLoadingChange?.({
+        loading,
+        reason: loading ? reason : null,
+      });
     },
     [onLoadingChange]
   );
@@ -576,6 +585,31 @@ const Player = ({
     ]
   );
 
+  const finishUrlAudioIfSeekedToEnd = useCallback(
+    (_reason: string) => {
+      const audioElement = audioRef.current;
+
+      if (!audioElement || activeSourceTypeRef.current !== "url") {
+        return false;
+      }
+
+      if (
+        !hasReachedAudioEnd({
+          currentTimeSeconds: Math.max(audioElement.currentTime, 0),
+          durationSeconds: audioElement.duration,
+        })
+      ) {
+        return false;
+      }
+
+      pendingAutoPlayRef.current = false;
+      audioElement.pause();
+      finishAudioItem(_reason);
+      return true;
+    },
+    [finishAudioItem]
+  );
+
   const handleSegmentEnded = useCallback(() => {
     const nextSegmentIndex = currentSegmentIndexRef.current + 1;
     const segments = currentAudioSegmentsRef.current;
@@ -595,7 +629,7 @@ const Player = ({
       pendingAutoPlayRef.current = defaultPlaying;
       publishPlaybackTime(getSegmentStartTimeMs(nextSegmentIndex));
       setIsPlaying(false);
-      updateLoading(true);
+      updateLoading(true, "waitingForMoreAudio");
 
       return;
     }
@@ -691,7 +725,7 @@ const Player = ({
       }
 
       pendingAutoPlayRef.current = true;
-      updateLoading(true);
+      updateLoading(true, "waitingForMoreAudio");
       return;
     }
 
@@ -909,6 +943,10 @@ const Player = ({
 
     syncPlaybackTime();
 
+    if (finishUrlAudioIfSeekedToEnd("canplay-seek-finished")) {
+      return;
+    }
+
     if (!pendingAutoPlayRef.current || !defaultPlaying) {
       return;
     }
@@ -917,6 +955,7 @@ const Player = ({
   }, [
     currentAudioIndex,
     defaultPlaying,
+    finishUrlAudioIfSeekedToEnd,
     syncPlaybackTime,
     tryPlayCurrentAudio,
   ]);
@@ -930,11 +969,30 @@ const Player = ({
     }
 
     syncPlaybackTime();
-  }, [currentAudioIndex, syncPlaybackTime]);
+
+    finishUrlAudioIfSeekedToEnd("metadata-seek-finished");
+  }, [currentAudioIndex, finishUrlAudioIfSeekedToEnd, syncPlaybackTime]);
 
   const handleAudioTimeUpdate = useCallback(() => {
     syncPlaybackTime();
   }, [syncPlaybackTime]);
+
+  const handleAudioLoadStart = useCallback(() => {
+    if (isWaitingForSegmentRef.current) {
+      return;
+    }
+
+    updateLoading(true, "loadingAudio");
+  }, [updateLoading]);
+
+  const handleAudioWaiting = useCallback(() => {
+    if (isWaitingForSegmentRef.current) {
+      updateLoading(true, "waitingForMoreAudio");
+      return;
+    }
+
+    updateLoading(true, "loadingAudio");
+  }, [updateLoading]);
 
   const handleAudioSeeking = useCallback(() => {
     syncPlaybackTime();
@@ -980,10 +1038,12 @@ const Player = ({
         ref={audioRef}
         preload="auto"
         playsInline
+        onLoadStart={handleAudioLoadStart}
         onLoadedMetadata={handleLoadedMetadata}
         onCanPlay={handleAudioCanPlay}
         onPlay={handleAudioPlay}
         onPause={handleAudioPause}
+        onWaiting={handleAudioWaiting}
         onSeeking={handleAudioSeeking}
         onSeeked={handleAudioSeeking}
         onTimeUpdate={handleAudioTimeUpdate}
@@ -1087,7 +1147,7 @@ const Player = ({
                     playbackAccessModeRef.current = "manual";
                     isPausedByUserRef.current = false;
                     pendingAutoPlayRef.current = true;
-                    updateLoading(true);
+                    updateLoading(true, "waitingForMoreAudio");
                     return;
                   }
 

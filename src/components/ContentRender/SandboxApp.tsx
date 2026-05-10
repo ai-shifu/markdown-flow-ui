@@ -153,6 +153,11 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       .sandbox-container { position: relative; width: 100%; }
       .sandbox-container svg,
       .sandbox-container img { display: block; margin-left: auto; margin-right: auto; }
+      /* Sub-pixel rounding (clamp() font-size + fractional flex children) can push
+         scrollHeight 1px past clientHeight, producing a phantom scrollbar on a root
+         that visually fits. The user content root inside .sandbox-container should
+         never render its own scrollbar; the iframe boundary handles overflow. */
+      .sandbox-container > * { overflow: clip !important; }
       .justify-\\[safe_center\\]{
         justify-content: safe center;
       }

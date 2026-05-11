@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import runStreamFixtureText from "../../../../测试数据.json?raw";
-import ContentRender from "./ContentRender";
+import ContentRender, {
+  type ContentRenderTypewriterOptions,
+} from "./ContentRender";
 import IframeSandbox from "./IframeSandbox";
 
 const meta = {
@@ -353,8 +355,8 @@ This greatly enhances content expressiveness and interactivity!
 `;
 
 const TYPEWRITER_STREAM_TICK_MS = 40;
-const TYPEWRITER_STREAM_BATCH_SIZE = 2;
 const TYPEWRITER_SOURCE_PUSH_INTERVAL_MS = 800;
+const TYPEWRITER_BATCH_SIZE = 2;
 
 type TypewriterRunStreamEvent = {
   type?: string;
@@ -400,17 +402,10 @@ const TYPEWRITER_STREAM_SEGMENTS = extractTypewriterTextSegments(
   parseTypewriterRunStreamFixture(runStreamFixtureText)
 );
 
-const splitIntoCharacterChunks = (value: string, chunkSize: number) => {
-  if (!value) return [];
-
-  const characters = Array.from(value);
-  const chunks: string[] = [];
-
-  for (let index = 0; index < characters.length; index += chunkSize) {
-    chunks.push(characters.slice(index, index + chunkSize).join(""));
-  }
-
-  return chunks;
+const TYPEWRITER_OPTIONS: ContentRenderTypewriterOptions = {
+  enabled: true,
+  chunkSize: TYPEWRITER_BATCH_SIZE,
+  tickMs: TYPEWRITER_STREAM_TICK_MS,
 };
 
 const TypewriterStreamPreview = ({
@@ -419,17 +414,14 @@ const TypewriterStreamPreview = ({
   content: readonly string[];
 }) => {
   const [sourceIndex, setSourceIndex] = useState(0);
-  const [pendingText, setPendingText] = useState("");
-  const [displayText, setDisplayText] = useState("");
+  const [arrivedText, setArrivedText] = useState("");
 
   const totalSourceText = useMemo(() => content.join(""), [content]);
-  const isStreamingDone =
-    sourceIndex >= content.length && pendingText.length === 0;
+  const isStreamingDone = sourceIndex >= content.length;
 
   useEffect(() => {
     setSourceIndex(0);
-    setPendingText("");
-    setDisplayText("");
+    setArrivedText("");
   }, [content]);
 
   useEffect(() => {
@@ -438,7 +430,7 @@ const TypewriterStreamPreview = ({
     const pushNextSegment = window.setTimeout(
       () => {
         const nextSegment = content[sourceIndex] ?? "";
-        setPendingText((current) => `${current}${nextSegment}`);
+        setArrivedText((current) => `${current}${nextSegment}`);
         setSourceIndex((current) => current + 1);
       },
       sourceIndex === 0 ? 0 : TYPEWRITER_SOURCE_PUSH_INTERVAL_MS
@@ -446,26 +438,6 @@ const TypewriterStreamPreview = ({
 
     return () => window.clearTimeout(pushNextSegment);
   }, [content, sourceIndex]);
-
-  useEffect(() => {
-    if (!pendingText) return undefined;
-
-    const typewriterTimer = window.setTimeout(() => {
-      const [nextChunk = ""] = splitIntoCharacterChunks(
-        pendingText,
-        TYPEWRITER_STREAM_BATCH_SIZE
-      );
-
-      if (!nextChunk) return;
-
-      setDisplayText((current) => `${current}${nextChunk}`);
-      setPendingText((current) =>
-        Array.from(current).slice(Array.from(nextChunk).length).join("")
-      );
-    }, TYPEWRITER_STREAM_TICK_MS);
-
-    return () => window.clearTimeout(typewriterTimer);
-  }, [pendingText]);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 rounded-[28px] bg-slate-50 p-6 md:p-8">
@@ -482,7 +454,7 @@ const TypewriterStreamPreview = ({
       </div>
 
       <div className="rounded-[24px] border border-slate-200 bg-white px-5 py-6 shadow-sm md:px-7">
-        <ContentRender content={displayText} />
+        <ContentRender content={arrivedText} typewriter={TYPEWRITER_OPTIONS} />
         <div className="mt-4 flex items-center gap-3 text-sm text-slate-500">
           <span
             className={`inline-flex h-2.5 w-2.5 rounded-full ${
@@ -509,10 +481,10 @@ const TypewriterStreamPreview = ({
 
         <div className="rounded-[20px] bg-white px-4 py-4 text-sm text-slate-700 shadow-sm ring-1 ring-slate-200">
           <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-            Frontend displayed
+            Stream payload
           </div>
           <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-6">
-            {displayText || " "}
+            {arrivedText || " "}
           </pre>
         </div>
       </div>

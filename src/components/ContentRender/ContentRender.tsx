@@ -1,6 +1,6 @@
 import "highlight.js/styles/github.css";
 import "katex/dist/katex.min.css";
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
@@ -45,6 +45,13 @@ import {
 
 const SANDBOX_TAG_HINT_PATTERN =
   /<(script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)\b/i;
+
+export interface ContentRenderTypewriterOptions {
+  enabled?: boolean;
+  chunkSize?: number;
+  tickMs?: number;
+}
+
 // Define component Props type
 export interface ContentRenderProps {
   content: string;
@@ -89,6 +96,8 @@ export interface ContentRenderProps {
   // Sandbox render mode
   sandboxMode?: "content" | "blackboard";
   beforeSend?: (param: OnSendContentParams) => boolean;
+  // Optional typewriter reveal configuration for append-only streaming text
+  typewriter?: ContentRenderTypewriterOptions;
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
 
@@ -267,6 +276,16 @@ const mergeNonSandboxSegments = (segments: RenderSegment[]) => {
   return merged;
 };
 
+const splitTextByCharacterChunk = (value: string, chunkSize: number) => {
+  const safeChunkSize = Math.max(1, chunkSize);
+  const characters = Array.from(value);
+
+  return {
+    chunk: characters.slice(0, safeChunkSize).join(""),
+    rest: characters.slice(safeChunkSize).join(""),
+  };
+};
+
 const ContentRender: React.FC<ContentRenderProps> = ({
   content,
   customRenderBar,
@@ -288,21 +307,88 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   sandboxMode = "content",
   onClickCustomButtonAfterContent,
   beforeSend,
+  typewriter,
   // tooltipMinLength,
 }) => {
+  const isTypewriterEnabled = Boolean(typewriter?.enabled);
+  const typewriterChunkSize = Math.max(1, typewriter?.chunkSize ?? 2);
+  const typewriterTickMs = Math.max(0, typewriter?.tickMs ?? 40);
+  const [displayContent, setDisplayContent] = useState(() =>
+    isTypewriterEnabled ? "" : content
+  );
+  const pendingContentRef = useRef("");
+  const previousTypewriterEnabledRef = useRef(isTypewriterEnabled);
+
+  useEffect(() => {
+    const wasTypewriterEnabled = previousTypewriterEnabledRef.current;
+    previousTypewriterEnabledRef.current = isTypewriterEnabled;
+
+    if (!isTypewriterEnabled) {
+      pendingContentRef.current = "";
+      setDisplayContent(content);
+      return;
+    }
+
+    setDisplayContent((current) => {
+      const shouldRestartTyping = !wasTypewriterEnabled;
+      const canContinueTyping = content.startsWith(current);
+
+      if (!shouldRestartTyping && !canContinueTyping) {
+        pendingContentRef.current = "";
+        return content;
+      }
+
+      const nextVisibleContent =
+        shouldRestartTyping || !canContinueTyping ? "" : current;
+
+      pendingContentRef.current = content.slice(nextVisibleContent.length);
+      return nextVisibleContent;
+    });
+  }, [content, isTypewriterEnabled]);
+
+  useEffect(() => {
+    if (!isTypewriterEnabled || !pendingContentRef.current) {
+      return undefined;
+    }
+
+    const typewriterTimer = window.setTimeout(() => {
+      setDisplayContent((current) => {
+        const { chunk, rest } = splitTextByCharacterChunk(
+          pendingContentRef.current,
+          typewriterChunkSize
+        );
+
+        if (!chunk) {
+          return current;
+        }
+
+        pendingContentRef.current = rest;
+        return `${current}${chunk}`;
+      });
+    }, typewriterTickMs);
+
+    return () => window.clearTimeout(typewriterTimer);
+  }, [
+    displayContent,
+    isTypewriterEnabled,
+    typewriterChunkSize,
+    typewriterTickMs,
+  ]);
+
+  const renderContent = isTypewriterEnabled ? displayContent : content;
   const normalizedContent = useMemo(
-    () => normalizeInlineHtml(content),
-    [content]
+    () => normalizeInlineHtml(renderContent),
+    [renderContent]
   );
 
   const interactionDefaults = useMemo(
     () =>
       getInteractionDefaultValues(
-        content,
+        renderContent,
         userInput,
         interactionDefaultValueOptions
       ),
-    [content, interactionDefaultValueOptions, userInput]
+    [interactionDefaultValueOptions, renderContent, userInput]
   );
 
   const resolvedDefaultButtonText =
@@ -362,7 +448,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       const language = match?.[1];
       if (language === "mermaid") {
         const chartContent = children?.toString().replace(/\n$/, "") || "";
-        const frozen = mermaidBlockIsComplete(content, chartContent);
+        const frozen = mermaidBlockIsComplete(renderContent, chartContent);
         return <MermaidChart chart={chartContent} frozen={frozen} />;
       }
 
@@ -421,13 +507,14 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   };
 
   const hasPotentialSandboxTags = useMemo(
-    () => SANDBOX_TAG_HINT_PATTERN.test(content),
-    [content]
+    () => SANDBOX_TAG_HINT_PATTERN.test(renderContent),
+    [renderContent]
   );
 
   const renderSegments = useMemo(
-    () => (hasPotentialSandboxTags ? splitContentSegments(content, true) : []),
-    [content, hasPotentialSandboxTags]
+    () =>
+      hasPotentialSandboxTags ? splitContentSegments(renderContent, true) : [],
+    [renderContent, hasPotentialSandboxTags]
   );
 
   const hasSandbox = renderSegments.some(

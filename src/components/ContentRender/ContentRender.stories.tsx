@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
+import runStreamFixtureText from "../../../../测试数据.json?raw";
 import ContentRender from "./ContentRender";
 import IframeSandbox from "./IframeSandbox";
 
@@ -350,6 +351,174 @@ This example demonstrates that our Markdown renderer now supports:
 This greatly enhances content expressiveness and interactivity!
 
 `;
+
+const TYPEWRITER_STREAM_TICK_MS = 40;
+const TYPEWRITER_STREAM_BATCH_SIZE = 2;
+const TYPEWRITER_SOURCE_PUSH_INTERVAL_MS = 800;
+
+type TypewriterRunStreamEvent = {
+  type?: string;
+  content?: {
+    element_type?: string;
+    content?: string;
+  };
+};
+
+const parseTypewriterRunStreamFixture = (
+  rawText: string
+): TypewriterRunStreamEvent[] =>
+  rawText
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith("data: "))
+    .map((line) => line.slice(6).trim())
+    .flatMap((payload) => {
+      if (!payload) {
+        return [];
+      }
+
+      try {
+        return [JSON.parse(payload) as TypewriterRunStreamEvent];
+      } catch {
+        return [];
+      }
+    });
+
+const extractTypewriterTextSegments = (
+  events: TypewriterRunStreamEvent[]
+): string[] =>
+  events
+    .filter(
+      (event) =>
+        event.type === "element" &&
+        event.content?.element_type === "text" &&
+        typeof event.content.content === "string"
+    )
+    .map((event) => event.content?.content?.trim())
+    .filter((content): content is string => Boolean(content));
+
+const TYPEWRITER_STREAM_SEGMENTS = extractTypewriterTextSegments(
+  parseTypewriterRunStreamFixture(runStreamFixtureText)
+);
+
+const splitIntoCharacterChunks = (value: string, chunkSize: number) => {
+  if (!value) return [];
+
+  const characters = Array.from(value);
+  const chunks: string[] = [];
+
+  for (let index = 0; index < characters.length; index += chunkSize) {
+    chunks.push(characters.slice(index, index + chunkSize).join(""));
+  }
+
+  return chunks;
+};
+
+const TypewriterStreamPreview = ({
+  content,
+}: {
+  content: readonly string[];
+}) => {
+  const [sourceIndex, setSourceIndex] = useState(0);
+  const [pendingText, setPendingText] = useState("");
+  const [displayText, setDisplayText] = useState("");
+
+  const totalSourceText = useMemo(() => content.join(""), [content]);
+  const isStreamingDone =
+    sourceIndex >= content.length && pendingText.length === 0;
+
+  useEffect(() => {
+    setSourceIndex(0);
+    setPendingText("");
+    setDisplayText("");
+  }, [content]);
+
+  useEffect(() => {
+    if (!content.length || sourceIndex >= content.length) return undefined;
+
+    const pushNextSegment = window.setTimeout(
+      () => {
+        const nextSegment = content[sourceIndex] ?? "";
+        setPendingText((current) => `${current}${nextSegment}`);
+        setSourceIndex((current) => current + 1);
+      },
+      sourceIndex === 0 ? 0 : TYPEWRITER_SOURCE_PUSH_INTERVAL_MS
+    );
+
+    return () => window.clearTimeout(pushNextSegment);
+  }, [content, sourceIndex]);
+
+  useEffect(() => {
+    if (!pendingText) return undefined;
+
+    const typewriterTimer = window.setTimeout(() => {
+      const [nextChunk = ""] = splitIntoCharacterChunks(
+        pendingText,
+        TYPEWRITER_STREAM_BATCH_SIZE
+      );
+
+      if (!nextChunk) return;
+
+      setDisplayText((current) => `${current}${nextChunk}`);
+      setPendingText((current) =>
+        Array.from(current).slice(Array.from(nextChunk).length).join("")
+      );
+    }, TYPEWRITER_STREAM_TICK_MS);
+
+    return () => window.clearTimeout(typewriterTimer);
+  }, [pendingText]);
+
+  return (
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 rounded-[28px] bg-slate-50 p-6 md:p-8">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-white">
+          STREAMING DEMO
+        </span>
+        <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-600">
+          2 chars / tick
+        </span>
+        <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-600">
+          sentence arrival simulation
+        </span>
+      </div>
+
+      <div className="rounded-[24px] border border-slate-200 bg-white px-5 py-6 shadow-sm md:px-7">
+        <ContentRender content={displayText} />
+        <div className="mt-4 flex items-center gap-3 text-sm text-slate-500">
+          <span
+            className={`inline-flex h-2.5 w-2.5 rounded-full ${
+              isStreamingDone ? "bg-emerald-500" : "bg-amber-500"
+            }`}
+          />
+          <span>
+            {isStreamingDone
+              ? "Typing complete"
+              : "Backend sentence arrived, frontend is typing evenly"}
+          </span>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-[20px] bg-slate-900 px-4 py-4 text-sm text-slate-100">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+            Backend received
+          </div>
+          <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-6">
+            {totalSourceText}
+          </pre>
+        </div>
+
+        <div className="rounded-[20px] bg-white px-4 py-4 text-sm text-slate-700 shadow-sm ring-1 ring-slate-200">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+            Frontend displayed
+          </div>
+          <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-6">
+            {displayText || " "}
+          </pre>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const MULTI_SELECT_EXAMPLES = `# Multi-Select Feature Examples
 
@@ -2061,6 +2230,24 @@ export const ReadingModeAppendedAskBlocks: Story = {
           );
         })}
       </div>
+    </div>
+  ),
+};
+
+export const TypewriterStreamingChineseText: Story = {
+  args: {},
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "Simulates sentence-level backend streaming while the frontend reveals the content at a steady two-character pace.",
+      },
+    },
+  },
+  render: () => (
+    <div className="min-h-[100dvh] bg-[linear-gradient(180deg,_rgb(248_250_252)_0%,_rgb(241_245_249)_100%)] px-6 py-10 md:px-10">
+      <TypewriterStreamPreview content={TYPEWRITER_STREAM_SEGMENTS} />
     </div>
   ),
 };

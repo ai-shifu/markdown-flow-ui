@@ -542,15 +542,6 @@ export const ComprehensiveMarkdownSyntax: Story = {
   name: "Comprehensive Markdown Syntax",
   args: {
     content: COMPREHENSIVE_MARKDOWN_SYNTAX,
-    enableTypewriter: false,
-  },
-};
-
-export const MarkdownSyntaxWithTypewriter: Story = {
-  name: "Markdown Syntax + Typewriter Effect",
-  args: {
-    content: COMPREHENSIVE_MARKDOWN_SYNTAX,
-    enableTypewriter: true,
   },
 };
 
@@ -558,36 +549,11 @@ export const MathAndMermaidDemo: Story = {
   name: "Math Formulas + Mermaid Charts",
   args: {
     content: MATH_AND_MERMAID_CONTENT,
-    enableTypewriter: false,
-  },
-};
-
-export const MermaidWithTypewriter: Story = {
-  name: "Mermaid Charts + Typewriter Effect",
-  args: {
-    content: `## Streaming Mermaid Demo
-\`\`\`mermaid
-flowchart LR
-  Typing -->|tokens| Mermaid
-  Mermaid -->|partial| Flicker[Flash?]
-  Flicker -->|fix| Stable[[Stable Preview]]
-\`\`\`
-AI 助手正在输出 Mermaid 代码，Typewriter 也会把它分段展示
-\`\`\`mermaid
-graph TD
-    A[硬盘里的空文件] -->|预训练| B[读完 40TB 书报代码]
-    B -->|后训练| C[大语言模型 LLM]
-    C -->|封装| D[ChatGPT/文心一言/通义千问]
-\`\`\`
-AI 助手正在输出 Mermaid 代码，Typewriter 也会把它分段展示
-`,
-    enableTypewriter: true,
   },
 };
 
 export const ContentRenderMathAndMermaid: Story = {
   args: {
-    enableTypewriter: false,
     content: `# 数学公式和图表展示
 
 ## HTML 展示
@@ -687,14 +653,12 @@ export const CustomButtonAfterContentDemo: Story = {
     onClickCustomButtonAfterContent: () => {
       console.log("custom-button-after-content clicked");
     },
-    enableTypewriter: false,
   },
 };
 
 export const MermaidErrorHandlingTest: Story = {
   name: "Mermaid Error Handling Test",
   args: {
-    enableTypewriter: false,
     content: `# Mermaid Error Handling Test
 
 ## Valid Mermaid Chart
@@ -742,20 +706,6 @@ export const MultiSelectExamples: Story = {
   name: "Multi-Select Feature Examples",
   args: {
     content: MULTI_SELECT_EXAMPLES,
-    enableTypewriter: false,
-    onSend: (params) => {
-      console.log("Multi-select callback received:", params);
-      alert(`Received data:\n${JSON.stringify(params, null, 2)}`);
-    },
-  },
-};
-
-export const MultiSelectWithTypewriter: Story = {
-  name: "Multi-Select + Typewriter Effect",
-  args: {
-    content: MULTI_SELECT_EXAMPLES,
-    enableTypewriter: true,
-    typingSpeed: 20,
     onSend: (params) => {
       console.log("Multi-select callback received:", params);
       alert(`Received data:\n${JSON.stringify(params, null, 2)}`);
@@ -793,7 +743,6 @@ Any additional thoughts or questions?
 ---
 
 Try interacting with the elements above to see how single-select (buttons) and multi-select (checkboxes + confirm button) work differently!`,
-    enableTypewriter: false,
     confirmButtonText: "Submit", // English confirm button
     onSend: (params) => {
       console.log("Interaction received:", params);
@@ -874,7 +823,6 @@ export const ChineseMultiSelectDemo: Story = {
 ---
 
 尝试与上面的元素交互，体验单选（按钮）和多选（复选框+确认按钮）的不同工作方式！`,
-    enableTypewriter: false,
     // defaultButtonText: '继续',
     // defaultInputText: `我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超长我就是测试一下超长超一下超长一下超长长`,
     confirmButtonText: "提交", // Chinese confirm button
@@ -908,7 +856,6 @@ export const ChineseMultiSelectDemo: Story = {
 export const NativeHtmlElements: Story = {
   name: "Native HTML Elements",
   args: {
-    enableTypewriter: false,
     content: NATIVE_HTML_CONTENT,
   },
 };
@@ -916,7 +863,6 @@ export const NativeHtmlElements: Story = {
 export const CodeBlockShowcase: Story = {
   name: "Code Block Showcase",
   args: {
-    enableTypewriter: false,
     content: CODE_BLOCK_SHOWCASE,
   },
 };
@@ -924,7 +870,6 @@ export const CodeBlockShowcase: Story = {
 export const EnglishChineseTypographyPreview: Story = {
   name: "English + 中文 Typography",
   args: {
-    enableTypewriter: false,
     content: `# Typography Preview
 
 ## English Section
@@ -1093,8 +1038,6 @@ export const SVGDemo: Story = {
 </svg>
 
 `,
-    enableTypewriter: false,
-    typingSpeed: 10,
   },
 };
 
@@ -1784,8 +1727,6 @@ const ReadingModeAskPill = ({
 export const HTMLDemo: Story = {
   name: "HTML Demo",
   args: {
-    enableTypewriter: false,
-    typingSpeed: 10,
     // sandboxLoadingText: "正在生成动画...",
     // sandboxStyleLoadingText: "正在生成样式...",
     // sandboxScriptLoadingText: "正在生成脚本...",
@@ -2067,9 +2008,7 @@ export const HTMLDemoIframeOnly: Story = {
 
 export const ReadingModeAppendedAskBlocks: Story = {
   name: "Reading Mode Appended Ask Blocks",
-  args: {
-    enableTypewriter: false,
-  },
+  args: {},
   parameters: {
     layout: "fullscreen",
   },
@@ -2117,11 +2056,7 @@ export const ReadingModeAppendedAskBlocks: Story = {
                 padding: "0 28px",
               }}
             >
-              <ContentRender
-                {...args}
-                content={item.content}
-                enableTypewriter={false}
-              />
+              <ContentRender {...args} content={item.content} />
             </div>
           );
         })}

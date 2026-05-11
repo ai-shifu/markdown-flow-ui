@@ -19,7 +19,6 @@ import CustomButtonInputVariable, {
   ComponentsWithCustomVariable,
 } from "./plugins/CustomVariable";
 import MermaidChart from "./plugins/MermaidChart";
-import useTypewriterStateMachine from "./useTypewriterStateMachine";
 import {
   preserveCustomVariableProperties,
   restoreCustomVariableProperties,
@@ -63,15 +62,12 @@ export interface ContentRenderProps {
   customRenderBar?: CustomRenderBarProps;
   onClickCustomButtonAfterContent?: () => void;
   onSend?: (content: OnSendContentParams) => void;
-  typingSpeed?: number;
-  enableTypewriter?: boolean;
   userInput?: string;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   defaultButtonText?: string;
   defaultInputText?: string; // Text input by user
   defaultSelectedValues?: string[]; // Default selected values for multi-select
   readonly?: boolean;
-  onTypeFinished?: () => void;
   // Multi-select confirm button text (i18n support)
   confirmButtonText?: string;
   // Copy button text (i18n support)
@@ -275,15 +271,12 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   content,
   customRenderBar,
   onSend,
-  typingSpeed = 30,
-  enableTypewriter = false,
   userInput,
   interactionDefaultValueOptions,
   defaultButtonText,
   defaultInputText,
   defaultSelectedValues,
   readonly = false,
-  onTypeFinished,
   confirmButtonText,
   copyButtonText,
   copiedButtonText,
@@ -330,7 +323,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     ? defaultSelectedValues
     : interactionDefaults.selectedValues || fallbackSelectedValues;
 
-  // Use custom Hook to handle typewriter effect
   const components: CustomComponents = {
     "custom-button-after-content": ({
       children,
@@ -428,19 +420,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     ),
   };
 
-  const { displayContent, isComplete } = useTypewriterStateMachine({
-    // processMarkdownText will let code block printf("You win!\n") become printf("You win!<br/>");
-    // content: processMarkdownText(content),
-    content: normalizedContent,
-    typingSpeed,
-    disabled: !enableTypewriter,
-  });
-  // Render the full content synchronously when typewriter is disabled
-  // to avoid a first-paint flash where content appears after helper actions.
-  const resolvedDisplayContent = enableTypewriter
-    ? displayContent
-    : normalizedContent;
-
   const hasPotentialSandboxTags = useMemo(
     () => SANDBOX_TAG_HINT_PATTERN.test(content),
     [content]
@@ -460,24 +439,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   );
 
   const segments = useMemo(
-    () => parseMarkdownSegments(resolvedDisplayContent),
-    [resolvedDisplayContent]
+    () => parseMarkdownSegments(normalizedContent),
+    [normalizedContent]
   );
-
-  const hasCompleted = useRef(false);
-
-  useEffect(() => {
-    if (hasSandbox) return;
-    if (isComplete && !hasCompleted.current) {
-      hasCompleted.current = true; // Mark as completed
-      onTypeFinished?.(); // Call the passed callback
-    }
-  }, [hasSandbox, isComplete, onTypeFinished]);
-
-  useEffect(() => {
-    if (hasSandbox) return;
-    hasCompleted.current = false; // Reset completion status when content changes
-  }, [hasSandbox, content]);
 
   const renderMarkdownSegments = (raw: string, keyPrefix: string) => {
     const normalized = normalizeInlineHtml(raw);
@@ -570,7 +534,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         <div className="content-render-custom-bar">
           {React.createElement(customRenderBar, {
             content,
-            displayContent,
+            displayContent: normalizedContent,
             onSend,
           })}
         </div>

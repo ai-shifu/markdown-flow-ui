@@ -17,9 +17,6 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
   initialContentList = [],
   customRenderBar,
   onSend,
-  onBlockComplete,
-  typingSpeed,
-  enableTypewriter = false,
   height = "100%",
   className = "",
   confirmButtonText,
@@ -55,9 +52,6 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
           initialContentList={initialContentList}
           customRenderBar={customRenderBar}
           onSend={onSend}
-          typingSpeed={typingSpeed}
-          enableTypewriter={enableTypewriter}
-          onBlockComplete={onBlockComplete}
           confirmButtonText={confirmButtonText}
           copyButtonText={copyButtonText}
           copiedButtonText={copiedButtonText}

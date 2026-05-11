@@ -2,9 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import runStreamFixtureText from "../../../../测试数据.json?raw";
-import ContentRender, {
-  type ContentRenderTypewriterOptions,
-} from "./ContentRender";
+import ContentRender from "./ContentRender";
 import IframeSandbox from "./IframeSandbox";
 
 const meta = {
@@ -356,7 +354,6 @@ This greatly enhances content expressiveness and interactivity!
 
 const TYPEWRITER_STREAM_TICK_MS = 40;
 const TYPEWRITER_SOURCE_PUSH_INTERVAL_MS = 800;
-const TYPEWRITER_BATCH_SIZE = 2;
 
 type TypewriterRunStreamEvent = {
   type?: string;
@@ -401,12 +398,6 @@ const extractTypewriterTextSegments = (
 const TYPEWRITER_STREAM_SEGMENTS = extractTypewriterTextSegments(
   parseTypewriterRunStreamFixture(runStreamFixtureText)
 );
-
-const TYPEWRITER_OPTIONS: ContentRenderTypewriterOptions = {
-  enabled: true,
-  chunkSize: TYPEWRITER_BATCH_SIZE,
-  tickMs: TYPEWRITER_STREAM_TICK_MS,
-};
 
 const TypewriterStreamPreview = ({
   content,
@@ -454,7 +445,11 @@ const TypewriterStreamPreview = ({
       </div>
 
       <div className="rounded-[24px] border border-slate-200 bg-white px-5 py-6 shadow-sm md:px-7">
-        <ContentRender content={arrivedText} typewriter={TYPEWRITER_OPTIONS} />
+        <ContentRender
+          content={arrivedText}
+          enableTypewriter={true}
+          typingSpeed={TYPEWRITER_STREAM_TICK_MS}
+        />
         <div className="mt-4 flex items-center gap-3 text-sm text-slate-500">
           <span
             className={`inline-flex h-2.5 w-2.5 rounded-full ${

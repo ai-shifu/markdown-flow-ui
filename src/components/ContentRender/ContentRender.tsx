@@ -46,15 +46,10 @@ import {
 const SANDBOX_TAG_HINT_PATTERN =
   /<(script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)\b/i;
 
-export interface ContentRenderTypewriterOptions {
-  enabled?: boolean;
-  chunkSize?: number;
-  tickMs?: number;
-}
-
 // Define component Props type
 export interface ContentRenderProps {
   content: string;
+  contentType?: string;
   /**
    * Callback invoked when the custom button after content is clicked.
    * This button is rendered via the `<custom-button-after-content>` tag in markdown content.
@@ -69,6 +64,8 @@ export interface ContentRenderProps {
   customRenderBar?: CustomRenderBarProps;
   onClickCustomButtonAfterContent?: () => void;
   onSend?: (content: OnSendContentParams) => void;
+  typingSpeed?: number;
+  enableTypewriter?: boolean;
   userInput?: string;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   defaultButtonText?: string;
@@ -96,8 +93,6 @@ export interface ContentRenderProps {
   // Sandbox render mode
   sandboxMode?: "content" | "blackboard";
   beforeSend?: (param: OnSendContentParams) => boolean;
-  // Optional typewriter reveal configuration for append-only streaming text
-  typewriter?: ContentRenderTypewriterOptions;
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
 
@@ -288,8 +283,11 @@ const splitTextByCharacterChunk = (value: string, chunkSize: number) => {
 
 const ContentRender: React.FC<ContentRenderProps> = ({
   content,
+  contentType,
   customRenderBar,
   onSend,
+  typingSpeed = 40,
+  enableTypewriter = false,
   userInput,
   interactionDefaultValueOptions,
   defaultButtonText,
@@ -307,12 +305,14 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   sandboxMode = "content",
   onClickCustomButtonAfterContent,
   beforeSend,
-  typewriter,
   // tooltipMinLength,
 }) => {
-  const isTypewriterEnabled = Boolean(typewriter?.enabled);
-  const typewriterChunkSize = Math.max(1, typewriter?.chunkSize ?? 2);
-  const typewriterTickMs = Math.max(0, typewriter?.tickMs ?? 40);
+  const shouldApplyTypewriterByContentType =
+    !contentType || contentType === "text";
+  const isTypewriterEnabled =
+    Boolean(enableTypewriter) && shouldApplyTypewriterByContentType;
+  const typewriterChunkSize = 2;
+  const typewriterTickMs = Math.max(0, typingSpeed);
   const [displayContent, setDisplayContent] = useState(() =>
     isTypewriterEnabled ? "" : content
   );

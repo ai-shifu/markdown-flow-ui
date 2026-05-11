@@ -442,6 +442,12 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
         if (cw > 0) {
           const minH = Math.round((cw * 9) / 16);
+          // Absolute height cap. Diverging vh-feedback (multiple `height:100vh`
+          // siblings, or compound vh-relative children whose sum exceeds the
+          // viewport) can otherwise grow the iframe geometrically across
+          // repeated ResizeObserver/MutationObserver passes. 1:20 aspect is
+          // a generous upper bound for any single sandbox slide.
+          const maxH = Math.max(8192, cw * 20);
           iframe.style.height = minH + "px";
           // eslint-disable-next-line @typescript-eslint/no-unused-expressions
           doc.body.offsetHeight; // force layout
@@ -493,6 +499,12 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
                 getInnerScrollableHeight(doc.body)
               );
               if (nextH <= measuredH + 1) break; // stable — stop iterating
+              // Geometric vh-feedback detection: vh-relative children scale
+              // with the iframe viewport, so growing the iframe makes them
+              // larger which grows scrollHeight — runaway divergence. Two
+              // `height:100vh` siblings produce a 2× per-iteration multiplier.
+              // Stop iterating; keep the prior (stable) measuredH.
+              if (nextH >= measuredH * 1.5) break;
               measuredH = nextH;
             }
           }
@@ -501,7 +513,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
           iframe.style.height = prevH;
 
           setContentHeight((prev) => {
-            const next = Math.max(200, Math.ceil(measuredH));
+            const next = Math.min(maxH, Math.max(200, Math.ceil(measuredH)));
             return prev === next ? prev : next;
           });
         }

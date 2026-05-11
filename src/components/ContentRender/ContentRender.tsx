@@ -369,6 +369,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
     return () => window.clearTimeout(typewriterTimer);
   }, [
+    content,
     displayContent,
     isTypewriterEnabled,
     typewriterChunkSize,

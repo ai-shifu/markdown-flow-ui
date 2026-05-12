@@ -384,6 +384,16 @@ const resolveTypewriterStreamElementTypeLabel = (
   element: Pick<RunStreamFixtureElement, "type">
 ) => String(element.type ?? "text").toUpperCase();
 
+const resolveTypewriterStreamEventElementBid = (
+  event?: RunStreamFixtureEvent
+) =>
+  String(
+    event?.content?.target_element_bid ||
+      event?.content?.element_bid ||
+      event?.content?.generated_block_bid ||
+      ""
+  ).trim();
+
 const TypewriterStreamPreview = ({
   events,
 }: {
@@ -391,7 +401,11 @@ const TypewriterStreamPreview = ({
 }) => {
   const [elementList, setElementList] = useState<RunStreamFixtureElement[]>([]);
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
+  const [finalizedElementBidSet, setFinalizedElementBidSet] = useState<
+    Record<string, boolean>
+  >({});
   const sequenceMapRef = useRef(new Map<string, number>());
+  const currentStreamingElementBidRef = useRef("");
   const visibleElementList = useMemo(
     () => getReadingModeTypewriterStreamElementList(elementList),
     [elementList]
@@ -425,8 +439,10 @@ const TypewriterStreamPreview = ({
 
   useEffect(() => {
     sequenceMapRef.current.clear();
+    currentStreamingElementBidRef.current = "";
     setElementList([]);
     setCurrentEventIndex(0);
+    setFinalizedElementBidSet({});
   }, [events]);
 
   useEffect(() => {
@@ -437,6 +453,22 @@ const TypewriterStreamPreview = ({
     const pushNextSegment = window.setTimeout(
       () => {
         const currentEvent = events[currentEventIndex];
+        const nextElementBid =
+          resolveTypewriterStreamEventElementBid(currentEvent);
+        const previousStreamingElementBid =
+          currentStreamingElementBidRef.current;
+
+        if (
+          currentEvent?.type === "element" &&
+          nextElementBid &&
+          previousStreamingElementBid &&
+          previousStreamingElementBid !== nextElementBid
+        ) {
+          setFinalizedElementBidSet((currentMap) => ({
+            ...currentMap,
+            [previousStreamingElementBid]: true,
+          }));
+        }
 
         if (currentEvent?.type === "element" && currentEvent.content) {
           const nextElement = normalizeRunStreamElement(
@@ -453,6 +485,18 @@ const TypewriterStreamPreview = ({
               })
             );
           }
+
+          if (nextElementBid) {
+            currentStreamingElementBidRef.current = nextElementBid;
+          }
+        }
+
+        if (currentEvent?.type === "done" && previousStreamingElementBid) {
+          setFinalizedElementBidSet((currentMap) => ({
+            ...currentMap,
+            [previousStreamingElementBid]: true,
+          }));
+          currentStreamingElementBidRef.current = "";
         }
 
         setCurrentEventIndex((current) => current + 1);
@@ -462,6 +506,23 @@ const TypewriterStreamPreview = ({
 
     return () => window.clearTimeout(pushNextSegment);
   }, [currentEventIndex, events]);
+
+  useEffect(() => {
+    if (currentEventIndex < events.length) {
+      return;
+    }
+
+    const completedElementBid = currentStreamingElementBidRef.current;
+    if (!completedElementBid) {
+      return;
+    }
+
+    setFinalizedElementBidSet((currentMap) => ({
+      ...currentMap,
+      [completedElementBid]: true,
+    }));
+    currentStreamingElementBidRef.current = "";
+  }, [currentEventIndex, events.length]);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 rounded-[28px] bg-slate-50 p-6 md:p-8">
@@ -489,6 +550,10 @@ const TypewriterStreamPreview = ({
               index
             );
             const shouldEnableTypewriter = element.type === "text";
+            const currentContent = String(element.content ?? "");
+            const shouldShowAskPill =
+              element.type !== "interaction" &&
+              Boolean(finalizedElementBidSet[element.element_bid]);
 
             return (
               <div
@@ -511,17 +576,19 @@ const TypewriterStreamPreview = ({
                 </div>
 
                 <ContentRender
-                  content={String(element.content ?? "")}
+                  content={currentContent}
                   enableTypewriter={shouldEnableTypewriter}
                   typingSpeed={TYPEWRITER_STREAM_TICK_MS}
                 />
 
-                <div className="mt-4">
-                  <ReadingModeAskPill
-                    anchorId={element.element_bid}
-                    label={TYPEWRITER_STREAM_ASK_LABEL}
-                  />
-                </div>
+                {shouldShowAskPill ? (
+                  <div className="mt-4">
+                    <ReadingModeAskPill
+                      anchorId={element.element_bid}
+                      label={TYPEWRITER_STREAM_ASK_LABEL}
+                    />
+                  </div>
+                ) : null}
               </div>
             );
           })}

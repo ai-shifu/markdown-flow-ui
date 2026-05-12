@@ -66,6 +66,7 @@ export interface ContentRenderProps {
   onSend?: (content: OnSendContentParams) => void;
   typingSpeed?: number;
   enableTypewriter?: boolean;
+  onTypeFinished?: () => void;
   userInput?: string;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   defaultButtonText?: string;
@@ -288,6 +289,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   onSend,
   typingSpeed = 40,
   enableTypewriter = false,
+  onTypeFinished,
   userInput,
   interactionDefaultValueOptions,
   defaultButtonText,
@@ -318,10 +320,12 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   );
   const pendingContentRef = useRef("");
   const previousTypewriterEnabledRef = useRef(isTypewriterEnabled);
+  const hasReportedTypeFinishedRef = useRef(false);
 
   useEffect(() => {
     const wasTypewriterEnabled = previousTypewriterEnabledRef.current;
     previousTypewriterEnabledRef.current = isTypewriterEnabled;
+    hasReportedTypeFinishedRef.current = false;
 
     if (!isTypewriterEnabled) {
       pendingContentRef.current = "";
@@ -345,6 +349,23 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       return nextVisibleContent;
     });
   }, [content, isTypewriterEnabled]);
+
+  useEffect(() => {
+    if (!isTypewriterEnabled) {
+      return;
+    }
+
+    if (
+      hasReportedTypeFinishedRef.current ||
+      pendingContentRef.current ||
+      displayContent !== content
+    ) {
+      return;
+    }
+
+    hasReportedTypeFinishedRef.current = true;
+    onTypeFinished?.();
+  }, [content, displayContent, isTypewriterEnabled, onTypeFinished]);
 
   useEffect(() => {
     if (!isTypewriterEnabled || !pendingContentRef.current) {

@@ -20,6 +20,7 @@ description: 为 `markdown-flow-ui` 的 `ContentRender` 新增或更新“后端
 7. story 命名保持英文，名称直接体现 `typewriter` 或 `streaming` 语义。
 8. 如果目标是复现 `ai-shifu` 学习页，优先按真实 `element` 事件流逐条回放，而不是把所有文本先拼成一个大字符串；`text`、`html` 等 block 要分别渲染。
 9. 学习页型 story 需要把“内容块 + 追问入口”一起展示，追问按钮应跟随每个已渲染内容块出现，方便核对真实阅读模式的节奏与结构。
+10. 当 story 要模拟学习页追问按钮时，按钮出现时机必须跟随 block 完成态：`text` 要等打字机结束，`html`/其他静态块要等该 `element` 不再继续收到流式更新后再显示。
 
 ## 约束
 

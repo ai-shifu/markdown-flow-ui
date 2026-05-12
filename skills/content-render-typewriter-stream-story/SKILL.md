@@ -18,9 +18,12 @@ description: 为 `markdown-flow-ui` 的 `ContentRender` 新增或更新“后端
 5. story preview wrapper 里只保留“后端分段到达”的状态，真正的逐字显示由 `ContentRender` 配置项接管。
 6. 若需要强调体验差异，可在 story 中同时展示“后端已收到全文”和“当前已到达组件的流式 payload”两个面板，方便肉眼对比。
 7. story 命名保持英文，名称直接体现 `typewriter` 或 `streaming` 语义。
+8. 如果目标是复现 `ai-shifu` 学习页，优先按真实 `element` 事件流逐条回放，而不是把所有文本先拼成一个大字符串；`text`、`html` 等 block 要分别渲染。
+9. 学习页型 story 需要把“内容块 + 追问入口”一起展示，追问按钮应跟随每个已渲染内容块出现，方便核对真实阅读模式的节奏与结构。
 
 ## 约束
 
 - 该类 story 的重点是复现节奏体验，不要顺手改动 `ContentRender` 的 markdown 解析逻辑，除非已经确认是组件级缺陷。
 - 打字机批次和间隔应抽成常量，避免把 `2`、`120ms` 这类节奏值散落在 JSX 或 effect 内部。
 - 若故事里需要重置回放，优先通过 `content` 依赖统一清空 story 自身的 source 状态，并让组件内部自行处理 typewriter 状态重建。
+- 当多个 story 都要消费同一份 SSE fixture 解析逻辑时，提到公共 `utils`，不要在 story 文件里各自复制一份解析器。

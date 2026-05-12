@@ -1,9 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import runStreamFixtureText from "../../../../测试数据.json?raw";
 import ContentRender from "./ContentRender";
 import IframeSandbox from "./IframeSandbox";
+import {
+  normalizeRunStreamElement,
+  upsertRunStreamElementList,
+  type RunStreamFixtureElement,
+  type RunStreamFixtureEvent,
+} from "../Slide/utils/listenModeElementList";
+import { parseRunStreamFixture } from "../Slide/utils/runStreamFixture";
 
 const meta = {
   title: "MarkdownFlow/ContentRender",
@@ -353,103 +360,173 @@ This greatly enhances content expressiveness and interactivity!
 `;
 
 const TYPEWRITER_STREAM_TICK_MS = 40;
-const TYPEWRITER_SOURCE_PUSH_INTERVAL_MS = 800;
+const TYPEWRITER_SOURCE_PUSH_INTERVAL_MS = 180;
+const TYPEWRITER_STREAM_MAX_BLOCK_WIDTH = 1000;
+const TYPEWRITER_STREAM_ASK_LABEL = "追问";
+const TYPEWRITER_STREAM_EVENTS = parseRunStreamFixture(runStreamFixtureText);
 
-type TypewriterRunStreamEvent = {
-  type?: string;
-  content?: {
-    element_type?: string;
-    content?: string;
-  };
-};
+const getReadingModeTypewriterStreamElementList = (
+  elementList: RunStreamFixtureElement[]
+) =>
+  elementList.filter(
+    (element) => typeof element.content === "string" && element.content.trim()
+  );
 
-const parseTypewriterRunStreamFixture = (
-  rawText: string
-): TypewriterRunStreamEvent[] =>
-  rawText
-    .split(/\r?\n/)
-    .filter((line) => line.startsWith("data: "))
-    .map((line) => line.slice(6).trim())
-    .flatMap((payload) => {
-      if (!payload) {
-        return [];
-      }
+const resolveTypewriterStreamElementKey = (
+  element: RunStreamFixtureElement,
+  index: number
+) =>
+  element.element_bid ||
+  String(element.sequence_number ?? "") ||
+  `${element.type}-${index}`;
 
-      try {
-        return [JSON.parse(payload) as TypewriterRunStreamEvent];
-      } catch {
-        return [];
-      }
-    });
-
-const extractTypewriterTextSegments = (
-  events: TypewriterRunStreamEvent[]
-): string[] =>
-  events
-    .filter(
-      (event) =>
-        event.type === "element" &&
-        event.content?.element_type === "text" &&
-        typeof event.content.content === "string"
-    )
-    .map((event) => event.content?.content?.trim())
-    .filter((content): content is string => Boolean(content));
-
-const TYPEWRITER_STREAM_SEGMENTS = extractTypewriterTextSegments(
-  parseTypewriterRunStreamFixture(runStreamFixtureText)
-);
+const resolveTypewriterStreamElementTypeLabel = (
+  element: Pick<RunStreamFixtureElement, "type">
+) => String(element.type ?? "text").toUpperCase();
 
 const TypewriterStreamPreview = ({
-  content,
+  events,
 }: {
-  content: readonly string[];
+  events: readonly RunStreamFixtureEvent[];
 }) => {
-  const [sourceIndex, setSourceIndex] = useState(0);
-  const [arrivedText, setArrivedText] = useState("");
+  const [elementList, setElementList] = useState<RunStreamFixtureElement[]>([]);
+  const [currentEventIndex, setCurrentEventIndex] = useState(0);
+  const sequenceMapRef = useRef(new Map<string, number>());
+  const visibleElementList = useMemo(
+    () => getReadingModeTypewriterStreamElementList(elementList),
+    [elementList]
+  );
+  const lastElement = visibleElementList.at(-1);
+  const isStreamingDone = currentEventIndex >= events.length;
+  const totalElementTypeSummary = useMemo(() => {
+    const typeCountMap = visibleElementList.reduce<Map<string, number>>(
+      (result, element) => {
+        const elementType = String(element.type ?? "text").trim() || "text";
+        result.set(elementType, (result.get(elementType) ?? 0) + 1);
+        return result;
+      },
+      new Map<string, number>()
+    );
 
-  const totalSourceText = useMemo(() => content.join(""), [content]);
-  const isStreamingDone = sourceIndex >= content.length;
+    return Array.from(typeCountMap.entries())
+      .map(([elementType, count]) => `${elementType} x${count}`)
+      .join(" · ");
+  }, [visibleElementList]);
+  const renderedSourcePreview = useMemo(
+    () =>
+      visibleElementList
+        .map((element) =>
+          typeof element.content === "string" ? element.content : ""
+        )
+        .filter(Boolean)
+        .join("\n\n"),
+    [visibleElementList]
+  );
 
   useEffect(() => {
-    setSourceIndex(0);
-    setArrivedText("");
-  }, [content]);
+    sequenceMapRef.current.clear();
+    setElementList([]);
+    setCurrentEventIndex(0);
+  }, [events]);
 
   useEffect(() => {
-    if (!content.length || sourceIndex >= content.length) return undefined;
+    if (!events.length || currentEventIndex >= events.length) {
+      return undefined;
+    }
 
     const pushNextSegment = window.setTimeout(
       () => {
-        const nextSegment = content[sourceIndex] ?? "";
-        setArrivedText((current) => `${current}${nextSegment}`);
-        setSourceIndex((current) => current + 1);
+        const currentEvent = events[currentEventIndex];
+
+        if (currentEvent?.type === "element" && currentEvent.content) {
+          const nextElement = normalizeRunStreamElement(
+            currentEvent.content,
+            Number(currentEvent.run_event_seq ?? currentEventIndex + 1)
+          );
+
+          if (nextElement) {
+            setElementList((currentList) =>
+              upsertRunStreamElementList({
+                currentList,
+                nextElement,
+                sequenceMap: sequenceMapRef.current,
+              })
+            );
+          }
+        }
+
+        setCurrentEventIndex((current) => current + 1);
       },
-      sourceIndex === 0 ? 0 : TYPEWRITER_SOURCE_PUSH_INTERVAL_MS
+      currentEventIndex === 0 ? 0 : TYPEWRITER_SOURCE_PUSH_INTERVAL_MS
     );
 
     return () => window.clearTimeout(pushNextSegment);
-  }, [content, sourceIndex]);
+  }, [currentEventIndex, events]);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 rounded-[28px] bg-slate-50 p-6 md:p-8">
       <div className="flex flex-wrap items-center gap-3">
         <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-white">
-          STREAMING DEMO
+          LEARNING PAGE DEMO
         </span>
         <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-600">
           2 chars / tick
         </span>
         <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-600">
-          sentence arrival simulation
+          element stream simulation
+        </span>
+        <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-600">
+          follow-up appended after every block
         </span>
       </div>
 
-      <div className="rounded-[24px] border border-slate-200 bg-white px-5 py-6 shadow-sm md:px-7">
-        <ContentRender
-          content={arrivedText}
-          enableTypewriter={true}
-          typingSpeed={TYPEWRITER_STREAM_TICK_MS}
-        />
+      <div className="rounded-[24px] border border-slate-200 bg-white px-4 py-6 shadow-sm md:px-0">
+        <div className="flex flex-col gap-6">
+          {visibleElementList.map((element, index) => {
+            const isLastElement = index === visibleElementList.length - 1;
+            const elementKey = resolveTypewriterStreamElementKey(
+              element,
+              index
+            );
+            const shouldEnableTypewriter = element.type === "text";
+
+            return (
+              <div
+                key={elementKey}
+                className="mx-auto w-full px-5 md:px-7"
+                style={{ maxWidth: TYPEWRITER_STREAM_MAX_BLOCK_WIDTH }}
+              >
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold tracking-[0.14em] text-white">
+                    {resolveTypewriterStreamElementTypeLabel(element)}
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    block {index + 1}
+                  </span>
+                  {isLastElement && !isStreamingDone ? (
+                    <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                      streaming
+                    </span>
+                  ) : null}
+                </div>
+
+                <ContentRender
+                  content={String(element.content ?? "")}
+                  enableTypewriter={shouldEnableTypewriter}
+                  typingSpeed={TYPEWRITER_STREAM_TICK_MS}
+                />
+
+                <div className="mt-4">
+                  <ReadingModeAskPill
+                    anchorId={element.element_bid}
+                    label={TYPEWRITER_STREAM_ASK_LABEL}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
         <div className="mt-4 flex items-center gap-3 text-sm text-slate-500">
           <span
             className={`inline-flex h-2.5 w-2.5 rounded-full ${
@@ -458,8 +535,8 @@ const TypewriterStreamPreview = ({
           />
           <span>
             {isStreamingDone
-              ? "Typing complete"
-              : "Backend sentence arrived, frontend is typing evenly"}
+              ? "Learning-page style rendering complete"
+              : "Streaming events are still appending element blocks"}
           </span>
         </div>
       </div>
@@ -467,19 +544,22 @@ const TypewriterStreamPreview = ({
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-[20px] bg-slate-900 px-4 py-4 text-sm text-slate-100">
           <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-            Backend received
+            Rendered blocks
           </div>
           <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-6">
-            {totalSourceText}
+            {renderedSourcePreview || " "}
           </pre>
         </div>
 
         <div className="rounded-[20px] bg-white px-4 py-4 text-sm text-slate-700 shadow-sm ring-1 ring-slate-200">
           <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-            Stream payload
+            Stream state
           </div>
           <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-6">
-            {arrivedText || " "}
+            {`events: ${currentEventIndex}/${events.length}
+elements: ${visibleElementList.length}
+types: ${totalElementTypeSummary || "none"}
+latest: ${lastElement?.element_bid || "none"}`}
           </pre>
         </div>
       </div>
@@ -2208,13 +2288,13 @@ export const TypewriterStreamingChineseText: Story = {
     docs: {
       description: {
         story:
-          "Simulates sentence-level backend streaming while the frontend reveals the content at a steady two-character pace.",
+          "Replays real ai-shifu learning-page element streaming, including follow-up actions and mixed text/html block rendering.",
       },
     },
   },
   render: () => (
     <div className="min-h-[100dvh] bg-[linear-gradient(180deg,_rgb(248_250_252)_0%,_rgb(241_245_249)_100%)] px-6 py-10 md:px-10">
-      <TypewriterStreamPreview content={TYPEWRITER_STREAM_SEGMENTS} />
+      <TypewriterStreamPreview events={TYPEWRITER_STREAM_EVENTS} />
     </div>
   ),
 };

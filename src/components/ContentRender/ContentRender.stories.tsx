@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import runStreamFixtureText from "../../../../测试数据.json?raw";
-import ContentRender from "./ContentRender";
+import ContentRender, {
+  type ContentRenderTypewriterState,
+} from "./ContentRender";
 import IframeSandbox from "./IframeSandbox";
 import {
   normalizeRunStreamElement,
@@ -394,6 +396,13 @@ const resolveTypewriterStreamEventElementBid = (
       ""
   ).trim();
 
+type TypewriterStreamElementRenderState = {
+  isTyping: boolean;
+  isTypewriterComplete: boolean;
+  renderedLength: number;
+  totalLength: number;
+};
+
 const TypewriterStreamPreview = ({
   events,
 }: {
@@ -404,14 +413,80 @@ const TypewriterStreamPreview = ({
   const [finalizedElementBidSet, setFinalizedElementBidSet] = useState<
     Record<string, boolean>
   >({});
+  const [elementRenderStateMap, setElementRenderStateMap] = useState<
+    Record<string, TypewriterStreamElementRenderState>
+  >({});
   const sequenceMapRef = useRef(new Map<string, number>());
   const currentStreamingElementBidRef = useRef("");
-  const visibleElementList = useMemo(
+  const streamedElementList = useMemo(
     () => getReadingModeTypewriterStreamElementList(elementList),
     [elementList]
   );
-  const lastElement = visibleElementList.at(-1);
+  const latestStreamedElement = streamedElementList.at(-1);
   const isStreamingDone = currentEventIndex >= events.length;
+  const streamedElementProgressList = useMemo(
+    () =>
+      streamedElementList.map((element, index) => {
+        const elementKey = resolveTypewriterStreamElementKey(element, index);
+        const elementBid = String(element.element_bid ?? "").trim();
+        const isTypewriterElement = element.type === "text";
+        const typewriterState = elementBid
+          ? elementRenderStateMap[elementBid]
+          : undefined;
+        const contentLength = String(element.content ?? "").length;
+        const isStreamComplete = Boolean(
+          elementBid && finalizedElementBidSet[elementBid]
+        );
+        const isTypewriterComplete = isTypewriterElement
+          ? Boolean(typewriterState?.isTypewriterComplete)
+          : true;
+
+        return {
+          element,
+          index,
+          elementKey,
+          elementBid,
+          isStreamComplete,
+          isTypewriterElement,
+          isTyping: Boolean(typewriterState?.isTyping),
+          renderedLength:
+            typewriterState?.renderedLength ??
+            (isTypewriterElement ? 0 : contentLength),
+          totalLength: typewriterState?.totalLength ?? contentLength,
+          isRenderComplete: isStreamComplete && isTypewriterComplete,
+        };
+      }),
+    [elementRenderStateMap, finalizedElementBidSet, streamedElementList]
+  );
+  const visibleElementProgressList = useMemo(() => {
+    const releasedElementList: typeof streamedElementProgressList = [];
+
+    streamedElementProgressList.forEach((entry, index) => {
+      if (index === 0) {
+        releasedElementList.push(entry);
+        return;
+      }
+
+      const previousEntry = streamedElementProgressList[index - 1];
+      if (!previousEntry?.isRenderComplete) {
+        return;
+      }
+
+      releasedElementList.push(entry);
+    });
+
+    return releasedElementList;
+  }, [streamedElementProgressList]);
+  const visibleElementList = useMemo(
+    () => visibleElementProgressList.map((entry) => entry.element),
+    [visibleElementProgressList]
+  );
+  const latestVisibleElement = visibleElementList.at(-1);
+  const currentStreamingElementBid = currentStreamingElementBidRef.current;
+  const currentRenderingElementEntry =
+    visibleElementProgressList.find((entry) => !entry.isRenderComplete) ?? null;
+  const currentTypingElementEntry =
+    visibleElementProgressList.find((entry) => entry.isTyping) ?? null;
   const totalElementTypeSummary = useMemo(() => {
     const typeCountMap = visibleElementList.reduce<Map<string, number>>(
       (result, element) => {
@@ -443,6 +518,7 @@ const TypewriterStreamPreview = ({
     setElementList([]);
     setCurrentEventIndex(0);
     setFinalizedElementBidSet({});
+    setElementRenderStateMap({});
   }, [events]);
 
   useEffect(() => {
@@ -524,6 +600,41 @@ const TypewriterStreamPreview = ({
     currentStreamingElementBidRef.current = "";
   }, [currentEventIndex, events.length]);
 
+  const updateElementTypewriterState = (
+    elementBid: string,
+    nextState: ContentRenderTypewriterState
+  ) => {
+    if (!elementBid) {
+      return;
+    }
+
+    setElementRenderStateMap((currentMap) => {
+      const previousState = currentMap[elementBid];
+      const normalizedNextState: TypewriterStreamElementRenderState = {
+        isTyping: nextState.isTyping,
+        isTypewriterComplete: nextState.isComplete,
+        renderedLength: nextState.renderedLength,
+        totalLength: nextState.totalLength,
+      };
+
+      if (
+        previousState &&
+        previousState.isTyping === normalizedNextState.isTyping &&
+        previousState.isTypewriterComplete ===
+          normalizedNextState.isTypewriterComplete &&
+        previousState.renderedLength === normalizedNextState.renderedLength &&
+        previousState.totalLength === normalizedNextState.totalLength
+      ) {
+        return currentMap;
+      }
+
+      return {
+        ...currentMap,
+        [elementBid]: normalizedNextState,
+      };
+    });
+  };
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 rounded-[28px] bg-slate-50 p-6 md:p-8">
       <div className="flex flex-wrap items-center gap-3">
@@ -543,17 +654,27 @@ const TypewriterStreamPreview = ({
 
       <div className="rounded-[24px] border border-slate-200 bg-white px-4 py-6 shadow-sm md:px-0">
         <div className="flex flex-col gap-6">
-          {visibleElementList.map((element, index) => {
-            const isLastElement = index === visibleElementList.length - 1;
-            const elementKey = resolveTypewriterStreamElementKey(
+          {visibleElementProgressList.map((entry) => {
+            const {
               element,
-              index
-            );
-            const shouldEnableTypewriter = element.type === "text";
+              index,
+              elementKey,
+              elementBid,
+              isStreamComplete,
+              isTypewriterElement,
+              renderedLength,
+              totalLength,
+              isRenderComplete,
+            } = entry;
             const currentContent = String(element.content ?? "");
             const shouldShowAskPill =
-              element.type !== "interaction" &&
-              Boolean(finalizedElementBidSet[element.element_bid]);
+              element.type !== "interaction" && isRenderComplete;
+            const isCurrentRenderingElement =
+              currentRenderingElementEntry?.elementBid === elementBid;
+            const isCurrentTypingElement =
+              currentTypingElementEntry?.elementBid === elementBid;
+            const isCurrentStreamingElement =
+              Boolean(elementBid) && currentStreamingElementBid === elementBid;
 
             return (
               <div
@@ -568,18 +689,40 @@ const TypewriterStreamPreview = ({
                   <span className="text-xs text-slate-500">
                     block {index + 1}
                   </span>
-                  {isLastElement && !isStreamingDone ? (
+                  {isCurrentRenderingElement ? (
+                    <span className="rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
+                      rendering
+                    </span>
+                  ) : null}
+                  {isCurrentTypingElement ? (
+                    <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                      typing
+                    </span>
+                  ) : null}
+                  {isCurrentStreamingElement && !isStreamingDone ? (
                     <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
                       streaming
+                    </span>
+                  ) : null}
+                  {isStreamComplete && isRenderComplete ? (
+                    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                      complete
                     </span>
                   ) : null}
                 </div>
 
                 <ContentRender
                   content={currentContent}
-                  enableTypewriter={shouldEnableTypewriter}
+                  enableTypewriter={isTypewriterElement}
                   typingSpeed={TYPEWRITER_STREAM_TICK_MS}
+                  onTypewriterStateChange={(state) =>
+                    updateElementTypewriterState(elementBid, state)
+                  }
                 />
+
+                <div className="mt-3 text-xs text-slate-400">
+                  {`element_bid: ${elementBid || "none"} · rendered: ${renderedLength}/${totalLength} · stream: ${isStreamComplete ? "done" : "pending"} · render: ${isRenderComplete ? "done" : "pending"}`}
+                </div>
 
                 {shouldShowAskPill ? (
                   <div className="mt-4">
@@ -624,9 +767,13 @@ const TypewriterStreamPreview = ({
           </div>
           <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-6">
             {`events: ${currentEventIndex}/${events.length}
-elements: ${visibleElementList.length}
+elements: ${visibleElementList.length}/${streamedElementList.length}
 types: ${totalElementTypeSummary || "none"}
-latest: ${lastElement?.element_bid || "none"}`}
+latest visible: ${latestVisibleElement?.element_bid || "none"}
+latest streamed: ${latestStreamedElement?.element_bid || "none"}
+streaming: ${currentStreamingElementBid || "none"}
+rendering: ${currentRenderingElementEntry?.elementBid || "none"}
+typing: ${currentTypingElementEntry?.elementBid || "none"}`}
           </pre>
         </div>
       </div>

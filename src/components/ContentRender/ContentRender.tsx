@@ -67,6 +67,7 @@ export interface ContentRenderProps {
   typingSpeed?: number;
   enableTypewriter?: boolean;
   onTypeFinished?: () => void;
+  onTypewriterStateChange?: (state: ContentRenderTypewriterState) => void;
   userInput?: string;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   defaultButtonText?: string;
@@ -95,6 +96,14 @@ export interface ContentRenderProps {
   sandboxMode?: "content" | "blackboard";
   beforeSend?: (param: OnSendContentParams) => boolean;
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
+}
+
+export interface ContentRenderTypewriterState {
+  isTypewriterEnabled: boolean;
+  isTyping: boolean;
+  isComplete: boolean;
+  renderedLength: number;
+  totalLength: number;
 }
 
 // Render svg string via Shadow DOM to avoid markdown wrapping
@@ -290,6 +299,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   typingSpeed = 40,
   enableTypewriter = false,
   onTypeFinished,
+  onTypewriterStateChange,
   userInput,
   interactionDefaultValueOptions,
   defaultButtonText,
@@ -396,6 +406,21 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     typewriterChunkSize,
     typewriterTickMs,
   ]);
+
+  const typewriterState = useMemo<ContentRenderTypewriterState>(
+    () => ({
+      isTypewriterEnabled,
+      isTyping: isTypewriterEnabled && displayContent !== content,
+      isComplete: displayContent === content,
+      renderedLength: displayContent.length,
+      totalLength: content.length,
+    }),
+    [content, displayContent, isTypewriterEnabled]
+  );
+
+  useEffect(() => {
+    onTypewriterStateChange?.(typewriterState);
+  }, [onTypewriterStateChange, typewriterState]);
 
   const renderContent = isTypewriterEnabled ? displayContent : content;
   const normalizedContent = useMemo(

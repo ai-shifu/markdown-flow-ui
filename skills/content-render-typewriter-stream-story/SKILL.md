@@ -21,6 +21,8 @@ description: 为 `markdown-flow-ui` 的 `ContentRender` 新增或更新“后端
 8. 如果目标是复现 `ai-shifu` 学习页，优先按真实 `element` 事件流逐条回放，而不是把所有文本先拼成一个大字符串；`text`、`html` 等 block 要分别渲染。
 9. 学习页型 story 需要把“内容块 + 追问入口”一起展示，追问按钮应跟随每个已渲染内容块出现，方便核对真实阅读模式的节奏与结构。
 10. 当 story 要模拟学习页追问按钮时，按钮出现时机必须跟随 block 完成态：`text` 要等打字机结束，`html`/其他静态块要等该 `element` 不再继续收到流式更新后再显示。
+11. 当 story 需要判断“当前正在渲染哪个 `element`”时，要区分“后端事件当前流到的 `element`”与“前端界面当前仍未完成的 `element`”；前者可基于 `target_element_bid` 追踪，后者要结合每个 `text` block 的打字机完成态与 element 级流结束态共同判断。
+12. 当后续 `element` 已经从流里到达，但前一个 `text` block 仍在打字时，后续 `element` 只能进入缓存态，不能立即进入可见列表；可见列表应按前一个 block 的 `renderComplete` 状态逐个放行。
 
 ## 约束
 

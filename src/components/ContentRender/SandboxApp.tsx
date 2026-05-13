@@ -153,6 +153,16 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       .sandbox-container { position: relative; width: 100%; }
       .sandbox-container svg,
       .sandbox-container img { display: block; margin-left: auto; margin-right: auto; }
+      /* Hide scroll UI without removing scroll semantics. Content roots with
+         inline style="height:100vh; overflow-y:auto" are the signal that
+         IframeSandbox.getInnerScrollableHeight relies on to grow the iframe
+         when content exceeds the viewport. We must not change overflow-y,
+         but sub-pixel rounding (1px below the +1 detection threshold) can
+         still surface a phantom scrollbar on content that visually fits.
+         Hide the scrollbar UI globally; when content truly overflows the
+         iframe is resized and no scrollbar would render anyway. */
+      .sandbox-container *::-webkit-scrollbar { display: none; }
+      .sandbox-container * { scrollbar-width: none; -ms-overflow-style: none; }
       .justify-\\[safe_center\\]{
         justify-content: safe center;
       }

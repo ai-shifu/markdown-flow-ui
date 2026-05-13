@@ -4,3 +4,4 @@ export type { UploadProps } from "./uploadTypes";
 export type { ImageResource } from "./components/ImageInject";
 export type { EditMode } from "./MarkdownFlowEditor";
 export type { EditorApi, EditorAction } from "./types";
+export type { EditorLocale } from "./editorI18n";

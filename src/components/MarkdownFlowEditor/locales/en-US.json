@@ -15,6 +15,7 @@
   "imageUploadPlaceholder": "Drag files or click to upload",
   "imageUploading": "Uploading...",
   "imageUploadSuccess": "Upload complete",
+  "imageUploadError": "Upload failed, please retry",
   "fixedTextPlaceholder": "Add fixed text",
   "fixedTextTooltip": "Fixed text",
   "slashDivider": "Divider",

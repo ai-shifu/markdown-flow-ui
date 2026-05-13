@@ -43,26 +43,26 @@ import VariablePlaceholder from "./plugins/VariablePlaceholder";
 import SyntaxHighlighter from "./plugins/SyntaxHighlighter";
 // import createFixedTextPlaceholder from "./plugins/FixedTextPlaceholder";
 // import DividerPlaceholder from "./plugins/DividerPlaceholder";
-import enUS from "./locales/en-US.json";
-import zhCN from "./locales/zh-CN.json";
 import { initReactI18next, useTranslation } from "react-i18next";
 import i18next from "i18next";
 import { UploadProps } from "./uploadTypes";
-
-const resources = {
-  "en-US": { translation: enUS },
-  "zh-CN": { translation: zhCN },
-};
+import {
+  DEFAULT_EDITOR_LOCALE,
+  editorLocaleResources,
+  EditorLocale,
+  getEditorLocaleMessages,
+  normalizeEditorLocale,
+} from "./editorI18n";
 
 if (!i18next.isInitialized) {
   i18next.use(initReactI18next).init({
-    resources,
-    lng: "en-US",
-    fallbackLng: "en-US",
+    resources: editorLocaleResources,
+    lng: DEFAULT_EDITOR_LOCALE,
+    fallbackLng: DEFAULT_EDITOR_LOCALE,
     interpolation: { escapeValue: false },
   });
 } else {
-  Object.entries(resources).forEach(([lng, resource]) => {
+  Object.entries(editorLocaleResources).forEach(([lng, resource]) => {
     i18next.addResourceBundle(
       lng,
       "translation",
@@ -85,7 +85,7 @@ type EditorProps = {
   systemVariables?: Variable[];
   onChange?: (value: string) => void;
   onBlur?: () => void;
-  locale?: "en-US" | "zh-CN";
+  locale?: EditorLocale;
   uploadProps?: UploadProps;
   disabled?: boolean;
   toolbarActionsRight?: EditorAction[];
@@ -130,20 +130,22 @@ const Editor: React.FC<EditorProps> = ({
   systemVariables: initialSystemVariables,
   onChange,
   onBlur,
-  locale = "en-US",
+  locale = DEFAULT_EDITOR_LOCALE,
   uploadProps,
   disabled = false,
   toolbarActionsRight,
   onReady,
 }) => {
   const { t, i18n } = useTranslation();
+  const resolvedLocale = normalizeEditorLocale(locale || i18n.language);
+
   useEffect(() => {
-    if (locale && i18n.language !== locale) {
-      i18n.changeLanguage(locale);
+    if (i18n.language !== resolvedLocale) {
+      i18n.changeLanguage(resolvedLocale);
     }
-  }, [i18n, locale]);
-  const activeLocale = (locale || i18n.language) as "en-US" | "zh-CN";
-  const currentStrings = resources[activeLocale]?.translation ?? enUS;
+  }, [i18n, resolvedLocale]);
+
+  const currentStrings = getEditorLocaleMessages(resolvedLocale);
   const toolbarLabels = useMemo(
     () => ({
       image: t("toolbarInsertImage", {
@@ -151,6 +153,9 @@ const Editor: React.FC<EditorProps> = ({
       }),
       video: t("toolbarInsertVideo", {
         defaultValue: "Insert video",
+      }),
+      variable: t("slashVariable", {
+        defaultValue: "Variable",
       }),
       addVariable: t("toolbarInsertNewVariable", {
         defaultValue: "Insert new variable",

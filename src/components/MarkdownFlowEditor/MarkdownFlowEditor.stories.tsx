@@ -353,6 +353,20 @@ export const MarkdownFlowEditorDisabled: Story = {
   },
 };
 
+export const MarkdownFlowEditorFrenchLocale: Story = {
+  args: {
+    content: `## Bonjour
+
+Tapez '/' pour insérer une image, une vidéo ou une variable.
+
+Variable système: {{sys_user_language}}
+`,
+    editMode: EditMode.QuickEdit,
+    locale: "fr-FR",
+    variables: [{ name: "sys_user_language" }, { name: "plan" }],
+  },
+};
+
 export const MarkdownFlowEditorWithToolbarRight: Story = {
   render: (args) => {
     const apiRef = useRef<EditorApi | null>(null);

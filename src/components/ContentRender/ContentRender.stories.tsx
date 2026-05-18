@@ -791,7 +791,8 @@ Choose your favorite programming languages (select multiple):
 ## Multi-Select with Text Input
 
 Select features you want and describe any additional requirements:
-?[%{{features}}User Authentication||API Integration||Database Support||File Upload||...Additional requirements]
+?[%{{intro_teaching_problem}}备课很慢，想更快产出教案、课件或课程结构//备课很慢，想更快产出教案、课件或课程结构||资料很多很散，想整理成可讲、可学、可练的内容//资料很多很散，想整理成可讲、可学、可练的内容||学生或学员不爱学，想提升互动、完课和参与感//学生或学员不爱学，想提升互动、完课和参与感||学完不会用，想增加练习、反馈和答疑//学完不会用，想增加练习、反馈和答疑||教研经验难复制，想沉淀 SOP、案例库或标准课//教研经验难复制，想沉淀 SOP、案例库或标准课||还没有明确问题，只想先了解可能性//还没有明确问题，只想先了解可能性||...其他问题]
+// ?[%{{features}}User Authentication||API Integration||Database Support||File Upload||...Additional requirements]
 
 ## Mixed Single and Multi-Select Examples
 

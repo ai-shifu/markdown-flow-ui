@@ -1,6 +1,6 @@
 import "highlight.js/styles/github.css";
 import "katex/dist/katex.min.css";
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
@@ -19,7 +19,6 @@ import CustomButtonInputVariable, {
   ComponentsWithCustomVariable,
 } from "./plugins/CustomVariable";
 import MermaidChart from "./plugins/MermaidChart";
-import useTypewriterStateMachine from "./useTypewriterStateMachine";
 import {
   preserveCustomVariableProperties,
   restoreCustomVariableProperties,
@@ -46,9 +45,11 @@ import {
 
 const SANDBOX_TAG_HINT_PATTERN =
   /<(script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)\b/i;
+
 // Define component Props type
 export interface ContentRenderProps {
   content: string;
+  contentType?: string;
   /**
    * Callback invoked when the custom button after content is clicked.
    * This button is rendered via the `<custom-button-after-content>` tag in markdown content.
@@ -65,13 +66,14 @@ export interface ContentRenderProps {
   onSend?: (content: OnSendContentParams) => void;
   typingSpeed?: number;
   enableTypewriter?: boolean;
+  onTypeFinished?: () => void;
+  onTypewriterStateChange?: (state: ContentRenderTypewriterState) => void;
   userInput?: string;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   defaultButtonText?: string;
   defaultInputText?: string; // Text input by user
   defaultSelectedValues?: string[]; // Default selected values for multi-select
   readonly?: boolean;
-  onTypeFinished?: () => void;
   // Multi-select confirm button text (i18n support)
   confirmButtonText?: string;
   // Copy button text (i18n support)
@@ -94,6 +96,14 @@ export interface ContentRenderProps {
   sandboxMode?: "content" | "blackboard";
   beforeSend?: (param: OnSendContentParams) => boolean;
   // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
+}
+
+export interface ContentRenderTypewriterState {
+  isTypewriterEnabled: boolean;
+  isTyping: boolean;
+  isComplete: boolean;
+  renderedLength: number;
+  totalLength: number;
 }
 
 // Render svg string via Shadow DOM to avoid markdown wrapping
@@ -271,19 +281,31 @@ const mergeNonSandboxSegments = (segments: RenderSegment[]) => {
   return merged;
 };
 
+const splitTextByCharacterChunk = (value: string, chunkSize: number) => {
+  const safeChunkSize = Math.max(1, chunkSize);
+  const characters = Array.from(value);
+
+  return {
+    chunk: characters.slice(0, safeChunkSize).join(""),
+    rest: characters.slice(safeChunkSize).join(""),
+  };
+};
+
 const ContentRender: React.FC<ContentRenderProps> = ({
   content,
+  contentType,
   customRenderBar,
   onSend,
-  typingSpeed = 30,
+  typingSpeed = 40,
   enableTypewriter = false,
+  onTypeFinished,
+  onTypewriterStateChange,
   userInput,
   interactionDefaultValueOptions,
   defaultButtonText,
   defaultInputText,
   defaultSelectedValues,
   readonly = false,
-  onTypeFinished,
   confirmButtonText,
   copyButtonText,
   copiedButtonText,
@@ -297,19 +319,123 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   beforeSend,
   // tooltipMinLength,
 }) => {
+  const shouldApplyTypewriterByContentType =
+    !contentType || contentType === "text";
+  const isTypewriterEnabled =
+    Boolean(enableTypewriter) && shouldApplyTypewriterByContentType;
+  const typewriterChunkSize = 2;
+  const typewriterTickMs = Math.max(0, typingSpeed);
+  const [displayContent, setDisplayContent] = useState(() =>
+    isTypewriterEnabled ? "" : content
+  );
+  const pendingContentRef = useRef("");
+  const previousTypewriterEnabledRef = useRef(isTypewriterEnabled);
+  const hasReportedTypeFinishedRef = useRef(false);
+
+  useEffect(() => {
+    const wasTypewriterEnabled = previousTypewriterEnabledRef.current;
+    previousTypewriterEnabledRef.current = isTypewriterEnabled;
+    hasReportedTypeFinishedRef.current = false;
+
+    if (!isTypewriterEnabled) {
+      pendingContentRef.current = "";
+      setDisplayContent(content);
+      return;
+    }
+
+    setDisplayContent((current) => {
+      const shouldRestartTyping = !wasTypewriterEnabled;
+      const canContinueTyping = content.startsWith(current);
+
+      if (!shouldRestartTyping && !canContinueTyping) {
+        pendingContentRef.current = "";
+        return content;
+      }
+
+      const nextVisibleContent =
+        shouldRestartTyping || !canContinueTyping ? "" : current;
+
+      pendingContentRef.current = content.slice(nextVisibleContent.length);
+      return nextVisibleContent;
+    });
+  }, [content, isTypewriterEnabled]);
+
+  useEffect(() => {
+    if (!isTypewriterEnabled) {
+      return;
+    }
+
+    if (
+      hasReportedTypeFinishedRef.current ||
+      pendingContentRef.current ||
+      displayContent !== content
+    ) {
+      return;
+    }
+
+    hasReportedTypeFinishedRef.current = true;
+    onTypeFinished?.();
+  }, [content, displayContent, isTypewriterEnabled, onTypeFinished]);
+
+  useEffect(() => {
+    if (!isTypewriterEnabled || !pendingContentRef.current) {
+      return undefined;
+    }
+
+    const typewriterTimer = window.setTimeout(() => {
+      setDisplayContent((current) => {
+        const { chunk, rest } = splitTextByCharacterChunk(
+          pendingContentRef.current,
+          typewriterChunkSize
+        );
+
+        if (!chunk) {
+          return current;
+        }
+
+        pendingContentRef.current = rest;
+        return `${current}${chunk}`;
+      });
+    }, typewriterTickMs);
+
+    return () => window.clearTimeout(typewriterTimer);
+  }, [
+    content,
+    displayContent,
+    isTypewriterEnabled,
+    typewriterChunkSize,
+    typewriterTickMs,
+  ]);
+
+  const typewriterState = useMemo<ContentRenderTypewriterState>(
+    () => ({
+      isTypewriterEnabled,
+      isTyping: isTypewriterEnabled && displayContent !== content,
+      isComplete: displayContent === content,
+      renderedLength: displayContent.length,
+      totalLength: content.length,
+    }),
+    [content, displayContent, isTypewriterEnabled]
+  );
+
+  useEffect(() => {
+    onTypewriterStateChange?.(typewriterState);
+  }, [onTypewriterStateChange, typewriterState]);
+
+  const renderContent = isTypewriterEnabled ? displayContent : content;
   const normalizedContent = useMemo(
-    () => normalizeInlineHtml(content),
-    [content]
+    () => normalizeInlineHtml(renderContent),
+    [renderContent]
   );
 
   const interactionDefaults = useMemo(
     () =>
       getInteractionDefaultValues(
-        content,
+        renderContent,
         userInput,
         interactionDefaultValueOptions
       ),
-    [content, interactionDefaultValueOptions, userInput]
+    [interactionDefaultValueOptions, renderContent, userInput]
   );
 
   const resolvedDefaultButtonText =
@@ -330,7 +456,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     ? defaultSelectedValues
     : interactionDefaults.selectedValues || fallbackSelectedValues;
 
-  // Use custom Hook to handle typewriter effect
   const components: CustomComponents = {
     "custom-button-after-content": ({
       children,
@@ -370,7 +495,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       const language = match?.[1];
       if (language === "mermaid") {
         const chartContent = children?.toString().replace(/\n$/, "") || "";
-        const frozen = mermaidBlockIsComplete(content, chartContent);
+        const frozen = mermaidBlockIsComplete(renderContent, chartContent);
         return <MermaidChart chart={chartContent} frozen={frozen} />;
       }
 
@@ -428,27 +553,15 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     ),
   };
 
-  const { displayContent, isComplete } = useTypewriterStateMachine({
-    // processMarkdownText will let code block printf("You win!\n") become printf("You win!<br/>");
-    // content: processMarkdownText(content),
-    content: normalizedContent,
-    typingSpeed,
-    disabled: !enableTypewriter,
-  });
-  // Render the full content synchronously when typewriter is disabled
-  // to avoid a first-paint flash where content appears after helper actions.
-  const resolvedDisplayContent = enableTypewriter
-    ? displayContent
-    : normalizedContent;
-
   const hasPotentialSandboxTags = useMemo(
-    () => SANDBOX_TAG_HINT_PATTERN.test(content),
-    [content]
+    () => SANDBOX_TAG_HINT_PATTERN.test(renderContent),
+    [renderContent]
   );
 
   const renderSegments = useMemo(
-    () => (hasPotentialSandboxTags ? splitContentSegments(content, true) : []),
-    [content, hasPotentialSandboxTags]
+    () =>
+      hasPotentialSandboxTags ? splitContentSegments(renderContent, true) : [],
+    [renderContent, hasPotentialSandboxTags]
   );
 
   const hasSandbox = renderSegments.some(
@@ -460,24 +573,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   );
 
   const segments = useMemo(
-    () => parseMarkdownSegments(resolvedDisplayContent),
-    [resolvedDisplayContent]
+    () => parseMarkdownSegments(normalizedContent),
+    [normalizedContent]
   );
-
-  const hasCompleted = useRef(false);
-
-  useEffect(() => {
-    if (hasSandbox) return;
-    if (isComplete && !hasCompleted.current) {
-      hasCompleted.current = true; // Mark as completed
-      onTypeFinished?.(); // Call the passed callback
-    }
-  }, [hasSandbox, isComplete, onTypeFinished]);
-
-  useEffect(() => {
-    if (hasSandbox) return;
-    hasCompleted.current = false; // Reset completion status when content changes
-  }, [hasSandbox, content]);
 
   const renderMarkdownSegments = (raw: string, keyPrefix: string) => {
     const normalized = normalizeInlineHtml(raw);
@@ -570,7 +668,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         <div className="content-render-custom-bar">
           {React.createElement(customRenderBar, {
             content,
-            displayContent,
+            displayContent: normalizedContent,
             onSend,
           })}
         </div>

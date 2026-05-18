@@ -110,21 +110,6 @@
   background-color: #ffffff;
 }
 
-.content-render-typing-cursor {
-  margin-left: 0.25rem;
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
 /* KaTeX math formula styles */
 .content-render .katex-display {
   margin: 1.5rem 0;

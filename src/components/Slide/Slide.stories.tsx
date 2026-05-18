@@ -16,6 +16,7 @@ import {
   type RunStreamFixtureElement,
   type RunStreamFixtureEvent,
 } from "./utils/listenModeElementList";
+import { parseRunStreamFixture } from "./utils/runStreamFixture";
 
 import Slide from "./Slide";
 import type { Element } from "./Slide";
@@ -535,23 +536,6 @@ const StreamingSlidePreview = ({
 
 const RUN_STREAM_EVENT_INTERVAL_MS = 180;
 
-const parseRunStreamFixture = (rawText: string): RunStreamFixtureEvent[] =>
-  rawText
-    .split(/\r?\n/)
-    .filter((line) => line.startsWith("data: "))
-    .map((line) => line.slice(6).trim())
-    .flatMap((payload) => {
-      if (!payload) {
-        return [];
-      }
-
-      try {
-        return [JSON.parse(payload) as RunStreamFixtureEvent];
-      } catch {
-        return [];
-      }
-    });
-
 const hasPlayableFixtureAudio = (
   record?: RunStreamFixtureEvent["content"] | null
 ) => Boolean(record?.audio_url || (record?.audio_segments?.length ?? 0) > 0);
@@ -1063,7 +1047,6 @@ const SimpleElementContentRenderPreview = ({
                 <ContentRender
                   content={element.content}
                   disableSandboxLoadingOverlay={hasErrorElement}
-                  enableTypewriter={false}
                   onSend={(content) => {
                     console.log(
                       "content render story onSend",

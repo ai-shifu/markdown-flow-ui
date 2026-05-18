@@ -158,7 +158,6 @@ const InteractionOverlayCard = memo(
           copiedButtonText={copiedButtonText}
           onSend={onSend}
           readonly={readonly}
-          enableTypewriter={false}
           sandboxMode="content"
         />
       </div>

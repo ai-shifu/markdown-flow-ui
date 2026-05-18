@@ -38,6 +38,12 @@ const interactionParser = createInteractionParser();
 const INTERACTION_TAG_PATTERN = /<custom-variable\b/i;
 const INTERACTION_SHORTCODE_PATTERN = /\?\[%\{\{([^}]+)\}\}([\s\S]*?)\]/;
 const JSON_LIKE_VALUE_PATTERN = /^[\[{]/;
+const INTERACTION_VALUE_SEPARATOR_PATTERN = /^[\s,，\n]+/;
+
+interface InteractionOptionCandidate {
+  token: string;
+  value: string;
+}
 
 const parseInteractionShortcode = (
   content?: string | null
@@ -146,6 +152,151 @@ const splitPresetValues = (raw: string) => {
     .split(/[,，\n]/)
     .map((item) => item.trim())
     .filter(Boolean);
+};
+
+const trimLeadingInteractionSeparators = (raw: string) =>
+  raw.replace(INTERACTION_VALUE_SEPARATOR_PATTERN, "");
+
+const buildInteractionOptionCandidates = (
+  info: InteractionParseResult
+): InteractionOptionCandidate[] => {
+  const buttonValues = info.buttonValues || [];
+  const buttonTexts = info.buttonTexts || [];
+  const candidates: InteractionOptionCandidate[] = [];
+  const seenCandidates = new Set<string>();
+
+  buttonValues.forEach((buttonValue, index) => {
+    const normalizedValue = `${buttonValue ?? ""}`.trim();
+    const normalizedText = `${buttonTexts[index] ?? ""}`.trim();
+
+    [normalizedValue, normalizedText].forEach((token) => {
+      if (!token) {
+        return;
+      }
+
+      const candidateKey = `${token}::${normalizedValue || token}`;
+      if (seenCandidates.has(candidateKey)) {
+        return;
+      }
+
+      seenCandidates.add(candidateKey);
+      candidates.push({
+        token,
+        value: normalizedValue || token,
+      });
+    });
+  });
+
+  return candidates.sort(
+    (left, right) => right.token.length - left.token.length
+  );
+};
+
+const matchInteractionOptionPrefix = (
+  raw: string,
+  info: InteractionParseResult
+): InteractionOptionCandidate | null => {
+  const normalizedRaw = trimLeadingInteractionSeparators(raw);
+  const candidates = buildInteractionOptionCandidates(info);
+
+  for (const candidate of candidates) {
+    if (!normalizedRaw.startsWith(candidate.token)) {
+      continue;
+    }
+
+    const trailingChar = normalizedRaw[candidate.token.length];
+    if (trailingChar && !/[\s,，\n]/.test(trailingChar)) {
+      continue;
+    }
+
+    return candidate;
+  }
+
+  return null;
+};
+
+const resolveMultiSelectFallbackDefaults = (
+  raw: string,
+  info: InteractionParseResult
+): InteractionDefaultValues => {
+  const tokens = splitPresetValues(raw);
+
+  if (!tokens.length) {
+    return {};
+  }
+
+  const selectedValues: string[] = [];
+  const customInputs: string[] = [];
+
+  tokens.forEach((token) => {
+    const mapped = normalizeButtonValue(token, info);
+
+    if (mapped) {
+      selectedValues.push(mapped.value);
+      return;
+    }
+
+    if (info.placeholder) {
+      customInputs.push(token);
+      return;
+    }
+
+    selectedValues.push(token);
+  });
+
+  return {
+    selectedValues: selectedValues.length ? selectedValues : undefined,
+    inputText: customInputs.length ? customInputs.join(", ") : undefined,
+  };
+};
+
+const resolveMultiSelectInteractionDefaults = (
+  raw: string,
+  info: InteractionParseResult
+): InteractionDefaultValues => {
+  const selectedValues: string[] = [];
+  let remainingRaw = raw.trim();
+
+  // Prefer option-aware prefix matching before delimiter splitting so
+  // option labels that contain commas can still round-trip correctly.
+  while (remainingRaw) {
+    const matchedCandidate = matchInteractionOptionPrefix(remainingRaw, info);
+
+    if (!matchedCandidate) {
+      break;
+    }
+
+    selectedValues.push(matchedCandidate.value);
+    const normalizedRemainingRaw =
+      trimLeadingInteractionSeparators(remainingRaw);
+    remainingRaw = trimLeadingInteractionSeparators(
+      normalizedRemainingRaw.slice(matchedCandidate.token.length)
+    );
+  }
+
+  if (selectedValues.length > 0) {
+    return {
+      selectedValues,
+      inputText:
+        info.placeholder && remainingRaw.trim()
+          ? remainingRaw.trim()
+          : undefined,
+    };
+  }
+
+  const fallbackDefaults = resolveMultiSelectFallbackDefaults(raw, info);
+
+  if (fallbackDefaults.selectedValues?.length) {
+    return fallbackDefaults;
+  }
+
+  if (info.placeholder) {
+    return {
+      inputText: raw.trim(),
+    };
+  }
+
+  return fallbackDefaults;
 };
 
 const normalizeStructuredInteractionDefaults = (
@@ -269,35 +420,7 @@ export const getInteractionDefaultValues = (
   }
 
   if (interactionInfo.isMultiSelect) {
-    const tokens = splitPresetValues(normalized);
-
-    if (!tokens.length) {
-      return {};
-    }
-
-    const selectedValues: string[] = [];
-    const customInputs: string[] = [];
-
-    tokens.forEach((token) => {
-      const mapped = normalizeButtonValue(token, interactionInfo);
-
-      if (mapped) {
-        selectedValues.push(mapped.value);
-        return;
-      }
-
-      if (interactionInfo.placeholder) {
-        customInputs.push(token);
-        return;
-      }
-
-      selectedValues.push(token);
-    });
-
-    return {
-      selectedValues: selectedValues.length ? selectedValues : undefined,
-      inputText: customInputs.length ? customInputs.join(", ") : undefined,
-    };
+    return resolveMultiSelectInteractionDefaults(normalized, interactionInfo);
   }
 
   const mapped = normalizeButtonValue(normalized, interactionInfo);

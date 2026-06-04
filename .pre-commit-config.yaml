@@ -7,12 +7,13 @@ repos:
       - id: check-yaml
         exclude: ^pnpm-lock\.yaml$
       - id: check-json
+        exclude: ^(测试数据\.json|测试数据2\.json|测试历史数据\.json)$
       - id: check-merge-conflict
       - id: check-symlinks
       - id: end-of-file-fixer
-        exclude: ^pnpm-lock\.yaml$
+        exclude: ^(pnpm-lock\.yaml|测试数据\.json|测试数据2\.json|测试历史数据\.json)$
       - id: trailing-whitespace
-        exclude: ^pnpm-lock\.yaml$
+        exclude: ^(pnpm-lock\.yaml|测试数据\.json|测试数据2\.json|测试历史数据\.json)$
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.48.0
     hooks:
@@ -37,7 +38,7 @@ repos:
         entry: prettier
         language: node
         files: \.(js|jsx|ts|tsx|mjs|cjs|css|scss|json)$
-        exclude: ^(package-lock\.json|pnpm-lock\.yaml|node_modules/).*$
+        exclude: ^(package-lock\.json|pnpm-lock\.yaml|node_modules/|测试数据\.json|测试数据2\.json|测试历史数据\.json).*$
         args: ["--write"]
         additional_dependencies: ["prettier@^3.5.3"]
         pass_filenames: true

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import runStreamFixtureText from "../../../../测试数据.json?raw";
+import runStreamFixtureText from "../../../测试数据.json?raw";
 import ContentRender, {
   type ContentRenderTypewriterState,
 } from "./ContentRender";

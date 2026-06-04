@@ -1,0 +1,14 @@
+[{
+    "sequence_number": 150,
+    "type": "code",
+    "content": "\n```\n你是一位银行风控专家。以下是用户提供的银行卡号和近 3 个月的交易记录。\n\n银行卡号：6222 0200 1234 5678\n交易记录：\n- 1月5日，收入 5000 元，来自工资\n- 1月8日，支出 200 元，超市消费\n- 1月15日，支出 8000 元，转账至陌生账户\n- 1月20日，收入 10000 元，来自不明来源\n- 1月25日，支出 300 元，餐饮消费\n\n请分析这笔 8000 元的转账和 10000 元的不明收入是否存在异常风险，并给出建议。\n```\n",
+    "is_marker": true,
+    "is_renderable": true,
+    "is_new": true,
+    "is_speakable": false,
+    "audio_url": "",
+    "is_audio_streaming": false,
+    "isAudioStreaming": false,
+    "blockBid": "64be4fc8b1c8424cbc707a7dec373c6e",
+    "page": 6
+}]

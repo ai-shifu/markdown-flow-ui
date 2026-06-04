@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 
-import historyFixtureText from "../../../../测试历史数据.json?raw";
-import runStreamFixtureText from "../../../../测试数据.json?raw";
-import runStreamFixtureText2 from "../../../../测试数据2.json?raw";
+import historyFixtureText from "../../../测试历史数据.json?raw";
+import runStreamFixtureText from "../../../测试数据.json?raw";
+import runStreamFixtureText2 from "../../../测试数据2.json?raw";
 import ContentRender from "../ContentRender";
 import type { OnSendContentParams } from "../types";
 import type { SlidePlayerCustomActionContext } from "./types";

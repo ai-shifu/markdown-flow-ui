@@ -43,6 +43,10 @@ export type {
   SlidePlayerCustomActionContext,
   SlidePlayerCustomActions,
 } from "./types";
-export type { PlayerProps, SlidePlayerTexts } from "./Player";
+export type {
+  PlayerProps,
+  SlidePlayerNavigationContext,
+  SlidePlayerTexts,
+} from "./Player";
 export type { UseSlideResult } from "./useSlide";
 export type { MobileViewMode } from "./utils/mobileScreenMode";

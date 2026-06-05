@@ -173,7 +173,7 @@
       ]
     }
   },
-  "version": "0.1.122",
+  "version": "0.1.124",
   "type": "module",
   "exports": {
     ".": {

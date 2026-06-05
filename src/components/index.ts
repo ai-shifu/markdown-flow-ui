@@ -30,5 +30,5 @@ export type {
   InteractionDefaultValues,
   InteractionParseResult,
 } from "../lib/interaction-defaults";
-export type { PlayerProps } from "./Slide";
+export type { PlayerProps, SlidePlayerNavigationContext } from "./Slide";
 export type { UseSlideResult } from "./Slide";

@@ -35,6 +35,7 @@ import {
   resolveAudioPlaybackSourceType,
   type AudioPlaybackSourceType,
 } from "./utils/playbackSource";
+import { shouldKeepPlayingAfterNavigation } from "./utils/playbackPreference";
 import { toPlayerCustomActionList } from "./utils/playerCustomActions";
 import "./player.css";
 
@@ -51,6 +52,10 @@ export interface SlidePlayerTexts {
 }
 
 export type SlidePlayerLoadingReason = "loadingAudio" | "waitingForMoreAudio";
+
+export interface SlidePlayerNavigationContext {
+  shouldContinuePlayback: boolean;
+}
 
 const preloadAudioUrl = (url?: string) => {
   if (typeof window === "undefined" || !url) {
@@ -83,11 +88,12 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
     loading: boolean;
     reason: SlidePlayerLoadingReason | null;
   }) => void;
+  onPlaybackPreferenceChange?: (playing: boolean) => void;
   onPlaybackStarted?: () => void;
   onPlaybackTimeChange?: (timeMs: number) => void;
   onSubtitleToggle?: () => void;
-  onPrev?: () => void;
-  onNext?: () => void;
+  onPrev?: (context: SlidePlayerNavigationContext) => void;
+  onNext?: (context: SlidePlayerNavigationContext) => void;
   onFullscreen?: () => void;
   isFullscreen?: boolean;
   mobileViewMode?: MobileViewMode;
@@ -148,6 +154,7 @@ const Player = ({
   isAutoAdvanceEnabled = true,
   useAutoAdvanceToggle = false,
   onLoadingChange,
+  onPlaybackPreferenceChange,
   onPlaybackStarted,
   onPlaybackTimeChange,
   onSubtitleToggle,
@@ -182,6 +189,9 @@ const Player = ({
   const currentAudioSegmentsRef = useRef<
     NonNullable<SlideAudioItem["audioSegments"]>
   >([]);
+  const playbackPreferenceRef = useRef(
+    useAutoAdvanceToggle ? isAutoAdvanceEnabled : defaultPlaying
+  );
   const wasPlayingBeforeExternalPauseRef = useRef(false);
   const isLoadingRef = useRef(false);
   const isPausedByUserRef = useRef(false);
@@ -254,6 +264,12 @@ const Player = ({
   }, [currentAudio]);
 
   useEffect(() => {
+    playbackPreferenceRef.current = useAutoAdvanceToggle
+      ? isAutoAdvanceEnabled
+      : defaultPlaying;
+  }, [defaultPlaying, isAutoAdvanceEnabled, useAutoAdvanceToggle]);
+
+  useEffect(() => {
     if (showControls) {
       return;
     }
@@ -298,6 +314,29 @@ const Player = ({
     },
     [onLoadingChange]
   );
+
+  const updatePlaybackPreference = useCallback(
+    (playing: boolean) => {
+      playbackPreferenceRef.current = playing;
+      onPlaybackPreferenceChange?.(playing);
+    },
+    [onPlaybackPreferenceChange]
+  );
+
+  const getNavigationContext = useCallback((): SlidePlayerNavigationContext => {
+    if (useAutoAdvanceToggle) {
+      return {
+        shouldContinuePlayback: playbackPreferenceRef.current,
+      };
+    }
+
+    return {
+      shouldContinuePlayback: shouldKeepPlayingAfterNavigation({
+        defaultPlaying: playbackPreferenceRef.current,
+        isPausedByUser: isPausedByUserRef.current,
+      }),
+    };
+  }, [useAutoAdvanceToggle]);
 
   const isAutoplayBlockedError = useCallback((error: unknown) => {
     if (!(error instanceof DOMException)) {
@@ -1123,7 +1162,9 @@ const Player = ({
                 aria-label="Rewind"
                 className="slide-player__action slide-player__action--prev"
                 disabled={prevDisabled}
-                onClick={onPrev}
+                onClick={() => {
+                  onPrev?.(getNavigationContext());
+                }}
                 type="button"
               >
                 <RotateCcw className="slide-player__icon" strokeWidth={2.25} />
@@ -1133,7 +1174,10 @@ const Player = ({
                 className="slide-player__toggle slide-player__toggle--playback"
                 onClick={() => {
                   if (useAutoAdvanceToggle) {
-                    onAutoAdvanceToggle?.(!isAutoAdvanceEnabled);
+                    const nextAutoAdvanceEnabled = !isAutoAdvanceEnabled;
+
+                    updatePlaybackPreference(nextAutoAdvanceEnabled);
+                    onAutoAdvanceToggle?.(nextAutoAdvanceEnabled);
                     return;
                   }
 
@@ -1145,6 +1189,7 @@ const Player = ({
 
                   if (waitingSegmentIndexRef.current !== null) {
                     if (isPlaying) {
+                      updatePlaybackPreference(false);
                       pendingAutoPlayRef.current = false;
                       isPausedByUserRef.current = true;
                       waitingSegmentIndexRef.current = null;
@@ -1155,6 +1200,7 @@ const Player = ({
                       return;
                     }
 
+                    updatePlaybackPreference(true);
                     playbackAccessModeRef.current = "manual";
                     isPausedByUserRef.current = false;
                     pendingAutoPlayRef.current = true;
@@ -1163,6 +1209,7 @@ const Player = ({
                   }
 
                   if (!audioElement.src && currentAudioSegments.length > 0) {
+                    updatePlaybackPreference(true);
                     playbackAccessModeRef.current = "manual";
                     isPausedByUserRef.current = false;
                     startSegmentPlayback(
@@ -1176,6 +1223,7 @@ const Player = ({
                   }
 
                   if (audioElement.paused) {
+                    updatePlaybackPreference(true);
                     playbackAccessModeRef.current = "manual";
                     isPausedByUserRef.current = false;
                     pendingAutoPlayRef.current = true;
@@ -1183,6 +1231,7 @@ const Player = ({
                     return;
                   }
 
+                  updatePlaybackPreference(false);
                   pendingAutoPlayRef.current = false;
                   isPausedByUserRef.current = true;
                   audioElement.pause();
@@ -1195,7 +1244,9 @@ const Player = ({
                 aria-label="Forward"
                 className="slide-player__action slide-player__action--next"
                 disabled={nextDisabled}
-                onClick={onNext}
+                onClick={() => {
+                  onNext?.(getNavigationContext());
+                }}
                 type="button"
               >
                 <RotateCw className="slide-player__icon" strokeWidth={2.25} />

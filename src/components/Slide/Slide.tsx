@@ -27,7 +27,11 @@ import {
 } from "../../lib/mobileDevice";
 import Player from "./Player";
 import SubtitleOverlay from "./SubtitleOverlay";
-import type { PlayerProps, SlidePlayerTexts } from "./Player";
+import type {
+  PlayerProps,
+  SlidePlayerNavigationContext,
+  SlidePlayerTexts,
+} from "./Player";
 import type { SlidePlayerLoadingReason } from "./Player";
 import type { Element } from "./types";
 import useSlide from "./useSlide";
@@ -117,10 +121,11 @@ interface InteractionOverlayCardProps {
   readonly?: boolean;
 }
 
-export interface SlideInteractionTexts extends Pick<
-  ContentRenderProps,
-  "confirmButtonText" | "copyButtonText" | "copiedButtonText"
-> {
+export interface SlideInteractionTexts
+  extends Pick<
+    ContentRenderProps,
+    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+  > {
   title?: string;
 }
 
@@ -287,6 +292,7 @@ const Slide: React.FC<SlideProps> = ({
   );
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
   const [hasPlayerInteracted, setHasPlayerInteracted] = useState(false);
+  const [isPlaybackRequested, setIsPlaybackRequested] = useState(true);
   const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(true);
   const [currentAudioKey, setCurrentAudioKey] = useState<string | null>(null);
   const [isAudioLoadingVisible, setIsAudioLoadingVisible] = useState(false);
@@ -675,20 +681,36 @@ const Slide: React.FC<SlideProps> = ({
 
   const hasResolvedCurrentInteraction = Boolean(
     currentInteractionElement?.readonly ||
-    currentInteractionElement?.user_input?.trim()
+      currentInteractionElement?.user_input?.trim()
   );
 
   const shouldBlockPlaybackForInteraction =
     Boolean(currentInteractionElement) && !hasResolvedCurrentInteraction;
 
+  const handlePlaybackPreferenceChange = useCallback((playing: boolean) => {
+    setIsPlaybackRequested(playing);
+    setIsAutoAdvanceEnabled(playing);
+  }, []);
+
+  const syncPlaybackPreferenceBeforeNavigation = useCallback(
+    (context?: SlidePlayerNavigationContext) => {
+      const shouldContinuePlayback =
+        context?.shouldContinuePlayback ?? isPlaybackRequested;
+
+      setIsPlaybackRequested(shouldContinuePlayback);
+      setIsAutoAdvanceEnabled(shouldContinuePlayback);
+    },
+    [isPlaybackRequested]
+  );
+
   useEffect(() => {
-    // Reset silent-step autoplay toggle whenever navigation lands on a new step.
-    setIsAutoAdvanceEnabled(true);
+    // Keep silent-step autoplay aligned with the same play/pause preference as audio.
+    setIsAutoAdvanceEnabled(isPlaybackRequested);
 
     if (playerCustomActionPauseOnActive) {
       setIsPlayerCustomActionActive(false);
     }
-  }, [currentIndex, playerCustomActionPauseOnActive]);
+  }, [currentIndex, isPlaybackRequested, playerCustomActionPauseOnActive]);
 
   useEffect(() => {
     return () => {
@@ -1324,25 +1346,43 @@ const Slide: React.FC<SlideProps> = ({
     });
   }, []);
 
-  const handlePrev = useCallback(() => {
-    shouldScrollToBottomRef.current = true;
-    pendingInteractionOverlayStepIndexRef.current = null;
-    setHasPlayerInteracted(true);
-    setIsAudioLoadingVisible(false);
-    showPlayerControls(true);
-    resetAudioSequence();
-    goPrev();
-  }, [goPrev, resetAudioSequence, showPlayerControls]);
+  const handlePrev = useCallback(
+    (context?: SlidePlayerNavigationContext) => {
+      syncPlaybackPreferenceBeforeNavigation(context);
+      shouldScrollToBottomRef.current = true;
+      pendingInteractionOverlayStepIndexRef.current = null;
+      setHasPlayerInteracted(true);
+      setIsAudioLoadingVisible(false);
+      showPlayerControls(true);
+      resetAudioSequence();
+      goPrev();
+    },
+    [
+      goPrev,
+      resetAudioSequence,
+      showPlayerControls,
+      syncPlaybackPreferenceBeforeNavigation,
+    ]
+  );
 
-  const handleNext = useCallback(() => {
-    shouldScrollToBottomRef.current = true;
-    pendingInteractionOverlayStepIndexRef.current = null;
-    setHasPlayerInteracted(true);
-    setIsAudioLoadingVisible(false);
-    showPlayerControls(true);
-    resetAudioSequence();
-    goNext();
-  }, [goNext, resetAudioSequence, showPlayerControls]);
+  const handleNext = useCallback(
+    (context?: SlidePlayerNavigationContext) => {
+      syncPlaybackPreferenceBeforeNavigation(context);
+      shouldScrollToBottomRef.current = true;
+      pendingInteractionOverlayStepIndexRef.current = null;
+      setHasPlayerInteracted(true);
+      setIsAudioLoadingVisible(false);
+      showPlayerControls(true);
+      resetAudioSequence();
+      goNext();
+    },
+    [
+      goNext,
+      resetAudioSequence,
+      showPlayerControls,
+      syncPlaybackPreferenceBeforeNavigation,
+    ]
+  );
 
   const handlePlayerLoadingChange = useCallback(
     ({
@@ -1701,7 +1741,7 @@ const Slide: React.FC<SlideProps> = ({
               !playerVisible && "pointer-events-none opacity-0"
             )}
             currentAudioIndex={currentAudioIndex}
-            defaultPlaying
+            defaultPlaying={isPlaybackRequested}
             isPlaybackPaused={shouldPausePlaybackForCustomAction}
             isAutoAdvanceEnabled={isAutoAdvanceEnabled}
             hasInteraction={Boolean(activeInteractionElement)}
@@ -1709,6 +1749,7 @@ const Slide: React.FC<SlideProps> = ({
             isSubtitleEnabled={isSubtitleEnabled}
             onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
             onLoadingChange={handlePlayerLoadingChange}
+            onPlaybackPreferenceChange={handlePlaybackPreferenceChange}
             onPlaybackStarted={() => {
               setHasCurrentAudioPlaybackStarted(true);
             }}

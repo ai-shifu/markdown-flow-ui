@@ -341,7 +341,7 @@ const Player = ({
   const subtitleShortcutMetadata = getShortcutMetadata(
     playerTexts.subtitleToggleAriaLabel,
     PLAYER_SHORTCUT_LABELS.subtitle,
-    "C"
+    "c"
   );
   const previousShortcutMetadata = getShortcutMetadata(
     playerTexts.previousLabel,
@@ -361,12 +361,12 @@ const Player = ({
   const fullscreenShortcutMetadata = getShortcutMetadata(
     fullscreenAriaLabel,
     PLAYER_SHORTCUT_LABELS.fullscreen,
-    "F"
+    "f"
   );
   const notesShortcutMetadata = getShortcutMetadata(
     playerTexts.notesLabel,
     PLAYER_SHORTCUT_LABELS.notes,
-    "N"
+    "n"
   );
   const activateKeyboardShortcutOwner = useCallback(() => {
     if (!shouldEnableKeyboardShortcuts) {
@@ -873,10 +873,10 @@ const Player = ({
     if (isPlaybackPaused) {
       wasPlayingBeforeExternalPauseRef.current = Boolean(
         currentAudioRef.current &&
-        !isPausedByUserRef.current &&
-        (!audioElement.paused ||
-          pendingAutoPlayRef.current ||
-          waitingSegmentIndexRef.current !== null)
+          !isPausedByUserRef.current &&
+          (!audioElement.paused ||
+            pendingAutoPlayRef.current ||
+            waitingSegmentIndexRef.current !== null)
       );
 
       pendingAutoPlayRef.current = false;
@@ -1368,6 +1368,11 @@ const Player = ({
       togglePlayback,
     ]
   );
+  const keyboardShortcutHandlersRef = useRef(keyboardShortcutHandlers);
+
+  useEffect(() => {
+    keyboardShortcutHandlersRef.current = keyboardShortcutHandlers;
+  }, [keyboardShortcutHandlers]);
 
   useEffect(() => {
     if (!shouldEnableKeyboardShortcuts || typeof document === "undefined") {
@@ -1386,7 +1391,7 @@ const Player = ({
       }
 
       let handled = false;
-      const handler = keyboardShortcutHandlers[action];
+      const handler = keyboardShortcutHandlersRef.current[action];
 
       handled = handler();
 
@@ -1402,11 +1407,7 @@ const Player = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [
-    keyboardShortcutOwnerId,
-    keyboardShortcutHandlers,
-    shouldEnableKeyboardShortcuts,
-  ]);
+  }, [keyboardShortcutOwnerId, shouldEnableKeyboardShortcuts]);
 
   useEffect(() => {
     onPlaybackTimeChange?.(playbackTimeMsRef.current);

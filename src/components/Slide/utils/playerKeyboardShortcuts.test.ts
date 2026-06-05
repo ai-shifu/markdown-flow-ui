@@ -67,6 +67,36 @@ describe("playerKeyboardShortcuts", () => {
     ).toBe(true);
   });
 
+  it("ignores custom interactive ARIA roles and text node targets", () => {
+    expect(
+      shouldIgnorePlayerKeyboardShortcutEvent(
+        {
+          key: "ArrowLeft",
+          target: target({
+            closest: (selector: string) =>
+              selector.includes('[role="slider"]') ? {} : null,
+          }),
+        },
+        "previous"
+      )
+    ).toBe(true);
+    expect(
+      shouldIgnorePlayerKeyboardShortcutEvent(
+        {
+          key: "ArrowRight",
+          target: target({
+            nodeType: 3,
+            parentElement: {
+              closest: (selector: string) =>
+                selector.includes('[role="menu"]') ? {} : null,
+            },
+          }),
+        },
+        "next"
+      )
+    ).toBe(true);
+  });
+
   it("tracks the active player owner", () => {
     const unregisterFirst = registerPlayerKeyboardShortcutOwner("first");
     const unregisterSecond = registerPlayerKeyboardShortcutOwner("second");

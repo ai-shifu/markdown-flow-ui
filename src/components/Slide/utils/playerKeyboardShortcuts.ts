@@ -21,11 +21,13 @@ type KeyboardShortcutTarget = EventTarget & {
   closest?: (selectors: string) => unknown;
   getAttribute?: (qualifiedName: string) => string | null;
   isContentEditable?: boolean;
+  nodeType?: number;
+  parentElement?: Element | null;
   tagName?: string;
 };
 
 const EDITABLE_SELECTOR =
-  'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [data-player-keyboard-shortcuts-ignore="true"]';
+  'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="slider"], [role="listbox"], [role="combobox"], [role="tablist"], [role="menu"], [role="tree"], [role="grid"], [data-player-keyboard-shortcuts-ignore="true"]';
 
 const NATIVE_SPACE_TARGET_SELECTOR = "button, [role='button']";
 
@@ -39,7 +41,13 @@ const getTargetCandidate = (
     return null;
   }
 
-  return target as KeyboardShortcutTarget;
+  const candidate = target as KeyboardShortcutTarget;
+
+  if (candidate.nodeType === 3) {
+    return (candidate.parentElement as KeyboardShortcutTarget | null) ?? null;
+  }
+
+  return candidate;
 };
 
 export const getPlayerKeyboardShortcutAction = (

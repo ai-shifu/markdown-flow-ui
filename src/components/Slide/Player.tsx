@@ -189,7 +189,9 @@ const Player = ({
   const currentAudioSegmentsRef = useRef<
     NonNullable<SlideAudioItem["audioSegments"]>
   >([]);
-  const playbackPreferenceRef = useRef(defaultPlaying);
+  const playbackPreferenceRef = useRef(
+    useAutoAdvanceToggle ? isAutoAdvanceEnabled : defaultPlaying
+  );
   const wasPlayingBeforeExternalPauseRef = useRef(false);
   const isLoadingRef = useRef(false);
   const isPausedByUserRef = useRef(false);
@@ -262,8 +264,10 @@ const Player = ({
   }, [currentAudio]);
 
   useEffect(() => {
-    playbackPreferenceRef.current = defaultPlaying;
-  }, [defaultPlaying]);
+    playbackPreferenceRef.current = useAutoAdvanceToggle
+      ? isAutoAdvanceEnabled
+      : defaultPlaying;
+  }, [defaultPlaying, isAutoAdvanceEnabled, useAutoAdvanceToggle]);
 
   useEffect(() => {
     if (showControls) {
@@ -322,31 +326,17 @@ const Player = ({
   const getNavigationContext = useCallback((): SlidePlayerNavigationContext => {
     if (useAutoAdvanceToggle) {
       return {
-        shouldContinuePlayback: isAutoAdvanceEnabled,
+        shouldContinuePlayback: playbackPreferenceRef.current,
       };
     }
 
     return {
       shouldContinuePlayback: shouldKeepPlayingAfterNavigation({
         defaultPlaying: playbackPreferenceRef.current,
-        hasCurrentAudio: Boolean(currentAudio),
-        hasPendingAutoPlay: pendingAutoPlayRef.current,
         isPausedByUser: isPausedByUserRef.current,
-        isPlaybackPaused,
-        isPlaying,
-        isWaitingForMoreAudio:
-          isWaitingForSegmentRef.current ||
-          waitingSegmentIndexRef.current !== null,
       }),
     };
-  }, [
-    currentAudio,
-    defaultPlaying,
-    isAutoAdvanceEnabled,
-    isPlaybackPaused,
-    isPlaying,
-    useAutoAdvanceToggle,
-  ]);
+  }, [useAutoAdvanceToggle]);
 
   const isAutoplayBlockedError = useCallback((error: unknown) => {
     if (!(error instanceof DOMException)) {
@@ -750,10 +740,10 @@ const Player = ({
     if (isPlaybackPaused) {
       wasPlayingBeforeExternalPauseRef.current = Boolean(
         currentAudioRef.current &&
-        !isPausedByUserRef.current &&
-        (!audioElement.paused ||
-          pendingAutoPlayRef.current ||
-          waitingSegmentIndexRef.current !== null)
+          !isPausedByUserRef.current &&
+          (!audioElement.paused ||
+            pendingAutoPlayRef.current ||
+            waitingSegmentIndexRef.current !== null)
       );
 
       pendingAutoPlayRef.current = false;

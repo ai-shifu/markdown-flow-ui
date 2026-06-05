@@ -12,6 +12,16 @@ type UseWakePlayerFromIframeParams = {
   onWake: () => void;
 };
 
+/**
+ * Restores player controls when users interact inside slide iframes and forwards supported keyboard shortcuts to the host document.
+ *
+ * @param params - Hook options.
+ * @param params.sectionRef - Section element used to scope iframe wake events and host shortcut dispatch.
+ * @param params.enabled - Enables or disables iframe wake handling.
+ * @param params.keyboardShortcutsEnabled - Enables or disables iframe keyboard shortcut forwarding. Defaults to true.
+ * @param params.onWake - Callback invoked when iframe interaction should restore player controls.
+ * @returns void
+ */
 const useWakePlayerFromIframe = ({
   sectionRef,
   enabled,
@@ -117,7 +127,7 @@ const useWakePlayerFromIframe = ({
           shiftKey: event.shiftKey,
         });
 
-        sectionElement.ownerDocument.dispatchEvent(hostKeyboardEvent);
+        sectionElement.dispatchEvent(hostKeyboardEvent);
 
         if (hostKeyboardEvent.defaultPrevented) {
           event.preventDefault();

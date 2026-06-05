@@ -85,4 +85,13 @@ describe("playerKeyboardShortcuts", () => {
 
     expect(isActivePlayerKeyboardShortcutOwner("first")).toBe(false);
   });
+
+  it("self-heals when registration follows a stale activation", () => {
+    activatePlayerKeyboardShortcutOwner("stale");
+
+    registerPlayerKeyboardShortcutOwner("first");
+
+    expect(isActivePlayerKeyboardShortcutOwner("first")).toBe(true);
+    expect(isActivePlayerKeyboardShortcutOwner("stale")).toBe(false);
+  });
 });

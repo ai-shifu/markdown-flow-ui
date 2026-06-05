@@ -142,7 +142,10 @@ export const shouldIgnorePlayerKeyboardShortcutEvent = (
 export const registerPlayerKeyboardShortcutOwner = (ownerId: string) => {
   playerKeyboardShortcutOwners.add(ownerId);
 
-  if (!activePlayerKeyboardShortcutOwnerId) {
+  if (
+    !activePlayerKeyboardShortcutOwnerId ||
+    !playerKeyboardShortcutOwners.has(activePlayerKeyboardShortcutOwnerId)
+  ) {
     activePlayerKeyboardShortcutOwnerId = ownerId;
   }
 

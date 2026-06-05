@@ -40,6 +40,7 @@ import {
   isActivePlayerKeyboardShortcutOwner,
   registerPlayerKeyboardShortcutOwner,
   shouldIgnorePlayerKeyboardShortcutEvent,
+  type PlayerKeyboardShortcutAction,
 } from "./utils/playerKeyboardShortcuts";
 import {
   resolveAudioPlaybackSourceType,
@@ -51,6 +52,17 @@ import "./player.css";
 
 const audioPreloadElementCache = new Map<string, HTMLAudioElement>();
 
+/**
+ * Labels and accessibility text used by the slide player controls.
+ *
+ * Missing fields fall back to `DEFAULT_SLIDE_PLAYER_TEXTS`; pass a `texts`
+ * object when a consumer needs localized control labels or tooltip text.
+ *
+ * @example
+ * ```tsx
+ * <Player texts={{ playLabel: "播放", nextLabel: "下一步" }} />
+ * ```
+ */
 export interface SlidePlayerTexts {
   closeSettingsLabel?: string;
   enterFullscreenLabel?: string;
@@ -131,6 +143,17 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   prevDisabled?: boolean;
   nextDisabled?: boolean;
   showControls?: boolean;
+  /**
+   * Enables document-level keyboard shortcuts for existing player actions.
+   *
+   * Defaults to `true`. Set to `false` when the page should not advertise or
+   * handle player shortcuts for this standalone player instance.
+   *
+   * @example
+   * ```tsx
+   * <Player enableKeyboardShortcuts={false} />
+   * ```
+   */
   enableKeyboardShortcuts?: boolean;
   customActions?: SlidePlayerCustomActions;
   customActionContext?: SlidePlayerCustomActionContext;
@@ -178,8 +201,8 @@ const PLAYER_SHORTCUT_LABELS = {
   subtitle: "C",
 } as const;
 
-const getShortcutTitle = (label: string, shortcut: string) =>
-  `${label} (${shortcut})`;
+const getShortcutTitle = (label: string | undefined, shortcut: string) =>
+  label ? `${label} (${shortcut})` : shortcut;
 
 const Player = ({
   audioList = [],
@@ -306,6 +329,45 @@ const Player = ({
   const fullscreenAriaLabel = isFullscreen
     ? playerTexts.exitFullscreenLabel
     : playerTexts.enterFullscreenLabel;
+  const getShortcutMetadata = useCallback(
+    (label: string | undefined, shortcutText: string, ariaKey: string) => ({
+      ariaKeyShortcuts: shouldEnableKeyboardShortcuts ? ariaKey : undefined,
+      title: shouldEnableKeyboardShortcuts
+        ? getShortcutTitle(label, shortcutText)
+        : label,
+    }),
+    [shouldEnableKeyboardShortcuts]
+  );
+  const subtitleShortcutMetadata = getShortcutMetadata(
+    playerTexts.subtitleToggleAriaLabel,
+    PLAYER_SHORTCUT_LABELS.subtitle,
+    "C"
+  );
+  const previousShortcutMetadata = getShortcutMetadata(
+    playerTexts.previousLabel,
+    PLAYER_SHORTCUT_LABELS.previous,
+    "ArrowLeft"
+  );
+  const playbackShortcutMetadata = getShortcutMetadata(
+    toggleAriaLabel,
+    PLAYER_SHORTCUT_LABELS.playback,
+    "Space"
+  );
+  const nextShortcutMetadata = getShortcutMetadata(
+    playerTexts.nextLabel,
+    PLAYER_SHORTCUT_LABELS.next,
+    "ArrowRight"
+  );
+  const fullscreenShortcutMetadata = getShortcutMetadata(
+    fullscreenAriaLabel,
+    PLAYER_SHORTCUT_LABELS.fullscreen,
+    "F"
+  );
+  const notesShortcutMetadata = getShortcutMetadata(
+    playerTexts.notesLabel,
+    PLAYER_SHORTCUT_LABELS.notes,
+    "N"
+  );
   const activateKeyboardShortcutOwner = useCallback(() => {
     if (!shouldEnableKeyboardShortcuts) {
       return;
@@ -1235,6 +1297,78 @@ const Player = ({
     return registerPlayerKeyboardShortcutOwner(keyboardShortcutOwnerId);
   }, [keyboardShortcutOwnerId, shouldEnableKeyboardShortcuts]);
 
+  const keyboardShortcutHandlers = useMemo<
+    Record<PlayerKeyboardShortcutAction, () => boolean>
+  >(
+    () => ({
+      fullscreen: () => {
+        if (!onFullscreen) {
+          return false;
+        }
+
+        onFullscreen();
+        return true;
+      },
+      interaction: () => {
+        if (!onInteractionToggle) {
+          return false;
+        }
+
+        if (hasInteraction) {
+          onInteractionToggle();
+        }
+
+        return true;
+      },
+      next: () => {
+        if (!onNext) {
+          return false;
+        }
+
+        if (!nextDisabled) {
+          onNext(getNavigationContext());
+        }
+
+        return true;
+      },
+      previous: () => {
+        if (!onPrev) {
+          return false;
+        }
+
+        if (!prevDisabled) {
+          onPrev(getNavigationContext());
+        }
+
+        return true;
+      },
+      subtitle: () => {
+        if (!onSubtitleToggle) {
+          return false;
+        }
+
+        onSubtitleToggle();
+        return true;
+      },
+      togglePlayback: () => {
+        togglePlayback();
+        return true;
+      },
+    }),
+    [
+      getNavigationContext,
+      hasInteraction,
+      nextDisabled,
+      onFullscreen,
+      onInteractionToggle,
+      onNext,
+      onPrev,
+      onSubtitleToggle,
+      prevDisabled,
+      togglePlayback,
+    ]
+  );
+
   useEffect(() => {
     if (!shouldEnableKeyboardShortcuts || typeof document === "undefined") {
       return;
@@ -1247,49 +1381,14 @@ const Player = ({
 
       const action = getPlayerKeyboardShortcutAction(event);
 
-      if (shouldIgnorePlayerKeyboardShortcutEvent(event, action)) {
+      if (!action || shouldIgnorePlayerKeyboardShortcutEvent(event, action)) {
         return;
       }
 
       let handled = false;
+      const handler = keyboardShortcutHandlers[action];
 
-      switch (action) {
-        case "togglePlayback":
-          handled = togglePlayback();
-          break;
-        case "previous":
-          if (!prevDisabled && onPrev) {
-            onPrev(getNavigationContext());
-            handled = true;
-          }
-          break;
-        case "next":
-          if (!nextDisabled && onNext) {
-            onNext(getNavigationContext());
-            handled = true;
-          }
-          break;
-        case "fullscreen":
-          if (onFullscreen) {
-            onFullscreen();
-            handled = true;
-          }
-          break;
-        case "subtitle":
-          if (onSubtitleToggle) {
-            onSubtitleToggle();
-            handled = true;
-          }
-          break;
-        case "interaction":
-          if (hasInteraction && onInteractionToggle) {
-            onInteractionToggle();
-            handled = true;
-          }
-          break;
-        default:
-          break;
-      }
+      handled = handler();
 
       if (!handled) {
         return;
@@ -1304,18 +1403,9 @@ const Player = ({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [
-    hasInteraction,
-    getNavigationContext,
     keyboardShortcutOwnerId,
-    nextDisabled,
-    onFullscreen,
-    onInteractionToggle,
-    onNext,
-    onPrev,
-    onSubtitleToggle,
-    prevDisabled,
+    keyboardShortcutHandlers,
     shouldEnableKeyboardShortcuts,
-    togglePlayback,
   ]);
 
   useEffect(() => {
@@ -1396,14 +1486,11 @@ const Player = ({
               </button>
               <button
                 aria-label={playerTexts.subtitleToggleAriaLabel}
-                aria-keyshortcuts="C"
+                aria-keyshortcuts={subtitleShortcutMetadata.ariaKeyShortcuts}
                 aria-pressed={isSubtitleEnabled}
                 className="slide-player__action slide-player__action--subtitle"
                 onClick={onSubtitleToggle}
-                title={getShortcutTitle(
-                  playerTexts.subtitleToggleAriaLabel,
-                  PLAYER_SHORTCUT_LABELS.subtitle
-                )}
+                title={subtitleShortcutMetadata.title}
                 type="button"
               >
                 {isSubtitleEnabled ? (
@@ -1416,48 +1503,39 @@ const Player = ({
                 )}
               </button>
               <button
-                aria-keyshortcuts="ArrowLeft"
+                aria-keyshortcuts={previousShortcutMetadata.ariaKeyShortcuts}
                 aria-label={playerTexts.previousLabel}
                 className="slide-player__action slide-player__action--prev"
                 disabled={prevDisabled}
                 onClick={() => {
                   onPrev?.(getNavigationContext());
                 }}
-                title={getShortcutTitle(
-                  playerTexts.previousLabel,
-                  PLAYER_SHORTCUT_LABELS.previous
-                )}
+                title={previousShortcutMetadata.title}
                 type="button"
               >
                 <RotateCcw className="slide-player__icon" strokeWidth={2.25} />
               </button>
               <button
                 aria-label={toggleAriaLabel}
-                aria-keyshortcuts="Space"
+                aria-keyshortcuts={playbackShortcutMetadata.ariaKeyShortcuts}
                 className="slide-player__toggle slide-player__toggle--playback"
                 onClick={() => {
                   togglePlayback();
                 }}
-                title={getShortcutTitle(
-                  toggleAriaLabel,
-                  PLAYER_SHORTCUT_LABELS.playback
-                )}
+                title={playbackShortcutMetadata.title}
                 type="button"
               >
                 {isTogglePlaying ? <PauseIcon /> : <PlayIcon />}
               </button>
               <button
-                aria-keyshortcuts="ArrowRight"
+                aria-keyshortcuts={nextShortcutMetadata.ariaKeyShortcuts}
                 aria-label={playerTexts.nextLabel}
                 className="slide-player__action slide-player__action--next"
                 disabled={nextDisabled}
                 onClick={() => {
                   onNext?.(getNavigationContext());
                 }}
-                title={getShortcutTitle(
-                  playerTexts.nextLabel,
-                  PLAYER_SHORTCUT_LABELS.next
-                )}
+                title={nextShortcutMetadata.title}
                 type="button"
               >
                 <RotateCw className="slide-player__icon" strokeWidth={2.25} />
@@ -1465,13 +1543,12 @@ const Player = ({
               {onFullscreen ? (
                 <button
                   aria-label={fullscreenAriaLabel}
-                  aria-keyshortcuts="F"
+                  aria-keyshortcuts={
+                    fullscreenShortcutMetadata.ariaKeyShortcuts
+                  }
                   className="slide-player__action slide-player__action--fullscreen"
                   onClick={onFullscreen}
-                  title={getShortcutTitle(
-                    fullscreenAriaLabel,
-                    PLAYER_SHORTCUT_LABELS.fullscreen
-                  )}
+                  title={fullscreenShortcutMetadata.title}
                   type="button"
                 >
                   {isFullscreen ? (
@@ -1499,17 +1576,14 @@ const Player = ({
               ))}
               <button
                 aria-label={playerTexts.notesLabel}
-                aria-keyshortcuts="N"
+                aria-keyshortcuts={notesShortcutMetadata.ariaKeyShortcuts}
                 className={cn(
                   "slide-player__action slide-player__action--notes",
                   isInteractionOpen && "slide-player__action--active"
                 )}
                 disabled={!hasInteraction}
                 onClick={onInteractionToggle}
-                title={getShortcutTitle(
-                  playerTexts.notesLabel,
-                  PLAYER_SHORTCUT_LABELS.notes
-                )}
+                title={notesShortcutMetadata.title}
                 type="button"
               >
                 <FilePenLine

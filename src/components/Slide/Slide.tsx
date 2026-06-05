@@ -208,6 +208,18 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   onPlayerVisibilityChange?: (visible: boolean) => void;
   onMobileViewModeChange?: (viewMode: MobileViewMode) => void;
   onStepChange?: (element: Element | undefined, index: number) => void;
+  /**
+   * Enables keyboard shortcuts for existing player actions.
+   *
+   * Defaults to `true`. The active slide responds after users click, touch, or
+   * focus the slide/player surface; ignored targets include form controls and
+   * interaction overlays.
+   *
+   * @example
+   * ```tsx
+   * <Slide elementList={slides} enableKeyboardShortcuts={false} />
+   * ```
+   */
   enableKeyboardShortcuts?: boolean;
   enableIframeScaling?: boolean;
   disableLoadingOverlay?: boolean;

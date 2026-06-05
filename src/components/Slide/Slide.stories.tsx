@@ -620,9 +620,9 @@ const resolveSubmittedUserInput = (content: OnSendContentParams) =>
 const isSameStoryElement = (currentElement: Element, targetElement?: Element) =>
   Boolean(
     targetElement &&
-    currentElement.type === targetElement.type &&
-    currentElement.sequence_number === targetElement.sequence_number &&
-    currentElement.content === targetElement.content
+      currentElement.type === targetElement.type &&
+      currentElement.sequence_number === targetElement.sequence_number &&
+      currentElement.content === targetElement.content
   );
 
 const applyInteractionSubmission = (
@@ -3130,9 +3130,22 @@ export const HistorySlides: Story = {
       backAriaLabel: "返回",
     },
     playerTexts: {
+      closeSettingsLabel: "关闭设置",
+      enterFullscreenLabel: "进入全屏",
+      exitFullscreenLabel: "退出全屏",
+      moreOptionsAriaLabel: "更多设置",
+      nextLabel: "下一步",
+      notesLabel: "笔记",
+      pauseAutoplayLabel: "暂停自动播放",
+      pauseLabel: "暂停",
+      playAutoplayLabel: "开启自动播放",
+      playLabel: "播放",
+      previousLabel: "上一步",
+      screenModeLabel: "屏幕模式",
       settingsTitle: "设置",
       subtitleLabel: "字幕",
       subtitleToggleAriaLabel: "切换字幕",
+      volumeAriaLabel: "音量",
       screenLabel: "屏幕",
       nonFullscreenLabel: "非全屏",
       fullscreenLabel: "全屏",

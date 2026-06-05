@@ -1,7 +1,9 @@
 import React, {
   memo,
   useCallback,
+  useContext,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -31,6 +33,14 @@ import {
   type MobileViewMode,
 } from "./utils/mobileScreenMode";
 import { hasReachedAudioEnd } from "./utils/audioCompletion";
+import { PlayerKeyboardShortcutContext } from "./utils/playerKeyboardShortcutContext";
+import {
+  activatePlayerKeyboardShortcutOwner,
+  getPlayerKeyboardShortcutAction,
+  isActivePlayerKeyboardShortcutOwner,
+  registerPlayerKeyboardShortcutOwner,
+  shouldIgnorePlayerKeyboardShortcutEvent,
+} from "./utils/playerKeyboardShortcuts";
 import {
   resolveAudioPlaybackSourceType,
   type AudioPlaybackSourceType,
@@ -42,9 +52,22 @@ import "./player.css";
 const audioPreloadElementCache = new Map<string, HTMLAudioElement>();
 
 export interface SlidePlayerTexts {
+  closeSettingsLabel?: string;
+  enterFullscreenLabel?: string;
+  exitFullscreenLabel?: string;
+  moreOptionsAriaLabel?: string;
+  nextLabel?: string;
+  notesLabel?: string;
+  pauseAutoplayLabel?: string;
+  pauseLabel?: string;
+  playAutoplayLabel?: string;
+  playLabel?: string;
+  previousLabel?: string;
+  screenModeLabel?: string;
   settingsTitle?: string;
   subtitleLabel?: string;
   subtitleToggleAriaLabel?: string;
+  volumeAriaLabel?: string;
   screenLabel?: string;
   nonFullscreenLabel?: string;
   fullscreenLabel?: string;
@@ -108,6 +131,7 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   prevDisabled?: boolean;
   nextDisabled?: boolean;
   showControls?: boolean;
+  enableKeyboardShortcuts?: boolean;
   customActions?: SlidePlayerCustomActions;
   customActionContext?: SlidePlayerCustomActionContext;
   texts?: SlidePlayerTexts;
@@ -145,6 +169,18 @@ const PlayIcon = () => (
   </svg>
 );
 
+const PLAYER_SHORTCUT_LABELS = {
+  fullscreen: "F",
+  next: "→",
+  notes: "N",
+  playback: "Space",
+  previous: "←",
+  subtitle: "C",
+} as const;
+
+const getShortcutTitle = (label: string, shortcut: string) =>
+  `${label} (${shortcut})`;
+
 const Player = ({
   audioList = [],
   className,
@@ -174,11 +210,16 @@ const Player = ({
   prevDisabled = false,
   nextDisabled = false,
   showControls = true,
+  enableKeyboardShortcuts = true,
   customActions,
   customActionContext,
   texts,
+  onFocusCapture,
+  onPointerDown,
   ...props
 }: PlayerProps) => {
+  const localKeyboardShortcutOwnerId = useId();
+  const keyboardShortcutContext = useContext(PlayerKeyboardShortcutContext);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previousInteractionOpenRef = useRef(isInteractionOpen);
   const audioSrcRef = useRef<string | null>(null);
@@ -208,6 +249,10 @@ const Player = ({
   >("unknown");
   const [isPlaying, setIsPlaying] = useState(defaultPlaying);
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
+  const keyboardShortcutOwnerId =
+    keyboardShortcutContext?.ownerId ?? localKeyboardShortcutOwnerId;
+  const shouldEnableKeyboardShortcuts =
+    enableKeyboardShortcuts && (keyboardShortcutContext?.enabled ?? true);
   const currentAudio =
     currentAudioIndex >= 0 ? audioList[currentAudioIndex] : undefined;
   const currentAudioUrl = currentAudio?.audioUrl;
@@ -253,11 +298,37 @@ const Player = ({
     : isPlaying;
   const toggleAriaLabel = useAutoAdvanceToggle
     ? isAutoAdvanceEnabled
-      ? "Pause autoplay"
-      : "Play autoplay"
+      ? playerTexts.pauseAutoplayLabel
+      : playerTexts.playAutoplayLabel
     : isPlaying
-      ? "Pause"
-      : "Play";
+      ? playerTexts.pauseLabel
+      : playerTexts.playLabel;
+  const fullscreenAriaLabel = isFullscreen
+    ? playerTexts.exitFullscreenLabel
+    : playerTexts.enterFullscreenLabel;
+  const activateKeyboardShortcutOwner = useCallback(() => {
+    if (!shouldEnableKeyboardShortcuts) {
+      return;
+    }
+
+    activatePlayerKeyboardShortcutOwner(keyboardShortcutOwnerId);
+  }, [keyboardShortcutOwnerId, shouldEnableKeyboardShortcuts]);
+
+  const handleRootPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      activateKeyboardShortcutOwner();
+      onPointerDown?.(event);
+    },
+    [activateKeyboardShortcutOwner, onPointerDown]
+  );
+
+  const handleRootFocusCapture = useCallback(
+    (event: React.FocusEvent<HTMLDivElement>) => {
+      activateKeyboardShortcutOwner();
+      onFocusCapture?.(event);
+    },
+    [activateKeyboardShortcutOwner, onFocusCapture]
+  );
 
   useEffect(() => {
     currentAudioRef.current = currentAudio;
@@ -740,10 +811,10 @@ const Player = ({
     if (isPlaybackPaused) {
       wasPlayingBeforeExternalPauseRef.current = Boolean(
         currentAudioRef.current &&
-        !isPausedByUserRef.current &&
-        (!audioElement.paused ||
-          pendingAutoPlayRef.current ||
-          waitingSegmentIndexRef.current !== null)
+          !isPausedByUserRef.current &&
+          (!audioElement.paused ||
+            pendingAutoPlayRef.current ||
+            waitingSegmentIndexRef.current !== null)
       );
 
       pendingAutoPlayRef.current = false;
@@ -1078,12 +1149,187 @@ const Player = ({
     [onMobileViewModeChange]
   );
 
+  const togglePlayback = useCallback(() => {
+    if (useAutoAdvanceToggle) {
+      const nextAutoAdvanceEnabled = !isAutoAdvanceEnabled;
+
+      updatePlaybackPreference(nextAutoAdvanceEnabled);
+      onAutoAdvanceToggle?.(nextAutoAdvanceEnabled);
+      return true;
+    }
+
+    const audioElement = audioRef.current;
+
+    if (isPlaybackPaused || !audioElement || !currentAudio) {
+      return false;
+    }
+
+    if (waitingSegmentIndexRef.current !== null) {
+      if (isPlaying) {
+        updatePlaybackPreference(false);
+        pendingAutoPlayRef.current = false;
+        isPausedByUserRef.current = true;
+        waitingSegmentIndexRef.current = null;
+        isWaitingForSegmentRef.current = false;
+        setIsPlaying(false);
+        updateLoading(false);
+        audioElement.pause();
+        return true;
+      }
+
+      updatePlaybackPreference(true);
+      playbackAccessModeRef.current = "manual";
+      isPausedByUserRef.current = false;
+      pendingAutoPlayRef.current = true;
+      updateLoading(true, "waitingForMoreAudio");
+      return true;
+    }
+
+    if (!audioElement.src && currentAudioSegments.length > 0) {
+      updatePlaybackPreference(true);
+      playbackAccessModeRef.current = "manual";
+      isPausedByUserRef.current = false;
+      startSegmentPlayback(
+        Math.min(
+          currentSegmentIndexRef.current,
+          currentAudioSegments.length - 1
+        ),
+        "toggle"
+      );
+      return true;
+    }
+
+    if (audioElement.paused) {
+      updatePlaybackPreference(true);
+      playbackAccessModeRef.current = "manual";
+      isPausedByUserRef.current = false;
+      pendingAutoPlayRef.current = true;
+      tryPlayCurrentAudio("toggle-resume");
+      return true;
+    }
+
+    updatePlaybackPreference(false);
+    pendingAutoPlayRef.current = false;
+    isPausedByUserRef.current = true;
+    audioElement.pause();
+    return true;
+  }, [
+    currentAudio,
+    currentAudioSegments.length,
+    isAutoAdvanceEnabled,
+    isPlaybackPaused,
+    isPlaying,
+    onAutoAdvanceToggle,
+    startSegmentPlayback,
+    tryPlayCurrentAudio,
+    updateLoading,
+    updatePlaybackPreference,
+    useAutoAdvanceToggle,
+  ]);
+
+  useEffect(() => {
+    if (!shouldEnableKeyboardShortcuts) {
+      return;
+    }
+
+    return registerPlayerKeyboardShortcutOwner(keyboardShortcutOwnerId);
+  }, [keyboardShortcutOwnerId, shouldEnableKeyboardShortcuts]);
+
+  useEffect(() => {
+    if (!shouldEnableKeyboardShortcuts || typeof document === "undefined") {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isActivePlayerKeyboardShortcutOwner(keyboardShortcutOwnerId)) {
+        return;
+      }
+
+      const action = getPlayerKeyboardShortcutAction(event);
+
+      if (shouldIgnorePlayerKeyboardShortcutEvent(event, action)) {
+        return;
+      }
+
+      let handled = false;
+
+      switch (action) {
+        case "togglePlayback":
+          handled = togglePlayback();
+          break;
+        case "previous":
+          if (!prevDisabled && onPrev) {
+            onPrev(getNavigationContext());
+            handled = true;
+          }
+          break;
+        case "next":
+          if (!nextDisabled && onNext) {
+            onNext(getNavigationContext());
+            handled = true;
+          }
+          break;
+        case "fullscreen":
+          if (onFullscreen) {
+            onFullscreen();
+            handled = true;
+          }
+          break;
+        case "subtitle":
+          if (onSubtitleToggle) {
+            onSubtitleToggle();
+            handled = true;
+          }
+          break;
+        case "interaction":
+          if (hasInteraction && onInteractionToggle) {
+            onInteractionToggle();
+            handled = true;
+          }
+          break;
+        default:
+          break;
+      }
+
+      if (!handled) {
+        return;
+      }
+
+      event.preventDefault();
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [
+    hasInteraction,
+    getNavigationContext,
+    keyboardShortcutOwnerId,
+    nextDisabled,
+    onFullscreen,
+    onInteractionToggle,
+    onNext,
+    onPrev,
+    onSubtitleToggle,
+    prevDisabled,
+    shouldEnableKeyboardShortcuts,
+    togglePlayback,
+  ]);
+
   useEffect(() => {
     onPlaybackTimeChange?.(playbackTimeMsRef.current);
   }, [onPlaybackTimeChange]);
 
   return (
-    <div className={cn("slide-player", className)} {...props}>
+    <div
+      {...props}
+      data-slide-player-shortcut-owner={keyboardShortcutOwnerId}
+      className={cn("slide-player", className)}
+      onFocusCapture={handleRootFocusCapture}
+      onPointerDown={handleRootPointerDown}
+    >
       <audio
         ref={audioRef}
         preload="auto"
@@ -1106,9 +1352,11 @@ const Player = ({
           <MobilePlayerSettingsSheet
             container={settingsPortalContainer}
             labels={{
+              closeSettings: playerTexts.closeSettingsLabel,
               fullscreen: playerTexts.fullscreenLabel,
               nonFullscreen: playerTexts.nonFullscreenLabel,
               screen: playerTexts.screenLabel,
+              screenMode: playerTexts.screenModeLabel,
               subtitle: playerTexts.subtitleLabel,
               subtitleToggle: playerTexts.subtitleToggleAriaLabel,
               title: playerTexts.settingsTitle,
@@ -1127,7 +1375,7 @@ const Player = ({
               <button
                 aria-expanded={isMobileMoreOpen}
                 aria-haspopup="dialog"
-                aria-label="More options"
+                aria-label={playerTexts.moreOptionsAriaLabel}
                 className="slide-player__action slide-player__action--mobile-more"
                 onClick={() => {
                   setIsMobileMoreOpen((prevOpen) => !prevOpen);
@@ -1139,14 +1387,23 @@ const Player = ({
                   strokeWidth={2.25}
                 />
               </button>
-              <button aria-label="Volume" className="hidden" type="button">
+              <button
+                aria-label={playerTexts.volumeAriaLabel}
+                className="hidden"
+                type="button"
+              >
                 <Volume2 className="slide-player__icon" strokeWidth={2.25} />
               </button>
               <button
                 aria-label={playerTexts.subtitleToggleAriaLabel}
+                aria-keyshortcuts="C"
                 aria-pressed={isSubtitleEnabled}
                 className="slide-player__action slide-player__action--subtitle"
                 onClick={onSubtitleToggle}
+                title={getShortcutTitle(
+                  playerTexts.subtitleToggleAriaLabel,
+                  PLAYER_SHORTCUT_LABELS.subtitle
+                )}
                 type="button"
               >
                 {isSubtitleEnabled ? (
@@ -1159,105 +1416,62 @@ const Player = ({
                 )}
               </button>
               <button
-                aria-label="Rewind"
+                aria-keyshortcuts="ArrowLeft"
+                aria-label={playerTexts.previousLabel}
                 className="slide-player__action slide-player__action--prev"
                 disabled={prevDisabled}
                 onClick={() => {
                   onPrev?.(getNavigationContext());
                 }}
+                title={getShortcutTitle(
+                  playerTexts.previousLabel,
+                  PLAYER_SHORTCUT_LABELS.previous
+                )}
                 type="button"
               >
                 <RotateCcw className="slide-player__icon" strokeWidth={2.25} />
               </button>
               <button
                 aria-label={toggleAriaLabel}
+                aria-keyshortcuts="Space"
                 className="slide-player__toggle slide-player__toggle--playback"
                 onClick={() => {
-                  if (useAutoAdvanceToggle) {
-                    const nextAutoAdvanceEnabled = !isAutoAdvanceEnabled;
-
-                    updatePlaybackPreference(nextAutoAdvanceEnabled);
-                    onAutoAdvanceToggle?.(nextAutoAdvanceEnabled);
-                    return;
-                  }
-
-                  const audioElement = audioRef.current;
-
-                  if (isPlaybackPaused || !audioElement || !currentAudio) {
-                    return;
-                  }
-
-                  if (waitingSegmentIndexRef.current !== null) {
-                    if (isPlaying) {
-                      updatePlaybackPreference(false);
-                      pendingAutoPlayRef.current = false;
-                      isPausedByUserRef.current = true;
-                      waitingSegmentIndexRef.current = null;
-                      isWaitingForSegmentRef.current = false;
-                      setIsPlaying(false);
-                      updateLoading(false);
-                      audioElement.pause();
-                      return;
-                    }
-
-                    updatePlaybackPreference(true);
-                    playbackAccessModeRef.current = "manual";
-                    isPausedByUserRef.current = false;
-                    pendingAutoPlayRef.current = true;
-                    updateLoading(true, "waitingForMoreAudio");
-                    return;
-                  }
-
-                  if (!audioElement.src && currentAudioSegments.length > 0) {
-                    updatePlaybackPreference(true);
-                    playbackAccessModeRef.current = "manual";
-                    isPausedByUserRef.current = false;
-                    startSegmentPlayback(
-                      Math.min(
-                        currentSegmentIndexRef.current,
-                        currentAudioSegments.length - 1
-                      ),
-                      "toggle"
-                    );
-                    return;
-                  }
-
-                  if (audioElement.paused) {
-                    updatePlaybackPreference(true);
-                    playbackAccessModeRef.current = "manual";
-                    isPausedByUserRef.current = false;
-                    pendingAutoPlayRef.current = true;
-                    tryPlayCurrentAudio("toggle-resume");
-                    return;
-                  }
-
-                  updatePlaybackPreference(false);
-                  pendingAutoPlayRef.current = false;
-                  isPausedByUserRef.current = true;
-                  audioElement.pause();
+                  togglePlayback();
                 }}
+                title={getShortcutTitle(
+                  toggleAriaLabel,
+                  PLAYER_SHORTCUT_LABELS.playback
+                )}
                 type="button"
               >
                 {isTogglePlaying ? <PauseIcon /> : <PlayIcon />}
               </button>
               <button
-                aria-label="Forward"
+                aria-keyshortcuts="ArrowRight"
+                aria-label={playerTexts.nextLabel}
                 className="slide-player__action slide-player__action--next"
                 disabled={nextDisabled}
                 onClick={() => {
                   onNext?.(getNavigationContext());
                 }}
+                title={getShortcutTitle(
+                  playerTexts.nextLabel,
+                  PLAYER_SHORTCUT_LABELS.next
+                )}
                 type="button"
               >
                 <RotateCw className="slide-player__icon" strokeWidth={2.25} />
               </button>
               {onFullscreen ? (
                 <button
-                  aria-label={
-                    isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
-                  }
+                  aria-label={fullscreenAriaLabel}
+                  aria-keyshortcuts="F"
                   className="slide-player__action slide-player__action--fullscreen"
                   onClick={onFullscreen}
+                  title={getShortcutTitle(
+                    fullscreenAriaLabel,
+                    PLAYER_SHORTCUT_LABELS.fullscreen
+                  )}
                   type="button"
                 >
                   {isFullscreen ? (
@@ -1284,13 +1498,18 @@ const Player = ({
                 </React.Fragment>
               ))}
               <button
-                aria-label="Notes"
+                aria-label={playerTexts.notesLabel}
+                aria-keyshortcuts="N"
                 className={cn(
                   "slide-player__action slide-player__action--notes",
                   isInteractionOpen && "slide-player__action--active"
                 )}
                 disabled={!hasInteraction}
                 onClick={onInteractionToggle}
+                title={getShortcutTitle(
+                  playerTexts.notesLabel,
+                  PLAYER_SHORTCUT_LABELS.notes
+                )}
                 type="button"
               >
                 <FilePenLine

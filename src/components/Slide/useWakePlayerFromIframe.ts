@@ -1,22 +1,34 @@
 import { useEffect, useRef } from "react";
 
+import {
+  getPlayerKeyboardShortcutAction,
+  shouldIgnorePlayerKeyboardShortcutEvent,
+} from "./utils/playerKeyboardShortcuts";
+
 type UseWakePlayerFromIframeParams = {
   sectionRef: React.RefObject<HTMLElement | null>;
   enabled: boolean;
+  keyboardShortcutsEnabled?: boolean;
   onWake: () => void;
 };
 
 const useWakePlayerFromIframe = ({
   sectionRef,
   enabled,
+  keyboardShortcutsEnabled = true,
   onWake,
 }: UseWakePlayerFromIframeParams) => {
   const enabledRef = useRef(enabled);
+  const keyboardShortcutsEnabledRef = useRef(keyboardShortcutsEnabled);
   const onWakeRef = useRef(onWake);
 
   useEffect(() => {
     enabledRef.current = enabled;
   }, [enabled]);
+
+  useEffect(() => {
+    keyboardShortcutsEnabledRef.current = keyboardShortcutsEnabled;
+  }, [keyboardShortcutsEnabled]);
 
   useEffect(() => {
     onWakeRef.current = onWake;
@@ -72,11 +84,52 @@ const useWakePlayerFromIframe = ({
         restorePlayerControls();
       };
 
+      const handleIframeDocumentKeyDown = (event: KeyboardEvent) => {
+        if (!enabledRef.current || !keyboardShortcutsEnabledRef.current) {
+          return;
+        }
+
+        const action = getPlayerKeyboardShortcutAction(event);
+
+        if (shouldIgnorePlayerKeyboardShortcutEvent(event, action)) {
+          return;
+        }
+
+        restorePlayerControls();
+
+        const hostWindow = sectionElement.ownerDocument.defaultView;
+
+        if (!hostWindow) {
+          return;
+        }
+
+        const hostKeyboardEvent = new hostWindow.KeyboardEvent("keydown", {
+          altKey: event.altKey,
+          bubbles: true,
+          cancelable: true,
+          code: event.code,
+          composed: true,
+          ctrlKey: event.ctrlKey,
+          key: event.key,
+          location: event.location,
+          metaKey: event.metaKey,
+          repeat: event.repeat,
+          shiftKey: event.shiftKey,
+        });
+
+        sectionElement.ownerDocument.dispatchEvent(hostKeyboardEvent);
+
+        if (hostKeyboardEvent.defaultPrevented) {
+          event.preventDefault();
+        }
+      };
+
       iframeDocument.addEventListener(
         "click",
         handleIframeDocumentInteraction,
         true
       );
+      iframeDocument.addEventListener("keydown", handleIframeDocumentKeyDown);
 
       cleanupMap.set(iframeElement, {
         cleanup: () => {
@@ -84,6 +137,10 @@ const useWakePlayerFromIframe = ({
             "click",
             handleIframeDocumentInteraction,
             true
+          );
+          iframeDocument.removeEventListener(
+            "keydown",
+            handleIframeDocumentKeyDown
           );
           iframeElement.removeEventListener("load", handleLoad);
         },

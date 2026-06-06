@@ -2,6 +2,7 @@ import React, {
   memo,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -36,6 +37,8 @@ import type { SlidePlayerLoadingReason } from "./Player";
 import type { Element } from "./types";
 import useSlide from "./useSlide";
 import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
+import { PlayerKeyboardShortcutContext } from "./utils/playerKeyboardShortcutContext";
+import { activatePlayerKeyboardShortcutOwner } from "./utils/playerKeyboardShortcuts";
 import {
   DEFAULT_MOBILE_VIEW_MODE,
   resolveMobileViewModeState,
@@ -205,6 +208,19 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   onPlayerVisibilityChange?: (visible: boolean) => void;
   onMobileViewModeChange?: (viewMode: MobileViewMode) => void;
   onStepChange?: (element: Element | undefined, index: number) => void;
+  /**
+   * Enables keyboard shortcuts for existing player actions.
+   *
+   * Defaults to `true`. The active slide responds after users click, touch, or
+   * focus the slide/player surface; ignored targets include form controls and
+   * interaction overlays.
+   *
+   * @example
+   * ```tsx
+   * <Slide elementList={slides} enableKeyboardShortcuts={false} />
+   * ```
+   */
+  enableKeyboardShortcuts?: boolean;
   enableIframeScaling?: boolean;
   disableLoadingOverlay?: boolean;
 }
@@ -228,12 +244,15 @@ const Slide: React.FC<SlideProps> = ({
   onPlayerVisibilityChange,
   onMobileViewModeChange,
   onStepChange,
+  enableKeyboardShortcuts = true,
   enableIframeScaling = true,
   disableLoadingOverlay = false,
   className,
   onPointerDown,
+  onFocusCapture,
   ...props
 }) => {
+  const keyboardShortcutOwnerId = useId();
   const sectionRef = useRef<HTMLElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const stageLayerRef = useRef<HTMLDivElement | null>(null);
@@ -282,6 +301,20 @@ const Slide: React.FC<SlideProps> = ({
     (slideElementList.length > 0 ||
       audioList.length > 0 ||
       Boolean(currentInteractionElement));
+  const keyboardShortcutContextValue = useMemo(
+    () => ({
+      enabled: enableKeyboardShortcuts,
+      ownerId: keyboardShortcutOwnerId,
+    }),
+    [enableKeyboardShortcuts, keyboardShortcutOwnerId]
+  );
+  const activateKeyboardShortcutOwner = useCallback(() => {
+    if (!enableKeyboardShortcuts || !shouldRenderPlayer) {
+      return;
+    }
+
+    activatePlayerKeyboardShortcutOwner(keyboardShortcutOwnerId);
+  }, [enableKeyboardShortcuts, keyboardShortcutOwnerId, shouldRenderPlayer]);
   const currentAudioSequenceKeys = useMemo(
     () =>
       currentAudioSequenceIndexes
@@ -859,6 +892,7 @@ const Slide: React.FC<SlideProps> = ({
       }
 
       // Restore player controls on explicit click/tap without waking on scroll start.
+      activateKeyboardShortcutOwner();
       setHasPlayerInteracted(true);
       showPlayerControls(true);
     };
@@ -868,12 +902,14 @@ const Slide: React.FC<SlideProps> = ({
     return () => {
       window.removeEventListener("message", handleSandboxInteraction);
     };
-  }, [shouldRenderPlayer, showPlayerControls]);
+  }, [activateKeyboardShortcutOwner, shouldRenderPlayer, showPlayerControls]);
 
   useWakePlayerFromIframe({
     sectionRef,
     enabled: shouldRenderPlayer,
+    keyboardShortcutsEnabled: enableKeyboardShortcuts,
     onWake: () => {
+      activateKeyboardShortcutOwner();
       setHasPlayerInteracted(true);
       showPlayerControls(true);
     },
@@ -1501,9 +1537,18 @@ const Slide: React.FC<SlideProps> = ({
 
   const handleSurfacePointerDown = useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
+      activateKeyboardShortcutOwner();
       onPointerDown?.(event);
     },
-    [onPointerDown]
+    [activateKeyboardShortcutOwner, onPointerDown]
+  );
+
+  const handleSurfaceFocusCapture = useCallback(
+    (event: React.FocusEvent<HTMLElement>) => {
+      activateKeyboardShortcutOwner();
+      onFocusCapture?.(event);
+    },
+    [activateKeyboardShortcutOwner, onFocusCapture]
   );
 
   const handleSurfaceClick = useCallback(() => {
@@ -1596,6 +1641,7 @@ const Slide: React.FC<SlideProps> = ({
         className
       )}
       onClick={handleSurfaceClick}
+      onFocusCapture={handleSurfaceFocusCapture}
       onPointerDown={handleSurfacePointerDown}
       {...props}
     >
@@ -1699,6 +1745,7 @@ const Slide: React.FC<SlideProps> = ({
         {shouldShowInteractionOverlay ? (
           <div
             ref={interactionOverlayRef}
+            data-player-keyboard-shortcuts-ignore="true"
             className={cn(
               "slide-interaction-overlay",
               playerVisible && shouldRenderPlayer
@@ -1729,48 +1776,53 @@ const Slide: React.FC<SlideProps> = ({
         ) : null}
 
         {shouldRenderPlayer ? (
-          <Player
-            audioList={audioList}
-            className={cn(
-              "absolute left-1/2 z-[2] -translate-x-1/2",
-              isDesktopBrowserFullscreen ? "bottom-3" : "-bottom-3",
-              playerClassName,
-              !playerVisible && "pointer-events-none opacity-0"
-            )}
-            currentAudioIndex={currentAudioIndex}
-            defaultPlaying={isPlaybackRequested}
-            isPlaybackPaused={shouldPausePlaybackForCustomAction}
-            isAutoAdvanceEnabled={isAutoAdvanceEnabled}
-            hasInteraction={Boolean(activeInteractionElement)}
-            isInteractionOpen={isInteractionOverlayOpen}
-            isSubtitleEnabled={isSubtitleEnabled}
-            onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
-            onLoadingChange={handlePlayerLoadingChange}
-            onPlaybackPreferenceChange={handlePlaybackPreferenceChange}
-            onPlaybackStarted={() => {
-              setHasCurrentAudioPlaybackStarted(true);
-            }}
-            onPlaybackTimeChange={playbackTimeStore.setTime}
-            onSubtitleToggle={() => {
-              setIsSubtitleEnabled((previousEnabled) => !previousEnabled);
-            }}
-            nextDisabled={!canGoNext}
-            onEnded={handlePlayerEnded}
-            onFullscreen={handleFullscreen}
-            isFullscreen={isBrowserFullscreen}
-            mobileViewMode={effectiveMobileViewMode}
-            settingsPortalContainer={viewportRef.current}
-            onMobileViewModeChange={handleMobileViewModeSelect}
-            onInteractionToggle={handleInteractionToggle}
-            onNext={handleNext}
-            onPrev={handlePrev}
-            prevDisabled={!canGoPrev}
-            showControls={playerVisible}
-            texts={playerTexts}
-            customActionContext={playerCustomActionContext}
-            customActions={playerCustomActions}
-            useAutoAdvanceToggle={shouldUseSilentStepAutoAdvanceToggle}
-          />
+          <PlayerKeyboardShortcutContext.Provider
+            value={keyboardShortcutContextValue}
+          >
+            <Player
+              audioList={audioList}
+              className={cn(
+                "absolute left-1/2 z-[2] -translate-x-1/2",
+                isDesktopBrowserFullscreen ? "bottom-3" : "-bottom-3",
+                playerClassName,
+                !playerVisible && "pointer-events-none opacity-0"
+              )}
+              currentAudioIndex={currentAudioIndex}
+              defaultPlaying={isPlaybackRequested}
+              enableKeyboardShortcuts={enableKeyboardShortcuts}
+              isPlaybackPaused={shouldPausePlaybackForCustomAction}
+              isAutoAdvanceEnabled={isAutoAdvanceEnabled}
+              hasInteraction={Boolean(activeInteractionElement)}
+              isInteractionOpen={isInteractionOverlayOpen}
+              isSubtitleEnabled={isSubtitleEnabled}
+              onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
+              onLoadingChange={handlePlayerLoadingChange}
+              onPlaybackStarted={() => {
+                setHasCurrentAudioPlaybackStarted(true);
+              }}
+              onPlaybackPreferenceChange={handlePlaybackPreferenceChange}
+              onPlaybackTimeChange={playbackTimeStore.setTime}
+              onSubtitleToggle={() => {
+                setIsSubtitleEnabled((previousEnabled) => !previousEnabled);
+              }}
+              nextDisabled={!canGoNext}
+              onEnded={handlePlayerEnded}
+              onFullscreen={handleFullscreen}
+              isFullscreen={isBrowserFullscreen}
+              mobileViewMode={effectiveMobileViewMode}
+              settingsPortalContainer={viewportRef.current}
+              onMobileViewModeChange={handleMobileViewModeSelect}
+              onInteractionToggle={handleInteractionToggle}
+              onNext={handleNext}
+              onPrev={handlePrev}
+              prevDisabled={!canGoPrev}
+              showControls={playerVisible}
+              texts={playerTexts}
+              customActionContext={playerCustomActionContext}
+              customActions={playerCustomActions}
+              useAutoAdvanceToggle={shouldUseSilentStepAutoAdvanceToggle}
+            />
+          </PlayerKeyboardShortcutContext.Provider>
         ) : null}
       </div>
     </section>

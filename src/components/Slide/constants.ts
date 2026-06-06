@@ -1,9 +1,22 @@
 export const DEFAULT_FULLSCREEN_HINT_DURATION_MS = 3000;
 
 export const DEFAULT_SLIDE_PLAYER_TEXTS = {
+  closeSettingsLabel: "Close settings",
+  enterFullscreenLabel: "Enter fullscreen",
+  exitFullscreenLabel: "Exit fullscreen",
+  moreOptionsAriaLabel: "More options",
+  nextLabel: "Forward",
+  notesLabel: "Notes",
+  pauseAutoplayLabel: "Pause autoplay",
+  pauseLabel: "Pause",
+  playAutoplayLabel: "Play autoplay",
+  playLabel: "Play",
+  previousLabel: "Rewind",
+  screenModeLabel: "Screen mode",
   settingsTitle: "Settings",
   subtitleLabel: "Subtitles",
   subtitleToggleAriaLabel: "Toggle subtitles",
+  volumeAriaLabel: "Volume",
   screenLabel: "Screen",
   nonFullscreenLabel: "Non-fullscreen",
   fullscreenLabel: "Fullscreen",

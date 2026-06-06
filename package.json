@@ -13,6 +13,7 @@
     "@codemirror/lang-markdown": "^6.3.3",
     "@codemirror/language": "^6.11.3",
     "@codemirror/language-data": "^6.5.1",
+    "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.38.1",
     "@fontsource/inter": "^5.2.8",
     "@microsoft/fetch-event-source": "^2.0.1",
@@ -173,7 +174,7 @@
       ]
     }
   },
-  "version": "0.1.124",
+  "version": "0.1.125",
   "type": "module",
   "exports": {
     ".": {

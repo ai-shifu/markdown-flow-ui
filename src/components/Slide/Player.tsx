@@ -48,6 +48,7 @@ import {
 } from "./utils/playbackSource";
 import { shouldKeepPlayingAfterNavigation } from "./utils/playbackPreference";
 import { toPlayerCustomActionList } from "./utils/playerCustomActions";
+import { suppressPlayerControlsWakeAfterNavigation } from "./utils/playerNavigationContext";
 import "./player.css";
 
 const audioPreloadElementCache = new Map<string, HTMLAudioElement>();
@@ -90,6 +91,8 @@ export type SlidePlayerLoadingReason = "loadingAudio" | "waitingForMoreAudio";
 
 export interface SlidePlayerNavigationContext {
   shouldContinuePlayback: boolean;
+  /** Set false when navigation should not reveal hidden player controls. */
+  shouldWakeControls?: boolean;
 }
 
 const preloadAudioUrl = (url?: string) => {
@@ -873,10 +876,10 @@ const Player = ({
     if (isPlaybackPaused) {
       wasPlayingBeforeExternalPauseRef.current = Boolean(
         currentAudioRef.current &&
-        !isPausedByUserRef.current &&
-        (!audioElement.paused ||
-          pendingAutoPlayRef.current ||
-          waitingSegmentIndexRef.current !== null)
+          !isPausedByUserRef.current &&
+          (!audioElement.paused ||
+            pendingAutoPlayRef.current ||
+            waitingSegmentIndexRef.current !== null)
       );
 
       pendingAutoPlayRef.current = false;
@@ -1326,7 +1329,9 @@ const Player = ({
         }
 
         if (!nextDisabled) {
-          onNext(getNavigationContext());
+          onNext(
+            suppressPlayerControlsWakeAfterNavigation(getNavigationContext())
+          );
         }
 
         return true;
@@ -1337,7 +1342,9 @@ const Player = ({
         }
 
         if (!prevDisabled) {
-          onPrev(getNavigationContext());
+          onPrev(
+            suppressPlayerControlsWakeAfterNavigation(getNavigationContext())
+          );
         }
 
         return true;

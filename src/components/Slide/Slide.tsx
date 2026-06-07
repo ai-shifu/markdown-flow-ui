@@ -45,6 +45,7 @@ import {
   type MobileViewMode,
 } from "./utils/mobileScreenMode";
 import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
+import { shouldWakePlayerControlsAfterNavigation } from "./utils/playerNavigationContext";
 import { shouldAutoAdvanceIntoAppendedMarker } from "./utils/appendedMarkerAdvance";
 import { getPlaybackSequenceTransition } from "./utils/playbackSequence";
 import {
@@ -124,10 +125,11 @@ interface InteractionOverlayCardProps {
   readonly?: boolean;
 }
 
-export interface SlideInteractionTexts extends Pick<
-  ContentRenderProps,
-  "confirmButtonText" | "copyButtonText" | "copiedButtonText"
-> {
+export interface SlideInteractionTexts
+  extends Pick<
+    ContentRenderProps,
+    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+  > {
   title?: string;
 }
 
@@ -713,7 +715,7 @@ const Slide: React.FC<SlideProps> = ({
 
   const hasResolvedCurrentInteraction = Boolean(
     currentInteractionElement?.readonly ||
-    currentInteractionElement?.user_input?.trim()
+      currentInteractionElement?.user_input?.trim()
   );
 
   const shouldBlockPlaybackForInteraction =
@@ -908,6 +910,7 @@ const Slide: React.FC<SlideProps> = ({
     sectionRef,
     enabled: shouldRenderPlayer,
     keyboardShortcutsEnabled: enableKeyboardShortcuts,
+    onKeyboardShortcut: activateKeyboardShortcutOwner,
     onWake: () => {
       activateKeyboardShortcutOwner();
       setHasPlayerInteracted(true);
@@ -1384,9 +1387,11 @@ const Slide: React.FC<SlideProps> = ({
       syncPlaybackPreferenceBeforeNavigation(context);
       shouldScrollToBottomRef.current = true;
       pendingInteractionOverlayStepIndexRef.current = null;
-      setHasPlayerInteracted(true);
       setIsAudioLoadingVisible(false);
-      showPlayerControls(true);
+      if (shouldWakePlayerControlsAfterNavigation(context)) {
+        setHasPlayerInteracted(true);
+        showPlayerControls(true);
+      }
       resetAudioSequence();
       goPrev();
     },
@@ -1403,9 +1408,11 @@ const Slide: React.FC<SlideProps> = ({
       syncPlaybackPreferenceBeforeNavigation(context);
       shouldScrollToBottomRef.current = true;
       pendingInteractionOverlayStepIndexRef.current = null;
-      setHasPlayerInteracted(true);
       setIsAudioLoadingVisible(false);
-      showPlayerControls(true);
+      if (shouldWakePlayerControlsAfterNavigation(context)) {
+        setHasPlayerInteracted(true);
+        showPlayerControls(true);
+      }
       resetAudioSequence();
       goNext();
     },

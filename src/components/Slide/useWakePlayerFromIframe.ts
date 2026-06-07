@@ -9,6 +9,7 @@ type UseWakePlayerFromIframeParams = {
   sectionRef: React.RefObject<HTMLElement | null>;
   enabled: boolean;
   keyboardShortcutsEnabled?: boolean;
+  onKeyboardShortcut?: () => void;
   onWake: () => void;
 };
 
@@ -19,6 +20,7 @@ type UseWakePlayerFromIframeParams = {
  * @param params.sectionRef - Section element used to scope iframe wake events and host shortcut dispatch.
  * @param params.enabled - Enables or disables iframe wake handling.
  * @param params.keyboardShortcutsEnabled - Enables or disables iframe keyboard shortcut forwarding. Defaults to true.
+ * @param params.onKeyboardShortcut - Callback invoked before iframe keyboard shortcuts are forwarded.
  * @param params.onWake - Callback invoked when iframe interaction should restore player controls.
  * @returns void
  */
@@ -26,10 +28,12 @@ const useWakePlayerFromIframe = ({
   sectionRef,
   enabled,
   keyboardShortcutsEnabled = true,
+  onKeyboardShortcut,
   onWake,
 }: UseWakePlayerFromIframeParams) => {
   const enabledRef = useRef(enabled);
   const keyboardShortcutsEnabledRef = useRef(keyboardShortcutsEnabled);
+  const onKeyboardShortcutRef = useRef(onKeyboardShortcut);
   const onWakeRef = useRef(onWake);
 
   useEffect(() => {
@@ -39,6 +43,10 @@ const useWakePlayerFromIframe = ({
   useEffect(() => {
     keyboardShortcutsEnabledRef.current = keyboardShortcutsEnabled;
   }, [keyboardShortcutsEnabled]);
+
+  useEffect(() => {
+    onKeyboardShortcutRef.current = onKeyboardShortcut;
+  }, [onKeyboardShortcut]);
 
   useEffect(() => {
     onWakeRef.current = onWake;
@@ -105,7 +113,7 @@ const useWakePlayerFromIframe = ({
           return;
         }
 
-        restorePlayerControls();
+        onKeyboardShortcutRef.current?.();
 
         const hostWindow = sectionElement.ownerDocument.defaultView;
 

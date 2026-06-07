@@ -45,6 +45,7 @@ import {
   type MobileViewMode,
 } from "./utils/mobileScreenMode";
 import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
+import { shouldWakePlayerControlsAfterNavigation } from "./utils/playerNavigationContext";
 import { shouldAutoAdvanceIntoAppendedMarker } from "./utils/appendedMarkerAdvance";
 import { getPlaybackSequenceTransition } from "./utils/playbackSequence";
 import {
@@ -908,6 +909,7 @@ const Slide: React.FC<SlideProps> = ({
     sectionRef,
     enabled: shouldRenderPlayer,
     keyboardShortcutsEnabled: enableKeyboardShortcuts,
+    onKeyboardShortcut: activateKeyboardShortcutOwner,
     onWake: () => {
       activateKeyboardShortcutOwner();
       setHasPlayerInteracted(true);
@@ -1384,9 +1386,11 @@ const Slide: React.FC<SlideProps> = ({
       syncPlaybackPreferenceBeforeNavigation(context);
       shouldScrollToBottomRef.current = true;
       pendingInteractionOverlayStepIndexRef.current = null;
-      setHasPlayerInteracted(true);
       setIsAudioLoadingVisible(false);
-      showPlayerControls(true);
+      if (shouldWakePlayerControlsAfterNavigation(context)) {
+        setHasPlayerInteracted(true);
+        showPlayerControls(true);
+      }
       resetAudioSequence();
       goPrev();
     },
@@ -1403,9 +1407,11 @@ const Slide: React.FC<SlideProps> = ({
       syncPlaybackPreferenceBeforeNavigation(context);
       shouldScrollToBottomRef.current = true;
       pendingInteractionOverlayStepIndexRef.current = null;
-      setHasPlayerInteracted(true);
       setIsAudioLoadingVisible(false);
-      showPlayerControls(true);
+      if (shouldWakePlayerControlsAfterNavigation(context)) {
+        setHasPlayerInteracted(true);
+        showPlayerControls(true);
+      }
       resetAudioSequence();
       goNext();
     },

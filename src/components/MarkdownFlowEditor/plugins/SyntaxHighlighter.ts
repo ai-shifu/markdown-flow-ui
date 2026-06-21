@@ -58,29 +58,41 @@ function collectSingleLineFixedOutputRanges(
   commentRanges: SyntaxHighlightRange[]
 ): SyntaxHighlightRange[] {
   const ranges: SyntaxHighlightRange[] = [];
+  let commentIndex = 0;
 
-  const isInsideComment = (index: number) =>
-    commentRanges.some((range) => index >= range.from && index < range.to);
+  const isInsideComment = (index: number) => {
+    while (
+      commentIndex < commentRanges.length &&
+      commentRanges[commentIndex].to <= index
+    ) {
+      commentIndex++;
+    }
+
+    const range = commentRanges[commentIndex];
+    return !!range && index >= range.from && index < range.to;
+  };
 
   let lineStart = 0;
   while (lineStart <= docText.length) {
     const newlineIndex = docText.indexOf("\n", lineStart);
     const lineEnd = newlineIndex === -1 ? docText.length : newlineIndex;
+    const lineText = docText.slice(lineStart, lineEnd);
     const markerPositions: number[] = [];
-    let searchFrom = lineStart;
+    let searchFrom = 0;
 
-    while (searchFrom < lineEnd) {
-      const markerIndex = docText.indexOf("===", searchFrom);
-      if (markerIndex === -1 || markerIndex >= lineEnd) {
+    while (searchFrom < lineText.length) {
+      const markerOffset = lineText.indexOf("===", searchFrom);
+      if (markerOffset === -1) {
         break;
       }
 
+      const markerIndex = lineStart + markerOffset;
       const isNegated = markerIndex > 0 && docText[markerIndex - 1] === "!";
       if (!isNegated && !isInsideComment(markerIndex)) {
         markerPositions.push(markerIndex);
       }
 
-      searchFrom = markerIndex + 3;
+      searchFrom = markerOffset + 3;
     }
 
     for (let i = 0; i + 1 < markerPositions.length; i += 2) {
@@ -162,7 +174,6 @@ export function collectSyntaxHighlightRanges(
   const matches: SyntaxHighlightRange[] = [];
   const occupied: { from: number; to: number }[] = [];
 
-  commentRegex.lastIndex = 0;
   controlBlockRegex.lastIndex = 0;
 
   // Prevent overlapping decorations so styling stays deterministic
@@ -198,7 +209,6 @@ export function collectSyntaxHighlightRanges(
   }
 
   // 2. Control Blocks
-  broadVariableRegex.lastIndex = 0;
   while ((match = controlBlockRegex.exec(docText)) !== null) {
     const fullStart = match.index;
     const fullEnd = match.index + match[0].length;

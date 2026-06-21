@@ -94,13 +94,12 @@ function collectCommentRanges(docText: string): SyntaxHighlightRange[] {
   return ranges;
 }
 
-function rangesOverlap(
-  first: SyntaxHighlightRange,
-  second: SyntaxHighlightRange
-) {
-  return !(first.to <= second.from || first.from >= second.to);
-}
-
+/**
+ * Collects non-overlapping fixed-output and comment wrapper ranges.
+ *
+ * @param docText - Document text to scan.
+ * @returns Outer syntax highlight ranges sorted by document position.
+ */
 export function collectOuterBlockRanges(
   docText: string
 ): SyntaxHighlightRange[] {
@@ -116,13 +115,8 @@ export function collectOuterBlockRanges(
   const outerRanges: SyntaxHighlightRange[] = [];
 
   for (const range of blockRanges) {
-    const isNestedOrOverlapping = outerRanges.some((outerRange) => {
-      const startsInsideOuter =
-        range.from >= outerRange.from && range.from < outerRange.to;
-      return startsInsideOuter || rangesOverlap(range, outerRange);
-    });
-
-    if (!isNestedOrOverlapping) {
+    const lastOuter = outerRanges[outerRanges.length - 1];
+    if (!lastOuter || range.from >= lastOuter.to) {
       outerRanges.push(range);
     }
   }
@@ -130,6 +124,13 @@ export function collectOuterBlockRanges(
   return outerRanges;
 }
 
+/**
+ * Collects all custom syntax highlight ranges for editor decorations.
+ *
+ * @param docText - Document text to scan.
+ * @param isCursorInside - Returns true when the current cursor is inside a range.
+ * @returns Non-overlapping syntax highlight ranges sorted by document position.
+ */
 export function collectSyntaxHighlightRanges(
   docText: string,
   isCursorInside: (from: number, to: number) => boolean = () => false

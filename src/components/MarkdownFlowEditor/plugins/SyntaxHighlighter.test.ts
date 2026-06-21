@@ -83,4 +83,14 @@ describe("collectSyntaxHighlightRanges", () => {
     expect(fixedTexts).toEqual([docText]);
     expect(commentTexts).toEqual([]);
   });
+
+  it("ignores fixed output markers inside inner comments", () => {
+    const docText = "=== <!--- ignored === marker ---> ===";
+
+    const fixedTexts = rangeTextsByClass(docText, "syntax-fixed");
+    const commentTexts = rangeTextsByClass(docText, "syntax-comment");
+
+    expect(fixedTexts).toEqual([docText]);
+    expect(commentTexts).toEqual([]);
+  });
 });

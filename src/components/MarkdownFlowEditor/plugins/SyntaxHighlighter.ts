@@ -10,7 +10,6 @@ import { createVariableExpressionRegexp } from "../utils";
 
 const broadVariableRegex = /\{\{.*?\}\}/g;
 const commentRegex = /<!--[\s\S]*?-->/g;
-const fixedOutputRegex = /===.*?===/g;
 const controlBlockRegex = /\?\[(.*?)\]/g;
 
 export interface SyntaxHighlightRange {
@@ -55,24 +54,48 @@ function collectMultilineFixedOutputRanges(
 }
 
 function collectSingleLineFixedOutputRanges(
-  docText: string
+  docText: string,
+  commentRanges: SyntaxHighlightRange[]
 ): SyntaxHighlightRange[] {
   const ranges: SyntaxHighlightRange[] = [];
-  let match;
 
-  fixedOutputRegex.lastIndex = 0;
-  while ((match = fixedOutputRegex.exec(docText)) !== null) {
-    const startIndex = match.index;
-    const isNegated = startIndex > 0 && docText[startIndex - 1] === "!";
-    if (isNegated) {
-      continue;
+  const isInsideComment = (index: number) =>
+    commentRanges.some((range) => index >= range.from && index < range.to);
+
+  let lineStart = 0;
+  while (lineStart <= docText.length) {
+    const newlineIndex = docText.indexOf("\n", lineStart);
+    const lineEnd = newlineIndex === -1 ? docText.length : newlineIndex;
+    const markerPositions: number[] = [];
+    let searchFrom = lineStart;
+
+    while (searchFrom < lineEnd) {
+      const markerIndex = docText.indexOf("===", searchFrom);
+      if (markerIndex === -1 || markerIndex >= lineEnd) {
+        break;
+      }
+
+      const isNegated = markerIndex > 0 && docText[markerIndex - 1] === "!";
+      if (!isNegated && !isInsideComment(markerIndex)) {
+        markerPositions.push(markerIndex);
+      }
+
+      searchFrom = markerIndex + 3;
     }
 
-    ranges.push({
-      from: startIndex,
-      to: startIndex + match[0].length,
-      className: "syntax-fixed",
-    });
+    for (let i = 0; i + 1 < markerPositions.length; i += 2) {
+      ranges.push({
+        from: markerPositions[i],
+        to: markerPositions[i + 1] + 3,
+        className: "syntax-fixed",
+      });
+    }
+
+    if (newlineIndex === -1) {
+      break;
+    }
+
+    lineStart = newlineIndex + 1;
   }
 
   return ranges;
@@ -103,10 +126,11 @@ function collectCommentRanges(docText: string): SyntaxHighlightRange[] {
 export function collectOuterBlockRanges(
   docText: string
 ): SyntaxHighlightRange[] {
+  const commentRanges = collectCommentRanges(docText);
   const blockRanges = [
     ...collectMultilineFixedOutputRanges(docText),
-    ...collectSingleLineFixedOutputRanges(docText),
-    ...collectCommentRanges(docText),
+    ...collectSingleLineFixedOutputRanges(docText, commentRanges),
+    ...commentRanges,
   ].sort((a, b) => {
     if (a.from !== b.from) return a.from - b.from;
     return b.to - a.to;
@@ -139,7 +163,6 @@ export function collectSyntaxHighlightRanges(
   const occupied: { from: number; to: number }[] = [];
 
   commentRegex.lastIndex = 0;
-  fixedOutputRegex.lastIndex = 0;
   controlBlockRegex.lastIndex = 0;
 
   // Prevent overlapping decorations so styling stays deterministic

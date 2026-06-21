@@ -13,11 +13,128 @@ const commentRegex = /<!--[\s\S]*?-->/g;
 const fixedOutputRegex = /===.*?===/g;
 const controlBlockRegex = /\?\[(.*?)\]/g;
 
-function buildDecorations(view: EditorView): DecorationSet {
-  const builder = new RangeSetBuilder<Decoration>();
-  const docText = view.state.doc.toString();
+export interface SyntaxHighlightRange {
+  from: number;
+  to: number;
+  className: string;
+}
 
-  const matches: { from: number; to: number; className: string }[] = [];
+function collectMultilineFixedOutputRanges(
+  docText: string
+): SyntaxHighlightRange[] {
+  const ranges: SyntaxHighlightRange[] = [];
+  let pendingStart: number | null = null;
+  let lineStart = 0;
+
+  while (lineStart <= docText.length) {
+    const newlineIndex = docText.indexOf("\n", lineStart);
+    const lineEnd = newlineIndex === -1 ? docText.length : newlineIndex;
+    const lineText = docText.slice(lineStart, lineEnd);
+
+    if (lineText.trim() === "!===") {
+      if (pendingStart === null) {
+        pendingStart = lineStart;
+      } else {
+        ranges.push({
+          from: pendingStart,
+          to: lineEnd,
+          className: "syntax-fixed",
+        });
+        pendingStart = null;
+      }
+    }
+
+    if (newlineIndex === -1) {
+      break;
+    }
+
+    lineStart = newlineIndex + 1;
+  }
+
+  return ranges;
+}
+
+function collectSingleLineFixedOutputRanges(
+  docText: string
+): SyntaxHighlightRange[] {
+  const ranges: SyntaxHighlightRange[] = [];
+  let match;
+
+  fixedOutputRegex.lastIndex = 0;
+  while ((match = fixedOutputRegex.exec(docText)) !== null) {
+    const startIndex = match.index;
+    const isNegated = startIndex > 0 && docText[startIndex - 1] === "!";
+    if (isNegated) {
+      continue;
+    }
+
+    ranges.push({
+      from: startIndex,
+      to: startIndex + match[0].length,
+      className: "syntax-fixed",
+    });
+  }
+
+  return ranges;
+}
+
+function collectCommentRanges(docText: string): SyntaxHighlightRange[] {
+  const ranges: SyntaxHighlightRange[] = [];
+  let match;
+
+  commentRegex.lastIndex = 0;
+  while ((match = commentRegex.exec(docText)) !== null) {
+    ranges.push({
+      from: match.index,
+      to: match.index + match[0].length,
+      className: "syntax-comment",
+    });
+  }
+
+  return ranges;
+}
+
+function rangesOverlap(
+  first: SyntaxHighlightRange,
+  second: SyntaxHighlightRange
+) {
+  return !(first.to <= second.from || first.from >= second.to);
+}
+
+export function collectOuterBlockRanges(
+  docText: string
+): SyntaxHighlightRange[] {
+  const blockRanges = [
+    ...collectMultilineFixedOutputRanges(docText),
+    ...collectSingleLineFixedOutputRanges(docText),
+    ...collectCommentRanges(docText),
+  ].sort((a, b) => {
+    if (a.from !== b.from) return a.from - b.from;
+    return b.to - a.to;
+  });
+
+  const outerRanges: SyntaxHighlightRange[] = [];
+
+  for (const range of blockRanges) {
+    const isNestedOrOverlapping = outerRanges.some((outerRange) => {
+      const startsInsideOuter =
+        range.from >= outerRange.from && range.from < outerRange.to;
+      return startsInsideOuter || rangesOverlap(range, outerRange);
+    });
+
+    if (!isNestedOrOverlapping) {
+      outerRanges.push(range);
+    }
+  }
+
+  return outerRanges;
+}
+
+export function collectSyntaxHighlightRanges(
+  docText: string,
+  isCursorInside: (from: number, to: number) => boolean = () => false
+): SyntaxHighlightRange[] {
+  const matches: SyntaxHighlightRange[] = [];
   const occupied: { from: number; to: number }[] = [];
 
   commentRegex.lastIndex = 0;
@@ -27,12 +144,6 @@ function buildDecorations(view: EditorView): DecorationSet {
   // Prevent overlapping decorations so styling stays deterministic
   const isOverlapping = (from: number, to: number) =>
     occupied.some((range) => !(to <= range.from || from >= range.to));
-
-  const isCursorInside = (from: number, to: number) => {
-    return view.state.selection.ranges.some((range) => {
-      return range.from >= from && range.to <= to;
-    });
-  };
 
   const addMatch = (from: number, to: number, className: string) => {
     if (from >= to) return false;
@@ -55,41 +166,14 @@ function buildDecorations(view: EditorView): DecorationSet {
     };
   };
 
-  // 1. Comments
   let match;
-  while ((match = commentRegex.exec(docText)) !== null) {
-    addMatch(match.index, match.index + match[0].length, "syntax-comment");
+
+  // 1. Outer block ranges win over any syntax inside them.
+  for (const range of collectOuterBlockRanges(docText)) {
+    addMatch(range.from, range.to, range.className);
   }
 
-  // 2. Fixed Output (Multiline) - only when both markers are alone on their lines
-  const lineCount = view.state.doc.lines;
-  let pendingStart: { from: number; line: number } | null = null;
-  for (let i = 1; i <= lineCount; i++) {
-    const lineInfo = view.state.doc.line(i);
-    const trimmed = lineInfo.text.trim();
-    if (trimmed === "!===") {
-      if (!pendingStart) {
-        pendingStart = { from: lineInfo.from, line: i };
-        continue;
-      }
-      const startFrom = pendingStart.from;
-      const endTo = lineInfo.to;
-      addMatch(startFrom, endTo, "syntax-fixed");
-      pendingStart = null;
-    }
-  }
-
-  // 3. Fixed Output (Single line, skip "!===...!===")
-  while ((match = fixedOutputRegex.exec(docText)) !== null) {
-    const startIndex = match.index;
-    const isNegated = startIndex > 0 && docText[startIndex - 1] === "!";
-    if (isNegated) {
-      continue;
-    }
-    addMatch(startIndex, startIndex + match[0].length, "syntax-fixed");
-  }
-
-  // 4. Control Blocks
+  // 2. Control Blocks
   broadVariableRegex.lastIndex = 0;
   while ((match = controlBlockRegex.exec(docText)) !== null) {
     const fullStart = match.index;
@@ -246,7 +330,7 @@ function buildDecorations(view: EditorView): DecorationSet {
     }
   }
 
-  // 5. Variables (only if not already decorated; invalid ones stay default outside control blocks)
+  // 3. Variables (only if not already decorated; invalid ones stay default outside control blocks)
   broadVariableRegex.lastIndex = 0;
   while ((match = broadVariableRegex.exec(docText)) !== null) {
     const text = match[0];
@@ -267,6 +351,18 @@ function buildDecorations(view: EditorView): DecorationSet {
   matches.sort((a, b) => {
     if (a.from !== b.from) return a.from - b.from;
     return b.to - a.to;
+  });
+
+  return matches;
+}
+
+function buildDecorations(view: EditorView): DecorationSet {
+  const builder = new RangeSetBuilder<Decoration>();
+  const docText = view.state.doc.toString();
+  const matches = collectSyntaxHighlightRanges(docText, (from, to) => {
+    return view.state.selection.ranges.some((range) => {
+      return range.from >= from && range.to <= to;
+    });
   });
 
   for (const m of matches) {

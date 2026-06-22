@@ -15,12 +15,12 @@ repos:
       - id: trailing-whitespace
         exclude: ^(pnpm-lock\.yaml|测试数据\.json|测试数据2\.json|测试历史数据\.json)$
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.48.0
+    rev: v0.49.0
     hooks:
       - id: markdownlint
         args: ["--fix"]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.16.3
+    rev: v4.16.4
     hooks:
       - id: commitizen
         stages: [commit-msg]

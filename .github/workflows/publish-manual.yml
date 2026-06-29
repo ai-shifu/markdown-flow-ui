@@ -63,6 +63,10 @@ jobs:
       - name: Upgrade npm for trusted publishing
         run: npm install -g npm@latest
 
+      # The build runs `pnpm exec tailwindcss` (build:css); pnpm is not preinstalled.
+      - name: Install pnpm
+        run: npm install -g pnpm
+
       - name: Install dependencies
         run: npm ci
 

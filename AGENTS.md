@@ -535,11 +535,9 @@ release version** (`X.Y.Z`), never `X.Y.Z-dev.N`. This is **enforced by CI**: th
 runs on every PR into `main` and fails if the version is a pre-release/dev build.
 (Add it as a required status check in the `main` ruleset to actually block merges.)
 
-> **Why this matters**: `markdown-flow-ui` is consumed by the `ai-shifu` project
-> (pinned in `src/cook-web/package.json`). A change here is usually made to be used
-> there, and ai-shifu refuses to merge a dev pin into its own `main` — so this
-> library's `main` must only ever carry release versions. dev builds stay on the
-> `dev` dist-tag / feature branches for cross-repo testing.
+> **Why this matters**: downstream projects install `markdown-flow-ui` from its
+> published releases, so `main` must only ever carry release versions. dev builds
+> stay on the `dev` dist-tag / feature branches for testing and never land on `main`.
 
 ## Troubleshooting
 

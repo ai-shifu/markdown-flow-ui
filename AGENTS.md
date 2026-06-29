@@ -526,6 +526,19 @@ not already taken) and auto-increments the `-dev.N` counter.
    `npm publish` → commits `chore: release <version>` back to the branch.
 4. Open a PR from the branch to `main`.
 
+#### Critical rule: PRs to `main` must carry a RELEASE version
+
+`dev` packages are throwaway test builds for feature branches only. Before opening
+(or merging) a PR into `main`, the `version` in `package.json` **must be a clean
+release version** (`X.Y.Z`), never `X.Y.Z-dev.N`. This is **enforced by CI**: the
+**Check release version** workflow (`.github/workflows/check-release-version.yml`)
+runs on every PR into `main` and fails if the version is a pre-release/dev build.
+(Add it as a required status check in the `main` ruleset to actually block merges.)
+
+> **Why this matters**: downstream projects install `markdown-flow-ui` from its
+> published releases, so `main` must only ever carry release versions. dev builds
+> stay on the `dev` dist-tag / feature branches for testing and never land on `main`.
+
 ## Troubleshooting
 
 ### Common Issues and Solutions

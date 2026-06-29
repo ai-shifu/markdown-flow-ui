@@ -70,7 +70,7 @@
     "cz-conventional-changelog": "^3.3.0",
     "daisyui": "4.12.10",
     "eslint": "^9",
-    "eslint-config-next": "15.3.5",
+    "eslint-config-next": "16.2.9",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-storybook": "^9.0.16",

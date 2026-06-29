@@ -493,11 +493,13 @@ GitHub Action (`.github/workflows/publish-manual.yml`), so no local
 `npm publish` (and no interactive 2FA/OTP) is needed. The old push-on-`main`
 `publish.yml` is disabled (kept as `publish.yml.bk`).
 
-**Prerequisite — `NPM_TOKEN` secret**: the workflow authenticates with an npm
-**Automation** token (Automation tokens bypass 2FA in CI). It is read from the
-`NPM_TOKEN` repository secret. The workflow runs `npm whoami` first and fails
-early with a clear message if the token is missing or expired — regenerate the
-token and update the secret if that happens.
+**Prerequisite — npm Trusted Publishing (OIDC)**: the workflow authenticates to
+npm with no token, via GitHub OIDC. A one-time setup is required on npm: open
+the package page → **Settings → Trusted Publisher → GitHub Actions** and register
+this repository with workflow filename `publish-manual.yml`. The workflow
+declares `id-token: write` and upgrades npm to a version that supports trusted
+publishing; published packages get provenance automatically. No `NPM_TOKEN`
+secret is needed (tokens expire and can leak — OIDC avoids both).
 
 **Two package types** (enter the clean base version, e.g. `0.1.128`):
 

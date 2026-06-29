@@ -35,6 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write          # allow pushing the version-bump commit back to the branch
+      id-token: write          # OIDC: authenticate to npm via Trusted Publishing
 
     steps:
       # Strategy A: never publish from the protected default branch.
@@ -58,17 +59,12 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: "npm"
 
+      # Trusted Publishing (OIDC) requires npm >= 11.5.1; node 20 ships an older npm.
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest
+
       - name: Install dependencies
         run: npm ci
-
-      - name: Verify npm auth token
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if ! npm whoami; then
-            echo "::error::NPM_TOKEN is missing or invalid. Generate a new npm Automation token (npmjs.com -> Access Tokens) and update the NPM_TOKEN repository secret."
-            exit 1
-          fi
 
       - name: Validate version and compute final version
         id: resolve
@@ -149,9 +145,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      # No token: npm authenticates via OIDC Trusted Publishing (provenance is
+      # attached automatically). Requires a trusted publisher configured on npm
+      # for this repo + workflow file.
       - name: Publish to npm
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           DIST_TAG: ${{ steps.resolve.outputs.dist_tag }}
         run: npm publish --tag "$DIST_TAG"
 

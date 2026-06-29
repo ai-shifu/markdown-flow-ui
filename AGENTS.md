@@ -504,10 +504,10 @@ secret is needed (tokens expire and can leak — OIDC avoids both).
 
 **Two package types** (enter the clean base version, e.g. `0.1.128`):
 
-| Type      | Final version    | dist-tag | Install                                   |
-| --------- | ---------------- | -------- | ----------------------------------------- |
-| `dev`     | `0.1.128-dev.N`  | `dev`    | `npm i markdown-flow-ui@dev` (opt-in)     |
-| `release` | `0.1.128`        | `latest` | `npm i markdown-flow-ui`                  |
+| Type      | Final version   | dist-tag | Install                               |
+| --------- | --------------- | -------- | ------------------------------------- |
+| `dev`     | `0.1.128-dev.N` | `dev`    | `npm i markdown-flow-ui@dev` (opt-in) |
+| `release` | `0.1.128`       | `latest` | `npm i markdown-flow-ui`              |
 
 The `dev` dist-tag keeps test builds off `latest`, so normal installs are
 unaffected. The Action validates the version (greater than the latest published,

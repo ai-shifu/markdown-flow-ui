@@ -1,0 +1,47 @@
+name: Check release version
+
+# Gate for PRs into main: the "version" in package.json must be a RELEASE
+# version (X.Y.Z), never a pre-release/dev build (e.g. X.Y.Z-dev.N, X.Y.Z-rc.N).
+# dev builds are published from feature branches only and must not land on main.
+#
+# To actually block merges, add this check as a required status check in the
+# main ruleset.
+#
+# No `paths:` filter on purpose: required checks with path filters get stuck
+# "pending" on PRs that don't touch the filtered files.
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Ensure package.json version is a release version
+        run: |
+          node <<'NODE'
+          const fs = require("fs");
+          const version = JSON.parse(fs.readFileSync("package.json", "utf8")).version;
+          if (!version) {
+            console.error("::error::No 'version' field in package.json.");
+            process.exit(1);
+          }
+          // semver pre-release = anything after a hyphen (e.g. 0.1.128-dev.1)
+          if (version.includes("-")) {
+            console.error(
+              `::error::package.json version ${version} is a pre-release/dev build and ` +
+                "cannot be merged into main. Set a release version (X.Y.Z) first — dev " +
+                "builds (X.Y.Z-dev.N) are for feature-branch testing only.",
+            );
+            process.exit(1);
+          }
+          console.log(`OK: version ${version} is a release version.`);
+          NODE

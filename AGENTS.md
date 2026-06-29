@@ -497,8 +497,9 @@ GitHub Action (`.github/workflows/publish-manual.yml`), so no local
 npm with no token, via GitHub OIDC. A one-time setup is required on npm: open
 the package page → **Settings → Trusted Publisher → GitHub Actions** and register
 this repository with workflow filename `publish-manual.yml`. The workflow
-declares `id-token: write` and upgrades npm to a version that supports trusted
-publishing; published packages get provenance automatically. No `NPM_TOKEN`
+declares `id-token: write` and `contents: write` permissions and upgrades npm
+to a version that supports trusted publishing; published packages get provenance
+automatically. No `NPM_TOKEN`
 secret is needed (tokens expire and can leak — OIDC avoids both).
 
 **Two package types** (enter the clean base version, e.g. `0.1.128`):

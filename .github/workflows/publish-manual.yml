@@ -1,0 +1,185 @@
+name: Publish (manual)
+
+# Manually-triggered npm publish. Lets collaborators publish markdown-flow-ui
+# from any branch with an explicit version number, without a local `npm publish`
+# (which requires interactive 2FA/OTP). The npm Automation token in the
+# NPM_TOKEN secret authenticates non-interactively.
+#
+# How to run:
+#   Actions -> Publish (manual) -> Run workflow
+#     - "Use workflow from": pick the branch to publish from (NOT main)
+#     - version:      base version, e.g. 0.1.128 (no -dev suffix)
+#     - release_type: dev (-> 0.1.128-dev.N on the `dev` dist-tag) or
+#                     release (-> 0.1.128 on `latest`)
+#
+# Refuses to run on the default branch (main).
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Base version, e.g. 0.1.128 (no -dev suffix)"
+        required: true
+        type: string
+      release_type:
+        description: "Package type"
+        required: true
+        type: choice
+        default: dev
+        options:
+          - dev
+          - release
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write          # allow pushing the version-bump commit back to the branch
+
+    steps:
+      # Strategy A: never publish from the protected default branch.
+      - name: Guard against publishing from main
+        if: github.ref_name == 'main'
+        run: |
+          echo "::error::Do not publish from 'main'. Run this workflow from a feature branch, then open a PR to merge the version bump back into main."
+          exit 1
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify npm auth token
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if ! npm whoami; then
+            echo "::error::NPM_TOKEN is missing or invalid. Generate a new npm Automation token (npmjs.com -> Access Tokens) and update the NPM_TOKEN repository secret."
+            exit 1
+          fi
+
+      - name: Validate version and compute final version
+        id: resolve
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          RELEASE_TYPE: ${{ inputs.release_type }}
+        run: |
+          node <<'NODE'
+          const cp = require("child_process");
+          const fs = require("fs");
+
+          const raw = (process.env.INPUT_VERSION || "").trim();
+          const releaseType = (process.env.RELEASE_TYPE || "").trim();
+
+          const fail = (m) => { console.error(`::error::${m}`); process.exit(1); };
+
+          // 1. Require a clean base version X.Y.Z (no suffix).
+          if (!/^\d+\.\d+\.\d+$/.test(raw)) {
+            fail(`Enter a clean base version like 0.1.128 (no -dev/-rc suffix), got '${raw}'.`);
+          }
+
+          const name = JSON.parse(fs.readFileSync("package.json", "utf8")).name;
+
+          // 2. Fetch existing versions from npm.
+          let versions = [];
+          try {
+            const out = cp.execSync(`npm view ${name} versions --json`, { encoding: "utf8" });
+            const parsed = JSON.parse(out);
+            versions = Array.isArray(parsed) ? parsed : [parsed];
+          } catch (e) {
+            versions = []; // package may not exist yet
+          }
+          const existing = new Set(versions);
+
+          const cmp = (a, b) => {
+            const pa = a.split(".").map(Number);
+            const pb = b.split(".").map(Number);
+            for (let i = 0; i < 3; i++) { if (pa[i] !== pb[i]) return pa[i] - pb[i]; }
+            return 0;
+          };
+
+          // 3. Must be greater than the latest stable (non-prerelease) version.
+          const stable = versions.filter((v) => /^\d+\.\d+\.\d+$/.test(v));
+          let latest = null;
+          for (const v of stable) { if (latest === null || cmp(v, latest) > 0) latest = v; }
+          if (latest && cmp(raw, latest) <= 0) {
+            fail(`Version ${raw} must be greater than the latest published ${latest}.`);
+          }
+
+          // 4. Compute final version.
+          let final;
+          if (releaseType === "release") {
+            final = raw;
+            if (existing.has(final)) fail(`Version ${final} already exists on npm.`);
+          } else {
+            const re = new RegExp(`^${raw.replace(/\./g, "\\.")}-dev\\.(\\d+)$`);
+            let maxN = 0, found = false;
+            for (const v of versions) {
+              const m = v.match(re);
+              if (m) { found = true; maxN = Math.max(maxN, Number(m[1])); }
+            }
+            let n = found ? maxN + 1 : 1;
+            final = `${raw}-dev.${n}`;
+            while (existing.has(final)) { n += 1; final = `${raw}-dev.${n}`; }
+          }
+
+          const distTag = releaseType === "dev" ? "dev" : "latest";
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `final_version=${final}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `dist_tag=${distTag}\n`);
+          console.log(`Resolved: ${name}@${final} (tag: ${distTag})`);
+          NODE
+
+      - name: Set package version
+        env:
+          FINAL_VERSION: ${{ steps.resolve.outputs.final_version }}
+        run: npm version "$FINAL_VERSION" --no-git-tag-version --allow-same-version
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DIST_TAG: ${{ steps.resolve.outputs.dist_tag }}
+        run: npm publish --tag "$DIST_TAG"
+
+      - name: Commit and push version bump
+        env:
+          FINAL_VERSION: ${{ steps.resolve.outputs.final_version }}
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore: release ${FINAL_VERSION}"
+          git push origin "HEAD:${BRANCH_NAME}"
+
+      - name: Summary
+        env:
+          FINAL_VERSION: ${{ steps.resolve.outputs.final_version }}
+          RELEASE_TYPE: ${{ inputs.release_type }}
+          DIST_TAG: ${{ steps.resolve.outputs.dist_tag }}
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          {
+            echo "## Published \`markdown-flow-ui@${FINAL_VERSION}\` (tag: ${DIST_TAG})"
+            echo ""
+            echo "- Branch: \`${BRANCH_NAME}\`"
+            if [ "${RELEASE_TYPE}" = "dev" ]; then
+              echo "- Install: \`npm install markdown-flow-ui@${FINAL_VERSION}\` (or \`markdown-flow-ui@dev\`)"
+            else
+              echo "- Install: \`npm install markdown-flow-ui@${FINAL_VERSION}\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

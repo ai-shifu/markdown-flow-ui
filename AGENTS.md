@@ -486,6 +486,39 @@ dist/
 - [ ] CHANGELOG updated with changes
 - [ ] Git tags applied for release
 
+### Release Process — Publish via GitHub Action ⭐
+
+Publishing to npm is done through the manually-triggered **Publish (manual)**
+GitHub Action (`.github/workflows/publish-manual.yml`), so no local
+`npm publish` (and no interactive 2FA/OTP) is needed. The old push-on-`main`
+`publish.yml` is disabled (kept as `publish.yml.bk`).
+
+**Prerequisite — `NPM_TOKEN` secret**: the workflow authenticates with an npm
+**Automation** token (Automation tokens bypass 2FA in CI). It is read from the
+`NPM_TOKEN` repository secret. The workflow runs `npm whoami` first and fails
+early with a clear message if the token is missing or expired — regenerate the
+token and update the secret if that happens.
+
+**Two package types** (enter the clean base version, e.g. `0.1.128`):
+
+| Type      | Final version    | dist-tag | Install                                   |
+| --------- | ---------------- | -------- | ----------------------------------------- |
+| `dev`     | `0.1.128-dev.N`  | `dev`    | `npm i markdown-flow-ui@dev` (opt-in)     |
+| `release` | `0.1.128`        | `latest` | `npm i markdown-flow-ui`                  |
+
+The `dev` dist-tag keeps test builds off `latest`, so normal installs are
+unaffected. The Action validates the version (greater than the latest published,
+not already taken) and auto-increments the `-dev.N` counter.
+
+**Workflow (strategy A — never publish from `main`)**:
+
+1. Branch from main and push it: `git checkout -b release/0.1.128 && git push -u origin release/0.1.128`.
+2. **Actions → Publish (manual) → Run workflow** → pick your branch →
+   `version=0.1.128`, `release_type=dev` or `release`.
+3. The Action validates → bumps `package.json` → `npm run build` →
+   `npm publish` → commits `chore: release <version>` back to the branch.
+4. Open a PR from the branch to `main`.
+
 ## Troubleshooting
 
 ### Common Issues and Solutions

@@ -40,7 +40,11 @@ eslint.config.mjs     # ESLint configuration
 
 ### MUST DO Before Any Commit
 
-1. **Run lint and format checks**: `npm run lint && npm run format:check` (MANDATORY)
+1. **Format before committing (MANDATORY)**: run `npm run format` to auto-format,
+   then `npm run lint`. CI runs `prettier --check` on every PR and **fails the PR
+   if anything is unformatted** — `npm run format` is the fix. (husky + lint-staged
+   also auto-formats changed files on commit, but run `npm run format` before
+   opening a PR to catch everything.)
 2. **Test your changes**: Run `npm test` and verify Storybook examples work
 3. **Build the library**: Run `npm run build` to ensure no build errors
 4. **Use English for all code**: Comments, variables, commit messages
@@ -504,10 +508,10 @@ secret is needed (tokens expire and can leak — OIDC avoids both).
 
 **Two package types** (enter the clean base version, e.g. `0.1.128`):
 
-| Type      | Final version    | dist-tag | Install                                   |
-| --------- | ---------------- | -------- | ----------------------------------------- |
-| `dev`     | `0.1.128-dev.N`  | `dev`    | `npm i markdown-flow-ui@dev` (opt-in)     |
-| `release` | `0.1.128`        | `latest` | `npm i markdown-flow-ui`                  |
+| Type      | Final version   | dist-tag | Install                               |
+| --------- | --------------- | -------- | ------------------------------------- |
+| `dev`     | `0.1.128-dev.N` | `dev`    | `npm i markdown-flow-ui@dev` (opt-in) |
+| `release` | `0.1.128`       | `latest` | `npm i markdown-flow-ui`              |
 
 The `dev` dist-tag keeps test builds off `latest`, so normal installs are
 unaffected. The Action validates the version (greater than the latest published,

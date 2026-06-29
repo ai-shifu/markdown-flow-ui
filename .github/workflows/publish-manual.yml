@@ -34,8 +34,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: write          # allow pushing the version-bump commit back to the branch
-      id-token: write          # OIDC: authenticate to npm via Trusted Publishing
+      contents: write # allow pushing the version-bump commit back to the branch
+      id-token: write # OIDC: authenticate to npm via Trusted Publishing
 
     steps:
       # Strategy A: never publish from the protected default branch.

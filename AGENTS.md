@@ -512,7 +512,7 @@ not already taken) and auto-increments the `-dev.N` counter.
 
 **Workflow (strategy A — never publish from `main`)**:
 
-1. Branch from main and push it: `git checkout -b release/0.1.128`.
+1. Branch from main and push it: `git checkout -b release/0.1.128 && git push -u origin release/0.1.128`.
 2. **Actions → Publish (manual) → Run workflow** → pick your branch →
    `version=0.1.128`, `release_type=dev` or `release`.
 3. The Action validates → bumps `package.json` → `npm run build` →

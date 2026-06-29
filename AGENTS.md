@@ -40,7 +40,11 @@ eslint.config.mjs     # ESLint configuration
 
 ### MUST DO Before Any Commit
 
-1. **Run lint and format checks**: `npm run lint && npm run format:check` (MANDATORY)
+1. **Format before committing (MANDATORY)**: run `npm run format` to auto-format,
+   then `npm run lint`. CI runs `prettier --check` on every PR and **fails the PR
+   if anything is unformatted** — `npm run format` is the fix. (husky + lint-staged
+   also auto-formats changed files on commit, but run `npm run format` before
+   opening a PR to catch everything.)
 2. **Test your changes**: Run `npm test` and verify Storybook examples work
 3. **Build the library**: Run `npm run build` to ensure no build errors
 4. **Use English for all code**: Comments, variables, commit messages
@@ -504,10 +508,10 @@ secret is needed (tokens expire and can leak — OIDC avoids both).
 
 **Two package types** (enter the clean base version, e.g. `0.1.128`):
 
-| Type      | Final version    | dist-tag | Install                                   |
-| --------- | ---------------- | -------- | ----------------------------------------- |
-| `dev`     | `0.1.128-dev.N`  | `dev`    | `npm i markdown-flow-ui@dev` (opt-in)     |
-| `release` | `0.1.128`        | `latest` | `npm i markdown-flow-ui`                  |
+| Type      | Final version   | dist-tag | Install                               |
+| --------- | --------------- | -------- | ------------------------------------- |
+| `dev`     | `0.1.128-dev.N` | `dev`    | `npm i markdown-flow-ui@dev` (opt-in) |
+| `release` | `0.1.128`       | `latest` | `npm i markdown-flow-ui`              |
 
 The `dev` dist-tag keeps test builds off `latest`, so normal installs are
 unaffected. The Action validates the version (greater than the latest published,
@@ -521,6 +525,19 @@ not already taken) and auto-increments the `-dev.N` counter.
 3. The Action validates → bumps `package.json` → `npm run build` →
    `npm publish` → commits `chore: release <version>` back to the branch.
 4. Open a PR from the branch to `main`.
+
+#### Critical rule: PRs to `main` must carry a RELEASE version
+
+`dev` packages are throwaway test builds for feature branches only. Before opening
+(or merging) a PR into `main`, the `version` in `package.json` **must be a clean
+release version** (`X.Y.Z`), never `X.Y.Z-dev.N`. This is **enforced by CI**: the
+**Check release version** workflow (`.github/workflows/check-release-version.yml`)
+runs on every PR into `main` and fails if the version is a pre-release/dev build.
+(Add it as a required status check in the `main` ruleset to actually block merges.)
+
+> **Why this matters**: downstream projects install `markdown-flow-ui` from its
+> published releases, so `main` must only ever carry release versions. dev builds
+> stay on the `dev` dist-tag / feature branches for testing and never land on `main`.
 
 ## Troubleshooting
 

@@ -1,0 +1,38 @@
+name: Format check
+
+# PR gate for code formatting (prettier). Unlike pre-commit.ci, this only
+# CHECKS — it never pushes auto-fix commits to your branch. Run `npm run format`
+# locally to fix anything this flags.
+#
+# ESLint/markdownlint stay as local husky + lint-staged hooks on changed files.
+# A full `next lint` gate is intentionally not enforced here: the repo has
+# pre-existing eslint warnings above the --max-warnings threshold, and the old
+# pre-commit.ci already skipped eslint.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prettier format check
+        run: npm run format:check

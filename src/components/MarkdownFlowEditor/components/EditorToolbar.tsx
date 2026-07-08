@@ -2,7 +2,7 @@ import { memo, useCallback } from "react";
 import {
   Braces,
   FileType,
-  Image,
+  Image as ImageIcon,
   TextCursorInput,
   // Link,
   SquareCheck,
@@ -255,7 +255,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                 aria-label={labels.image}
                 title={labels.image}
               >
-                <Image strokeWidth={1.75} size={ICON_SIZE} />
+                <ImageIcon strokeWidth={1.75} size={ICON_SIZE} />
               </button>
             </TooltipTrigger>
             <TooltipContent side="top">{labels.image ?? ""}</TooltipContent>

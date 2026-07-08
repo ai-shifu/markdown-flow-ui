@@ -25,6 +25,12 @@ describe("playerKeyboardShortcuts", () => {
       "previous"
     );
     expect(getPlayerKeyboardShortcutAction({ key: "ArrowRight" })).toBe("next");
+    expect(
+      getPlayerKeyboardShortcutAction({ key: "ArrowLeft", shiftKey: true })
+    ).toBe("previousSubtitle");
+    expect(
+      getPlayerKeyboardShortcutAction({ key: "ArrowRight", shiftKey: true })
+    ).toBe("nextSubtitle");
     expect(getPlayerKeyboardShortcutAction({ key: "f" })).toBe("fullscreen");
     expect(getPlayerKeyboardShortcutAction({ key: "C" })).toBe("subtitle");
     expect(getPlayerKeyboardShortcutAction({ key: "n" })).toBe("interaction");
@@ -37,12 +43,15 @@ describe("playerKeyboardShortcuts", () => {
     expect(getPlayerKeyboardShortcutAction({ key: "m" })).toBeNull();
   });
 
-  it("ignores shortcuts with modifier keys", () => {
+  it("ignores non-subtitle shortcuts with modifier keys", () => {
     expect(
       getPlayerKeyboardShortcutAction({ key: "f", metaKey: true })
     ).toBeNull();
     expect(
-      getPlayerKeyboardShortcutAction({ key: "ArrowRight", shiftKey: true })
+      getPlayerKeyboardShortcutAction({ key: "ArrowRight", altKey: true })
+    ).toBeNull();
+    expect(
+      getPlayerKeyboardShortcutAction({ key: "f", shiftKey: true })
     ).toBeNull();
   });
 

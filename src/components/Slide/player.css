@@ -2,7 +2,7 @@
   position: absolute;
   display: flex;
   min-height: 80px;
-  width: min(664px, calc(100vw - 48px));
+  width: min(760px, calc(100vw - 48px));
   align-items: flex-end;
   justify-content: center;
 }

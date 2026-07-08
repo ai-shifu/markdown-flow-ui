@@ -110,6 +110,8 @@ const meta = {
       nonFullscreenLabel: "Non-fullscreen",
       fullscreenLabel: "Fullscreen",
       fullscreenHintText: "Rotate your screen for the best experience.",
+      nextSubtitleLabel: "Next subtitle",
+      previousSubtitleLabel: "Previous subtitle",
     },
     fullscreenHeader: undefined,
     playerAutoHideDelay: 3000,
@@ -3135,12 +3137,14 @@ export const HistorySlides: Story = {
       exitFullscreenLabel: "退出全屏",
       moreOptionsAriaLabel: "更多设置",
       nextLabel: "下一步",
+      nextSubtitleLabel: "下一条字幕",
       notesLabel: "笔记",
       pauseAutoplayLabel: "暂停自动播放",
       pauseLabel: "暂停",
       playAutoplayLabel: "开启自动播放",
       playLabel: "播放",
       previousLabel: "上一步",
+      previousSubtitleLabel: "上一条字幕",
       screenModeLabel: "屏幕模式",
       settingsTitle: "设置",
       subtitleLabel: "字幕",
@@ -3917,7 +3921,7 @@ export const TextAudioSubtitleSyncDebug: Story = {
     docs: {
       description: {
         story:
-          "Debugs a type=text element by playing audio_url or audio_segments while showing millisecond progress and the active subtitle_cues window.",
+          "Debugs a type=text element by playing audio_url or audio_segments while showing millisecond progress, the active subtitle_cues window, and Shift+Arrow subtitle jumping.",
       },
     },
   },

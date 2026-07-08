@@ -17,6 +17,8 @@ import {
   RotateCcw,
   RotateCw,
   ScanLine,
+  SkipBack,
+  SkipForward,
   Volume2,
 } from "lucide-react";
 
@@ -49,6 +51,10 @@ import {
 import { shouldKeepPlayingAfterNavigation } from "./utils/playbackPreference";
 import { toPlayerCustomActionList } from "./utils/playerCustomActions";
 import { suppressPlayerControlsWakeAfterNavigation } from "./utils/playerNavigationContext";
+import {
+  getSubtitleCueJumpTime,
+  type SubtitleCueJumpDirection,
+} from "./utils/subtitleCue";
 import "./player.css";
 
 const audioPreloadElementCache = new Map<string, HTMLAudioElement>();
@@ -70,12 +76,14 @@ export interface SlidePlayerTexts {
   exitFullscreenLabel?: string;
   moreOptionsAriaLabel?: string;
   nextLabel?: string;
+  nextSubtitleLabel?: string;
   notesLabel?: string;
   pauseAutoplayLabel?: string;
   pauseLabel?: string;
   playAutoplayLabel?: string;
   playLabel?: string;
   previousLabel?: string;
+  previousSubtitleLabel?: string;
   screenModeLabel?: string;
   settingsTitle?: string;
   subtitleLabel?: string;
@@ -113,6 +121,35 @@ const preloadAudioUrl = (url?: string) => {
   audio.load();
 
   audioPreloadElementCache.set(url, audio);
+};
+
+const resolveSegmentSeekTarget = (
+  segments: NonNullable<SlideAudioItem["audioSegments"]> = [],
+  timeMs: number
+) => {
+  const normalizedTimeMs = Math.max(Number(timeMs), 0);
+  let segmentStartTimeMs = 0;
+
+  for (let index = 0; index < segments.length; index += 1) {
+    const segment = segments[index];
+    const durationMs = Math.max(Number(segment?.duration_ms ?? 0), 0);
+    const segmentEndTimeMs = segmentStartTimeMs + durationMs;
+
+    if (
+      normalizedTimeMs < segmentEndTimeMs ||
+      (durationMs === 0 && normalizedTimeMs === segmentStartTimeMs)
+    ) {
+      return {
+        segmentIndex: index,
+        segmentTimeSeconds:
+          Math.max(normalizedTimeMs - segmentStartTimeMs, 0) / 1000,
+      };
+    }
+
+    segmentStartTimeMs = segmentEndTimeMs;
+  }
+
+  return null;
 };
 
 export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
@@ -198,9 +235,11 @@ const PlayIcon = () => (
 const PLAYER_SHORTCUT_LABELS = {
   fullscreen: "F",
   next: "→",
+  nextSubtitle: "Shift+→",
   notes: "N",
   playback: "Space",
   previous: "←",
+  previousSubtitle: "Shift+←",
   subtitle: "C",
 } as const;
 
@@ -275,6 +314,10 @@ const Player = ({
   >("unknown");
   const [isPlaying, setIsPlaying] = useState(defaultPlaying);
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
+  const [subtitleJumpAvailability, setSubtitleJumpAvailability] = useState({
+    next: false,
+    previous: false,
+  });
   const keyboardShortcutOwnerId =
     keyboardShortcutContext?.ownerId ?? localKeyboardShortcutOwnerId;
   const shouldEnableKeyboardShortcuts =
@@ -290,11 +333,15 @@ const Player = ({
       ),
     [currentAudio?.audioSegments]
   );
+  const currentSubtitleCues = useMemo(
+    () => currentAudio?.element?.subtitle_cues ?? [],
+    [currentAudio?.element?.subtitle_cues]
+  );
   const customActionList = useMemo(
     () => toPlayerCustomActionList(customActions, customActionContext),
     [customActionContext, customActions]
   );
-  const mobileVisibleActionCount = customActionList.length + 5;
+  const mobileVisibleActionCount = customActionList.length + 7;
   const controlsStyle = useMemo(
     () =>
       ({
@@ -351,6 +398,11 @@ const Player = ({
     PLAYER_SHORTCUT_LABELS.previous,
     "ArrowLeft"
   );
+  const previousSubtitleShortcutMetadata = getShortcutMetadata(
+    playerTexts.previousSubtitleLabel,
+    PLAYER_SHORTCUT_LABELS.previousSubtitle,
+    "Shift+ArrowLeft"
+  );
   const playbackShortcutMetadata = getShortcutMetadata(
     toggleAriaLabel,
     PLAYER_SHORTCUT_LABELS.playback,
@@ -360,6 +412,11 @@ const Player = ({
     playerTexts.nextLabel,
     PLAYER_SHORTCUT_LABELS.next,
     "ArrowRight"
+  );
+  const nextSubtitleShortcutMetadata = getShortcutMetadata(
+    playerTexts.nextSubtitleLabel,
+    PLAYER_SHORTCUT_LABELS.nextSubtitle,
+    "Shift+ArrowRight"
   );
   const fullscreenShortcutMetadata = getShortcutMetadata(
     fullscreenAriaLabel,
@@ -535,6 +592,64 @@ const Player = ({
       );
   }, []);
 
+  const canSeekToPlaybackTimeMs = useCallback(
+    (timeMs: number) => {
+      if (!currentAudio || isPlaybackPaused) {
+        return false;
+      }
+
+      if (currentAudioUrl) {
+        return true;
+      }
+
+      return Boolean(resolveSegmentSeekTarget(currentAudioSegments, timeMs));
+    },
+    [currentAudio, currentAudioSegments, currentAudioUrl, isPlaybackPaused]
+  );
+
+  const getSubtitleJumpTargetTimeMs = useCallback(
+    (direction: SubtitleCueJumpDirection, currentTimeMs: number) => {
+      const targetTimeMs = getSubtitleCueJumpTime({
+        currentTimeMs,
+        direction,
+        subtitleCues: currentSubtitleCues,
+      });
+
+      if (targetTimeMs === null || !canSeekToPlaybackTimeMs(targetTimeMs)) {
+        return null;
+      }
+
+      return targetTimeMs;
+    },
+    [canSeekToPlaybackTimeMs, currentSubtitleCues]
+  );
+
+  const updateSubtitleJumpAvailability = useCallback(
+    (currentTimeMs: number) => {
+      const nextAvailability = {
+        previous:
+          getSubtitleJumpTargetTimeMs("previous", currentTimeMs) !== null,
+        next: getSubtitleJumpTargetTimeMs("next", currentTimeMs) !== null,
+      };
+
+      setSubtitleJumpAvailability((previousAvailability) => {
+        if (
+          previousAvailability.previous === nextAvailability.previous &&
+          previousAvailability.next === nextAvailability.next
+        ) {
+          return previousAvailability;
+        }
+
+        return nextAvailability;
+      });
+    },
+    [getSubtitleJumpTargetTimeMs]
+  );
+
+  useEffect(() => {
+    updateSubtitleJumpAvailability(playbackTimeMsRef.current);
+  }, [updateSubtitleJumpAvailability]);
+
   const getCurrentPlaybackTimeMs = useCallback(() => {
     const audioElement = audioRef.current;
 
@@ -568,8 +683,9 @@ const Player = ({
 
       playbackTimeMsRef.current = nextPlaybackTimeMs;
       onPlaybackTimeChange?.(nextPlaybackTimeMs);
+      updateSubtitleJumpAvailability(nextPlaybackTimeMs);
     },
-    [onPlaybackTimeChange]
+    [onPlaybackTimeChange, updateSubtitleJumpAvailability]
   );
 
   const syncPlaybackTime = useCallback(() => {
@@ -683,7 +799,14 @@ const Player = ({
   );
 
   const startSegmentPlayback = useCallback(
-    (segmentIndex: number, _reason: string) => {
+    (
+      segmentIndex: number,
+      _reason: string,
+      options: {
+        seekTimeSeconds?: number;
+        shouldResume?: boolean;
+      } = {}
+    ) => {
       const audioElement = audioRef.current;
       const segment = currentAudioSegmentsRef.current[segmentIndex];
 
@@ -692,14 +815,21 @@ const Player = ({
       }
 
       const nextAudioSrc = getSegmentSrc(segment.audio_data);
+      const nextSeekTimeSeconds = Math.max(
+        Number(options.seekTimeSeconds ?? 0),
+        0
+      );
 
       currentSegmentIndexRef.current = segmentIndex;
       waitingSegmentIndexRef.current = null;
       isWaitingForSegmentRef.current = false;
       isSwitchingSegmentRef.current = true;
       preferredSourceTypeRef.current = "segment";
-      publishPlaybackTime(getSegmentStartTimeMs(segmentIndex));
-      const shouldAutoResume = canStartPlaybackAutomatically();
+      publishPlaybackTime(
+        getSegmentStartTimeMs(segmentIndex) + nextSeekTimeSeconds * 1000
+      );
+      const shouldAutoResume =
+        options.shouldResume ?? canStartPlaybackAutomatically();
 
       pendingAutoPlayRef.current = shouldAutoResume;
       updateLoading(false);
@@ -717,10 +847,10 @@ const Player = ({
         audioElement.load();
       }
 
-      pendingSeekTimeRef.current = 0;
+      pendingSeekTimeRef.current = nextSeekTimeSeconds;
 
       if (audioElement.readyState > 0) {
-        audioElement.currentTime = 0;
+        audioElement.currentTime = nextSeekTimeSeconds;
         pendingSeekTimeRef.current = null;
       }
 
@@ -741,6 +871,111 @@ const Player = ({
       publishPlaybackTime,
       tryPlayCurrentAudio,
       updateLoading,
+    ]
+  );
+
+  const seekToPlaybackTimeMs = useCallback(
+    (timeMs: number) => {
+      const audioElement = audioRef.current;
+
+      if (!audioElement || !currentAudio || isPlaybackPaused) {
+        return false;
+      }
+
+      const targetTimeMs = Math.max(Number(timeMs), 0);
+      const shouldResumePlayback = !audioElement.paused && !audioElement.ended;
+
+      stopPlaybackTimeLoop();
+      pendingAutoPlayRef.current = shouldResumePlayback;
+      updateLoading(false);
+
+      if (shouldResumePlayback) {
+        playbackAccessModeRef.current = "manual";
+        isPausedByUserRef.current = false;
+        updatePlaybackPreference(true);
+      }
+
+      if (currentAudioUrl) {
+        const targetTimeSeconds = targetTimeMs / 1000;
+        const hasNewSrc = audioSrcRef.current !== currentAudioUrl;
+
+        if (hasNewSrc) {
+          audioElement.pause();
+          audioElement.removeAttribute("src");
+          audioElement.load();
+          audioSrcRef.current = currentAudioUrl;
+          activeSourceTypeRef.current = "url";
+          preferredSourceTypeRef.current = "url";
+          audioElement.src = currentAudioUrl;
+          audioElement.load();
+        }
+
+        pendingSeekTimeRef.current = targetTimeSeconds;
+        publishPlaybackTime(targetTimeMs);
+
+        if (audioElement.readyState > 0) {
+          audioElement.currentTime = targetTimeSeconds;
+          pendingSeekTimeRef.current = null;
+        }
+
+        if (!shouldResumePlayback) {
+          pendingAutoPlayRef.current = false;
+          audioElement.pause();
+          setIsPlaying(false);
+          return true;
+        }
+
+        return tryPlayCurrentAudio("subtitle-seek-url");
+      }
+
+      const segmentSeekTarget = resolveSegmentSeekTarget(
+        currentAudioSegmentsRef.current,
+        targetTimeMs
+      );
+
+      if (!segmentSeekTarget) {
+        return false;
+      }
+
+      return startSegmentPlayback(
+        segmentSeekTarget.segmentIndex,
+        "subtitle-seek-segment",
+        {
+          seekTimeSeconds: segmentSeekTarget.segmentTimeSeconds,
+          shouldResume: shouldResumePlayback,
+        }
+      );
+    },
+    [
+      currentAudio,
+      currentAudioUrl,
+      isPlaybackPaused,
+      publishPlaybackTime,
+      startSegmentPlayback,
+      stopPlaybackTimeLoop,
+      tryPlayCurrentAudio,
+      updateLoading,
+      updatePlaybackPreference,
+    ]
+  );
+
+  const jumpToSubtitleCue = useCallback(
+    (direction: SubtitleCueJumpDirection) => {
+      const targetTimeMs = getSubtitleJumpTargetTimeMs(
+        direction,
+        getCurrentPlaybackTimeMs()
+      );
+
+      if (targetTimeMs === null) {
+        return false;
+      }
+
+      return seekToPlaybackTimeMs(targetTimeMs);
+    },
+    [
+      getCurrentPlaybackTimeMs,
+      getSubtitleJumpTargetTimeMs,
+      seekToPlaybackTimeMs,
     ]
   );
 
@@ -1336,6 +1571,14 @@ const Player = ({
 
         return true;
       },
+      nextSubtitle: () => {
+        if (!subtitleJumpAvailability.next) {
+          return true;
+        }
+
+        jumpToSubtitleCue("next");
+        return true;
+      },
       previous: () => {
         if (!onPrev) {
           return false;
@@ -1347,6 +1590,14 @@ const Player = ({
           );
         }
 
+        return true;
+      },
+      previousSubtitle: () => {
+        if (!subtitleJumpAvailability.previous) {
+          return true;
+        }
+
+        jumpToSubtitleCue("previous");
         return true;
       },
       subtitle: () => {
@@ -1365,6 +1616,7 @@ const Player = ({
     [
       getNavigationContext,
       hasInteraction,
+      jumpToSubtitleCue,
       nextDisabled,
       onFullscreen,
       onInteractionToggle,
@@ -1372,6 +1624,8 @@ const Player = ({
       onPrev,
       onSubtitleToggle,
       prevDisabled,
+      subtitleJumpAvailability.next,
+      subtitleJumpAvailability.previous,
       togglePlayback,
     ]
   );
@@ -1511,6 +1765,21 @@ const Player = ({
                 )}
               </button>
               <button
+                aria-keyshortcuts={
+                  previousSubtitleShortcutMetadata.ariaKeyShortcuts
+                }
+                aria-label={playerTexts.previousSubtitleLabel}
+                className="slide-player__action slide-player__action--prev-subtitle"
+                disabled={!subtitleJumpAvailability.previous}
+                onClick={() => {
+                  jumpToSubtitleCue("previous");
+                }}
+                title={previousSubtitleShortcutMetadata.title}
+                type="button"
+              >
+                <SkipBack className="slide-player__icon" strokeWidth={2.25} />
+              </button>
+              <button
                 aria-keyshortcuts={previousShortcutMetadata.ariaKeyShortcuts}
                 aria-label={playerTexts.previousLabel}
                 className="slide-player__action slide-player__action--prev"
@@ -1547,6 +1816,24 @@ const Player = ({
                 type="button"
               >
                 <RotateCw className="slide-player__icon" strokeWidth={2.25} />
+              </button>
+              <button
+                aria-keyshortcuts={
+                  nextSubtitleShortcutMetadata.ariaKeyShortcuts
+                }
+                aria-label={playerTexts.nextSubtitleLabel}
+                className="slide-player__action slide-player__action--next-subtitle"
+                disabled={!subtitleJumpAvailability.next}
+                onClick={() => {
+                  jumpToSubtitleCue("next");
+                }}
+                title={nextSubtitleShortcutMetadata.title}
+                type="button"
+              >
+                <SkipForward
+                  className="slide-player__icon"
+                  strokeWidth={2.25}
+                />
               </button>
               {onFullscreen ? (
                 <button

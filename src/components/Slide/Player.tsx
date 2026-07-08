@@ -382,9 +382,10 @@ const Player = ({
   const currentAudio =
     currentAudioIndex >= 0 ? audioList[currentAudioIndex] : undefined;
   const currentAudioUrl = currentAudio?.audioUrl;
+  const currentAudioSegmentList = currentAudio?.audioSegments;
   const currentAudioSegments = useMemo(
     () => getSortedAudioSegments(currentAudio),
-    [currentAudio]
+    [currentAudio, currentAudioSegmentList]
   );
   let subtitleCueTracksCache = subtitleCueTracksCacheRef.current;
 

@@ -48,8 +48,43 @@ eslint.config.mjs     # ESLint configuration
 2. **Test your changes**: Run `npm test` and verify Storybook examples work
 3. **Build the library**: Run `npm run build` to ensure no build errors
 4. **Use English for all code**: Comments, variables, commit messages
-5. **Follow Conventional Commits**: `type: description` (lowercase type, imperative mood)
+5. **Follow the git commit message requirements below**: use the required
+   subject, body, and classification rules.
 6. **Update Storybook stories**: Add/update stories for new or modified components
+
+### Git Commit Message Requirements
+
+All git commit message requirements live in this section. Other docs and
+agent-specific rule files may point here for title, body, and classification
+rules, but must not duplicate or redefine them.
+
+- Human-authored and coding-agent-authored commit messages must follow the
+  policy below.
+- Local hooks and Commitizen config are only baseline quality helpers. This
+  project currently has a `pre-commit` hook for lint-staged; do not assume
+  hooks enforce the `Changed:` / `Benefit:` body or the classification rules
+  below.
+- Subject: use English Conventional Commits without scope parentheses, such as
+  `type: summary`; do not use `type(scope): summary`. Use a lowercase type and
+  imperative mood.
+- Body: include exactly two sections, `Changed:` and `Benefit:`.
+- Classification: use `chore` for repository-maintenance-only instruction or
+  generated guidance updates like this file.
+- Runtime prompt, template, and system-prompt changes affect product behavior:
+  use `feat` when adding capability and `fix` when correcting behavior; do not
+  use `docs`.
+
+Example:
+
+```text
+chore: import commit message requirements
+
+Changed:
+Moved repository commit message requirements into AGENTS.md.
+
+Benefit:
+Contributors have one place to check the required commit title and body format.
+```
 
 ### Common Pitfalls to Avoid
 
@@ -587,31 +622,7 @@ npm pack --dry-run
 - **Component Props**: All prop names and descriptions
 - **Type Definitions**: Interface names, type names, and documentation
 - **Error Messages**: All error messages and logging
-- **Git Commit Messages**: Must follow Conventional Commits format
 - **Documentation**: README, API docs, and inline documentation
-
-#### Conventional Commits Format
-
-**Required Format**: `<type>: <description>`
-
-**Common Types**:
-
-- `feat:` - New feature or component
-- `fix:` - Bug fix
-- `docs:` - Documentation changes
-- `refactor:` - Code refactoring
-- `test:` - Adding or updating tests
-- `chore:` - Maintenance tasks
-- `build:` - Build system changes
-- `ci:` - CI configuration changes
-- `perf:` - Performance improvements
-- `style:` - Code formatting (no functional changes)
-
-**Examples**:
-
-- `feat: add typewriter effect to ContentRender component`
-- `fix: resolve markdown parsing issue with nested lists`
-- `docs: update component API documentation`
 
 ### Pre-commit Quality Checks
 

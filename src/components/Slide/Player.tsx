@@ -204,6 +204,7 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
     target: SlidePlayerSubtitleJumpTarget,
     context: SlidePlayerNavigationContext
   ) => boolean | void;
+  canJumpToSubtitleTarget?: (target: SlidePlayerSubtitleJumpTarget) => boolean;
   onFullscreen?: () => void;
   isFullscreen?: boolean;
   mobileViewMode?: MobileViewMode;
@@ -300,6 +301,7 @@ const Player = ({
   onPrev,
   onNext,
   onSubtitleJump,
+  canJumpToSubtitleTarget,
   onFullscreen,
   isFullscreen = false,
   mobileViewMode = DEFAULT_MOBILE_VIEW_MODE,
@@ -673,12 +675,24 @@ const Player = ({
         return null;
       }
 
+      if (target.audioIndex !== currentAudioIndex) {
+        if (!onSubtitleJump) {
+          return null;
+        }
+
+        if (canJumpToSubtitleTarget && !canJumpToSubtitleTarget(target)) {
+          return null;
+        }
+      }
+
       return target;
     },
     [
       audioList,
+      canJumpToSubtitleTarget,
       canSeekToAudioPlaybackTimeMs,
       currentAudioIndex,
+      onSubtitleJump,
       subtitleCueTracks,
     ]
   );

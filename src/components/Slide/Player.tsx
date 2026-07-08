@@ -12,10 +12,10 @@ import {
   Captions,
   CaptionsOff,
   EllipsisVertical,
+  FastForward,
   FilePenLine,
   Maximize,
-  RotateCcw,
-  RotateCw,
+  Rewind,
   ScanLine,
   SkipBack,
   SkipForward,
@@ -1903,6 +1903,80 @@ const Player = ({
                 <Volume2 className="slide-player__icon" strokeWidth={2.25} />
               </button>
               <button
+                aria-label={toggleAriaLabel}
+                aria-keyshortcuts={playbackShortcutMetadata.ariaKeyShortcuts}
+                className="slide-player__toggle slide-player__toggle--playback"
+                onClick={() => {
+                  togglePlayback();
+                }}
+                title={playbackShortcutMetadata.title}
+                type="button"
+              >
+                {isTogglePlaying ? <PauseIcon /> : <PlayIcon />}
+              </button>
+              <button
+                aria-keyshortcuts={previousShortcutMetadata.ariaKeyShortcuts}
+                aria-label={playerTexts.previousLabel}
+                className="slide-player__action slide-player__action--prev"
+                disabled={prevDisabled}
+                onClick={() => {
+                  onPrev?.(getNavigationContext());
+                }}
+                title={previousShortcutMetadata.title}
+                type="button"
+              >
+                <SkipBack className="slide-player__icon" strokeWidth={2.25} />
+              </button>
+              <button
+                aria-keyshortcuts={nextShortcutMetadata.ariaKeyShortcuts}
+                aria-label={playerTexts.nextLabel}
+                className="slide-player__action slide-player__action--next"
+                disabled={nextDisabled}
+                onClick={() => {
+                  onNext?.(getNavigationContext());
+                }}
+                title={nextShortcutMetadata.title}
+                type="button"
+              >
+                <SkipForward
+                  className="slide-player__icon"
+                  strokeWidth={2.25}
+                />
+              </button>
+              <button
+                aria-keyshortcuts={
+                  previousSubtitleShortcutMetadata.ariaKeyShortcuts
+                }
+                aria-label={playerTexts.previousSubtitleLabel}
+                className="slide-player__action slide-player__action--prev-subtitle"
+                disabled={!subtitleJumpAvailability.previous}
+                onClick={() => {
+                  jumpToSubtitleCue("previous");
+                }}
+                title={previousSubtitleShortcutMetadata.title}
+                type="button"
+              >
+                <Rewind className="slide-player__icon" strokeWidth={2.25} />
+              </button>
+              <button
+                aria-keyshortcuts={
+                  nextSubtitleShortcutMetadata.ariaKeyShortcuts
+                }
+                aria-label={playerTexts.nextSubtitleLabel}
+                className="slide-player__action slide-player__action--next-subtitle"
+                disabled={!subtitleJumpAvailability.next}
+                onClick={() => {
+                  jumpToSubtitleCue("next");
+                }}
+                title={nextSubtitleShortcutMetadata.title}
+                type="button"
+              >
+                <FastForward
+                  className="slide-player__icon"
+                  strokeWidth={2.25}
+                />
+              </button>
+              <button
                 aria-label={playerTexts.subtitleToggleAriaLabel}
                 aria-keyshortcuts={subtitleShortcutMetadata.ariaKeyShortcuts}
                 aria-pressed={isSubtitleEnabled}
@@ -1919,77 +1993,6 @@ const Player = ({
                     strokeWidth={2.25}
                   />
                 )}
-              </button>
-              <button
-                aria-keyshortcuts={
-                  previousSubtitleShortcutMetadata.ariaKeyShortcuts
-                }
-                aria-label={playerTexts.previousSubtitleLabel}
-                className="slide-player__action slide-player__action--prev-subtitle"
-                disabled={!subtitleJumpAvailability.previous}
-                onClick={() => {
-                  jumpToSubtitleCue("previous");
-                }}
-                title={previousSubtitleShortcutMetadata.title}
-                type="button"
-              >
-                <SkipBack className="slide-player__icon" strokeWidth={2.25} />
-              </button>
-              <button
-                aria-keyshortcuts={previousShortcutMetadata.ariaKeyShortcuts}
-                aria-label={playerTexts.previousLabel}
-                className="slide-player__action slide-player__action--prev"
-                disabled={prevDisabled}
-                onClick={() => {
-                  onPrev?.(getNavigationContext());
-                }}
-                title={previousShortcutMetadata.title}
-                type="button"
-              >
-                <RotateCcw className="slide-player__icon" strokeWidth={2.25} />
-              </button>
-              <button
-                aria-label={toggleAriaLabel}
-                aria-keyshortcuts={playbackShortcutMetadata.ariaKeyShortcuts}
-                className="slide-player__toggle slide-player__toggle--playback"
-                onClick={() => {
-                  togglePlayback();
-                }}
-                title={playbackShortcutMetadata.title}
-                type="button"
-              >
-                {isTogglePlaying ? <PauseIcon /> : <PlayIcon />}
-              </button>
-              <button
-                aria-keyshortcuts={nextShortcutMetadata.ariaKeyShortcuts}
-                aria-label={playerTexts.nextLabel}
-                className="slide-player__action slide-player__action--next"
-                disabled={nextDisabled}
-                onClick={() => {
-                  onNext?.(getNavigationContext());
-                }}
-                title={nextShortcutMetadata.title}
-                type="button"
-              >
-                <RotateCw className="slide-player__icon" strokeWidth={2.25} />
-              </button>
-              <button
-                aria-keyshortcuts={
-                  nextSubtitleShortcutMetadata.ariaKeyShortcuts
-                }
-                aria-label={playerTexts.nextSubtitleLabel}
-                className="slide-player__action slide-player__action--next-subtitle"
-                disabled={!subtitleJumpAvailability.next}
-                onClick={() => {
-                  jumpToSubtitleCue("next");
-                }}
-                title={nextSubtitleShortcutMetadata.title}
-                type="button"
-              >
-                <SkipForward
-                  className="slide-player__icon"
-                  strokeWidth={2.25}
-                />
               </button>
               {onFullscreen ? (
                 <button

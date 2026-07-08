@@ -159,11 +159,8 @@ export const shouldClearSubtitleCueJumpTarget = ({
   currentTimeMs,
   target,
 }: ShouldClearSubtitleCueJumpTargetOptions) =>
-  Boolean(
-    target &&
-      target.audioIndex === currentAudioIndex &&
-      target.timeMs !== normalizePlaybackTimeMs(currentTimeMs)
-  );
+  target?.audioIndex === currentAudioIndex &&
+  target.timeMs !== normalizePlaybackTimeMs(currentTimeMs);
 
 const resolveSubtitleCueJumpTargetCandidate = ({
   audioIndex,

@@ -220,6 +220,8 @@ const PLAYER_SHORTCUT_LABELS = {
   subtitle: "C",
 } as const;
 
+const SUBTITLE_JUMP_AVAILABILITY_UPDATE_INTERVAL_MS = 250;
+
 const getShortcutTitle = (label: string | undefined, shortcut: string) =>
   label ? `${label} (${shortcut})` : shortcut;
 
@@ -289,6 +291,7 @@ const Player = ({
   const updateSubtitleJumpAvailabilityRef = useRef<
     (currentTimeMs: number) => void
   >(() => {});
+  const lastSubtitleJumpAvailabilityTimeMsRef = useRef<number | null>(null);
   const playbackAccessModeRef = useRef<
     "unknown" | "auto" | "manual" | "blocked"
   >("unknown");
@@ -608,11 +611,28 @@ const Player = ({
   );
 
   const updateSubtitleJumpAvailability = useCallback(
-    (currentTimeMs: number) => {
+    (currentTimeMs: number, force = false) => {
+      const normalizedCurrentTimeMs = Math.max(Number(currentTimeMs), 0);
+
+      if (
+        !force &&
+        lastSubtitleJumpAvailabilityTimeMsRef.current !== null &&
+        Math.abs(
+          normalizedCurrentTimeMs -
+            lastSubtitleJumpAvailabilityTimeMsRef.current
+        ) < SUBTITLE_JUMP_AVAILABILITY_UPDATE_INTERVAL_MS
+      ) {
+        return;
+      }
+
+      lastSubtitleJumpAvailabilityTimeMsRef.current = normalizedCurrentTimeMs;
+
       const nextAvailability = {
         previous:
-          getSubtitleJumpTargetTimeMs("previous", currentTimeMs) !== null,
-        next: getSubtitleJumpTargetTimeMs("next", currentTimeMs) !== null,
+          getSubtitleJumpTargetTimeMs("previous", normalizedCurrentTimeMs) !==
+          null,
+        next:
+          getSubtitleJumpTargetTimeMs("next", normalizedCurrentTimeMs) !== null,
       };
 
       setSubtitleJumpAvailability((previousAvailability) => {
@@ -631,7 +651,7 @@ const Player = ({
 
   useEffect(() => {
     updateSubtitleJumpAvailabilityRef.current = updateSubtitleJumpAvailability;
-    updateSubtitleJumpAvailability(playbackTimeMsRef.current);
+    updateSubtitleJumpAvailability(playbackTimeMsRef.current, true);
   }, [updateSubtitleJumpAvailability]);
 
   const getCurrentPlaybackTimeMs = useCallback(() => {

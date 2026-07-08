@@ -3,9 +3,6 @@ import type { ElementSubtitleCue } from "../types";
 /** Direction for subtitle cue jump navigation. */
 export type SubtitleCueJumpDirection = "previous" | "next";
 
-/** Default elapsed time before Previous replays the active subtitle cue. */
-export const DEFAULT_SUBTITLE_CUE_REPLAY_THRESHOLD_MS = 800;
-
 export const getVisibleSubtitleText = (
   subtitleCues: ElementSubtitleCue[] = [],
   currentTimeMs: number
@@ -118,7 +115,6 @@ const getNextSubtitleCueStartTimeMs = (
 export interface GetSubtitleCueJumpTimeOptions {
   currentTimeMs: number;
   direction: SubtitleCueJumpDirection;
-  replayThresholdMs?: number;
   subtitleCues?: ElementSubtitleCue[];
 }
 
@@ -126,7 +122,6 @@ export interface GetSubtitleCueJumpTimeOptions {
 export const getSubtitleCueJumpTime = ({
   currentTimeMs,
   direction,
-  replayThresholdMs = DEFAULT_SUBTITLE_CUE_REPLAY_THRESHOLD_MS,
   subtitleCues = [],
 }: GetSubtitleCueJumpTimeOptions): number | null => {
   if (subtitleCues.length === 0) {
@@ -147,13 +142,6 @@ export const getSubtitleCueJumpTime = ({
     sortedSubtitleCues,
     normalizedCurrentTimeMs
   );
-
-  if (
-    activeStartTimeMs !== null &&
-    normalizedCurrentTimeMs - activeStartTimeMs >= replayThresholdMs
-  ) {
-    return activeStartTimeMs;
-  }
 
   return getPreviousSubtitleCueStartTimeMs(
     sortedSubtitleCues,

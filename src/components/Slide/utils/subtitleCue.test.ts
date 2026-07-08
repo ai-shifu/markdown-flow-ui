@@ -76,17 +76,17 @@ describe("getSubtitleCueJumpTime", () => {
     ).toBe(4_000);
   });
 
-  it("replays the active subtitle after the replay threshold", () => {
+  it("returns the previous subtitle even after the active subtitle has played for a while", () => {
     expect(
       getSubtitleCueJumpTime({
         subtitleCues,
         currentTimeMs: 2_400,
         direction: "previous",
       })
-    ).toBe(1_500);
+    ).toBe(0);
   });
 
-  it("returns the previous subtitle before the replay threshold", () => {
+  it("returns the previous subtitle near the active subtitle start", () => {
     expect(
       getSubtitleCueJumpTime({
         subtitleCues,

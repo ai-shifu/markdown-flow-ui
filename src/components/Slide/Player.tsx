@@ -912,7 +912,10 @@ const Player = ({
         updatePlaybackPreference(true);
       }
 
-      if (activeSourceTypeRef.current === "segment" && segmentSeekTarget) {
+      if (
+        segmentSeekTarget &&
+        (activeSourceTypeRef.current === "segment" || !currentAudioUrl)
+      ) {
         return startSegmentPlayback(
           segmentSeekTarget.segmentIndex,
           "subtitle-seek-segment",
@@ -956,18 +959,7 @@ const Player = ({
         return tryPlayCurrentAudio("subtitle-seek-url");
       }
 
-      if (!segmentSeekTarget) {
-        return false;
-      }
-
-      return startSegmentPlayback(
-        segmentSeekTarget.segmentIndex,
-        "subtitle-seek-segment",
-        {
-          seekTimeSeconds: segmentSeekTarget.segmentTimeSeconds,
-          shouldResume: shouldResumePlayback,
-        }
-      );
+      return false;
     },
     [
       currentAudio,

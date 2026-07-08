@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { getSubtitleCueJumpTime, getVisibleSubtitleText } from "./subtitleCue";
+import {
+  getSubtitleCueJumpTarget,
+  getSubtitleCueJumpTime,
+  getVisibleSubtitleText,
+} from "./subtitleCue";
 
 describe("getVisibleSubtitleText", () => {
   it("joins currently visible cues by visual order", () => {
@@ -41,6 +45,22 @@ describe("getVisibleSubtitleText", () => {
         1_500
       )
     ).toBe("");
+  });
+
+  it("defaults non-finite playback time to zero", () => {
+    expect(
+      getVisibleSubtitleText(
+        [
+          {
+            text: "Opening",
+            start_ms: 0,
+            end_ms: 1_000,
+            segment_index: 0,
+          },
+        ],
+        Number.NaN
+      )
+    ).toBe("Opening");
   });
 });
 
@@ -130,6 +150,16 @@ describe("getSubtitleCueJumpTime", () => {
     ).toBeNull();
   });
 
+  it("defaults non-finite playback time to zero", () => {
+    expect(
+      getSubtitleCueJumpTime({
+        subtitleCues,
+        currentTimeMs: Number.NaN,
+        direction: "next",
+      })
+    ).toBe(1_500);
+  });
+
   it("treats duplicate cue start times as one jump target", () => {
     expect(
       getSubtitleCueJumpTime({
@@ -159,5 +189,166 @@ describe("getSubtitleCueJumpTime", () => {
         direction: "previous",
       })
     ).toBeNull();
+  });
+});
+
+describe("getSubtitleCueJumpTarget", () => {
+  const tracks = [
+    {
+      subtitleCues: [
+        {
+          text: "First track opening",
+          start_ms: 0,
+          end_ms: 1_000,
+          segment_index: 0,
+        },
+        {
+          text: "First track closing",
+          start_ms: 2_000,
+          end_ms: 3_000,
+          segment_index: 1,
+        },
+      ],
+    },
+    {
+      subtitleCues: [
+        {
+          text: "Second track opening",
+          start_ms: 0,
+          end_ms: 1_000,
+          segment_index: 0,
+        },
+        {
+          text: "Second track closing",
+          start_ms: 4_000,
+          end_ms: 5_000,
+          segment_index: 1,
+        },
+      ],
+    },
+    {
+      subtitleCues: [],
+    },
+    {
+      subtitleCues: [
+        {
+          text: "Fourth track opening",
+          start_ms: 0,
+          end_ms: 1_000,
+          segment_index: 0,
+        },
+      ],
+    },
+  ];
+
+  it("returns a next target inside the current audio track", () => {
+    expect(
+      getSubtitleCueJumpTarget({
+        tracks,
+        currentAudioIndex: 0,
+        currentTimeMs: 500,
+        direction: "next",
+      })
+    ).toEqual({
+      audioIndex: 0,
+      timeMs: 2_000,
+    });
+  });
+
+  it("returns the first cue in the next audio track when current audio has no next target", () => {
+    expect(
+      getSubtitleCueJumpTarget({
+        tracks,
+        currentAudioIndex: 0,
+        currentTimeMs: 2_500,
+        direction: "next",
+      })
+    ).toEqual({
+      audioIndex: 1,
+      timeMs: 0,
+    });
+  });
+
+  it("skips audio tracks without subtitle cues when moving forward", () => {
+    expect(
+      getSubtitleCueJumpTarget({
+        tracks,
+        currentAudioIndex: 1,
+        currentTimeMs: 4_500,
+        direction: "next",
+      })
+    ).toEqual({
+      audioIndex: 3,
+      timeMs: 0,
+    });
+  });
+
+  it("returns a previous target inside the current audio track", () => {
+    expect(
+      getSubtitleCueJumpTarget({
+        tracks,
+        currentAudioIndex: 1,
+        currentTimeMs: 4_500,
+        direction: "previous",
+      })
+    ).toEqual({
+      audioIndex: 1,
+      timeMs: 0,
+    });
+  });
+
+  it("returns the last cue in the previous audio track when current audio has no previous target", () => {
+    expect(
+      getSubtitleCueJumpTarget({
+        tracks,
+        currentAudioIndex: 1,
+        currentTimeMs: 0,
+        direction: "previous",
+      })
+    ).toEqual({
+      audioIndex: 0,
+      timeMs: 2_000,
+    });
+  });
+
+  it("returns null when no subtitle target exists across tracks", () => {
+    expect(
+      getSubtitleCueJumpTarget({
+        tracks,
+        currentAudioIndex: 0,
+        currentTimeMs: 0,
+        direction: "previous",
+      })
+    ).toBeNull();
+    expect(
+      getSubtitleCueJumpTarget({
+        tracks,
+        currentAudioIndex: 3,
+        currentTimeMs: 100,
+        direction: "next",
+      })
+    ).toBeNull();
+    expect(
+      getSubtitleCueJumpTarget({
+        tracks,
+        currentAudioIndex: -1,
+        currentTimeMs: 100,
+        direction: "next",
+      })
+    ).toBeNull();
+  });
+
+  it("defaults non-finite current time to zero for cross-track targets", () => {
+    expect(
+      getSubtitleCueJumpTarget({
+        tracks,
+        currentAudioIndex: 1,
+        currentTimeMs: Number.NaN,
+        direction: "next",
+      })
+    ).toEqual({
+      audioIndex: 1,
+      timeMs: 4_000,
+    });
   });
 });

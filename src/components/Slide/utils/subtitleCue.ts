@@ -3,15 +3,32 @@ import type { ElementSubtitleCue } from "../types";
 /** Direction for subtitle cue jump navigation. */
 export type SubtitleCueJumpDirection = "previous" | "next";
 
+export interface SubtitleCueJumpTrack {
+  subtitleCues?: ElementSubtitleCue[];
+}
+
+export interface SubtitleCueJumpTarget {
+  audioIndex: number;
+  timeMs: number;
+}
+
+const normalizePlaybackTimeMs = (timeMs: number) => {
+  const parsedTimeMs = Number(timeMs);
+
+  return Number.isFinite(parsedTimeMs) ? Math.max(parsedTimeMs, 0) : 0;
+};
+
 export const getVisibleSubtitleText = (
   subtitleCues: ElementSubtitleCue[] = [],
   currentTimeMs: number
-) =>
-  subtitleCues
+): string => {
+  const normalizedCurrentTimeMs = normalizePlaybackTimeMs(currentTimeMs);
+
+  return subtitleCues
     .filter(
       (subtitleCue) =>
-        currentTimeMs >= subtitleCue.start_ms &&
-        currentTimeMs < subtitleCue.end_ms
+        normalizedCurrentTimeMs >= subtitleCue.start_ms &&
+        normalizedCurrentTimeMs < subtitleCue.end_ms
     )
     .sort(
       (prevCue, nextCue) =>
@@ -23,6 +40,7 @@ export const getVisibleSubtitleText = (
     .map((subtitleCue) => subtitleCue.text.trim())
     .filter(Boolean)
     .join("\n");
+};
 
 const getSubtitleCueStartTimeMs = (subtitleCue: ElementSubtitleCue) =>
   Math.max(Number(subtitleCue.start_ms ?? 0), 0);
@@ -111,6 +129,18 @@ const getNextSubtitleCueStartTimeMs = (
   return nextSubtitleCue ? getSubtitleCueStartTimeMs(nextSubtitleCue) : null;
 };
 
+const getFirstSubtitleCueStartTimeMs = (subtitleCues: ElementSubtitleCue[]) => {
+  const firstSubtitleCue = subtitleCues[0];
+
+  return firstSubtitleCue ? getSubtitleCueStartTimeMs(firstSubtitleCue) : null;
+};
+
+const getLastSubtitleCueStartTimeMs = (subtitleCues: ElementSubtitleCue[]) => {
+  const lastSubtitleCue = subtitleCues[subtitleCues.length - 1];
+
+  return lastSubtitleCue ? getSubtitleCueStartTimeMs(lastSubtitleCue) : null;
+};
+
 /** Options used to resolve a subtitle cue jump target. */
 export interface GetSubtitleCueJumpTimeOptions {
   currentTimeMs: number;
@@ -129,7 +159,7 @@ export const getSubtitleCueJumpTime = ({
   }
 
   const sortedSubtitleCues = sortSubtitleCuesByPlaybackTime(subtitleCues);
-  const normalizedCurrentTimeMs = Math.max(Number(currentTimeMs), 0);
+  const normalizedCurrentTimeMs = normalizePlaybackTimeMs(currentTimeMs);
 
   if (direction === "next") {
     return getNextSubtitleCueStartTimeMs(
@@ -147,4 +177,79 @@ export const getSubtitleCueJumpTime = ({
     sortedSubtitleCues,
     activeStartTimeMs ?? normalizedCurrentTimeMs
   );
+};
+
+export interface GetSubtitleCueJumpTargetOptions {
+  currentAudioIndex: number;
+  currentTimeMs: number;
+  direction: SubtitleCueJumpDirection;
+  tracks?: SubtitleCueJumpTrack[];
+}
+
+export const getSubtitleCueJumpTarget = ({
+  currentAudioIndex,
+  currentTimeMs,
+  direction,
+  tracks = [],
+}: GetSubtitleCueJumpTargetOptions): SubtitleCueJumpTarget | null => {
+  if (
+    tracks.length === 0 ||
+    currentAudioIndex < 0 ||
+    currentAudioIndex >= tracks.length
+  ) {
+    return null;
+  }
+
+  const normalizedCurrentTimeMs = normalizePlaybackTimeMs(currentTimeMs);
+
+  if (direction === "next") {
+    for (
+      let audioIndex = currentAudioIndex;
+      audioIndex < tracks.length;
+      audioIndex += 1
+    ) {
+      const sortedSubtitleCues = sortSubtitleCuesByPlaybackTime(
+        tracks[audioIndex]?.subtitleCues ?? []
+      );
+      const timeMs =
+        audioIndex === currentAudioIndex
+          ? getNextSubtitleCueStartTimeMs(
+              sortedSubtitleCues,
+              normalizedCurrentTimeMs
+            )
+          : getFirstSubtitleCueStartTimeMs(sortedSubtitleCues);
+
+      if (timeMs !== null) {
+        return {
+          audioIndex,
+          timeMs,
+        };
+      }
+    }
+
+    return null;
+  }
+
+  for (let audioIndex = currentAudioIndex; audioIndex >= 0; audioIndex -= 1) {
+    const sortedSubtitleCues = sortSubtitleCuesByPlaybackTime(
+      tracks[audioIndex]?.subtitleCues ?? []
+    );
+    const timeMs =
+      audioIndex === currentAudioIndex
+        ? getSubtitleCueJumpTime({
+            currentTimeMs: normalizedCurrentTimeMs,
+            direction,
+            subtitleCues: sortedSubtitleCues,
+          })
+        : getLastSubtitleCueStartTimeMs(sortedSubtitleCues);
+
+    if (timeMs !== null) {
+      return {
+        audioIndex,
+        timeMs,
+      };
+    }
+  }
+
+  return null;
 };

@@ -31,6 +31,8 @@ import SubtitleOverlay from "./SubtitleOverlay";
 import type {
   PlayerProps,
   SlidePlayerNavigationContext,
+  SlidePlayerSubtitleJumpTarget,
+  SlidePlayerSubtitleSeekRequest,
   SlidePlayerTexts,
 } from "./Player";
 import type { SlidePlayerLoadingReason } from "./Player";
@@ -48,6 +50,10 @@ import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
 import { shouldWakePlayerControlsAfterNavigation } from "./utils/playerNavigationContext";
 import { shouldAutoAdvanceIntoAppendedMarker } from "./utils/appendedMarkerAdvance";
 import { getPlaybackSequenceTransition } from "./utils/playbackSequence";
+import {
+  canReachSubtitleJumpTarget,
+  hasResolvedInteractionElement,
+} from "./utils/subtitleJumpNavigation";
 import {
   getPlayerCustomActionCount,
   resolvePlayerCustomActionElement,
@@ -267,6 +273,13 @@ const Slide: React.FC<SlideProps> = ({
   const prevRenderElementKeysRef = useRef<string[]>([]);
   const shouldScrollToBottomRef = useRef(false);
   const pendingInteractionOverlayStepIndexRef = useRef<number | null>(null);
+  const pendingSubtitleJumpRef = useRef<{
+    audioIndex: number;
+    audioKey: string;
+    slideIndex: number;
+    timeMs: number;
+  } | null>(null);
+  const subtitleSeekRequestIdRef = useRef(0);
   const playbackResetKeyRef = useRef<string | null>(null);
   const appendedMarkerAdvanceStateRef = useRef({
     markerCount: 0,
@@ -279,6 +292,7 @@ const Slide: React.FC<SlideProps> = ({
     slideElementList,
     currentIndex,
     audioList,
+    audioSlideIndexes,
     currentAudioSequenceIndexes,
     currentStepHasSpeakableElement,
     currentInteractionElement,
@@ -286,6 +300,7 @@ const Slide: React.FC<SlideProps> = ({
     canGoNext,
     handlePrev: goPrev,
     handleNext: goNext,
+    handleGoTo: goTo,
   } = useSlide(elementList);
   const currentStepElement = useMemo(() => {
     if (currentIndex < 0) {
@@ -329,6 +344,8 @@ const Slide: React.FC<SlideProps> = ({
   const [isPlaybackRequested, setIsPlaybackRequested] = useState(true);
   const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(true);
   const [currentAudioKey, setCurrentAudioKey] = useState<string | null>(null);
+  const [subtitleSeekRequest, setSubtitleSeekRequest] =
+    useState<SlidePlayerSubtitleSeekRequest | null>(null);
   const [isAudioLoadingVisible, setIsAudioLoadingVisible] = useState(false);
   const [audioLoadingReason, setAudioLoadingReason] =
     useState<SlideBufferingReason>(DEFAULT_BUFFERING_REASON);
@@ -608,25 +625,47 @@ const Slide: React.FC<SlideProps> = ({
     autoAdvanceTimerRef.current = null;
   }, []);
 
-  const resetAudioSequence = useCallback(() => {
-    clearAutoAdvanceTimer();
-    clearInteractionAutoCloseTimer();
-    clearInteractionOverlayOpenTimer();
-    setCurrentAudioKey(null);
-    playbackTimeStore.reset();
-    setIsAudioLoadingVisible(false);
-    setAudioLoadingReason(DEFAULT_BUFFERING_REASON);
-    setHasCompletedCurrentStepAudio(false);
-    setHasCurrentAudioPlaybackStarted(false);
-    setActiveInteractionElement(undefined);
-    setIsInteractionOverlayOpen(false);
-    setInteractionOverlaySubtitleOffset(0);
-  }, [
-    clearAutoAdvanceTimer,
-    clearInteractionAutoCloseTimer,
-    clearInteractionOverlayOpenTimer,
-    playbackTimeStore,
-  ]);
+  const resetAudioSequence = useCallback(
+    (
+      options: {
+        preservePendingSubtitleJump?: boolean;
+      } = {}
+    ) => {
+      clearAutoAdvanceTimer();
+      clearInteractionAutoCloseTimer();
+      clearInteractionOverlayOpenTimer();
+      setCurrentAudioKey(null);
+      playbackTimeStore.reset();
+      setIsAudioLoadingVisible(false);
+      setAudioLoadingReason(DEFAULT_BUFFERING_REASON);
+      setHasCompletedCurrentStepAudio(false);
+      setHasCurrentAudioPlaybackStarted(false);
+      setSubtitleSeekRequest(null);
+      if (!options.preservePendingSubtitleJump) {
+        pendingSubtitleJumpRef.current = null;
+      }
+      setActiveInteractionElement(undefined);
+      setIsInteractionOverlayOpen(false);
+      setInteractionOverlaySubtitleOffset(0);
+    },
+    [
+      clearAutoAdvanceTimer,
+      clearInteractionAutoCloseTimer,
+      clearInteractionOverlayOpenTimer,
+      playbackTimeStore,
+    ]
+  );
+
+  const requestSubtitleCueSeek = useCallback(
+    (target: SlidePlayerSubtitleJumpTarget) => {
+      subtitleSeekRequestIdRef.current += 1;
+      setSubtitleSeekRequest({
+        ...target,
+        id: subtitleSeekRequestIdRef.current,
+      });
+    },
+    []
+  );
 
   const startCurrentAudioSequence = useCallback(() => {
     const nextAudioKey = currentAudioSequenceKeys[0];
@@ -714,8 +753,7 @@ const Slide: React.FC<SlideProps> = ({
   );
 
   const hasResolvedCurrentInteraction = Boolean(
-    currentInteractionElement?.readonly ||
-      currentInteractionElement?.user_input?.trim()
+    hasResolvedInteractionElement(currentInteractionElement)
   );
 
   const shouldBlockPlaybackForInteraction =
@@ -941,8 +979,14 @@ const Slide: React.FC<SlideProps> = ({
       currentStepHasSpeakableElement,
     });
 
+    const pendingSubtitleJump = pendingSubtitleJumpRef.current;
+    const shouldPreservePendingSubtitleJump =
+      pendingSubtitleJump?.slideIndex === currentIndex;
+
     if (hasPlaybackContextChanged) {
-      resetAudioSequence();
+      resetAudioSequence({
+        preservePendingSubtitleJump: shouldPreservePendingSubtitleJump,
+      });
     }
 
     if (currentElementList.length === 0 && !currentInteractionElement) {
@@ -951,6 +995,27 @@ const Slide: React.FC<SlideProps> = ({
 
     if (shouldPausePlaybackForCustomAction) {
       return;
+    }
+
+    if (pendingSubtitleJump?.slideIndex === currentIndex) {
+      if (
+        !canReachSubtitleJumpTarget({
+          currentIndex,
+          resolvedCurrentInteractionElement: activeInteractionElement,
+          slideElementList,
+          targetSlideIndex: pendingSubtitleJump.slideIndex,
+        })
+      ) {
+        // Keep the pending seek queued while the interaction overlay gates playback.
+      } else {
+        pendingSubtitleJumpRef.current = null;
+        setCurrentAudioKey(pendingSubtitleJump.audioKey);
+        requestSubtitleCueSeek({
+          audioIndex: pendingSubtitleJump.audioIndex,
+          timeMs: pendingSubtitleJump.timeMs,
+        });
+        return;
+      }
     }
 
     if (currentInteractionElement) {
@@ -1002,9 +1067,11 @@ const Slide: React.FC<SlideProps> = ({
       clearAutoAdvanceTimer();
     };
   }, [
+    activeInteractionElement,
     canGoNext,
     clearAutoAdvanceTimer,
     currentElementList.length,
+    currentIndex,
     currentInteractionElement,
     currentAudioKey,
     currentPlaybackResetKey,
@@ -1018,7 +1085,9 @@ const Slide: React.FC<SlideProps> = ({
     shouldBlockPlaybackForInteraction,
     clearInteractionOverlayOpenTimer,
     resetAudioSequence,
+    requestSubtitleCueSeek,
     scheduleInteractionOverlayOpen,
+    slideElementList,
     startCurrentAudioSequence,
     shouldPausePlaybackForCustomAction,
     shouldUseSilentStepAutoAdvanceToggle,
@@ -1381,6 +1450,83 @@ const Slide: React.FC<SlideProps> = ({
       behavior: "smooth",
     });
   }, []);
+
+  const canJumpToSubtitleTarget = useCallback(
+    (target: SlidePlayerSubtitleJumpTarget) =>
+      canReachSubtitleJumpTarget({
+        currentIndex,
+        resolvedCurrentInteractionElement: activeInteractionElement,
+        slideElementList,
+        targetSlideIndex: audioSlideIndexes[target.audioIndex],
+      }),
+    [
+      activeInteractionElement,
+      audioSlideIndexes,
+      currentIndex,
+      slideElementList,
+    ]
+  );
+
+  const handleSubtitleJump = useCallback(
+    (
+      target: SlidePlayerSubtitleJumpTarget,
+      context: SlidePlayerNavigationContext
+    ) => {
+      const targetAudio = audioList[target.audioIndex];
+      const targetAudioKey = targetAudio?.audioKey;
+      const targetSlideIndex = audioSlideIndexes[target.audioIndex];
+
+      if (!targetAudioKey || targetSlideIndex == null) {
+        return false;
+      }
+
+      if (!canJumpToSubtitleTarget(target)) {
+        return false;
+      }
+
+      syncPlaybackPreferenceBeforeNavigation(context);
+      pendingInteractionOverlayStepIndexRef.current = null;
+      setIsAudioLoadingVisible(false);
+      setHasCompletedCurrentStepAudio(false);
+      setHasCurrentAudioPlaybackStarted(false);
+
+      if (shouldWakePlayerControlsAfterNavigation(context)) {
+        setHasPlayerInteracted(true);
+        showPlayerControls(true);
+      }
+
+      if (targetSlideIndex === currentIndex) {
+        pendingSubtitleJumpRef.current = null;
+        resetAudioSequence();
+        setCurrentAudioKey(targetAudioKey);
+        requestSubtitleCueSeek(target);
+        return true;
+      }
+
+      shouldScrollToBottomRef.current = true;
+      resetAudioSequence();
+      pendingSubtitleJumpRef.current = {
+        audioIndex: target.audioIndex,
+        audioKey: targetAudioKey,
+        slideIndex: targetSlideIndex,
+        timeMs: target.timeMs,
+      };
+      goTo(targetSlideIndex);
+
+      return true;
+    },
+    [
+      audioList,
+      audioSlideIndexes,
+      canJumpToSubtitleTarget,
+      currentIndex,
+      goTo,
+      requestSubtitleCueSeek,
+      resetAudioSequence,
+      showPlayerControls,
+      syncPlaybackPreferenceBeforeNavigation,
+    ]
+  );
 
   const handlePrev = useCallback(
     (context?: SlidePlayerNavigationContext) => {
@@ -1822,8 +1968,11 @@ const Slide: React.FC<SlideProps> = ({
               onInteractionToggle={handleInteractionToggle}
               onNext={handleNext}
               onPrev={handlePrev}
+              onSubtitleJump={handleSubtitleJump}
+              canJumpToSubtitleTarget={canJumpToSubtitleTarget}
               prevDisabled={!canGoPrev}
               showControls={playerVisible}
+              subtitleSeekRequest={subtitleSeekRequest}
               texts={playerTexts}
               customActionContext={playerCustomActionContext}
               customActions={playerCustomActions}

@@ -51,7 +51,10 @@ import {
 import { shouldKeepPlayingAfterNavigation } from "./utils/playbackPreference";
 import { toPlayerCustomActionList } from "./utils/playerCustomActions";
 import { suppressPlayerControlsWakeAfterNavigation } from "./utils/playerNavigationContext";
-import { resolveSegmentSeekTarget } from "./utils/segmentSeek";
+import {
+  isPlaybackTimeCoveredBySegments,
+  resolveSegmentSeekTarget,
+} from "./utils/segmentSeek";
 import {
   getSubtitleCueJumpTime,
   type SubtitleCueJumpDirection,
@@ -77,6 +80,7 @@ export interface SlidePlayerTexts {
   exitFullscreenLabel?: string;
   moreOptionsAriaLabel?: string;
   nextLabel?: string;
+  /** Accessible label/title for the next-subtitle jump control. */
   nextSubtitleLabel?: string;
   notesLabel?: string;
   pauseAutoplayLabel?: string;
@@ -84,6 +88,7 @@ export interface SlidePlayerTexts {
   playAutoplayLabel?: string;
   playLabel?: string;
   previousLabel?: string;
+  /** Accessible label/title for the previous-subtitle jump control. */
   previousSubtitleLabel?: string;
   screenModeLabel?: string;
   settingsTitle?: string;
@@ -281,6 +286,9 @@ const Player = ({
   const isSwitchingSegmentRef = useRef(false);
   const playbackAnimationFrameRef = useRef<number | null>(null);
   const playbackTimeMsRef = useRef(0);
+  const updateSubtitleJumpAvailabilityRef = useRef<
+    (currentTimeMs: number) => void
+  >(() => {});
   const playbackAccessModeRef = useRef<
     "unknown" | "auto" | "manual" | "blocked"
   >("unknown");
@@ -574,7 +582,10 @@ const Player = ({
         return true;
       }
 
-      return Boolean(resolveSegmentSeekTarget(currentAudioSegments, timeMs));
+      return (
+        isPlaybackTimeCoveredBySegments(currentAudioSegments, timeMs) &&
+        Boolean(resolveSegmentSeekTarget(currentAudioSegments, timeMs))
+      );
     },
     [currentAudio, currentAudioSegments, currentAudioUrl, isPlaybackPaused]
   );
@@ -619,6 +630,7 @@ const Player = ({
   );
 
   useEffect(() => {
+    updateSubtitleJumpAvailabilityRef.current = updateSubtitleJumpAvailability;
     updateSubtitleJumpAvailability(playbackTimeMsRef.current);
   }, [updateSubtitleJumpAvailability]);
 
@@ -655,9 +667,9 @@ const Player = ({
 
       playbackTimeMsRef.current = nextPlaybackTimeMs;
       onPlaybackTimeChange?.(nextPlaybackTimeMs);
-      updateSubtitleJumpAvailability(nextPlaybackTimeMs);
+      updateSubtitleJumpAvailabilityRef.current(nextPlaybackTimeMs);
     },
-    [onPlaybackTimeChange, updateSubtitleJumpAvailability]
+    [onPlaybackTimeChange]
   );
 
   const syncPlaybackTime = useCallback(() => {
@@ -855,7 +867,22 @@ const Player = ({
       }
 
       const targetTimeMs = Math.max(Number(timeMs), 0);
-      const shouldResumePlayback = !audioElement.paused && !audioElement.ended;
+      const shouldResumePlayback =
+        (!audioElement.paused && !audioElement.ended) ||
+        pendingAutoPlayRef.current ||
+        isSwitchingSegmentRef.current ||
+        (waitingSegmentIndexRef.current !== null &&
+          playbackPreferenceRef.current &&
+          !isPausedByUserRef.current);
+      const segmentSeekTarget = isPlaybackTimeCoveredBySegments(
+        currentAudioSegmentsRef.current,
+        targetTimeMs
+      )
+        ? resolveSegmentSeekTarget(
+            currentAudioSegmentsRef.current,
+            targetTimeMs
+          )
+        : null;
 
       stopPlaybackTimeLoop();
       pendingAutoPlayRef.current = shouldResumePlayback;
@@ -865,6 +892,17 @@ const Player = ({
         playbackAccessModeRef.current = "manual";
         isPausedByUserRef.current = false;
         updatePlaybackPreference(true);
+      }
+
+      if (activeSourceTypeRef.current === "segment" && segmentSeekTarget) {
+        return startSegmentPlayback(
+          segmentSeekTarget.segmentIndex,
+          "subtitle-seek-segment",
+          {
+            seekTimeSeconds: segmentSeekTarget.segmentTimeSeconds,
+            shouldResume: shouldResumePlayback,
+          }
+        );
       }
 
       if (currentAudioUrl) {
@@ -899,11 +937,6 @@ const Player = ({
 
         return tryPlayCurrentAudio("subtitle-seek-url");
       }
-
-      const segmentSeekTarget = resolveSegmentSeekTarget(
-        currentAudioSegmentsRef.current,
-        targetTimeMs
-      );
 
       if (!segmentSeekTarget) {
         return false;
@@ -1548,8 +1581,7 @@ const Player = ({
           return true;
         }
 
-        jumpToSubtitleCue("next");
-        return true;
+        return jumpToSubtitleCue("next");
       },
       previous: () => {
         if (!onPrev) {
@@ -1569,8 +1601,7 @@ const Player = ({
           return true;
         }
 
-        jumpToSubtitleCue("previous");
-        return true;
+        return jumpToSubtitleCue("previous");
       },
       subtitle: () => {
         if (!onSubtitleToggle) {

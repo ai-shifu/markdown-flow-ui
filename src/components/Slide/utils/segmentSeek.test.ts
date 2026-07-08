@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveSegmentSeekTarget } from "./segmentSeek";
+import {
+  isPlaybackTimeCoveredBySegments,
+  resolveSegmentSeekTarget,
+} from "./segmentSeek";
 
 describe("resolveSegmentSeekTarget", () => {
   const audioSegments = [
@@ -38,5 +41,11 @@ describe("resolveSegmentSeekTarget", () => {
 
   it("returns null when there are no segments", () => {
     expect(resolveSegmentSeekTarget([], 1_000)).toBeNull();
+  });
+
+  it("detects whether a playback time is covered by loaded segments", () => {
+    expect(isPlaybackTimeCoveredBySegments(audioSegments, 3_000)).toBe(true);
+    expect(isPlaybackTimeCoveredBySegments(audioSegments, 3_001)).toBe(false);
+    expect(isPlaybackTimeCoveredBySegments([], 0)).toBe(false);
   });
 });

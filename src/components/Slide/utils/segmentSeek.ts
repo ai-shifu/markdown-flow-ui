@@ -5,6 +5,22 @@ export interface SegmentSeekTarget {
   segmentTimeSeconds: number;
 }
 
+export const getAudioSegmentsDurationMs = (
+  segments: NonNullable<SlideAudioItem["audioSegments"]> = []
+) =>
+  segments.reduce(
+    (totalDurationMs, segment) =>
+      totalDurationMs + Math.max(Number(segment.duration_ms ?? 0), 0),
+    0
+  );
+
+export const isPlaybackTimeCoveredBySegments = (
+  segments: NonNullable<SlideAudioItem["audioSegments"]> = [],
+  timeMs: number
+) =>
+  segments.length > 0 &&
+  Math.max(Number(timeMs), 0) <= getAudioSegmentsDurationMs(segments);
+
 export const resolveSegmentSeekTarget = (
   segments: NonNullable<SlideAudioItem["audioSegments"]> = [],
   timeMs: number

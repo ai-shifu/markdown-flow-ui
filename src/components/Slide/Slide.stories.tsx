@@ -3240,6 +3240,7 @@ export const HistorySlides: Story = {
     fullscreenHeader: {
       content: (
         <div className="flex min-w-0 items-center gap-2 overflow-hidden text-[16px] font-bold leading-6 text-black">
+          {/* eslint-disable-next-line @next/next/no-img-element -- Storybook uses a static avatar fixture outside Next image optimization. */}
           <img
             alt="Nike老师"
             className="h-8 w-8 shrink-0 rounded-full object-cover"

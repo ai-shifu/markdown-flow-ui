@@ -56,8 +56,10 @@ import {
   resolveSegmentSeekTarget,
 } from "./utils/segmentSeek";
 import {
-  getSubtitleCueJumpTime,
+  getSubtitleCueJumpTarget,
   type SubtitleCueJumpDirection,
+  type SubtitleCueJumpTarget,
+  type SubtitleCueJumpTrack,
 } from "./utils/subtitleCue";
 import "./player.css";
 
@@ -109,6 +111,13 @@ export interface SlidePlayerNavigationContext {
   shouldWakeControls?: boolean;
 }
 
+export type SlidePlayerSubtitleJumpTarget = SubtitleCueJumpTarget;
+
+export interface SlidePlayerSubtitleSeekRequest
+  extends SlidePlayerSubtitleJumpTarget {
+  id: number | string;
+}
+
 const preloadAudioUrl = (url?: string) => {
   if (typeof window === "undefined" || !url) {
     return;
@@ -129,6 +138,12 @@ const preloadAudioUrl = (url?: string) => {
   audioPreloadElementCache.set(url, audio);
 };
 
+const getSortedAudioSegments = (audioItem?: SlideAudioItem) =>
+  [...(audioItem?.audioSegments ?? [])].sort(
+    (prevSegment, nextSegment) =>
+      prevSegment.segment_index - nextSegment.segment_index
+  );
+
 export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   audioList?: SlideAudioItem[];
   currentAudioIndex?: number;
@@ -146,6 +161,10 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   onSubtitleToggle?: () => void;
   onPrev?: (context: SlidePlayerNavigationContext) => void;
   onNext?: (context: SlidePlayerNavigationContext) => void;
+  onSubtitleJump?: (
+    target: SlidePlayerSubtitleJumpTarget,
+    context: SlidePlayerNavigationContext
+  ) => boolean | void;
   onFullscreen?: () => void;
   isFullscreen?: boolean;
   mobileViewMode?: MobileViewMode;
@@ -172,6 +191,7 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
    * ```
    */
   enableKeyboardShortcuts?: boolean;
+  subtitleSeekRequest?: SlidePlayerSubtitleSeekRequest | null;
   customActions?: SlidePlayerCustomActions;
   customActionContext?: SlidePlayerCustomActionContext;
   texts?: SlidePlayerTexts;
@@ -240,6 +260,7 @@ const Player = ({
   onSubtitleToggle,
   onPrev,
   onNext,
+  onSubtitleJump,
   onFullscreen,
   isFullscreen = false,
   mobileViewMode = DEFAULT_MOBILE_VIEW_MODE,
@@ -255,6 +276,7 @@ const Player = ({
   nextDisabled = false,
   showControls = true,
   enableKeyboardShortcuts = true,
+  subtitleSeekRequest = null,
   customActions,
   customActionContext,
   texts,
@@ -292,6 +314,7 @@ const Player = ({
     (currentTimeMs: number) => void
   >(() => {});
   const lastSubtitleJumpAvailabilityTimeMsRef = useRef<number | null>(null);
+  const lastSubtitleSeekRequestIdRef = useRef<number | string | null>(null);
   const playbackAccessModeRef = useRef<
     "unknown" | "auto" | "manual" | "blocked"
   >("unknown");
@@ -309,16 +332,15 @@ const Player = ({
     currentAudioIndex >= 0 ? audioList[currentAudioIndex] : undefined;
   const currentAudioUrl = currentAudio?.audioUrl;
   const currentAudioSegments = useMemo(
-    () =>
-      [...(currentAudio?.audioSegments ?? [])].sort(
-        (prevSegment, nextSegment) =>
-          prevSegment.segment_index - nextSegment.segment_index
-      ),
-    [currentAudio?.audioSegments]
+    () => getSortedAudioSegments(currentAudio),
+    [currentAudio]
   );
-  const currentSubtitleCues = useMemo(
-    () => currentAudio?.element?.subtitle_cues ?? [],
-    [currentAudio?.element?.subtitle_cues]
+  const subtitleCueTracks = useMemo<SubtitleCueJumpTrack[]>(
+    () =>
+      audioList.map((audioItem) => ({
+        subtitleCues: audioItem.element?.subtitle_cues ?? [],
+      })),
+    [audioList]
   );
   const customActionList = useMemo(
     () => toPlayerCustomActionList(customActions, customActionContext),
@@ -575,36 +597,51 @@ const Player = ({
       );
   }, []);
 
-  const canSeekToPlaybackTimeMs = useCallback(
-    (timeMs: number) => {
-      if (!currentAudio || isPlaybackPaused) {
+  const canSeekToAudioPlaybackTimeMs = useCallback(
+    (audioItem: SlideAudioItem | undefined, timeMs: number) => {
+      if (!audioItem || isPlaybackPaused) {
         return false;
       }
 
-      if (currentAudioUrl) {
+      if (audioItem.audioUrl) {
         return true;
       }
 
-      return isPlaybackTimeCoveredBySegments(currentAudioSegments, timeMs);
+      return isPlaybackTimeCoveredBySegments(
+        getSortedAudioSegments(audioItem),
+        timeMs
+      );
     },
-    [currentAudio, currentAudioSegments, currentAudioUrl, isPlaybackPaused]
+    [isPlaybackPaused]
   );
 
-  const getSubtitleJumpTargetTimeMs = useCallback(
+  const getSubtitleJumpTarget = useCallback(
     (direction: SubtitleCueJumpDirection, currentTimeMs: number) => {
-      const targetTimeMs = getSubtitleCueJumpTime({
+      const target = getSubtitleCueJumpTarget({
+        currentAudioIndex,
         currentTimeMs,
         direction,
-        subtitleCues: currentSubtitleCues,
+        tracks: subtitleCueTracks,
       });
 
-      if (targetTimeMs === null || !canSeekToPlaybackTimeMs(targetTimeMs)) {
+      if (
+        !target ||
+        !canSeekToAudioPlaybackTimeMs(
+          audioList[target.audioIndex],
+          target.timeMs
+        )
+      ) {
         return null;
       }
 
-      return targetTimeMs;
+      return target;
     },
-    [canSeekToPlaybackTimeMs, currentSubtitleCues]
+    [
+      audioList,
+      canSeekToAudioPlaybackTimeMs,
+      currentAudioIndex,
+      subtitleCueTracks,
+    ]
   );
 
   const updateSubtitleJumpAvailability = useCallback(
@@ -626,10 +663,8 @@ const Player = ({
 
       const nextAvailability = {
         previous:
-          getSubtitleJumpTargetTimeMs("previous", normalizedCurrentTimeMs) !==
-          null,
-        next:
-          getSubtitleJumpTargetTimeMs("next", normalizedCurrentTimeMs) !== null,
+          getSubtitleJumpTarget("previous", normalizedCurrentTimeMs) !== null,
+        next: getSubtitleJumpTarget("next", normalizedCurrentTimeMs) !== null,
       };
 
       setSubtitleJumpAvailability((previousAvailability) => {
@@ -643,7 +678,7 @@ const Player = ({
         return nextAvailability;
       });
     },
-    [getSubtitleJumpTargetTimeMs]
+    [getSubtitleJumpTarget]
   );
 
   useEffect(() => {
@@ -976,20 +1011,32 @@ const Player = ({
 
   const jumpToSubtitleCue = useCallback(
     (direction: SubtitleCueJumpDirection) => {
-      const targetTimeMs = getSubtitleJumpTargetTimeMs(
+      const target = getSubtitleJumpTarget(
         direction,
         getCurrentPlaybackTimeMs()
       );
 
-      if (targetTimeMs === null) {
+      if (target === null) {
         return false;
       }
 
-      return seekToPlaybackTimeMs(targetTimeMs);
+      if (target.audioIndex === currentAudioIndex) {
+        return seekToPlaybackTimeMs(target.timeMs);
+      }
+
+      return Boolean(
+        onSubtitleJump?.(
+          target,
+          suppressPlayerControlsWakeAfterNavigation(getNavigationContext())
+        )
+      );
     },
     [
+      currentAudioIndex,
       getCurrentPlaybackTimeMs,
-      getSubtitleJumpTargetTimeMs,
+      getNavigationContext,
+      getSubtitleJumpTarget,
+      onSubtitleJump,
       seekToPlaybackTimeMs,
     ]
   );
@@ -1340,6 +1387,36 @@ const Player = ({
     tryPlayCurrentAudio,
     getWaitingSegmentSeekTime,
     updateLoading,
+  ]);
+
+  useEffect(() => {
+    if (!subtitleSeekRequest) {
+      return;
+    }
+
+    if (
+      subtitleSeekRequest.id === lastSubtitleSeekRequestIdRef.current ||
+      subtitleSeekRequest.audioIndex !== currentAudioIndex
+    ) {
+      return;
+    }
+
+    const targetAudio = audioList[subtitleSeekRequest.audioIndex];
+
+    if (
+      !canSeekToAudioPlaybackTimeMs(targetAudio, subtitleSeekRequest.timeMs)
+    ) {
+      return;
+    }
+
+    lastSubtitleSeekRequestIdRef.current = subtitleSeekRequest.id;
+    seekToPlaybackTimeMs(subtitleSeekRequest.timeMs);
+  }, [
+    audioList,
+    canSeekToAudioPlaybackTimeMs,
+    currentAudioIndex,
+    seekToPlaybackTimeMs,
+    subtitleSeekRequest,
   ]);
 
   useEffect(() => resetAudio, [resetAudio]);

@@ -31,6 +31,8 @@ import SubtitleOverlay from "./SubtitleOverlay";
 import type {
   PlayerProps,
   SlidePlayerNavigationContext,
+  SlidePlayerSubtitleJumpTarget,
+  SlidePlayerSubtitleSeekRequest,
   SlidePlayerTexts,
 } from "./Player";
 import type { SlidePlayerLoadingReason } from "./Player";
@@ -267,6 +269,13 @@ const Slide: React.FC<SlideProps> = ({
   const prevRenderElementKeysRef = useRef<string[]>([]);
   const shouldScrollToBottomRef = useRef(false);
   const pendingInteractionOverlayStepIndexRef = useRef<number | null>(null);
+  const pendingSubtitleJumpRef = useRef<{
+    audioIndex: number;
+    audioKey: string;
+    slideIndex: number;
+    timeMs: number;
+  } | null>(null);
+  const subtitleSeekRequestIdRef = useRef(0);
   const playbackResetKeyRef = useRef<string | null>(null);
   const appendedMarkerAdvanceStateRef = useRef({
     markerCount: 0,
@@ -279,6 +288,7 @@ const Slide: React.FC<SlideProps> = ({
     slideElementList,
     currentIndex,
     audioList,
+    audioSlideIndexes,
     currentAudioSequenceIndexes,
     currentStepHasSpeakableElement,
     currentInteractionElement,
@@ -286,6 +296,7 @@ const Slide: React.FC<SlideProps> = ({
     canGoNext,
     handlePrev: goPrev,
     handleNext: goNext,
+    handleGoTo: goTo,
   } = useSlide(elementList);
   const currentStepElement = useMemo(() => {
     if (currentIndex < 0) {
@@ -329,6 +340,8 @@ const Slide: React.FC<SlideProps> = ({
   const [isPlaybackRequested, setIsPlaybackRequested] = useState(true);
   const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(true);
   const [currentAudioKey, setCurrentAudioKey] = useState<string | null>(null);
+  const [subtitleSeekRequest, setSubtitleSeekRequest] =
+    useState<SlidePlayerSubtitleSeekRequest | null>(null);
   const [isAudioLoadingVisible, setIsAudioLoadingVisible] = useState(false);
   const [audioLoadingReason, setAudioLoadingReason] =
     useState<SlideBufferingReason>(DEFAULT_BUFFERING_REASON);
@@ -618,6 +631,7 @@ const Slide: React.FC<SlideProps> = ({
     setAudioLoadingReason(DEFAULT_BUFFERING_REASON);
     setHasCompletedCurrentStepAudio(false);
     setHasCurrentAudioPlaybackStarted(false);
+    setSubtitleSeekRequest(null);
     setActiveInteractionElement(undefined);
     setIsInteractionOverlayOpen(false);
     setInteractionOverlaySubtitleOffset(0);
@@ -627,6 +641,17 @@ const Slide: React.FC<SlideProps> = ({
     clearInteractionOverlayOpenTimer,
     playbackTimeStore,
   ]);
+
+  const requestSubtitleCueSeek = useCallback(
+    (target: SlidePlayerSubtitleJumpTarget) => {
+      subtitleSeekRequestIdRef.current += 1;
+      setSubtitleSeekRequest({
+        ...target,
+        id: subtitleSeekRequestIdRef.current,
+      });
+    },
+    []
+  );
 
   const startCurrentAudioSequence = useCallback(() => {
     const nextAudioKey = currentAudioSequenceKeys[0];
@@ -953,6 +978,18 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
+    const pendingSubtitleJump = pendingSubtitleJumpRef.current;
+
+    if (pendingSubtitleJump?.slideIndex === currentIndex) {
+      pendingSubtitleJumpRef.current = null;
+      setCurrentAudioKey(pendingSubtitleJump.audioKey);
+      requestSubtitleCueSeek({
+        audioIndex: pendingSubtitleJump.audioIndex,
+        timeMs: pendingSubtitleJump.timeMs,
+      });
+      return;
+    }
+
     if (currentInteractionElement) {
       setActiveInteractionElement(currentInteractionElement);
     }
@@ -1018,6 +1055,7 @@ const Slide: React.FC<SlideProps> = ({
     shouldBlockPlaybackForInteraction,
     clearInteractionOverlayOpenTimer,
     resetAudioSequence,
+    requestSubtitleCueSeek,
     scheduleInteractionOverlayOpen,
     startCurrentAudioSequence,
     shouldPausePlaybackForCustomAction,
@@ -1381,6 +1419,62 @@ const Slide: React.FC<SlideProps> = ({
       behavior: "smooth",
     });
   }, []);
+
+  const handleSubtitleJump = useCallback(
+    (
+      target: SlidePlayerSubtitleJumpTarget,
+      context: SlidePlayerNavigationContext
+    ) => {
+      const targetAudio = audioList[target.audioIndex];
+      const targetAudioKey = targetAudio?.audioKey;
+      const targetSlideIndex = audioSlideIndexes[target.audioIndex];
+
+      if (!targetAudioKey || targetSlideIndex == null) {
+        return false;
+      }
+
+      syncPlaybackPreferenceBeforeNavigation(context);
+      pendingInteractionOverlayStepIndexRef.current = null;
+      setIsAudioLoadingVisible(false);
+      setHasCompletedCurrentStepAudio(false);
+      setHasCurrentAudioPlaybackStarted(false);
+
+      if (shouldWakePlayerControlsAfterNavigation(context)) {
+        setHasPlayerInteracted(true);
+        showPlayerControls(true);
+      }
+
+      if (targetSlideIndex === currentIndex) {
+        pendingSubtitleJumpRef.current = null;
+        resetAudioSequence();
+        setCurrentAudioKey(targetAudioKey);
+        requestSubtitleCueSeek(target);
+        return true;
+      }
+
+      shouldScrollToBottomRef.current = true;
+      pendingSubtitleJumpRef.current = {
+        audioIndex: target.audioIndex,
+        audioKey: targetAudioKey,
+        slideIndex: targetSlideIndex,
+        timeMs: target.timeMs,
+      };
+      resetAudioSequence();
+      goTo(targetSlideIndex);
+
+      return true;
+    },
+    [
+      audioList,
+      audioSlideIndexes,
+      currentIndex,
+      goTo,
+      requestSubtitleCueSeek,
+      resetAudioSequence,
+      showPlayerControls,
+      syncPlaybackPreferenceBeforeNavigation,
+    ]
+  );
 
   const handlePrev = useCallback(
     (context?: SlidePlayerNavigationContext) => {
@@ -1822,8 +1916,10 @@ const Slide: React.FC<SlideProps> = ({
               onInteractionToggle={handleInteractionToggle}
               onNext={handleNext}
               onPrev={handlePrev}
+              onSubtitleJump={handleSubtitleJump}
               prevDisabled={!canGoPrev}
               showControls={playerVisible}
+              subtitleSeekRequest={subtitleSeekRequest}
               texts={playerTexts}
               customActionContext={playerCustomActionContext}
               customActions={playerCustomActions}

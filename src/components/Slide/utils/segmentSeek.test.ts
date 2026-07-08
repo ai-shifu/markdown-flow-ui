@@ -43,9 +43,46 @@ describe("resolveSegmentSeekTarget", () => {
     expect(resolveSegmentSeekTarget([], 1_000)).toBeNull();
   });
 
+  it("does not resolve the unloaded boundary when the last segment is not final", () => {
+    const streamingAudioSegments = [
+      {
+        segment_index: 0,
+        audio_data: "first",
+        duration_ms: 1_000,
+        is_final: false,
+      },
+    ];
+
+    expect(resolveSegmentSeekTarget(streamingAudioSegments, 999)).toEqual({
+      segmentIndex: 0,
+      segmentTimeSeconds: 0.999,
+    });
+    expect(resolveSegmentSeekTarget(streamingAudioSegments, 1_000)).toBeNull();
+    expect(resolveSegmentSeekTarget(streamingAudioSegments, 1_001)).toBeNull();
+  });
+
   it("detects whether a playback time is covered by loaded segments", () => {
     expect(isPlaybackTimeCoveredBySegments(audioSegments, 3_000)).toBe(true);
     expect(isPlaybackTimeCoveredBySegments(audioSegments, 3_001)).toBe(false);
     expect(isPlaybackTimeCoveredBySegments([], 0)).toBe(false);
+  });
+
+  it("only treats a loaded segment boundary as covered when the last segment is final", () => {
+    const streamingAudioSegments = [
+      {
+        segment_index: 0,
+        audio_data: "first",
+        duration_ms: 1_000,
+        is_final: false,
+      },
+    ];
+
+    expect(isPlaybackTimeCoveredBySegments(streamingAudioSegments, 999)).toBe(
+      true
+    );
+    expect(isPlaybackTimeCoveredBySegments(streamingAudioSegments, 1_000)).toBe(
+      false
+    );
+    expect(isPlaybackTimeCoveredBySegments(audioSegments, 3_000)).toBe(true);
   });
 });

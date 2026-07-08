@@ -904,6 +904,7 @@ const Player = ({
           )
         : null;
 
+      lastSubtitleJumpAvailabilityTimeMsRef.current = null;
       stopPlaybackTimeLoop();
       pendingAutoPlayRef.current = shouldResumePlayback;
       updateLoading(false);

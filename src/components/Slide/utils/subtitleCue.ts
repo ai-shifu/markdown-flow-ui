@@ -53,7 +53,7 @@ const sortSubtitleCuesByPlaybackTime = (
         getSubtitleCueStartTimeMs(nextCue) ||
       getSubtitleCueEndTimeMs(previousCue) - getSubtitleCueEndTimeMs(nextCue) ||
       (previousCue.position ?? 0) - (nextCue.position ?? 0) ||
-      previousCue.segment_index - nextCue.segment_index
+      (previousCue.segment_index ?? 0) - (nextCue.segment_index ?? 0)
   );
 
   sortedSubtitleCuesCache.set(subtitleCues, sortedSubtitleCues);

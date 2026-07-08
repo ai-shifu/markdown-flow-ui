@@ -10,7 +10,7 @@ export const getAudioSegmentsDurationMs = (
 ) =>
   segments.reduce(
     (totalDurationMs, segment) =>
-      totalDurationMs + Math.max(Number(segment.duration_ms ?? 0), 0),
+      totalDurationMs + Math.max(Number(segment?.duration_ms ?? 0), 0),
     0
   );
 

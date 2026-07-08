@@ -6,38 +6,23 @@ type SlideAudioSegment = SlideAudioSegments[number];
 const sortedAudioSegmentsCache = new WeakMap<
   SlideAudioSegments,
   {
-    signature: string;
+    lastSegments: Array<SlideAudioSegment | null | undefined>;
     sortedSegments: SlideAudioSegments;
   }
 >();
-const audioSegmentIdentityCache = new WeakMap<object, number>();
-let nextAudioSegmentIdentity = 0;
 
 const isPresentAudioSegment = (
   segment: SlideAudioSegment | null | undefined
 ): segment is SlideAudioSegment => Boolean(segment);
 
-const getAudioSegmentIdentity = (segment: SlideAudioSegment) => {
-  const cachedIdentity = audioSegmentIdentityCache.get(segment);
-
-  if (cachedIdentity != null) {
-    return cachedIdentity;
-  }
-
-  nextAudioSegmentIdentity += 1;
-  audioSegmentIdentityCache.set(segment, nextAudioSegmentIdentity);
-
-  return nextAudioSegmentIdentity;
-};
-
-const getAudioSegmentsSignature = (audioSegments: SlideAudioSegments) =>
-  audioSegments
-    .map((segment) =>
-      segment
-        ? `${getAudioSegmentIdentity(segment)}:${segment.segment_index ?? 0}:${Number(segment.duration_ms ?? 0)}:${segment.is_final ? "1" : "0"}`
-        : ""
-    )
-    .join("|");
+const hasSameSegmentReferences = (
+  previousSegments: Array<SlideAudioSegment | null | undefined>,
+  nextSegments: SlideAudioSegments
+) =>
+  previousSegments.length === nextSegments.length &&
+  previousSegments.every(
+    (previousSegment, index) => previousSegment === nextSegments[index]
+  );
 
 export const getSortedAudioSegments = (audioItem?: SlideAudioItem) => {
   const audioSegments = audioItem?.audioSegments;
@@ -46,10 +31,12 @@ export const getSortedAudioSegments = (audioItem?: SlideAudioItem) => {
     return [];
   }
 
-  const signature = getAudioSegmentsSignature(audioSegments);
   const cachedSegments = sortedAudioSegmentsCache.get(audioSegments);
 
-  if (cachedSegments?.signature === signature) {
+  if (
+    cachedSegments &&
+    hasSameSegmentReferences(cachedSegments.lastSegments, audioSegments)
+  ) {
     return cachedSegments.sortedSegments;
   }
 
@@ -61,7 +48,7 @@ export const getSortedAudioSegments = (audioItem?: SlideAudioItem) => {
     );
 
   sortedAudioSegmentsCache.set(audioSegments, {
-    signature,
+    lastSegments: [...audioSegments],
     sortedSegments,
   });
 

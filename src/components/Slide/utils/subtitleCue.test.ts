@@ -46,6 +46,22 @@ describe("getVisibleSubtitleText", () => {
       )
     ).toBe("");
   });
+
+  it("defaults non-finite playback time to zero", () => {
+    expect(
+      getVisibleSubtitleText(
+        [
+          {
+            text: "Opening",
+            start_ms: 0,
+            end_ms: 1_000,
+            segment_index: 0,
+          },
+        ],
+        Number.NaN
+      )
+    ).toBe("Opening");
+  });
 });
 
 describe("getSubtitleCueJumpTime", () => {
@@ -132,6 +148,16 @@ describe("getSubtitleCueJumpTime", () => {
         direction: "next",
       })
     ).toBeNull();
+  });
+
+  it("defaults non-finite playback time to zero", () => {
+    expect(
+      getSubtitleCueJumpTime({
+        subtitleCues,
+        currentTimeMs: Number.NaN,
+        direction: "next",
+      })
+    ).toBe(1_500);
   });
 
   it("treats duplicate cue start times as one jump target", () => {
@@ -310,5 +336,19 @@ describe("getSubtitleCueJumpTarget", () => {
         direction: "next",
       })
     ).toBeNull();
+  });
+
+  it("defaults non-finite current time to zero for cross-track targets", () => {
+    expect(
+      getSubtitleCueJumpTarget({
+        tracks,
+        currentAudioIndex: 1,
+        currentTimeMs: Number.NaN,
+        direction: "next",
+      })
+    ).toEqual({
+      audioIndex: 1,
+      timeMs: 4_000,
+    });
   });
 });

@@ -12,15 +12,23 @@ export interface SubtitleCueJumpTarget {
   timeMs: number;
 }
 
+const normalizePlaybackTimeMs = (timeMs: number) => {
+  const parsedTimeMs = Number(timeMs);
+
+  return Number.isFinite(parsedTimeMs) ? Math.max(parsedTimeMs, 0) : 0;
+};
+
 export const getVisibleSubtitleText = (
   subtitleCues: ElementSubtitleCue[] = [],
   currentTimeMs: number
-) =>
-  subtitleCues
+): string => {
+  const normalizedCurrentTimeMs = normalizePlaybackTimeMs(currentTimeMs);
+
+  return subtitleCues
     .filter(
       (subtitleCue) =>
-        currentTimeMs >= subtitleCue.start_ms &&
-        currentTimeMs < subtitleCue.end_ms
+        normalizedCurrentTimeMs >= subtitleCue.start_ms &&
+        normalizedCurrentTimeMs < subtitleCue.end_ms
     )
     .sort(
       (prevCue, nextCue) =>
@@ -32,6 +40,7 @@ export const getVisibleSubtitleText = (
     .map((subtitleCue) => subtitleCue.text.trim())
     .filter(Boolean)
     .join("\n");
+};
 
 const getSubtitleCueStartTimeMs = (subtitleCue: ElementSubtitleCue) =>
   Math.max(Number(subtitleCue.start_ms ?? 0), 0);
@@ -150,7 +159,7 @@ export const getSubtitleCueJumpTime = ({
   }
 
   const sortedSubtitleCues = sortSubtitleCuesByPlaybackTime(subtitleCues);
-  const normalizedCurrentTimeMs = Math.max(Number(currentTimeMs), 0);
+  const normalizedCurrentTimeMs = normalizePlaybackTimeMs(currentTimeMs);
 
   if (direction === "next") {
     return getNextSubtitleCueStartTimeMs(
@@ -191,7 +200,7 @@ export const getSubtitleCueJumpTarget = ({
     return null;
   }
 
-  const normalizedCurrentTimeMs = Math.max(Number(currentTimeMs), 0);
+  const normalizedCurrentTimeMs = normalizePlaybackTimeMs(currentTimeMs);
 
   if (direction === "next") {
     for (

@@ -632,6 +632,7 @@ const Slide: React.FC<SlideProps> = ({
     setHasCompletedCurrentStepAudio(false);
     setHasCurrentAudioPlaybackStarted(false);
     setSubtitleSeekRequest(null);
+    pendingSubtitleJumpRef.current = null;
     setActiveInteractionElement(undefined);
     setIsInteractionOverlayOpen(false);
     setInteractionOverlaySubtitleOffset(0);
@@ -1453,13 +1454,13 @@ const Slide: React.FC<SlideProps> = ({
       }
 
       shouldScrollToBottomRef.current = true;
+      resetAudioSequence();
       pendingSubtitleJumpRef.current = {
         audioIndex: target.audioIndex,
         audioKey: targetAudioKey,
         slideIndex: targetSlideIndex,
         timeMs: target.timeMs,
       };
-      resetAudioSequence();
       goTo(targetSlideIndex);
 
       return true;

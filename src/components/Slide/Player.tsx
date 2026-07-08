@@ -138,11 +138,50 @@ const preloadAudioUrl = (url?: string) => {
   audioPreloadElementCache.set(url, audio);
 };
 
-const getSortedAudioSegments = (audioItem?: SlideAudioItem) =>
-  [...(audioItem?.audioSegments ?? [])].sort(
+type SlideAudioSegments = NonNullable<SlideAudioItem["audioSegments"]>;
+
+const sortedAudioSegmentsCache = new WeakMap<
+  SlideAudioSegments,
+  {
+    signature: string;
+    sortedSegments: SlideAudioSegments;
+  }
+>();
+
+const getAudioSegmentsSignature = (audioSegments: SlideAudioSegments) =>
+  audioSegments
+    .map(
+      (segment) =>
+        `${segment.segment_index}:${Number(segment.duration_ms ?? 0)}:${segment.is_final ? "1" : "0"}`
+    )
+    .join("|");
+
+const getSortedAudioSegments = (audioItem?: SlideAudioItem) => {
+  const audioSegments = audioItem?.audioSegments;
+
+  if (!audioSegments) {
+    return [];
+  }
+
+  const signature = getAudioSegmentsSignature(audioSegments);
+  const cachedSegments = sortedAudioSegmentsCache.get(audioSegments);
+
+  if (cachedSegments?.signature === signature) {
+    return cachedSegments.sortedSegments;
+  }
+
+  const sortedSegments = [...audioSegments].sort(
     (prevSegment, nextSegment) =>
       prevSegment.segment_index - nextSegment.segment_index
   );
+
+  sortedAudioSegmentsCache.set(audioSegments, {
+    signature,
+    sortedSegments,
+  });
+
+  return sortedSegments;
+};
 
 export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   audioList?: SlideAudioItem[];

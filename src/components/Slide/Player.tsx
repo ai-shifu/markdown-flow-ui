@@ -51,6 +51,7 @@ import {
 import { shouldKeepPlayingAfterNavigation } from "./utils/playbackPreference";
 import { toPlayerCustomActionList } from "./utils/playerCustomActions";
 import { suppressPlayerControlsWakeAfterNavigation } from "./utils/playerNavigationContext";
+import { resolveSegmentSeekTarget } from "./utils/segmentSeek";
 import {
   getSubtitleCueJumpTime,
   type SubtitleCueJumpDirection,
@@ -121,35 +122,6 @@ const preloadAudioUrl = (url?: string) => {
   audio.load();
 
   audioPreloadElementCache.set(url, audio);
-};
-
-const resolveSegmentSeekTarget = (
-  segments: NonNullable<SlideAudioItem["audioSegments"]> = [],
-  timeMs: number
-) => {
-  const normalizedTimeMs = Math.max(Number(timeMs), 0);
-  let segmentStartTimeMs = 0;
-
-  for (let index = 0; index < segments.length; index += 1) {
-    const segment = segments[index];
-    const durationMs = Math.max(Number(segment?.duration_ms ?? 0), 0);
-    const segmentEndTimeMs = segmentStartTimeMs + durationMs;
-
-    if (
-      normalizedTimeMs < segmentEndTimeMs ||
-      (durationMs === 0 && normalizedTimeMs === segmentStartTimeMs)
-    ) {
-      return {
-        segmentIndex: index,
-        segmentTimeSeconds:
-          Math.max(normalizedTimeMs - segmentStartTimeMs, 0) / 1000,
-      };
-    }
-
-    segmentStartTimeMs = segmentEndTimeMs;
-  }
-
-  return null;
 };
 
 export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {

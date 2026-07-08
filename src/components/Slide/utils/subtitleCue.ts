@@ -31,16 +31,33 @@ const getSubtitleCueStartTimeMs = (subtitleCue: ElementSubtitleCue) =>
 const getSubtitleCueEndTimeMs = (subtitleCue: ElementSubtitleCue) =>
   Math.max(Number(subtitleCue.end_ms ?? 0), 0);
 
+const sortedSubtitleCuesCache = new WeakMap<
+  ElementSubtitleCue[],
+  ElementSubtitleCue[]
+>();
+
 const sortSubtitleCuesByPlaybackTime = (
   subtitleCues: ElementSubtitleCue[] = []
-) =>
-  [...subtitleCues].sort(
-    (prevCue, nextCue) =>
-      getSubtitleCueStartTimeMs(prevCue) - getSubtitleCueStartTimeMs(nextCue) ||
-      getSubtitleCueEndTimeMs(prevCue) - getSubtitleCueEndTimeMs(nextCue) ||
-      (prevCue.position ?? 0) - (nextCue.position ?? 0) ||
-      prevCue.segment_index - nextCue.segment_index
+) => {
+  const cachedSubtitleCues = sortedSubtitleCuesCache.get(subtitleCues);
+
+  if (cachedSubtitleCues) {
+    return cachedSubtitleCues;
+  }
+
+  const sortedSubtitleCues = [...subtitleCues].sort(
+    (previousCue, nextCue) =>
+      getSubtitleCueStartTimeMs(previousCue) -
+        getSubtitleCueStartTimeMs(nextCue) ||
+      getSubtitleCueEndTimeMs(previousCue) - getSubtitleCueEndTimeMs(nextCue) ||
+      (previousCue.position ?? 0) - (nextCue.position ?? 0) ||
+      previousCue.segment_index - nextCue.segment_index
   );
+
+  sortedSubtitleCuesCache.set(subtitleCues, sortedSubtitleCues);
+
+  return sortedSubtitleCues;
+};
 
 const getActiveSubtitleCueStartTimeMs = (
   subtitleCues: ElementSubtitleCue[],
@@ -48,14 +65,19 @@ const getActiveSubtitleCueStartTimeMs = (
 ) => {
   let activeStartTimeMs: number | null = null;
 
-  subtitleCues.forEach((subtitleCue) => {
+  for (const subtitleCue of subtitleCues) {
     const startTimeMs = getSubtitleCueStartTimeMs(subtitleCue);
+
+    if (startTimeMs > currentTimeMs) {
+      break;
+    }
+
     const endTimeMs = getSubtitleCueEndTimeMs(subtitleCue);
 
     if (currentTimeMs >= startTimeMs && currentTimeMs < endTimeMs) {
       activeStartTimeMs = startTimeMs;
     }
-  });
+  }
 
   return activeStartTimeMs;
 };
@@ -66,13 +88,15 @@ const getPreviousSubtitleCueStartTimeMs = (
 ) => {
   let previousStartTimeMs: number | null = null;
 
-  subtitleCues.forEach((subtitleCue) => {
+  for (const subtitleCue of subtitleCues) {
     const startTimeMs = getSubtitleCueStartTimeMs(subtitleCue);
 
-    if (startTimeMs < currentTimeMs) {
-      previousStartTimeMs = startTimeMs;
+    if (startTimeMs >= currentTimeMs) {
+      break;
     }
-  });
+
+    previousStartTimeMs = startTimeMs;
+  }
 
   return previousStartTimeMs;
 };
@@ -101,12 +125,12 @@ export const getSubtitleCueJumpTime = ({
   replayThresholdMs = DEFAULT_SUBTITLE_CUE_REPLAY_THRESHOLD_MS,
   subtitleCues = [],
 }: GetSubtitleCueJumpTimeOptions) => {
-  const sortedSubtitleCues = sortSubtitleCuesByPlaybackTime(subtitleCues);
-  const normalizedCurrentTimeMs = Math.max(Number(currentTimeMs), 0);
-
-  if (sortedSubtitleCues.length === 0) {
+  if (subtitleCues.length === 0) {
     return null;
   }
+
+  const sortedSubtitleCues = sortSubtitleCuesByPlaybackTime(subtitleCues);
+  const normalizedCurrentTimeMs = Math.max(Number(currentTimeMs), 0);
 
   if (direction === "next") {
     return getNextSubtitleCueStartTimeMs(

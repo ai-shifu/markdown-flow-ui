@@ -49,7 +49,10 @@ import {
 import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
 import { shouldWakePlayerControlsAfterNavigation } from "./utils/playerNavigationContext";
 import { shouldAutoAdvanceIntoAppendedMarker } from "./utils/appendedMarkerAdvance";
-import { getPlaybackSequenceTransition } from "./utils/playbackSequence";
+import {
+  getPlaybackSequenceTransition,
+  shouldStartDefaultAudioSequence,
+} from "./utils/playbackSequence";
 import {
   canReachSubtitleJumpTarget,
   hasResolvedInteractionElement,
@@ -286,6 +289,7 @@ const Slide: React.FC<SlideProps> = ({
     currentIndex: -1,
     canGoNext: false,
   });
+  const shouldSkipDefaultAudioStartForSubtitleJumpRef = useRef(false);
   const {
     currentElementList,
     stepElementLists,
@@ -1009,6 +1013,9 @@ const Slide: React.FC<SlideProps> = ({
         // Keep the pending seek queued while the interaction overlay gates playback.
       } else {
         pendingSubtitleJumpRef.current = null;
+        // The default audio-start effect still sees the pre-seek render state.
+        // Skip it once so it does not replace the subtitle target audio.
+        shouldSkipDefaultAudioStartForSubtitleJumpRef.current = true;
         setCurrentAudioKey(pendingSubtitleJump.audioKey);
         requestSubtitleCueSeek({
           audioIndex: pendingSubtitleJump.audioIndex,
@@ -1126,19 +1133,21 @@ const Slide: React.FC<SlideProps> = ({
   ]);
 
   useEffect(() => {
-    if (currentAudioKey || currentAudioSequenceKeys.length === 0) {
-      return;
-    }
+    const shouldSkipDefaultAudioStart =
+      shouldSkipDefaultAudioStartForSubtitleJumpRef.current;
+    shouldSkipDefaultAudioStartForSubtitleJumpRef.current = false;
 
     if (
-      shouldPausePlaybackForCustomAction ||
-      !currentStepHasSpeakableElement ||
-      shouldBlockPlaybackForInteraction
+      !shouldStartDefaultAudioSequence({
+        currentAudioKey,
+        currentAudioSequenceLength: currentAudioSequenceKeys.length,
+        currentStepHasSpeakableElement,
+        hasCompletedCurrentStepAudio,
+        shouldBlockPlaybackForInteraction,
+        shouldPausePlaybackForCustomAction,
+        shouldSkipDefaultAudioStart,
+      })
     ) {
-      return;
-    }
-
-    if (hasCompletedCurrentStepAudio) {
       return;
     }
 

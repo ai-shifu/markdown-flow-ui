@@ -311,6 +311,65 @@ describe("getSubtitleCueJumpTarget", () => {
     });
   });
 
+  it("continues to the previous audio track when the previous target was already selected", () => {
+    expect(
+      getSubtitleCueJumpTarget({
+        tracks,
+        currentAudioIndex: 1,
+        currentTimeMs: 1_200,
+        direction: "previous",
+        excludeTarget: {
+          audioIndex: 1,
+          timeMs: 0,
+        },
+      })
+    ).toEqual({
+      audioIndex: 0,
+      timeMs: 2_000,
+    });
+  });
+
+  it("continues to the previous cue in the same audio track when a repeated target is excluded", () => {
+    expect(
+      getSubtitleCueJumpTarget({
+        tracks: [
+          {
+            subtitleCues: [
+              {
+                text: "Opening",
+                start_ms: 0,
+                end_ms: 1_000,
+                segment_index: 0,
+              },
+              {
+                text: "Middle",
+                start_ms: 2_000,
+                end_ms: 3_000,
+                segment_index: 1,
+              },
+              {
+                text: "Closing",
+                start_ms: 4_000,
+                end_ms: 5_000,
+                segment_index: 2,
+              },
+            ],
+          },
+        ],
+        currentAudioIndex: 0,
+        currentTimeMs: 4_500,
+        direction: "previous",
+        excludeTarget: {
+          audioIndex: 0,
+          timeMs: 2_000,
+        },
+      })
+    ).toEqual({
+      audioIndex: 0,
+      timeMs: 0,
+    });
+  });
+
   it("returns null when no subtitle target exists across tracks", () => {
     expect(
       getSubtitleCueJumpTarget({

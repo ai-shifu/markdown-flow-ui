@@ -141,6 +141,13 @@ const getLastSubtitleCueStartTimeMs = (subtitleCues: ElementSubtitleCue[]) => {
   return lastSubtitleCue ? getSubtitleCueStartTimeMs(lastSubtitleCue) : null;
 };
 
+const isSameSubtitleCueJumpTarget = (
+  previousTarget: SubtitleCueJumpTarget | null | undefined,
+  nextTarget: SubtitleCueJumpTarget
+) =>
+  previousTarget?.audioIndex === nextTarget.audioIndex &&
+  previousTarget.timeMs === nextTarget.timeMs;
+
 /** Options used to resolve a subtitle cue jump target. */
 export interface GetSubtitleCueJumpTimeOptions {
   currentTimeMs: number;
@@ -183,6 +190,7 @@ export interface GetSubtitleCueJumpTargetOptions {
   currentAudioIndex: number;
   currentTimeMs: number;
   direction: SubtitleCueJumpDirection;
+  excludeTarget?: SubtitleCueJumpTarget | null;
   tracks?: SubtitleCueJumpTrack[];
 }
 
@@ -190,6 +198,7 @@ export const getSubtitleCueJumpTarget = ({
   currentAudioIndex,
   currentTimeMs,
   direction,
+  excludeTarget = null,
   tracks = [],
 }: GetSubtitleCueJumpTargetOptions): SubtitleCueJumpTarget | null => {
   if (
@@ -220,10 +229,28 @@ export const getSubtitleCueJumpTarget = ({
           : getFirstSubtitleCueStartTimeMs(sortedSubtitleCues);
 
       if (timeMs !== null) {
-        return {
+        const target = {
           audioIndex,
           timeMs,
         };
+
+        if (isSameSubtitleCueJumpTarget(excludeTarget, target)) {
+          const nextTimeMs = getNextSubtitleCueStartTimeMs(
+            sortedSubtitleCues,
+            timeMs
+          );
+
+          if (nextTimeMs !== null) {
+            return {
+              audioIndex,
+              timeMs: nextTimeMs,
+            };
+          }
+
+          continue;
+        }
+
+        return target;
       }
     }
 
@@ -244,10 +271,28 @@ export const getSubtitleCueJumpTarget = ({
         : getLastSubtitleCueStartTimeMs(sortedSubtitleCues);
 
     if (timeMs !== null) {
-      return {
+      const target = {
         audioIndex,
         timeMs,
       };
+
+      if (isSameSubtitleCueJumpTarget(excludeTarget, target)) {
+        const previousTimeMs = getPreviousSubtitleCueStartTimeMs(
+          sortedSubtitleCues,
+          timeMs
+        );
+
+        if (previousTimeMs !== null) {
+          return {
+            audioIndex,
+            timeMs: previousTimeMs,
+          };
+        }
+
+        continue;
+      }
+
+      return target;
     }
   }
 

@@ -364,6 +364,8 @@ const Player = ({
     (currentTimeMs: number) => void
   >(() => {});
   const lastSubtitleJumpAvailabilityTimeMsRef = useRef<number | null>(null);
+  const lastSubtitleJumpTargetRef =
+    useRef<SlidePlayerSubtitleJumpTarget | null>(null);
   const lastSubtitleSeekRequestIdRef = useRef<number | string | null>(null);
   const subtitleCueTracksCacheRef = useRef<SubtitleCueTracksCache | null>(null);
   const playbackAccessModeRef = useRef<
@@ -670,11 +672,18 @@ const Player = ({
   );
 
   const getSubtitleJumpTarget = useCallback(
-    (direction: SubtitleCueJumpDirection, currentTimeMs: number) => {
+    (
+      direction: SubtitleCueJumpDirection,
+      currentTimeMs: number,
+      options: {
+        excludeTarget?: SlidePlayerSubtitleJumpTarget | null;
+      } = {}
+    ) => {
       const target = getSubtitleCueJumpTarget({
         currentAudioIndex,
         currentTimeMs,
         direction,
+        excludeTarget: options.excludeTarget,
         tracks: subtitleCueTracks,
       });
 
@@ -1079,7 +1088,11 @@ const Player = ({
     (direction: SubtitleCueJumpDirection) => {
       const target = getSubtitleJumpTarget(
         direction,
-        getCurrentPlaybackTimeMs()
+        getCurrentPlaybackTimeMs(),
+        {
+          excludeTarget:
+            direction === "previous" ? lastSubtitleJumpTargetRef.current : null,
+        }
       );
 
       if (target === null) {
@@ -1087,15 +1100,27 @@ const Player = ({
       }
 
       if (target.audioIndex === currentAudioIndex) {
-        return seekToPlaybackTimeMs(target.timeMs);
+        const didSeek = seekToPlaybackTimeMs(target.timeMs);
+
+        if (didSeek) {
+          lastSubtitleJumpTargetRef.current = target;
+        }
+
+        return didSeek;
       }
 
-      return Boolean(
+      const didJump = Boolean(
         onSubtitleJump?.(
           target,
           suppressPlayerControlsWakeAfterNavigation(getNavigationContext())
         )
       );
+
+      if (didJump) {
+        lastSubtitleJumpTargetRef.current = target;
+      }
+
+      return didJump;
     },
     [
       currentAudioIndex,

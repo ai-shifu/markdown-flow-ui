@@ -71,7 +71,7 @@ const audioPreloadElementCache = new Map<string, HTMLAudioElement>();
  *
  * @example
  * ```tsx
- * <Player texts={{ playLabel: "播放", nextLabel: "下一步" }} />
+ * <Player texts={{ playLabel: "播放", nextLabel: "下一页" }} />
  * ```
  */
 export interface SlidePlayerTexts {

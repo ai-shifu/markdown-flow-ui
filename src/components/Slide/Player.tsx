@@ -139,6 +139,18 @@ const preloadAudioUrl = (url?: string) => {
   audioPreloadElementCache.set(url, audio);
 };
 
+const getSubtitleCueTrackSignature = (audioList: SlideAudioItem[]) =>
+  audioList
+    .map((audioItem) =>
+      (audioItem.element?.subtitle_cues ?? [])
+        .map(
+          (subtitleCue) =>
+            `${subtitleCue.start_ms}:${subtitleCue.end_ms}:${subtitleCue.segment_index}:${subtitleCue.position ?? ""}`
+        )
+        .join(",")
+    )
+    .join("|");
+
 export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   audioList?: SlideAudioItem[];
   currentAudioIndex?: number;
@@ -340,12 +352,13 @@ const Player = ({
     () => getSortedAudioSegments(currentAudio),
     [currentAudio]
   );
+  const subtitleCueTrackSignature = getSubtitleCueTrackSignature(audioList);
   const subtitleCueTracks = useMemo<SubtitleCueJumpTrack[]>(
     () =>
       audioList.map((audioItem) => ({
         subtitleCues: audioItem.element?.subtitle_cues ?? [],
       })),
-    [audioList]
+    [audioList, subtitleCueTrackSignature]
   );
   const customActionList = useMemo(
     () => toPlayerCustomActionList(customActions, customActionContext),

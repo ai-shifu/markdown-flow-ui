@@ -10,16 +10,31 @@ const sortedAudioSegmentsCache = new WeakMap<
     sortedSegments: SlideAudioSegments;
   }
 >();
+const audioSegmentIdentityCache = new WeakMap<object, number>();
+let nextAudioSegmentIdentity = 0;
 
 const isPresentAudioSegment = (
   segment: SlideAudioSegment | null | undefined
 ): segment is SlideAudioSegment => Boolean(segment);
 
+const getAudioSegmentIdentity = (segment: SlideAudioSegment) => {
+  const cachedIdentity = audioSegmentIdentityCache.get(segment);
+
+  if (cachedIdentity != null) {
+    return cachedIdentity;
+  }
+
+  nextAudioSegmentIdentity += 1;
+  audioSegmentIdentityCache.set(segment, nextAudioSegmentIdentity);
+
+  return nextAudioSegmentIdentity;
+};
+
 const getAudioSegmentsSignature = (audioSegments: SlideAudioSegments) =>
   audioSegments
     .map((segment) =>
       segment
-        ? `${segment.segment_index ?? 0}:${Number(segment.duration_ms ?? 0)}:${segment.is_final ? "1" : "0"}`
+        ? `${getAudioSegmentIdentity(segment)}:${segment.segment_index ?? 0}:${Number(segment.duration_ms ?? 0)}:${segment.is_final ? "1" : "0"}`
         : ""
     )
     .join("|");

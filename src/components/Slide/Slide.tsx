@@ -1001,6 +1001,7 @@ const Slide: React.FC<SlideProps> = ({
       if (
         !canReachSubtitleJumpTarget({
           currentIndex,
+          resolvedCurrentInteractionElement: activeInteractionElement,
           slideElementList,
           targetSlideIndex: pendingSubtitleJump.slideIndex,
         })
@@ -1066,9 +1067,11 @@ const Slide: React.FC<SlideProps> = ({
       clearAutoAdvanceTimer();
     };
   }, [
+    activeInteractionElement,
     canGoNext,
     clearAutoAdvanceTimer,
     currentElementList.length,
+    currentIndex,
     currentInteractionElement,
     currentAudioKey,
     currentPlaybackResetKey,
@@ -1084,6 +1087,7 @@ const Slide: React.FC<SlideProps> = ({
     resetAudioSequence,
     requestSubtitleCueSeek,
     scheduleInteractionOverlayOpen,
+    slideElementList,
     startCurrentAudioSequence,
     shouldPausePlaybackForCustomAction,
     shouldUseSilentStepAutoAdvanceToggle,
@@ -1451,10 +1455,16 @@ const Slide: React.FC<SlideProps> = ({
     (target: SlidePlayerSubtitleJumpTarget) =>
       canReachSubtitleJumpTarget({
         currentIndex,
+        resolvedCurrentInteractionElement: activeInteractionElement,
         slideElementList,
         targetSlideIndex: audioSlideIndexes[target.audioIndex],
       }),
-    [audioSlideIndexes, currentIndex, slideElementList]
+    [
+      activeInteractionElement,
+      audioSlideIndexes,
+      currentIndex,
+      slideElementList,
+    ]
   );
 
   const handleSubtitleJump = useCallback(

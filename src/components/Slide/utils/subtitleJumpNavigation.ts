@@ -8,12 +8,14 @@ export const isUnresolvedInteractionElement = (element?: Element) =>
 
 export interface CanReachSubtitleJumpTargetOptions {
   currentIndex: number;
+  resolvedCurrentInteractionElement?: Element;
   slideElementList: Element[];
   targetSlideIndex: number | undefined;
 }
 
 export const canReachSubtitleJumpTarget = ({
   currentIndex,
+  resolvedCurrentInteractionElement,
   slideElementList,
   targetSlideIndex,
 }: CanReachSubtitleJumpTargetOptions) => {
@@ -32,7 +34,15 @@ export const canReachSubtitleJumpTarget = ({
     slideIndex <= targetSlideIndex;
     slideIndex += 1
   ) {
-    if (isUnresolvedInteractionElement(slideElementList[slideIndex])) {
+    const isLocallyResolvedCurrentInteraction =
+      slideIndex === currentIndex &&
+      slideElementList[slideIndex]?.type === "interaction" &&
+      hasResolvedInteractionElement(resolvedCurrentInteractionElement);
+
+    if (
+      !isLocallyResolvedCurrentInteraction &&
+      isUnresolvedInteractionElement(slideElementList[slideIndex])
+    ) {
       return false;
     }
   }

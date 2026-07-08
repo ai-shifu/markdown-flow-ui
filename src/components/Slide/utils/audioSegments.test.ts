@@ -89,4 +89,28 @@ describe("getSortedAudioSegments", () => {
       )
     ).toEqual(["first", "second"]);
   });
+
+  it("refreshes the cached sort when a streaming segment object is replaced", () => {
+    const originalSegment = {
+      segment_index: 0,
+      audio_data: "original",
+      duration_ms: 100,
+      is_final: false,
+    };
+    const replacementSegment = {
+      segment_index: 0,
+      audio_data: "updated",
+      duration_ms: 100,
+      is_final: false,
+    };
+    const audioSegments = [originalSegment];
+
+    expect(getSortedAudioSegments({ audioSegments })[0]).toBe(originalSegment);
+
+    audioSegments[0] = replacementSegment;
+
+    expect(getSortedAudioSegments({ audioSegments })[0]).toBe(
+      replacementSegment
+    );
+  });
 });

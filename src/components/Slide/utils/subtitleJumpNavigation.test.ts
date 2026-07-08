@@ -51,6 +51,17 @@ describe("canReachSubtitleJumpTarget", () => {
     ).toBe(true);
   });
 
+  it("allows subtitle jumps after the current interaction is resolved locally", () => {
+    expect(
+      canReachSubtitleJumpTarget({
+        currentIndex: 1,
+        targetSlideIndex: 2,
+        resolvedCurrentInteractionElement: resolvedInteraction,
+        slideElementList: [marker(), unresolvedInteraction, marker()],
+      })
+    ).toBe(true);
+  });
+
   it("allows backward subtitle jumps without applying forward interaction gates", () => {
     expect(
       canReachSubtitleJumpTarget({

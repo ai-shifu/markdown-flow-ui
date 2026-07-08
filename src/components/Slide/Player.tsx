@@ -27,6 +27,7 @@ import MobilePlayerSettingsSheet from "./MobilePlayerSettingsSheet";
 import { DEFAULT_SLIDE_PLAYER_TEXTS } from "./constants";
 import type { SlideAudioItem } from "./useSlide";
 import type {
+  ElementSubtitleCue,
   SlidePlayerCustomActionContext,
   SlidePlayerCustomActions,
 } from "./types";
@@ -139,17 +140,49 @@ const preloadAudioUrl = (url?: string) => {
   audioPreloadElementCache.set(url, audio);
 };
 
-const getSubtitleCueTrackSignature = (audioList: SlideAudioItem[]) =>
-  audioList
-    .map((audioItem) =>
-      (audioItem.element?.subtitle_cues ?? [])
-        .map(
-          (subtitleCue) =>
-            `${subtitleCue.start_ms}:${subtitleCue.end_ms}:${subtitleCue.segment_index}:${subtitleCue.position ?? ""}`
-        )
-        .join(",")
-    )
-    .join("|");
+type SubtitleCueList = ElementSubtitleCue[] | undefined;
+
+interface SubtitleCueTracksCache {
+  audioList: SlideAudioItem[];
+  subtitleCueLists: SubtitleCueList[];
+  subtitleCueLengths: number[];
+  tracks: SubtitleCueJumpTrack[];
+}
+
+const hasCurrentSubtitleCueTracksCache = (
+  audioList: SlideAudioItem[],
+  cache: SubtitleCueTracksCache | null
+): cache is SubtitleCueTracksCache =>
+  cache !== null &&
+  cache.audioList === audioList &&
+  cache.subtitleCueLists.length === audioList.length &&
+  audioList.every((audioItem, index) => {
+    const subtitleCues = audioItem.element?.subtitle_cues;
+
+    return (
+      cache.subtitleCueLists[index] === subtitleCues &&
+      cache.subtitleCueLengths[index] === (subtitleCues?.length ?? 0)
+    );
+  });
+
+const createSubtitleCueTracksCache = (
+  audioList: SlideAudioItem[]
+): SubtitleCueTracksCache => {
+  const subtitleCueLists = audioList.map(
+    (audioItem) => audioItem.element?.subtitle_cues
+  );
+
+  return {
+    audioList,
+    subtitleCueLists,
+    subtitleCueLengths: subtitleCueLists.map(
+      (subtitleCues) => subtitleCues?.length ?? 0
+    ),
+    tracks: subtitleCueLists.map((subtitleCues) => ({
+      subtitleCues: subtitleCues ?? [],
+    })),
+  };
+};
 
 export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   audioList?: SlideAudioItem[];
@@ -332,6 +365,7 @@ const Player = ({
   >(() => {});
   const lastSubtitleJumpAvailabilityTimeMsRef = useRef<number | null>(null);
   const lastSubtitleSeekRequestIdRef = useRef<number | string | null>(null);
+  const subtitleCueTracksCacheRef = useRef<SubtitleCueTracksCache | null>(null);
   const playbackAccessModeRef = useRef<
     "unknown" | "auto" | "manual" | "blocked"
   >("unknown");
@@ -352,14 +386,14 @@ const Player = ({
     () => getSortedAudioSegments(currentAudio),
     [currentAudio]
   );
-  const subtitleCueTrackSignature = getSubtitleCueTrackSignature(audioList);
-  const subtitleCueTracks = useMemo<SubtitleCueJumpTrack[]>(
-    () =>
-      audioList.map((audioItem) => ({
-        subtitleCues: audioItem.element?.subtitle_cues ?? [],
-      })),
-    [audioList, subtitleCueTrackSignature]
-  );
+  let subtitleCueTracksCache = subtitleCueTracksCacheRef.current;
+
+  if (!hasCurrentSubtitleCueTracksCache(audioList, subtitleCueTracksCache)) {
+    subtitleCueTracksCache = createSubtitleCueTracksCache(audioList);
+    subtitleCueTracksCacheRef.current = subtitleCueTracksCache;
+  }
+
+  const subtitleCueTracks = subtitleCueTracksCache.tracks;
   const customActionList = useMemo(
     () => toPlayerCustomActionList(customActions, customActionContext),
     [customActionContext, customActions]

@@ -148,6 +148,45 @@ const isSameSubtitleCueJumpTarget = (
   previousTarget?.audioIndex === nextTarget.audioIndex &&
   previousTarget.timeMs === nextTarget.timeMs;
 
+const resolveSubtitleCueJumpTargetCandidate = ({
+  audioIndex,
+  excludeTarget,
+  getFallbackTimeMs,
+  sortedSubtitleCues,
+  timeMs,
+}: {
+  audioIndex: number;
+  excludeTarget: SubtitleCueJumpTarget | null;
+  getFallbackTimeMs: (
+    subtitleCues: ElementSubtitleCue[],
+    timeMs: number
+  ) => number | null;
+  sortedSubtitleCues: ElementSubtitleCue[];
+  timeMs: number | null;
+}): SubtitleCueJumpTarget | null => {
+  if (timeMs === null) {
+    return null;
+  }
+
+  const target = {
+    audioIndex,
+    timeMs,
+  };
+
+  if (!isSameSubtitleCueJumpTarget(excludeTarget, target)) {
+    return target;
+  }
+
+  const fallbackTimeMs = getFallbackTimeMs(sortedSubtitleCues, timeMs);
+
+  return fallbackTimeMs !== null
+    ? {
+        audioIndex,
+        timeMs: fallbackTimeMs,
+      }
+    : null;
+};
+
 /** Options used to resolve a subtitle cue jump target. */
 export interface GetSubtitleCueJumpTimeOptions {
   currentTimeMs: number;
@@ -194,6 +233,84 @@ export interface GetSubtitleCueJumpTargetOptions {
   tracks?: SubtitleCueJumpTrack[];
 }
 
+const getNextSubtitleCueJumpTarget = ({
+  currentAudioIndex,
+  currentTimeMs,
+  excludeTarget,
+  tracks,
+}: {
+  currentAudioIndex: number;
+  currentTimeMs: number;
+  excludeTarget: SubtitleCueJumpTarget | null;
+  tracks: SubtitleCueJumpTrack[];
+}) => {
+  for (
+    let audioIndex = currentAudioIndex;
+    audioIndex < tracks.length;
+    audioIndex += 1
+  ) {
+    const sortedSubtitleCues = sortSubtitleCuesByPlaybackTime(
+      tracks[audioIndex]?.subtitleCues ?? []
+    );
+    const timeMs =
+      audioIndex === currentAudioIndex
+        ? getNextSubtitleCueStartTimeMs(sortedSubtitleCues, currentTimeMs)
+        : getFirstSubtitleCueStartTimeMs(sortedSubtitleCues);
+    const target = resolveSubtitleCueJumpTargetCandidate({
+      audioIndex,
+      excludeTarget,
+      getFallbackTimeMs: getNextSubtitleCueStartTimeMs,
+      sortedSubtitleCues,
+      timeMs,
+    });
+
+    if (target) {
+      return target;
+    }
+  }
+
+  return null;
+};
+
+const getPreviousSubtitleCueJumpTarget = ({
+  currentAudioIndex,
+  currentTimeMs,
+  excludeTarget,
+  tracks,
+}: {
+  currentAudioIndex: number;
+  currentTimeMs: number;
+  excludeTarget: SubtitleCueJumpTarget | null;
+  tracks: SubtitleCueJumpTrack[];
+}) => {
+  for (let audioIndex = currentAudioIndex; audioIndex >= 0; audioIndex -= 1) {
+    const sortedSubtitleCues = sortSubtitleCuesByPlaybackTime(
+      tracks[audioIndex]?.subtitleCues ?? []
+    );
+    const timeMs =
+      audioIndex === currentAudioIndex
+        ? getSubtitleCueJumpTime({
+            currentTimeMs,
+            direction: "previous",
+            subtitleCues: sortedSubtitleCues,
+          })
+        : getLastSubtitleCueStartTimeMs(sortedSubtitleCues);
+    const target = resolveSubtitleCueJumpTargetCandidate({
+      audioIndex,
+      excludeTarget,
+      getFallbackTimeMs: getPreviousSubtitleCueStartTimeMs,
+      sortedSubtitleCues,
+      timeMs,
+    });
+
+    if (target) {
+      return target;
+    }
+  }
+
+  return null;
+};
+
 export const getSubtitleCueJumpTarget = ({
   currentAudioIndex,
   currentTimeMs,
@@ -212,89 +329,18 @@ export const getSubtitleCueJumpTarget = ({
   const normalizedCurrentTimeMs = normalizePlaybackTimeMs(currentTimeMs);
 
   if (direction === "next") {
-    for (
-      let audioIndex = currentAudioIndex;
-      audioIndex < tracks.length;
-      audioIndex += 1
-    ) {
-      const sortedSubtitleCues = sortSubtitleCuesByPlaybackTime(
-        tracks[audioIndex]?.subtitleCues ?? []
-      );
-      const timeMs =
-        audioIndex === currentAudioIndex
-          ? getNextSubtitleCueStartTimeMs(
-              sortedSubtitleCues,
-              normalizedCurrentTimeMs
-            )
-          : getFirstSubtitleCueStartTimeMs(sortedSubtitleCues);
-
-      if (timeMs !== null) {
-        const target = {
-          audioIndex,
-          timeMs,
-        };
-
-        if (isSameSubtitleCueJumpTarget(excludeTarget, target)) {
-          const nextTimeMs = getNextSubtitleCueStartTimeMs(
-            sortedSubtitleCues,
-            timeMs
-          );
-
-          if (nextTimeMs !== null) {
-            return {
-              audioIndex,
-              timeMs: nextTimeMs,
-            };
-          }
-
-          continue;
-        }
-
-        return target;
-      }
-    }
-
-    return null;
+    return getNextSubtitleCueJumpTarget({
+      currentAudioIndex,
+      currentTimeMs: normalizedCurrentTimeMs,
+      excludeTarget,
+      tracks,
+    });
   }
 
-  for (let audioIndex = currentAudioIndex; audioIndex >= 0; audioIndex -= 1) {
-    const sortedSubtitleCues = sortSubtitleCuesByPlaybackTime(
-      tracks[audioIndex]?.subtitleCues ?? []
-    );
-    const timeMs =
-      audioIndex === currentAudioIndex
-        ? getSubtitleCueJumpTime({
-            currentTimeMs: normalizedCurrentTimeMs,
-            direction,
-            subtitleCues: sortedSubtitleCues,
-          })
-        : getLastSubtitleCueStartTimeMs(sortedSubtitleCues);
-
-    if (timeMs !== null) {
-      const target = {
-        audioIndex,
-        timeMs,
-      };
-
-      if (isSameSubtitleCueJumpTarget(excludeTarget, target)) {
-        const previousTimeMs = getPreviousSubtitleCueStartTimeMs(
-          sortedSubtitleCues,
-          timeMs
-        );
-
-        if (previousTimeMs !== null) {
-          return {
-            audioIndex,
-            timeMs: previousTimeMs,
-          };
-        }
-
-        continue;
-      }
-
-      return target;
-    }
-  }
-
-  return null;
+  return getPreviousSubtitleCueJumpTarget({
+    currentAudioIndex,
+    currentTimeMs: normalizedCurrentTimeMs,
+    excludeTarget,
+    tracks,
+  });
 };

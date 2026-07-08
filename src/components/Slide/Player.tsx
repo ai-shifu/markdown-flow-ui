@@ -585,10 +585,7 @@ const Player = ({
         return true;
       }
 
-      return (
-        isPlaybackTimeCoveredBySegments(currentAudioSegments, timeMs) &&
-        Boolean(resolveSegmentSeekTarget(currentAudioSegments, timeMs))
-      );
+      return isPlaybackTimeCoveredBySegments(currentAudioSegments, timeMs);
     },
     [currentAudio, currentAudioSegments, currentAudioUrl, isPlaybackPaused]
   );

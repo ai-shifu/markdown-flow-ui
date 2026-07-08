@@ -136,7 +136,7 @@ const getFirstSubtitleCueStartTimeMs = (subtitleCues: ElementSubtitleCue[]) => {
 };
 
 const getLastSubtitleCueStartTimeMs = (subtitleCues: ElementSubtitleCue[]) => {
-  const lastSubtitleCue = subtitleCues[subtitleCues.length - 1];
+  const lastSubtitleCue = subtitleCues.at(-1);
 
   return lastSubtitleCue ? getSubtitleCueStartTimeMs(lastSubtitleCue) : null;
 };

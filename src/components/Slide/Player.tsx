@@ -156,10 +156,17 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   onSubtitleToggle?: () => void;
   onPrev?: (context: SlidePlayerNavigationContext) => void;
   onNext?: (context: SlidePlayerNavigationContext) => void;
+  /**
+   * Handles subtitle jumps that target a different audio track.
+   *
+   * Return `true` when the parent accepted the jump; return `false` or `void`
+   * when the player should treat the jump as rejected.
+   */
   onSubtitleJump?: (
     target: SlidePlayerSubtitleJumpTarget,
     context: SlidePlayerNavigationContext
   ) => boolean | void;
+  /** Returns whether a cross-audio subtitle jump target is currently reachable. */
   canJumpToSubtitleTarget?: (target: SlidePlayerSubtitleJumpTarget) => boolean;
   onFullscreen?: () => void;
   isFullscreen?: boolean;
@@ -187,6 +194,7 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
    * ```
    */
   enableKeyboardShortcuts?: boolean;
+  /** Requests a subtitle seek after the parent moves to the target audio track. */
   subtitleSeekRequest?: SlidePlayerSubtitleSeekRequest | null;
   customActions?: SlidePlayerCustomActions;
   customActionContext?: SlidePlayerCustomActionContext;

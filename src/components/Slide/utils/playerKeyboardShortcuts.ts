@@ -2,6 +2,8 @@ export type PlayerKeyboardShortcutAction =
   | "togglePlayback"
   | "previous"
   | "next"
+  | "previousSubtitle"
+  | "nextSubtitle"
   | "fullscreen"
   | "subtitle"
   | "interaction";
@@ -53,11 +55,22 @@ const getTargetCandidate = (
 export const getPlayerKeyboardShortcutAction = (
   event: PlayerKeyboardShortcutEventLike
 ): PlayerKeyboardShortcutAction | null => {
-  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+  if (event.altKey || event.ctrlKey || event.metaKey) {
     return null;
   }
 
   const normalizedKey = event.key.toLowerCase();
+
+  if (event.shiftKey) {
+    switch (normalizedKey) {
+      case "arrowleft":
+        return "previousSubtitle";
+      case "arrowright":
+        return "nextSubtitle";
+      default:
+        return null;
+    }
+  }
 
   if (
     event.code === "Space" ||

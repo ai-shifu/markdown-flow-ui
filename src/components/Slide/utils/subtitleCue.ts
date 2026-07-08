@@ -12,6 +12,12 @@ export interface SubtitleCueJumpTarget {
   timeMs: number;
 }
 
+export interface ShouldClearSubtitleCueJumpTargetOptions {
+  currentAudioIndex: number;
+  currentTimeMs: number;
+  target: SubtitleCueJumpTarget | null | undefined;
+}
+
 const normalizePlaybackTimeMs = (timeMs: number) => {
   const parsedTimeMs = Number(timeMs);
 
@@ -147,6 +153,17 @@ const isSameSubtitleCueJumpTarget = (
 ) =>
   previousTarget?.audioIndex === nextTarget.audioIndex &&
   previousTarget.timeMs === nextTarget.timeMs;
+
+export const shouldClearSubtitleCueJumpTarget = ({
+  currentAudioIndex,
+  currentTimeMs,
+  target,
+}: ShouldClearSubtitleCueJumpTargetOptions) =>
+  Boolean(
+    target &&
+      target.audioIndex === currentAudioIndex &&
+      target.timeMs !== normalizePlaybackTimeMs(currentTimeMs)
+  );
 
 const resolveSubtitleCueJumpTargetCandidate = ({
   audioIndex,

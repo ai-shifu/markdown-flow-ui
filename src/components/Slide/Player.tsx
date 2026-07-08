@@ -59,6 +59,7 @@ import {
 import { getSortedAudioSegments } from "./utils/audioSegments";
 import {
   getSubtitleCueJumpTarget,
+  shouldClearSubtitleCueJumpTarget,
   type SubtitleCueJumpDirection,
   type SubtitleCueJumpTarget,
   type SubtitleCueJumpTrack,
@@ -793,10 +794,20 @@ const Player = ({
       }
 
       playbackTimeMsRef.current = nextPlaybackTimeMs;
+      if (
+        shouldClearSubtitleCueJumpTarget({
+          currentAudioIndex,
+          currentTimeMs: nextPlaybackTimeMs,
+          target: lastSubtitleJumpTargetRef.current,
+        })
+      ) {
+        lastSubtitleJumpTargetRef.current = null;
+      }
+
       onPlaybackTimeChange?.(nextPlaybackTimeMs);
       updateSubtitleJumpAvailabilityRef.current(nextPlaybackTimeMs);
     },
-    [onPlaybackTimeChange]
+    [currentAudioIndex, onPlaybackTimeChange]
   );
 
   const syncPlaybackTime = useCallback(() => {

@@ -4,6 +4,7 @@ import {
   getSubtitleCueJumpTarget,
   getSubtitleCueJumpTime,
   getVisibleSubtitleText,
+  shouldClearSubtitleCueJumpTarget,
 } from "./subtitleCue";
 
 describe("getVisibleSubtitleText", () => {
@@ -409,5 +410,56 @@ describe("getSubtitleCueJumpTarget", () => {
       audioIndex: 1,
       timeMs: 4_000,
     });
+  });
+});
+
+describe("shouldClearSubtitleCueJumpTarget", () => {
+  it("keeps the target while playback is still at the subtitle jump target", () => {
+    expect(
+      shouldClearSubtitleCueJumpTarget({
+        currentAudioIndex: 0,
+        currentTimeMs: 2_000,
+        target: {
+          audioIndex: 0,
+          timeMs: 2_000,
+        },
+      })
+    ).toBe(false);
+  });
+
+  it("clears the target after playback advances away from it on the same audio", () => {
+    expect(
+      shouldClearSubtitleCueJumpTarget({
+        currentAudioIndex: 0,
+        currentTimeMs: 4_500,
+        target: {
+          audioIndex: 0,
+          timeMs: 2_000,
+        },
+      })
+    ).toBe(true);
+  });
+
+  it("keeps the target while a cross-audio subtitle jump is waiting for the target audio", () => {
+    expect(
+      shouldClearSubtitleCueJumpTarget({
+        currentAudioIndex: 1,
+        currentTimeMs: 0,
+        target: {
+          audioIndex: 0,
+          timeMs: 2_000,
+        },
+      })
+    ).toBe(false);
+  });
+
+  it("ignores missing targets", () => {
+    expect(
+      shouldClearSubtitleCueJumpTarget({
+        currentAudioIndex: 0,
+        currentTimeMs: 4_500,
+        target: null,
+      })
+    ).toBe(false);
   });
 });

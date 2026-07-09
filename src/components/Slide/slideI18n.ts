@@ -2,6 +2,10 @@ import {
   normalizeMarkdownFlowLocale,
   type MarkdownFlowLocale,
 } from "../../lib/locale";
+import {
+  buildLocaleTexts,
+  type LocaleTextValues,
+} from "../../lib/localeTextMap";
 
 export interface SlidePlayerLocaleTexts {
   closeSettingsLabel: string;
@@ -42,43 +46,113 @@ export interface SlideLocaleTexts {
   playerTexts: SlidePlayerLocaleTexts;
 }
 
-export const DEFAULT_SLIDE_PLAYER_TEXTS: SlidePlayerLocaleTexts = {
-  closeSettingsLabel: "Close settings",
-  enterFullscreenLabel: "Enter fullscreen",
-  exitFullscreenLabel: "Exit fullscreen",
-  moreOptionsAriaLabel: "More options",
-  nextLabel: "Next page",
-  nextSubtitleLabel: "Next sentence",
-  notesLabel: "Notes",
-  pauseAutoplayLabel: "Pause autoplay",
-  pauseLabel: "Pause",
-  playAutoplayLabel: "Play autoplay",
-  playLabel: "Play",
-  previousLabel: "Previous page",
-  previousSubtitleLabel: "Previous sentence",
-  screenModeLabel: "Screen mode",
-  settingsTitle: "Settings",
-  subtitleLabel: "Subtitles",
-  subtitleToggleAriaLabel: "Toggle subtitles",
-  volumeAriaLabel: "Volume",
-  screenLabel: "Screen",
-  nonFullscreenLabel: "Non-fullscreen",
-  fullscreenLabel: "Fullscreen",
-  fullscreenHintText: "Rotate your screen for the best experience.",
-};
+const SLIDE_PLAYER_TEXT_KEYS = [
+  "closeSettingsLabel",
+  "enterFullscreenLabel",
+  "exitFullscreenLabel",
+  "moreOptionsAriaLabel",
+  "nextLabel",
+  "nextSubtitleLabel",
+  "notesLabel",
+  "pauseAutoplayLabel",
+  "pauseLabel",
+  "playAutoplayLabel",
+  "playLabel",
+  "previousLabel",
+  "previousSubtitleLabel",
+  "screenModeLabel",
+  "settingsTitle",
+  "subtitleLabel",
+  "subtitleToggleAriaLabel",
+  "volumeAriaLabel",
+  "screenLabel",
+  "nonFullscreenLabel",
+  "fullscreenLabel",
+  "fullscreenHintText",
+] as const satisfies readonly (keyof SlidePlayerLocaleTexts)[];
 
-export const DEFAULT_SLIDE_INTERACTION_TEXTS: SlideInteractionLocaleTexts = {
-  title: "Submit the content below to continue.",
-  confirmButtonText: "Submit",
-  copyButtonText: "Copy",
-  copiedButtonText: "Copied",
-};
+const SLIDE_INTERACTION_TEXT_KEYS = [
+  "title",
+  "confirmButtonText",
+  "copyButtonText",
+  "copiedButtonText",
+] as const satisfies readonly (keyof SlideInteractionLocaleTexts)[];
 
-export const DEFAULT_SLIDE_BUFFERING_TEXTS = {
-  waitingForAudio: "Waiting for current slide audio...",
-  loadingAudio: "Loading current slide audio...",
-  waitingForMoreAudio: "Waiting for more current slide audio...",
-} as const;
+const SLIDE_BUFFERING_TEXT_KEYS = [
+  "waitingForAudio",
+  "loadingAudio",
+  "waitingForMoreAudio",
+] as const;
+
+const createSlidePlayerTexts = (
+  values: LocaleTextValues<typeof SLIDE_PLAYER_TEXT_KEYS>
+): SlidePlayerLocaleTexts =>
+  buildLocaleTexts(SLIDE_PLAYER_TEXT_KEYS, values) as SlidePlayerLocaleTexts;
+
+const createSlideInteractionTexts = (
+  values: LocaleTextValues<typeof SLIDE_INTERACTION_TEXT_KEYS>
+): SlideInteractionLocaleTexts =>
+  buildLocaleTexts(
+    SLIDE_INTERACTION_TEXT_KEYS,
+    values
+  ) as SlideInteractionLocaleTexts;
+
+const createSlideBufferingTexts = (
+  values: LocaleTextValues<typeof SLIDE_BUFFERING_TEXT_KEYS>
+): Record<string, string> =>
+  buildLocaleTexts(SLIDE_BUFFERING_TEXT_KEYS, values);
+
+const createSlideLocaleTexts = (
+  fullscreenBackAriaLabel: string,
+  bufferingValues: LocaleTextValues<typeof SLIDE_BUFFERING_TEXT_KEYS>,
+  interactionValues: LocaleTextValues<typeof SLIDE_INTERACTION_TEXT_KEYS>,
+  playerValues: LocaleTextValues<typeof SLIDE_PLAYER_TEXT_KEYS>
+): SlideLocaleTexts => ({
+  bufferingText: createSlideBufferingTexts(bufferingValues),
+  fullscreenBackAriaLabel,
+  interactionTexts: createSlideInteractionTexts(interactionValues),
+  playerTexts: createSlidePlayerTexts(playerValues),
+});
+
+export const DEFAULT_SLIDE_PLAYER_TEXTS: SlidePlayerLocaleTexts =
+  createSlidePlayerTexts([
+    "Close settings",
+    "Enter fullscreen",
+    "Exit fullscreen",
+    "More options",
+    "Next page",
+    "Next sentence",
+    "Notes",
+    "Pause autoplay",
+    "Pause",
+    "Play autoplay",
+    "Play",
+    "Previous page",
+    "Previous sentence",
+    "Screen mode",
+    "Settings",
+    "Subtitles",
+    "Toggle subtitles",
+    "Volume",
+    "Screen",
+    "Non-fullscreen",
+    "Fullscreen",
+    "Rotate your screen for the best experience.",
+  ]);
+
+export const DEFAULT_SLIDE_INTERACTION_TEXTS: SlideInteractionLocaleTexts =
+  createSlideInteractionTexts([
+    "Submit the content below to continue.",
+    "Submit",
+    "Copy",
+    "Copied",
+  ]);
+
+export const DEFAULT_SLIDE_BUFFERING_TEXTS = createSlideBufferingTexts([
+  "Waiting for current slide audio...",
+  "Loading current slide audio...",
+  "Waiting for more current slide audio...",
+]);
 
 export const SLIDE_LOCALE_TEXTS: Record<MarkdownFlowLocale, SlideLocaleTexts> =
   {
@@ -88,84 +162,77 @@ export const SLIDE_LOCALE_TEXTS: Record<MarkdownFlowLocale, SlideLocaleTexts> =
       interactionTexts: DEFAULT_SLIDE_INTERACTION_TEXTS,
       playerTexts: DEFAULT_SLIDE_PLAYER_TEXTS,
     },
-    "fr-FR": {
-      bufferingText: {
-        waitingForAudio: "En attente de l'audio de la diapositive actuelle...",
-        loadingAudio: "Chargement de l'audio de la diapositive actuelle...",
-        waitingForMoreAudio:
-          "En attente de la suite de l'audio de la diapositive actuelle...",
-      },
-      fullscreenBackAriaLabel: "Retour",
-      interactionTexts: {
-        title: "Soumettez le contenu ci-dessous pour continuer.",
-        confirmButtonText: "Soumettre",
-        copyButtonText: "Copier",
-        copiedButtonText: "Copié",
-      },
-      playerTexts: {
-        closeSettingsLabel: "Fermer les paramètres",
-        enterFullscreenLabel: "Passer en plein écran",
-        exitFullscreenLabel: "Quitter le plein écran",
-        moreOptionsAriaLabel: "Plus d'options",
-        nextLabel: "Page suivante",
-        nextSubtitleLabel: "Phrase suivante",
-        notesLabel: "Notes",
-        pauseAutoplayLabel: "Suspendre la lecture automatique",
-        pauseLabel: "Pause",
-        playAutoplayLabel: "Lancer la lecture automatique",
-        playLabel: "Lecture",
-        previousLabel: "Page précédente",
-        previousSubtitleLabel: "Phrase précédente",
-        screenModeLabel: "Mode d'affichage",
-        settingsTitle: "Paramètres",
-        subtitleLabel: "Sous-titres",
-        subtitleToggleAriaLabel: "Afficher ou masquer les sous-titres",
-        volumeAriaLabel: "Volume",
-        screenLabel: "Écran",
-        nonFullscreenLabel: "Hors plein écran",
-        fullscreenLabel: "Plein écran",
-        fullscreenHintText:
-          "Faites pivoter votre écran pour une meilleure expérience.",
-      },
-    },
-    "zh-CN": {
-      bufferingText: {
-        waitingForAudio: "正在等待当前页音频...",
-        loadingAudio: "正在加载当前页音频...",
-        waitingForMoreAudio: "正在等待更多当前页音频...",
-      },
-      fullscreenBackAriaLabel: "返回",
-      interactionTexts: {
-        title: "提交下面的内容以继续",
-        confirmButtonText: "提交",
-        copyButtonText: "复制",
-        copiedButtonText: "已复制",
-      },
-      playerTexts: {
-        closeSettingsLabel: "关闭设置",
-        enterFullscreenLabel: "进入全屏",
-        exitFullscreenLabel: "退出全屏",
-        moreOptionsAriaLabel: "更多选项",
-        nextLabel: "下一页",
-        nextSubtitleLabel: "下一句",
-        notesLabel: "笔记",
-        pauseAutoplayLabel: "暂停自动播放",
-        pauseLabel: "暂停",
-        playAutoplayLabel: "开始自动播放",
-        playLabel: "播放",
-        previousLabel: "上一页",
-        previousSubtitleLabel: "上一句",
-        screenModeLabel: "屏幕模式",
-        settingsTitle: "设置",
-        subtitleLabel: "字幕",
-        subtitleToggleAriaLabel: "切换字幕",
-        volumeAriaLabel: "音量",
-        screenLabel: "屏幕",
-        nonFullscreenLabel: "非全屏",
-        fullscreenLabel: "全屏",
-        fullscreenHintText: "旋转屏幕以获得更好的体验。",
-      },
-    },
+    "fr-FR": createSlideLocaleTexts(
+      "Retour",
+      [
+        "En attente de l'audio de la diapositive actuelle...",
+        "Chargement de l'audio de la diapositive actuelle...",
+        "En attente de la suite de l'audio de la diapositive actuelle...",
+      ],
+      [
+        "Soumettez le contenu ci-dessous pour continuer.",
+        "Soumettre",
+        "Copier",
+        "Copié",
+      ],
+      [
+        "Fermer les paramètres",
+        "Passer en plein écran",
+        "Quitter le plein écran",
+        "Plus d'options",
+        "Page suivante",
+        "Phrase suivante",
+        "Notes",
+        "Suspendre la lecture automatique",
+        "Pause",
+        "Lancer la lecture automatique",
+        "Lecture",
+        "Page précédente",
+        "Phrase précédente",
+        "Mode d'affichage",
+        "Paramètres",
+        "Sous-titres",
+        "Afficher ou masquer les sous-titres",
+        "Volume",
+        "Écran",
+        "Hors plein écran",
+        "Plein écran",
+        "Faites pivoter votre écran pour une meilleure expérience.",
+      ]
+    ),
+    "zh-CN": createSlideLocaleTexts(
+      "返回",
+      [
+        "正在等待当前页音频...",
+        "正在加载当前页音频...",
+        "正在等待更多当前页音频...",
+      ],
+      ["提交下面的内容以继续", "提交", "复制", "已复制"],
+      [
+        "关闭设置",
+        "进入全屏",
+        "退出全屏",
+        "更多选项",
+        "下一页",
+        "下一句",
+        "笔记",
+        "暂停自动播放",
+        "暂停",
+        "开始自动播放",
+        "播放",
+        "上一页",
+        "上一句",
+        "屏幕模式",
+        "设置",
+        "字幕",
+        "切换字幕",
+        "音量",
+        "屏幕",
+        "非全屏",
+        "全屏",
+        "旋转屏幕以获得更好的体验。",
+      ]
+    ),
   };
 
 export const getSlideLocaleTexts = (locale?: string | null): SlideLocaleTexts =>

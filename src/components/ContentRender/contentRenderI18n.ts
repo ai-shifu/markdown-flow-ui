@@ -2,6 +2,10 @@ import {
   normalizeMarkdownFlowLocale,
   type MarkdownFlowLocale,
 } from "../../lib/locale";
+import {
+  buildLocaleTexts,
+  type LocaleTextValues,
+} from "../../lib/localeTextMap";
 
 export interface ContentRenderLocaleTexts {
   confirmButtonText: string;
@@ -16,46 +20,67 @@ export interface ContentRenderLocaleTexts {
   scrollToBottomLabel: string;
 }
 
+const CONTENT_RENDER_TEXT_KEYS = [
+  "confirmButtonText",
+  "copyButtonText",
+  "copiedButtonText",
+  "sandboxLoadingText",
+  "sandboxStyleLoadingText",
+  "sandboxScriptLoadingText",
+  "sandboxFullscreenButtonText",
+  "sandboxExitFullscreenButtonText",
+  "sendButtonLabel",
+  "scrollToBottomLabel",
+] as const satisfies readonly (keyof ContentRenderLocaleTexts)[];
+
+const createContentRenderLocaleTexts = (
+  values: LocaleTextValues<typeof CONTENT_RENDER_TEXT_KEYS>
+): ContentRenderLocaleTexts =>
+  buildLocaleTexts(
+    CONTENT_RENDER_TEXT_KEYS,
+    values
+  ) as ContentRenderLocaleTexts;
+
 export const CONTENT_RENDER_LOCALE_TEXTS: Record<
   MarkdownFlowLocale,
   ContentRenderLocaleTexts
 > = {
-  "en-US": {
-    confirmButtonText: "Submit",
-    copyButtonText: "Copy",
-    copiedButtonText: "Copied",
-    sandboxLoadingText: "Loading content...",
-    sandboxStyleLoadingText: "Building styles...",
-    sandboxScriptLoadingText: "Building scripts cache...",
-    sandboxFullscreenButtonText: "Fullscreen",
-    sandboxExitFullscreenButtonText: "Exit fullscreen",
-    sendButtonLabel: "Send",
-    scrollToBottomLabel: "Scroll to bottom",
-  },
-  "fr-FR": {
-    confirmButtonText: "Soumettre",
-    copyButtonText: "Copier",
-    copiedButtonText: "Copié",
-    sandboxLoadingText: "Chargement du contenu...",
-    sandboxStyleLoadingText: "Génération des styles...",
-    sandboxScriptLoadingText: "Génération du cache des scripts...",
-    sandboxFullscreenButtonText: "Plein écran",
-    sandboxExitFullscreenButtonText: "Quitter le plein écran",
-    sendButtonLabel: "Envoyer",
-    scrollToBottomLabel: "Faire défiler jusqu'en bas",
-  },
-  "zh-CN": {
-    confirmButtonText: "提交",
-    copyButtonText: "复制",
-    copiedButtonText: "已复制",
-    sandboxLoadingText: "正在加载内容...",
-    sandboxStyleLoadingText: "正在生成样式...",
-    sandboxScriptLoadingText: "正在生成脚本缓存...",
-    sandboxFullscreenButtonText: "全屏浏览",
-    sandboxExitFullscreenButtonText: "退出全屏",
-    sendButtonLabel: "发送",
-    scrollToBottomLabel: "滚动到底部",
-  },
+  "en-US": createContentRenderLocaleTexts([
+    "Submit",
+    "Copy",
+    "Copied",
+    "Loading content...",
+    "Building styles...",
+    "Building scripts cache...",
+    "Fullscreen",
+    "Exit fullscreen",
+    "Send",
+    "Scroll to bottom",
+  ]),
+  "fr-FR": createContentRenderLocaleTexts([
+    "Soumettre",
+    "Copier",
+    "Copié",
+    "Chargement du contenu...",
+    "Génération des styles...",
+    "Génération du cache des scripts...",
+    "Plein écran",
+    "Quitter le plein écran",
+    "Envoyer",
+    "Faire défiler jusqu'en bas",
+  ]),
+  "zh-CN": createContentRenderLocaleTexts([
+    "提交",
+    "复制",
+    "已复制",
+    "正在加载内容...",
+    "正在生成样式...",
+    "正在生成脚本缓存...",
+    "全屏浏览",
+    "退出全屏",
+    "发送",
+    "滚动到底部",
+  ]),
 };
 
 export const getContentRenderLocaleTexts = (

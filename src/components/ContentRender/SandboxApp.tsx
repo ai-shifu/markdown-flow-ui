@@ -251,8 +251,30 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     }
 
     const contentNodes = Array.from(wrapper.childNodes);
-    setHasRenderedContent(contentNodes.length > 0);
+    const hasInitialContent = contentNodes.length > 0;
+    setHasRenderedContent(hasInitialContent);
     container.replaceChildren(...contentNodes);
+
+    let scriptContentObserver: MutationObserver | null = null;
+    const markRenderedContentFromContainer = () => {
+      if (container.childNodes.length === 0) {
+        return false;
+      }
+
+      setHasRenderedContent(true);
+      scriptContentObserver?.disconnect();
+      scriptContentObserver = null;
+      return true;
+    };
+    if (!hasInitialContent && hasScripts && shouldExecuteScripts) {
+      scriptContentObserver = new MutationObserver(() => {
+        markRenderedContentFromContainer();
+      });
+      scriptContentObserver.observe(container, {
+        childList: true,
+        subtree: true,
+      });
+    }
 
     resourceQueue.forEach((node) => {
       if (node.tagName.toLowerCase() === "style") {
@@ -288,6 +310,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
         node.remove();
       }
     });
+    markRenderedContentFromContainer();
     if (enableScaling) {
       const win = container.ownerDocument?.defaultView as ScalingWindow | null;
       win?.__mdf_triggerFitContent?.();
@@ -315,6 +338,10 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
         );
       }
     });
+
+    return () => {
+      scriptContentObserver?.disconnect();
+    };
   }, [html, resetToken, enableScaling]);
 
   useEffect(

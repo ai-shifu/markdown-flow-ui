@@ -116,6 +116,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   type,
   className,
   locale,
+  loadingText,
   styleLoadingText,
   scriptLoadingText,
   fullScreenButtonText,
@@ -680,6 +681,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       <SandboxApp
         html={renderHtmlContent}
         locale={locale}
+        loadingText={loadingText}
         styleLoadingText={styleLoadingText}
         scriptLoadingText={scriptLoadingText}
         disableLoadingOverlay={disableLoadingOverlay}
@@ -710,6 +712,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   }, [
     renderHtmlContent,
     locale,
+    loadingText,
     styleLoadingText,
     scriptLoadingText,
     resetToken,

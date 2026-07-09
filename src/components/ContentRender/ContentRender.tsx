@@ -333,12 +333,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   const resolvedCopyButtonText = copyButtonText || localeTexts.copyButtonText;
   const resolvedCopiedButtonText =
     copiedButtonText || localeTexts.copiedButtonText;
-  const resolvedSandboxLoadingText =
-    sandboxLoadingText || localeTexts.sandboxLoadingText;
-  const resolvedSandboxStyleLoadingText =
-    sandboxStyleLoadingText || localeTexts.sandboxStyleLoadingText;
-  const resolvedSandboxScriptLoadingText =
-    sandboxScriptLoadingText || localeTexts.sandboxScriptLoadingText;
   const resolvedSandboxFullscreenButtonText =
     sandboxFullscreenButtonText || localeTexts.sandboxFullscreenButtonText;
   const resolvedSandboxExitFullscreenButtonText =
@@ -646,9 +640,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               content={segment.value}
               className="content-render-iframe"
               locale={locale}
-              loadingText={resolvedSandboxLoadingText}
-              styleLoadingText={resolvedSandboxStyleLoadingText}
-              scriptLoadingText={resolvedSandboxScriptLoadingText}
+              loadingText={sandboxLoadingText}
+              styleLoadingText={sandboxStyleLoadingText}
+              scriptLoadingText={sandboxScriptLoadingText}
               disableLoadingOverlay={disableSandboxLoadingOverlay}
               fullScreenButtonText={resolvedSandboxFullscreenButtonText}
               exitFullScreenButtonText={resolvedSandboxExitFullscreenButtonText}

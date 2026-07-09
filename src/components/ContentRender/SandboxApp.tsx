@@ -7,6 +7,7 @@ import type { ScalingWindow } from "./utils/iframe-scaling";
 export interface SandboxAppProps {
   html: string;
   locale?: MarkdownFlowLocale;
+  loadingText?: string;
   styleLoadingText?: string;
   scriptLoadingText?: string;
   resetToken?: number;
@@ -95,6 +96,7 @@ const reuseRenderedImages = (
 const SandboxApp: React.FC<SandboxAppProps> = ({
   html,
   locale,
+  loadingText,
   styleLoadingText,
   scriptLoadingText,
   resetToken = 0,
@@ -108,6 +110,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isGeneratingStyles, setIsGeneratingStyles] = useState(false);
   const [isGeneratingScripts, setIsGeneratingScripts] = useState(false);
+  const [hasRenderedContent, setHasRenderedContent] = useState(false);
   const appendedStylesRef = useRef<HTMLStyleElement[]>([]);
   const appendedScriptsRef = useRef<HTMLScriptElement[]>([]);
   const styleStartRef = useRef(0);
@@ -116,7 +119,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   const scriptTimerRef = useRef<number | null>(null);
   const hasStylesRef = useRef(false);
   const hasScriptsRef = useRef(false);
-  const hasRenderedContentRef = useRef(false);
   const prevResetTokenRef = useRef(resetToken);
   const MIN_LOADING_MS = 200;
 
@@ -177,7 +179,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
 
   useEffect(() => {
     if (resetToken !== prevResetTokenRef.current) {
-      hasRenderedContentRef.current = false;
+      setHasRenderedContent(false);
       prevResetTokenRef.current = resetToken;
     }
     clearTimer(styleTimerRef);
@@ -197,7 +199,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     appendedScriptsRef.current.forEach((node) => node.remove());
     appendedScriptsRef.current = [];
 
-    // const hasRenderedBefore = hasRenderedContentRef.current;
     setIsGeneratingStyles(false);
     setIsGeneratingScripts(false);
     const wrapper = doc.createElement("div");
@@ -250,9 +251,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     }
 
     const hasFirstElement = !!wrapper.firstElementChild;
-    if (hasFirstElement) {
-      hasRenderedContentRef.current = true;
-    }
+    setHasRenderedContent(hasFirstElement);
 
     const contentNodes = Array.from(wrapper.childNodes);
     container.replaceChildren(...contentNodes);
@@ -347,9 +346,15 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     }
 
     if (isGeneratingScripts || hasScriptsRef.current)
-      return scriptLoadingText || localeTexts.sandboxScriptLoadingText;
+      return (
+        scriptLoadingText || loadingText || localeTexts.sandboxScriptLoadingText
+      );
     if (isGeneratingStyles || hasStylesRef.current)
-      return styleLoadingText || localeTexts.sandboxStyleLoadingText;
+      return (
+        styleLoadingText || loadingText || localeTexts.sandboxStyleLoadingText
+      );
+    if (!hasRenderedContent)
+      return loadingText || localeTexts.sandboxLoadingText;
     return null;
   })();
 

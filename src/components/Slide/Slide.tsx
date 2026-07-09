@@ -269,6 +269,7 @@ const Slide: React.FC<SlideProps> = ({
   const stageLayerRef = useRef<HTMLDivElement | null>(null);
   const lastElementRef = useRef<HTMLDivElement | null>(null);
   const playerHideTimerRef = useRef<number | null>(null);
+  const isPointerInsidePlayerControlsRef = useRef(false);
   const autoAdvanceTimerRef = useRef<number | null>(null);
   const interactionAutoCloseTimerRef = useRef<number | null>(null);
   const interactionOverlayOpenTimerRef = useRef<number | null>(null);
@@ -729,6 +730,15 @@ const Slide: React.FC<SlideProps> = ({
     [clearInteractionOverlayOpenTimer]
   );
 
+  const isPlayerControlsHovered = useCallback(
+    () =>
+      isPointerInsidePlayerControlsRef.current ||
+      Boolean(
+        sectionRef.current?.querySelector(".slide-player__controls:hover")
+      ),
+    []
+  );
+
   const showPlayerControls = useCallback(
     (enableAutoHide = hasPlayerInteracted) => {
       if (!shouldRenderPlayer) {
@@ -738,11 +748,21 @@ const Slide: React.FC<SlideProps> = ({
       setIsPlayerVisible(true);
       clearPlayerHideTimer();
 
-      if (playerAlwaysVisible || !enableAutoHide || playerAutoHideDelay <= 0) {
+      if (
+        playerAlwaysVisible ||
+        !enableAutoHide ||
+        playerAutoHideDelay <= 0 ||
+        isPlayerControlsHovered()
+      ) {
         return;
       }
 
       playerHideTimerRef.current = window.setTimeout(() => {
+        if (isPlayerControlsHovered()) {
+          playerHideTimerRef.current = null;
+          return;
+        }
+
         setIsPlayerVisible(false);
         playerHideTimerRef.current = null;
       }, playerAutoHideDelay);
@@ -750,6 +770,7 @@ const Slide: React.FC<SlideProps> = ({
     [
       clearPlayerHideTimer,
       hasPlayerInteracted,
+      isPlayerControlsHovered,
       playerAlwaysVisible,
       playerAutoHideDelay,
       shouldRenderPlayer,
@@ -807,6 +828,14 @@ const Slide: React.FC<SlideProps> = ({
       onPlayerVisibilityChange?.(false);
     };
   }, [onPlayerVisibilityChange, playerVisible]);
+
+  useEffect(() => {
+    if (playerVisible) {
+      return;
+    }
+
+    isPointerInsidePlayerControlsRef.current = false;
+  }, [playerVisible]);
 
   useEffect(() => {
     if (isMobileDevice || mobileViewMode === DEFAULT_MOBILE_VIEW_MODE) {
@@ -1681,6 +1710,20 @@ const Slide: React.FC<SlideProps> = ({
     setIsInteractionOverlayOpen((prevOpen) => !prevOpen);
   }, [activeInteractionElement]);
 
+  const handlePlayerControlsPointerEnter = useCallback(() => {
+    isPointerInsidePlayerControlsRef.current = true;
+    clearPlayerHideTimer();
+
+    if (shouldRenderPlayer) {
+      setIsPlayerVisible(true);
+    }
+  }, [clearPlayerHideTimer, shouldRenderPlayer]);
+
+  const handlePlayerControlsPointerLeave = useCallback(() => {
+    isPointerInsidePlayerControlsRef.current = false;
+    showPlayerControls(true);
+  }, [showPlayerControls]);
+
   const stopOverlayPropagation = useCallback(
     (
       event:
@@ -1974,6 +2017,8 @@ const Slide: React.FC<SlideProps> = ({
               mobileViewMode={effectiveMobileViewMode}
               settingsPortalContainer={viewportRef.current}
               onMobileViewModeChange={handleMobileViewModeSelect}
+              onControlsPointerEnter={handlePlayerControlsPointerEnter}
+              onControlsPointerLeave={handlePlayerControlsPointerLeave}
               onInteractionToggle={handleInteractionToggle}
               onNext={handleNext}
               onPrev={handlePrev}

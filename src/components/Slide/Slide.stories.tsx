@@ -68,7 +68,8 @@ const meta = {
     },
     playerAutoHideDelay: {
       control: { type: "number", min: 0, step: 500 },
-      description: "Auto-hide delay for player controls in milliseconds",
+      description:
+        "Auto-hide delay for player controls in milliseconds after the pointer leaves the control bar",
     },
     markerAutoAdvanceDelay: {
       control: { type: "number", min: 0, step: 500 },

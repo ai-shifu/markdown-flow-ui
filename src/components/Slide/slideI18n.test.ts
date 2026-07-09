@@ -22,8 +22,8 @@ describe("getSlideLocaleTexts", () => {
     expect(getSlideLocaleTexts("fr-FR")).toMatchObject({
       bufferingText: {
         waitingForAudio: "En attente de l'audio de la diapositive actuelle...",
-        loadingAudio: "Chargement audio…",
-        waitingForMoreAudio: "En attente de plus d’audio…",
+        loadingAudio: "Chargement audio...",
+        waitingForMoreAudio: "En attente de plus d'audio...",
       },
       fullscreenBackAriaLabel: "Retour au mode non plein écran",
       interactionTexts: {

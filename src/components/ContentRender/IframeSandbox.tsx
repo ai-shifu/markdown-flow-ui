@@ -716,7 +716,11 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     styleLoadingText,
     scriptLoadingText,
     resetToken,
+    disableLoadingOverlay,
+    hasRootVhHeight,
     mode,
+    shouldStretchRootHeight,
+    shouldEnableScaling,
   ]);
   const containerClassName = [
     "w-full relative content-render-iframe-sandbox",

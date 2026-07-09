@@ -71,6 +71,17 @@ const meta = {
       description:
         "Fullscreen-only mobile header with a built-in back button and optional custom content slot",
     },
+    playerEnabled: {
+      control: "boolean",
+      description:
+        "Enable the player runtime, including audio playback and keyboard shortcuts",
+    },
+    playerControlsVisibility: {
+      control: "select",
+      options: ["auto", "visible", "hidden"],
+      description:
+        "Control whether player controls auto-hide, stay visible, or stay hidden while runtime behavior remains active",
+    },
     playerAutoHideDelay: {
       control: { type: "number", min: 0, step: 500 },
       description:
@@ -83,7 +94,7 @@ const meta = {
     },
     playerAlwaysVisible: {
       control: "boolean",
-      description: "Keep the player controls visible without auto hiding",
+      description: 'Deprecated: use playerControlsVisibility="visible" instead',
     },
     playerCustomActions: {
       control: false,
@@ -2267,6 +2278,36 @@ const CUSTOM_PLAYER_SECOND_QUIZ_SUBTITLE_CUES = createCustomPlayerSubtitleCues(
 export const Default: Story = {
   args: {
     elementList: exampleElementList,
+  },
+};
+
+export const PlayerDisabled: Story = {
+  args: {
+    elementList: exampleElementList,
+    playerEnabled: false,
+  },
+};
+
+export const ControlsHiddenWithKeyboardShortcuts: Story = {
+  args: {
+    elementList: exampleElementList,
+    enableKeyboardShortcuts: true,
+    playerControlsVisibility: "hidden",
+  },
+};
+
+export const ControlsAlwaysVisible: Story = {
+  args: {
+    elementList: exampleElementList,
+    playerControlsVisibility: "visible",
+  },
+};
+
+export const ControlsAutoHide: Story = {
+  args: {
+    elementList: exampleElementList,
+    playerAutoHideDelay: 3000,
+    playerControlsVisibility: "auto",
   },
 };
 

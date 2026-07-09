@@ -203,6 +203,7 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   isSubtitleEnabled?: boolean;
   prevDisabled?: boolean;
   nextDisabled?: boolean;
+  /** Shows or hides the visual controls without disabling audio, callbacks, or keyboard shortcuts. */
   showControls?: boolean;
   /** Fired when the pointer enters the controls container to pause auto-hide. */
   onControlsPointerEnter?: React.PointerEventHandler<HTMLDivElement>;

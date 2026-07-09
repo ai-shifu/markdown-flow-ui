@@ -23,8 +23,9 @@ import {
 } from "lucide-react";
 
 import { cn } from "../../lib/utils";
+import type { MarkdownFlowLocale } from "../../lib/locale";
 import MobilePlayerSettingsSheet from "./MobilePlayerSettingsSheet";
-import { DEFAULT_SLIDE_PLAYER_TEXTS } from "./constants";
+import { getSlidePlayerTexts, type SlidePlayerLocaleTexts } from "./slideI18n";
 import type { SlideAudioItem } from "./useSlide";
 import type {
   ElementSubtitleCue,
@@ -71,40 +72,15 @@ const audioPreloadElementCache = new Map<string, HTMLAudioElement>();
 /**
  * Labels and accessibility text used by the slide player controls.
  *
- * Missing fields fall back to `DEFAULT_SLIDE_PLAYER_TEXTS`; pass a `texts`
- * object when a consumer needs localized control labels or tooltip text.
+ * Missing fields fall back to the selected `locale`; pass a `texts` object when
+ * a consumer needs custom control labels or tooltip text.
  *
  * @example
  * ```tsx
- * <Player texts={{ playLabel: "播放", nextLabel: "下一页" }} />
+ * <Player locale="zh-CN" texts={{ playLabel: "播放", nextLabel: "下一页" }} />
  * ```
  */
-export interface SlidePlayerTexts {
-  closeSettingsLabel?: string;
-  enterFullscreenLabel?: string;
-  exitFullscreenLabel?: string;
-  moreOptionsAriaLabel?: string;
-  nextLabel?: string;
-  /** Accessible label/title for the next-subtitle jump control. */
-  nextSubtitleLabel?: string;
-  notesLabel?: string;
-  pauseAutoplayLabel?: string;
-  pauseLabel?: string;
-  playAutoplayLabel?: string;
-  playLabel?: string;
-  previousLabel?: string;
-  /** Accessible label/title for the previous-subtitle jump control. */
-  previousSubtitleLabel?: string;
-  screenModeLabel?: string;
-  settingsTitle?: string;
-  subtitleLabel?: string;
-  subtitleToggleAriaLabel?: string;
-  volumeAriaLabel?: string;
-  screenLabel?: string;
-  nonFullscreenLabel?: string;
-  fullscreenLabel?: string;
-  fullscreenHintText?: string;
-}
+export type SlidePlayerTexts = Partial<SlidePlayerLocaleTexts>;
 
 export type SlidePlayerLoadingReason = "loadingAudio" | "waitingForMoreAudio";
 
@@ -248,6 +224,8 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   subtitleSeekRequest?: SlidePlayerSubtitleSeekRequest | null;
   customActions?: SlidePlayerCustomActions;
   customActionContext?: SlidePlayerCustomActionContext;
+  /** Locale used for built-in control labels when `texts` does not provide them. */
+  locale?: MarkdownFlowLocale;
   texts?: SlidePlayerTexts;
 };
 
@@ -336,6 +314,7 @@ const Player = ({
   subtitleSeekRequest = null,
   customActions,
   customActionContext,
+  locale,
   texts,
   onFocusCapture,
   onPointerDown,
@@ -419,10 +398,10 @@ const Player = ({
   );
   const playerTexts = useMemo(
     () => ({
-      ...DEFAULT_SLIDE_PLAYER_TEXTS,
+      ...getSlidePlayerTexts(locale),
       ...texts,
     }),
-    [texts]
+    [locale, texts]
   );
   const currentAudioKey = useMemo(() => {
     if (!currentAudio) {

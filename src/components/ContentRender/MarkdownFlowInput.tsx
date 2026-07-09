@@ -8,10 +8,14 @@ import {
   InputGroupButton,
   InputGroupTextarea,
 } from "../ui/inputGroup/input-group";
+import type { MarkdownFlowLocale } from "../../lib/locale";
+import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 
 interface MarkdownFlowInputProps {
   disabled?: boolean;
+  locale?: MarkdownFlowLocale;
   placeholder?: string;
+  sendButtonLabel?: string;
   value?: string;
   title?: string;
   onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
@@ -25,7 +29,9 @@ const resolveAssetSrc = (asset: string | { src: string }) =>
 
 const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   disabled,
+  locale,
   placeholder,
+  sendButtonLabel,
   value,
   title,
   onChange,
@@ -33,6 +39,9 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   className,
   textareaClassName,
 }) => {
+  const localeTexts = getContentRenderLocaleTexts(locale);
+  const resolvedSendButtonLabel =
+    sendButtonLabel || localeTexts.sendButtonLabel;
   const isSendDisabled = disabled || !value?.trim();
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (!onSend) {
@@ -69,7 +78,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
         size="icon-sm"
         onClick={onSend}
         disabled={isSendDisabled}
-        aria-label="send"
+        aria-label={resolvedSendButtonLabel}
         style={{
           margin: "0px 7px 4px 7px",
           cursor: isSendDisabled ? "not-allowed" : "pointer",
@@ -80,7 +89,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
           src={resolveAssetSrc(
             isSendDisabled ? sendIconDisable : sendIconEnable
           )}
-          alt="send"
+          alt={resolvedSendButtonLabel}
           className="size-6"
         />
       </InputGroupButton>

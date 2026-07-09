@@ -12,6 +12,11 @@ const meta = {
   },
   tags: ["autodocs"],
   argTypes: {
+    locale: {
+      control: "select",
+      options: ["en-US", "fr-FR", "zh-CN"],
+      description: "Locale for built-in UI text",
+    },
     initialContentList: {
       description: "MarkdownFlow 内容列表",
       table: {
@@ -65,6 +70,21 @@ export const MarkdownFlowStory: Story = {
         content: `?[%{{ sys_user_style }}幽默|大气|二次元｜...具体描述下你喜欢的风格]`,
         defaultButtonText: "幽默",
         readonly: true,
+      },
+    ],
+  },
+};
+
+export const FrenchLocale: Story = {
+  args: {
+    locale: "fr-FR",
+    initialContentList: [
+      {
+        content:
+          "Choisissez les sujets à approfondir : ?[%{{ topics }}Markdown||Interactions||Rendu HTML||...Autre sujet]",
+      },
+      {
+        content: "```ts\nconst locale = 'fr-FR';\n```",
       },
     ],
   },

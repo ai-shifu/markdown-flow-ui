@@ -11,6 +11,7 @@ import { ChevronLeft } from "lucide-react";
 
 import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
+import type { MarkdownFlowLocale } from "../../lib/locale";
 import LoadingOverlayCard from "../ui/loading-overlay-card";
 import ContentRender from "../ContentRender";
 import type { ContentRenderProps } from "../ContentRender/ContentRender";
@@ -63,6 +64,11 @@ import {
 } from "./utils/playerCustomActions";
 import { createPlaybackTimeStore } from "./utils/playbackTimeStore";
 import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
+import {
+  DEFAULT_SLIDE_BUFFERING_TEXTS,
+  getSlideLocaleTexts,
+  type SlideBufferingReason,
+} from "./slideI18n";
 import "./slide.css";
 export type {
   Element,
@@ -76,19 +82,13 @@ const DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS = 2000;
 const DEFAULT_INTERACTION_OVERLAY_OPEN_DELAY_MS = 300;
 const DEFAULT_INTERACTION_OVERLAY_FALLBACK_OFFSET_PX = 160;
 const DEFAULT_INTERACTION_SUBTITLE_GAP_PX = 16;
-const DEFAULT_BUFFERING_REASON = "waitingForAudio";
+const DEFAULT_BUFFERING_REASON: SlideBufferingReason = "waitingForAudio";
 
-export type SlideBufferingReason = "waitingForAudio" | SlidePlayerLoadingReason;
+export type { SlideBufferingReason } from "./slideI18n";
 
 export type SlideBufferingTextConfig =
   | string
   | Partial<Record<SlideBufferingReason, string>>;
-
-const DEFAULT_SLIDE_BUFFERING_TEXTS: Record<SlideBufferingReason, string> = {
-  waitingForAudio: "Waiting for current slide audio...",
-  loadingAudio: "Loading current slide audio...",
-  waitingForMoreAudio: "Waiting for more current slide audio...",
-};
 
 const resolveBufferingTextByReason = (
   bufferingText: SlideBufferingTextConfig,
@@ -103,6 +103,20 @@ const resolveBufferingTextByReason = (
     bufferingText[DEFAULT_BUFFERING_REASON] ??
     DEFAULT_SLIDE_BUFFERING_TEXTS[reason]
   );
+};
+
+const mergeBufferingTextWithLocaleDefaults = (
+  bufferingText: SlideBufferingTextConfig | undefined,
+  localeBufferingText: Record<string, string>
+): SlideBufferingTextConfig => {
+  if (typeof bufferingText === "string") {
+    return bufferingText;
+  }
+
+  return {
+    ...localeBufferingText,
+    ...bufferingText,
+  };
 };
 
 const shouldShowBufferingOverlay = (
@@ -124,6 +138,7 @@ type RenderSlideElementOptions = {
 interface InteractionOverlayCardProps {
   content: string;
   title: string;
+  locale?: MarkdownFlowLocale;
   defaultButtonText?: string;
   defaultInputText?: string;
   defaultSelectedValues?: string[];
@@ -152,6 +167,7 @@ const InteractionOverlayCard = memo(
   ({
     content,
     title,
+    locale,
     defaultButtonText,
     defaultInputText,
     defaultSelectedValues,
@@ -168,6 +184,7 @@ const InteractionOverlayCard = memo(
       <div className="slide-player__interaction-body">
         <ContentRender
           content={content}
+          locale={locale}
           defaultButtonText={defaultButtonText}
           defaultInputText={defaultInputText}
           defaultSelectedValues={defaultSelectedValues}
@@ -202,6 +219,8 @@ const areStepElementListsEqual = (
 
 export interface SlideProps extends React.ComponentProps<"section"> {
   elementList?: Element[];
+  /** Locale used for built-in UI text when a more specific text prop is not provided. */
+  locale?: MarkdownFlowLocale;
   showPlayer?: boolean;
   playerAlwaysVisible?: boolean;
   playerClassName?: string;
@@ -238,13 +257,14 @@ export interface SlideProps extends React.ComponentProps<"section"> {
 
 const Slide: React.FC<SlideProps> = ({
   elementList = [],
+  locale,
   showPlayer = true,
   playerAlwaysVisible = false,
   playerClassName,
   fullscreenHeader,
   playerCustomActions,
   playerCustomActionPauseOnActive = true,
-  bufferingText = DEFAULT_SLIDE_BUFFERING_TEXTS,
+  bufferingText,
   interactionTitle,
   interactionTexts,
   playerTexts,
@@ -263,6 +283,15 @@ const Slide: React.FC<SlideProps> = ({
   onFocusCapture,
   ...props
 }) => {
+  const localeTexts = useMemo(() => getSlideLocaleTexts(locale), [locale]);
+  const resolvedBufferingText = useMemo(
+    () =>
+      mergeBufferingTextWithLocaleDefaults(
+        bufferingText,
+        localeTexts.bufferingText
+      ),
+    [bufferingText, localeTexts.bufferingText]
+  );
   const keyboardShortcutOwnerId = useId();
   const sectionRef = useRef<HTMLElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -1383,6 +1412,7 @@ const Slide: React.FC<SlideProps> = ({
           className="content-render-iframe"
           disableLoadingOverlay={disableLoadingOverlay}
           hideFullScreen
+          locale={locale}
           mode="blackboard"
           replaceRootScreenHeightWithFull={
             options.replaceRootScreenHeightWithFull
@@ -1399,6 +1429,7 @@ const Slide: React.FC<SlideProps> = ({
         className="content-render-iframe"
         disableLoadingOverlay={disableLoadingOverlay}
         hideFullScreen
+        locale={locale}
         mode="blackboard"
         type="markdown"
         content={element.content as string}
@@ -1870,7 +1901,10 @@ const Slide: React.FC<SlideProps> = ({
         {shouldShowFullscreenHeader ? (
           <div className="slide-landscape-header">
             <button
-              aria-label={fullscreenHeader?.backAriaLabel ?? "Back"}
+              aria-label={
+                fullscreenHeader?.backAriaLabel ??
+                localeTexts.fullscreenBackAriaLabel
+              }
               className="slide-landscape-header__back"
               onClick={handleFullscreenHeaderBack}
               type="button"
@@ -1931,7 +1965,7 @@ const Slide: React.FC<SlideProps> = ({
         {isAudioLoadingVisible ? (
           <LoadingOverlayCard
             message={resolveBufferingTextByReason(
-              bufferingText,
+              resolvedBufferingText,
               audioLoadingReason
             )}
             className="absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2"
@@ -1963,18 +1997,28 @@ const Slide: React.FC<SlideProps> = ({
           >
             <InteractionOverlayCard
               content={String(activeInteractionElement?.content ?? "")}
+              locale={locale}
               defaultButtonText={interactionDefaults.buttonText ?? ""}
               defaultInputText={interactionDefaults.inputText ?? ""}
               defaultSelectedValues={interactionDefaultSelectedValues}
-              confirmButtonText={interactionTexts?.confirmButtonText}
-              copyButtonText={interactionTexts?.copyButtonText}
-              copiedButtonText={interactionTexts?.copiedButtonText}
+              confirmButtonText={
+                interactionTexts?.confirmButtonText ??
+                localeTexts.interactionTexts.confirmButtonText
+              }
+              copyButtonText={
+                interactionTexts?.copyButtonText ??
+                localeTexts.interactionTexts.copyButtonText
+              }
+              copiedButtonText={
+                interactionTexts?.copiedButtonText ??
+                localeTexts.interactionTexts.copiedButtonText
+              }
               onSend={handleInteractionSend}
               readonly={isInteractionReadonly}
               title={
                 interactionTexts?.title ??
                 interactionTitle ??
-                "Submit the content below to continue."
+                localeTexts.interactionTexts.title
               }
             />
           </div>
@@ -1997,6 +2041,7 @@ const Slide: React.FC<SlideProps> = ({
               enableKeyboardShortcuts={enableKeyboardShortcuts}
               isPlaybackPaused={shouldPausePlaybackForCustomAction}
               isAutoAdvanceEnabled={isAutoAdvanceEnabled}
+              locale={locale}
               hasInteraction={Boolean(activeInteractionElement)}
               isInteractionOpen={isInteractionOverlayOpen}
               isSubtitleEnabled={isSubtitleEnabled}

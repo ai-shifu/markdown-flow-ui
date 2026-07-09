@@ -50,4 +50,14 @@ describe("getSlideLocaleTexts", () => {
       },
     });
   });
+
+  it("normalizes aliases and falls back to en-US for empty or unsupported locales", () => {
+    const englishTexts = getSlideLocaleTexts("en-US");
+    expect(getSlideLocaleTexts(null)).toEqual(englishTexts);
+    expect(getSlideLocaleTexts(undefined)).toEqual(englishTexts);
+    expect(getSlideLocaleTexts("es-ES")).toEqual(englishTexts);
+
+    expect(getSlideLocaleTexts("fr")).toEqual(getSlideLocaleTexts("fr-FR"));
+    expect(getSlideLocaleTexts("zh_CN")).toEqual(getSlideLocaleTexts("zh-CN"));
+  });
 });

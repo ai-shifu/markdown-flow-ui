@@ -173,8 +173,8 @@ export const SLIDE_LOCALE_TEXTS: Record<MarkdownFlowLocale, SlideLocaleTexts> =
       "Retour au mode non plein écran",
       [
         "En attente de l'audio de la diapositive actuelle...",
-        "Chargement audio…",
-        "En attente de plus d’audio…",
+        "Chargement audio...",
+        "En attente de plus d'audio...",
       ],
       [
         "Soumettez le contenu ci-dessous pour continuer.",

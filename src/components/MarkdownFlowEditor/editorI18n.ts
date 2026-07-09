@@ -15,12 +15,12 @@ export const editorLocaleResources = {
   "zh-CN": { translation: zhCN },
 } as const;
 
-export type EditorLocale = MarkdownFlowLocale;
-
-export const normalizeEditorLocale = (locale?: string | null): EditorLocale => {
+export const normalizeEditorLocale = (
+  locale?: string | null
+): MarkdownFlowLocale => {
   const normalizedLocale = normalizeMarkdownFlowLocale(locale);
   return normalizedLocale in editorLocaleResources
-    ? (normalizedLocale as EditorLocale)
+    ? normalizedLocale
     : DEFAULT_EDITOR_LOCALE;
 };
 

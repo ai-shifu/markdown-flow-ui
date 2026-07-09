@@ -1045,6 +1045,11 @@ const Slide: React.FC<SlideProps> = ({
   });
 
   useEffect(() => {
+    if (!shouldMountPlayer) {
+      resetAudioSequence();
+      return;
+    }
+
     const { hasPlaybackContextChanged, shouldInitializeAudioSequence } =
       getPlaybackSequenceTransition({
         previousResetKey: playbackResetKeyRef.current,
@@ -1178,6 +1183,7 @@ const Slide: React.FC<SlideProps> = ({
     resetAudioSequence,
     requestSubtitleCueSeek,
     scheduleInteractionOverlayOpen,
+    shouldMountPlayer,
     slideElementList,
     startCurrentAudioSequence,
     shouldPausePlaybackForCustomAction,

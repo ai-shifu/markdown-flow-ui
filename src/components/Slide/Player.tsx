@@ -228,7 +228,9 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   prevDisabled?: boolean;
   nextDisabled?: boolean;
   showControls?: boolean;
+  /** Fired when the pointer enters the controls container to pause auto-hide. */
   onControlsPointerEnter?: React.PointerEventHandler<HTMLDivElement>;
+  /** Fired when the pointer leaves the controls container to resume auto-hide. */
   onControlsPointerLeave?: React.PointerEventHandler<HTMLDivElement>;
   /**
    * Enables document-level keyboard shortcuts for existing player actions.

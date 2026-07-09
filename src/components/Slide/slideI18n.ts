@@ -144,7 +144,7 @@ export const DEFAULT_SLIDE_PLAYER_TEXTS: SlidePlayerLocaleTexts =
     "Screen",
     "Non-fullscreen",
     "Fullscreen",
-    "Rotate your screen for the best experience.",
+    "Please rotate your screen for the best experience",
   ]);
 
 export const DEFAULT_SLIDE_INTERACTION_TEXTS: SlideInteractionLocaleTexts =
@@ -157,24 +157,24 @@ export const DEFAULT_SLIDE_INTERACTION_TEXTS: SlideInteractionLocaleTexts =
 
 export const DEFAULT_SLIDE_BUFFERING_TEXTS = createSlideBufferingTexts([
   "Waiting for current slide audio...",
-  "Loading current slide audio...",
-  "Waiting for more current slide audio...",
+  "Loading audio...",
+  "Waiting for more audio...",
 ]);
 
 export const SLIDE_LOCALE_TEXTS: Record<MarkdownFlowLocale, SlideLocaleTexts> =
   {
     "en-US": {
       bufferingText: DEFAULT_SLIDE_BUFFERING_TEXTS,
-      fullscreenBackAriaLabel: "Back",
+      fullscreenBackAriaLabel: "Back to non-full screen",
       interactionTexts: DEFAULT_SLIDE_INTERACTION_TEXTS,
       playerTexts: DEFAULT_SLIDE_PLAYER_TEXTS,
     },
     "fr-FR": createSlideLocaleTexts(
-      "Retour",
+      "Retour au mode non plein écran",
       [
         "En attente de l'audio de la diapositive actuelle...",
-        "Chargement de l'audio de la diapositive actuelle...",
-        "En attente de la suite de l'audio de la diapositive actuelle...",
+        "Chargement audio...",
+        "En attente de plus d'audio...",
       ],
       [
         "Soumettez le contenu ci-dessous pour continuer.",
@@ -204,16 +204,12 @@ export const SLIDE_LOCALE_TEXTS: Record<MarkdownFlowLocale, SlideLocaleTexts> =
         "Écran",
         "Hors plein écran",
         "Plein écran",
-        "Faites pivoter votre écran pour une meilleure expérience.",
+        "Veuillez tourner votre écran pour une meilleure expérience",
       ]
     ),
     "zh-CN": createSlideLocaleTexts(
-      "返回",
-      [
-        "正在等待当前页音频...",
-        "正在加载当前页音频...",
-        "正在等待更多当前页音频...",
-      ],
+      "返回非全屏",
+      ["正在等待当前页音频...", "正在加载音频", "正在等待音频"],
       ["提交下面的内容以继续", "提交", "复制", "已复制"],
       [
         "关闭设置",
@@ -237,7 +233,7 @@ export const SLIDE_LOCALE_TEXTS: Record<MarkdownFlowLocale, SlideLocaleTexts> =
         "屏幕",
         "非全屏",
         "全屏",
-        "旋转屏幕以获得更好的体验。",
+        "请旋转屏幕以获得最佳体验",
       ]
     ),
   };

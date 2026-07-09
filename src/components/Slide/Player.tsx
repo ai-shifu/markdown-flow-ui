@@ -228,6 +228,8 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   prevDisabled?: boolean;
   nextDisabled?: boolean;
   showControls?: boolean;
+  onControlsPointerEnter?: React.PointerEventHandler<HTMLDivElement>;
+  onControlsPointerLeave?: React.PointerEventHandler<HTMLDivElement>;
   /**
    * Enables document-level keyboard shortcuts for existing player actions.
    *
@@ -326,6 +328,8 @@ const Player = ({
   prevDisabled = false,
   nextDisabled = false,
   showControls = true,
+  onControlsPointerEnter,
+  onControlsPointerLeave,
   enableKeyboardShortcuts = true,
   subtitleSeekRequest = null,
   customActions,
@@ -1914,7 +1918,12 @@ const Player = ({
             viewMode={mobileViewMode}
           />
 
-          <div className="slide-player__controls" style={controlsStyle}>
+          <div
+            className="slide-player__controls"
+            onPointerEnter={onControlsPointerEnter}
+            onPointerLeave={onControlsPointerLeave}
+            style={controlsStyle}
+          >
             <div className="slide-player__group">
               <button
                 aria-expanded={isMobileMoreOpen}

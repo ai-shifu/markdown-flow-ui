@@ -709,6 +709,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     };
   }, [
     renderHtmlContent,
+    locale,
     styleLoadingText,
     scriptLoadingText,
     resetToken,

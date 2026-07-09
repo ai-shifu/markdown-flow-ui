@@ -33,24 +33,37 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  render: (args) => {
-    const [value, setValue] = React.useState("Hello Shifu");
+type InteractiveMarkdownFlowInputProps = React.ComponentProps<
+  typeof MarkdownFlowInput
+> & {
+  initialValue: string;
+};
 
-    return (
-      <div style={{ width: 420 }}>
-        <MarkdownFlowInput
-          {...args}
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
-          onSend={() => {
-            console.log("Send clicked with value:", value);
-            setValue("");
-          }}
-        />
-      </div>
-    );
-  },
+const InteractiveMarkdownFlowInput = ({
+  initialValue,
+  ...args
+}: InteractiveMarkdownFlowInputProps) => {
+  const [value, setValue] = React.useState(initialValue);
+
+  return (
+    <div style={{ width: 420 }}>
+      <MarkdownFlowInput
+        {...args}
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+        onSend={() => {
+          console.log("Send clicked with value:", value);
+          setValue("");
+        }}
+      />
+    </div>
+  );
+};
+
+export const Default: Story = {
+  render: (args) => (
+    <InteractiveMarkdownFlowInput {...args} initialValue="Hello Shifu" />
+  ),
 };
 
 export const Disabled: Story = {
@@ -65,21 +78,7 @@ export const FrenchLocale: Story = {
     locale: "fr-FR",
     placeholder: "Posez une question...",
   },
-  render: (args) => {
-    const [value, setValue] = React.useState("Bonjour");
-
-    return (
-      <div style={{ width: 420 }}>
-        <MarkdownFlowInput
-          {...args}
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
-          onSend={() => {
-            console.log("Send clicked with value:", value);
-            setValue("");
-          }}
-        />
-      </div>
-    );
-  },
+  render: (args) => (
+    <InteractiveMarkdownFlowInput {...args} initialValue="Bonjour" />
+  ),
 };

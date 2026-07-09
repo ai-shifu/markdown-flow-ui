@@ -50,9 +50,11 @@ import {
   DEFAULT_EDITOR_LOCALE,
   editorLocaleResources,
   getEditorLocaleMessages,
-  normalizeEditorLocale,
 } from "./editorI18n";
-import type { MarkdownFlowLocale } from "../../lib/locale";
+import {
+  normalizeMarkdownFlowLocale,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
 
 if (!i18next.isInitialized) {
   i18next.use(initReactI18next).init({
@@ -137,7 +139,7 @@ const Editor: React.FC<EditorProps> = ({
   onReady,
 }) => {
   const { t, i18n } = useTranslation();
-  const resolvedLocale = normalizeEditorLocale(locale || i18n.language);
+  const resolvedLocale = normalizeMarkdownFlowLocale(locale || i18n.language);
 
   useEffect(() => {
     if (i18n.language !== resolvedLocale) {

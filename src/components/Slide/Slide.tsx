@@ -67,6 +67,7 @@ import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
 import {
   DEFAULT_SLIDE_BUFFERING_TEXTS,
   getSlideLocaleTexts,
+  type SlideBufferingReason,
 } from "./slideI18n";
 import "./slide.css";
 export type {
@@ -81,9 +82,9 @@ const DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS = 2000;
 const DEFAULT_INTERACTION_OVERLAY_OPEN_DELAY_MS = 300;
 const DEFAULT_INTERACTION_OVERLAY_FALLBACK_OFFSET_PX = 160;
 const DEFAULT_INTERACTION_SUBTITLE_GAP_PX = 16;
-const DEFAULT_BUFFERING_REASON = "waitingForAudio";
+const DEFAULT_BUFFERING_REASON: SlideBufferingReason = "waitingForAudio";
 
-export type SlideBufferingReason = "waitingForAudio" | SlidePlayerLoadingReason;
+export type { SlideBufferingReason } from "./slideI18n";
 
 export type SlideBufferingTextConfig =
   | string

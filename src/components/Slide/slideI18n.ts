@@ -39,8 +39,12 @@ export interface SlideInteractionLocaleTexts {
   copiedButtonText: string;
 }
 
+export type SlideBufferingReason =
+  | "waitingForAudio"
+  | import("./Player").SlidePlayerLoadingReason;
+
 export interface SlideLocaleTexts {
-  bufferingText: Record<string, string>;
+  bufferingText: Record<SlideBufferingReason, string>;
   fullscreenBackAriaLabel: string;
   interactionTexts: SlideInteractionLocaleTexts;
   playerTexts: SlidePlayerLocaleTexts;
@@ -82,7 +86,7 @@ const SLIDE_BUFFERING_TEXT_KEYS = [
   "waitingForAudio",
   "loadingAudio",
   "waitingForMoreAudio",
-] as const;
+] as const satisfies readonly SlideBufferingReason[];
 
 const createSlidePlayerTexts = (
   values: LocaleTextValues<typeof SLIDE_PLAYER_TEXT_KEYS>
@@ -99,8 +103,11 @@ const createSlideInteractionTexts = (
 
 const createSlideBufferingTexts = (
   values: LocaleTextValues<typeof SLIDE_BUFFERING_TEXT_KEYS>
-): Record<string, string> =>
-  buildLocaleTexts(SLIDE_BUFFERING_TEXT_KEYS, values);
+): Record<SlideBufferingReason, string> =>
+  buildLocaleTexts(SLIDE_BUFFERING_TEXT_KEYS, values) as Record<
+    SlideBufferingReason,
+    string
+  >;
 
 const createSlideLocaleTexts = (
   fullscreenBackAriaLabel: string,

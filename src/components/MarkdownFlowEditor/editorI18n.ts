@@ -4,6 +4,7 @@ import zhCN from "./locales/zh-CN.json";
 import {
   DEFAULT_MARKDOWN_FLOW_LOCALE,
   normalizeMarkdownFlowLocale,
+  type MarkdownFlowLocale,
 } from "../../lib/locale";
 
 export const DEFAULT_EDITOR_LOCALE = DEFAULT_MARKDOWN_FLOW_LOCALE;
@@ -14,7 +15,7 @@ export const editorLocaleResources = {
   "zh-CN": { translation: zhCN },
 } as const;
 
-export type EditorLocale = keyof typeof editorLocaleResources;
+export type EditorLocale = MarkdownFlowLocale;
 
 export const normalizeEditorLocale = (locale?: string | null): EditorLocale => {
   const normalizedLocale = normalizeMarkdownFlowLocale(locale);

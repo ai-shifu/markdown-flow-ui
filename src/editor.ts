@@ -10,3 +10,4 @@ import {
 export { MarkdownFlowEditor };
 
 export type { EditMode, EditorLocale, UploadProps, ImageResource };
+export type { MarkdownFlowLocale } from "./lib/locale";

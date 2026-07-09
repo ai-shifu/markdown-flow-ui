@@ -49,10 +49,10 @@ import { UploadProps } from "./uploadTypes";
 import {
   DEFAULT_EDITOR_LOCALE,
   editorLocaleResources,
-  EditorLocale,
   getEditorLocaleMessages,
   normalizeEditorLocale,
 } from "./editorI18n";
+import type { MarkdownFlowLocale } from "../../lib/locale";
 
 if (!i18next.isInitialized) {
   i18next.use(initReactI18next).init({
@@ -85,7 +85,7 @@ type EditorProps = {
   systemVariables?: Variable[];
   onChange?: (value: string) => void;
   onBlur?: () => void;
-  locale?: EditorLocale;
+  locale?: MarkdownFlowLocale;
   uploadProps?: UploadProps;
   disabled?: boolean;
   toolbarActionsRight?: EditorAction[];

@@ -59,9 +59,9 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: "npm"
 
-      # Trusted Publishing (OIDC) requires npm >= 11.5.1; node 20 ships an older npm.
+      # Trusted Publishing (OIDC) requires npm >= 11.5.1; npm 12 requires Node 22+.
       - name: Upgrade npm for trusted publishing
-        run: npm install -g npm@latest
+        run: npm install -g npm@11.6.4
 
       # The build runs `pnpm exec tailwindcss` (build:css); pnpm is not preinstalled.
       - name: Install pnpm

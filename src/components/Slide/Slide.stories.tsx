@@ -104,21 +104,6 @@ const meta = {
   },
   args: {
     elementList: [],
-    interactionTexts: {
-      title: "Submit the content below to continue.",
-      confirmButtonText: "Submit",
-      copyButtonText: "Copy",
-      copiedButtonText: "Copied",
-    },
-    playerTexts: {
-      settingsTitle: "Settings",
-      screenLabel: "Screen",
-      nonFullscreenLabel: "Non-fullscreen",
-      fullscreenLabel: "Fullscreen",
-      fullscreenHintText: "Rotate your screen for the best experience.",
-      nextSubtitleLabel: "Next sentence",
-      previousSubtitleLabel: "Previous sentence",
-    },
     fullscreenHeader: undefined,
     playerAutoHideDelay: 3000,
     markerAutoAdvanceDelay: 2000,

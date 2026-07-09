@@ -250,10 +250,8 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       setIsGeneratingScripts(true);
     }
 
-    const hasFirstElement = !!wrapper.firstElementChild;
-    setHasRenderedContent(hasFirstElement);
-
     const contentNodes = Array.from(wrapper.childNodes);
+    setHasRenderedContent(contentNodes.length > 0);
     container.replaceChildren(...contentNodes);
 
     resourceQueue.forEach((node) => {

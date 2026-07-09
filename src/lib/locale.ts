@@ -17,7 +17,7 @@ export const normalizeMarkdownFlowLocale = (
     return DEFAULT_MARKDOWN_FLOW_LOCALE;
   }
 
-  const normalizedLocale = locale.replaceAll("_", "-");
+  const normalizedLocale = locale.split("_").join("-");
   if (MARKDOWN_FLOW_LOCALES.includes(normalizedLocale as MarkdownFlowLocale)) {
     return normalizedLocale as MarkdownFlowLocale;
   }

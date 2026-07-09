@@ -48,5 +48,6 @@ export type {
   SlidePlayerNavigationContext,
   SlidePlayerTexts,
 } from "./Player";
+export type { MarkdownFlowLocale } from "../../lib/locale";
 export type { UseSlideResult } from "./useSlide";
 export type { MobileViewMode } from "./utils/mobileScreenMode";

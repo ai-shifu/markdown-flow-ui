@@ -11,6 +11,11 @@ const meta = {
   },
   tags: ["autodocs"],
   argTypes: {
+    locale: {
+      control: "select",
+      options: ["en-US", "fr-FR", "zh-CN"],
+      description: "Locale for the send button accessibility text",
+    },
     placeholder: {
       control: "text",
       description: "Textarea placeholder text",
@@ -52,5 +57,29 @@ export const Disabled: Story = {
   args: {
     disabled: true,
     value: "Disabled state",
+  },
+};
+
+export const FrenchLocale: Story = {
+  args: {
+    locale: "fr-FR",
+    placeholder: "Posez une question...",
+  },
+  render: (args) => {
+    const [value, setValue] = React.useState("Bonjour");
+
+    return (
+      <div style={{ width: 420 }}>
+        <MarkdownFlowInput
+          {...args}
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          onSend={() => {
+            console.log("Send clicked with value:", value);
+            setValue("");
+          }}
+        />
+      </div>
+    );
   },
 };

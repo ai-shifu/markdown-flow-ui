@@ -47,3 +47,4 @@ export type {
   InteractionDefaultValues,
   InteractionParseResult,
 } from "./lib/interaction-defaults";
+export type { MarkdownFlowLocale } from "./lib/locale";

@@ -35,6 +35,11 @@ const meta = {
   },
   tags: ["autodocs"],
   argTypes: {
+    locale: {
+      control: "select",
+      options: ["en-US", "fr-FR", "zh-CN"],
+      description: "Locale for built-in player and interaction UI text",
+    },
     elementList: {
       description: "Slide element data list",
       table: {
@@ -2277,6 +2282,33 @@ const CUSTOM_PLAYER_SECOND_QUIZ_SUBTITLE_CUES = createCustomPlayerSubtitleCues(
 export const Default: Story = {
   args: {
     elementList: exampleElementList,
+  },
+};
+
+export const FrenchLocale: Story = {
+  args: {
+    locale: "fr-FR",
+    playerAlwaysVisible: true,
+    interactionTexts: undefined,
+    playerTexts: undefined,
+    elementList: [
+      {
+        sequence_number: 1,
+        type: "html",
+        content:
+          '<div class="flex h-full min-h-[320px] items-center justify-center bg-slate-50 p-8 text-center"><div><h1 class="text-3xl font-semibold text-slate-900">Bienvenue</h1><p class="mt-3 text-slate-600">Les libellés intégrés utilisent la locale française.</p></div></div>',
+        is_renderable: true,
+        is_speakable: false,
+      },
+      {
+        sequence_number: 2,
+        type: "interaction",
+        content:
+          "Sélectionnez les formats à utiliser : ?[%{{ formats }}Article||Vidéo||Exercice||...Autre format]",
+        is_renderable: false,
+        is_speakable: false,
+      },
+    ],
   },
 };
 

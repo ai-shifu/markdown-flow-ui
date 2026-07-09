@@ -5,12 +5,14 @@ import useScrollToBottom from "./useScrollToBottom";
 import { ChevronDown } from "lucide-react";
 import { Button } from "../ui/button";
 import type { MarkdownFlowProps } from "./MarkdownFlow";
+import { getContentRenderLocaleTexts } from "../ContentRender/contentRenderI18n";
 
 import "./markdownFlow.css";
 
 export interface ScrollableMarkdownFlowProps extends MarkdownFlowProps {
   height?: string | number;
   className?: string;
+  scrollToBottomAriaLabel?: string;
 }
 
 const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
@@ -19,12 +21,17 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
   onSend,
   height = "100%",
   className = "",
+  locale,
   confirmButtonText,
   copyButtonText,
   copiedButtonText,
+  scrollToBottomAriaLabel,
   ...restProps
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const localeTexts = getContentRenderLocaleTexts(locale);
+  const resolvedScrollToBottomAriaLabel =
+    scrollToBottomAriaLabel || localeTexts.scrollToBottomLabel;
 
   const { showScrollToBottom, handleUserScrollToBottom } = useScrollToBottom(
     containerRef,
@@ -52,6 +59,7 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
           initialContentList={initialContentList}
           customRenderBar={customRenderBar}
           onSend={onSend}
+          locale={locale}
           confirmButtonText={confirmButtonText}
           copyButtonText={copyButtonText}
           copiedButtonText={copiedButtonText}
@@ -64,7 +72,7 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
           variant="ghost"
           size="icon"
           onClick={handleUserScrollToBottom}
-          aria-label="滚动到底部"
+          aria-label={resolvedScrollToBottomAriaLabel}
         >
           <ChevronDown />
         </Button>

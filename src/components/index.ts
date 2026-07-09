@@ -11,6 +11,7 @@ export {
 
 // Export types
 export type { ContentRenderProps } from "./ContentRender/ContentRender";
+export type { MarkdownFlowLocale } from "../lib/locale";
 export type { OnSendContentParams, CustomRenderBarProps } from "./types";
 export type {
   EditMode,

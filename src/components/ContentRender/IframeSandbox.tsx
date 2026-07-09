@@ -23,6 +23,8 @@ import {
   injectScalingSystem,
   type ScalingWindow,
 } from "./utils/iframe-scaling";
+import type { MarkdownFlowLocale } from "../../lib/locale";
+import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 
 type InjectBlackboardLibraries =
   typeof import("./blackboard-vendor").injectBlackboardLibraries;
@@ -47,10 +49,12 @@ const SANDBOX_INTERACTION_THROTTLE_MS = 240;
 export interface IframeSandboxProps {
   content: string;
   className?: string;
+  locale?: MarkdownFlowLocale;
   loadingText?: string;
   styleLoadingText?: string;
   scriptLoadingText?: string;
   fullScreenButtonText?: string;
+  exitFullScreenButtonText?: string;
   hideFullScreen?: boolean;
   mode?: "content" | "blackboard";
   type: "sandbox" | "markdown";
@@ -111,15 +115,22 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   content,
   type,
   className,
+  locale,
   styleLoadingText,
   scriptLoadingText,
   fullScreenButtonText,
+  exitFullScreenButtonText,
   hideFullScreen = false,
   mode = "content",
   replaceRootScreenHeightWithFull = false,
   enableScaling = false,
   disableLoadingOverlay = false,
 }) => {
+  const localeTexts = getContentRenderLocaleTexts(locale);
+  const resolvedFullScreenButtonText =
+    fullScreenButtonText || localeTexts.sandboxFullscreenButtonText;
+  const resolvedExitFullScreenButtonText =
+    exitFullScreenButtonText || localeTexts.sandboxExitFullscreenButtonText;
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const rootRef = useRef<Root | null>(null);
@@ -668,6 +679,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     root.render(
       <SandboxApp
         html={renderHtmlContent}
+        locale={locale}
         styleLoadingText={styleLoadingText}
         scriptLoadingText={scriptLoadingText}
         disableLoadingOverlay={disableLoadingOverlay}
@@ -735,13 +747,16 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
             "absolute top-2 right-2 z-50 p-1.5 bg-black/75 text-white rounded-md cursor-pointer"
           }
         >
-          {isFullscreen ? "退出全屏" : fullScreenButtonText || "全屏浏览"}
+          {isFullscreen
+            ? resolvedExitFullScreenButtonText
+            : resolvedFullScreenButtonText}
         </button>
       )}
       {mode === "blackboard" && type === "markdown" ? (
         <div onClick={() => emitSandboxInteraction("click")}>
           <ContentRender
             content={content}
+            locale={locale}
             disableSandboxLoadingOverlay={disableLoadingOverlay}
           />
         </div>

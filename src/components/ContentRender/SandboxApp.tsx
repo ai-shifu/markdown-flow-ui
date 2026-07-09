@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import LoadingOverlayCard from "../ui/loading-overlay-card";
+import type { MarkdownFlowLocale } from "../../lib/locale";
+import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 import type { ScalingWindow } from "./utils/iframe-scaling";
 
 export interface SandboxAppProps {
   html: string;
+  locale?: MarkdownFlowLocale;
   styleLoadingText?: string;
   scriptLoadingText?: string;
   resetToken?: number;
@@ -91,6 +94,7 @@ const reuseRenderedImages = (
 
 const SandboxApp: React.FC<SandboxAppProps> = ({
   html,
+  locale,
   styleLoadingText,
   scriptLoadingText,
   resetToken = 0,
@@ -100,6 +104,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   enableScaling = false,
   disableLoadingOverlay = false,
 }) => {
+  const localeTexts = getContentRenderLocaleTexts(locale);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isGeneratingStyles, setIsGeneratingStyles] = useState(false);
   const [isGeneratingScripts, setIsGeneratingScripts] = useState(false);
@@ -342,9 +347,9 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     }
 
     if (isGeneratingScripts || hasScriptsRef.current)
-      return scriptLoadingText || "Building scripts cache...";
+      return scriptLoadingText || localeTexts.sandboxScriptLoadingText;
     if (isGeneratingStyles || hasStylesRef.current)
-      return styleLoadingText || "Building styles...";
+      return styleLoadingText || localeTexts.sandboxStyleLoadingText;
     return null;
   })();
 

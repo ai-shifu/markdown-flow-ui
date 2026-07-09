@@ -26,34 +26,14 @@ describe("resolveSlidePlayerVisibility", () => {
     });
   });
 
-  it("prefers playerControlsVisibility over playerAlwaysVisible", () => {
+  it("uses explicit always-visible controls", () => {
     expect(
       resolveSlidePlayerVisibility({
-        playerAlwaysVisible: true,
-        playerControlsVisibility: "hidden",
+        playerControlsVisibility: "visible",
       })
     ).toEqual({
       playerEnabled: true,
-      playerControlsVisibility: "hidden",
-    });
-  });
-
-  it("prefers playerEnabled over showPlayer", () => {
-    expect(
-      resolveSlidePlayerVisibility({
-        playerEnabled: true,
-        showPlayer: false,
-      })
-    ).toEqual({
-      playerEnabled: true,
-      playerControlsVisibility: "auto",
-    });
-  });
-
-  it("keeps showPlayer compatibility when playerEnabled is not set", () => {
-    expect(resolveSlidePlayerVisibility({ showPlayer: false })).toEqual({
-      playerEnabled: false,
-      playerControlsVisibility: "auto",
+      playerControlsVisibility: "visible",
     });
   });
 });

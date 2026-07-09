@@ -228,8 +228,6 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   locale?: MarkdownFlowLocale;
   /** Enables the player runtime, including audio playback and keyboard shortcuts. */
   playerEnabled?: boolean;
-  /** @deprecated Use playerEnabled instead. */
-  showPlayer?: boolean;
   /**
    * Controls whether the player controls are always visible, always hidden, or auto-hidden.
    *
@@ -242,8 +240,6 @@ export interface SlideProps extends React.ComponentProps<"section"> {
    * ```
    */
   playerControlsVisibility?: SlidePlayerControlsVisibility;
-  /** @deprecated Use playerControlsVisibility="visible" instead. */
-  playerAlwaysVisible?: boolean;
   playerClassName?: string;
   fullscreenHeader?: SlideFullscreenHeader;
   playerCustomActions?: PlayerProps["customActions"];
@@ -280,9 +276,7 @@ const Slide: React.FC<SlideProps> = ({
   elementList = [],
   locale,
   playerEnabled,
-  showPlayer = true,
   playerControlsVisibility,
-  playerAlwaysVisible = false,
   playerClassName,
   fullscreenHeader,
   playerCustomActions,
@@ -320,9 +314,7 @@ const Slide: React.FC<SlideProps> = ({
     playerControlsVisibility: resolvedPlayerControlsVisibility,
   } = resolveSlidePlayerVisibility({
     playerEnabled,
-    showPlayer,
     playerControlsVisibility,
-    playerAlwaysVisible,
   });
   const keyboardShortcutOwnerId = useId();
   const sectionRef = useRef<HTMLElement | null>(null);

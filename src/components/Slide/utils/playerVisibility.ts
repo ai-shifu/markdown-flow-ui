@@ -2,9 +2,7 @@ export type SlidePlayerControlsVisibility = "auto" | "visible" | "hidden";
 
 export interface ResolveSlidePlayerVisibilityOptions {
   playerEnabled?: boolean;
-  showPlayer?: boolean;
   playerControlsVisibility?: SlidePlayerControlsVisibility;
-  playerAlwaysVisible?: boolean;
 }
 
 export interface ResolvedSlidePlayerVisibility {
@@ -14,11 +12,8 @@ export interface ResolvedSlidePlayerVisibility {
 
 export const resolveSlidePlayerVisibility = ({
   playerEnabled,
-  showPlayer,
   playerControlsVisibility,
-  playerAlwaysVisible,
 }: ResolveSlidePlayerVisibilityOptions): ResolvedSlidePlayerVisibility => ({
-  playerEnabled: playerEnabled ?? showPlayer ?? true,
-  playerControlsVisibility:
-    playerControlsVisibility ?? (playerAlwaysVisible ? "visible" : "auto"),
+  playerEnabled: playerEnabled ?? true,
+  playerControlsVisibility: playerControlsVisibility ?? "auto",
 });

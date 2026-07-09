@@ -92,10 +92,6 @@ const meta = {
       description:
         "Auto-advance delay for silent marker-only steps in milliseconds",
     },
-    playerAlwaysVisible: {
-      control: "boolean",
-      description: 'Deprecated: use playerControlsVisibility="visible" instead',
-    },
     playerCustomActions: {
       control: false,
       description:
@@ -118,7 +114,6 @@ const meta = {
     fullscreenHeader: undefined,
     playerAutoHideDelay: 3000,
     markerAutoAdvanceDelay: 2000,
-    playerAlwaysVisible: false,
   },
 } satisfies Meta<typeof Slide>;
 
@@ -2314,7 +2309,7 @@ export const ControlsAutoHide: Story = {
 export const FrenchLocale: Story = {
   args: {
     locale: "fr-FR",
-    playerAlwaysVisible: true,
+    playerControlsVisibility: "visible",
     interactionTexts: undefined,
     playerTexts: undefined,
     elementList: [
@@ -2340,7 +2335,7 @@ export const FrenchLocale: Story = {
 
 export const CustomPlayerActionButton: Story = {
   args: {
-    playerAlwaysVisible: true,
+    playerControlsVisibility: "visible",
     elementList: [
       {
         sequence_number: 90,
@@ -2759,7 +2754,6 @@ export const FullViewportSlides: Story = {
 
 export const FullViewportSingleSlide: Story = {
   args: {
-    playerAlwaysVisible: false,
     elementList: [
       {
         sequence_number: 31,
@@ -3272,7 +3266,6 @@ export const FullViewportSingleSlideWithEmptyPpt: Story = {
 export const StuckSpeakableFixtureSSE: Story = {
   args: {
     bufferingText: "Audio buffering...",
-    playerAlwaysVisible: false,
   },
   parameters: {
     docs: {
@@ -3295,7 +3288,6 @@ export const StuckSpeakableFixtureSSE: Story = {
 
 export const HistorySlides: Story = {
   args: {
-    // playerAlwaysVisible: true,
     fullscreenHeader: {
       content: (
         <div className="flex min-w-0 items-center gap-2 overflow-hidden text-[16px] font-bold leading-6 text-black">
@@ -3595,7 +3587,6 @@ export const HistorySlides: Story = {
 
 export const StreamingSingleIframeSlide: Story = {
   args: {
-    playerAlwaysVisible: false,
     elementList: [
       createExampleElement({
         sequenceNumber: 1,
@@ -3623,7 +3614,6 @@ export const StreamingSingleIframeSlide: Story = {
 export const StreamingSpeakableLoadingOnlySlide: Story = {
   args: {
     bufferingText: "Audio buffering...",
-    playerAlwaysVisible: false,
     elementList: [
       createExampleElement({
         sequenceNumber: 1,
@@ -3746,7 +3736,6 @@ export const FullViewportSingleSlideWithSSE: Story = {
 
 export const HistoryInteractionTriggeredSSE: Story = {
   args: {
-    playerAlwaysVisible: false,
     interactionDefaultValueOptions: {
       resolveDefaultValues: () => ({
         selectedValues: ["都不同意"],
@@ -3780,7 +3769,6 @@ export const HistoryInteractionTriggeredSSE: Story = {
 
 export const InteractionTriggeredFixtureSwitchSSE: Story = {
   args: {
-    playerAlwaysVisible: false,
     interactionDefaultValueOptions: {
       resolveDefaultValues: () => ({
         selectedValues: ["非常了解"],
@@ -4119,7 +4107,6 @@ const delayedAudioSourceElement =
 export const StreamingSpeakableDelayedAudioSlide: Story = {
   args: {
     bufferingText: "Audio buffering...",
-    playerAlwaysVisible: false,
     elementList: [
       createExampleElement({
         sequenceNumber: 1,

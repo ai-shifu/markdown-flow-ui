@@ -104,6 +104,20 @@ const resolveBufferingTextByReason = (
   );
 };
 
+const mergeBufferingTextWithLocaleDefaults = (
+  bufferingText: SlideBufferingTextConfig | undefined,
+  localeBufferingText: Record<string, string>
+): SlideBufferingTextConfig => {
+  if (typeof bufferingText === "string") {
+    return bufferingText;
+  }
+
+  return {
+    ...localeBufferingText,
+    ...bufferingText,
+  };
+};
+
 const shouldShowBufferingOverlay = (
   reason: SlideBufferingReason | null,
   loading: boolean
@@ -269,7 +283,14 @@ const Slide: React.FC<SlideProps> = ({
   ...props
 }) => {
   const localeTexts = useMemo(() => getSlideLocaleTexts(locale), [locale]);
-  const resolvedBufferingText = bufferingText ?? localeTexts.bufferingText;
+  const resolvedBufferingText = useMemo(
+    () =>
+      mergeBufferingTextWithLocaleDefaults(
+        bufferingText,
+        localeTexts.bufferingText
+      ),
+    [bufferingText, localeTexts.bufferingText]
+  );
   const keyboardShortcutOwnerId = useId();
   const sectionRef = useRef<HTMLElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);

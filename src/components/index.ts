@@ -22,6 +22,7 @@ export type {
   Element,
   ElementSubtitleCue,
   SlideInteractionTexts,
+  SlidePlayerControlsVisibility,
   SlideProps,
 } from "./Slide";
 export type {

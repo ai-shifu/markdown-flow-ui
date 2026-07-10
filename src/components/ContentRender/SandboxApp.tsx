@@ -3,6 +3,11 @@ import LoadingOverlayCard from "../ui/loading-overlay-card";
 import type { MarkdownFlowLocale } from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 import type { ScalingWindow } from "./utils/iframe-scaling";
+import {
+  forceSandboxLinksToOpenInNewTab,
+  mergeAnchorRelValue,
+  shouldForceAnchorHrefToNewTab,
+} from "./utils/link-targets";
 
 export interface SandboxAppProps {
   html: string;
@@ -202,7 +207,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     setIsGeneratingStyles(false);
     setIsGeneratingScripts(false);
     const wrapper = doc.createElement("div");
-    wrapper.innerHTML = html;
+    wrapper.innerHTML = forceSandboxLinksToOpenInNewTab(html);
 
     const openScriptCount = (html.match(/<script[\s>]/gi) || []).length;
     const closeScriptCount = (html.match(/<\/script>/gi) || []).length;
@@ -254,6 +259,29 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     const hasInitialContent = contentNodes.length > 0;
     setHasRenderedContent(hasInitialContent);
     container.replaceChildren(...contentNodes);
+
+    const handleLinkClick = (event: MouseEvent) => {
+      const clickTarget = event.target;
+      if (!(clickTarget instanceof Element)) {
+        return;
+      }
+
+      const anchor = clickTarget.closest("a[href]");
+      if (!(anchor instanceof HTMLAnchorElement)) {
+        return;
+      }
+
+      if (!shouldForceAnchorHrefToNewTab(anchor.getAttribute("href"))) {
+        return;
+      }
+
+      anchor.setAttribute("target", "_blank");
+      anchor.setAttribute(
+        "rel",
+        mergeAnchorRelValue(anchor.getAttribute("rel"))
+      );
+    };
+    container.addEventListener("click", handleLinkClick, true);
 
     let scriptContentObserver: MutationObserver | null = null;
     const markRenderedContentFromContainer = () => {
@@ -341,6 +369,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
 
     return () => {
       scriptContentObserver?.disconnect();
+      container.removeEventListener("click", handleLinkClick, true);
     };
   }, [html, resetToken, enableScaling]);
 

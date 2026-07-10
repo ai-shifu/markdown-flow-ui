@@ -25,6 +25,7 @@ import {
 } from "./utils/iframe-scaling";
 import type { MarkdownFlowLocale } from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
+import { CJK_SAFE_SANS_FONT_FAMILY } from "./cjkFontFamily";
 
 type InjectBlackboardLibraries =
   typeof import("./blackboard-vendor").injectBlackboardLibraries;
@@ -311,7 +312,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
       :root { color-scheme: light; }
-      html, body, #root { width: 100%; }
+      html, body, #root { width: 100%; font-family: ${CJK_SAFE_SANS_FONT_FAMILY}; }
       ${mode === "blackboard" ? "html, body, #root { height: 100%; }" : ""}
       html, body { margin: 0; padding: 0; overflow: ${shouldEnableScaling ? "hidden auto" : mode === "blackboard" ? "auto" : "hidden"}; }
       *, *::before, *::after { box-sizing: border-box; }

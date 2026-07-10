@@ -2437,6 +2437,41 @@ export const HTMLDemoIframeOnly: Story = {
   },
 };
 
+export const SandboxCJKFontFallback: Story = {
+  args: {},
+  parameters: {
+    layout: "fullscreen",
+  },
+  render: () => (
+    <div style={{ width: "100%", padding: "24px" }}>
+      <div style={{ height: "320px" }}>
+        <IframeSandbox
+          hideFullScreen
+          type="sandbox"
+          mode="blackboard"
+          content={`
+            <div class="h-full bg-slate-50 p-8 text-slate-900">
+              <h1 data-cjk-font-case="inherited" class="text-3xl font-bold">中文默认字体回退</h1>
+              <p data-cjk-font-case="font-sans" class="mt-4 font-sans text-xl">Tailwind font-sans 中文内容</p>
+              <svg class="mt-6" width="420" height="80" viewBox="0 0 420 80" role="img" aria-label="CJK font fallback diagram">
+                <text data-cjk-font-case="svg" x="8" y="48" font-size="28">图表中的中文标签</text>
+              </svg>
+            </div>
+          `}
+        />
+      </div>
+      <div data-cjk-font-case="mermaid" style={{ marginTop: "24px" }}>
+        <ContentRender
+          content={`\`\`\`mermaid
+flowchart LR
+  A[中文图表] --> B[PDF 标签]
+\`\`\``}
+        />
+      </div>
+    </div>
+  ),
+};
+
 export const ReadingModeAppendedAskBlocks: Story = {
   name: "Reading Mode Appended Ask Blocks",
   args: {},

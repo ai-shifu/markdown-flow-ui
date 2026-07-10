@@ -4,7 +4,6 @@ import type { MarkdownFlowLocale } from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 import type { ScalingWindow } from "./utils/iframe-scaling";
 import {
-  forceSandboxLinksToOpenInNewTab,
   mergeAnchorRelValue,
   shouldForceAnchorHrefToNewTab,
 } from "./utils/link-targets";
@@ -207,7 +206,19 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     setIsGeneratingStyles(false);
     setIsGeneratingScripts(false);
     const wrapper = doc.createElement("div");
-    wrapper.innerHTML = forceSandboxLinksToOpenInNewTab(html);
+    wrapper.innerHTML = html;
+    wrapper.querySelectorAll("a[href]").forEach((node) => {
+      if (!(node instanceof HTMLAnchorElement)) {
+        return;
+      }
+
+      if (!shouldForceAnchorHrefToNewTab(node.getAttribute("href"))) {
+        return;
+      }
+
+      node.setAttribute("target", "_blank");
+      node.setAttribute("rel", mergeAnchorRelValue(node.getAttribute("rel")));
+    });
 
     const openScriptCount = (html.match(/<script[\s>]/gi) || []).length;
     const closeScriptCount = (html.match(/<\/script>/gi) || []).length;

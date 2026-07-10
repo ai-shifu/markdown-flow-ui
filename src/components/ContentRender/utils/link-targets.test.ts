@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  forceSandboxLinksToOpenInNewTab,
   mergeAnchorRelValue,
   shouldForceAnchorHrefToNewTab,
 } from "./link-targets";
@@ -12,9 +11,15 @@ describe("shouldForceAnchorHrefToNewTab", () => {
     expect(shouldForceAnchorHrefToNewTab("/docs/lesson")).toBe(true);
   });
 
-  it("skips hash and javascript links", () => {
+  it("skips non-navigating and external-app links", () => {
+    expect(shouldForceAnchorHrefToNewTab("")).toBe(false);
     expect(shouldForceAnchorHrefToNewTab("#section-1")).toBe(false);
     expect(shouldForceAnchorHrefToNewTab(" javascript:void(0) ")).toBe(false);
+    expect(shouldForceAnchorHrefToNewTab("data:text/plain,hello")).toBe(false);
+    expect(shouldForceAnchorHrefToNewTab("mailto:hello@example.com")).toBe(
+      false
+    );
+    expect(shouldForceAnchorHrefToNewTab("tel:+8613800138000")).toBe(false);
     expect(shouldForceAnchorHrefToNewTab(null)).toBe(false);
   });
 });
@@ -26,37 +31,29 @@ describe("mergeAnchorRelValue", () => {
     );
     expect(mergeAnchorRelValue(null)).toBe("noopener noreferrer");
   });
+
+  it("keeps rel tokens unique", () => {
+    expect(mergeAnchorRelValue("noopener noreferrer nofollow noreferrer")).toBe(
+      "noopener noreferrer nofollow"
+    );
+  });
 });
 
-describe("forceSandboxLinksToOpenInNewTab", () => {
-  it("adds target and rel to external links", () => {
+describe("href edge cases", () => {
+  it("treats query strings containing target or rel as normal URLs", () => {
     expect(
-      forceSandboxLinksToOpenInNewTab(
-        '<p><a href="https://app.ai-shifu.cn/course/1">Learn course</a></p>'
+      shouldForceAnchorHrefToNewTab(
+        "https://app.ai-shifu.cn/course/2?target=keep&rel=safe"
       )
-    ).toContain(
-      '<a href="https://app.ai-shifu.cn/course/1" target="_blank" rel="noopener noreferrer">'
-    );
+    ).toBe(true);
   });
 
-  it("preserves existing rel tokens while adding safe ones", () => {
+  it("treats values from single-quoted and unquoted href attributes as normal URLs", () => {
     expect(
-      forceSandboxLinksToOpenInNewTab(
-        '<a href="/c/test" rel="nofollow">Course link</a>'
-      )
-    ).toContain(
-      '<a href="/c/test" rel="nofollow noopener noreferrer" target="_blank">'
-    );
-  });
-
-  it("does not patch hash or javascript links", () => {
+      shouldForceAnchorHrefToNewTab("https://app.ai-shifu.cn/course/1")
+    ).toBe(true);
     expect(
-      forceSandboxLinksToOpenInNewTab('<a href="#chapter-1">Jump</a>')
-    ).toBe('<a href="#chapter-1">Jump</a>');
-    expect(
-      forceSandboxLinksToOpenInNewTab(
-        '<a href="javascript:void(0)">Open menu</a>'
-      )
-    ).toBe('<a href="javascript:void(0)">Open menu</a>');
+      shouldForceAnchorHrefToNewTab("https://app.ai-shifu.cn/course/2")
+    ).toBe(true);
   });
 });

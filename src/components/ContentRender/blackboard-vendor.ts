@@ -17,6 +17,8 @@ export function injectBlackboardLibraries(doc: Document): void {
   // 1. Tailwind CSS v3 (JIT compiler, must load first)
   const tailwindEl = doc.createElement("script");
   tailwindEl.textContent = tailwindScript;
+  // The Play CDN script replaces window.tailwind with its Proxy during execution,
+  // so configure that runtime only after the synchronous append completes.
   doc.head.appendChild(tailwindEl);
   const tailwindRuntime = (doc.defaultView as TailwindRuntimeWindow | null)
     ?.tailwind;

@@ -28,6 +28,7 @@ import {
   subscribeMobileDeviceChange,
 } from "../../lib/mobileDevice";
 import Player from "./Player";
+import MarkdownSlideScaling from "./MarkdownSlideScaling";
 import SubtitleOverlay from "./SubtitleOverlay";
 import type {
   PlayerProps,
@@ -48,6 +49,7 @@ import {
   type MobileViewMode,
 } from "./utils/mobileScreenMode";
 import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
+import { resolveMarkdownScalingMode } from "./utils/markdownScaling";
 import { shouldWakePlayerControlsAfterNavigation } from "./utils/playerNavigationContext";
 import { shouldAutoAdvanceIntoAppendedMarker } from "./utils/appendedMarkerAdvance";
 import {
@@ -274,6 +276,13 @@ export interface SlideProps extends React.ComponentProps<"section"> {
    */
   enableKeyboardShortcuts?: boolean;
   enableIframeScaling?: boolean;
+  /**
+   * Fits Markdown-only slides to the available presentation viewport.
+   *
+   * Defaults to `true`. Disable this to preserve the fixed 16px article
+   * typography used by standalone ContentRender.
+   */
+  enableMarkdownScaling?: boolean;
   disableLoadingOverlay?: boolean;
 }
 
@@ -299,6 +308,7 @@ const Slide: React.FC<SlideProps> = ({
   onStepChange,
   enableKeyboardShortcuts = true,
   enableIframeScaling = true,
+  enableMarkdownScaling = true,
   disableLoadingOverlay = false,
   className,
   onPointerDown,
@@ -1667,6 +1677,10 @@ const Slide: React.FC<SlideProps> = ({
     const visibleElementCount = elementList.filter(
       (element) => element.is_renderable !== false
     ).length;
+    const markdownScalingMode =
+      isActiveStep && enableMarkdownScaling
+        ? resolveMarkdownScalingMode(elementList)
+        : "disabled";
     const lastVisibleElementIndex = elementList.reduce(
       (lastVisibleIndex, element, index) =>
         element.is_renderable !== false ? index : lastVisibleIndex,
@@ -1674,7 +1688,10 @@ const Slide: React.FC<SlideProps> = ({
     );
 
     return (
-      <div className="slide-stage__content flex w-full flex-col gap-4">
+      <MarkdownSlideScaling
+        className="slide-stage__content flex w-full flex-col gap-4"
+        mode={markdownScalingMode}
+      >
         {elementList.map((element, index) => {
           const isPreRenderedHtml =
             element.type === "html" && element.is_renderable === false;
@@ -1707,7 +1724,7 @@ const Slide: React.FC<SlideProps> = ({
             </div>
           );
         })}
-      </div>
+      </MarkdownSlideScaling>
     );
   };
 

@@ -15,11 +15,7 @@ import ContentRender from "../ContentRender";
 import type { ContentRenderProps } from "../ContentRender/ContentRender";
 import IframeSandbox from "../ContentRender/IframeSandbox";
 import type { OnSendContentParams } from "../types";
-import {
-  getInteractionDefaultSelectedValues,
-  getInteractionDefaultValues,
-  type InteractionDefaultValueOptions,
-} from "../../lib/interaction-defaults";
+import type { InteractionDefaultValueOptions } from "../../lib/interaction-defaults";
 import {
   isLandscapeViewport as getIsFullscreenPreferredViewport,
   isMobileDevice as getIsMobileDevice,
@@ -50,6 +46,7 @@ import {
 } from "./utils/playerCustomActions";
 import { createPlaybackTimeStore } from "./utils/playbackTimeStore";
 import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
+import { resolveSlideInteractionState } from "./utils/interactionResolution";
 import "./slide.css";
 export type {
   Element,
@@ -121,10 +118,11 @@ interface InteractionOverlayCardProps {
   readonly?: boolean;
 }
 
-export interface SlideInteractionTexts extends Pick<
-  ContentRenderProps,
-  "confirmButtonText" | "copyButtonText" | "copiedButtonText"
-> {
+export interface SlideInteractionTexts
+  extends Pick<
+    ContentRenderProps,
+    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+  > {
   title?: string;
 }
 
@@ -680,7 +678,7 @@ const Slide: React.FC<SlideProps> = ({
 
   const hasResolvedCurrentInteraction = Boolean(
     currentInteractionElement?.readonly ||
-    currentInteractionElement?.user_input?.trim()
+      currentInteractionElement?.user_input?.trim()
   );
 
   const shouldBlockPlaybackForInteraction =
@@ -1067,54 +1065,18 @@ const Slide: React.FC<SlideProps> = ({
     setHasCurrentAudioPlaybackStarted(false);
   }, [currentPlaybackStartedResetKey]);
 
-  const interactionDefaults = useMemo(() => {
-    if (!activeInteractionElement) {
-      return {};
-    }
-
-    const shouldPreferResolvedInteractionInput = Boolean(
-      activeInteractionElement.user_input?.trim()
-    );
-
-    return getInteractionDefaultValues(
-      typeof activeInteractionElement.content === "string"
-        ? activeInteractionElement.content
-        : undefined,
-      activeInteractionElement.user_input,
-      shouldPreferResolvedInteractionInput
-        ? undefined
-        : interactionDefaultValueOptions
-    );
-  }, [activeInteractionElement, interactionDefaultValueOptions]);
-
-  const interactionDefaultSelectedValues = useMemo(() => {
-    if (!activeInteractionElement) {
-      return undefined;
-    }
-
-    const shouldPreferResolvedInteractionInput = Boolean(
-      activeInteractionElement.user_input?.trim()
-    );
-
-    return getInteractionDefaultSelectedValues(
-      typeof activeInteractionElement.content === "string"
-        ? activeInteractionElement.content
-        : undefined,
-      activeInteractionElement.user_input,
-      shouldPreferResolvedInteractionInput
-        ? undefined
-        : interactionDefaultValueOptions
-    );
-  }, [activeInteractionElement, interactionDefaultValueOptions]);
-
-  const hasResolvedInteractionInput = Boolean(
-    activeInteractionElement?.user_input?.trim()
+  const {
+    interactionDefaults,
+    interactionDefaultSelectedValues,
+    isInteractionReadonly,
+    shouldAutoContinueInteraction,
+  } = useMemo(
+    () =>
+      resolveSlideInteractionState(activeInteractionElement, {
+        interactionDefaultValueOptions,
+      }),
+    [activeInteractionElement, interactionDefaultValueOptions]
   );
-
-  const isInteractionReadonly =
-    Boolean(activeInteractionElement?.readonly) || hasResolvedInteractionInput;
-  const shouldAutoContinueInteraction =
-    isInteractionReadonly || hasResolvedInteractionInput;
   const shouldShowInteractionOverlay =
     Boolean(activeInteractionElement) && isInteractionOverlayOpen;
 

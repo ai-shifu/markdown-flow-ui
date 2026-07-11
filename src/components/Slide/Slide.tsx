@@ -64,6 +64,10 @@ import {
 } from "./utils/playerCustomActions";
 import { createPlaybackTimeStore } from "./utils/playbackTimeStore";
 import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
+import {
+  areImageOnlyStepIframeVisualsReady,
+  DEFAULT_IMAGE_ONLY_VISUAL_READY_TIMEOUT_MS,
+} from "./utils/imageOnlyStepVisualReady";
 import { resolveSilentStepAutoAdvanceDelay } from "./utils/silentStepAutoAdvance";
 import {
   resolveSlidePlayerVisibility,
@@ -325,6 +329,7 @@ const Slide: React.FC<SlideProps> = ({
   const playerHideTimerRef = useRef<number | null>(null);
   const isPointerInsidePlayerControlsRef = useRef(false);
   const autoAdvanceTimerRef = useRef<number | null>(null);
+  const imageOnlyStepReadyTimeoutRef = useRef<number | null>(null);
   const interactionAutoCloseTimerRef = useRef<number | null>(null);
   const interactionOverlayOpenTimerRef = useRef<number | null>(null);
   const interactionOverlayRef = useRef<HTMLDivElement | null>(null);
@@ -368,6 +373,14 @@ const Slide: React.FC<SlideProps> = ({
 
     return slideElementList[currentIndex];
   }, [currentIndex, slideElementList]);
+  const currentRenderElementKeys = useMemo(
+    () =>
+      currentElementList.map(
+        (element, index) =>
+          `${element.sequence_number ?? `${element.type}-${index}`}:${String(element.is_new ?? "")}`
+      ),
+    [currentElementList]
+  );
   const visibleMarkerCount = slideElementList.filter(
     (element) => element.is_renderable !== false
   ).length;
@@ -664,6 +677,20 @@ const Slide: React.FC<SlideProps> = ({
       markerAutoAdvanceDelay,
     ]
   );
+  const isImageOnlySilentStep = useMemo(
+    () => silentStepAutoAdvanceDelay !== markerAutoAdvanceDelay,
+    [markerAutoAdvanceDelay, silentStepAutoAdvanceDelay]
+  );
+  const imageOnlyStepVisualReadyKey = useMemo(
+    () => currentRenderElementKeys.join("|"),
+    [currentRenderElementKeys]
+  );
+  const [readyImageOnlyStepKey, setReadyImageOnlyStepKey] = useState<
+    string | null
+  >(null);
+  const isImageOnlyStepVisualReady =
+    !isImageOnlySilentStep ||
+    readyImageOnlyStepKey === imageOnlyStepVisualReadyKey;
 
   const clearPlayerHideTimer = useCallback(() => {
     if (playerHideTimerRef.current === null) {
@@ -701,6 +728,15 @@ const Slide: React.FC<SlideProps> = ({
     autoAdvanceTimerRef.current = null;
   }, []);
 
+  const clearImageOnlyStepReadyTimeout = useCallback(() => {
+    if (imageOnlyStepReadyTimeoutRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(imageOnlyStepReadyTimeoutRef.current);
+    imageOnlyStepReadyTimeoutRef.current = null;
+  }, []);
+
   const resetAudioSequence = useCallback(
     (
       options: {
@@ -710,6 +746,7 @@ const Slide: React.FC<SlideProps> = ({
       clearAutoAdvanceTimer();
       clearInteractionAutoCloseTimer();
       clearInteractionOverlayOpenTimer();
+      clearImageOnlyStepReadyTimeout();
       setCurrentAudioKey(null);
       playbackTimeStore.reset();
       setIsAudioLoadingVisible(false);
@@ -726,6 +763,7 @@ const Slide: React.FC<SlideProps> = ({
     },
     [
       clearAutoAdvanceTimer,
+      clearImageOnlyStepReadyTimeout,
       clearInteractionAutoCloseTimer,
       clearInteractionOverlayOpenTimer,
       playbackTimeStore,
@@ -881,15 +919,141 @@ const Slide: React.FC<SlideProps> = ({
   useEffect(() => {
     return () => {
       clearAutoAdvanceTimer();
+      clearImageOnlyStepReadyTimeout();
       clearPlayerHideTimer();
       clearInteractionAutoCloseTimer();
       clearInteractionOverlayOpenTimer();
     };
   }, [
     clearAutoAdvanceTimer,
+    clearImageOnlyStepReadyTimeout,
     clearInteractionAutoCloseTimer,
     clearInteractionOverlayOpenTimer,
     clearPlayerHideTimer,
+  ]);
+
+  useEffect(() => {
+    if (!isImageOnlySilentStep) {
+      clearImageOnlyStepReadyTimeout();
+      return;
+    }
+
+    let cancelled = false;
+    let rafId: number | null = null;
+    let cleanupListeners: (() => void) | null = null;
+
+    const detachListeners = () => {
+      cleanupListeners?.();
+      cleanupListeners = null;
+    };
+
+    const finishVisualReady = () => {
+      if (cancelled) {
+        return;
+      }
+
+      detachListeners();
+      clearImageOnlyStepReadyTimeout();
+      setReadyImageOnlyStepKey(imageOnlyStepVisualReadyKey);
+    };
+
+    const evaluateVisualReady = () => {
+      if (cancelled) {
+        return;
+      }
+
+      detachListeners();
+
+      const activeStepContainer = stageLayerRef.current?.querySelector(
+        '[data-active-step="true"]'
+      ) as HTMLElement | null;
+
+      if (!activeStepContainer) {
+        return;
+      }
+
+      const iframeElements = Array.from(
+        activeStepContainer.querySelectorAll("iframe")
+      ) as HTMLIFrameElement[];
+
+      if (
+        iframeElements.length === 0 ||
+        areImageOnlyStepIframeVisualsReady(iframeElements)
+      ) {
+        finishVisualReady();
+        return;
+      }
+
+      const cleanupCallbacks: Array<() => void> = [];
+      const queueRecheck = () => {
+        if (cancelled) {
+          return;
+        }
+
+        if (rafId !== null) {
+          window.cancelAnimationFrame(rafId);
+        }
+
+        rafId = window.requestAnimationFrame(() => {
+          rafId = null;
+          evaluateVisualReady();
+        });
+      };
+      const registerEvent = (
+        target: EventTarget,
+        eventName: string,
+        listener: EventListener
+      ) => {
+        target.addEventListener(eventName, listener, { once: true });
+        cleanupCallbacks.push(() =>
+          target.removeEventListener(eventName, listener)
+        );
+      };
+
+      iframeElements.forEach((iframeElement) => {
+        const iframeDocument = iframeElement.contentDocument;
+
+        if (!iframeDocument || iframeDocument.readyState !== "complete") {
+          registerEvent(iframeElement, "load", queueRecheck);
+          return;
+        }
+
+        Array.from(iframeDocument.images)
+          .filter((image) => !image.complete)
+          .forEach((image) => {
+            registerEvent(image, "load", queueRecheck);
+            registerEvent(image, "error", queueRecheck);
+          });
+      });
+
+      cleanupListeners = () => {
+        cleanupCallbacks.forEach((cleanup) => cleanup());
+      };
+    };
+
+    rafId = window.requestAnimationFrame(() => {
+      rafId = null;
+      evaluateVisualReady();
+    });
+
+    imageOnlyStepReadyTimeoutRef.current = window.setTimeout(() => {
+      finishVisualReady();
+    }, DEFAULT_IMAGE_ONLY_VISUAL_READY_TIMEOUT_MS);
+
+    return () => {
+      cancelled = true;
+      detachListeners();
+      clearImageOnlyStepReadyTimeout();
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
+  }, [
+    clearImageOnlyStepReadyTimeout,
+    currentElementList,
+    currentIndex,
+    imageOnlyStepVisualReadyKey,
+    isImageOnlySilentStep,
   ]);
 
   useEffect(() => {
@@ -1169,6 +1333,10 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
+    if (isImageOnlySilentStep && !isImageOnlyStepVisualReady) {
+      return;
+    }
+
     // Auto-advance silent marker-only steps so playback flow does not stall.
     autoAdvanceTimerRef.current = window.setTimeout(() => {
       autoAdvanceTimerRef.current = null;
@@ -1188,6 +1356,8 @@ const Slide: React.FC<SlideProps> = ({
     currentAudioKey,
     currentPlaybackResetKey,
     currentStepHasSpeakableElement,
+    isImageOnlySilentStep,
+    isImageOnlyStepVisualReady,
     markerAutoAdvanceDelay,
     silentStepAutoAdvanceDelay,
     goNext,
@@ -1840,16 +2010,6 @@ const Slide: React.FC<SlideProps> = ({
     setHasPlayerInteracted(true);
     revealPlayerControls(true);
   }, [revealPlayerControls]);
-
-  const currentRenderElementKeys = useMemo(
-    () =>
-      currentElementList.map(
-        (element, index) =>
-          `${element.sequence_number ?? `${element.type}-${index}`}:${String(element.is_new ?? "")}`
-      ),
-    [currentElementList]
-  );
-
   useEffect(() => {
     const prevKeys = prevRenderElementKeysRef.current;
     const hasStablePrefix =
@@ -1994,6 +2154,7 @@ const Slide: React.FC<SlideProps> = ({
                           mountedStepState.sourceStepIndexes[0] ??
                           mountedStepStateIndex
                         }
+                        data-active-step={isActiveStep ? "true" : undefined}
                         aria-hidden={!isActiveStep || undefined}
                         className="w-full h-full"
                         style={{ display: isActiveStep ? undefined : "none" }}

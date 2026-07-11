@@ -3153,6 +3153,101 @@ export const PreloadedHtmlTailwindRefresh: Story = {
   },
 };
 
+const DynamicSlideContentTypeExample = () => {
+  const [isHtml, setIsHtml] = useState(false);
+  const elementList = useMemo(
+    () => [
+      createExampleElement({
+        sequenceNumber: 32,
+        type: isHtml ? "html" : "text",
+        content: isHtml
+          ? '<div data-dynamic-sandbox-target class="flex h-full w-full items-center justify-center bg-blue-600 p-[4vmin] text-white"><h1 class="text-[5vmin] font-bold">Sandbox initialized</h1></div>'
+          : "# Markdown mode\n\nSwitch to HTML without remounting the surrounding slide element.",
+        isNew: true,
+      }),
+    ],
+    [isHtml]
+  );
+
+  return (
+    <div className="relative h-[100dvh] w-full bg-background p-8">
+      <button
+        type="button"
+        data-dynamic-type-toggle
+        className="absolute right-10 top-10 z-[100] rounded bg-black px-4 py-2 text-white"
+        onClick={() => setIsHtml((current) => !current)}
+      >
+        {isHtml ? "Show Markdown" : "Show HTML"}
+      </button>
+      <Slide
+        className="w-full"
+        elementList={elementList}
+        playerEnabled={false}
+      />
+    </div>
+  );
+};
+
+export const DynamicMarkdownToHtmlSandbox: Story = {
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "Switches one keyed slide element between Markdown and HTML to verify the iframe sandbox initializes on every content-type transition.",
+      },
+    },
+  },
+  render: () => <DynamicSlideContentTypeExample />,
+  play: async ({ canvasElement }) => {
+    expect(canvasElement.querySelector("iframe")).toBeNull();
+
+    const toggle = canvasElement.querySelector(
+      "[data-dynamic-type-toggle]"
+    ) as HTMLButtonElement;
+
+    await userEvent.click(toggle);
+    await waitFor(
+      () => {
+        const iframe = canvasElement.querySelector("iframe");
+        const target = iframe?.contentDocument?.querySelector(
+          "[data-dynamic-sandbox-target]"
+        );
+
+        expect(target).not.toBeNull();
+        expect(getComputedStyle(target as HTMLElement).paddingTop).not.toBe(
+          "0px"
+        );
+      },
+      { timeout: 10000 }
+    );
+
+    await userEvent.click(toggle);
+    await waitFor(() => {
+      expect(canvasElement.querySelector("iframe")).toBeNull();
+      expect(
+        canvasElement.querySelector(".content-render.markdown-body")
+      ).not.toBeNull();
+    });
+
+    await userEvent.click(toggle);
+    await waitFor(
+      () => {
+        const iframe = canvasElement.querySelector("iframe");
+        const target = iframe?.contentDocument?.querySelector(
+          "[data-dynamic-sandbox-target]"
+        );
+
+        expect(target).not.toBeNull();
+        expect(getComputedStyle(target as HTMLElement).paddingTop).not.toBe(
+          "0px"
+        );
+      },
+      { timeout: 10000 }
+    );
+  },
+};
+
 export const FullViewportSingleSlide: Story = {
   args: {
     elementList: [

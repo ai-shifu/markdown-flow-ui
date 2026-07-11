@@ -109,7 +109,7 @@ const replaceRootScreenHeightWithFullClass = (
   );
 };
 
-const IframeSandbox: React.FC<IframeSandboxProps> = ({
+const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   content,
   type,
   className,
@@ -716,11 +716,13 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       if (shouldBridgeSandboxInteraction) {
         doc.removeEventListener("click", handleSandboxClick, true);
       }
+      if (rootRef.current === root) {
+        rootRef.current = null;
+        updateHeightRef.current = () => {};
+      }
       // Defer unmount to avoid React warning when parent is mid-render
       setTimeout(() => {
         root.unmount();
-        rootRef.current = null;
-        updateHeightRef.current = () => {};
       }, 0);
     };
   }, []);
@@ -738,6 +740,10 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    if (typeof ResizeObserver === "undefined") {
+      setContainerWidth(el.clientWidth);
+      return;
+    }
     const ro = new ResizeObserver((entries) => {
       setContainerWidth(entries[0]?.contentRect.width ?? el.clientWidth);
     });
@@ -800,6 +806,10 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     const t1 = setTimeout(() => updateHeightRef.current?.(), 100);
     const t2 = setTimeout(() => updateHeightRef.current?.(), 500);
     return () => {
+      if (initialPaintFrameRef.current !== null) {
+        window.cancelAnimationFrame(initialPaintFrameRef.current);
+        initialPaintFrameRef.current = null;
+      }
       clearTimeout(t1);
       clearTimeout(t2);
     };
@@ -880,6 +890,18 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       )}
     </div>
   );
+};
+
+const IframeSandbox: React.FC<IframeSandboxProps> = (props) => {
+  const mode = props.mode ?? "content";
+  const shouldEnableScaling = Boolean(
+    props.enableScaling && mode === "blackboard" && props.type === "sandbox"
+  );
+  // The iframe shell captures these initialization-only values. Remounting the
+  // inner instance keeps old and new React roots from sharing cleanup refs.
+  const lifecycleKey = `${props.type}:${mode}:${shouldEnableScaling ? "scaled" : "unscaled"}`;
+
+  return <IframeSandboxInstance key={lifecycleKey} {...props} />;
 };
 
 export default IframeSandbox;

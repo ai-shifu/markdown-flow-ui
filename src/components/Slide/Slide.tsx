@@ -2,6 +2,7 @@ import React, {
   memo,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -10,6 +11,7 @@ import { ChevronLeft } from "lucide-react";
 
 import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
+import type { MarkdownFlowLocale } from "../../lib/locale";
 import LoadingOverlayCard from "../ui/loading-overlay-card";
 import ContentRender from "../ContentRender";
 import type { ContentRenderProps } from "../ContentRender/ContentRender";
@@ -26,27 +28,48 @@ import SubtitleOverlay from "./SubtitleOverlay";
 import type {
   PlayerProps,
   SlidePlayerNavigationContext,
+  SlidePlayerSubtitleJumpTarget,
+  SlidePlayerSubtitleSeekRequest,
   SlidePlayerTexts,
 } from "./Player";
 import type { SlidePlayerLoadingReason } from "./Player";
 import type { Element } from "./types";
 import useSlide from "./useSlide";
 import useWakePlayerFromIframe from "./useWakePlayerFromIframe";
+import { PlayerKeyboardShortcutContext } from "./utils/playerKeyboardShortcutContext";
+import { activatePlayerKeyboardShortcutOwner } from "./utils/playerKeyboardShortcuts";
 import {
   DEFAULT_MOBILE_VIEW_MODE,
   resolveMobileViewModeState,
   type MobileViewMode,
 } from "./utils/mobileScreenMode";
 import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
+import { shouldWakePlayerControlsAfterNavigation } from "./utils/playerNavigationContext";
 import { shouldAutoAdvanceIntoAppendedMarker } from "./utils/appendedMarkerAdvance";
-import { getPlaybackSequenceTransition } from "./utils/playbackSequence";
+import {
+  getPlaybackSequenceTransition,
+  shouldStartDefaultAudioSequence,
+} from "./utils/playbackSequence";
+import {
+  canReachSubtitleJumpTarget,
+  hasResolvedInteractionElement,
+} from "./utils/subtitleJumpNavigation";
 import {
   getPlayerCustomActionCount,
   resolvePlayerCustomActionElement,
 } from "./utils/playerCustomActions";
 import { createPlaybackTimeStore } from "./utils/playbackTimeStore";
-import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
 import { resolveSlideInteractionState } from "./utils/interactionResolution";
+import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
+import {
+  resolveSlidePlayerVisibility,
+  type SlidePlayerControlsVisibility,
+} from "./utils/playerVisibility";
+import {
+  DEFAULT_SLIDE_BUFFERING_TEXTS,
+  getSlideLocaleTexts,
+  type SlideBufferingReason,
+} from "./slideI18n";
 import "./slide.css";
 export type {
   Element,
@@ -55,24 +78,19 @@ export type {
   SlidePlayerCustomActionContext,
   SlidePlayerCustomActions,
 } from "./types";
+export type { SlidePlayerControlsVisibility } from "./utils/playerVisibility";
 
 const DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS = 2000;
 const DEFAULT_INTERACTION_OVERLAY_OPEN_DELAY_MS = 300;
 const DEFAULT_INTERACTION_OVERLAY_FALLBACK_OFFSET_PX = 160;
 const DEFAULT_INTERACTION_SUBTITLE_GAP_PX = 16;
-const DEFAULT_BUFFERING_REASON = "waitingForAudio";
+const DEFAULT_BUFFERING_REASON: SlideBufferingReason = "waitingForAudio";
 
-export type SlideBufferingReason = "waitingForAudio" | SlidePlayerLoadingReason;
+export type { SlideBufferingReason } from "./slideI18n";
 
 export type SlideBufferingTextConfig =
   | string
   | Partial<Record<SlideBufferingReason, string>>;
-
-const DEFAULT_SLIDE_BUFFERING_TEXTS: Record<SlideBufferingReason, string> = {
-  waitingForAudio: "Waiting for current slide audio...",
-  loadingAudio: "Loading current slide audio...",
-  waitingForMoreAudio: "Waiting for more current slide audio...",
-};
 
 const resolveBufferingTextByReason = (
   bufferingText: SlideBufferingTextConfig,
@@ -87,6 +105,20 @@ const resolveBufferingTextByReason = (
     bufferingText[DEFAULT_BUFFERING_REASON] ??
     DEFAULT_SLIDE_BUFFERING_TEXTS[reason]
   );
+};
+
+const mergeBufferingTextWithLocaleDefaults = (
+  bufferingText: SlideBufferingTextConfig | undefined,
+  localeBufferingText: Record<string, string>
+): SlideBufferingTextConfig => {
+  if (typeof bufferingText === "string") {
+    return bufferingText;
+  }
+
+  return {
+    ...localeBufferingText,
+    ...bufferingText,
+  };
 };
 
 const shouldShowBufferingOverlay = (
@@ -108,6 +140,7 @@ type RenderSlideElementOptions = {
 interface InteractionOverlayCardProps {
   content: string;
   title: string;
+  locale?: MarkdownFlowLocale;
   defaultButtonText?: string;
   defaultInputText?: string;
   defaultSelectedValues?: string[];
@@ -136,6 +169,7 @@ const InteractionOverlayCard = memo(
   ({
     content,
     title,
+    locale,
     defaultButtonText,
     defaultInputText,
     defaultSelectedValues,
@@ -152,6 +186,7 @@ const InteractionOverlayCard = memo(
       <div className="slide-player__interaction-body">
         <ContentRender
           content={content}
+          locale={locale}
           defaultButtonText={defaultButtonText}
           defaultInputText={defaultInputText}
           defaultSelectedValues={defaultSelectedValues}
@@ -186,8 +221,22 @@ const areStepElementListsEqual = (
 
 export interface SlideProps extends React.ComponentProps<"section"> {
   elementList?: Element[];
-  showPlayer?: boolean;
-  playerAlwaysVisible?: boolean;
+  /** Locale used for built-in UI text when a more specific text prop is not provided. */
+  locale?: MarkdownFlowLocale;
+  /** Enables the player runtime, including audio playback and keyboard shortcuts. */
+  playerEnabled?: boolean;
+  /**
+   * Controls whether the player controls are always visible, always hidden, or auto-hidden.
+   *
+   * Use `"hidden"` to keep audio playback and keyboard shortcuts active while
+   * hiding the visual controls.
+   *
+   * @example
+   * ```tsx
+   * <Slide playerControlsVisibility="hidden" enableKeyboardShortcuts />
+   * ```
+   */
+  playerControlsVisibility?: SlidePlayerControlsVisibility;
   playerClassName?: string;
   fullscreenHeader?: SlideFullscreenHeader;
   playerCustomActions?: PlayerProps["customActions"];
@@ -203,19 +252,33 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   onPlayerVisibilityChange?: (visible: boolean) => void;
   onMobileViewModeChange?: (viewMode: MobileViewMode) => void;
   onStepChange?: (element: Element | undefined, index: number) => void;
+  /**
+   * Enables keyboard shortcuts for existing player actions.
+   *
+   * Defaults to `true`. The active slide responds after users click, touch, or
+   * focus the slide/player surface; ignored targets include form controls and
+   * interaction overlays.
+   *
+   * @example
+   * ```tsx
+   * <Slide elementList={slides} enableKeyboardShortcuts={false} />
+   * ```
+   */
+  enableKeyboardShortcuts?: boolean;
   enableIframeScaling?: boolean;
   disableLoadingOverlay?: boolean;
 }
 
 const Slide: React.FC<SlideProps> = ({
   elementList = [],
-  showPlayer = true,
-  playerAlwaysVisible = false,
+  locale,
+  playerEnabled,
+  playerControlsVisibility,
   playerClassName,
   fullscreenHeader,
   playerCustomActions,
   playerCustomActionPauseOnActive = true,
-  bufferingText = DEFAULT_SLIDE_BUFFERING_TEXTS,
+  bufferingText,
   interactionTitle,
   interactionTexts,
   playerTexts,
@@ -226,17 +289,37 @@ const Slide: React.FC<SlideProps> = ({
   onPlayerVisibilityChange,
   onMobileViewModeChange,
   onStepChange,
+  enableKeyboardShortcuts = true,
   enableIframeScaling = true,
   disableLoadingOverlay = false,
   className,
   onPointerDown,
+  onFocusCapture,
   ...props
 }) => {
+  const localeTexts = useMemo(() => getSlideLocaleTexts(locale), [locale]);
+  const resolvedBufferingText = useMemo(
+    () =>
+      mergeBufferingTextWithLocaleDefaults(
+        bufferingText,
+        localeTexts.bufferingText
+      ),
+    [bufferingText, localeTexts.bufferingText]
+  );
+  const {
+    playerEnabled: resolvedPlayerEnabled,
+    playerControlsVisibility: resolvedPlayerControlsVisibility,
+  } = resolveSlidePlayerVisibility({
+    playerEnabled,
+    playerControlsVisibility,
+  });
+  const keyboardShortcutOwnerId = useId();
   const sectionRef = useRef<HTMLElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const stageLayerRef = useRef<HTMLDivElement | null>(null);
   const lastElementRef = useRef<HTMLDivElement | null>(null);
   const playerHideTimerRef = useRef<number | null>(null);
+  const isPointerInsidePlayerControlsRef = useRef(false);
   const autoAdvanceTimerRef = useRef<number | null>(null);
   const interactionAutoCloseTimerRef = useRef<number | null>(null);
   const interactionOverlayOpenTimerRef = useRef<number | null>(null);
@@ -244,18 +327,27 @@ const Slide: React.FC<SlideProps> = ({
   const prevRenderElementKeysRef = useRef<string[]>([]);
   const shouldScrollToBottomRef = useRef(false);
   const pendingInteractionOverlayStepIndexRef = useRef<number | null>(null);
+  const pendingSubtitleJumpRef = useRef<{
+    audioIndex: number;
+    audioKey: string;
+    slideIndex: number;
+    timeMs: number;
+  } | null>(null);
+  const subtitleSeekRequestIdRef = useRef(0);
   const playbackResetKeyRef = useRef<string | null>(null);
   const appendedMarkerAdvanceStateRef = useRef({
     markerCount: 0,
     currentIndex: -1,
     canGoNext: false,
   });
+  const shouldSkipDefaultAudioStartForSubtitleJumpRef = useRef(false);
   const {
     currentElementList,
     stepElementLists,
     slideElementList,
     currentIndex,
     audioList,
+    audioSlideIndexes,
     currentAudioSequenceIndexes,
     currentStepHasSpeakableElement,
     currentInteractionElement,
@@ -263,6 +355,7 @@ const Slide: React.FC<SlideProps> = ({
     canGoNext,
     handlePrev: goPrev,
     handleNext: goNext,
+    handleGoTo: goTo,
   } = useSlide(elementList);
   const currentStepElement = useMemo(() => {
     if (currentIndex < 0) {
@@ -275,11 +368,25 @@ const Slide: React.FC<SlideProps> = ({
     (element) => element.is_renderable !== false
   ).length;
   const isSingleSlide = visibleMarkerCount === 1;
-  const shouldRenderPlayer =
-    showPlayer &&
+  const shouldMountPlayer =
+    resolvedPlayerEnabled &&
     (slideElementList.length > 0 ||
       audioList.length > 0 ||
       Boolean(currentInteractionElement));
+  const keyboardShortcutContextValue = useMemo(
+    () => ({
+      enabled: enableKeyboardShortcuts,
+      ownerId: keyboardShortcutOwnerId,
+    }),
+    [enableKeyboardShortcuts, keyboardShortcutOwnerId]
+  );
+  const activateKeyboardShortcutOwner = useCallback(() => {
+    if (!enableKeyboardShortcuts || !shouldMountPlayer) {
+      return;
+    }
+
+    activatePlayerKeyboardShortcutOwner(keyboardShortcutOwnerId);
+  }, [enableKeyboardShortcuts, keyboardShortcutOwnerId, shouldMountPlayer]);
   const currentAudioSequenceKeys = useMemo(
     () =>
       currentAudioSequenceIndexes
@@ -292,6 +399,8 @@ const Slide: React.FC<SlideProps> = ({
   const [isPlaybackRequested, setIsPlaybackRequested] = useState(true);
   const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(true);
   const [currentAudioKey, setCurrentAudioKey] = useState<string | null>(null);
+  const [subtitleSeekRequest, setSubtitleSeekRequest] =
+    useState<SlidePlayerSubtitleSeekRequest | null>(null);
   const [isAudioLoadingVisible, setIsAudioLoadingVisible] = useState(false);
   const [audioLoadingReason, setAudioLoadingReason] =
     useState<SlideBufferingReason>(DEFAULT_BUFFERING_REASON);
@@ -343,12 +452,14 @@ const Slide: React.FC<SlideProps> = ({
     ]
   );
   const previousEffectiveMobileViewModeRef = useRef(effectiveMobileViewMode);
-  const playerVisible =
-    shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
+  const playerControlsVisible =
+    shouldMountPlayer &&
+    resolvedPlayerControlsVisibility !== "hidden" &&
+    (resolvedPlayerControlsVisibility === "visible" || isPlayerVisible);
   const shouldShowFullscreenHeader =
-    isImmersiveMobileFullscreen && playerVisible;
+    isImmersiveMobileFullscreen && playerControlsVisible;
   const shouldApplyFullscreenViewportPadding =
-    isImmersiveMobileFullscreen && playerVisible;
+    isImmersiveMobileFullscreen && playerControlsVisible;
   const shouldShowMobileFullscreenMask =
     isImmersiveMobileFullscreen || isNativeMobileFullscreen;
   const isDesktopBrowserFullscreen = isBrowserFullscreen && !isMobileDevice;
@@ -571,25 +682,47 @@ const Slide: React.FC<SlideProps> = ({
     autoAdvanceTimerRef.current = null;
   }, []);
 
-  const resetAudioSequence = useCallback(() => {
-    clearAutoAdvanceTimer();
-    clearInteractionAutoCloseTimer();
-    clearInteractionOverlayOpenTimer();
-    setCurrentAudioKey(null);
-    playbackTimeStore.reset();
-    setIsAudioLoadingVisible(false);
-    setAudioLoadingReason(DEFAULT_BUFFERING_REASON);
-    setHasCompletedCurrentStepAudio(false);
-    setHasCurrentAudioPlaybackStarted(false);
-    setActiveInteractionElement(undefined);
-    setIsInteractionOverlayOpen(false);
-    setInteractionOverlaySubtitleOffset(0);
-  }, [
-    clearAutoAdvanceTimer,
-    clearInteractionAutoCloseTimer,
-    clearInteractionOverlayOpenTimer,
-    playbackTimeStore,
-  ]);
+  const resetAudioSequence = useCallback(
+    (
+      options: {
+        preservePendingSubtitleJump?: boolean;
+      } = {}
+    ) => {
+      clearAutoAdvanceTimer();
+      clearInteractionAutoCloseTimer();
+      clearInteractionOverlayOpenTimer();
+      setCurrentAudioKey(null);
+      playbackTimeStore.reset();
+      setIsAudioLoadingVisible(false);
+      setAudioLoadingReason(DEFAULT_BUFFERING_REASON);
+      setHasCompletedCurrentStepAudio(false);
+      setHasCurrentAudioPlaybackStarted(false);
+      setSubtitleSeekRequest(null);
+      if (!options.preservePendingSubtitleJump) {
+        pendingSubtitleJumpRef.current = null;
+      }
+      setActiveInteractionElement(undefined);
+      setIsInteractionOverlayOpen(false);
+      setInteractionOverlaySubtitleOffset(0);
+    },
+    [
+      clearAutoAdvanceTimer,
+      clearInteractionAutoCloseTimer,
+      clearInteractionOverlayOpenTimer,
+      playbackTimeStore,
+    ]
+  );
+
+  const requestSubtitleCueSeek = useCallback(
+    (target: SlidePlayerSubtitleJumpTarget) => {
+      subtitleSeekRequestIdRef.current += 1;
+      setSubtitleSeekRequest({
+        ...target,
+        id: subtitleSeekRequestIdRef.current,
+      });
+    },
+    []
+  );
 
   const startCurrentAudioSequence = useCallback(() => {
     const nextAudioKey = currentAudioSequenceKeys[0];
@@ -649,20 +782,39 @@ const Slide: React.FC<SlideProps> = ({
     [clearInteractionOverlayOpenTimer]
   );
 
-  const showPlayerControls = useCallback(
+  const isPlayerControlsHovered = useCallback(
+    () =>
+      isPointerInsidePlayerControlsRef.current ||
+      Boolean(
+        sectionRef.current?.querySelector(".slide-player__controls:hover")
+      ),
+    []
+  );
+
+  const revealPlayerControls = useCallback(
     (enableAutoHide = hasPlayerInteracted) => {
-      if (!shouldRenderPlayer) {
+      if (!shouldMountPlayer || resolvedPlayerControlsVisibility === "hidden") {
         return;
       }
 
       setIsPlayerVisible(true);
       clearPlayerHideTimer();
 
-      if (playerAlwaysVisible || !enableAutoHide || playerAutoHideDelay <= 0) {
+      if (
+        resolvedPlayerControlsVisibility === "visible" ||
+        !enableAutoHide ||
+        playerAutoHideDelay <= 0 ||
+        isPlayerControlsHovered()
+      ) {
         return;
       }
 
       playerHideTimerRef.current = window.setTimeout(() => {
+        if (isPlayerControlsHovered()) {
+          playerHideTimerRef.current = null;
+          return;
+        }
+
         setIsPlayerVisible(false);
         playerHideTimerRef.current = null;
       }, playerAutoHideDelay);
@@ -670,15 +822,15 @@ const Slide: React.FC<SlideProps> = ({
     [
       clearPlayerHideTimer,
       hasPlayerInteracted,
-      playerAlwaysVisible,
+      isPlayerControlsHovered,
       playerAutoHideDelay,
-      shouldRenderPlayer,
+      resolvedPlayerControlsVisibility,
+      shouldMountPlayer,
     ]
   );
 
   const hasResolvedCurrentInteraction = Boolean(
-    currentInteractionElement?.readonly ||
-      currentInteractionElement?.user_input?.trim()
+    hasResolvedInteractionElement(currentInteractionElement)
   );
 
   const shouldBlockPlaybackForInteraction =
@@ -686,18 +838,15 @@ const Slide: React.FC<SlideProps> = ({
 
   const handlePlaybackPreferenceChange = useCallback((playing: boolean) => {
     setIsPlaybackRequested(playing);
-    setIsAutoAdvanceEnabled(playing);
   }, []);
 
   const syncPlaybackPreferenceBeforeNavigation = useCallback(
     (context?: SlidePlayerNavigationContext) => {
-      const shouldContinuePlayback =
-        context?.shouldContinuePlayback ?? isPlaybackRequested;
-
-      setIsPlaybackRequested(shouldContinuePlayback);
-      setIsAutoAdvanceEnabled(shouldContinuePlayback);
+      if (context) {
+        setIsPlaybackRequested(context.shouldContinuePlayback);
+      }
     },
-    [isPlaybackRequested]
+    []
   );
 
   useEffect(() => {
@@ -724,12 +873,20 @@ const Slide: React.FC<SlideProps> = ({
   ]);
 
   useEffect(() => {
-    onPlayerVisibilityChange?.(playerVisible);
+    onPlayerVisibilityChange?.(playerControlsVisible);
 
     return () => {
       onPlayerVisibilityChange?.(false);
     };
-  }, [onPlayerVisibilityChange, playerVisible]);
+  }, [onPlayerVisibilityChange, playerControlsVisible]);
+
+  useEffect(() => {
+    if (playerControlsVisible) {
+      return;
+    }
+
+    isPointerInsidePlayerControlsRef.current = false;
+  }, [playerControlsVisible]);
 
   useEffect(() => {
     if (isMobileDevice || mobileViewMode === DEFAULT_MOBILE_VIEW_MODE) {
@@ -812,13 +969,13 @@ const Slide: React.FC<SlideProps> = ({
   ]);
 
   useEffect(() => {
-    if (!shouldRenderPlayer) {
+    if (!shouldMountPlayer || resolvedPlayerControlsVisibility === "hidden") {
       clearPlayerHideTimer();
       setIsPlayerVisible(false);
       return;
     }
 
-    if (playerAlwaysVisible) {
+    if (resolvedPlayerControlsVisibility === "visible") {
       clearPlayerHideTimer();
       setIsPlayerVisible(true);
       return;
@@ -826,14 +983,14 @@ const Slide: React.FC<SlideProps> = ({
 
     if (!hasPlayerInteracted) {
       // Keep the initial player visible briefly, then hide it automatically.
-      showPlayerControls(true);
+      revealPlayerControls(true);
     }
   }, [
     clearPlayerHideTimer,
     hasPlayerInteracted,
-    playerAlwaysVisible,
-    shouldRenderPlayer,
-    showPlayerControls,
+    resolvedPlayerControlsVisibility,
+    shouldMountPlayer,
+    revealPlayerControls,
   ]);
 
   useEffect(() => {
@@ -854,13 +1011,14 @@ const Slide: React.FC<SlideProps> = ({
         return;
       }
 
-      if (!shouldRenderPlayer) {
+      if (!shouldMountPlayer) {
         return;
       }
 
       // Restore player controls on explicit click/tap without waking on scroll start.
+      activateKeyboardShortcutOwner();
       setHasPlayerInteracted(true);
-      showPlayerControls(true);
+      revealPlayerControls(true);
     };
 
     window.addEventListener("message", handleSandboxInteraction);
@@ -868,18 +1026,26 @@ const Slide: React.FC<SlideProps> = ({
     return () => {
       window.removeEventListener("message", handleSandboxInteraction);
     };
-  }, [shouldRenderPlayer, showPlayerControls]);
+  }, [activateKeyboardShortcutOwner, shouldMountPlayer, revealPlayerControls]);
 
   useWakePlayerFromIframe({
     sectionRef,
-    enabled: shouldRenderPlayer,
+    enabled: shouldMountPlayer,
+    keyboardShortcutsEnabled: enableKeyboardShortcuts,
+    onKeyboardShortcut: activateKeyboardShortcutOwner,
     onWake: () => {
+      activateKeyboardShortcutOwner();
       setHasPlayerInteracted(true);
-      showPlayerControls(true);
+      revealPlayerControls(true);
     },
   });
 
   useEffect(() => {
+    if (!shouldMountPlayer) {
+      resetAudioSequence();
+      return;
+    }
+
     const { hasPlaybackContextChanged, shouldInitializeAudioSequence } =
       getPlaybackSequenceTransition({
         previousResetKey: playbackResetKeyRef.current,
@@ -902,8 +1068,14 @@ const Slide: React.FC<SlideProps> = ({
       currentStepHasSpeakableElement,
     });
 
+    const pendingSubtitleJump = pendingSubtitleJumpRef.current;
+    const shouldPreservePendingSubtitleJump =
+      pendingSubtitleJump?.slideIndex === currentIndex;
+
     if (hasPlaybackContextChanged) {
-      resetAudioSequence();
+      resetAudioSequence({
+        preservePendingSubtitleJump: shouldPreservePendingSubtitleJump,
+      });
     }
 
     if (currentElementList.length === 0 && !currentInteractionElement) {
@@ -912,6 +1084,30 @@ const Slide: React.FC<SlideProps> = ({
 
     if (shouldPausePlaybackForCustomAction) {
       return;
+    }
+
+    if (pendingSubtitleJump?.slideIndex === currentIndex) {
+      if (
+        !canReachSubtitleJumpTarget({
+          currentIndex,
+          resolvedCurrentInteractionElement: activeInteractionElement,
+          slideElementList,
+          targetSlideIndex: pendingSubtitleJump.slideIndex,
+        })
+      ) {
+        // Keep the pending seek queued while the interaction overlay gates playback.
+      } else {
+        pendingSubtitleJumpRef.current = null;
+        // The default audio-start effect still sees the pre-seek render state.
+        // Skip it once so it does not replace the subtitle target audio.
+        shouldSkipDefaultAudioStartForSubtitleJumpRef.current = true;
+        setCurrentAudioKey(pendingSubtitleJump.audioKey);
+        requestSubtitleCueSeek({
+          audioIndex: pendingSubtitleJump.audioIndex,
+          timeMs: pendingSubtitleJump.timeMs,
+        });
+        return;
+      }
     }
 
     if (currentInteractionElement) {
@@ -963,9 +1159,11 @@ const Slide: React.FC<SlideProps> = ({
       clearAutoAdvanceTimer();
     };
   }, [
+    activeInteractionElement,
     canGoNext,
     clearAutoAdvanceTimer,
     currentElementList.length,
+    currentIndex,
     currentInteractionElement,
     currentAudioKey,
     currentPlaybackResetKey,
@@ -979,7 +1177,10 @@ const Slide: React.FC<SlideProps> = ({
     shouldBlockPlaybackForInteraction,
     clearInteractionOverlayOpenTimer,
     resetAudioSequence,
+    requestSubtitleCueSeek,
     scheduleInteractionOverlayOpen,
+    shouldMountPlayer,
+    slideElementList,
     startCurrentAudioSequence,
     shouldPausePlaybackForCustomAction,
     shouldUseSilentStepAutoAdvanceToggle,
@@ -1018,19 +1219,21 @@ const Slide: React.FC<SlideProps> = ({
   ]);
 
   useEffect(() => {
-    if (currentAudioKey || currentAudioSequenceKeys.length === 0) {
-      return;
-    }
+    const shouldSkipDefaultAudioStart =
+      shouldSkipDefaultAudioStartForSubtitleJumpRef.current;
+    shouldSkipDefaultAudioStartForSubtitleJumpRef.current = false;
 
     if (
-      shouldPausePlaybackForCustomAction ||
-      !currentStepHasSpeakableElement ||
-      shouldBlockPlaybackForInteraction
+      !shouldStartDefaultAudioSequence({
+        currentAudioKey,
+        currentAudioSequenceLength: currentAudioSequenceKeys.length,
+        currentStepHasSpeakableElement,
+        hasCompletedCurrentStepAudio,
+        shouldBlockPlaybackForInteraction,
+        shouldPausePlaybackForCustomAction,
+        shouldSkipDefaultAudioStart,
+      })
     ) {
-      return;
-    }
-
-    if (hasCompletedCurrentStepAudio) {
       return;
     }
 
@@ -1201,6 +1404,7 @@ const Slide: React.FC<SlideProps> = ({
           className="content-render-iframe"
           disableLoadingOverlay={disableLoadingOverlay}
           hideFullScreen
+          locale={locale}
           mode="blackboard"
           replaceRootScreenHeightWithFull={
             options.replaceRootScreenHeightWithFull
@@ -1217,6 +1421,7 @@ const Slide: React.FC<SlideProps> = ({
         className="content-render-iframe"
         disableLoadingOverlay={disableLoadingOverlay}
         hideFullScreen
+        locale={locale}
         mode="blackboard"
         type="markdown"
         content={element.content as string}
@@ -1307,21 +1512,100 @@ const Slide: React.FC<SlideProps> = ({
     });
   }, []);
 
+  const canJumpToSubtitleTarget = useCallback(
+    (target: SlidePlayerSubtitleJumpTarget) =>
+      canReachSubtitleJumpTarget({
+        currentIndex,
+        resolvedCurrentInteractionElement: activeInteractionElement,
+        slideElementList,
+        targetSlideIndex: audioSlideIndexes[target.audioIndex],
+      }),
+    [
+      activeInteractionElement,
+      audioSlideIndexes,
+      currentIndex,
+      slideElementList,
+    ]
+  );
+
+  const handleSubtitleJump = useCallback(
+    (
+      target: SlidePlayerSubtitleJumpTarget,
+      context: SlidePlayerNavigationContext
+    ) => {
+      const targetAudio = audioList[target.audioIndex];
+      const targetAudioKey = targetAudio?.audioKey;
+      const targetSlideIndex = audioSlideIndexes[target.audioIndex];
+
+      if (!targetAudioKey || targetSlideIndex == null) {
+        return false;
+      }
+
+      if (!canJumpToSubtitleTarget(target)) {
+        return false;
+      }
+
+      syncPlaybackPreferenceBeforeNavigation(context);
+      pendingInteractionOverlayStepIndexRef.current = null;
+      setIsAudioLoadingVisible(false);
+      setHasCompletedCurrentStepAudio(false);
+      setHasCurrentAudioPlaybackStarted(false);
+
+      if (shouldWakePlayerControlsAfterNavigation(context)) {
+        setHasPlayerInteracted(true);
+        revealPlayerControls(true);
+      }
+
+      if (targetSlideIndex === currentIndex) {
+        pendingSubtitleJumpRef.current = null;
+        resetAudioSequence();
+        setCurrentAudioKey(targetAudioKey);
+        requestSubtitleCueSeek(target);
+        return true;
+      }
+
+      shouldScrollToBottomRef.current = true;
+      resetAudioSequence();
+      pendingSubtitleJumpRef.current = {
+        audioIndex: target.audioIndex,
+        audioKey: targetAudioKey,
+        slideIndex: targetSlideIndex,
+        timeMs: target.timeMs,
+      };
+      goTo(targetSlideIndex);
+
+      return true;
+    },
+    [
+      audioList,
+      audioSlideIndexes,
+      canJumpToSubtitleTarget,
+      currentIndex,
+      goTo,
+      requestSubtitleCueSeek,
+      resetAudioSequence,
+      revealPlayerControls,
+      syncPlaybackPreferenceBeforeNavigation,
+    ]
+  );
+
   const handlePrev = useCallback(
     (context?: SlidePlayerNavigationContext) => {
       syncPlaybackPreferenceBeforeNavigation(context);
       shouldScrollToBottomRef.current = true;
       pendingInteractionOverlayStepIndexRef.current = null;
-      setHasPlayerInteracted(true);
       setIsAudioLoadingVisible(false);
-      showPlayerControls(true);
+      if (shouldWakePlayerControlsAfterNavigation(context)) {
+        setHasPlayerInteracted(true);
+        revealPlayerControls(true);
+      }
       resetAudioSequence();
       goPrev();
     },
     [
       goPrev,
       resetAudioSequence,
-      showPlayerControls,
+      revealPlayerControls,
       syncPlaybackPreferenceBeforeNavigation,
     ]
   );
@@ -1331,16 +1615,18 @@ const Slide: React.FC<SlideProps> = ({
       syncPlaybackPreferenceBeforeNavigation(context);
       shouldScrollToBottomRef.current = true;
       pendingInteractionOverlayStepIndexRef.current = null;
-      setHasPlayerInteracted(true);
       setIsAudioLoadingVisible(false);
-      showPlayerControls(true);
+      if (shouldWakePlayerControlsAfterNavigation(context)) {
+        setHasPlayerInteracted(true);
+        revealPlayerControls(true);
+      }
       resetAudioSequence();
       goNext();
     },
     [
       goNext,
       resetAudioSequence,
-      showPlayerControls,
+      revealPlayerControls,
       syncPlaybackPreferenceBeforeNavigation,
     ]
   );
@@ -1447,6 +1733,20 @@ const Slide: React.FC<SlideProps> = ({
     setIsInteractionOverlayOpen((prevOpen) => !prevOpen);
   }, [activeInteractionElement]);
 
+  const handlePlayerControlsPointerEnter = useCallback(() => {
+    isPointerInsidePlayerControlsRef.current = true;
+    clearPlayerHideTimer();
+
+    if (shouldMountPlayer) {
+      setIsPlayerVisible(true);
+    }
+  }, [clearPlayerHideTimer, shouldMountPlayer]);
+
+  const handlePlayerControlsPointerLeave = useCallback(() => {
+    isPointerInsidePlayerControlsRef.current = false;
+    revealPlayerControls(true);
+  }, [revealPlayerControls]);
+
   const stopOverlayPropagation = useCallback(
     (
       event:
@@ -1456,24 +1756,33 @@ const Slide: React.FC<SlideProps> = ({
       event.stopPropagation();
 
       // Keep the player visible a bit longer when users interact with the overlay.
-      if (playerVisible) {
-        showPlayerControls(true);
+      if (playerControlsVisible) {
+        revealPlayerControls(true);
       }
     },
-    [isPlayerVisible, showPlayerControls]
+    [playerControlsVisible, revealPlayerControls]
   );
 
   const handleSurfacePointerDown = useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
+      activateKeyboardShortcutOwner();
       onPointerDown?.(event);
     },
-    [onPointerDown]
+    [activateKeyboardShortcutOwner, onPointerDown]
+  );
+
+  const handleSurfaceFocusCapture = useCallback(
+    (event: React.FocusEvent<HTMLElement>) => {
+      activateKeyboardShortcutOwner();
+      onFocusCapture?.(event);
+    },
+    [activateKeyboardShortcutOwner, onFocusCapture]
   );
 
   const handleSurfaceClick = useCallback(() => {
     setHasPlayerInteracted(true);
-    showPlayerControls(true);
-  }, [showPlayerControls]);
+    revealPlayerControls(true);
+  }, [revealPlayerControls]);
 
   const currentRenderElementKeys = useMemo(
     () =>
@@ -1560,6 +1869,7 @@ const Slide: React.FC<SlideProps> = ({
         className
       )}
       onClick={handleSurfaceClick}
+      onFocusCapture={handleSurfaceFocusCapture}
       onPointerDown={handleSurfacePointerDown}
       {...props}
     >
@@ -1583,7 +1893,10 @@ const Slide: React.FC<SlideProps> = ({
         {shouldShowFullscreenHeader ? (
           <div className="slide-landscape-header">
             <button
-              aria-label={fullscreenHeader?.backAriaLabel ?? "Back"}
+              aria-label={
+                fullscreenHeader?.backAriaLabel ??
+                localeTexts.fullscreenBackAriaLabel
+              }
               className="slide-landscape-header__back"
               onClick={handleFullscreenHeaderBack}
               type="button"
@@ -1644,7 +1957,7 @@ const Slide: React.FC<SlideProps> = ({
         {isAudioLoadingVisible ? (
           <LoadingOverlayCard
             message={resolveBufferingTextByReason(
-              bufferingText,
+              resolvedBufferingText,
               audioLoadingReason
             )}
             className="absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2"
@@ -1653,9 +1966,9 @@ const Slide: React.FC<SlideProps> = ({
 
         <SubtitleOverlay
           extraBottomOffset={interactionOverlaySubtitleOffset}
-          hasPlayerGap={playerVisible}
+          hasPlayerGap={playerControlsVisible}
           isEnabled={isSubtitleEnabled && hasCurrentAudioPlaybackStarted}
-          isPlayerHidden={shouldRenderPlayer && !playerVisible}
+          isPlayerHidden={shouldMountPlayer && !playerControlsVisible}
           playbackTimeStore={playbackTimeStore}
           subtitleCues={currentSubtitleCues}
         />
@@ -1663,9 +1976,10 @@ const Slide: React.FC<SlideProps> = ({
         {shouldShowInteractionOverlay ? (
           <div
             ref={interactionOverlayRef}
+            data-player-keyboard-shortcuts-ignore="true"
             className={cn(
               "slide-interaction-overlay",
-              playerVisible && shouldRenderPlayer
+              playerControlsVisible && shouldMountPlayer
                 ? "slide-interaction-overlay--with-player"
                 : "slide-interaction-overlay--standalone"
             )}
@@ -1675,66 +1989,87 @@ const Slide: React.FC<SlideProps> = ({
           >
             <InteractionOverlayCard
               content={String(activeInteractionElement?.content ?? "")}
+              locale={locale}
               defaultButtonText={interactionDefaults.buttonText ?? ""}
               defaultInputText={interactionDefaults.inputText ?? ""}
               defaultSelectedValues={interactionDefaultSelectedValues}
-              confirmButtonText={interactionTexts?.confirmButtonText}
-              copyButtonText={interactionTexts?.copyButtonText}
-              copiedButtonText={interactionTexts?.copiedButtonText}
+              confirmButtonText={
+                interactionTexts?.confirmButtonText ??
+                localeTexts.interactionTexts.confirmButtonText
+              }
+              copyButtonText={
+                interactionTexts?.copyButtonText ??
+                localeTexts.interactionTexts.copyButtonText
+              }
+              copiedButtonText={
+                interactionTexts?.copiedButtonText ??
+                localeTexts.interactionTexts.copiedButtonText
+              }
               onSend={handleInteractionSend}
               readonly={isInteractionReadonly}
               title={
                 interactionTexts?.title ??
                 interactionTitle ??
-                "Submit the content below to continue."
+                localeTexts.interactionTexts.title
               }
             />
           </div>
         ) : null}
 
-        {shouldRenderPlayer ? (
-          <Player
-            audioList={audioList}
-            className={cn(
-              "absolute left-1/2 z-[2] -translate-x-1/2",
-              isDesktopBrowserFullscreen ? "bottom-3" : "-bottom-3",
-              playerClassName,
-              !playerVisible && "pointer-events-none opacity-0"
-            )}
-            currentAudioIndex={currentAudioIndex}
-            defaultPlaying={isPlaybackRequested}
-            isPlaybackPaused={shouldPausePlaybackForCustomAction}
-            isAutoAdvanceEnabled={isAutoAdvanceEnabled}
-            hasInteraction={Boolean(activeInteractionElement)}
-            isInteractionOpen={isInteractionOverlayOpen}
-            isSubtitleEnabled={isSubtitleEnabled}
-            onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
-            onLoadingChange={handlePlayerLoadingChange}
-            onPlaybackPreferenceChange={handlePlaybackPreferenceChange}
-            onPlaybackStarted={() => {
-              setHasCurrentAudioPlaybackStarted(true);
-            }}
-            onPlaybackTimeChange={playbackTimeStore.setTime}
-            onSubtitleToggle={() => {
-              setIsSubtitleEnabled((previousEnabled) => !previousEnabled);
-            }}
-            nextDisabled={!canGoNext}
-            onEnded={handlePlayerEnded}
-            onFullscreen={handleFullscreen}
-            isFullscreen={isBrowserFullscreen}
-            mobileViewMode={effectiveMobileViewMode}
-            settingsPortalContainer={viewportRef.current}
-            onMobileViewModeChange={handleMobileViewModeSelect}
-            onInteractionToggle={handleInteractionToggle}
-            onNext={handleNext}
-            onPrev={handlePrev}
-            prevDisabled={!canGoPrev}
-            showControls={playerVisible}
-            texts={playerTexts}
-            customActionContext={playerCustomActionContext}
-            customActions={playerCustomActions}
-            useAutoAdvanceToggle={shouldUseSilentStepAutoAdvanceToggle}
-          />
+        {shouldMountPlayer ? (
+          <PlayerKeyboardShortcutContext.Provider
+            value={keyboardShortcutContextValue}
+          >
+            <Player
+              audioList={audioList}
+              className={cn(
+                "absolute left-1/2 z-[2] -translate-x-1/2",
+                isDesktopBrowserFullscreen ? "bottom-3" : "-bottom-3",
+                playerClassName,
+                !playerControlsVisible && "pointer-events-none opacity-0"
+              )}
+              currentAudioIndex={currentAudioIndex}
+              defaultPlaying={isPlaybackRequested}
+              enableKeyboardShortcuts={enableKeyboardShortcuts}
+              isPlaybackPaused={shouldPausePlaybackForCustomAction}
+              isAutoAdvanceEnabled={isAutoAdvanceEnabled}
+              locale={locale}
+              hasInteraction={Boolean(activeInteractionElement)}
+              isInteractionOpen={isInteractionOverlayOpen}
+              isSubtitleEnabled={isSubtitleEnabled}
+              onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
+              onLoadingChange={handlePlayerLoadingChange}
+              onPlaybackStarted={() => {
+                setHasCurrentAudioPlaybackStarted(true);
+              }}
+              onPlaybackPreferenceChange={handlePlaybackPreferenceChange}
+              onPlaybackTimeChange={playbackTimeStore.setTime}
+              onSubtitleToggle={() => {
+                setIsSubtitleEnabled((previousEnabled) => !previousEnabled);
+              }}
+              nextDisabled={!canGoNext}
+              onEnded={handlePlayerEnded}
+              onFullscreen={handleFullscreen}
+              isFullscreen={isBrowserFullscreen}
+              mobileViewMode={effectiveMobileViewMode}
+              settingsPortalContainer={viewportRef.current}
+              onMobileViewModeChange={handleMobileViewModeSelect}
+              onControlsPointerEnter={handlePlayerControlsPointerEnter}
+              onControlsPointerLeave={handlePlayerControlsPointerLeave}
+              onInteractionToggle={handleInteractionToggle}
+              onNext={handleNext}
+              onPrev={handlePrev}
+              onSubtitleJump={handleSubtitleJump}
+              canJumpToSubtitleTarget={canJumpToSubtitleTarget}
+              prevDisabled={!canGoPrev}
+              showControls={playerControlsVisible}
+              subtitleSeekRequest={subtitleSeekRequest}
+              texts={playerTexts}
+              customActionContext={playerCustomActionContext}
+              customActions={playerCustomActions}
+              useAutoAdvanceToggle={shouldUseSilentStepAutoAdvanceToggle}
+            />
+          </PlayerKeyboardShortcutContext.Provider>
         ) : null}
       </div>
     </section>

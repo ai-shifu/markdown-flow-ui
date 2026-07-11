@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { getPlaybackSequenceTransition } from "./playbackSequence";
+import {
+  getPlaybackSequenceTransition,
+  shouldStartDefaultAudioSequence,
+} from "./playbackSequence";
 
 describe("playbackSequence", () => {
   it("does not restart the current step after it already finished", () => {
@@ -43,5 +46,33 @@ describe("playbackSequence", () => {
       hasPlaybackContextChanged: true,
       shouldInitializeAudioSequence: true,
     });
+  });
+
+  it("starts the default audio sequence when the step has pending audio", () => {
+    expect(
+      shouldStartDefaultAudioSequence({
+        currentAudioKey: null,
+        currentAudioSequenceLength: 2,
+        currentStepHasSpeakableElement: true,
+        hasCompletedCurrentStepAudio: false,
+        shouldBlockPlaybackForInteraction: false,
+        shouldPausePlaybackForCustomAction: false,
+        shouldSkipDefaultAudioStart: false,
+      })
+    ).toBe(true);
+  });
+
+  it("does not start the default audio sequence after a subtitle jump selected a target audio", () => {
+    expect(
+      shouldStartDefaultAudioSequence({
+        currentAudioKey: null,
+        currentAudioSequenceLength: 2,
+        currentStepHasSpeakableElement: true,
+        hasCompletedCurrentStepAudio: false,
+        shouldBlockPlaybackForInteraction: false,
+        shouldPausePlaybackForCustomAction: false,
+        shouldSkipDefaultAudioStart: true,
+      })
+    ).toBe(false);
   });
 });

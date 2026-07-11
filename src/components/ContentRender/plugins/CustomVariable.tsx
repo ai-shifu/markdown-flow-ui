@@ -8,7 +8,9 @@ import {
   InputGroup,
   InputGroupTextarea,
 } from "../../ui/inputGroup/input-group";
+import type { MarkdownFlowLocale } from "../../../lib/locale";
 import { cn } from "../../../lib/utils";
+import { getContentRenderLocaleTexts } from "../contentRenderI18n";
 
 // Define custom variable node type
 interface CustomVariableNode {
@@ -28,6 +30,7 @@ interface CustomVariableProps {
   defaultButtonText?: string;
   defaultInputText?: string;
   defaultSelectedValues?: string[];
+  locale?: MarkdownFlowLocale;
   readonly?: boolean;
   onSend?: (content: OnSendContentParams) => void;
   // Multi-select confirm button text (i18n support)
@@ -134,6 +137,7 @@ const MultiSelectSection = ({
 interface SingleSelectSectionProps {
   node: CustomVariableNode;
   readonly?: boolean;
+  locale?: MarkdownFlowLocale;
   resolvedDefaultButtonText?: string;
   handleButtonClick: (value: string) => void;
   inputValue: string;
@@ -144,6 +148,7 @@ interface SingleSelectSectionProps {
 const SingleSelectSection = ({
   node,
   readonly,
+  locale,
   resolvedDefaultButtonText,
   handleButtonClick,
   inputValue,
@@ -178,6 +183,7 @@ const SingleSelectSection = ({
       <span className="mt-[9px] mb-1">
         <MarkdownFlowInput
           disabled={readonly}
+          locale={locale}
           placeholder={node.properties.placeholder}
           value={inputValue}
           onChange={handleInputChange}
@@ -192,6 +198,7 @@ const SingleSelectSection = ({
 // Pure input
 interface InputSectionProps {
   readonly?: boolean;
+  locale?: MarkdownFlowLocale;
   placeholder?: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
@@ -200,6 +207,7 @@ interface InputSectionProps {
 
 const InputSection = ({
   readonly,
+  locale,
   placeholder,
   value,
   onChange,
@@ -212,6 +220,7 @@ const InputSection = ({
   return (
     <MarkdownFlowInput
       disabled={readonly}
+      locale={locale}
       placeholder={placeholder}
       value={value}
       onChange={onChange}
@@ -225,13 +234,17 @@ const InputSection = ({
 const CustomButtonInputVariable = ({
   node,
   readonly,
+  locale,
   defaultButtonText,
   defaultInputText,
   defaultSelectedValues,
   onSend,
-  confirmButtonText = "Submit", // Default to English, can be overridden
+  confirmButtonText,
   beforeSend = () => true,
 }: CustomVariableProps) => {
+  const localeTexts = getContentRenderLocaleTexts(locale);
+  const resolvedConfirmButtonText =
+    confirmButtonText || localeTexts.confirmButtonText;
   const [inputValue, setInputValue] = React.useState(defaultInputText || "");
   const [selectedValues, setSelectedValues] = React.useState<string[]>(
     defaultSelectedValues || []
@@ -243,7 +256,9 @@ const CustomButtonInputVariable = ({
     baseButtonTexts.length === 0 &&
     !node.properties?.placeholder;
   const fallbackButtonLabel =
-    node.properties?.variableName?.trim() || defaultButtonText || "Submit";
+    node.properties?.variableName?.trim() ||
+    defaultButtonText ||
+    resolvedConfirmButtonText;
 
   const singleSelectNode = React.useMemo<CustomVariableNode>(() => {
     if (!shouldUseFallbackButton) {
@@ -353,7 +368,7 @@ const CustomButtonInputVariable = ({
           readonly={readonly}
           selectedValues={selectedValues}
           inputValue={inputValue}
-          confirmButtonText={confirmButtonText}
+          confirmButtonText={resolvedConfirmButtonText}
           handleCheckboxChange={handleCheckboxChange}
           handleInputChange={handleInputChange}
           handleKeyDown={handleKeyDown}
@@ -365,6 +380,7 @@ const CustomButtonInputVariable = ({
         <SingleSelectSection
           node={singleSelectNode}
           readonly={readonly}
+          locale={locale}
           resolvedDefaultButtonText={resolvedDefaultButtonText}
           handleButtonClick={handleButtonClick}
           inputValue={inputValue}
@@ -376,6 +392,7 @@ const CustomButtonInputVariable = ({
       {!isMultiSelect && !isSingleSelect && node.properties?.placeholder && (
         <InputSection
           readonly={readonly}
+          locale={locale}
           placeholder={node.properties.placeholder}
           value={inputValue}
           onChange={handleInputChange}

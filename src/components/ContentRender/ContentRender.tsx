@@ -42,6 +42,8 @@ import {
   getInteractionDefaultValues,
   type InteractionDefaultValueOptions,
 } from "../../lib/interaction-defaults";
+import type { MarkdownFlowLocale } from "../../lib/locale";
+import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 
 const SANDBOX_TAG_HINT_PATTERN =
   /<(script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)\b/i;
@@ -50,6 +52,8 @@ const SANDBOX_TAG_HINT_PATTERN =
 export interface ContentRenderProps {
   content: string;
   contentType?: string;
+  /** Locale used for built-in UI text when a more specific text prop is not provided. */
+  locale?: MarkdownFlowLocale;
   /**
    * Callback invoked when the custom button after content is clicked.
    * This button is rendered via the `<custom-button-after-content>` tag in markdown content.
@@ -92,6 +96,8 @@ export interface ContentRenderProps {
   disableSandboxLoadingOverlay?: boolean;
   // Fullscreen button text for iframe sandbox
   sandboxFullscreenButtonText?: string;
+  // Exit fullscreen button text for iframe sandbox
+  sandboxExitFullscreenButtonText?: string;
   // Sandbox render mode
   sandboxMode?: "content" | "blackboard";
   beforeSend?: (param: OnSendContentParams) => boolean;
@@ -294,6 +300,7 @@ const splitTextByCharacterChunk = (value: string, chunkSize: number) => {
 const ContentRender: React.FC<ContentRenderProps> = ({
   content,
   contentType,
+  locale,
   customRenderBar,
   onSend,
   typingSpeed = 40,
@@ -314,11 +321,23 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   sandboxScriptLoadingText,
   disableSandboxLoadingOverlay = false,
   sandboxFullscreenButtonText,
+  sandboxExitFullscreenButtonText,
   sandboxMode = "content",
   onClickCustomButtonAfterContent,
   beforeSend,
   // tooltipMinLength,
 }) => {
+  const localeTexts = getContentRenderLocaleTexts(locale);
+  const resolvedConfirmButtonText =
+    confirmButtonText || localeTexts.confirmButtonText;
+  const resolvedCopyButtonText = copyButtonText || localeTexts.copyButtonText;
+  const resolvedCopiedButtonText =
+    copiedButtonText || localeTexts.copiedButtonText;
+  const resolvedSandboxFullscreenButtonText =
+    sandboxFullscreenButtonText || localeTexts.sandboxFullscreenButtonText;
+  const resolvedSandboxExitFullscreenButtonText =
+    sandboxExitFullscreenButtonText ||
+    localeTexts.sandboxExitFullscreenButtonText;
   const shouldApplyTypewriterByContentType =
     !contentType || contentType === "text";
   const isTypewriterEnabled =
@@ -482,7 +501,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         defaultSelectedValues={resolvedDefaultSelectedValues}
         onSend={onSend}
         beforeSend={beforeSend}
-        confirmButtonText={confirmButtonText}
+        locale={locale}
+        confirmButtonText={resolvedConfirmButtonText}
         // tooltipMinLength={tooltipMinLength}
       />
     ),
@@ -547,8 +567,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     pre: (props) => (
       <CodeBlock
         {...props}
-        copyButtonText={copyButtonText}
-        copiedButtonText={copiedButtonText}
+        copyButtonText={resolvedCopyButtonText}
+        copiedButtonText={resolvedCopiedButtonText}
       />
     ),
   };
@@ -619,11 +639,13 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               type="sandbox"
               content={segment.value}
               className="content-render-iframe"
+              locale={locale}
               loadingText={sandboxLoadingText}
               styleLoadingText={sandboxStyleLoadingText}
               scriptLoadingText={sandboxScriptLoadingText}
               disableLoadingOverlay={disableSandboxLoadingOverlay}
-              fullScreenButtonText={sandboxFullscreenButtonText}
+              fullScreenButtonText={resolvedSandboxFullscreenButtonText}
+              exitFullScreenButtonText={resolvedSandboxExitFullscreenButtonText}
               mode={sandboxMode}
             />
           ) : (

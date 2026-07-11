@@ -2,51 +2,31 @@ import { describe, expect, it } from "vitest";
 
 import { shouldKeepPlayingAfterNavigation } from "./playbackPreference";
 
-const baseState = {
-  defaultPlaying: true,
-  hasCurrentAudio: true,
-  hasPendingAutoPlay: false,
-  isPausedByUser: false,
-  isPlaybackPaused: false,
-  isPlaying: false,
-  isWaitingForMoreAudio: false,
-};
-
 describe("shouldKeepPlayingAfterNavigation", () => {
-  it("keeps playing when the current audio is actively playing", () => {
+  it("keeps playing when playback is requested and not paused by user", () => {
     expect(
       shouldKeepPlayingAfterNavigation({
-        ...baseState,
-        isPlaying: true,
+        defaultPlaying: true,
+        isPausedByUser: false,
       })
     ).toBe(true);
   });
 
-  it("keeps playing while the player is waiting for more audio", () => {
+  it("stays paused when playback is not requested", () => {
     expect(
       shouldKeepPlayingAfterNavigation({
-        ...baseState,
-        isWaitingForMoreAudio: true,
+        defaultPlaying: false,
+        isPausedByUser: false,
       })
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("stays paused after the user pauses playback", () => {
     expect(
       shouldKeepPlayingAfterNavigation({
-        ...baseState,
-        defaultPlaying: false,
+        defaultPlaying: true,
         isPausedByUser: true,
       })
     ).toBe(false);
-  });
-
-  it("keeps the requested playback state before audio is available", () => {
-    expect(
-      shouldKeepPlayingAfterNavigation({
-        ...baseState,
-        hasCurrentAudio: false,
-      })
-    ).toBe(true);
   });
 });

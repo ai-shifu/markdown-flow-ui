@@ -40,12 +40,51 @@ eslint.config.mjs     # ESLint configuration
 
 ### MUST DO Before Any Commit
 
-1. **Run lint and format checks**: `npm run lint && npm run format:check` (MANDATORY)
+1. **Format before committing (MANDATORY)**: run `npm run format` to auto-format,
+   then `npm run lint`. CI runs `prettier --check` on every PR and **fails the PR
+   if anything is unformatted** — `npm run format` is the fix. (husky + lint-staged
+   also auto-formats changed files on commit, but run `npm run format` before
+   opening a PR to catch everything.)
 2. **Test your changes**: Run `npm test` and verify Storybook examples work
 3. **Build the library**: Run `npm run build` to ensure no build errors
 4. **Use English for all code**: Comments, variables, commit messages
-5. **Follow Conventional Commits**: `type: description` (lowercase type, imperative mood)
+5. **Follow the git commit message requirements below**: use the required
+   subject, body, and classification rules.
 6. **Update Storybook stories**: Add/update stories for new or modified components
+
+### Git Commit Message Requirements
+
+All git commit message requirements live in this section. Other docs and
+agent-specific rule files may point here for title, body, and classification
+rules, but must not duplicate or redefine them.
+
+- Human-authored and coding-agent-authored commit messages must follow the
+  policy below.
+- Local hooks and Commitizen config are only baseline quality helpers. This
+  project currently has a `pre-commit` hook for lint-staged; do not assume
+  hooks enforce the `Changed:` / `Benefit:` body or the classification rules
+  below.
+- Subject: use English Conventional Commits without scope parentheses, such as
+  `type: summary`; do not use `type(scope): summary`. Use a lowercase type and
+  imperative mood.
+- Body: include exactly two sections, `Changed:` and `Benefit:`.
+- Classification: use `chore` for repository-maintenance-only instruction or
+  generated guidance updates like this file.
+- Runtime prompt, template, and system-prompt changes affect product behavior:
+  use `feat` when adding capability and `fix` when correcting behavior; do not
+  use `docs`.
+
+Example:
+
+```text
+chore: import commit message requirements
+
+Changed:
+Moved repository commit message requirements into AGENTS.md.
+
+Benefit:
+Contributors have one place to check the required commit title and body format.
+```
 
 ### Common Pitfalls to Avoid
 
@@ -486,6 +525,55 @@ dist/
 - [ ] CHANGELOG updated with changes
 - [ ] Git tags applied for release
 
+### Release Process — Publish via GitHub Action ⭐
+
+Publishing to npm is done through the manually-triggered **Publish (manual)**
+GitHub Action (`.github/workflows/publish-manual.yml`), so no local
+`npm publish` (and no interactive 2FA/OTP) is needed. The old push-on-`main`
+`publish.yml` is disabled (kept as `publish.yml.bk`).
+
+**Prerequisite — npm Trusted Publishing (OIDC)**: the workflow authenticates to
+npm with no token, via GitHub OIDC. A one-time setup is required on npm: open
+the package page → **Settings → Trusted Publisher → GitHub Actions** and register
+this repository with workflow filename `publish-manual.yml`. The workflow
+declares `id-token: write` and `contents: write` permissions and upgrades npm
+to a version that supports trusted publishing; published packages get provenance
+automatically. No `NPM_TOKEN`
+secret is needed (tokens expire and can leak — OIDC avoids both).
+
+**Two package types** (enter the clean base version, e.g. `0.1.128`):
+
+| Type      | Final version   | dist-tag | Install                               |
+| --------- | --------------- | -------- | ------------------------------------- |
+| `dev`     | `0.1.128-dev.N` | `dev`    | `npm i markdown-flow-ui@dev` (opt-in) |
+| `release` | `0.1.128`       | `latest` | `npm i markdown-flow-ui`              |
+
+The `dev` dist-tag keeps test builds off `latest`, so normal installs are
+unaffected. The Action validates the version (greater than the latest published,
+not already taken) and auto-increments the `-dev.N` counter.
+
+**Workflow (strategy A — never publish from `main`)**:
+
+1. Branch from main and push it: `git checkout -b release/0.1.128 && git push -u origin release/0.1.128`.
+2. **Actions → Publish (manual) → Run workflow** → pick your branch →
+   `version=0.1.128`, `release_type=dev` or `release`.
+3. The Action validates → bumps `package.json` → `npm run build` →
+   `npm publish` → commits `chore: release <version>` back to the branch.
+4. Open a PR from the branch to `main`.
+
+#### Critical rule: PRs to `main` must carry a RELEASE version
+
+`dev` packages are throwaway test builds for feature branches only. Before opening
+(or merging) a PR into `main`, the `version` in `package.json` **must be a clean
+release version** (`X.Y.Z`), never `X.Y.Z-dev.N`. This is **enforced by CI**: the
+**Check release version** workflow (`.github/workflows/check-release-version.yml`)
+runs on every PR into `main` and fails if the version is a pre-release/dev build.
+(Add it as a required status check in the `main` ruleset to actually block merges.)
+
+> **Why this matters**: downstream projects install `markdown-flow-ui` from its
+> published releases, so `main` must only ever carry release versions. dev builds
+> stay on the `dev` dist-tag / feature branches for testing and never land on `main`.
+
 ## Troubleshooting
 
 ### Common Issues and Solutions
@@ -534,31 +622,7 @@ npm pack --dry-run
 - **Component Props**: All prop names and descriptions
 - **Type Definitions**: Interface names, type names, and documentation
 - **Error Messages**: All error messages and logging
-- **Git Commit Messages**: Must follow Conventional Commits format
 - **Documentation**: README, API docs, and inline documentation
-
-#### Conventional Commits Format
-
-**Required Format**: `<type>: <description>`
-
-**Common Types**:
-
-- `feat:` - New feature or component
-- `fix:` - Bug fix
-- `docs:` - Documentation changes
-- `refactor:` - Code refactoring
-- `test:` - Adding or updating tests
-- `chore:` - Maintenance tasks
-- `build:` - Build system changes
-- `ci:` - CI configuration changes
-- `perf:` - Performance improvements
-- `style:` - Code formatting (no functional changes)
-
-**Examples**:
-
-- `feat: add typewriter effect to ContentRender component`
-- `fix: resolve markdown parsing issue with nested lists`
-- `docs: update component API documentation`
 
 ### Pre-commit Quality Checks
 

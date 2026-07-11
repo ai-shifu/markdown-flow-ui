@@ -19,7 +19,7 @@ import {
 import { parseRunStreamFixture } from "./utils/runStreamFixture";
 
 import Slide from "./Slide";
-import type { Element } from "./Slide";
+import type { Element, ElementSubtitleCue } from "./Slide";
 
 const meta = {
   title: "MarkdownFlow/Slide",
@@ -35,6 +35,11 @@ const meta = {
   },
   tags: ["autodocs"],
   argTypes: {
+    locale: {
+      control: "select",
+      options: ["en-US", "fr-FR", "zh-CN"],
+      description: "Locale for built-in player and interaction UI text",
+    },
     elementList: {
       description: "Slide element data list",
       table: {
@@ -66,18 +71,26 @@ const meta = {
       description:
         "Fullscreen-only mobile header with a built-in back button and optional custom content slot",
     },
+    playerEnabled: {
+      control: "boolean",
+      description:
+        "Enable the player runtime, including audio playback and keyboard shortcuts",
+    },
+    playerControlsVisibility: {
+      control: "select",
+      options: ["auto", "visible", "hidden"],
+      description:
+        "Control whether player controls auto-hide, stay visible, or stay hidden while runtime behavior remains active",
+    },
     playerAutoHideDelay: {
       control: { type: "number", min: 0, step: 500 },
-      description: "Auto-hide delay for player controls in milliseconds",
+      description:
+        "Auto-hide delay for player controls in milliseconds after the pointer leaves the control bar",
     },
     markerAutoAdvanceDelay: {
       control: { type: "number", min: 0, step: 500 },
       description:
         "Auto-advance delay for silent marker-only steps in milliseconds",
-    },
-    playerAlwaysVisible: {
-      control: "boolean",
-      description: "Keep the player controls visible without auto hiding",
     },
     playerCustomActions: {
       control: false,
@@ -98,23 +111,9 @@ const meta = {
   },
   args: {
     elementList: [],
-    interactionTexts: {
-      title: "Submit the content below to continue.",
-      confirmButtonText: "Submit",
-      copyButtonText: "Copy",
-      copiedButtonText: "Copied",
-    },
-    playerTexts: {
-      settingsTitle: "Settings",
-      screenLabel: "Screen",
-      nonFullscreenLabel: "Non-fullscreen",
-      fullscreenLabel: "Fullscreen",
-      fullscreenHintText: "Rotate your screen for the best experience.",
-    },
     fullscreenHeader: undefined,
     playerAutoHideDelay: 3000,
     markerAutoAdvanceDelay: 2000,
-    playerAlwaysVisible: false,
   },
 } satisfies Meta<typeof Slide>;
 
@@ -620,9 +619,9 @@ const resolveSubmittedUserInput = (content: OnSendContentParams) =>
 const isSameStoryElement = (currentElement: Element, targetElement?: Element) =>
   Boolean(
     targetElement &&
-    currentElement.type === targetElement.type &&
-    currentElement.sequence_number === targetElement.sequence_number &&
-    currentElement.content === targetElement.content
+      currentElement.type === targetElement.type &&
+      currentElement.sequence_number === targetElement.sequence_number &&
+      currentElement.content === targetElement.content
   );
 
 const applyInteractionSubmission = (
@@ -2162,15 +2161,181 @@ const CustomPlayerActionSlidePreview = ({
   );
 };
 
+const createCustomPlayerSubtitleCues = (
+  texts: string[],
+  cueDurationMs = 3200
+): ElementSubtitleCue[] =>
+  texts.map((text, index) => ({
+    text,
+    start_ms: index * cueDurationMs,
+    end_ms: (index + 1) * cueDurationMs,
+    segment_index: 0,
+    position: index,
+  }));
+
+const CUSTOM_PLAYER_OVERVIEW_SUBTITLE_CUES = createCustomPlayerSubtitleCues(
+  [
+    "好了 kk，这就是我们本节要攻克的“山头地图”！",
+    "考勤流程听起来枯燥，但三大流程和三大原则会帮你快速上手。",
+    "我们的目标很明确：请假、公出、加班，都要在系统里走清楚。",
+    "记住口诀：上级同意、当月务必发起流程、材料齐全。",
+    "这不是随便说说，而是避免申请被打回来的关键。",
+    "接下来我们会一个个流程拆开看。",
+    "保证你学完就能立刻用上。",
+  ],
+  4500
+);
+
+const CUSTOM_PLAYER_DINGTALK_PATH_SUBTITLE_CUES =
+  createCustomPlayerSubtitleCues(
+    ["先看钉钉路径。", "再练习钉钉公出流程。", "最后练习钉钉加班流程。"],
+    2200
+  );
+
+const CUSTOM_PLAYER_DINGTALK_PRIORITY_SUBTITLE_CUES =
+  createCustomPlayerSubtitleCues(
+    ["本节优先看钉钉工作台路径。", "接着看外勤打卡。", "然后看请假提交流程。"],
+    2200
+  );
+
+const CUSTOM_PLAYER_SYSTEM_MAP_SUBTITLE_CUES = createCustomPlayerSubtitleCues(
+  [
+    "看明白这张“寻宝图”了吗，kk？",
+    "这次主攻钉钉，但三个系统的入口都要有个全局地图。",
+    "钉钉的核心路径是：打开钉钉 App，进入工作台，找到考勤打卡。",
+    "排班和打卡记录藏在统计里的我的考勤。",
+    "请假、加班这些流程，统一入口在审批里。",
+    "千万盯住红底警告：月底流程必须完结。",
+    "发生考勤变动的当月，就要立刻把流程走掉。",
+    "上级同意和材料齐全这两条铁律永远不变。",
+  ],
+  4200
+);
+
+const CUSTOM_PLAYER_ENTRY_SUMMARY_SUBTITLE_CUES =
+  createCustomPlayerSubtitleCues(
+    [
+      "路径为钉钉 App 到工作台，再到考勤打卡。",
+      "功能包括查看规则、查看排班表。",
+      "也可以申请请假。",
+    ],
+    2400
+  );
+
+const CUSTOM_PLAYER_FIRST_QUIZ_SUBTITLE_CUES = createCustomPlayerSubtitleCues(
+  ["题目 1：哪项是原文明确要求？"],
+  3000
+);
+
+const CUSTOM_PLAYER_FIRST_ANSWER_SUBTITLE_CUES = createCustomPlayerSubtitleCues(
+  ["原文口径为“月底流程必须完结”。"],
+  3000
+);
+
+const CUSTOM_PLAYER_BUSINESS_TRIP_SUBTITLE_CUES =
+  createCustomPlayerSubtitleCues(
+    [
+      "适用工作原因外出不能打卡。",
+      "每日进行钉钉外勤打卡。",
+      "同时要走钉钉公出流程。",
+      "审核通过按公出发薪，否则按事假处理。",
+    ],
+    2600
+  );
+
+const CUSTOM_PLAYER_BUSINESS_TRIP_REQUIREMENTS_SUBTITLE_CUES =
+  createCustomPlayerSubtitleCues(
+    [
+      "第一，时间、地点、工作事项要完整说明。",
+      "第二，上传公出场地照片。",
+      "第三，异地公出提供往返车票、打车记录或自驾记录。",
+    ],
+    3200
+  );
+
+const CUSTOM_PLAYER_OVERTIME_SUBTITLE_CUES = createCustomPlayerSubtitleCues(
+  [
+    "加班适用于系统排班休息日，因工作安排需要上班。",
+    "至少要达到 0.5 天。",
+    "0.5 天判定，需要 4.5 小时打卡工时和至少 4 小时室内工时。",
+    "1 天判定，需要 9 小时打卡工时和至少 8 小时室内工时。",
+    "加班要走钉钉加班流程。",
+    "审核通过后释放调休额度，经领导批准才可申请加班流程。",
+  ],
+  4200
+);
+
+const CUSTOM_PLAYER_SECOND_QUIZ_SUBTITLE_CUES = createCustomPlayerSubtitleCues(
+  ["题目 2：公出缺少外勤与照片，结果应按什么处理？"],
+  3600
+);
+
 export const Default: Story = {
   args: {
     elementList: exampleElementList,
   },
 };
 
+export const PlayerDisabled: Story = {
+  args: {
+    elementList: exampleElementList,
+    playerEnabled: false,
+  },
+};
+
+export const ControlsHiddenWithKeyboardShortcuts: Story = {
+  args: {
+    elementList: exampleElementList,
+    enableKeyboardShortcuts: true,
+    playerControlsVisibility: "hidden",
+  },
+};
+
+export const ControlsAlwaysVisible: Story = {
+  args: {
+    elementList: exampleElementList,
+    playerControlsVisibility: "visible",
+  },
+};
+
+export const ControlsAutoHide: Story = {
+  args: {
+    elementList: exampleElementList,
+    playerAutoHideDelay: 3000,
+    playerControlsVisibility: "auto",
+  },
+};
+
+export const FrenchLocale: Story = {
+  args: {
+    locale: "fr-FR",
+    playerControlsVisibility: "visible",
+    interactionTexts: undefined,
+    playerTexts: undefined,
+    elementList: [
+      {
+        sequence_number: 1,
+        type: "html",
+        content:
+          '<div class="flex h-full min-h-[320px] items-center justify-center bg-slate-50 p-8 text-center"><div><h1 class="text-3xl font-semibold text-slate-900">Bienvenue</h1><p class="mt-3 text-slate-600">Les libellés intégrés utilisent la locale française.</p></div></div>',
+        is_renderable: true,
+        is_speakable: false,
+      },
+      {
+        sequence_number: 2,
+        type: "interaction",
+        content:
+          "Sélectionnez les formats à utiliser : ?[%{{ formats }}Article||Vidéo||Exercice||...Autre format]",
+        is_renderable: false,
+        is_speakable: false,
+      },
+    ],
+  },
+};
+
 export const CustomPlayerActionButton: Story = {
   args: {
-    playerAlwaysVisible: true,
+    playerControlsVisibility: "visible",
     elementList: [
       {
         sequence_number: 90,
@@ -2223,6 +2388,7 @@ export const CustomPlayerActionButton: Story = {
         is_speakable: true,
         audio_url:
           "https://res.ai-shifu.cn/tts-audio/fe7725223a9941f1890e5c2a4f80a39f.mp3",
+        subtitle_cues: CUSTOM_PLAYER_OVERVIEW_SUBTITLE_CUES,
         is_audio_streaming: false,
         isAudioStreaming: false,
         ask_list: [
@@ -2263,6 +2429,7 @@ export const CustomPlayerActionButton: Story = {
         is_speakable: true,
         audio_url:
           "https://res.ai-shifu.cn/tts-audio/6106d540914f4362bb9be0b2663012f9.mp3",
+        subtitle_cues: CUSTOM_PLAYER_DINGTALK_PATH_SUBTITLE_CUES,
         is_audio_streaming: false,
         isAudioStreaming: false,
         ask_list: [
@@ -2303,6 +2470,7 @@ export const CustomPlayerActionButton: Story = {
         is_speakable: true,
         audio_url:
           "https://res.ai-shifu.cn/tts-audio/6a4a673bdec547a1bf5f9a4218afb898.mp3",
+        subtitle_cues: CUSTOM_PLAYER_DINGTALK_PRIORITY_SUBTITLE_CUES,
         is_audio_streaming: false,
         isAudioStreaming: false,
         ask_list: [
@@ -2359,6 +2527,7 @@ export const CustomPlayerActionButton: Story = {
         is_speakable: true,
         audio_url:
           "https://res.ai-shifu.cn/tts-audio/651358c977a046f68536017a92452d0a.mp3",
+        subtitle_cues: CUSTOM_PLAYER_SYSTEM_MAP_SUBTITLE_CUES,
         is_audio_streaming: false,
         isAudioStreaming: false,
         blockBid: "96fb5ed4397149ea9c15ac037d5a159c",
@@ -2375,6 +2544,7 @@ export const CustomPlayerActionButton: Story = {
         is_speakable: true,
         audio_url:
           "https://res.ai-shifu.cn/tts-audio/9386e65e3a17469bada1e097391d90cb.mp3",
+        subtitle_cues: CUSTOM_PLAYER_ENTRY_SUMMARY_SUBTITLE_CUES,
         is_audio_streaming: false,
         isAudioStreaming: false,
         blockBid: "8aa8b612381c4f3ead736e596398f744",
@@ -2390,6 +2560,7 @@ export const CustomPlayerActionButton: Story = {
         is_speakable: true,
         audio_url:
           "https://res.ai-shifu.cn/tts-audio/d3e1edd1401e4b99b5e33bc563eb28dc.mp3",
+        subtitle_cues: CUSTOM_PLAYER_FIRST_QUIZ_SUBTITLE_CUES,
         is_audio_streaming: false,
         isAudioStreaming: false,
         blockBid: "6b45a7def3b74826a5f5bc852618487e",
@@ -2418,6 +2589,7 @@ export const CustomPlayerActionButton: Story = {
         is_speakable: true,
         audio_url:
           "https://res.ai-shifu.cn/tts-audio/7dcdcfdabf9f460ba2105dba82eed686.mp3",
+        subtitle_cues: CUSTOM_PLAYER_FIRST_ANSWER_SUBTITLE_CUES,
         is_audio_streaming: false,
         isAudioStreaming: false,
         blockBid: "1390c577c9ae492eaa17e795a3b1fd29",
@@ -2449,6 +2621,7 @@ export const CustomPlayerActionButton: Story = {
         is_speakable: true,
         audio_url:
           "https://res.ai-shifu.cn/tts-audio/59eb252eec4141bfae13800f3398f341.mp3",
+        subtitle_cues: CUSTOM_PLAYER_BUSINESS_TRIP_SUBTITLE_CUES,
         is_audio_streaming: false,
         isAudioStreaming: false,
         blockBid: "48a463157d14409faedd8f4aa1123bcc",
@@ -2479,6 +2652,7 @@ export const CustomPlayerActionButton: Story = {
         is_speakable: true,
         audio_url:
           "https://res.ai-shifu.cn/tts-audio/0aa2033f910641d2a91b99a2edb7e5c8.mp3",
+        subtitle_cues: CUSTOM_PLAYER_BUSINESS_TRIP_REQUIREMENTS_SUBTITLE_CUES,
         is_audio_streaming: false,
         isAudioStreaming: false,
         blockBid: "30d1fc2f89e04f8784d5244804b7ec7e",
@@ -2509,6 +2683,7 @@ export const CustomPlayerActionButton: Story = {
         is_speakable: true,
         audio_url:
           "https://res.ai-shifu.cn/tts-audio/84f50e22663c4b13ad2352018d4392a7.mp3",
+        subtitle_cues: CUSTOM_PLAYER_OVERTIME_SUBTITLE_CUES,
         is_audio_streaming: false,
         isAudioStreaming: false,
         blockBid: "87318d8c715240068ec10014208e6aaa",
@@ -2524,6 +2699,7 @@ export const CustomPlayerActionButton: Story = {
         is_speakable: true,
         audio_url:
           "https://res.ai-shifu.cn/tts-audio/ef46b278eeca4cef83c64823ff422341.mp3",
+        subtitle_cues: CUSTOM_PLAYER_SECOND_QUIZ_SUBTITLE_CUES,
         is_audio_streaming: false,
         isAudioStreaming: false,
         blockBid: "77ba4d661c564ddf95a62665ab4f5f73",
@@ -2578,7 +2754,6 @@ export const FullViewportSlides: Story = {
 
 export const FullViewportSingleSlide: Story = {
   args: {
-    playerAlwaysVisible: false,
     elementList: [
       {
         sequence_number: 31,
@@ -3091,7 +3266,6 @@ export const FullViewportSingleSlideWithEmptyPpt: Story = {
 export const StuckSpeakableFixtureSSE: Story = {
   args: {
     bufferingText: "Audio buffering...",
-    playerAlwaysVisible: false,
   },
   parameters: {
     docs: {
@@ -3114,10 +3288,10 @@ export const StuckSpeakableFixtureSSE: Story = {
 
 export const HistorySlides: Story = {
   args: {
-    // playerAlwaysVisible: true,
     fullscreenHeader: {
       content: (
         <div className="flex min-w-0 items-center gap-2 overflow-hidden text-[16px] font-bold leading-6 text-black">
+          {/* eslint-disable-next-line @next/next/no-img-element -- Storybook uses a static avatar fixture outside Next image optimization. */}
           <img
             alt="Nike老师"
             className="h-8 w-8 shrink-0 rounded-full object-cover"
@@ -3130,9 +3304,24 @@ export const HistorySlides: Story = {
       backAriaLabel: "返回",
     },
     playerTexts: {
+      closeSettingsLabel: "关闭设置",
+      enterFullscreenLabel: "进入全屏",
+      exitFullscreenLabel: "退出全屏",
+      moreOptionsAriaLabel: "更多设置",
+      nextLabel: "下一页",
+      nextSubtitleLabel: "下一句",
+      notesLabel: "笔记",
+      pauseAutoplayLabel: "暂停自动播放",
+      pauseLabel: "暂停",
+      playAutoplayLabel: "开启自动播放",
+      playLabel: "播放",
+      previousLabel: "上一页",
+      previousSubtitleLabel: "上一句",
+      screenModeLabel: "屏幕模式",
       settingsTitle: "设置",
       subtitleLabel: "字幕",
       subtitleToggleAriaLabel: "切换字幕",
+      volumeAriaLabel: "音量",
       screenLabel: "屏幕",
       nonFullscreenLabel: "非全屏",
       fullscreenLabel: "全屏",
@@ -3398,7 +3587,6 @@ export const HistorySlides: Story = {
 
 export const StreamingSingleIframeSlide: Story = {
   args: {
-    playerAlwaysVisible: false,
     elementList: [
       createExampleElement({
         sequenceNumber: 1,
@@ -3426,7 +3614,6 @@ export const StreamingSingleIframeSlide: Story = {
 export const StreamingSpeakableLoadingOnlySlide: Story = {
   args: {
     bufferingText: "Audio buffering...",
-    playerAlwaysVisible: false,
     elementList: [
       createExampleElement({
         sequenceNumber: 1,
@@ -3549,7 +3736,6 @@ export const FullViewportSingleSlideWithSSE: Story = {
 
 export const HistoryInteractionTriggeredSSE: Story = {
   args: {
-    playerAlwaysVisible: false,
     interactionDefaultValueOptions: {
       resolveDefaultValues: () => ({
         selectedValues: ["都不同意"],
@@ -3583,7 +3769,6 @@ export const HistoryInteractionTriggeredSSE: Story = {
 
 export const InteractionTriggeredFixtureSwitchSSE: Story = {
   args: {
-    playerAlwaysVisible: false,
     interactionDefaultValueOptions: {
       resolveDefaultValues: () => ({
         selectedValues: ["非常了解"],
@@ -3904,7 +4089,7 @@ export const TextAudioSubtitleSyncDebug: Story = {
     docs: {
       description: {
         story:
-          "Debugs a type=text element by playing audio_url or audio_segments while showing millisecond progress and the active subtitle_cues window.",
+          "Debugs a type=text element by playing audio_url or audio_segments while showing millisecond progress, the active subtitle_cues window, and Shift+Arrow subtitle jumping.",
       },
     },
   },
@@ -3922,7 +4107,6 @@ const delayedAudioSourceElement =
 export const StreamingSpeakableDelayedAudioSlide: Story = {
   args: {
     bufferingText: "Audio buffering...",
-    playerAlwaysVisible: false,
     elementList: [
       createExampleElement({
         sequenceNumber: 1,

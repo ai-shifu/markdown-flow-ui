@@ -6,9 +6,11 @@ import { Dialog, DialogOverlay, DialogPortal, DialogTitle } from "../ui/dialog";
 import type { MobileViewMode } from "./utils/mobileScreenMode";
 
 export type MobilePlayerSettingsSheetLabels = {
+  closeSettings: string;
   title: string;
   subtitle: string;
   subtitleToggle: string;
+  screenMode: string;
   screen: string;
   nonFullscreen: string;
   fullscreen: string;
@@ -46,6 +48,7 @@ const MobilePlayerSettingsSheet = ({
         <DialogOverlay className="z-[60] bg-black/35" />
         <DialogPrimitive.Content
           aria-describedby={undefined}
+          data-player-keyboard-shortcuts-ignore="true"
           className={cn(
             "fixed inset-x-0 bottom-0 z-[61] flex max-h-[min(360px,calc(100dvh-32px))] flex-col overflow-hidden rounded-t-[24px] border-t border-border bg-background shadow-[0_-12px_32px_rgba(28,44,64,0.16)] outline-none",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
@@ -57,7 +60,7 @@ const MobilePlayerSettingsSheet = ({
               {labels.title}
             </DialogTitle>
             <button
-              aria-label="Close settings"
+              aria-label={labels.closeSettings}
               className="inline-flex h-8 w-8 items-center justify-center rounded-full border-none bg-transparent p-0 text-foreground/70 transition-colors hover:text-foreground"
               onClick={onClose}
               type="button"
@@ -106,7 +109,7 @@ const MobilePlayerSettingsSheet = ({
               {labels.screen}
             </span>
             <div
-              aria-label="Screen mode"
+              aria-label={labels.screenMode}
               className="flex items-center gap-8"
               role="radiogroup"
             >

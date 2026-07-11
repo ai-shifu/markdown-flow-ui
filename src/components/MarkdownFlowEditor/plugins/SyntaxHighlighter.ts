@@ -10,29 +10,175 @@ import { createVariableExpressionRegexp } from "../utils";
 
 const broadVariableRegex = /\{\{.*?\}\}/g;
 const commentRegex = /<!--[\s\S]*?-->/g;
-const fixedOutputRegex = /===.*?===/g;
 const controlBlockRegex = /\?\[(.*?)\]/g;
 
-function buildDecorations(view: EditorView): DecorationSet {
-  const builder = new RangeSetBuilder<Decoration>();
-  const docText = view.state.doc.toString();
+export interface SyntaxHighlightRange {
+  from: number;
+  to: number;
+  className: string;
+}
 
-  const matches: { from: number; to: number; className: string }[] = [];
-  const occupied: { from: number; to: number }[] = [];
+function collectMultilineFixedOutputRanges(
+  docText: string
+): SyntaxHighlightRange[] {
+  const ranges: SyntaxHighlightRange[] = [];
+  let pendingStart: number | null = null;
+  let lineStart = 0;
+
+  while (lineStart <= docText.length) {
+    const newlineIndex = docText.indexOf("\n", lineStart);
+    const lineEnd = newlineIndex === -1 ? docText.length : newlineIndex;
+    const lineText = docText.slice(lineStart, lineEnd);
+
+    if (lineText.trim() === "!===") {
+      if (pendingStart === null) {
+        pendingStart = lineStart;
+      } else {
+        ranges.push({
+          from: pendingStart,
+          to: lineEnd,
+          className: "syntax-fixed",
+        });
+        pendingStart = null;
+      }
+    }
+
+    if (newlineIndex === -1) {
+      break;
+    }
+
+    lineStart = newlineIndex + 1;
+  }
+
+  return ranges;
+}
+
+function collectSingleLineFixedOutputRanges(
+  docText: string,
+  commentRanges: SyntaxHighlightRange[]
+): SyntaxHighlightRange[] {
+  const ranges: SyntaxHighlightRange[] = [];
+  let commentIndex = 0;
+
+  const isInsideComment = (index: number) => {
+    while (
+      commentIndex < commentRanges.length &&
+      commentRanges[commentIndex].to <= index
+    ) {
+      commentIndex++;
+    }
+
+    const range = commentRanges[commentIndex];
+    return !!range && index >= range.from && index < range.to;
+  };
+
+  let lineStart = 0;
+  while (lineStart <= docText.length) {
+    const newlineIndex = docText.indexOf("\n", lineStart);
+    const lineEnd = newlineIndex === -1 ? docText.length : newlineIndex;
+    const lineText = docText.slice(lineStart, lineEnd);
+    const markerPositions: number[] = [];
+    let searchFrom = 0;
+
+    while (searchFrom < lineText.length) {
+      const markerOffset = lineText.indexOf("===", searchFrom);
+      if (markerOffset === -1) {
+        break;
+      }
+
+      const markerIndex = lineStart + markerOffset;
+      const isNegated = markerIndex > 0 && docText[markerIndex - 1] === "!";
+      if (!isNegated && !isInsideComment(markerIndex)) {
+        markerPositions.push(markerIndex);
+      }
+
+      searchFrom = markerOffset + 3;
+    }
+
+    for (let i = 0; i + 1 < markerPositions.length; i += 2) {
+      ranges.push({
+        from: markerPositions[i],
+        to: markerPositions[i + 1] + 3,
+        className: "syntax-fixed",
+      });
+    }
+
+    if (newlineIndex === -1) {
+      break;
+    }
+
+    lineStart = newlineIndex + 1;
+  }
+
+  return ranges;
+}
+
+function collectCommentRanges(docText: string): SyntaxHighlightRange[] {
+  const ranges: SyntaxHighlightRange[] = [];
+  let match;
 
   commentRegex.lastIndex = 0;
-  fixedOutputRegex.lastIndex = 0;
+  while ((match = commentRegex.exec(docText)) !== null) {
+    ranges.push({
+      from: match.index,
+      to: match.index + match[0].length,
+      className: "syntax-comment",
+    });
+  }
+
+  return ranges;
+}
+
+/**
+ * Collects non-overlapping fixed-output and comment wrapper ranges.
+ *
+ * @param docText - Document text to scan.
+ * @returns Outer syntax highlight ranges sorted by document position.
+ */
+export function collectOuterBlockRanges(
+  docText: string
+): SyntaxHighlightRange[] {
+  const commentRanges = collectCommentRanges(docText);
+  const blockRanges = [
+    ...collectMultilineFixedOutputRanges(docText),
+    ...collectSingleLineFixedOutputRanges(docText, commentRanges),
+    ...commentRanges,
+  ].sort((a, b) => {
+    if (a.from !== b.from) return a.from - b.from;
+    return b.to - a.to;
+  });
+
+  const outerRanges: SyntaxHighlightRange[] = [];
+
+  for (const range of blockRanges) {
+    const lastOuter = outerRanges[outerRanges.length - 1];
+    if (!lastOuter || range.from >= lastOuter.to) {
+      outerRanges.push(range);
+    }
+  }
+
+  return outerRanges;
+}
+
+/**
+ * Collects all custom syntax highlight ranges for editor decorations.
+ *
+ * @param docText - Document text to scan.
+ * @param isCursorInside - Returns true when the current cursor is inside a range.
+ * @returns Non-overlapping syntax highlight ranges sorted by document position.
+ */
+export function collectSyntaxHighlightRanges(
+  docText: string,
+  isCursorInside: (from: number, to: number) => boolean = () => false
+): SyntaxHighlightRange[] {
+  const matches: SyntaxHighlightRange[] = [];
+  const occupied: { from: number; to: number }[] = [];
+
   controlBlockRegex.lastIndex = 0;
 
   // Prevent overlapping decorations so styling stays deterministic
   const isOverlapping = (from: number, to: number) =>
     occupied.some((range) => !(to <= range.from || from >= range.to));
-
-  const isCursorInside = (from: number, to: number) => {
-    return view.state.selection.ranges.some((range) => {
-      return range.from >= from && range.to <= to;
-    });
-  };
 
   const addMatch = (from: number, to: number, className: string) => {
     if (from >= to) return false;
@@ -55,42 +201,14 @@ function buildDecorations(view: EditorView): DecorationSet {
     };
   };
 
-  // 1. Comments
   let match;
-  while ((match = commentRegex.exec(docText)) !== null) {
-    addMatch(match.index, match.index + match[0].length, "syntax-comment");
+
+  // 1. Outer block ranges win over any syntax inside them.
+  for (const range of collectOuterBlockRanges(docText)) {
+    addMatch(range.from, range.to, range.className);
   }
 
-  // 2. Fixed Output (Multiline) - only when both markers are alone on their lines
-  const lineCount = view.state.doc.lines;
-  let pendingStart: { from: number; line: number } | null = null;
-  for (let i = 1; i <= lineCount; i++) {
-    const lineInfo = view.state.doc.line(i);
-    const trimmed = lineInfo.text.trim();
-    if (trimmed === "!===") {
-      if (!pendingStart) {
-        pendingStart = { from: lineInfo.from, line: i };
-        continue;
-      }
-      const startFrom = pendingStart.from;
-      const endTo = lineInfo.to;
-      addMatch(startFrom, endTo, "syntax-fixed");
-      pendingStart = null;
-    }
-  }
-
-  // 3. Fixed Output (Single line, skip "!===...!===")
-  while ((match = fixedOutputRegex.exec(docText)) !== null) {
-    const startIndex = match.index;
-    const isNegated = startIndex > 0 && docText[startIndex - 1] === "!";
-    if (isNegated) {
-      continue;
-    }
-    addMatch(startIndex, startIndex + match[0].length, "syntax-fixed");
-  }
-
-  // 4. Control Blocks
-  broadVariableRegex.lastIndex = 0;
+  // 2. Control Blocks
   while ((match = controlBlockRegex.exec(docText)) !== null) {
     const fullStart = match.index;
     const fullEnd = match.index + match[0].length;
@@ -246,7 +364,7 @@ function buildDecorations(view: EditorView): DecorationSet {
     }
   }
 
-  // 5. Variables (only if not already decorated; invalid ones stay default outside control blocks)
+  // 3. Variables (only if not already decorated; invalid ones stay default outside control blocks)
   broadVariableRegex.lastIndex = 0;
   while ((match = broadVariableRegex.exec(docText)) !== null) {
     const text = match[0];
@@ -267,6 +385,18 @@ function buildDecorations(view: EditorView): DecorationSet {
   matches.sort((a, b) => {
     if (a.from !== b.from) return a.from - b.from;
     return b.to - a.to;
+  });
+
+  return matches;
+}
+
+function buildDecorations(view: EditorView): DecorationSet {
+  const builder = new RangeSetBuilder<Decoration>();
+  const docText = view.state.doc.toString();
+  const matches = collectSyntaxHighlightRanges(docText, (from, to) => {
+    return view.state.selection.ranges.some((range) => {
+      return range.from >= from && range.to <= to;
+    });
   });
 
   for (const m of matches) {

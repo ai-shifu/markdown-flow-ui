@@ -10,6 +10,16 @@ export interface PlaybackSequenceTransitionResult {
   shouldInitializeAudioSequence: boolean;
 }
 
+export interface DefaultAudioSequenceStartOptions {
+  currentAudioKey: string | null;
+  currentAudioSequenceLength: number;
+  currentStepHasSpeakableElement: boolean;
+  hasCompletedCurrentStepAudio: boolean;
+  shouldBlockPlaybackForInteraction: boolean;
+  shouldPausePlaybackForCustomAction: boolean;
+  shouldSkipDefaultAudioStart: boolean;
+}
+
 export const getPlaybackSequenceTransition = ({
   previousResetKey,
   nextResetKey,
@@ -25,4 +35,32 @@ export const getPlaybackSequenceTransition = ({
     hasPlaybackContextChanged,
     shouldInitializeAudioSequence,
   };
+};
+
+export const shouldStartDefaultAudioSequence = ({
+  currentAudioKey,
+  currentAudioSequenceLength,
+  currentStepHasSpeakableElement,
+  hasCompletedCurrentStepAudio,
+  shouldBlockPlaybackForInteraction,
+  shouldPausePlaybackForCustomAction,
+  shouldSkipDefaultAudioStart,
+}: DefaultAudioSequenceStartOptions) => {
+  if (
+    currentAudioKey ||
+    currentAudioSequenceLength === 0 ||
+    shouldSkipDefaultAudioStart
+  ) {
+    return false;
+  }
+
+  if (
+    shouldPausePlaybackForCustomAction ||
+    !currentStepHasSpeakableElement ||
+    shouldBlockPlaybackForInteraction
+  ) {
+    return false;
+  }
+
+  return !hasCompletedCurrentStepAudio;
 };

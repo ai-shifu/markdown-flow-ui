@@ -1,5 +1,6 @@
 import React from "react";
 import type { InteractionDefaultValueOptions } from "../../lib/interaction-defaults";
+import type { MarkdownFlowLocale } from "../../lib/locale";
 import ContentRender from "../ContentRender";
 import { CustomRenderBarProps, OnSendContentParams } from "../types";
 import "./markdownFlow.css";
@@ -17,6 +18,8 @@ export interface MarkdownFlowProps {
     onClickCustomButtonAfterContent?: () => void;
     dynamicInteractionFormat?: string;
   }[];
+  /** Locale used for built-in UI text when a more specific text prop is not provided. */
+  locale?: MarkdownFlowLocale;
   customRenderBar?: CustomRenderBarProps;
   onSend?: (content: OnSendContentParams) => void;
   // Multi-select confirm button text (i18n support)
@@ -31,6 +34,7 @@ export interface MarkdownFlowProps {
 
 const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   initialContentList = [],
+  locale,
   customRenderBar,
   onSend: onSendProp,
   confirmButtonText,
@@ -57,6 +61,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             customRenderBar={contentInfo.customRenderBar || customRenderBar}
             onSend={onSend}
             beforeSend={beforeSend}
+            locale={locale}
             interactionDefaultValueOptions={interactionDefaultValueOptions}
             onClickCustomButtonAfterContent={
               contentInfo.onClickCustomButtonAfterContent

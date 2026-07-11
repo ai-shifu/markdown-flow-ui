@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { shouldPresentInteractionOverlay } from "./interactionPlayback";
+import {
+  shouldPresentInteractionOverlay,
+  shouldRenderInteractionOverlay,
+} from "./interactionPlayback";
 
 describe("shouldPresentInteractionOverlay", () => {
   it("keeps unresolved interactions blocking playback", () => {
@@ -53,5 +56,55 @@ describe("shouldPresentInteractionOverlay", () => {
         currentStepHasSpeakableElement: true,
       })
     ).toBe(false);
+  });
+});
+
+describe("shouldRenderInteractionOverlay", () => {
+  it("hides unresolved blocking interactions when player controls auto-hide", () => {
+    expect(
+      shouldRenderInteractionOverlay({
+        hasActiveInteraction: true,
+        isInteractionOverlayOpen: true,
+        shouldBlockPlaybackForInteraction: true,
+        playerControlsVisible: false,
+        shouldMountPlayer: true,
+      })
+    ).toBe(false);
+  });
+
+  it("shows unresolved blocking interactions while player controls are visible", () => {
+    expect(
+      shouldRenderInteractionOverlay({
+        hasActiveInteraction: true,
+        isInteractionOverlayOpen: true,
+        shouldBlockPlaybackForInteraction: true,
+        playerControlsVisible: true,
+        shouldMountPlayer: true,
+      })
+    ).toBe(true);
+  });
+
+  it("keeps resolved or readonly interactions visible even when player controls hide", () => {
+    expect(
+      shouldRenderInteractionOverlay({
+        hasActiveInteraction: true,
+        isInteractionOverlayOpen: true,
+        shouldBlockPlaybackForInteraction: false,
+        playerControlsVisible: false,
+        shouldMountPlayer: true,
+      })
+    ).toBe(true);
+  });
+
+  it("does not hide the overlay when the player is not mounted", () => {
+    expect(
+      shouldRenderInteractionOverlay({
+        hasActiveInteraction: true,
+        isInteractionOverlayOpen: true,
+        shouldBlockPlaybackForInteraction: true,
+        playerControlsVisible: false,
+        shouldMountPlayer: false,
+      })
+    ).toBe(true);
   });
 });

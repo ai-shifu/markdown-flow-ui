@@ -48,7 +48,11 @@ import {
   resolveMobileViewModeState,
   type MobileViewMode,
 } from "./utils/mobileScreenMode";
-import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
+<<<<<<< HEAD
+import {
+  shouldPresentInteractionOverlay,
+  shouldRenderInteractionOverlay,
+} from "./utils/interactionPlayback";
 import { resolveMarkdownScalingMode } from "./utils/markdownScaling";
 import { shouldWakePlayerControlsAfterNavigation } from "./utils/playerNavigationContext";
 import { shouldAutoAdvanceIntoAppendedMarker } from "./utils/appendedMarkerAdvance";
@@ -1330,8 +1334,13 @@ const Slide: React.FC<SlideProps> = ({
     Boolean(activeInteractionElement?.readonly) || hasResolvedInteractionInput;
   const shouldAutoContinueInteraction =
     isInteractionReadonly || hasResolvedInteractionInput;
-  const shouldShowInteractionOverlay =
-    Boolean(activeInteractionElement) && isInteractionOverlayOpen;
+  const shouldShowInteractionOverlay = shouldRenderInteractionOverlay({
+    hasActiveInteraction: Boolean(activeInteractionElement),
+    isInteractionOverlayOpen,
+    shouldBlockPlaybackForInteraction,
+    playerControlsVisible,
+    shouldMountPlayer,
+  });
 
   const handleInteractionSend = useCallback(
     (content: OnSendContentParams) => {

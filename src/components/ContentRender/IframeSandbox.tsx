@@ -27,17 +27,14 @@ import type { MarkdownFlowLocale } from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 import { CJK_SAFE_SANS_FONT_FAMILY } from "./cjkFontFamily";
 
-type InjectBlackboardLibraries =
-  typeof import("./blackboard-vendor").injectBlackboardLibraries;
+type BlackboardVendorModule = typeof import("./blackboard-vendor");
 
 // Cache the sandbox vendor loader so every iframe reuses the same preload request.
-let blackboardVendorPromise: Promise<InjectBlackboardLibraries> | null = null;
+let blackboardVendorPromise: Promise<BlackboardVendorModule> | null = null;
 
 const loadBlackboardVendor = () => {
   if (!blackboardVendorPromise) {
-    blackboardVendorPromise = import("./blackboard-vendor").then(
-      (m) => m.injectBlackboardLibraries
-    );
+    blackboardVendorPromise = import("./blackboard-vendor");
   }
 
   return blackboardVendorPromise;
@@ -577,9 +574,9 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     if (shouldInjectSandboxVendor) {
       // Inject Tailwind/DaisyUI/GSAP before rendering sandbox content to avoid FOUC.
       loadBlackboardVendor()
-        .then((inject) => {
+        .then(({ injectBlackboardLibraries }) => {
           if (isDestroyed) return;
-          inject(doc);
+          injectBlackboardLibraries(doc);
           if (shouldEnableScaling) {
             injectScalingSystem(doc);
           }
@@ -594,6 +591,87 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         });
     }
 
+    const hostElement = containerRef.current;
+    let needsTailwindRefreshAfterHidden = Boolean(
+      hostElement &&
+        (hostElement.clientWidth <= 0 || hostElement.clientHeight <= 0)
+    );
+    let isTailwindRefreshQueued = false;
+    let tailwindRefreshFrame: number | null = null;
+    let tailwindRefreshTimer: number | null = null;
+    const runPostTailwindRefreshLayout = () => {
+      if (isDestroyed) return;
+      scheduleHeightUpdate();
+      const iframeWin = iframe.contentWindow as ScalingWindow | null;
+      iframeWin?.__mdf_triggerFitContent?.();
+    };
+    const isHostVisible = () =>
+      Boolean(
+        hostElement &&
+          hostElement.clientWidth > 0 &&
+          hostElement.clientHeight > 0
+      );
+    const queueTailwindRefreshAfterHidden = () => {
+      if (
+        !shouldInjectSandboxVendor ||
+        !hostElement ||
+        !needsTailwindRefreshAfterHidden ||
+        isTailwindRefreshQueued ||
+        !isHostVisible()
+      ) {
+        return;
+      }
+
+      isTailwindRefreshQueued = true;
+      loadBlackboardVendor()
+        .then(({ refreshTailwindRuntime }) => {
+          if (isDestroyed) return;
+
+          tailwindRefreshFrame = window.requestAnimationFrame(() => {
+            tailwindRefreshFrame = null;
+            isTailwindRefreshQueued = false;
+
+            const sandboxContainer = doc.querySelector(".sandbox-container");
+            if (
+              isDestroyed ||
+              !isHostVisible() ||
+              !sandboxContainer?.childNodes.length ||
+              !refreshTailwindRuntime(doc)
+            ) {
+              return;
+            }
+
+            needsTailwindRefreshAfterHidden = false;
+            runPostTailwindRefreshLayout();
+            tailwindRefreshTimer = window.setTimeout(() => {
+              tailwindRefreshTimer = null;
+              runPostTailwindRefreshLayout();
+            }, 100);
+          });
+        })
+        .catch(() => {
+          isTailwindRefreshQueued = false;
+        });
+    };
+    const hostResizeObserver =
+      shouldInjectSandboxVendor && hostElement
+        ? new ResizeObserver((entries) => {
+            const contentRect = entries[0]?.contentRect;
+            const hostWidth = contentRect?.width ?? hostElement.clientWidth;
+            const hostHeight = contentRect?.height ?? hostElement.clientHeight;
+            const isHostSizeVisible = hostWidth > 0 && hostHeight > 0;
+
+            if (!isHostSizeVisible) {
+              return;
+            }
+
+            queueTailwindRefreshAfterHidden();
+          })
+        : null;
+    if (hostResizeObserver && hostElement) {
+      hostResizeObserver.observe(hostElement);
+    }
+
     const resizeObserver = new ResizeObserver(() => updateHeight());
     resizeObserver.observe(doc.body);
     if (rootEl) {
@@ -604,6 +682,11 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     // (e.g. content injected by scripts, images loading, dynamic rendering)
     const mutationObserver = new MutationObserver(() => {
       scheduleHeightUpdate();
+      if (!isHostVisible()) {
+        needsTailwindRefreshAfterHidden = true;
+        return;
+      }
+      queueTailwindRefreshAfterHidden();
     });
     mutationObserver.observe(doc.body, {
       childList: true,
@@ -614,8 +697,15 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
 
     return () => {
       isDestroyed = true;
+      hostResizeObserver?.disconnect();
       resizeObserver.disconnect();
       mutationObserver.disconnect();
+      if (tailwindRefreshFrame !== null) {
+        window.cancelAnimationFrame(tailwindRefreshFrame);
+      }
+      if (tailwindRefreshTimer !== null) {
+        window.clearTimeout(tailwindRefreshTimer);
+      }
       if (shouldEnableScaling) {
         const iframeWin = iframe.contentWindow as ScalingWindow | null;
         iframeWin?.__mdf_cleanupScaling?.();

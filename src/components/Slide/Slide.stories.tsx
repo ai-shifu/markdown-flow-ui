@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
-import { expect, waitFor } from "storybook/test";
+import { expect, userEvent, waitFor } from "storybook/test";
 
 import historyFixtureText from "../../../测试历史数据.json?raw";
 import runStreamFixtureText from "../../../测试数据.json?raw";
@@ -3026,6 +3026,74 @@ export const FullViewportMarkdownSlideWithoutScaling: Story = {
     expect(getComputedStyle(markdown).lineHeight).toBe("30px");
     expect(getComputedStyle(code).fontSize).toBe("13px");
     expect(getComputedStyle(language).fontSize).toBe("12px");
+  },
+};
+
+export const PreloadedHtmlTailwindRefresh: Story = {
+  args: {
+    elementList: [
+      createExampleElement({
+        sequenceNumber: 23,
+        type: "html",
+        content:
+          '<div class="flex h-screen w-full items-center justify-center bg-slate-100 p-[4vmin]"><div class="rounded-[2vmin] bg-white p-[5vmin] text-center shadow-xl"><h1 class="text-[5vmin] font-bold text-slate-900">First HTML slide</h1><p class="mt-[2vmin] text-[2.5vmin] text-slate-600">The next slide starts preloaded under display:none.</p></div></div>',
+        isNew: true,
+      }),
+      {
+        ...createExampleElement({
+          sequenceNumber: 24,
+          type: "html",
+          content:
+            '<div data-tailwind-regression-target class="h-screen w-full bg-gradient-to-br from-blue-600 to-indigo-950 p-[4vmin] text-white"><h1 class="text-[6vmin] font-bold">Preloaded Tailwind restored</h1><div class="mt-[4vmin] grid grid-cols-2 gap-[3vmin]"><div class="rounded-[2vmin] bg-white/20 p-[4vmin] shadow-xl"><h2 class="text-[3.5vmin] font-semibold">Gradient</h2><p class="mt-[1vmin] text-[2.5vmin] text-blue-100">Utilities are compiled after the hidden iframe becomes visible.</p></div><div class="rounded-[2vmin] border border-white/30 bg-white/10 p-[4vmin]"><h2 class="text-[3.5vmin] font-semibold">Spacing</h2><p class="mt-[1vmin] text-[2.5vmin] text-indigo-100">Padding, color, grid, and typography must all remain styled.</p></div></div></div>',
+          isNew: true,
+        }),
+        is_renderable: false,
+      },
+    ],
+    playerControlsVisibility: "visible",
+  },
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "Navigates to an HTML sandbox that was preloaded under display:none and verifies Tailwind Play recompiles its utilities after becoming visible.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="h-[100dvh] w-full bg-background">
+      <Slide className="w-full" {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const nextButton = canvasElement.querySelector(
+      "button[aria-label='Next page']"
+    ) as HTMLButtonElement;
+
+    await userEvent.click(nextButton);
+    await waitFor(
+      () => {
+        const activeStep = Array.from(
+          canvasElement.querySelectorAll(".slide-stage__layer > div")
+        ).find((element) => getComputedStyle(element).display !== "none");
+        const iframe = activeStep?.querySelector("iframe");
+        const target = iframe?.contentDocument?.querySelector(
+          "[data-tailwind-regression-target]"
+        ) as HTMLElement | null;
+
+        expect(iframe?.clientWidth).toBeGreaterThan(0);
+        expect(iframe?.clientHeight).toBeGreaterThan(0);
+        expect(target).not.toBeNull();
+        expect(getComputedStyle(target as HTMLElement).paddingTop).not.toBe(
+          "0px"
+        );
+        expect(
+          getComputedStyle(target as HTMLElement).backgroundImage
+        ).not.toBe("none");
+      },
+      { timeout: 10000 }
+    );
   },
 };
 

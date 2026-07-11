@@ -852,11 +852,13 @@ const Slide: React.FC<SlideProps> = ({
   useEffect(() => {
     // Keep silent-step autoplay aligned with the same play/pause preference as audio.
     setIsAutoAdvanceEnabled(isPlaybackRequested);
+  }, [currentIndex, isPlaybackRequested, playerCustomActionPauseOnActive]);
 
+  useEffect(() => {
     if (playerCustomActionPauseOnActive) {
       setIsPlayerCustomActionActive(false);
     }
-  }, [currentIndex, isPlaybackRequested, playerCustomActionPauseOnActive]);
+  }, [currentIndex, playerCustomActionPauseOnActive]);
 
   useEffect(() => {
     return () => {

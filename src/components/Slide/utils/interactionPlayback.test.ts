@@ -107,4 +107,28 @@ describe("shouldRenderInteractionOverlay", () => {
       })
     ).toBe(true);
   });
+
+  it("hides the overlay when there is no active interaction", () => {
+    expect(
+      shouldRenderInteractionOverlay({
+        hasActiveInteraction: false,
+        isInteractionOverlayOpen: true,
+        shouldBlockPlaybackForInteraction: true,
+        playerControlsVisible: true,
+        shouldMountPlayer: true,
+      })
+    ).toBe(false);
+  });
+
+  it("hides the overlay when the interaction overlay is closed", () => {
+    expect(
+      shouldRenderInteractionOverlay({
+        hasActiveInteraction: true,
+        isInteractionOverlayOpen: false,
+        shouldBlockPlaybackForInteraction: true,
+        playerControlsVisible: true,
+        shouldMountPlayer: true,
+      })
+    ).toBe(false);
+  });
 });

@@ -43,7 +43,7 @@ export const shouldPresentInteractionOverlay = ({
   return !currentStepHasSpeakableElement;
 };
 
-interface ShouldRenderInteractionOverlayParams {
+export interface ShouldRenderInteractionOverlayParams {
   hasActiveInteraction: boolean;
   isInteractionOverlayOpen: boolean;
   shouldBlockPlaybackForInteraction: boolean;

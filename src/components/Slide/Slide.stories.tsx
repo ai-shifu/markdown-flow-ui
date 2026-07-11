@@ -1,11 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
+import { expect, waitFor } from "storybook/test";
 
 import historyFixtureText from "../../../测试历史数据.json?raw";
 import runStreamFixtureText from "../../../测试数据.json?raw";
 import runStreamFixtureText2 from "../../../测试数据2.json?raw";
 import ContentRender from "../ContentRender";
+import { resolvePresentationBaseFontSize } from "../ContentRender/utils/presentation-scaling";
 import type { OnSendContentParams } from "../types";
 import type { SlidePlayerCustomActionContext } from "./types";
 import { getVisibleSubtitleText } from "./utils/subtitleCue";
@@ -86,6 +88,11 @@ const meta = {
       control: { type: "number", min: 0, step: 500 },
       description:
         "Auto-hide delay for player controls in milliseconds after the pointer leaves the control bar",
+    },
+    enableMarkdownScaling: {
+      control: "boolean",
+      description:
+        "Fit Markdown-only slides to the available presentation viewport",
     },
     markerAutoAdvanceDelay: {
       control: { type: "number", min: 0, step: 500 },
@@ -264,6 +271,40 @@ const SLOT_CONTENT = (
 );
 
 const VIDEO_CONTENT = `<iframe data-tag="video" data-title="哔哩哔哩视频" data-url="https://www.bilibili.com/video/BV1ry4y1y7KZ/" class="w-full aspect-video rounded-lg border-0" src="https://player.bilibili.com/player.html?bvid=BV1ry4y1y7KZ&autoplay=0" allowfullscreen="" allow="autoplay; encrypted-media"></iframe>`;
+
+const PRESENTATION_MARKDOWN_CONTENT = [
+  "# Markdown Presentation Scaling",
+  "",
+  "Markdown now uses the same viewport-driven typography as HTML slides. A logical page is measured as one composition, so every block grows and compresses together.",
+  "",
+  "## What stays readable",
+  "",
+  "- Headings and body copy scale from the available width and height.",
+  "- Tables, formulas, diagrams, and code participate in the same fit calculation.",
+  "- Dense pages compress to remain visible and keep scrolling as a final fallback.",
+  "",
+  "| Content | Fullscreen behavior |",
+  "| --- | --- |",
+  "| Text and headings | Scale together |",
+  "| Tables and code | Preserve overflow safety |",
+  "| Mermaid and images | Refit after asynchronous layout |",
+  "",
+  "```typescript",
+  "const fontSize = fitPresentationFontSize({ viewport, measure });",
+  'renderMarkdown({ fontSize, overflowFallback: "scroll" });',
+  "```",
+  "",
+  "The fitting formula starts from $\\min(\\max(12, w / 48), 0.03h)$ and never reduces text below 8px.",
+  "",
+  "```mermaid",
+  "flowchart LR",
+  "  A[Viewport] --> B[Base font size]",
+  "  B --> C{Content fits?}",
+  "  C -->|Yes| D[Present]",
+  "  C -->|No| E[Compress]",
+  "  E --> C",
+  "```",
+].join("\n");
 
 const STREAMING_IFRAME_CONTENT = `<div class="w-full h-screen flex flex-col p-[4vmin] bg-white">
   <div class="flex-1 flex flex-col items-center justify-[safe_center] gap-[4vmin]">
@@ -2750,6 +2791,242 @@ export const FullViewportSlides: Story = {
       ))}
     </div>
   ),
+};
+
+export const FullViewportMarkdownSlide: Story = {
+  args: {
+    elementList: [
+      createExampleElement({
+        sequenceNumber: 30,
+        type: "text",
+        content: PRESENTATION_MARKDOWN_CONTENT,
+        isNew: true,
+      }),
+    ],
+    enableMarkdownScaling: true,
+    playerEnabled: false,
+  },
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "Fits a dense Markdown composition to the full viewport using the same base font-size and overflow compression rules as HTML presentation slides.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="h-[100dvh] w-full bg-background p-8">
+      <Slide className="w-full" {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    await waitFor(
+      () => {
+        expect(
+          canvasElement.querySelector(
+            ".slide-markdown-scaling[data-markdown-slide-scaling='fit'] .content-render-mermaid svg"
+          )
+        ).not.toBeNull();
+
+        const viewport = canvasElement.querySelector(
+          ".slide-markdown-scaling[data-markdown-slide-scaling='fit']"
+        ) as HTMLElement;
+
+        expect(viewport.scrollWidth).toBeLessThanOrEqual(
+          viewport.clientWidth + 4
+        );
+        expect(viewport.scrollHeight).toBeLessThanOrEqual(
+          viewport.clientHeight + 4
+        );
+      },
+      { timeout: 10000 }
+    );
+
+    const viewport = canvasElement.querySelector(
+      ".slide-markdown-scaling[data-markdown-slide-scaling='fit']"
+    ) as HTMLElement;
+    const content = viewport.querySelector(
+      ":scope > .slide-markdown-scaling__content"
+    ) as HTMLElement;
+    const markdown = viewport.querySelector(
+      ".content-render.markdown-body"
+    ) as HTMLElement;
+    const code = viewport.querySelector(
+      ".code-block-container pre"
+    ) as HTMLElement;
+    const fittedFontSize = Number(content.dataset.markdownSlideFontSize);
+    const baseFontSize = resolvePresentationBaseFontSize({
+      height: viewport.clientHeight,
+      width: viewport.clientWidth,
+    });
+
+    expect(fittedFontSize).toBeLessThan(baseFontSize);
+    expect(parseFloat(getComputedStyle(markdown).fontSize)).toBeCloseTo(
+      fittedFontSize,
+      1
+    );
+    expect(parseFloat(getComputedStyle(code).fontSize)).toBeLessThan(
+      fittedFontSize
+    );
+    expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth + 4);
+    expect(viewport.scrollHeight).toBeLessThanOrEqual(
+      viewport.clientHeight + 4
+    );
+  },
+};
+
+export const FullViewportSparseMarkdownSlide: Story = {
+  args: {
+    elementList: [
+      createExampleElement({
+        sequenceNumber: 29,
+        type: "title",
+        content:
+          "# Responsive Markdown\n\nSparse slides expand their typography to use the available presentation viewport.",
+        isNew: true,
+      }),
+    ],
+    enableMarkdownScaling: true,
+    playerEnabled: false,
+  },
+  parameters: {
+    layout: "fullscreen",
+  },
+  render: (args) => (
+    <div className="h-[100dvh] w-full bg-background p-8">
+      <Slide className="w-full" {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    await waitFor(() => {
+      expect(
+        canvasElement.querySelector(
+          ".slide-markdown-scaling__content[data-markdown-slide-font-size]"
+        )
+      ).not.toBeNull();
+    });
+
+    const viewport = canvasElement.querySelector(
+      ".slide-markdown-scaling[data-markdown-slide-scaling='fit']"
+    ) as HTMLElement;
+    const markdown = viewport.querySelector(
+      ".content-render.markdown-body"
+    ) as HTMLElement;
+
+    expect(parseFloat(getComputedStyle(markdown).fontSize)).toBeGreaterThan(16);
+    expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth + 4);
+    expect(viewport.scrollHeight).toBeLessThanOrEqual(
+      viewport.clientHeight + 4
+    );
+  },
+};
+
+export const FullViewportAccumulatedMarkdownSlide: Story = {
+  args: {
+    elementList: [
+      {
+        ...createExampleElement({
+          sequenceNumber: 26,
+          type: "title",
+          content: "# One logical Markdown slide",
+          isNew: true,
+        }),
+        is_renderable: false,
+      },
+      {
+        ...createExampleElement({
+          sequenceNumber: 27,
+          type: "text",
+          content:
+            "Title, body copy, and code can arrive as separate elements while sharing one presentation-scale calculation.",
+        }),
+        is_renderable: false,
+      },
+      createExampleElement({
+        sequenceNumber: 28,
+        type: "code",
+        content: CODE_CONTENT,
+      }),
+    ],
+    enableMarkdownScaling: true,
+    playerEnabled: false,
+  },
+  parameters: {
+    layout: "fullscreen",
+  },
+  render: (args) => (
+    <div className="h-[100dvh] w-full bg-background p-8">
+      <Slide className="w-full" {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    await waitFor(() => {
+      expect(
+        canvasElement.querySelector(
+          ".slide-markdown-scaling__content[data-markdown-slide-font-size]"
+        )
+      ).not.toBeNull();
+    });
+
+    const viewport = canvasElement.querySelector(
+      ".slide-markdown-scaling[data-markdown-slide-scaling='fit']"
+    ) as HTMLElement;
+    const markdownElements = Array.from(
+      viewport.querySelectorAll(".content-render.markdown-body")
+    ) as HTMLElement[];
+    const fontSizes = markdownElements.map(
+      (element) => getComputedStyle(element).fontSize
+    );
+
+    expect(markdownElements).toHaveLength(3);
+    expect(markdownElements.every((element) => element.offsetParent)).toBe(
+      true
+    );
+    expect(new Set(fontSizes).size).toBe(1);
+  },
+};
+
+export const FullViewportMarkdownSlideWithoutScaling: Story = {
+  args: {
+    elementList: [
+      createExampleElement({
+        sequenceNumber: 25,
+        type: "text",
+        content: PRESENTATION_MARKDOWN_CONTENT,
+        isNew: true,
+      }),
+    ],
+    enableMarkdownScaling: false,
+    playerEnabled: false,
+  },
+  parameters: {
+    layout: "fullscreen",
+  },
+  render: (args) => (
+    <div className="h-[100dvh] w-full bg-background p-8">
+      <Slide className="w-full" {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const markdown = canvasElement.querySelector(
+      ".content-render.markdown-body"
+    ) as HTMLElement;
+    const code = canvasElement.querySelector(
+      ".code-block-container pre"
+    ) as HTMLElement;
+    const language = canvasElement.querySelector(
+      ".code-block-container .language-name"
+    ) as HTMLElement;
+
+    expect(
+      canvasElement.querySelector("[data-markdown-slide-scaling]")
+    ).toBeNull();
+    expect(getComputedStyle(markdown).fontSize).toBe("16px");
+    expect(getComputedStyle(markdown).lineHeight).toBe("30px");
+    expect(getComputedStyle(code).fontSize).toBe("13px");
+    expect(getComputedStyle(language).fontSize).toBe("12px");
+  },
 };
 
 export const FullViewportSingleSlide: Story = {

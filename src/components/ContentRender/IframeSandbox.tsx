@@ -724,7 +724,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     shouldEnableScaling,
   ]);
   const containerClassName = [
-    "w-full relative content-render-iframe-sandbox",
+    `w-full relative content-render-iframe-sandbox content-render-iframe-sandbox--${type}`,
     isBlackboardMode
       ? "h-full overflow-auto flex flex-col"
       : contentModeStyle

@@ -653,8 +653,9 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
           isTailwindRefreshQueued = false;
         });
     };
+    const canObserveResize = typeof ResizeObserver !== "undefined";
     const hostResizeObserver =
-      shouldInjectSandboxVendor && hostElement
+      shouldInjectSandboxVendor && hostElement && canObserveResize
         ? new ResizeObserver((entries) => {
             const contentRect = entries[0]?.contentRect;
             const hostWidth = contentRect?.width ?? hostElement.clientWidth;
@@ -672,10 +673,12 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       hostResizeObserver.observe(hostElement);
     }
 
-    const resizeObserver = new ResizeObserver(() => updateHeight());
-    resizeObserver.observe(doc.body);
+    const resizeObserver = canObserveResize
+      ? new ResizeObserver(() => updateHeight())
+      : null;
+    resizeObserver?.observe(doc.body);
     if (rootEl) {
-      resizeObserver.observe(rootEl);
+      resizeObserver?.observe(rootEl);
     }
 
     // MutationObserver: detect DOM changes that ResizeObserver might miss
@@ -698,7 +701,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     return () => {
       isDestroyed = true;
       hostResizeObserver?.disconnect();
-      resizeObserver.disconnect();
+      resizeObserver?.disconnect();
       mutationObserver.disconnect();
       if (tailwindRefreshFrame !== null) {
         window.cancelAnimationFrame(tailwindRefreshFrame);

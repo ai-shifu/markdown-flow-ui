@@ -64,6 +64,7 @@ import {
 } from "./utils/playerCustomActions";
 import { createPlaybackTimeStore } from "./utils/playbackTimeStore";
 import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
+import { resolveSilentStepAutoAdvanceDelay } from "./utils/silentStepAutoAdvance";
 import {
   resolveSlidePlayerVisibility,
   type SlidePlayerControlsVisibility,
@@ -648,6 +649,21 @@ const Slide: React.FC<SlideProps> = ({
       currentStepHasSpeakableElement,
     ]
   );
+  const silentStepAutoAdvanceDelay = useMemo(
+    () =>
+      resolveSilentStepAutoAdvanceDelay({
+        currentElementList,
+        currentStepHasSpeakableElement,
+        currentInteractionElement,
+        markerAutoAdvanceDelay,
+      }),
+    [
+      currentElementList,
+      currentInteractionElement,
+      currentStepHasSpeakableElement,
+      markerAutoAdvanceDelay,
+    ]
+  );
 
   const clearPlayerHideTimer = useCallback(() => {
     if (playerHideTimerRef.current === null) {
@@ -1157,7 +1173,7 @@ const Slide: React.FC<SlideProps> = ({
     autoAdvanceTimerRef.current = window.setTimeout(() => {
       autoAdvanceTimerRef.current = null;
       goNext();
-    }, markerAutoAdvanceDelay);
+    }, silentStepAutoAdvanceDelay);
 
     return () => {
       clearAutoAdvanceTimer();
@@ -1173,6 +1189,7 @@ const Slide: React.FC<SlideProps> = ({
     currentPlaybackResetKey,
     currentStepHasSpeakableElement,
     markerAutoAdvanceDelay,
+    silentStepAutoAdvanceDelay,
     goNext,
     hasCompletedCurrentStepAudio,
     disableLoadingOverlay,

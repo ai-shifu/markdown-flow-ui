@@ -1,13 +1,9 @@
 import tailwindScript from "./vendor/tailwindcss-v3.min.js?raw";
 import daisyuiCss from "./vendor/daisyui-v4.min.css?raw";
 import gsapScript from "./vendor/gsap-v3.min.js?raw";
-import { addCjkSafeSansToTailwindConfig } from "./cjkFontFamily";
+import { refreshTailwindRuntime } from "./utils/tailwind-runtime";
 
-interface TailwindRuntimeWindow extends Window {
-  tailwind?: {
-    config?: unknown;
-  };
-}
+export { refreshTailwindRuntime };
 
 /**
  * Inject blackboard-mode libraries (Tailwind CSS, DaisyUI, GSAP)
@@ -20,13 +16,7 @@ export function injectBlackboardLibraries(doc: Document): void {
   // The Play CDN script replaces window.tailwind with its Proxy during execution,
   // so configure that runtime only after the synchronous append completes.
   doc.head.appendChild(tailwindEl);
-  const tailwindRuntime = (doc.defaultView as TailwindRuntimeWindow | null)
-    ?.tailwind;
-  if (tailwindRuntime) {
-    tailwindRuntime.config = addCjkSafeSansToTailwindConfig(
-      tailwindRuntime.config
-    );
-  }
+  refreshTailwindRuntime(doc);
 
   // 2. DaisyUI v4 CSS
   const daisyuiEl = doc.createElement("style");

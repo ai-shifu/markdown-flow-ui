@@ -63,6 +63,42 @@ describe("shouldUseImageOnlySilentStepAutoAdvanceDelay", () => {
     ).toBe(false);
   });
 
+  it("uses the image-only delay for html image slides without readable text", () => {
+    expect(
+      shouldUseImageOnlySilentStepAutoAdvanceDelay({
+        currentElementList: [
+          marker(),
+          {
+            content:
+              '<div class=\"slide\"><img src=\"/slide.png\" alt=\"\" /></div>',
+            type: "html",
+            is_renderable: true,
+            is_speakable: false,
+          },
+        ],
+        currentStepHasSpeakableElement: false,
+      })
+    ).toBe(true);
+  });
+
+  it("does not use the image-only delay for html slides with readable text", () => {
+    expect(
+      shouldUseImageOnlySilentStepAutoAdvanceDelay({
+        currentElementList: [
+          marker(),
+          {
+            content:
+              '<div><img src=\"/slide.png\" alt=\"\" /><p>Readable caption</p></div>',
+            type: "html",
+            is_renderable: true,
+            is_speakable: false,
+          },
+        ],
+        currentStepHasSpeakableElement: false,
+      })
+    ).toBe(false);
+  });
+
   it("does not use the image-only delay when the step still has speech", () => {
     expect(
       shouldUseImageOnlySilentStepAutoAdvanceDelay({

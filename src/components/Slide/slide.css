@@ -108,7 +108,7 @@
   height: 100%;
 }
 
-.slide-markdown-scaling {
+.slide-markdown-scaling[data-markdown-slide-scaling="fit"] {
   justify-content: safe center;
 }
 

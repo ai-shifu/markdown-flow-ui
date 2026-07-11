@@ -4,6 +4,7 @@
     sans-serif;
   --content-render-font-size: var(--mdf-slide-font-size, 16px);
   --content-render-line-height: var(--mdf-slide-line-height, 30px);
+
   font-family: var(--content-render-font-family);
   min-width: 0;
   line-height: var(--content-render-line-height);

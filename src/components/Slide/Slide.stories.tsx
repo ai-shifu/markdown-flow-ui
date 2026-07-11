@@ -2987,6 +2987,62 @@ export const FullViewportAccumulatedMarkdownSlide: Story = {
   },
 };
 
+export const FullViewportMixedSlideTopAlignment: Story = {
+  args: {
+    elementList: [
+      {
+        ...createExampleElement({
+          sequenceNumber: 30,
+          type: "title",
+          content: "# Mixed slide stays top aligned",
+          isNew: true,
+        }),
+        is_renderable: false,
+      },
+      createExampleElement({
+        sequenceNumber: 31,
+        type: "slot",
+        content: (
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-6 text-blue-950">
+            Mixed Markdown and slot content uses the viewport base size without
+            changing the existing top-aligned layout.
+          </div>
+        ),
+      }),
+    ],
+    enableMarkdownScaling: true,
+    playerEnabled: false,
+  },
+  parameters: {
+    layout: "fullscreen",
+  },
+  render: (args) => (
+    <div className="h-[100dvh] w-full bg-background p-8">
+      <Slide className="w-full" {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const viewport = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide-markdown-scaling[data-markdown-slide-scaling='base']"
+      ) as HTMLElement | null;
+
+      expect(element).not.toBeNull();
+      return element as HTMLElement;
+    });
+    const content = viewport.querySelector(
+      ".slide-markdown-scaling__content"
+    ) as HTMLElement;
+    const firstSlideElement = content.firstElementChild as HTMLElement;
+    const topOffset =
+      firstSlideElement.getBoundingClientRect().top -
+      viewport.getBoundingClientRect().top;
+
+    expect(topOffset).toBeGreaterThanOrEqual(-1);
+    expect(topOffset).toBeLessThanOrEqual(4);
+  },
+};
+
 export const FullViewportMarkdownSlideWithoutScaling: Story = {
   args: {
     elementList: [

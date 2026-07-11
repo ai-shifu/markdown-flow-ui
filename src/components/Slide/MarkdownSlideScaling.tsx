@@ -11,8 +11,27 @@ const SLIDE_FONT_SIZE_PROPERTY = "--mdf-slide-font-size";
 const useIsomorphicLayoutEffect =
   typeof window === "undefined" ? useEffect : useLayoutEffect;
 
+interface MarkdownFitSnapshot {
+  contentHeight: number;
+  contentWidth: number;
+  mode: MarkdownScalingMode;
+  viewportHeight: number;
+  viewportWidth: number;
+}
+
+const areFitSnapshotsEqual = (
+  left: MarkdownFitSnapshot,
+  right: MarkdownFitSnapshot
+) =>
+  left.contentHeight === right.contentHeight &&
+  left.contentWidth === right.contentWidth &&
+  left.mode === right.mode &&
+  left.viewportHeight === right.viewportHeight &&
+  left.viewportWidth === right.viewportWidth;
+
 export interface MarkdownSlideScalingProps
   extends React.ComponentPropsWithoutRef<"div"> {
+  /** Controls whether Markdown content is fitted, base-scaled, or unscaled. */
   mode: MarkdownScalingMode;
 }
 
@@ -31,6 +50,7 @@ const MarkdownSlideScaling: React.FC<MarkdownSlideScalingProps> = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const fitFrameRef = useRef<number | null>(null);
   const isFittingRef = useRef(false);
+  const lastFitSnapshotRef = useRef<MarkdownFitSnapshot | null>(null);
 
   const fitContent = useCallback(() => {
     const viewport = viewportRef.current;
@@ -46,6 +66,19 @@ const MarkdownSlideScaling: React.FC<MarkdownSlideScalingProps> = ({
     };
 
     if (viewportSize.height <= 0 || viewportSize.width <= 0) {
+      return;
+    }
+
+    const currentSnapshot: MarkdownFitSnapshot = {
+      contentHeight: content.scrollHeight,
+      contentWidth: content.scrollWidth,
+      mode,
+      viewportHeight: viewportSize.height,
+      viewportWidth: viewportSize.width,
+    };
+    const lastSnapshot = lastFitSnapshotRef.current;
+
+    if (lastSnapshot && areFitSnapshotsEqual(lastSnapshot, currentSnapshot)) {
       return;
     }
 
@@ -74,6 +107,13 @@ const MarkdownSlideScaling: React.FC<MarkdownSlideScalingProps> = ({
 
       content.style.setProperty(SLIDE_FONT_SIZE_PROPERTY, `${fontSize}px`);
       content.dataset.markdownSlideFontSize = String(fontSize);
+      lastFitSnapshotRef.current = {
+        contentHeight: content.scrollHeight,
+        contentWidth: content.scrollWidth,
+        mode,
+        viewportHeight: viewportSize.height,
+        viewportWidth: viewportSize.width,
+      };
     } finally {
       isFittingRef.current = false;
     }
@@ -91,6 +131,11 @@ const MarkdownSlideScaling: React.FC<MarkdownSlideScalingProps> = ({
   }, [fitContent, mode]);
 
   useIsomorphicLayoutEffect(() => {
+    if (fitFrameRef.current !== null) {
+      window.cancelAnimationFrame(fitFrameRef.current);
+      fitFrameRef.current = null;
+    }
+
     const content = contentRef.current;
 
     if (!content) {
@@ -100,6 +145,7 @@ const MarkdownSlideScaling: React.FC<MarkdownSlideScalingProps> = ({
     if (mode === "disabled") {
       content.style.removeProperty(SLIDE_FONT_SIZE_PROPERTY);
       delete content.dataset.markdownSlideFontSize;
+      lastFitSnapshotRef.current = null;
       return;
     }
 
@@ -120,9 +166,13 @@ const MarkdownSlideScaling: React.FC<MarkdownSlideScalingProps> = ({
         : new ResizeObserver(scheduleFit);
     resizeObserver?.observe(viewport);
 
+    const handleContentChange = () => {
+      lastFitSnapshotRef.current = null;
+      scheduleFit();
+    };
     const mutationObserver =
       mode === "fit" && typeof MutationObserver !== "undefined"
-        ? new MutationObserver(scheduleFit)
+        ? new MutationObserver(handleContentChange)
         : null;
 
     if (mode === "fit") {
@@ -132,7 +182,7 @@ const MarkdownSlideScaling: React.FC<MarkdownSlideScalingProps> = ({
         characterData: true,
         subtree: true,
       });
-      content.addEventListener("load", scheduleFit, true);
+      content.addEventListener("load", handleContentChange, true);
     }
 
     window.addEventListener("resize", scheduleFit);
@@ -143,7 +193,7 @@ const MarkdownSlideScaling: React.FC<MarkdownSlideScalingProps> = ({
       mutationObserver?.disconnect();
 
       if (mode === "fit") {
-        content.removeEventListener("load", scheduleFit, true);
+        content.removeEventListener("load", handleContentChange, true);
       }
 
       window.removeEventListener("resize", scheduleFit);

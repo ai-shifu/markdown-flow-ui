@@ -306,6 +306,88 @@ const PRESENTATION_MARKDOWN_CONTENT = [
   "```",
 ].join("\n");
 
+const FULL_VIEWPORT_CODE_ONLY_CONTENT = [
+  "```typescript",
+  "type Viewport = Readonly<{",
+  "  width: number;",
+  "  height: number;",
+  "}>;",
+  "",
+  "type ContentSize = Readonly<{",
+  "  width: number;",
+  "  height: number;",
+  "}>;",
+  "",
+  "const MIN_FONT_SIZE = 8;",
+  "const MAX_FONT_SIZE = 64;",
+  "const FIT_EPSILON = 0.25;",
+  "",
+  "const fits = (content: ContentSize, viewport: Viewport) =>",
+  "  content.width <= viewport.width &&",
+  "  content.height <= viewport.height;",
+  "",
+  "export function fitMarkdownFontSize(",
+  "  viewport: Viewport,",
+  "  measure: (fontSize: number) => ContentSize",
+  ") {",
+  "  let low = MIN_FONT_SIZE;",
+  "  let high = MAX_FONT_SIZE;",
+  "",
+  "  while (high - low > FIT_EPSILON) {",
+  "    const middle = (low + high) / 2;",
+  "    if (fits(measure(middle), viewport)) {",
+  "      low = middle;",
+  "    } else {",
+  "      high = middle;",
+  "    }",
+  "  }",
+  "",
+  "  return Number(low.toFixed(2));",
+  "}",
+  "",
+  "const fittedFontSize = fitMarkdownFontSize(",
+  "  { width: 1280, height: 720 },",
+  "  (fontSize) => ({",
+  "    width: fontSize * 34,",
+  "    height: fontSize * 18,",
+  "  })",
+  ");",
+  "",
+  "console.log({ fittedFontSize });",
+  "```",
+].join("\n");
+
+const FULL_VIEWPORT_HEADING_ONLY_CONTENT = "# Markdown 全屏标题";
+
+const FULL_VIEWPORT_MERMAID_ONLY_CONTENT = [
+  "```mermaid",
+  "flowchart LR",
+  "  A[Markdown source] --> B[Parse AST]",
+  "  B --> C{Block type}",
+  "  C -->|Heading| D[Typography]",
+  "  C -->|Code| E[Syntax highlight]",
+  "  C -->|Math| F[KaTeX]",
+  "  C -->|Diagram| G[Mermaid]",
+  "  D --> H[Measure content]",
+  "  E --> H",
+  "  F --> H",
+  "  G --> H",
+  "  H --> I{Fits viewport?}",
+  "  I -->|No| J[Reduce font size]",
+  "  J --> H",
+  "  I -->|Yes| K[Present slide]",
+  "```",
+].join("\n");
+
+const FULL_VIEWPORT_MATH_ONLY_CONTENT = String.raw`$$
+\begin{aligned}
+e^{i\pi}+1 &= 0 \\
+\frac{d}{dx}\left(x^n\right) &= nx^{n-1} \\
+\int_{-\infty}^{\infty} e^{-x^2}\,dx &= \sqrt{\pi} \\
+\sum_{k=1}^{n} k &= \frac{n(n+1)}{2}
+\end{aligned}
+$$`;
+
 const STREAMING_IFRAME_CONTENT = `<div class="w-full h-screen flex flex-col p-[4vmin] bg-white">
   <div class="flex-1 flex flex-col items-center justify-[safe_center] gap-[4vmin]">
     <h1 class="text-[4vmin] font-bold text-[#0F63EE]">三个常见观点，请你判断</h1>
@@ -2793,6 +2875,72 @@ export const FullViewportSlides: Story = {
   ),
 };
 
+const renderFullViewportMarkdownStory = (
+  args: React.ComponentProps<typeof Slide>
+) => (
+  <div className="h-[100dvh] w-full bg-background p-8">
+    <Slide className="w-full" {...args} />
+  </div>
+);
+
+const waitForFittedMarkdownStory = async (canvasElement: HTMLElement) =>
+  waitFor(() => {
+    const viewport = canvasElement.querySelector(
+      ".slide-markdown-scaling[data-markdown-slide-scaling='fit']"
+    ) as HTMLElement | null;
+    const content = viewport?.querySelector(
+      ":scope > .slide-markdown-scaling__content[data-markdown-slide-font-size]"
+    ) as HTMLElement | null;
+    const markdown = viewport?.querySelector(
+      ".content-render.markdown-body"
+    ) as HTMLElement | null;
+
+    expect(viewport).not.toBeNull();
+    expect(content).not.toBeNull();
+    expect(markdown).not.toBeNull();
+
+    return {
+      content: content as HTMLElement,
+      markdown: markdown as HTMLElement,
+      viewport: viewport as HTMLElement,
+    };
+  });
+
+const expectFittedMarkdownStoryToFit = (viewport: HTMLElement) => {
+  expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth + 4);
+  expect(viewport.scrollHeight).toBeLessThanOrEqual(viewport.clientHeight + 4);
+};
+
+interface FullViewportMarkdownStoryConfig {
+  content: string;
+  description: string;
+  play: NonNullable<Story["play"]>;
+  sequenceNumber: number;
+  type: Element["type"];
+}
+
+const createFullViewportMarkdownStory = ({
+  content,
+  description,
+  play,
+  sequenceNumber,
+  type,
+}: FullViewportMarkdownStoryConfig): Story => ({
+  args: {
+    elementList: [
+      createExampleElement({ sequenceNumber, type, content, isNew: true }),
+    ],
+    enableMarkdownScaling: true,
+    playerEnabled: false,
+  },
+  parameters: {
+    layout: "fullscreen",
+    docs: { description: { story: description } },
+  },
+  render: renderFullViewportMarkdownStory,
+  play,
+});
+
 export const FullViewportMarkdownSlide: Story = {
   args: {
     elementList: [
@@ -2875,6 +3023,128 @@ export const FullViewportMarkdownSlide: Story = {
     );
   },
 };
+
+export const FullViewportCodeOnlyMarkdownSlide =
+  createFullViewportMarkdownStory({
+    sequenceNumber: 33,
+    type: "code",
+    content: FULL_VIEWPORT_CODE_ONLY_CONTENT,
+    description:
+      "Fills one Markdown slide with a dense TypeScript code block to exercise fullscreen compression and syntax highlighting.",
+    play: async ({ canvasElement }) => {
+      const { content, markdown, viewport } =
+        await waitForFittedMarkdownStory(canvasElement);
+      const markdownRenderer = markdown.querySelector(
+        ".markdown-renderer"
+      ) as HTMLElement;
+      const codeBlock = markdownRenderer.querySelector(
+        ":scope > .code-block-container"
+      ) as HTMLElement;
+      const code = codeBlock.querySelector("pre > code") as HTMLElement;
+      const language = codeBlock.querySelector(".language-name") as HTMLElement;
+      const fittedFontSize = Number(content.dataset.markdownSlideFontSize);
+
+      expect(markdownRenderer.children).toHaveLength(1);
+      expect(language.textContent?.trim()).toBe("typescript");
+      expect(code.textContent).toContain("fitMarkdownFontSize");
+      expect(parseFloat(getComputedStyle(code).fontSize)).toBeLessThan(
+        fittedFontSize
+      );
+      expectFittedMarkdownStoryToFit(viewport);
+    },
+  });
+
+export const FullViewportHeadingOnlyMarkdownSlide =
+  createFullViewportMarkdownStory({
+    sequenceNumber: 34,
+    type: "title",
+    content: FULL_VIEWPORT_HEADING_ONLY_CONTENT,
+    description:
+      "Renders exactly one level-one heading so sparse Markdown typography and centering can be inspected in isolation.",
+    play: async ({ canvasElement }) => {
+      const { markdown, viewport } =
+        await waitForFittedMarkdownStory(canvasElement);
+      const markdownRenderer = markdown.querySelector(
+        ".markdown-renderer"
+      ) as HTMLElement;
+      const headings = markdownRenderer.querySelectorAll("h1");
+      const heading = headings[0] as HTMLElement;
+
+      expect(markdownRenderer.children).toHaveLength(1);
+      expect(headings).toHaveLength(1);
+      expect(heading.textContent?.trim()).toBe("Markdown 全屏标题");
+      expect(parseFloat(getComputedStyle(heading).fontSize)).toBeGreaterThan(
+        parseFloat(getComputedStyle(markdown).fontSize)
+      );
+      expectFittedMarkdownStoryToFit(viewport);
+    },
+  });
+
+export const FullViewportMermaidOnlyMarkdownSlide =
+  createFullViewportMarkdownStory({
+    sequenceNumber: 35,
+    type: "mermaid",
+    content: FULL_VIEWPORT_MERMAID_ONLY_CONTENT,
+    description:
+      "Renders one Mermaid diagram without surrounding prose and verifies the asynchronous SVG refits inside the presentation viewport.",
+    play: async ({ canvasElement }) => {
+      const { markdown, viewport } =
+        await waitForFittedMarkdownStory(canvasElement);
+
+      await waitFor(
+        () => {
+          const diagrams = markdown.querySelectorAll(".content-render-mermaid");
+          const svg = markdown.querySelector(
+            ".content-render-mermaid-inner svg"
+          ) as SVGElement | null;
+          const svgRect = svg?.getBoundingClientRect();
+          const viewportRect = viewport.getBoundingClientRect();
+
+          expect(diagrams).toHaveLength(1);
+          expect(svg).not.toBeNull();
+          expect(svgRect?.width).toBeGreaterThan(0);
+          expect(svgRect?.height).toBeGreaterThan(0);
+          expect(svgRect?.left).toBeGreaterThanOrEqual(viewportRect.left - 4);
+          expect(svgRect?.right).toBeLessThanOrEqual(viewportRect.right + 4);
+          expect(markdown.querySelector(".code-block-container")).toBeNull();
+          expectFittedMarkdownStoryToFit(viewport);
+        },
+        { timeout: 10000 }
+      );
+    },
+  });
+
+export const FullViewportMathOnlyMarkdownSlide =
+  createFullViewportMarkdownStory({
+    sequenceNumber: 36,
+    type: "latex",
+    content: FULL_VIEWPORT_MATH_ONLY_CONTENT,
+    description:
+      "Renders one display-math block so KaTeX sizing and fullscreen fitting can be inspected without other Markdown content.",
+    play: async ({ canvasElement }) => {
+      const { markdown, viewport } =
+        await waitForFittedMarkdownStory(canvasElement);
+      const markdownRenderer = markdown.querySelector(
+        ".markdown-renderer"
+      ) as HTMLElement;
+      const displays = markdownRenderer.querySelectorAll(".katex-display");
+      const katex = markdownRenderer.querySelector(
+        ".katex-display > .katex"
+      ) as HTMLElement;
+      const annotation = markdownRenderer.querySelector(
+        ".katex-mathml annotation[encoding='application/x-tex']"
+      );
+
+      expect(markdownRenderer.children).toHaveLength(1);
+      expect(displays).toHaveLength(1);
+      expect(annotation?.textContent).toContain("\\begin{aligned}");
+      expect(markdownRenderer.querySelector(".katex-error")).toBeNull();
+      expect(parseFloat(getComputedStyle(katex).fontSize)).toBeGreaterThan(
+        parseFloat(getComputedStyle(markdown).fontSize)
+      );
+      expectFittedMarkdownStoryToFit(viewport);
+    },
+  });
 
 export const FullViewportSparseMarkdownSlide: Story = {
   args: {

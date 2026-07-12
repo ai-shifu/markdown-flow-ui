@@ -48,7 +48,6 @@ import {
   resolveMobileViewModeState,
   type MobileViewMode,
 } from "./utils/mobileScreenMode";
-<<<<<<< HEAD
 import {
   shouldPresentInteractionOverlay,
   shouldRenderInteractionOverlay,

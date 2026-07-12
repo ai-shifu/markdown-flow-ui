@@ -8,6 +8,15 @@
  * 4. ResizeObserver / MutationObserver keep everything in sync.
  */
 
+import {
+  PRESENTATION_DEFAULT_FONT_SIZE_PX,
+  PRESENTATION_HEIGHT_FONT_RATIO,
+  PRESENTATION_MIN_BASE_FONT_SIZE_PX,
+  PRESENTATION_MIN_FONT_SIZE_PX,
+  PRESENTATION_OVERFLOW_TOLERANCE_PX,
+  PRESENTATION_WIDTH_FONT_DIVISOR,
+} from "./presentation-scaling";
+
 /** Window extension for the scaling system injected into the iframe. */
 export interface ScalingWindow extends Window {
   __mdf_triggerFitContent?: () => void;
@@ -16,7 +25,7 @@ export interface ScalingWindow extends Window {
 
 const SCALING_CSS = `
 /* Gamma-style scaling base */
-:root { --mdf-fs: 16px; }
+:root { --mdf-fs: ${PRESENTATION_DEFAULT_FONT_SIZE_PX}px; }
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -46,10 +55,10 @@ html, body {
 const SCALING_JS = `
 !function() {
   var fitTimer = null;
-  var baseFontSize = 16;
+  var baseFontSize = ${PRESENTATION_DEFAULT_FONT_SIZE_PX};
   var compressionRatio = 1;
   var lastCompressTime = 0;
-  var MIN_FONT_PX = 8;
+  var MIN_FONT_PX = ${PRESENTATION_MIN_FONT_SIZE_PX};
 
   function applyFs(fs) {
     document.documentElement.style.setProperty('--mdf-fs', fs + 'px');
@@ -66,8 +75,8 @@ const SCALING_JS = `
     var naturalH = slide.offsetHeight;
     var naturalW = slide.scrollWidth;
 
-    var overflowH = naturalH > viewH + 4;
-    var overflowW = naturalW > viewW + 4;
+    var overflowH = naturalH > viewH + ${PRESENTATION_OVERFLOW_TOLERANCE_PX};
+    var overflowW = naturalW > viewW + ${PRESENTATION_OVERFLOW_TOLERANCE_PX};
 
     if (overflowH || overflowW) {
       var now = Date.now();
@@ -102,7 +111,10 @@ const SCALING_JS = `
   function syncFs() {
     var w = document.documentElement.clientWidth;
     var h = document.documentElement.clientHeight;
-    baseFontSize = Math.min(Math.max(12, w / 48), h * 0.03);
+    baseFontSize = Math.min(
+      Math.max(${PRESENTATION_MIN_BASE_FONT_SIZE_PX}, w / ${PRESENTATION_WIDTH_FONT_DIVISOR}),
+      h * ${PRESENTATION_HEIGHT_FONT_RATIO}
+    );
     applyFs(Math.max(baseFontSize * compressionRatio, MIN_FONT_PX));
     clearTimeout(fitTimer);
     fitTimer = setTimeout(fitContent, 60);

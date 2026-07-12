@@ -70,7 +70,7 @@ import {
   areImageOnlyStepIframeVisualsReady,
   DEFAULT_IMAGE_ONLY_VISUAL_READY_TIMEOUT_MS,
 } from "./utils/imageOnlyStepVisualReady";
-import { resolveSilentStepAutoAdvanceDelay } from "./utils/silentStepAutoAdvance";
+import { resolveSilentStepAutoAdvanceBehavior } from "./utils/silentStepAutoAdvance";
 import {
   resolveSlidePlayerVisibility,
   type SlidePlayerControlsVisibility,
@@ -672,9 +672,9 @@ const Slide: React.FC<SlideProps> = ({
       currentStepHasSpeakableElement,
     ]
   );
-  const silentStepAutoAdvanceDelay = useMemo(
+  const silentStepAutoAdvanceBehavior = useMemo(
     () =>
-      resolveSilentStepAutoAdvanceDelay({
+      resolveSilentStepAutoAdvanceBehavior({
         currentElementList,
         currentStepHasSpeakableElement,
         currentInteractionElement,
@@ -687,10 +687,9 @@ const Slide: React.FC<SlideProps> = ({
       markerAutoAdvanceDelay,
     ]
   );
-  const isImageOnlySilentStep = useMemo(
-    () => silentStepAutoAdvanceDelay !== markerAutoAdvanceDelay,
-    [markerAutoAdvanceDelay, silentStepAutoAdvanceDelay]
-  );
+  const silentStepAutoAdvanceDelay = silentStepAutoAdvanceBehavior.delayMs;
+  const isImageOnlySilentStep =
+    silentStepAutoAdvanceBehavior.usesImageOnlyDelay;
   const imageOnlyStepVisualReadyKey = useMemo(
     () => `${currentIndex}:${currentRenderElementKeys.join("|")}`,
     [currentIndex, currentRenderElementKeys]
@@ -1368,7 +1367,6 @@ const Slide: React.FC<SlideProps> = ({
     currentStepHasSpeakableElement,
     isImageOnlySilentStep,
     isImageOnlyStepVisualReady,
-    markerAutoAdvanceDelay,
     silentStepAutoAdvanceDelay,
     goNext,
     hasCompletedCurrentStepAudio,

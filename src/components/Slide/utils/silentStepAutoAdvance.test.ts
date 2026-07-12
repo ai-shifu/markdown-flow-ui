@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Element } from "../types";
 import { DEFAULT_IMAGE_ONLY_AUTO_ADVANCE_DELAY_MS } from "../constants";
 import {
+  resolveSilentStepAutoAdvanceBehavior,
   resolveSilentStepAutoAdvanceDelay,
   shouldUseImageOnlySilentStepAutoAdvanceDelay,
 } from "./silentStepAutoAdvance";
@@ -142,5 +143,33 @@ describe("resolveSilentStepAutoAdvanceDelay", () => {
         markerAutoAdvanceDelay: 2000,
       })
     ).toBe(2000);
+  });
+});
+
+describe("resolveSilentStepAutoAdvanceBehavior", () => {
+  it("keeps the image-only flag explicit when both delays match", () => {
+    expect(
+      resolveSilentStepAutoAdvanceBehavior({
+        currentElementList: [marker(), imageElement("img")],
+        currentStepHasSpeakableElement: false,
+        markerAutoAdvanceDelay: DEFAULT_IMAGE_ONLY_AUTO_ADVANCE_DELAY_MS,
+      })
+    ).toEqual({
+      delayMs: DEFAULT_IMAGE_ONLY_AUTO_ADVANCE_DELAY_MS,
+      usesImageOnlyDelay: true,
+    });
+  });
+
+  it("does not mark non-image silent steps as image-only when delays match", () => {
+    expect(
+      resolveSilentStepAutoAdvanceBehavior({
+        currentElementList: [marker()],
+        currentStepHasSpeakableElement: false,
+        markerAutoAdvanceDelay: DEFAULT_IMAGE_ONLY_AUTO_ADVANCE_DELAY_MS,
+      })
+    ).toEqual({
+      delayMs: DEFAULT_IMAGE_ONLY_AUTO_ADVANCE_DELAY_MS,
+      usesImageOnlyDelay: false,
+    });
   });
 });

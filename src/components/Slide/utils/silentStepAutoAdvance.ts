@@ -18,6 +18,11 @@ export interface SilentStepAutoAdvanceDelayParams {
   markerAutoAdvanceDelay: number;
 }
 
+export interface SilentStepAutoAdvanceBehavior {
+  delayMs: number;
+  usesImageOnlyDelay: boolean;
+}
+
 const isRenderableStepContentElement = (element?: Element) =>
   Boolean(element) && !element?.is_marker && element?.is_renderable !== false;
 
@@ -73,10 +78,29 @@ export const resolveSilentStepAutoAdvanceDelay = ({
   currentInteractionElement,
   markerAutoAdvanceDelay,
 }: SilentStepAutoAdvanceDelayParams) =>
-  shouldUseImageOnlySilentStepAutoAdvanceDelay({
+  resolveSilentStepAutoAdvanceBehavior({
     currentElementList,
     currentStepHasSpeakableElement,
     currentInteractionElement,
-  })
-    ? DEFAULT_IMAGE_ONLY_AUTO_ADVANCE_DELAY_MS
-    : markerAutoAdvanceDelay;
+    markerAutoAdvanceDelay,
+  }).delayMs;
+
+export const resolveSilentStepAutoAdvanceBehavior = ({
+  currentElementList,
+  currentStepHasSpeakableElement,
+  currentInteractionElement,
+  markerAutoAdvanceDelay,
+}: SilentStepAutoAdvanceDelayParams): SilentStepAutoAdvanceBehavior => {
+  const usesImageOnlyDelay = shouldUseImageOnlySilentStepAutoAdvanceDelay({
+    currentElementList,
+    currentStepHasSpeakableElement,
+    currentInteractionElement,
+  });
+
+  return {
+    delayMs: usesImageOnlyDelay
+      ? DEFAULT_IMAGE_ONLY_AUTO_ADVANCE_DELAY_MS
+      : markerAutoAdvanceDelay,
+    usesImageOnlyDelay,
+  };
+};

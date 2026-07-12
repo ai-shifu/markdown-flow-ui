@@ -4,7 +4,9 @@ import type { MarkdownFlowLocale } from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 import type { ScalingWindow } from "./utils/iframe-scaling";
 import {
+  isAnchorElement,
   mergeAnchorRelValue,
+  resolveClosestAnchor,
   shouldForceAnchorHrefToNewTab,
 } from "./utils/link-targets";
 
@@ -208,7 +210,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     const wrapper = doc.createElement("div");
     wrapper.innerHTML = html;
     wrapper.querySelectorAll("a[href]").forEach((node) => {
-      if (!(node instanceof HTMLAnchorElement)) {
+      if (!isAnchorElement(node)) {
         return;
       }
 
@@ -272,13 +274,8 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     container.replaceChildren(...contentNodes);
 
     const handleLinkClick = (event: MouseEvent) => {
-      const clickTarget = event.target;
-      if (!(clickTarget instanceof Element)) {
-        return;
-      }
-
-      const anchor = clickTarget.closest("a[href]");
-      if (!(anchor instanceof HTMLAnchorElement)) {
+      const anchor = resolveClosestAnchor(event.target);
+      if (!anchor) {
         return;
       }
 

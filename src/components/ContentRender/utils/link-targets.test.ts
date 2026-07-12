@@ -1,7 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
+  isAnchorElement,
   mergeAnchorRelValue,
+  resolveClosestAnchor,
   shouldForceAnchorHrefToNewTab,
 } from "./link-targets";
 
@@ -36,6 +38,35 @@ describe("mergeAnchorRelValue", () => {
     expect(mergeAnchorRelValue("noopener noreferrer nofollow noreferrer")).toBe(
       "noopener noreferrer nofollow"
     );
+  });
+});
+
+describe("realm-safe anchor helpers", () => {
+  it("identifies anchor elements by tagName instead of instanceof", () => {
+    expect(isAnchorElement({ tagName: "A" })).toBe(true);
+    expect(isAnchorElement({ tagName: "DIV" })).toBe(false);
+  });
+
+  it("resolves anchors via closest from element-like event targets", () => {
+    const anchor = { tagName: "A" } as HTMLAnchorElement;
+    const closest = vi.fn(() => anchor);
+
+    expect(resolveClosestAnchor({ closest } as unknown as EventTarget)).toBe(
+      anchor
+    );
+    expect(closest).toHaveBeenCalledWith("a[href]");
+  });
+
+  it("falls back to parentElement.closest for text-node-like targets", () => {
+    const anchor = { tagName: "A" } as HTMLAnchorElement;
+    const closest = vi.fn(() => anchor);
+
+    expect(
+      resolveClosestAnchor({
+        parentElement: { closest },
+      } as unknown as EventTarget)
+    ).toBe(anchor);
+    expect(closest).toHaveBeenCalledWith("a[href]");
   });
 });
 

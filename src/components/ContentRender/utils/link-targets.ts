@@ -18,6 +18,29 @@ export const shouldForceAnchorHrefToNewTab = (href: string | null) => {
   return true;
 };
 
+export const isAnchorElement = (
+  node: { tagName?: string | null } | null | undefined
+): node is HTMLAnchorElement => node?.tagName?.toLowerCase() === "a";
+
+export const resolveClosestAnchor = (target: EventTarget | null) => {
+  const candidate = target as {
+    closest?: (selector: string) => Element | null;
+    parentElement?: Element | null;
+  } | null;
+
+  if (!candidate) {
+    return null;
+  }
+
+  if (typeof candidate.closest === "function") {
+    const anchor = candidate.closest("a[href]");
+    return isAnchorElement(anchor) ? anchor : null;
+  }
+
+  const anchor = candidate.parentElement?.closest("a[href]");
+  return isAnchorElement(anchor) ? anchor : null;
+};
+
 export const mergeAnchorRelValue = (rel: string | null) => {
   const tokens = new Set(
     (rel ?? "")

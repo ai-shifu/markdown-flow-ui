@@ -692,8 +692,8 @@ const Slide: React.FC<SlideProps> = ({
     [markerAutoAdvanceDelay, silentStepAutoAdvanceDelay]
   );
   const imageOnlyStepVisualReadyKey = useMemo(
-    () => currentRenderElementKeys.join("|"),
-    [currentRenderElementKeys]
+    () => `${currentIndex}:${currentRenderElementKeys.join("|")}`,
+    [currentIndex, currentRenderElementKeys]
   );
   const [readyImageOnlyStepKey, setReadyImageOnlyStepKey] = useState<
     string | null

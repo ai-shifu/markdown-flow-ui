@@ -49,6 +49,7 @@ export interface ShouldRenderInteractionOverlayParams {
   shouldBlockPlaybackForInteraction: boolean;
   playerControlsVisible: boolean;
   shouldMountPlayer: boolean;
+  hasFocusedTextInput: boolean;
 }
 
 export const shouldRenderInteractionOverlay = ({
@@ -57,9 +58,14 @@ export const shouldRenderInteractionOverlay = ({
   shouldBlockPlaybackForInteraction,
   playerControlsVisible,
   shouldMountPlayer,
+  hasFocusedTextInput,
 }: ShouldRenderInteractionOverlayParams) => {
   if (!hasActiveInteraction || !isInteractionOverlayOpen) {
     return false;
+  }
+
+  if (hasFocusedTextInput) {
+    return true;
   }
 
   if (

@@ -68,6 +68,7 @@ describe("shouldRenderInteractionOverlay", () => {
         shouldBlockPlaybackForInteraction: true,
         playerControlsVisible: false,
         shouldMountPlayer: true,
+        hasFocusedTextInput: false,
       })
     ).toBe(false);
   });
@@ -80,6 +81,7 @@ describe("shouldRenderInteractionOverlay", () => {
         shouldBlockPlaybackForInteraction: true,
         playerControlsVisible: true,
         shouldMountPlayer: true,
+        hasFocusedTextInput: false,
       })
     ).toBe(true);
   });
@@ -92,6 +94,7 @@ describe("shouldRenderInteractionOverlay", () => {
         shouldBlockPlaybackForInteraction: false,
         playerControlsVisible: false,
         shouldMountPlayer: true,
+        hasFocusedTextInput: false,
       })
     ).toBe(true);
   });
@@ -104,6 +107,7 @@ describe("shouldRenderInteractionOverlay", () => {
         shouldBlockPlaybackForInteraction: true,
         playerControlsVisible: false,
         shouldMountPlayer: false,
+        hasFocusedTextInput: false,
       })
     ).toBe(true);
   });
@@ -116,6 +120,7 @@ describe("shouldRenderInteractionOverlay", () => {
         shouldBlockPlaybackForInteraction: true,
         playerControlsVisible: true,
         shouldMountPlayer: true,
+        hasFocusedTextInput: false,
       })
     ).toBe(false);
   });
@@ -128,7 +133,21 @@ describe("shouldRenderInteractionOverlay", () => {
         shouldBlockPlaybackForInteraction: true,
         playerControlsVisible: true,
         shouldMountPlayer: true,
+        hasFocusedTextInput: false,
       })
     ).toBe(false);
+  });
+
+  it("keeps blocking interactions visible while a text input is focused", () => {
+    expect(
+      shouldRenderInteractionOverlay({
+        hasActiveInteraction: true,
+        isInteractionOverlayOpen: true,
+        shouldBlockPlaybackForInteraction: true,
+        playerControlsVisible: false,
+        shouldMountPlayer: true,
+        hasFocusedTextInput: true,
+      })
+    ).toBe(true);
   });
 });

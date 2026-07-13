@@ -2086,8 +2086,7 @@ const Slide: React.FC<SlideProps> = ({
 
               if (
                 nextFocusTarget instanceof HTMLElement &&
-                interactionOverlayRef.current?.contains(nextFocusTarget) &&
-                isTextEntryTarget(nextFocusTarget)
+                interactionOverlayRef.current?.contains(nextFocusTarget)
               ) {
                 return;
               }

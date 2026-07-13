@@ -48,7 +48,10 @@ import {
   resolveMobileViewModeState,
   type MobileViewMode,
 } from "./utils/mobileScreenMode";
-import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
+import {
+  shouldPresentInteractionOverlay,
+  shouldRenderInteractionOverlay,
+} from "./utils/interactionPlayback";
 import { resolveMarkdownScalingMode } from "./utils/markdownScaling";
 import { shouldWakePlayerControlsAfterNavigation } from "./utils/playerNavigationContext";
 import { shouldAutoAdvanceIntoAppendedMarker } from "./utils/appendedMarkerAdvance";
@@ -228,6 +231,17 @@ const areStepElementListsEqual = (
       element.content === nextElement?.content
     );
   });
+
+const TEXT_ENTRY_SELECTOR = [
+  'input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"])',
+  "textarea",
+  '[contenteditable=""]',
+  '[contenteditable="true"]',
+  '[contenteditable="plaintext-only"]',
+].join(", ");
+
+const isTextEntryTarget = (target: EventTarget | null): target is HTMLElement =>
+  target instanceof HTMLElement && target.matches(TEXT_ENTRY_SELECTOR);
 
 export interface SlideProps extends React.ComponentProps<"section"> {
   elementList?: Element[];
@@ -442,6 +456,8 @@ const Slide: React.FC<SlideProps> = ({
     Element | undefined
   >();
   const [isInteractionOverlayOpen, setIsInteractionOverlayOpen] =
+    useState(false);
+  const [hasFocusedInteractionTextInput, setHasFocusedInteractionTextInput] =
     useState(false);
   const [
     interactionOverlaySubtitleOffset,
@@ -1515,8 +1531,14 @@ const Slide: React.FC<SlideProps> = ({
     Boolean(activeInteractionElement?.readonly) || hasResolvedInteractionInput;
   const shouldAutoContinueInteraction =
     isInteractionReadonly || hasResolvedInteractionInput;
-  const shouldShowInteractionOverlay =
-    Boolean(activeInteractionElement) && isInteractionOverlayOpen;
+  const shouldShowInteractionOverlay = shouldRenderInteractionOverlay({
+    hasActiveInteraction: Boolean(activeInteractionElement),
+    isInteractionOverlayOpen,
+    shouldBlockPlaybackForInteraction,
+    playerControlsVisible,
+    shouldMountPlayer,
+    hasFocusedTextInput: hasFocusedInteractionTextInput,
+  });
 
   const handleInteractionSend = useCallback(
     (content: OnSendContentParams) => {
@@ -1557,6 +1579,14 @@ const Slide: React.FC<SlideProps> = ({
       document.removeEventListener("fullscreenchange", syncFullscreenState);
     };
   }, []);
+
+  useEffect(() => {
+    if (activeInteractionElement && isInteractionOverlayOpen) {
+      return;
+    }
+
+    setHasFocusedInteractionTextInput(false);
+  }, [activeInteractionElement, isInteractionOverlayOpen]);
 
   useEffect(() => {
     if (!shouldShowInteractionOverlay) {
@@ -2218,6 +2248,27 @@ const Slide: React.FC<SlideProps> = ({
             )}
             onClick={stopOverlayPropagation}
             onPointerDown={stopOverlayPropagation}
+            onFocusCapture={(event) => {
+              if (isTextEntryTarget(event.target)) {
+                setHasFocusedInteractionTextInput(true);
+              }
+            }}
+            onBlurCapture={(event) => {
+              if (!isTextEntryTarget(event.target)) {
+                return;
+              }
+
+              const nextFocusTarget = event.relatedTarget;
+
+              if (
+                nextFocusTarget instanceof HTMLElement &&
+                interactionOverlayRef.current?.contains(nextFocusTarget)
+              ) {
+                return;
+              }
+
+              setHasFocusedInteractionTextInput(false);
+            }}
             style={interactionOverlayStyle}
           >
             <InteractionOverlayCard

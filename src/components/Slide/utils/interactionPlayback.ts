@@ -42,3 +42,33 @@ export const shouldPresentInteractionOverlay = ({
   // keep the overlay closed so the step can continue as normal playback.
   return !currentStepHasSpeakableElement;
 };
+
+export interface ShouldRenderInteractionOverlayParams {
+  hasActiveInteraction: boolean;
+  isInteractionOverlayOpen: boolean;
+  shouldBlockPlaybackForInteraction: boolean;
+  playerControlsVisible: boolean;
+  shouldMountPlayer: boolean;
+}
+
+export const shouldRenderInteractionOverlay = ({
+  hasActiveInteraction,
+  isInteractionOverlayOpen,
+  shouldBlockPlaybackForInteraction,
+  playerControlsVisible,
+  shouldMountPlayer,
+}: ShouldRenderInteractionOverlayParams) => {
+  if (!hasActiveInteraction || !isInteractionOverlayOpen) {
+    return false;
+  }
+
+  if (
+    shouldBlockPlaybackForInteraction &&
+    shouldMountPlayer &&
+    !playerControlsVisible
+  ) {
+    return false;
+  }
+
+  return true;
+};

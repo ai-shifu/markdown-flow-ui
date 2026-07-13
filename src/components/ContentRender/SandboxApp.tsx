@@ -3,6 +3,12 @@ import LoadingOverlayCard from "../ui/loading-overlay-card";
 import type { MarkdownFlowLocale } from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 import type { ScalingWindow } from "./utils/iframe-scaling";
+import {
+  isAnchorElement,
+  mergeAnchorRelValue,
+  resolveClosestAnchor,
+  shouldForceAnchorHrefToNewTab,
+} from "./utils/link-targets";
 
 export interface SandboxAppProps {
   html: string;
@@ -203,6 +209,18 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     setIsGeneratingScripts(false);
     const wrapper = doc.createElement("div");
     wrapper.innerHTML = html;
+    wrapper.querySelectorAll("a[href]").forEach((node) => {
+      if (!isAnchorElement(node)) {
+        return;
+      }
+
+      if (!shouldForceAnchorHrefToNewTab(node.getAttribute("href"))) {
+        return;
+      }
+
+      node.setAttribute("target", "_blank");
+      node.setAttribute("rel", mergeAnchorRelValue(node.getAttribute("rel")));
+    });
 
     const openScriptCount = (html.match(/<script[\s>]/gi) || []).length;
     const closeScriptCount = (html.match(/<\/script>/gi) || []).length;
@@ -254,6 +272,24 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     const hasInitialContent = contentNodes.length > 0;
     setHasRenderedContent(hasInitialContent);
     container.replaceChildren(...contentNodes);
+
+    const handleLinkClick = (event: MouseEvent) => {
+      const anchor = resolveClosestAnchor(event.target);
+      if (!anchor) {
+        return;
+      }
+
+      if (!shouldForceAnchorHrefToNewTab(anchor.getAttribute("href"))) {
+        return;
+      }
+
+      anchor.setAttribute("target", "_blank");
+      anchor.setAttribute(
+        "rel",
+        mergeAnchorRelValue(anchor.getAttribute("rel"))
+      );
+    };
+    container.addEventListener("click", handleLinkClick, true);
 
     let scriptContentObserver: MutationObserver | null = null;
     const markRenderedContentFromContainer = () => {
@@ -341,6 +377,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
 
     return () => {
       scriptContentObserver?.disconnect();
+      container.removeEventListener("click", handleLinkClick, true);
     };
   }, [html, resetToken, enableScaling]);
 

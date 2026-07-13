@@ -21,6 +21,21 @@ const hasStableMarkerPrefix = (
     (element, index) => element === nextSlideElementList[index]
   );
 
+const hasStableMarkerIdentityPrefix = (
+  previousSlideElementList: Element[],
+  nextSlideElementList: Element[]
+) =>
+  nextSlideElementList.length <= previousSlideElementList.length &&
+  nextSlideElementList.every((element, index) => {
+    const previousElement = previousSlideElementList[index];
+
+    return (
+      element.type === previousElement?.type &&
+      element.sequence_number === previousElement?.sequence_number &&
+      element.content === previousElement?.content
+    );
+  });
+
 export const resolveNextSlideIndexAfterMarkerAppend = ({
   previousIndex,
   previousSlideElementList,
@@ -48,6 +63,17 @@ export const resolveNextSlideIndexAfterMarkerAppend = ({
     isResolvedInteractionElement(previousCurrentElement)
   ) {
     return previousSlideElementList.length;
+  }
+
+  const hasTruncatedMarkers =
+    nextSlideElementList.length < previousSlideElementList.length &&
+    hasStableMarkerIdentityPrefix(
+      previousSlideElementList,
+      nextSlideElementList
+    );
+
+  if (hasTruncatedMarkers && nextSlideElementList.length > 0) {
+    return Math.min(previousIndex, nextSlideElementList.length - 1);
   }
 
   if (previousIndex >= 0 && previousIndex < nextSlideElementList.length) {

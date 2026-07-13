@@ -17,11 +17,7 @@ import ContentRender from "../ContentRender";
 import type { ContentRenderProps } from "../ContentRender/ContentRender";
 import IframeSandbox from "../ContentRender/IframeSandbox";
 import type { OnSendContentParams } from "../types";
-import {
-  getInteractionDefaultSelectedValues,
-  getInteractionDefaultValues,
-  type InteractionDefaultValueOptions,
-} from "../../lib/interaction-defaults";
+import type { InteractionDefaultValueOptions } from "../../lib/interaction-defaults";
 import {
   isLandscapeViewport as getIsFullscreenPreferredViewport,
   isMobileDevice as getIsMobileDevice,
@@ -68,6 +64,7 @@ import {
   resolvePlayerCustomActionElement,
 } from "./utils/playerCustomActions";
 import { createPlaybackTimeStore } from "./utils/playbackTimeStore";
+import { resolveSlideInteractionState } from "./utils/interactionResolution";
 import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
 import {
   resolveSlidePlayerVisibility,
@@ -92,6 +89,15 @@ const DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS = 2000;
 const DEFAULT_INTERACTION_OVERLAY_OPEN_DELAY_MS = 300;
 const DEFAULT_INTERACTION_OVERLAY_FALLBACK_OFFSET_PX = 160;
 const DEFAULT_INTERACTION_SUBTITLE_GAP_PX = 16;
+const DEFAULT_RESOLVED_INTERACTION_AUTO_CLOSE_DELAY_MS = 3000;
+const INTERACTION_ACTIVITY_SELECTOR = [
+  "button",
+  "input",
+  "textarea",
+  '[contenteditable=""]',
+  '[contenteditable="true"]',
+  '[contenteditable="plaintext-only"]',
+].join(", ");
 const DEFAULT_BUFFERING_REASON: SlideBufferingReason = "waitingForAudio";
 
 export type { SlideBufferingReason } from "./slideI18n";
@@ -237,6 +243,11 @@ const TEXT_ENTRY_SELECTOR = [
 
 const isTextEntryTarget = (target: EventTarget | null): target is HTMLElement =>
   target instanceof HTMLElement && target.matches(TEXT_ENTRY_SELECTOR);
+const isInteractionActivityTarget = (
+  target: EventTarget | null
+): target is HTMLElement =>
+  target instanceof HTMLElement &&
+  target.matches(INTERACTION_ACTIVITY_SELECTOR);
 
 export interface SlideProps extends React.ComponentProps<"section"> {
   elementList?: Element[];
@@ -444,6 +455,8 @@ const Slide: React.FC<SlideProps> = ({
   const [isInteractionOverlayOpen, setIsInteractionOverlayOpen] =
     useState(false);
   const [hasFocusedInteractionTextInput, setHasFocusedInteractionTextInput] =
+    useState(false);
+  const [hasInteractionOverlayActivity, setHasInteractionOverlayActivity] =
     useState(false);
   const [
     interactionOverlaySubtitleOffset,
@@ -871,22 +884,23 @@ const Slide: React.FC<SlideProps> = ({
 
   const syncPlaybackPreferenceBeforeNavigation = useCallback(
     (context?: SlidePlayerNavigationContext) => {
-      const shouldContinuePlayback =
-        context?.shouldContinuePlayback ?? isPlaybackRequested;
-
-      setIsPlaybackRequested(shouldContinuePlayback);
+      if (context) {
+        setIsPlaybackRequested(context.shouldContinuePlayback);
+      }
     },
-    [isPlaybackRequested]
+    []
   );
 
   useEffect(() => {
     // Keep silent-step autoplay aligned with the same play/pause preference as audio.
     setIsAutoAdvanceEnabled(isPlaybackRequested);
+  }, [currentIndex, isPlaybackRequested, playerCustomActionPauseOnActive]);
 
+  useEffect(() => {
     if (playerCustomActionPauseOnActive) {
       setIsPlayerCustomActionActive(false);
     }
-  }, [currentIndex, isPlaybackRequested, playerCustomActionPauseOnActive]);
+  }, [currentIndex, playerCustomActionPauseOnActive]);
 
   useEffect(() => {
     return () => {
@@ -1298,58 +1312,26 @@ const Slide: React.FC<SlideProps> = ({
     setHasCurrentAudioPlaybackStarted(false);
   }, [currentPlaybackStartedResetKey]);
 
-  const interactionDefaults = useMemo(() => {
-    if (!activeInteractionElement) {
-      return {};
-    }
-
-    const shouldPreferResolvedInteractionInput = Boolean(
-      activeInteractionElement.user_input?.trim()
-    );
-
-    return getInteractionDefaultValues(
-      typeof activeInteractionElement.content === "string"
-        ? activeInteractionElement.content
-        : undefined,
-      activeInteractionElement.user_input,
-      shouldPreferResolvedInteractionInput
-        ? undefined
-        : interactionDefaultValueOptions
-    );
-  }, [activeInteractionElement, interactionDefaultValueOptions]);
-
-  const interactionDefaultSelectedValues = useMemo(() => {
-    if (!activeInteractionElement) {
-      return undefined;
-    }
-
-    const shouldPreferResolvedInteractionInput = Boolean(
-      activeInteractionElement.user_input?.trim()
-    );
-
-    return getInteractionDefaultSelectedValues(
-      typeof activeInteractionElement.content === "string"
-        ? activeInteractionElement.content
-        : undefined,
-      activeInteractionElement.user_input,
-      shouldPreferResolvedInteractionInput
-        ? undefined
-        : interactionDefaultValueOptions
-    );
-  }, [activeInteractionElement, interactionDefaultValueOptions]);
-
-  const hasResolvedInteractionInput = Boolean(
-    activeInteractionElement?.user_input?.trim()
+  const {
+    interactionDefaults,
+    interactionDefaultSelectedValues,
+    hasResolvedInteractionInput,
+    isInteractionReadonly,
+    shouldAutoContinueInteraction,
+  } = useMemo(
+    () =>
+      resolveSlideInteractionState(activeInteractionElement, {
+        interactionDefaultValueOptions,
+      }),
+    [activeInteractionElement, interactionDefaultValueOptions]
   );
-
-  const isInteractionReadonly =
-    Boolean(activeInteractionElement?.readonly) || hasResolvedInteractionInput;
-  const shouldAutoContinueInteraction =
-    isInteractionReadonly || hasResolvedInteractionInput;
   const shouldShowInteractionOverlay = shouldRenderInteractionOverlay({
     hasActiveInteraction: Boolean(activeInteractionElement),
     isInteractionOverlayOpen,
-    shouldBlockPlaybackForInteraction,
+    shouldBlockPlaybackForInteraction:
+      shouldBlockPlaybackForInteraction &&
+      !isInteractionReadonly &&
+      !hasResolvedInteractionInput,
     playerControlsVisible,
     shouldMountPlayer,
     hasFocusedTextInput: hasFocusedInteractionTextInput,
@@ -1401,6 +1383,7 @@ const Slide: React.FC<SlideProps> = ({
     }
 
     setHasFocusedInteractionTextInput(false);
+    setHasInteractionOverlayActivity(false);
   }, [activeInteractionElement, isInteractionOverlayOpen]);
 
   useEffect(() => {
@@ -1445,16 +1428,33 @@ const Slide: React.FC<SlideProps> = ({
   useEffect(() => {
     clearInteractionAutoCloseTimer();
 
-    if (!isInteractionOverlayOpen || !shouldAutoContinueInteraction) {
+    if (!isInteractionOverlayOpen) {
       return;
     }
 
-    // Auto-close passive interaction markers to keep playback moving.
+    if (shouldAutoContinueInteraction) {
+      // Auto-close passive interaction markers to keep playback moving.
+      interactionAutoCloseTimerRef.current = window.setTimeout(() => {
+        interactionAutoCloseTimerRef.current = null;
+
+        continueAfterInteraction();
+      }, DEFAULT_RESOLVED_INTERACTION_AUTO_CLOSE_DELAY_MS);
+      return () => {
+        clearInteractionAutoCloseTimer();
+      };
+    }
+
+    if (hasInteractionOverlayActivity || !hasResolvedInteractionInput) {
+      return;
+    }
+
+    // Give resolved history interactions a short revisit window before
+    // playback resumes, but stop auto-closing once the learner starts editing.
     interactionAutoCloseTimerRef.current = window.setTimeout(() => {
       interactionAutoCloseTimerRef.current = null;
 
       continueAfterInteraction();
-    }, 2000);
+    }, DEFAULT_RESOLVED_INTERACTION_AUTO_CLOSE_DELAY_MS);
 
     return () => {
       clearInteractionAutoCloseTimer();
@@ -1462,6 +1462,8 @@ const Slide: React.FC<SlideProps> = ({
   }, [
     clearInteractionAutoCloseTimer,
     continueAfterInteraction,
+    hasInteractionOverlayActivity,
+    hasResolvedInteractionInput,
     isInteractionOverlayOpen,
     shouldAutoContinueInteraction,
   ]);
@@ -2076,6 +2078,10 @@ const Slide: React.FC<SlideProps> = ({
               if (isTextEntryTarget(event.target)) {
                 setHasFocusedInteractionTextInput(true);
               }
+
+              if (isInteractionActivityTarget(event.target)) {
+                setHasInteractionOverlayActivity(true);
+              }
             }}
             onBlurCapture={(event) => {
               if (!isTextEntryTarget(event.target)) {
@@ -2092,6 +2098,16 @@ const Slide: React.FC<SlideProps> = ({
               }
 
               setHasFocusedInteractionTextInput(false);
+            }}
+            onPointerDownCapture={(event) => {
+              if (isInteractionActivityTarget(event.target)) {
+                setHasInteractionOverlayActivity(true);
+              }
+            }}
+            onInputCapture={(event) => {
+              if (isInteractionActivityTarget(event.target)) {
+                setHasInteractionOverlayActivity(true);
+              }
             }}
             style={interactionOverlayStyle}
           >

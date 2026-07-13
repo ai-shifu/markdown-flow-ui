@@ -86,6 +86,15 @@ const DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS = 2000;
 const DEFAULT_INTERACTION_OVERLAY_OPEN_DELAY_MS = 300;
 const DEFAULT_INTERACTION_OVERLAY_FALLBACK_OFFSET_PX = 160;
 const DEFAULT_INTERACTION_SUBTITLE_GAP_PX = 16;
+const DEFAULT_RESOLVED_INTERACTION_AUTO_CLOSE_DELAY_MS = 3000;
+const INTERACTION_ACTIVITY_SELECTOR = [
+  "button",
+  "input",
+  "textarea",
+  '[contenteditable=""]',
+  '[contenteditable="true"]',
+  '[contenteditable="plaintext-only"]',
+].join(", ");
 const DEFAULT_BUFFERING_REASON: SlideBufferingReason = "waitingForAudio";
 
 export type { SlideBufferingReason } from "./slideI18n";
@@ -220,6 +229,12 @@ const areStepElementListsEqual = (
       element.content === nextElement?.content
     );
   });
+
+const isInteractionActivityTarget = (
+  target: EventTarget | null
+): target is HTMLElement =>
+  target instanceof HTMLElement &&
+  target.matches(INTERACTION_ACTIVITY_SELECTOR);
 
 export interface SlideProps extends React.ComponentProps<"section"> {
   elementList?: Element[];
@@ -425,6 +440,8 @@ const Slide: React.FC<SlideProps> = ({
     Element | undefined
   >();
   const [isInteractionOverlayOpen, setIsInteractionOverlayOpen] =
+    useState(false);
+  const [hasInteractionOverlayActivity, setHasInteractionOverlayActivity] =
     useState(false);
   const [
     interactionOverlaySubtitleOffset,
@@ -1283,6 +1300,7 @@ const Slide: React.FC<SlideProps> = ({
   const {
     interactionDefaults,
     interactionDefaultSelectedValues,
+    hasResolvedInteractionInput,
     isInteractionReadonly,
     shouldAutoContinueInteraction,
   } = useMemo(
@@ -1336,6 +1354,14 @@ const Slide: React.FC<SlideProps> = ({
   }, []);
 
   useEffect(() => {
+    if (activeInteractionElement && isInteractionOverlayOpen) {
+      return;
+    }
+
+    setHasInteractionOverlayActivity(false);
+  }, [activeInteractionElement, isInteractionOverlayOpen]);
+
+  useEffect(() => {
     if (!shouldShowInteractionOverlay) {
       setInteractionOverlaySubtitleOffset(0);
       return;
@@ -1377,16 +1403,33 @@ const Slide: React.FC<SlideProps> = ({
   useEffect(() => {
     clearInteractionAutoCloseTimer();
 
-    if (!isInteractionOverlayOpen || !shouldAutoContinueInteraction) {
+    if (!isInteractionOverlayOpen) {
       return;
     }
 
-    // Auto-close passive interaction markers to keep playback moving.
+    if (shouldAutoContinueInteraction) {
+      // Auto-close passive interaction markers to keep playback moving.
+      interactionAutoCloseTimerRef.current = window.setTimeout(() => {
+        interactionAutoCloseTimerRef.current = null;
+
+        continueAfterInteraction();
+      }, DEFAULT_RESOLVED_INTERACTION_AUTO_CLOSE_DELAY_MS);
+      return () => {
+        clearInteractionAutoCloseTimer();
+      };
+    }
+
+    if (hasInteractionOverlayActivity || !hasResolvedInteractionInput) {
+      return;
+    }
+
+    // Give resolved history interactions a short revisit window before
+    // playback resumes, but stop auto-closing once the learner starts editing.
     interactionAutoCloseTimerRef.current = window.setTimeout(() => {
       interactionAutoCloseTimerRef.current = null;
 
       continueAfterInteraction();
-    }, 2000);
+    }, DEFAULT_RESOLVED_INTERACTION_AUTO_CLOSE_DELAY_MS);
 
     return () => {
       clearInteractionAutoCloseTimer();
@@ -1394,6 +1437,8 @@ const Slide: React.FC<SlideProps> = ({
   }, [
     clearInteractionAutoCloseTimer,
     continueAfterInteraction,
+    hasInteractionOverlayActivity,
+    hasResolvedInteractionInput,
     isInteractionOverlayOpen,
     shouldAutoContinueInteraction,
   ]);
@@ -2004,6 +2049,21 @@ const Slide: React.FC<SlideProps> = ({
             )}
             onClick={stopOverlayPropagation}
             onPointerDown={stopOverlayPropagation}
+            onPointerDownCapture={(event) => {
+              if (isInteractionActivityTarget(event.target)) {
+                setHasInteractionOverlayActivity(true);
+              }
+            }}
+            onFocusCapture={(event) => {
+              if (isInteractionActivityTarget(event.target)) {
+                setHasInteractionOverlayActivity(true);
+              }
+            }}
+            onInputCapture={(event) => {
+              if (isInteractionActivityTarget(event.target)) {
+                setHasInteractionOverlayActivity(true);
+              }
+            }}
             style={interactionOverlayStyle}
           >
             <InteractionOverlayCard

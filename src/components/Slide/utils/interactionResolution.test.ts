@@ -41,6 +41,22 @@ describe("resolveSlideInteractionState", () => {
     expect(interactionState.shouldAutoContinueInteraction).toBe(true);
   });
 
+  it("auto-continues resolved history interactions without forcing readonly", () => {
+    const interactionState = resolveSlideInteractionState(
+      {
+        type: "interaction",
+        content: "?[%{{level}} 完全不了解 | 略知一二 | 比较熟悉]",
+        user_input: "略知一二",
+        readonly: false,
+      },
+      {}
+    );
+
+    expect(interactionState.hasResolvedInteractionInput).toBe(true);
+    expect(interactionState.isInteractionReadonly).toBe(false);
+    expect(interactionState.shouldAutoContinueInteraction).toBe(false);
+  });
+
   it("preserves structured history defaults without forcing readonly", () => {
     const interactionState = resolveSlideInteractionState(
       {

@@ -66,7 +66,9 @@ rules, but must not duplicate or redefine them.
   below.
 - Subject: use English Conventional Commits without scope parentheses, such as
   `type: summary`; do not use `type(scope): summary`. Use a lowercase type and
-  imperative mood.
+  imperative mood. Write the summary in plain language that product users can
+  understand. When a change affects users, describe the user-visible outcome
+  or benefit instead of only naming the internal implementation detail.
 - Body: include exactly two sections, `Changed:` and `Benefit:`.
 - Classification: use `chore` for repository-maintenance-only instruction or
   generated guidance updates like this file.

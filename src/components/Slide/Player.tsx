@@ -2039,6 +2039,11 @@ const Player = ({
                 </React.Fragment>
               ))}
               <button
+                aria-expanded={
+                  hasInteraction
+                    ? isInteractionOpen && !isInteractionCollapsed
+                    : false
+                }
                 aria-label={playerTexts.notesLabel}
                 className={cn(
                   "slide-player__action slide-player__action--interaction",

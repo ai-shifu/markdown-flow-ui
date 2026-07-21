@@ -1525,6 +1525,32 @@ const Slide: React.FC<SlideProps> = ({
     setIsInteractionOverlayCollapsing(false);
   }, [activeInteractionElement]);
 
+  useEffect(() => {
+    if (interactionCollapsible) {
+      return;
+    }
+
+    if (interactionOverlayCollapseTimerRef.current !== null) {
+      window.clearTimeout(interactionOverlayCollapseTimerRef.current);
+      interactionOverlayCollapseTimerRef.current = null;
+    }
+
+    if (!isInteractionOverlayCollapsed && !isInteractionOverlayCollapsing) {
+      return;
+    }
+
+    if (activeInteractionElement) {
+      setIsInteractionOverlayOpen(true);
+    }
+    setIsInteractionOverlayCollapsed(false);
+    setIsInteractionOverlayCollapsing(false);
+  }, [
+    activeInteractionElement,
+    interactionCollapsible,
+    isInteractionOverlayCollapsed,
+    isInteractionOverlayCollapsing,
+  ]);
+
   useEffect(
     () => () => {
       if (interactionOverlayCollapseTimerRef.current !== null) {

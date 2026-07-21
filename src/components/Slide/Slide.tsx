@@ -261,16 +261,6 @@ const isInteractionActivityTarget = (
 ): target is HTMLElement =>
   target instanceof HTMLElement &&
   target.matches(INTERACTION_ACTIVITY_SELECTOR);
-const TEXT_ENTRY_SELECTOR = [
-  'input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"])',
-  "textarea",
-  '[contenteditable=""]',
-  '[contenteditable="true"]',
-  '[contenteditable="plaintext-only"]',
-].join(", ");
-
-const isTextEntryTarget = (target: EventTarget | null): target is HTMLElement =>
-  target instanceof HTMLElement && target.matches(TEXT_ENTRY_SELECTOR);
 
 export interface SlideProps extends React.ComponentProps<"section"> {
   elementList?: Element[];
@@ -494,8 +484,6 @@ const Slide: React.FC<SlideProps> = ({
   const [isInteractionOverlayOpen, setIsInteractionOverlayOpen] =
     useState(false);
   const [hasInteractionOverlayActivity, setHasInteractionOverlayActivity] =
-    useState(false);
-  const [hasFocusedInteractionTextInput, setHasFocusedInteractionTextInput] =
     useState(false);
   const [isInteractionOverlayCollapsed, setIsInteractionOverlayCollapsed] =
     useState(false);
@@ -1571,7 +1559,6 @@ const Slide: React.FC<SlideProps> = ({
   const shouldShowInteractionOverlay = shouldRenderInteractionOverlay({
     hasActiveInteraction: Boolean(activeInteractionElement),
     isInteractionOverlayOpen,
-    hasFocusedTextInput: hasFocusedInteractionTextInput,
   });
 
   const handleInteractionSend = useCallback(
@@ -1620,11 +1607,14 @@ const Slide: React.FC<SlideProps> = ({
     }
 
     setHasInteractionOverlayActivity(false);
-    setHasFocusedInteractionTextInput(false);
   }, [activeInteractionElement, isInteractionOverlayOpen]);
 
   useEffect(() => {
-    if (!shouldShowInteractionOverlay) {
+    if (
+      !shouldShowInteractionOverlay ||
+      isInteractionOverlayCollapsed ||
+      isInteractionOverlayCollapsing
+    ) {
       setInteractionOverlaySubtitleOffset(0);
       return;
     }
@@ -1632,6 +1622,7 @@ const Slide: React.FC<SlideProps> = ({
     const interactionOverlayElement = interactionOverlayRef.current;
 
     if (!interactionOverlayElement) {
+      setInteractionOverlaySubtitleOffset(0);
       return;
     }
 
@@ -1660,7 +1651,11 @@ const Slide: React.FC<SlideProps> = ({
     return () => {
       resizeObserver.disconnect();
     };
-  }, [shouldShowInteractionOverlay]);
+  }, [
+    isInteractionOverlayCollapsed,
+    isInteractionOverlayCollapsing,
+    shouldShowInteractionOverlay,
+  ]);
 
   useEffect(() => {
     clearInteractionAutoCloseTimer();
@@ -2354,29 +2349,9 @@ const Slide: React.FC<SlideProps> = ({
               }
             }}
             onFocusCapture={(event) => {
-              if (isTextEntryTarget(event.target)) {
-                setHasFocusedInteractionTextInput(true);
-              }
-
               if (isInteractionActivityTarget(event.target)) {
                 setHasInteractionOverlayActivity(true);
               }
-            }}
-            onBlurCapture={(event) => {
-              if (!isTextEntryTarget(event.target)) {
-                return;
-              }
-
-              const nextFocusTarget = event.relatedTarget;
-
-              if (
-                nextFocusTarget instanceof HTMLElement &&
-                interactionOverlayRef.current?.contains(nextFocusTarget)
-              ) {
-                return;
-              }
-
-              setHasFocusedInteractionTextInput(false);
             }}
             onInputCapture={(event) => {
               if (isInteractionActivityTarget(event.target)) {

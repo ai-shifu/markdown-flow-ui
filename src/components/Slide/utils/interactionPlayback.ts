@@ -46,20 +46,14 @@ export const shouldPresentInteractionOverlay = ({
 export interface ShouldRenderInteractionOverlayParams {
   hasActiveInteraction: boolean;
   isInteractionOverlayOpen: boolean;
-  hasFocusedTextInput: boolean;
 }
 
 export const shouldRenderInteractionOverlay = ({
   hasActiveInteraction,
   isInteractionOverlayOpen,
-  hasFocusedTextInput,
 }: ShouldRenderInteractionOverlayParams) => {
   if (!hasActiveInteraction || !isInteractionOverlayOpen) {
     return false;
-  }
-
-  if (hasFocusedTextInput) {
-    return true;
   }
 
   return true;

@@ -65,7 +65,6 @@ describe("shouldRenderInteractionOverlay", () => {
       shouldRenderInteractionOverlay({
         hasActiveInteraction: true,
         isInteractionOverlayOpen: true,
-        hasFocusedTextInput: false,
       })
     ).toBe(true);
   });
@@ -75,7 +74,6 @@ describe("shouldRenderInteractionOverlay", () => {
       shouldRenderInteractionOverlay({
         hasActiveInteraction: true,
         isInteractionOverlayOpen: true,
-        hasFocusedTextInput: false,
       })
     ).toBe(true);
   });
@@ -85,7 +83,6 @@ describe("shouldRenderInteractionOverlay", () => {
       shouldRenderInteractionOverlay({
         hasActiveInteraction: true,
         isInteractionOverlayOpen: true,
-        hasFocusedTextInput: false,
       })
     ).toBe(true);
   });
@@ -95,7 +92,6 @@ describe("shouldRenderInteractionOverlay", () => {
       shouldRenderInteractionOverlay({
         hasActiveInteraction: true,
         isInteractionOverlayOpen: true,
-        hasFocusedTextInput: false,
       })
     ).toBe(true);
   });
@@ -105,7 +101,6 @@ describe("shouldRenderInteractionOverlay", () => {
       shouldRenderInteractionOverlay({
         hasActiveInteraction: false,
         isInteractionOverlayOpen: true,
-        hasFocusedTextInput: false,
       })
     ).toBe(false);
   });
@@ -115,18 +110,7 @@ describe("shouldRenderInteractionOverlay", () => {
       shouldRenderInteractionOverlay({
         hasActiveInteraction: true,
         isInteractionOverlayOpen: false,
-        hasFocusedTextInput: false,
       })
     ).toBe(false);
-  });
-
-  it("keeps blocking interactions visible while a text input is focused", () => {
-    expect(
-      shouldRenderInteractionOverlay({
-        hasActiveInteraction: true,
-        isInteractionOverlayOpen: true,
-        hasFocusedTextInput: true,
-      })
-    ).toBe(true);
   });
 });

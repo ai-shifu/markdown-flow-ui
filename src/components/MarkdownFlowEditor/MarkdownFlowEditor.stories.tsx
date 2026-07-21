@@ -17,7 +17,7 @@ const meta = {
   },
   tags: ["autodocs"],
   argTypes: {
-    value: {
+    content: {
       control: "text",
       description: "Markdown content to edit",
     },
@@ -25,23 +25,13 @@ const meta = {
       action: "onChange",
       description: "Callback when content changes",
     },
-    className: {
-      control: "text",
-      description: "Class name to apply to the editor",
-    },
-    readOnly: {
-      control: "boolean",
-      description: "Whether the editor is read-only",
-    },
     disabled: {
       control: "boolean",
       description: "Disables user interactions and editing",
     },
   },
   args: {
-    value: "",
-    className: "",
-    readOnly: false,
+    content: "",
     disabled: false,
   },
 } satisfies Meta<typeof MarkdownFlowEditor>;

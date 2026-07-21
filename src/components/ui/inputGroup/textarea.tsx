@@ -1,12 +1,15 @@
 import * as React from "react";
 
-import RcTextArea, { TextAreaProps as RcTextAreaProps } from "rc-textarea";
+import RcTextArea, {
+  TextAreaProps as RcTextAreaProps,
+  TextAreaRef,
+} from "rc-textarea";
 
 import { cn } from "../../../lib/utils";
 
 type TextareaProps = RcTextAreaProps;
 
-const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+const Textarea = React.forwardRef<TextAreaRef, TextareaProps>(
   ({ className, autoSize = { minRows: 1 }, style, ...props }, ref) => {
     return (
       <RcTextArea

@@ -35,9 +35,8 @@ export const splitDiffContent = (content?: string): DiffContentParts => {
   }
 
   const patchText = matched[1]?.trim();
-  const trailingContent = content
-    .slice(matched.index + matched[0].length)
-    .trim();
+  const matchStart = matched.index ?? 0;
+  const trailingContent = content.slice(matchStart + matched[0].length).trim();
 
   return {
     patchText: patchText || undefined,

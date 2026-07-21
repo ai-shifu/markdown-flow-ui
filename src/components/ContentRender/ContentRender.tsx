@@ -9,6 +9,7 @@ import remarkBreaks from "remark-breaks";
 import remarkFlow from "remark-flow";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import type { PluggableList } from "unified";
 import { CustomRenderBarProps, OnSendContentParams } from "../types";
 import { sanitizeInvalidTagName } from "./utils/sanitize-invalid-tag-name";
 import { stripSvgTextLineBreaks } from "./utils/strip-svg-text-line-breaks";
@@ -236,9 +237,14 @@ type CustomComponents = ComponentsWithCustomVariable & {
   }>;
 };
 
-const remarkPlugins = [remarkGfm, remarkMath, remarkFlow, remarkBreaks];
+const remarkPlugins: PluggableList = [
+  remarkGfm,
+  remarkMath,
+  remarkFlow,
+  remarkBreaks,
+];
 
-const rehypePlugins = [
+const rehypePlugins: PluggableList = [
   preserveCustomVariableProperties,
   rehypeRaw,
   sanitizeInvalidTagName,

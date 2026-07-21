@@ -5,8 +5,7 @@ export type PlayerKeyboardShortcutAction =
   | "previousSubtitle"
   | "nextSubtitle"
   | "fullscreen"
-  | "subtitle"
-  | "interaction";
+  | "subtitle";
 
 export interface PlayerKeyboardShortcutEventLike {
   altKey?: boolean;
@@ -89,8 +88,6 @@ export const getPlayerKeyboardShortcutAction = (
       return "fullscreen";
     case "c":
       return "subtitle";
-    case "n":
-      return "interaction";
     default:
       return null;
   }

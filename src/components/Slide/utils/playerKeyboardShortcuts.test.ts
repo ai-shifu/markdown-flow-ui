@@ -33,7 +33,6 @@ describe("playerKeyboardShortcuts", () => {
     ).toBe("nextSubtitle");
     expect(getPlayerKeyboardShortcutAction({ key: "f" })).toBe("fullscreen");
     expect(getPlayerKeyboardShortcutAction({ key: "C" })).toBe("subtitle");
-    expect(getPlayerKeyboardShortcutAction({ key: "n" })).toBe("interaction");
   });
 
   it("does not map unsupported media keys", () => {

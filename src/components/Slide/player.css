@@ -2,7 +2,7 @@
   position: absolute;
   display: flex;
   min-height: 80px;
-  width: min(760px, calc(100vw - 48px));
+  width: min(720px, calc(100vw - 48px));
   align-items: flex-end;
   justify-content: center;
 }
@@ -20,6 +20,7 @@
   border-top: 1px solid #e5e5e5;
   border-bottom: 1px solid #e5e5e5;
 }
+
 .slide--mobile-device.slide--mobile-landscape-native .slide-player {
   min-height: 60px !important;
 }
@@ -194,16 +195,17 @@
   transform: translateY(-50%);
 }
 
-.slide--mobile-device.slide--mobile-landscape .slide-player__action--notes,
+.slide--mobile-device.slide--mobile-landscape
+  .slide-player__action--interaction,
 .slide--mobile-device.slide--mobile-landscape-native
-  .slide-player__action--notes {
+  .slide-player__action--interaction {
   justify-self: auto;
 }
 .slide-player__controls {
   display: inline-flex;
   align-items: center;
   height: 80px;
-  padding: 0 40px;
+  padding: 0 32px;
   border-radius: 100px;
   border: 2px solid var(--custom-dark-input, rgba(255, 255, 255, 0));
   background: linear-gradient(
@@ -247,10 +249,16 @@
 }
 
 .slide-player__interaction-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
   padding: 24px 24px 0;
 }
 
 .slide-player__interaction-title {
+  min-width: 0;
+  flex: 1 1 auto;
   margin: 0;
   color: color-mix(in srgb, var(--foreground) 65%, transparent);
   font-size: 16px;
@@ -264,7 +272,7 @@
 .slide-player__group {
   display: flex;
   align-items: center;
-  gap: 40px;
+  gap: 32px;
 }
 
 .slide-player__action,
@@ -311,6 +319,14 @@
   color: var(--primary);
 }
 
+.slide-player__action--interaction-collapsed,
+.slide-player__action--interaction-collapsed:hover {
+  color: #2563eb;
+  background: transparent;
+  border-radius: 999px;
+  animation: slide-player-interaction-collapse-pulse 720ms ease-out;
+}
+
 .slide-player__icon {
   width: 32px;
   height: 32px;
@@ -326,7 +342,7 @@
   min-width: 1px;
   align-self: stretch;
   height: auto;
-  margin: 0 40px;
+  margin: 0 32px;
   background: var(--border);
   flex: 0 0 1px;
 }
@@ -347,6 +363,85 @@
   z-index: 4;
   width: min(760px, calc(var(--slide-mobile-viewport-width, 100dvw) - 48px));
   transform: translateX(-50%);
+}
+
+.slide-interaction-overlay--collapsible {
+  animation: slide-interaction-expand 160ms ease-out;
+  transform-origin: bottom right;
+}
+
+.slide-interaction-overlay--collapsing {
+  pointer-events: none;
+  animation: slide-interaction-collapse 160ms ease-in forwards;
+}
+
+.slide-player__interaction-collapse {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-left: 12px;
+  border: 0;
+  color: #64748b;
+  background: transparent;
+  transition: color 160ms ease;
+}
+
+.slide-player__interaction-collapse:hover {
+  color: #334155;
+  background: transparent;
+}
+
+.slide-player__interaction-collapse:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.42);
+  outline-offset: 2px;
+}
+
+@keyframes slide-interaction-expand {
+  from {
+    opacity: 0.72;
+    transform: translateX(-50%) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+@keyframes slide-interaction-collapse {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.94);
+  }
+}
+
+@keyframes slide-player-interaction-collapse-pulse {
+  0% {
+    background: rgba(37, 99, 235, 0.1);
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.22);
+    transform: scale(1);
+  }
+
+  45% {
+    background: rgba(37, 99, 235, 0.1);
+    box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.08);
+    transform: scale(1.08);
+    color: #1d4ed8;
+  }
+
+  100% {
+    background: transparent;
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+    transform: scale(1);
+  }
 }
 
 .slide-interaction-overlay--with-player {
@@ -379,6 +474,38 @@
   left: 12px;
   right: 12px;
   width: auto;
+}
+
+.slide--mobile-device .slide-interaction-overlay--collapsible {
+  animation-name: slide-interaction-expand-mobile;
+}
+
+.slide--mobile-device .slide-interaction-overlay--collapsing {
+  animation-name: slide-interaction-collapse-mobile;
+}
+
+@keyframes slide-interaction-expand-mobile {
+  from {
+    opacity: 0.72;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-interaction-collapse-mobile {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.94);
+  }
 }
 
 .slide--mobile-device.slide--mobile-landscape-native

@@ -60,17 +60,14 @@ describe("shouldPresentInteractionOverlay", () => {
 });
 
 describe("shouldRenderInteractionOverlay", () => {
-  it("hides unresolved blocking interactions when player controls auto-hide", () => {
+  it("keeps unresolved blocking interactions visible when player controls auto-hide", () => {
     expect(
       shouldRenderInteractionOverlay({
         hasActiveInteraction: true,
         isInteractionOverlayOpen: true,
-        shouldBlockPlaybackForInteraction: true,
-        playerControlsVisible: false,
-        shouldMountPlayer: true,
         hasFocusedTextInput: false,
       })
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("shows unresolved blocking interactions while player controls are visible", () => {
@@ -78,9 +75,6 @@ describe("shouldRenderInteractionOverlay", () => {
       shouldRenderInteractionOverlay({
         hasActiveInteraction: true,
         isInteractionOverlayOpen: true,
-        shouldBlockPlaybackForInteraction: true,
-        playerControlsVisible: true,
-        shouldMountPlayer: true,
         hasFocusedTextInput: false,
       })
     ).toBe(true);
@@ -91,9 +85,6 @@ describe("shouldRenderInteractionOverlay", () => {
       shouldRenderInteractionOverlay({
         hasActiveInteraction: true,
         isInteractionOverlayOpen: true,
-        shouldBlockPlaybackForInteraction: false,
-        playerControlsVisible: false,
-        shouldMountPlayer: true,
         hasFocusedTextInput: false,
       })
     ).toBe(true);
@@ -104,9 +95,6 @@ describe("shouldRenderInteractionOverlay", () => {
       shouldRenderInteractionOverlay({
         hasActiveInteraction: true,
         isInteractionOverlayOpen: true,
-        shouldBlockPlaybackForInteraction: true,
-        playerControlsVisible: false,
-        shouldMountPlayer: false,
         hasFocusedTextInput: false,
       })
     ).toBe(true);
@@ -117,9 +105,6 @@ describe("shouldRenderInteractionOverlay", () => {
       shouldRenderInteractionOverlay({
         hasActiveInteraction: false,
         isInteractionOverlayOpen: true,
-        shouldBlockPlaybackForInteraction: true,
-        playerControlsVisible: true,
-        shouldMountPlayer: true,
         hasFocusedTextInput: false,
       })
     ).toBe(false);
@@ -130,9 +115,6 @@ describe("shouldRenderInteractionOverlay", () => {
       shouldRenderInteractionOverlay({
         hasActiveInteraction: true,
         isInteractionOverlayOpen: false,
-        shouldBlockPlaybackForInteraction: true,
-        playerControlsVisible: true,
-        shouldMountPlayer: true,
         hasFocusedTextInput: false,
       })
     ).toBe(false);
@@ -143,9 +125,6 @@ describe("shouldRenderInteractionOverlay", () => {
       shouldRenderInteractionOverlay({
         hasActiveInteraction: true,
         isInteractionOverlayOpen: true,
-        shouldBlockPlaybackForInteraction: true,
-        playerControlsVisible: false,
-        shouldMountPlayer: true,
         hasFocusedTextInput: true,
       })
     ).toBe(true);

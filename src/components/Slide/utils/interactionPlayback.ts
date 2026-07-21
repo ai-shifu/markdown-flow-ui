@@ -28,7 +28,7 @@ export const shouldPresentInteractionOverlay = ({
   }
 
   // Re-open the interaction entry state whenever playback navigates into
-  // the interaction step so the notes action stays highlighted for history
+  // the interaction step so the interaction action stays highlighted for history
   // playback and manual prev/next navigation.
   if (hasPlaybackContextChanged) {
     return true;
@@ -46,18 +46,12 @@ export const shouldPresentInteractionOverlay = ({
 export interface ShouldRenderInteractionOverlayParams {
   hasActiveInteraction: boolean;
   isInteractionOverlayOpen: boolean;
-  shouldBlockPlaybackForInteraction: boolean;
-  playerControlsVisible: boolean;
-  shouldMountPlayer: boolean;
   hasFocusedTextInput: boolean;
 }
 
 export const shouldRenderInteractionOverlay = ({
   hasActiveInteraction,
   isInteractionOverlayOpen,
-  shouldBlockPlaybackForInteraction,
-  playerControlsVisible,
-  shouldMountPlayer,
   hasFocusedTextInput,
 }: ShouldRenderInteractionOverlayParams) => {
   if (!hasActiveInteraction || !isInteractionOverlayOpen) {
@@ -66,14 +60,6 @@ export const shouldRenderInteractionOverlay = ({
 
   if (hasFocusedTextInput) {
     return true;
-  }
-
-  if (
-    shouldBlockPlaybackForInteraction &&
-    shouldMountPlayer &&
-    !playerControlsVisible
-  ) {
-    return false;
   }
 
   return true;

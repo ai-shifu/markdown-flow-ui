@@ -89,6 +89,11 @@ const meta = {
       description:
         "Auto-hide delay for player controls in milliseconds after the pointer leaves the control bar",
     },
+    interactionCollapsible: {
+      control: "boolean",
+      description:
+        "Allow users to minimize the interaction overlay while reviewing slide content without changing playback flow",
+    },
     enableMarkdownScaling: {
       control: "boolean",
       description:
@@ -102,7 +107,7 @@ const meta = {
     playerCustomActions: {
       control: false,
       description:
-        "Custom player action nodes rendered before the default notes action",
+        "Custom player action nodes rendered after the playback controls",
       table: {
         type: {
           summary:
@@ -120,6 +125,7 @@ const meta = {
     elementList: [],
     fullscreenHeader: undefined,
     playerAutoHideDelay: 3000,
+    interactionCollapsible: false,
     markerAutoAdvanceDelay: 2000,
   },
 } satisfies Meta<typeof Slide>;
@@ -2429,6 +2435,14 @@ export const ControlsAutoHide: Story = {
   },
 };
 
+export const CollapsibleInteraction: Story = {
+  args: {
+    elementList: exampleElementList,
+    playerControlsVisibility: "auto",
+    interactionCollapsible: true,
+  },
+};
+
 export const FrenchLocale: Story = {
   args: {
     locale: "fr-FR",
@@ -2846,7 +2860,7 @@ export const CustomPlayerActionButton: Story = {
     docs: {
       description: {
         story:
-          "Renders one external custom action button before the default notes action in the Slide player.",
+          "Renders one external custom action button after the playback controls in the Slide player.",
       },
     },
   },
@@ -4076,7 +4090,7 @@ export const HistorySlides: Story = {
       moreOptionsAriaLabel: "更多设置",
       nextLabel: "下一页",
       nextSubtitleLabel: "下一句",
-      notesLabel: "笔记",
+      notesLabel: "交互",
       pauseAutoplayLabel: "暂停自动播放",
       pauseLabel: "暂停",
       playAutoplayLabel: "开启自动播放",

@@ -34,6 +34,7 @@ export interface SlidePlayerLocaleTexts {
 
 export interface SlideInteractionLocaleTexts {
   title: string;
+  collapseLabel: string;
   confirmButtonText: string;
   copyButtonText: string;
   copiedButtonText: string;
@@ -77,6 +78,7 @@ const SLIDE_PLAYER_TEXT_KEYS = [
 
 const SLIDE_INTERACTION_TEXT_KEYS = [
   "title",
+  "collapseLabel",
   "confirmButtonText",
   "copyButtonText",
   "copiedButtonText",
@@ -129,7 +131,7 @@ export const DEFAULT_SLIDE_PLAYER_TEXTS: SlidePlayerLocaleTexts =
     "More options",
     "Next page",
     "Next sentence",
-    "Notes",
+    "Interaction",
     "Pause autoplay",
     "Pause",
     "Play autoplay",
@@ -150,6 +152,7 @@ export const DEFAULT_SLIDE_PLAYER_TEXTS: SlidePlayerLocaleTexts =
 export const DEFAULT_SLIDE_INTERACTION_TEXTS: SlideInteractionLocaleTexts =
   createSlideInteractionTexts([
     "Submit the content below to continue.",
+    "Minimize interaction",
     "Submit",
     "Copy",
     "Copied",
@@ -178,6 +181,7 @@ export const SLIDE_LOCALE_TEXTS: Record<MarkdownFlowLocale, SlideLocaleTexts> =
       ],
       [
         "Soumettez le contenu ci-dessous pour continuer.",
+        "Réduire l'interaction",
         "Soumettre",
         "Copier",
         "Copié",
@@ -189,7 +193,7 @@ export const SLIDE_LOCALE_TEXTS: Record<MarkdownFlowLocale, SlideLocaleTexts> =
         "Plus d'options",
         "Page suivante",
         "Phrase suivante",
-        "Notes",
+        "Interaction",
         "Suspendre la lecture automatique",
         "Pause",
         "Lancer la lecture automatique",
@@ -210,7 +214,7 @@ export const SLIDE_LOCALE_TEXTS: Record<MarkdownFlowLocale, SlideLocaleTexts> =
     "zh-CN": createSlideLocaleTexts(
       "返回非全屏",
       ["正在等待当前页音频...", "正在加载音频", "正在等待音频"],
-      ["提交下面的内容以继续", "提交", "复制", "已复制"],
+      ["提交下面的内容以继续", "收起交互", "提交", "复制", "已复制"],
       [
         "关闭设置",
         "进入全屏",
@@ -218,7 +222,7 @@ export const SLIDE_LOCALE_TEXTS: Record<MarkdownFlowLocale, SlideLocaleTexts> =
         "更多选项",
         "下一页",
         "下一句",
-        "笔记",
+        "交互",
         "暂停自动播放",
         "暂停",
         "开始自动播放",

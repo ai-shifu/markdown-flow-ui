@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Minimize2 } from "lucide-react";
 
 import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
@@ -95,6 +95,7 @@ const DEFAULT_INTERACTION_OVERLAY_OPEN_DELAY_MS = 300;
 const DEFAULT_INTERACTION_OVERLAY_FALLBACK_OFFSET_PX = 160;
 const DEFAULT_INTERACTION_SUBTITLE_GAP_PX = 16;
 const DEFAULT_RESOLVED_INTERACTION_AUTO_CLOSE_DELAY_MS = 3000;
+const INTERACTION_OVERLAY_COLLAPSE_ANIMATION_MS = 160;
 const INTERACTION_ACTIVITY_SELECTOR = [
   "button",
   "input",
@@ -166,6 +167,9 @@ interface InteractionOverlayCardProps {
   confirmButtonText?: string;
   copyButtonText?: string;
   copiedButtonText?: string;
+  canCollapse?: boolean;
+  collapseLabel?: string;
+  onCollapse?: () => void;
   onSend?: (content: OnSendContentParams) => void;
   readonly?: boolean;
 }
@@ -176,6 +180,7 @@ export interface SlideInteractionTexts
     "confirmButtonText" | "copyButtonText" | "copiedButtonText"
   > {
   title?: string;
+  collapseLabel?: string;
 }
 
 export type SlideFullscreenHeader = {
@@ -195,12 +200,25 @@ const InteractionOverlayCard = memo(
     confirmButtonText,
     copyButtonText,
     copiedButtonText,
+    canCollapse = false,
+    collapseLabel,
+    onCollapse,
     onSend,
     readonly = false,
   }: InteractionOverlayCardProps) => (
     <div className="slide-player__interaction-card">
       <div className="slide-player__interaction-header">
         <p className="slide-player__interaction-title">{title}</p>
+        {canCollapse ? (
+          <button
+            aria-label={collapseLabel}
+            className="slide-player__interaction-collapse"
+            onClick={onCollapse}
+            type="button"
+          >
+            <Minimize2 aria-hidden="true" className="h-4 w-4" />
+          </button>
+        ) : null}
       </div>
       <div className="slide-player__interaction-body">
         <ContentRender
@@ -281,6 +299,12 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   interactionTexts?: SlideInteractionTexts;
   playerTexts?: SlidePlayerTexts;
   playerAutoHideDelay?: number;
+  /**
+   * Allows users to minimize the interaction overlay while reviewing slide
+   * content. The interaction flow is unchanged and users can expand it again
+   * before submitting.
+   */
+  interactionCollapsible?: boolean;
   markerAutoAdvanceDelay?: number;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   onSend?: (content: OnSendContentParams, element?: Element) => void;
@@ -325,6 +349,7 @@ const Slide: React.FC<SlideProps> = ({
   interactionTexts,
   playerTexts,
   playerAutoHideDelay = 3000,
+  interactionCollapsible = false,
   markerAutoAdvanceDelay = DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS,
   interactionDefaultValueOptions,
   onSend,
@@ -472,6 +497,11 @@ const Slide: React.FC<SlideProps> = ({
     useState(false);
   const [hasFocusedInteractionTextInput, setHasFocusedInteractionTextInput] =
     useState(false);
+  const [isInteractionOverlayCollapsed, setIsInteractionOverlayCollapsed] =
+    useState(false);
+  const [isInteractionOverlayCollapsing, setIsInteractionOverlayCollapsing] =
+    useState(false);
+  const interactionOverlayCollapseTimerRef = useRef<number | null>(null);
   const [
     interactionOverlaySubtitleOffset,
     setInteractionOverlaySubtitleOffset,
@@ -1497,6 +1527,26 @@ const Slide: React.FC<SlideProps> = ({
     setHasCurrentAudioPlaybackStarted(false);
   }, [currentPlaybackStartedResetKey]);
 
+  useEffect(() => {
+    if (interactionOverlayCollapseTimerRef.current !== null) {
+      window.clearTimeout(interactionOverlayCollapseTimerRef.current);
+      interactionOverlayCollapseTimerRef.current = null;
+    }
+
+    setIsInteractionOverlayCollapsed(false);
+    setIsInteractionOverlayCollapsing(false);
+  }, [activeInteractionElement]);
+
+  useEffect(
+    () => () => {
+      if (interactionOverlayCollapseTimerRef.current !== null) {
+        window.clearTimeout(interactionOverlayCollapseTimerRef.current);
+        interactionOverlayCollapseTimerRef.current = null;
+      }
+    },
+    []
+  );
+
   const {
     interactionDefaults,
     interactionDefaultSelectedValues,
@@ -1513,15 +1563,14 @@ const Slide: React.FC<SlideProps> = ({
 
   const isInteractionReadonly =
     Boolean(activeInteractionElement?.readonly) || resolvedInteractionReadonly;
+  const canCollapseInteractionOverlay =
+    interactionCollapsible &&
+    Boolean(activeInteractionElement) &&
+    !isInteractionReadonly &&
+    !hasResolvedInteractionInput;
   const shouldShowInteractionOverlay = shouldRenderInteractionOverlay({
     hasActiveInteraction: Boolean(activeInteractionElement),
     isInteractionOverlayOpen,
-    shouldBlockPlaybackForInteraction:
-      shouldBlockPlaybackForInteraction &&
-      !isInteractionReadonly &&
-      !hasResolvedInteractionInput,
-    playerControlsVisible,
-    shouldMountPlayer,
     hasFocusedTextInput: hasFocusedInteractionTextInput,
   });
 
@@ -2002,13 +2051,54 @@ const Slide: React.FC<SlideProps> = ({
     ]
   );
 
+  const collapseInteractionOverlay = useCallback(() => {
+    if (!canCollapseInteractionOverlay) {
+      return;
+    }
+
+    if (interactionOverlayCollapseTimerRef.current !== null) {
+      window.clearTimeout(interactionOverlayCollapseTimerRef.current);
+    }
+
+    setIsInteractionOverlayCollapsing(true);
+    interactionOverlayCollapseTimerRef.current = window.setTimeout(() => {
+      interactionOverlayCollapseTimerRef.current = null;
+      setIsInteractionOverlayCollapsed(true);
+      setIsInteractionOverlayCollapsing(false);
+    }, INTERACTION_OVERLAY_COLLAPSE_ANIMATION_MS);
+  }, [canCollapseInteractionOverlay]);
+
   const handleInteractionToggle = useCallback(() => {
     if (!activeInteractionElement) {
       return;
     }
 
+    if (isInteractionOverlayCollapsed || isInteractionOverlayCollapsing) {
+      if (interactionOverlayCollapseTimerRef.current !== null) {
+        window.clearTimeout(interactionOverlayCollapseTimerRef.current);
+        interactionOverlayCollapseTimerRef.current = null;
+      }
+
+      setIsInteractionOverlayOpen(true);
+      setIsInteractionOverlayCollapsed(false);
+      setIsInteractionOverlayCollapsing(false);
+      return;
+    }
+
+    if (canCollapseInteractionOverlay && isInteractionOverlayOpen) {
+      collapseInteractionOverlay();
+      return;
+    }
+
     setIsInteractionOverlayOpen((prevOpen) => !prevOpen);
-  }, [activeInteractionElement]);
+  }, [
+    activeInteractionElement,
+    canCollapseInteractionOverlay,
+    collapseInteractionOverlay,
+    isInteractionOverlayCollapsed,
+    isInteractionOverlayCollapsing,
+    isInteractionOverlayOpen,
+  ]);
 
   const handlePlayerControlsPointerEnter = useCallback(() => {
     isPointerInsidePlayerControlsRef.current = true;
@@ -2241,12 +2331,17 @@ const Slide: React.FC<SlideProps> = ({
           subtitleCues={currentSubtitleCues}
         />
 
-        {shouldShowInteractionOverlay ? (
+        {shouldShowInteractionOverlay &&
+        (!isInteractionOverlayCollapsed || isInteractionOverlayCollapsing) ? (
           <div
             ref={interactionOverlayRef}
             data-player-keyboard-shortcuts-ignore="true"
             className={cn(
               "slide-interaction-overlay",
+              canCollapseInteractionOverlay &&
+                "slide-interaction-overlay--collapsible",
+              isInteractionOverlayCollapsing &&
+                "slide-interaction-overlay--collapsing",
               playerControlsVisible && shouldMountPlayer
                 ? "slide-interaction-overlay--with-player"
                 : "slide-interaction-overlay--standalone"
@@ -2308,6 +2403,12 @@ const Slide: React.FC<SlideProps> = ({
                 interactionTexts?.copiedButtonText ??
                 localeTexts.interactionTexts.copiedButtonText
               }
+              canCollapse={canCollapseInteractionOverlay}
+              collapseLabel={
+                interactionTexts?.collapseLabel ??
+                localeTexts.interactionTexts.collapseLabel
+              }
+              onCollapse={collapseInteractionOverlay}
               onSend={handleInteractionSend}
               readonly={isInteractionReadonly}
               title={
@@ -2326,7 +2427,8 @@ const Slide: React.FC<SlideProps> = ({
             <Player
               audioList={audioList}
               className={cn(
-                "absolute left-1/2 z-[2] -translate-x-1/2",
+                "absolute left-1/2 z-[2]",
+                "-translate-x-1/2",
                 isDesktopBrowserFullscreen ? "bottom-3" : "-bottom-3",
                 playerClassName,
                 !playerControlsVisible && "pointer-events-none opacity-0"
@@ -2338,6 +2440,9 @@ const Slide: React.FC<SlideProps> = ({
               isAutoAdvanceEnabled={isAutoAdvanceEnabled}
               locale={locale}
               hasInteraction={Boolean(activeInteractionElement)}
+              isInteractionCollapsed={
+                isInteractionOverlayCollapsed || isInteractionOverlayCollapsing
+              }
               isInteractionOpen={isInteractionOverlayOpen}
               isSubtitleEnabled={isSubtitleEnabled}
               onAutoAdvanceToggle={setIsAutoAdvanceEnabled}

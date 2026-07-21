@@ -199,6 +199,7 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   onAutoAdvanceToggle?: (enabled: boolean) => void;
   onInteractionToggle?: () => void;
   hasInteraction?: boolean;
+  isInteractionCollapsed?: boolean;
   isInteractionOpen?: boolean;
   isSubtitleEnabled?: boolean;
   prevDisabled?: boolean;
@@ -266,7 +267,6 @@ const PLAYER_SHORTCUT_LABELS = {
   fullscreen: "F",
   next: "→",
   nextSubtitle: "Shift+→",
-  notes: "N",
   playback: "Space",
   previous: "←",
   previousSubtitle: "Shift+←",
@@ -304,6 +304,7 @@ const Player = ({
   onAutoAdvanceToggle,
   onInteractionToggle,
   hasInteraction = false,
+  isInteractionCollapsed = false,
   isInteractionOpen = false,
   isSubtitleEnabled = true,
   prevDisabled = false,
@@ -470,11 +471,6 @@ const Player = ({
     fullscreenAriaLabel,
     PLAYER_SHORTCUT_LABELS.fullscreen,
     "f"
-  );
-  const notesShortcutMetadata = getShortcutMetadata(
-    playerTexts.notesLabel,
-    PLAYER_SHORTCUT_LABELS.notes,
-    "n"
   );
   const activateKeyboardShortcutOwner = useCallback(() => {
     if (!shouldEnableKeyboardShortcuts) {
@@ -1727,17 +1723,6 @@ const Player = ({
         onFullscreen();
         return true;
       },
-      interaction: () => {
-        if (!onInteractionToggle) {
-          return false;
-        }
-
-        if (hasInteraction) {
-          onInteractionToggle();
-        }
-
-        return true;
-      },
       next: () => {
         if (!onNext) {
           return false;
@@ -1793,11 +1778,9 @@ const Player = ({
     }),
     [
       getNavigationContext,
-      hasInteraction,
       jumpToSubtitleCue,
       nextDisabled,
       onFullscreen,
-      onInteractionToggle,
       onNext,
       onPrev,
       onSubtitleToggle,
@@ -2057,14 +2040,17 @@ const Player = ({
               ))}
               <button
                 aria-label={playerTexts.notesLabel}
-                aria-keyshortcuts={notesShortcutMetadata.ariaKeyShortcuts}
                 className={cn(
-                  "slide-player__action slide-player__action--notes",
-                  isInteractionOpen && "slide-player__action--active"
+                  "slide-player__action slide-player__action--interaction",
+                  isInteractionOpen &&
+                    !isInteractionCollapsed &&
+                    "slide-player__action--active",
+                  isInteractionCollapsed &&
+                    "slide-player__action--interaction-collapsed"
                 )}
                 disabled={!hasInteraction}
                 onClick={onInteractionToggle}
-                title={notesShortcutMetadata.title}
+                title={playerTexts.notesLabel}
                 type="button"
               >
                 <FilePenLine

@@ -174,7 +174,7 @@
       ]
     }
   },
-  "version": "0.2.3-dev.3",
+  "version": "0.2.3",
   "type": "module",
   "exports": {
     ".": {

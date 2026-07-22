@@ -227,7 +227,9 @@ const InteractionOverlayCard = memo(
         onPointerMove={onDragHandlePointerMove}
         onPointerUp={onDragHandlePointerUp}
       >
-        <GripHorizontal aria-hidden="true" />
+        <span className="slide-player__interaction-drag-handle-icon">
+          <GripHorizontal aria-hidden="true" />
+        </span>
       </button>
       <div className="slide-player__interaction-header">
         <p className="slide-player__interaction-title">{title}</p>
@@ -2186,27 +2188,6 @@ const Slide: React.FC<SlideProps> = ({
     ]
   );
 
-  const handleInteractionOverlaySurfacePointerDown = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      if (isMobileDevice) {
-        stopOverlayPropagation(event);
-        return;
-      }
-
-      if (isInteractionActivityTarget(event.target)) {
-        stopOverlayPropagation(event);
-        return;
-      }
-
-      handleInteractionOverlayPointerDown(event);
-    },
-    [
-      handleInteractionOverlayPointerDown,
-      isMobileDevice,
-      stopOverlayPropagation,
-    ]
-  );
-
   const handleInteractionOverlayPointerMove = useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
       const dragState = interactionOverlayDragRef.current;
@@ -2458,20 +2439,15 @@ const Slide: React.FC<SlideProps> = ({
               playerControlsVisible && shouldMountPlayer
                 ? "slide-interaction-overlay--with-player"
                 : "slide-interaction-overlay--standalone",
-              !isMobileDevice && "slide-interaction-overlay--draggable",
               isInteractionOverlayDragging &&
                 "slide-interaction-overlay--dragging"
             )}
             onClick={stopOverlayPropagation}
-            onPointerDown={handleInteractionOverlaySurfacePointerDown}
             onPointerDownCapture={(event) => {
               if (isInteractionActivityTarget(event.target)) {
                 setHasInteractionOverlayActivity(true);
               }
             }}
-            onPointerMove={handleInteractionOverlayPointerMove}
-            onPointerUp={endInteractionOverlayDrag}
-            onPointerCancel={endInteractionOverlayDrag}
             onFocusCapture={(event) => {
               if (isInteractionActivityTarget(event.target)) {
                 setHasInteractionOverlayActivity(true);

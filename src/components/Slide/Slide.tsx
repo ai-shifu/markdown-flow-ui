@@ -3,11 +3,12 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, GripHorizontal } from "lucide-react";
 
 import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
@@ -45,8 +46,11 @@ import {
   type MobileViewMode,
 } from "./utils/mobileScreenMode";
 import {
+  clampInteractionOverlayDragOffset,
   shouldPresentInteractionOverlay,
   shouldRenderInteractionOverlay,
+  type InteractionOverlayDragBounds,
+  type InteractionOverlayDragOffset,
 } from "./utils/interactionPlayback";
 import { resolveMarkdownScalingMode } from "./utils/markdownScaling";
 import { shouldWakePlayerControlsAfterNavigation } from "./utils/playerNavigationContext";
@@ -95,6 +99,13 @@ const DEFAULT_INTERACTION_OVERLAY_OPEN_DELAY_MS = 300;
 const DEFAULT_INTERACTION_OVERLAY_FALLBACK_OFFSET_PX = 160;
 const DEFAULT_INTERACTION_SUBTITLE_GAP_PX = 16;
 const DEFAULT_RESOLVED_INTERACTION_AUTO_CLOSE_DELAY_MS = 3000;
+const DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET: InteractionOverlayDragOffset = {
+  x: 0,
+  y: 0,
+};
+type InteractionOverlayLayoutRect = Pick<DOMRect, "left" | "top">;
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 const INTERACTION_ACTIVITY_SELECTOR = [
   "button",
   "input",
@@ -167,6 +178,10 @@ interface InteractionOverlayCardProps {
   copyButtonText?: string;
   copiedButtonText?: string;
   onSend?: (content: OnSendContentParams) => void;
+  onDragHandlePointerCancel?: React.PointerEventHandler<HTMLButtonElement>;
+  onDragHandlePointerDown?: React.PointerEventHandler<HTMLButtonElement>;
+  onDragHandlePointerMove?: React.PointerEventHandler<HTMLButtonElement>;
+  onDragHandlePointerUp?: React.PointerEventHandler<HTMLButtonElement>;
   readonly?: boolean;
 }
 
@@ -196,9 +211,24 @@ const InteractionOverlayCard = memo(
     copyButtonText,
     copiedButtonText,
     onSend,
+    onDragHandlePointerCancel,
+    onDragHandlePointerDown,
+    onDragHandlePointerMove,
+    onDragHandlePointerUp,
     readonly = false,
   }: InteractionOverlayCardProps) => (
     <div className="slide-player__interaction-card">
+      <button
+        type="button"
+        className="slide-player__interaction-drag-handle"
+        aria-label="Move interaction"
+        onPointerCancel={onDragHandlePointerCancel}
+        onPointerDown={onDragHandlePointerDown}
+        onPointerMove={onDragHandlePointerMove}
+        onPointerUp={onDragHandlePointerUp}
+      >
+        <GripHorizontal aria-hidden="true" />
+      </button>
       <div className="slide-player__interaction-header">
         <p className="slide-player__interaction-title">{title}</p>
       </div>
@@ -242,18 +272,7 @@ const isInteractionActivityTarget = (
   target: EventTarget | null
 ): target is HTMLElement =>
   target instanceof HTMLElement &&
-  target.matches(INTERACTION_ACTIVITY_SELECTOR);
-const TEXT_ENTRY_SELECTOR = [
-  'input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"])',
-  "textarea",
-  '[contenteditable=""]',
-  '[contenteditable="true"]',
-  '[contenteditable="plaintext-only"]',
-].join(", ");
-
-const isTextEntryTarget = (target: EventTarget | null): target is HTMLElement =>
-  target instanceof HTMLElement && target.matches(TEXT_ENTRY_SELECTOR);
-
+  Boolean(target.closest(INTERACTION_ACTIVITY_SELECTOR));
 export interface SlideProps extends React.ComponentProps<"section"> {
   elementList?: Element[];
   /** Locale used for built-in UI text when a more specific text prop is not provided. */
@@ -368,6 +387,15 @@ const Slide: React.FC<SlideProps> = ({
   const interactionAutoCloseTimerRef = useRef<number | null>(null);
   const interactionOverlayOpenTimerRef = useRef<number | null>(null);
   const interactionOverlayRef = useRef<HTMLDivElement | null>(null);
+  const interactionOverlayLayoutRectRef =
+    useRef<InteractionOverlayLayoutRect | null>(null);
+  const interactionOverlayDragRef = useRef<{
+    pointerId: number;
+    startClientX: number;
+    startClientY: number;
+    startOffset: InteractionOverlayDragOffset;
+    bounds: InteractionOverlayDragBounds;
+  } | null>(null);
   const prevRenderElementKeysRef = useRef<string[]>([]);
   const shouldScrollToBottomRef = useRef(false);
   const pendingInteractionOverlayStepIndexRef = useRef<number | null>(null);
@@ -470,7 +498,11 @@ const Slide: React.FC<SlideProps> = ({
     useState(false);
   const [hasInteractionOverlayActivity, setHasInteractionOverlayActivity] =
     useState(false);
-  const [hasFocusedInteractionTextInput, setHasFocusedInteractionTextInput] =
+  const [interactionOverlayDragOffset, setInteractionOverlayDragOffset] =
+    useState<InteractionOverlayDragOffset>(
+      DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET
+    );
+  const [isInteractionOverlayDragging, setIsInteractionOverlayDragging] =
     useState(false);
   const [
     interactionOverlaySubtitleOffset,
@@ -641,8 +673,14 @@ const Slide: React.FC<SlideProps> = ({
         "--slide-player-mobile-control-count": String(
           playerCustomActionCount + 4
         ),
+        "--slide-interaction-drag-x": `${interactionOverlayDragOffset.x}px`,
+        "--slide-interaction-drag-y": `${interactionOverlayDragOffset.y}px`,
       }) as React.CSSProperties,
-    [playerCustomActionCount]
+    [
+      interactionOverlayDragOffset.x,
+      interactionOverlayDragOffset.y,
+      playerCustomActionCount,
+    ]
   );
   const hasAvailableStepAudio = currentAudioSequenceKeys.length > 0;
   const currentInteractionResetKey = useMemo(() => {
@@ -1516,13 +1554,6 @@ const Slide: React.FC<SlideProps> = ({
   const shouldShowInteractionOverlay = shouldRenderInteractionOverlay({
     hasActiveInteraction: Boolean(activeInteractionElement),
     isInteractionOverlayOpen,
-    shouldBlockPlaybackForInteraction:
-      shouldBlockPlaybackForInteraction &&
-      !isInteractionReadonly &&
-      !hasResolvedInteractionInput,
-    playerControlsVisible,
-    shouldMountPlayer,
-    hasFocusedTextInput: hasFocusedInteractionTextInput,
   });
 
   const handleInteractionSend = useCallback(
@@ -1571,8 +1602,14 @@ const Slide: React.FC<SlideProps> = ({
     }
 
     setHasInteractionOverlayActivity(false);
-    setHasFocusedInteractionTextInput(false);
   }, [activeInteractionElement, isInteractionOverlayOpen]);
+
+  useEffect(() => {
+    setInteractionOverlayDragOffset(DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET);
+    setIsInteractionOverlayDragging(false);
+    interactionOverlayDragRef.current = null;
+    interactionOverlayLayoutRectRef.current = null;
+  }, [activeInteractionElement]);
 
   useEffect(() => {
     if (!shouldShowInteractionOverlay) {
@@ -2026,9 +2063,7 @@ const Slide: React.FC<SlideProps> = ({
 
   const stopOverlayPropagation = useCallback(
     (
-      event:
-        | React.PointerEvent<HTMLDivElement>
-        | React.MouseEvent<HTMLDivElement>
+      event: React.PointerEvent<HTMLElement> | React.MouseEvent<HTMLElement>
     ) => {
       event.stopPropagation();
 
@@ -2038,6 +2073,179 @@ const Slide: React.FC<SlideProps> = ({
       }
     },
     [playerControlsVisible, revealPlayerControls]
+  );
+
+  const getInteractionOverlayDragBounds = useCallback(
+    (
+      overlayElement: HTMLElement,
+      startOffset: InteractionOverlayDragOffset
+    ): InteractionOverlayDragBounds | null => {
+      const viewportElement = viewportRef.current;
+
+      if (!viewportElement) {
+        return null;
+      }
+
+      const overlayRect = overlayElement.getBoundingClientRect();
+      const viewportRect = viewportElement.getBoundingClientRect();
+
+      return {
+        minX: startOffset.x + viewportRect.left - overlayRect.left,
+        maxX: startOffset.x + viewportRect.right - overlayRect.right,
+        minY: startOffset.y + viewportRect.top - overlayRect.top,
+        maxY: startOffset.y + viewportRect.bottom - overlayRect.bottom,
+      };
+    },
+    []
+  );
+
+  useIsomorphicLayoutEffect(() => {
+    const overlayElement = interactionOverlayRef.current;
+
+    if (!shouldShowInteractionOverlay || !overlayElement) {
+      interactionOverlayLayoutRectRef.current = null;
+      return;
+    }
+
+    const previousRect = interactionOverlayLayoutRectRef.current;
+    const currentRect = overlayElement.getBoundingClientRect();
+
+    if (!previousRect || isInteractionOverlayDragging) {
+      interactionOverlayLayoutRectRef.current = currentRect;
+      return;
+    }
+
+    const nextOffset = {
+      x: interactionOverlayDragOffset.x + previousRect.left - currentRect.left,
+      y: interactionOverlayDragOffset.y + previousRect.top - currentRect.top,
+    };
+    const bounds = getInteractionOverlayDragBounds(
+      overlayElement,
+      interactionOverlayDragOffset
+    );
+    const clampedOffset = bounds
+      ? clampInteractionOverlayDragOffset(nextOffset, bounds)
+      : nextOffset;
+
+    interactionOverlayLayoutRectRef.current = {
+      left: currentRect.left + clampedOffset.x - interactionOverlayDragOffset.x,
+      top: currentRect.top + clampedOffset.y - interactionOverlayDragOffset.y,
+    };
+
+    if (
+      clampedOffset.x !== interactionOverlayDragOffset.x ||
+      clampedOffset.y !== interactionOverlayDragOffset.y
+    ) {
+      setInteractionOverlayDragOffset(clampedOffset);
+    }
+  }, [
+    getInteractionOverlayDragBounds,
+    interactionOverlayDragOffset,
+    isInteractionOverlayDragging,
+    playerControlsVisible,
+    shouldMountPlayer,
+    shouldShowInteractionOverlay,
+  ]);
+
+  const handleInteractionOverlayPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      stopOverlayPropagation(event);
+
+      if (
+        event.button !== 0 ||
+        !event.currentTarget.isConnected ||
+        !interactionOverlayRef.current
+      ) {
+        return;
+      }
+
+      const bounds = getInteractionOverlayDragBounds(
+        interactionOverlayRef.current,
+        interactionOverlayDragOffset
+      );
+
+      if (!bounds) {
+        return;
+      }
+
+      event.preventDefault();
+      event.currentTarget.setPointerCapture(event.pointerId);
+      interactionOverlayDragRef.current = {
+        pointerId: event.pointerId,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        startOffset: interactionOverlayDragOffset,
+        bounds,
+      };
+      setIsInteractionOverlayDragging(true);
+    },
+    [
+      getInteractionOverlayDragBounds,
+      interactionOverlayDragOffset,
+      stopOverlayPropagation,
+    ]
+  );
+
+  const handleInteractionOverlaySurfacePointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (isMobileDevice) {
+        stopOverlayPropagation(event);
+        return;
+      }
+
+      if (isInteractionActivityTarget(event.target)) {
+        stopOverlayPropagation(event);
+        return;
+      }
+
+      handleInteractionOverlayPointerDown(event);
+    },
+    [
+      handleInteractionOverlayPointerDown,
+      isMobileDevice,
+      stopOverlayPropagation,
+    ]
+  );
+
+  const handleInteractionOverlayPointerMove = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      const dragState = interactionOverlayDragRef.current;
+
+      if (!dragState || dragState.pointerId !== event.pointerId) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      setInteractionOverlayDragOffset(
+        clampInteractionOverlayDragOffset(
+          {
+            x: dragState.startOffset.x + event.clientX - dragState.startClientX,
+            y: dragState.startOffset.y + event.clientY - dragState.startClientY,
+          },
+          dragState.bounds
+        )
+      );
+    },
+    []
+  );
+
+  const endInteractionOverlayDrag = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      const dragState = interactionOverlayDragRef.current;
+
+      if (!dragState || dragState.pointerId !== event.pointerId) {
+        return;
+      }
+
+      event.stopPropagation();
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      interactionOverlayDragRef.current = null;
+      setIsInteractionOverlayDragging(false);
+    },
+    []
   );
 
   const handleSurfacePointerDown = useCallback(
@@ -2249,39 +2457,25 @@ const Slide: React.FC<SlideProps> = ({
               "slide-interaction-overlay",
               playerControlsVisible && shouldMountPlayer
                 ? "slide-interaction-overlay--with-player"
-                : "slide-interaction-overlay--standalone"
+                : "slide-interaction-overlay--standalone",
+              !isMobileDevice && "slide-interaction-overlay--draggable",
+              isInteractionOverlayDragging &&
+                "slide-interaction-overlay--dragging"
             )}
             onClick={stopOverlayPropagation}
-            onPointerDown={stopOverlayPropagation}
+            onPointerDown={handleInteractionOverlaySurfacePointerDown}
             onPointerDownCapture={(event) => {
               if (isInteractionActivityTarget(event.target)) {
                 setHasInteractionOverlayActivity(true);
               }
             }}
+            onPointerMove={handleInteractionOverlayPointerMove}
+            onPointerUp={endInteractionOverlayDrag}
+            onPointerCancel={endInteractionOverlayDrag}
             onFocusCapture={(event) => {
-              if (isTextEntryTarget(event.target)) {
-                setHasFocusedInteractionTextInput(true);
-              }
-
               if (isInteractionActivityTarget(event.target)) {
                 setHasInteractionOverlayActivity(true);
               }
-            }}
-            onBlurCapture={(event) => {
-              if (!isTextEntryTarget(event.target)) {
-                return;
-              }
-
-              const nextFocusTarget = event.relatedTarget;
-
-              if (
-                nextFocusTarget instanceof HTMLElement &&
-                interactionOverlayRef.current?.contains(nextFocusTarget)
-              ) {
-                return;
-              }
-
-              setHasFocusedInteractionTextInput(false);
             }}
             onInputCapture={(event) => {
               if (isInteractionActivityTarget(event.target)) {
@@ -2309,6 +2503,10 @@ const Slide: React.FC<SlideProps> = ({
                 localeTexts.interactionTexts.copiedButtonText
               }
               onSend={handleInteractionSend}
+              onDragHandlePointerCancel={endInteractionOverlayDrag}
+              onDragHandlePointerDown={handleInteractionOverlayPointerDown}
+              onDragHandlePointerMove={handleInteractionOverlayPointerMove}
+              onDragHandlePointerUp={endInteractionOverlayDrag}
               readonly={isInteractionReadonly}
               title={
                 interactionTexts?.title ??

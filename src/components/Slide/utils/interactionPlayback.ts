@@ -46,35 +46,38 @@ export const shouldPresentInteractionOverlay = ({
 export interface ShouldRenderInteractionOverlayParams {
   hasActiveInteraction: boolean;
   isInteractionOverlayOpen: boolean;
-  shouldBlockPlaybackForInteraction: boolean;
-  playerControlsVisible: boolean;
-  shouldMountPlayer: boolean;
-  hasFocusedTextInput: boolean;
 }
 
 export const shouldRenderInteractionOverlay = ({
   hasActiveInteraction,
   isInteractionOverlayOpen,
-  shouldBlockPlaybackForInteraction,
-  playerControlsVisible,
-  shouldMountPlayer,
-  hasFocusedTextInput,
 }: ShouldRenderInteractionOverlayParams) => {
   if (!hasActiveInteraction || !isInteractionOverlayOpen) {
     return false;
   }
 
-  if (hasFocusedTextInput) {
-    return true;
-  }
-
-  if (
-    shouldBlockPlaybackForInteraction &&
-    shouldMountPlayer &&
-    !playerControlsVisible
-  ) {
-    return false;
-  }
-
   return true;
 };
+
+export interface InteractionOverlayDragOffset {
+  x: number;
+  y: number;
+}
+
+export interface InteractionOverlayDragBounds {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+
+const clampNumber = (value: number, min: number, max: number) =>
+  Math.min(Math.max(value, min), max);
+
+export const clampInteractionOverlayDragOffset = (
+  offset: InteractionOverlayDragOffset,
+  bounds: InteractionOverlayDragBounds
+): InteractionOverlayDragOffset => ({
+  x: clampNumber(offset.x, bounds.minX, bounds.maxX),
+  y: clampNumber(offset.y, bounds.minY, bounds.maxY),
+});

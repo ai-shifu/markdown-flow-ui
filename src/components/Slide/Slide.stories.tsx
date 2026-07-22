@@ -2580,7 +2580,7 @@ export const DesktopInteractionOverlayPointerDrag: Story = {
     docs: {
       description: {
         story:
-          "Exercises desktop overlay dragging through pointer events so the full interaction card remains movable within the slide viewport.",
+          "Exercises desktop overlay dragging from the header handle and verifies the interaction body no longer starts a drag.",
       },
     },
   },
@@ -2592,25 +2592,35 @@ export const DesktopInteractionOverlayPointerDrag: Story = {
   play: async ({ canvasElement }) => {
     const overlay = await waitFor(() => {
       const element = canvasElement.querySelector(
-        ".slide-interaction-overlay--draggable"
+        ".slide-interaction-overlay"
       ) as HTMLElement | null;
 
       expect(element).not.toBeNull();
       return element as HTMLElement;
     });
-    const capturedPointerIds = installPointerCaptureSpy(overlay);
+    const handle = overlay.querySelector(
+      '[aria-label="Move interaction"]'
+    ) as HTMLElement | null;
+    const body = overlay.querySelector(
+      ".slide-player__interaction-body"
+    ) as HTMLElement | null;
+
+    expect(handle).not.toBeNull();
+    expect(body).not.toBeNull();
+
+    const capturedPointerIds = installPointerCaptureSpy(handle as HTMLElement);
     const beforeOffsets = getOverlayDragOffsets(overlay);
-    const overlayRect = overlay.getBoundingClientRect();
+    const handleRect = (handle as HTMLElement).getBoundingClientRect();
 
     triggerPointerDrag(
-      overlay,
+      handle as HTMLElement,
       {
-        clientX: overlayRect.left + 48,
-        clientY: overlayRect.top + 40,
+        clientX: handleRect.left + handleRect.width / 2,
+        clientY: handleRect.top + handleRect.height / 2,
       },
       {
-        clientX: overlayRect.left + 128,
-        clientY: overlayRect.top + 84,
+        clientX: handleRect.left + handleRect.width / 2 + 80,
+        clientY: handleRect.top + handleRect.height / 2 + 44,
       }
     );
 
@@ -2620,6 +2630,25 @@ export const DesktopInteractionOverlayPointerDrag: Story = {
       expect(
         overlay.classList.contains("slide-interaction-overlay--dragging")
       ).toBe(false);
+    });
+
+    const afterHandleOffsets = getOverlayDragOffsets(overlay);
+    const bodyRect = (body as HTMLElement).getBoundingClientRect();
+
+    triggerPointerDrag(
+      body as HTMLElement,
+      {
+        clientX: bodyRect.left + 48,
+        clientY: bodyRect.top + 48,
+      },
+      {
+        clientX: bodyRect.left + 108,
+        clientY: bodyRect.top + 104,
+      }
+    );
+
+    await waitFor(() => {
+      expect(getOverlayDragOffsets(overlay)).toEqual(afterHandleOffsets);
     });
   },
 };

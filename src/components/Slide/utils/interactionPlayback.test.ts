@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  clampInteractionOverlayDragOffset,
   shouldPresentInteractionOverlay,
   shouldRenderInteractionOverlay,
 } from "./interactionPlayback";
@@ -60,54 +61,11 @@ describe("shouldPresentInteractionOverlay", () => {
 });
 
 describe("shouldRenderInteractionOverlay", () => {
-  it("hides unresolved blocking interactions when player controls auto-hide", () => {
+  it("renders active open interactions", () => {
     expect(
       shouldRenderInteractionOverlay({
         hasActiveInteraction: true,
         isInteractionOverlayOpen: true,
-        shouldBlockPlaybackForInteraction: true,
-        playerControlsVisible: false,
-        shouldMountPlayer: true,
-        hasFocusedTextInput: false,
-      })
-    ).toBe(false);
-  });
-
-  it("shows unresolved blocking interactions while player controls are visible", () => {
-    expect(
-      shouldRenderInteractionOverlay({
-        hasActiveInteraction: true,
-        isInteractionOverlayOpen: true,
-        shouldBlockPlaybackForInteraction: true,
-        playerControlsVisible: true,
-        shouldMountPlayer: true,
-        hasFocusedTextInput: false,
-      })
-    ).toBe(true);
-  });
-
-  it("keeps resolved or readonly interactions visible even when player controls hide", () => {
-    expect(
-      shouldRenderInteractionOverlay({
-        hasActiveInteraction: true,
-        isInteractionOverlayOpen: true,
-        shouldBlockPlaybackForInteraction: false,
-        playerControlsVisible: false,
-        shouldMountPlayer: true,
-        hasFocusedTextInput: false,
-      })
-    ).toBe(true);
-  });
-
-  it("does not hide the overlay when the player is not mounted", () => {
-    expect(
-      shouldRenderInteractionOverlay({
-        hasActiveInteraction: true,
-        isInteractionOverlayOpen: true,
-        shouldBlockPlaybackForInteraction: true,
-        playerControlsVisible: false,
-        shouldMountPlayer: false,
-        hasFocusedTextInput: false,
       })
     ).toBe(true);
   });
@@ -117,10 +75,6 @@ describe("shouldRenderInteractionOverlay", () => {
       shouldRenderInteractionOverlay({
         hasActiveInteraction: false,
         isInteractionOverlayOpen: true,
-        shouldBlockPlaybackForInteraction: true,
-        playerControlsVisible: true,
-        shouldMountPlayer: true,
-        hasFocusedTextInput: false,
       })
     ).toBe(false);
   });
@@ -130,24 +84,27 @@ describe("shouldRenderInteractionOverlay", () => {
       shouldRenderInteractionOverlay({
         hasActiveInteraction: true,
         isInteractionOverlayOpen: false,
-        shouldBlockPlaybackForInteraction: true,
-        playerControlsVisible: true,
-        shouldMountPlayer: true,
-        hasFocusedTextInput: false,
       })
     ).toBe(false);
   });
+});
 
-  it("keeps blocking interactions visible while a text input is focused", () => {
+describe("clampInteractionOverlayDragOffset", () => {
+  it("keeps dragged interaction overlays within the viewport bounds", () => {
     expect(
-      shouldRenderInteractionOverlay({
-        hasActiveInteraction: true,
-        isInteractionOverlayOpen: true,
-        shouldBlockPlaybackForInteraction: true,
-        playerControlsVisible: false,
-        shouldMountPlayer: true,
-        hasFocusedTextInput: true,
-      })
-    ).toBe(true);
+      clampInteractionOverlayDragOffset(
+        { x: 240, y: -180 },
+        { minX: -80, maxX: 120, minY: -100, maxY: 60 }
+      )
+    ).toEqual({ x: 120, y: -100 });
+  });
+
+  it("preserves offsets that are already inside the viewport bounds", () => {
+    expect(
+      clampInteractionOverlayDragOffset(
+        { x: 24, y: -12 },
+        { minX: -80, maxX: 120, minY: -100, maxY: 60 }
+      )
+    ).toEqual({ x: 24, y: -12 });
   });
 });

@@ -2161,6 +2161,148 @@ const createExampleElement = ({
   ...element,
 });
 
+const POINTER_TEST_ID = 41;
+
+const DRAG_TEST_ELEMENT_LIST: Element[] = [
+  createExampleElement({
+    sequenceNumber: 1,
+    type: "interaction",
+    content: "?[%{{drag_test_choice}} Option A | Option B | Option C]",
+    isNew: true,
+    readonly: false,
+  }),
+];
+
+const dispatchPointerEvent = (
+  element: HTMLElement,
+  type: string,
+  {
+    button = 0,
+    buttons,
+    clientX,
+    clientY,
+    pointerId = POINTER_TEST_ID,
+    pointerType = "mouse",
+  }: {
+    button?: number;
+    buttons?: number;
+    clientX: number;
+    clientY: number;
+    pointerId?: number;
+    pointerType?: string;
+  }
+) => {
+  element.dispatchEvent(
+    new PointerEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      button,
+      buttons: buttons ?? (type === "pointerup" ? 0 : 1),
+      clientX,
+      clientY,
+      pointerId,
+      pointerType,
+    })
+  );
+};
+
+const installPointerCaptureSpy = (element: HTMLElement) => {
+  const capturedPointerIds: number[] = [];
+
+  Object.defineProperty(element, "setPointerCapture", {
+    configurable: true,
+    value: (pointerId: number) => {
+      capturedPointerIds.push(pointerId);
+    },
+  });
+
+  return capturedPointerIds;
+};
+
+const getOverlayDragOffsets = (overlay: HTMLElement) => ({
+  x: overlay.style.getPropertyValue("--slide-interaction-drag-x").trim(),
+  y: overlay.style.getPropertyValue("--slide-interaction-drag-y").trim(),
+});
+
+const triggerPointerDrag = (
+  element: HTMLElement,
+  start: { clientX: number; clientY: number },
+  end: { clientX: number; clientY: number }
+) => {
+  dispatchPointerEvent(element, "pointerdown", start);
+  dispatchPointerEvent(element, "pointermove", end);
+  dispatchPointerEvent(element, "pointerup", end);
+};
+
+const installWindowValueOverride = <T extends object, K extends keyof T>(
+  target: T,
+  key: K,
+  value: T[K]
+) => {
+  const descriptor = Object.getOwnPropertyDescriptor(target, key);
+
+  Object.defineProperty(target, key, {
+    configurable: true,
+    value,
+  });
+
+  return () => {
+    if (descriptor) {
+      Object.defineProperty(target, key, descriptor);
+      return;
+    }
+
+    delete (target as Record<PropertyKey, unknown>)[key as PropertyKey];
+  };
+};
+
+const MobilePointerDragSlidePreview = ({
+  elementList = [],
+  ...props
+}: React.ComponentProps<typeof Slide>) => {
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const restoreUserAgent = installWindowValueOverride(
+      window.navigator,
+      "userAgent",
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)"
+    );
+    const restoreMatchMedia = installWindowValueOverride(
+      window,
+      "matchMedia",
+      ((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        dispatchEvent: () => false,
+      })) as Window["matchMedia"]
+    );
+
+    setIsReady(true);
+
+    return () => {
+      restoreMatchMedia();
+      restoreUserAgent();
+    };
+  }, []);
+
+  if (!isReady) {
+    return null;
+  }
+
+  return (
+    <div className="mx-auto h-[100dvh] w-[390px] bg-background">
+      <Slide className="h-full w-full" {...props} elementList={elementList} />
+    </div>
+  );
+};
+
 const exampleElementList: Element[] = [
   createExampleElement({
     sequenceNumber: 1,
@@ -2426,6 +2568,113 @@ export const ControlsAutoHide: Story = {
     elementList: exampleElementList,
     playerAutoHideDelay: 3000,
     playerControlsVisibility: "auto",
+  },
+};
+
+export const DesktopInteractionOverlayPointerDrag: Story = {
+  args: {
+    elementList: DRAG_TEST_ELEMENT_LIST,
+    playerControlsVisibility: "visible",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Exercises desktop overlay dragging through pointer events so the full interaction card remains movable within the slide viewport.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="flex h-[100dvh] w-full items-center justify-center bg-muted/20 p-8">
+      <Slide className="w-full max-w-4xl" {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const overlay = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide-interaction-overlay--draggable"
+      ) as HTMLElement | null;
+
+      expect(element).not.toBeNull();
+      return element as HTMLElement;
+    });
+    const capturedPointerIds = installPointerCaptureSpy(overlay);
+    const beforeOffsets = getOverlayDragOffsets(overlay);
+    const overlayRect = overlay.getBoundingClientRect();
+
+    triggerPointerDrag(
+      overlay,
+      {
+        clientX: overlayRect.left + 48,
+        clientY: overlayRect.top + 40,
+      },
+      {
+        clientX: overlayRect.left + 128,
+        clientY: overlayRect.top + 84,
+      }
+    );
+
+    await waitFor(() => {
+      expect(capturedPointerIds).toContain(POINTER_TEST_ID);
+      expect(getOverlayDragOffsets(overlay)).not.toEqual(beforeOffsets);
+      expect(
+        overlay.classList.contains("slide-interaction-overlay--dragging")
+      ).toBe(false);
+    });
+  },
+};
+
+export const MobileInteractionOverlayPointerDrag: Story = {
+  args: {
+    elementList: DRAG_TEST_ELEMENT_LIST,
+    playerControlsVisibility: "visible",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Exercises the mobile drag handle pointer chain so touch-style dragging keeps the interaction movable without using the full card as the drag target.",
+      },
+    },
+  },
+  render: (args) => <MobilePointerDragSlidePreview {...args} />,
+  play: async ({ canvasElement }) => {
+    const overlay = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide--mobile-device .slide-interaction-overlay"
+      ) as HTMLElement | null;
+
+      expect(element).not.toBeNull();
+      return element as HTMLElement;
+    });
+    const handle = overlay.querySelector(
+      '[aria-label="Move interaction"]'
+    ) as HTMLElement | null;
+
+    expect(handle).not.toBeNull();
+
+    const capturedPointerIds = installPointerCaptureSpy(handle as HTMLElement);
+    const beforeOffsets = getOverlayDragOffsets(overlay);
+    const handleRect = (handle as HTMLElement).getBoundingClientRect();
+
+    triggerPointerDrag(
+      handle as HTMLElement,
+      {
+        clientX: handleRect.left + handleRect.width / 2,
+        clientY: handleRect.top + handleRect.height / 2,
+        pointerType: "touch",
+      },
+      {
+        clientX: handleRect.left + handleRect.width / 2 + 36,
+        clientY: handleRect.top + handleRect.height / 2 + 52,
+        pointerType: "touch",
+      }
+    );
+
+    await waitFor(() => {
+      expect(capturedPointerIds).toContain(POINTER_TEST_ID);
+      expect(getOverlayDragOffsets(overlay)).not.toEqual(beforeOffsets);
+    });
   },
 };
 

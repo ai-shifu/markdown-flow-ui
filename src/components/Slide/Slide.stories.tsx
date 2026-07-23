@@ -21,11 +21,7 @@ import {
 import { parseRunStreamFixture } from "./utils/runStreamFixture";
 
 import Slide from "./Slide";
-import type {
-  Element,
-  ElementSubtitleCue,
-  SlideInteractionOverlaySize,
-} from "./Slide";
+import type { Element, ElementSubtitleCue } from "./Slide";
 
 const meta = {
   title: "MarkdownFlow/Slide",
@@ -62,12 +58,6 @@ const meta = {
     interactionTexts: {
       control: "object",
       description: "I18n-ready interaction overlay UI texts",
-    },
-    interactionOverlaySize: {
-      control: "select",
-      options: ["default", "large"],
-      description:
-        "Use the large desktop interaction overlay for classroom projection while keeping mobile compact",
     },
     playerTexts: {
       control: "object",
@@ -2194,26 +2184,27 @@ const CLASSROOM_INTERACTION_ELEMENT_LIST: Element[] = [
   }),
 ];
 
-const InteractionOverlaySizeTogglePreview = (
+const ClassroomModeTogglePreview = (
   props: React.ComponentProps<typeof Slide>
 ) => {
-  const [interactionOverlaySize, setInteractionOverlaySize] =
-    useState<SlideInteractionOverlaySize>("default");
+  const [isClassroomMode, setIsClassroomMode] = useState(false);
 
   return (
     <div className="relative h-[640px] w-full bg-muted/20 p-8">
       <Slide
         {...props}
         className="h-full w-full"
-        interactionOverlaySize={interactionOverlaySize}
+        playerClassName={
+          isClassroomMode ? "classroom-slide-player" : "listen-slide-player"
+        }
       />
       <button
         type="button"
-        data-testid="toggle-interaction-overlay-size"
+        data-testid="toggle-classroom-mode"
         className="absolute left-10 top-10 z-10 rounded bg-white px-3 py-2 text-sm shadow"
-        onClick={() => setInteractionOverlaySize("large")}
+        onClick={() => setIsClassroomMode(true)}
       >
-        Use large overlay
+        Use classroom mode
       </button>
     </div>
   );
@@ -2620,7 +2611,6 @@ export const ControlsAutoHide: Story = {
 export const DesktopInteractionOverlayPointerDrag: Story = {
   args: {
     elementList: DRAG_TEST_ELEMENT_LIST,
-    interactionOverlaySize: "large",
     playerControlsVisibility: "visible",
   },
   parameters: {
@@ -2677,19 +2667,11 @@ export const DesktopInteractionOverlayPointerDrag: Story = {
       expect(
         overlay.classList.contains("slide-interaction-overlay--dragging")
       ).toBe(false);
-      expect(overlay).toHaveClass("slide-interaction-overlay--large");
+      expect(overlay).not.toHaveClass("slide-interaction-overlay--classroom");
     });
 
     const afterHandleOffsets = getOverlayDragOffsets(overlay);
     const bodyRect = (body as HTMLElement).getBoundingClientRect();
-    const choiceButton = overlay.querySelector(
-      ".single-select-container button"
-    ) as HTMLElement | null;
-
-    expect(choiceButton).not.toBeNull();
-    expect(
-      (choiceButton as HTMLElement).getBoundingClientRect().height
-    ).toBeGreaterThanOrEqual(48);
 
     triggerPointerDrag(
       body as HTMLElement,
@@ -2712,12 +2694,12 @@ export const DesktopInteractionOverlayPointerDrag: Story = {
 export const ClassroomInteractionOverlay: Story = {
   args: {
     elementList: CLASSROOM_INTERACTION_ELEMENT_LIST,
-    interactionOverlaySize: "large",
     interactionTexts: {
       title: "课堂互动",
       confirmButtonText: "确认选择",
     },
     locale: "zh-CN",
+    playerClassName: "classroom-slide-player",
     playerControlsVisibility: "hidden",
   },
   parameters: {
@@ -2770,7 +2752,7 @@ export const ClassroomInteractionOverlay: Story = {
     expect(confirmButton).not.toBeNull();
     expect(checkboxVisual).not.toBeNull();
     expect(input).not.toBeNull();
-    expect(overlay).toHaveClass("slide-interaction-overlay--large");
+    expect(overlay).toHaveClass("slide-interaction-overlay--classroom");
 
     await waitFor(() => {
       const overlayRect = overlay.getBoundingClientRect();
@@ -2840,7 +2822,7 @@ export const EmbeddedClassroomInteractionOverlay: Story = {
 
     expect(viewport).not.toBeNull();
     expect(body).not.toBeNull();
-    expect(overlay).toHaveClass("slide-interaction-overlay--large");
+    expect(overlay).toHaveClass("slide-interaction-overlay--classroom");
 
     await waitFor(() => {
       const overlayRect = overlay.getBoundingClientRect();
@@ -2855,7 +2837,7 @@ export const EmbeddedClassroomInteractionOverlay: Story = {
   },
 };
 
-export const InteractionOverlaySizeToggleAfterDrag: Story = {
+export const ClassroomModeToggleAfterDrag: Story = {
   args: {
     elementList: DRAG_TEST_ELEMENT_LIST,
     playerControlsVisibility: "hidden",
@@ -2864,11 +2846,11 @@ export const InteractionOverlaySizeToggleAfterDrag: Story = {
     docs: {
       description: {
         story:
-          "Re-clamps a previously dragged interaction overlay when a desktop presentation switches to the large classroom size.",
+          "Re-clamps a previously dragged interaction overlay when a desktop presentation switches into classroom mode.",
       },
     },
   },
-  render: (args) => <InteractionOverlaySizeTogglePreview {...args} />,
+  render: (args) => <ClassroomModeTogglePreview {...args} />,
   play: async ({ canvasElement }) => {
     const overlay = await waitFor(() => {
       const element = canvasElement.querySelector(
@@ -2885,7 +2867,7 @@ export const InteractionOverlaySizeToggleAfterDrag: Story = {
       '[aria-label="Move interaction"]'
     ) as HTMLElement | null;
     const toggleButton = canvasElement.querySelector(
-      '[data-testid="toggle-interaction-overlay-size"]'
+      '[data-testid="toggle-classroom-mode"]'
     ) as HTMLButtonElement | null;
 
     expect(viewport).not.toBeNull();
@@ -2921,7 +2903,7 @@ export const InteractionOverlaySizeToggleAfterDrag: Story = {
       const overlayRect = overlay.getBoundingClientRect();
       const viewportRect = (viewport as HTMLElement).getBoundingClientRect();
 
-      expect(overlay).toHaveClass("slide-interaction-overlay--large");
+      expect(overlay).toHaveClass("slide-interaction-overlay--classroom");
       expect(overlayRect.width).toBeGreaterThan(compactWidth);
       expect(overlayRect.left).toBeGreaterThanOrEqual(viewportRect.left - 1);
       expect(overlayRect.right).toBeLessThanOrEqual(viewportRect.right + 1);
@@ -2934,7 +2916,7 @@ export const InteractionOverlaySizeToggleAfterDrag: Story = {
 export const MobileInteractionOverlayPointerDrag: Story = {
   args: {
     elementList: DRAG_TEST_ELEMENT_LIST,
-    interactionOverlaySize: "large",
+    playerClassName: "classroom-slide-player",
     playerControlsVisibility: "visible",
   },
   parameters: {
@@ -2982,7 +2964,7 @@ export const MobileInteractionOverlayPointerDrag: Story = {
     await waitFor(() => {
       expect(capturedPointerIds).toContain(POINTER_TEST_ID);
       expect(getOverlayDragOffsets(overlay)).not.toEqual(beforeOffsets);
-      expect(overlay).not.toHaveClass("slide-interaction-overlay--large");
+      expect(overlay).not.toHaveClass("slide-interaction-overlay--classroom");
     });
   },
 };

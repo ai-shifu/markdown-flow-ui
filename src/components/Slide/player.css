@@ -397,7 +397,7 @@
   transition: opacity 160ms ease;
 }
 
-.slide-interaction-overlay--large {
+.slide-interaction-overlay--classroom {
   --mdf-slide-font-size: 24px;
   --mdf-slide-line-height: 36px;
   --text-sm-font-size: 21px;
@@ -410,7 +410,7 @@
   width: min(1080px, calc(100% - 48px));
 }
 
-.slide-interaction-overlay--large .slide-player__interaction-card {
+.slide-interaction-overlay--classroom .slide-player__interaction-card {
   display: flex;
   min-height: 0;
   flex: 1 1 auto;
@@ -422,32 +422,35 @@
     0 10px 20px -12px rgba(0, 0, 0, 0.16);
 }
 
-.slide-interaction-overlay--large .slide-player__interaction-drag-handle {
+.slide-interaction-overlay--classroom .slide-player__interaction-drag-handle {
   top: 14px;
   height: 40px;
 }
 
-.slide-interaction-overlay--large .slide-player__interaction-drag-handle-icon {
+.slide-interaction-overlay--classroom
+  .slide-player__interaction-drag-handle-icon {
   width: 52px;
   height: 40px;
 }
 
-.slide-interaction-overlay--large .slide-player__interaction-drag-handle svg {
+.slide-interaction-overlay--classroom
+  .slide-player__interaction-drag-handle
+  svg {
   width: 24px;
   height: 24px;
 }
 
-.slide-interaction-overlay--large .slide-player__interaction-header {
+.slide-interaction-overlay--classroom .slide-player__interaction-header {
   flex: 0 0 auto;
   padding: 32px 72px 0 32px;
 }
 
-.slide-interaction-overlay--large .slide-player__interaction-title {
+.slide-interaction-overlay--classroom .slide-player__interaction-title {
   font-size: 22px;
   line-height: 30px;
 }
 
-.slide-interaction-overlay--large .slide-player__interaction-body {
+.slide-interaction-overlay--classroom .slide-player__interaction-body {
   min-height: 0;
   max-height: 640px;
   flex: 0 1 auto;
@@ -457,14 +460,16 @@
   overscroll-behavior: contain;
 }
 
-.slide-interaction-overlay--large .content-render .custom-variable-container {
+.slide-interaction-overlay--classroom
+  .content-render
+  .custom-variable-container {
   width: 100%;
   margin-top: 20px;
   padding: 16px 20px;
   border-radius: 12px;
 }
 
-.slide-interaction-overlay--large
+.slide-interaction-overlay--classroom
   .content-render
   .single-select-container
   > span {
@@ -472,7 +477,7 @@
   row-gap: 14px;
 }
 
-.slide-interaction-overlay--large
+.slide-interaction-overlay--classroom
   .content-render
   .single-select-container
   button {
@@ -483,12 +488,12 @@
   line-height: 28px;
 }
 
-.slide-interaction-overlay--large .content-render .multi-select-container {
+.slide-interaction-overlay--classroom .content-render .multi-select-container {
   gap: 18px;
   padding: 8px 0;
 }
 
-.slide-interaction-overlay--large
+.slide-interaction-overlay--classroom
   .content-render
   .multi-select-container
   > span:first-child {
@@ -496,7 +501,7 @@
   row-gap: 16px;
 }
 
-.slide-interaction-overlay--large
+.slide-interaction-overlay--classroom
   .content-render
   .multi-select-container
   label {
@@ -504,7 +509,7 @@
   line-height: 28px;
 }
 
-.slide-interaction-overlay--large
+.slide-interaction-overlay--classroom
   .content-render
   .multi-select-container
   label
@@ -516,7 +521,7 @@
   border-radius: 6px;
 }
 
-.slide-interaction-overlay--large
+.slide-interaction-overlay--classroom
   .content-render
   .multi-select-container
   label
@@ -527,37 +532,37 @@
   height: 18px;
 }
 
-.slide-interaction-overlay--large
+.slide-interaction-overlay--classroom
   .content-render
   .multi-select-container
   > span.block,
-.slide-interaction-overlay--large
+.slide-interaction-overlay--classroom
   .content-render
   .custom-variable-container
   .rc-textarea,
-.slide-interaction-overlay--large .content-render .input-container {
+.slide-interaction-overlay--classroom .content-render .input-container {
   max-width: 720px;
 }
 
-.slide-interaction-overlay--large .content-render .input-container {
+.slide-interaction-overlay--classroom .content-render .input-container {
   border-width: 2px;
   border-radius: 12px;
 }
 
-.slide-interaction-overlay--large textarea.rc-textarea,
-.slide-interaction-overlay--large
+.slide-interaction-overlay--classroom textarea.rc-textarea,
+.slide-interaction-overlay--classroom
   .content-render
   .input-container
   [data-slot="input-group-control"] {
   min-height: 48px;
 }
 
-.slide-interaction-overlay--large textarea.rc-textarea {
+.slide-interaction-overlay--classroom textarea.rc-textarea {
   /* rc-textarea writes its measured minimum height inline. */
   min-height: 48px !important;
 }
 
-.slide-interaction-overlay--large
+.slide-interaction-overlay--classroom
   .content-render
   .input-container
   [data-slot="input-group-control"] {
@@ -568,7 +573,7 @@
   line-height: 32px;
 }
 
-.slide-interaction-overlay--large
+.slide-interaction-overlay--classroom
   .content-render
   .input-container
   [data-slot="button"] {
@@ -576,7 +581,7 @@
   height: 40px;
 }
 
-.slide-interaction-overlay--large
+.slide-interaction-overlay--classroom
   .content-render
   .input-container
   [data-slot="button"]
@@ -585,7 +590,9 @@
   height: 32px;
 }
 
-.slide-interaction-overlay--large .content-render .multi-select-confirm-button {
+.slide-interaction-overlay--classroom
+  .content-render
+  .multi-select-confirm-button {
   min-height: 48px;
   padding: 10px 24px;
   border-radius: 10px;

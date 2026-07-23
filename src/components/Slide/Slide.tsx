@@ -99,6 +99,7 @@ const DEFAULT_INTERACTION_OVERLAY_OPEN_DELAY_MS = 300;
 const DEFAULT_INTERACTION_OVERLAY_FALLBACK_OFFSET_PX = 160;
 const DEFAULT_INTERACTION_SUBTITLE_GAP_PX = 16;
 const DEFAULT_RESOLVED_INTERACTION_AUTO_CLOSE_DELAY_MS = 3000;
+const CLASSROOM_PLAYER_CLASS_NAME = "classroom-slide-player";
 const DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET: InteractionOverlayDragOffset = {
   x: 0,
   y: 0,
@@ -121,8 +122,6 @@ export type { SlideBufferingReason } from "./slideI18n";
 export type SlideBufferingTextConfig =
   | string
   | Partial<Record<SlideBufferingReason, string>>;
-
-export type SlideInteractionOverlaySize = "default" | "large";
 
 const resolveBufferingTextByReason = (
   bufferingText: SlideBufferingTextConfig,
@@ -302,13 +301,6 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   bufferingText?: SlideBufferingTextConfig;
   interactionTitle?: string;
   interactionTexts?: SlideInteractionTexts;
-  /**
-   * Controls the interaction overlay size on desktop presentation surfaces.
-   *
-   * Use `"large"` for classroom projection. Mobile layouts keep the compact
-   * overlay so controls remain inside the available viewport.
-   */
-  interactionOverlaySize?: SlideInteractionOverlaySize;
   playerTexts?: SlidePlayerTexts;
   playerAutoHideDelay?: number;
   markerAutoAdvanceDelay?: number;
@@ -353,7 +345,6 @@ const Slide: React.FC<SlideProps> = ({
   bufferingText,
   interactionTitle,
   interactionTexts,
-  interactionOverlaySize = "default",
   playerTexts,
   playerAutoHideDelay = 3000,
   markerAutoAdvanceDelay = DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS,
@@ -372,6 +363,9 @@ const Slide: React.FC<SlideProps> = ({
   ...props
 }) => {
   const localeTexts = useMemo(() => getSlideLocaleTexts(locale), [locale]);
+  const isClassroomMode =
+    playerClassName?.split(/\s+/).includes(CLASSROOM_PLAYER_CLASS_NAME) ??
+    false;
   const resolvedBufferingText = useMemo(
     () =>
       mergeBufferingTextWithLocaleDefaults(
@@ -2153,7 +2147,7 @@ const Slide: React.FC<SlideProps> = ({
   }, [
     getInteractionOverlayDragBounds,
     interactionOverlayDragOffset,
-    interactionOverlaySize,
+    isClassroomMode,
     isInteractionOverlayDragging,
     playerControlsVisible,
     shouldMountPlayer,
@@ -2451,8 +2445,8 @@ const Slide: React.FC<SlideProps> = ({
                 ? "slide-interaction-overlay--with-player"
                 : "slide-interaction-overlay--standalone",
               !isMobileDevice &&
-                interactionOverlaySize === "large" &&
-                "slide-interaction-overlay--large",
+                isClassroomMode &&
+                "slide-interaction-overlay--classroom",
               isInteractionOverlayDragging &&
                 "slide-interaction-overlay--dragging"
             )}

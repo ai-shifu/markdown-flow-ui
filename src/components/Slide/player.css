@@ -268,7 +268,7 @@
 
 .slide-player__interaction-drag-handle-icon {
   display: inline-flex;
-  width: 40px;
+  width: 52px;
   height: 32px;
   align-items: center;
   justify-content: center;
@@ -284,9 +284,14 @@
 }
 
 .slide-player__interaction-drag-handle svg {
+  flex: 0 0 auto;
   width: 18px;
   height: 18px;
   stroke-width: 2;
+}
+
+.slide-player__interaction-drag-handle svg + svg {
+  margin-left: -2px;
 }
 
 .slide-player__interaction-header {

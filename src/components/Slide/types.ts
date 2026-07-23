@@ -48,6 +48,7 @@ export interface Element {
   readonly?: boolean;
   audio_segments?: ElementAudioSegment[];
   subtitle_cues?: ElementSubtitleCue[];
+  [key: string]: unknown;
 }
 
 export interface SlidePlayerCustomActionContext {

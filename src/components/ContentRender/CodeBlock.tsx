@@ -7,7 +7,7 @@ import { Copy, Check } from "lucide-react";
  */
 export interface CodeBlockProps {
   /** The code content and nested elements to render.*/
-  children: React.ReactNode;
+  children?: React.ReactNode;
   /** Optional CSS class name for the pre element. */
   className?: string;
   /** Text to display on the copy button (i18n support). */

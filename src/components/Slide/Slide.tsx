@@ -229,6 +229,8 @@ const InteractionOverlayCard = memo(
       >
         <span className="slide-player__interaction-drag-handle-icon">
           <GripHorizontal aria-hidden="true" />
+          <GripHorizontal aria-hidden="true" />
+          <GripHorizontal aria-hidden="true" />
         </span>
       </button>
       <div className="slide-player__interaction-header">

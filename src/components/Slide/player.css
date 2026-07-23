@@ -385,6 +385,7 @@
   --slide-player-height: 80px;
   --slide-interaction-player-space: 80px;
   --slide-interaction-gap: 16px;
+  --slide-interaction-bottom-position: 24px;
   position: absolute;
   left: 50%;
   z-index: 4;
@@ -396,6 +397,202 @@
   transition: opacity 160ms ease;
 }
 
+.slide-interaction-overlay--large {
+  --mdf-slide-font-size: 24px;
+  --mdf-slide-line-height: 36px;
+  --text-sm-font-size: 21px;
+  --text-sm-line-height: 30px;
+  --text-xs-font-size: 21px;
+  --text-xs-line-height: 28px;
+  display: flex;
+  max-height: calc(100% - var(--slide-interaction-bottom-position) - 24px);
+  flex-direction: column;
+  width: min(1080px, calc(100% - 48px));
+}
+
+.slide-interaction-overlay--large .slide-player__interaction-card {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  border-width: 2px;
+  border-radius: 32px;
+  box-shadow:
+    0 24px 48px -12px rgba(0, 0, 0, 0.2),
+    0 10px 20px -12px rgba(0, 0, 0, 0.16);
+}
+
+.slide-interaction-overlay--large .slide-player__interaction-drag-handle {
+  top: 14px;
+  height: 40px;
+}
+
+.slide-interaction-overlay--large .slide-player__interaction-drag-handle-icon {
+  width: 52px;
+  height: 40px;
+}
+
+.slide-interaction-overlay--large .slide-player__interaction-drag-handle svg {
+  width: 24px;
+  height: 24px;
+}
+
+.slide-interaction-overlay--large .slide-player__interaction-header {
+  flex: 0 0 auto;
+  padding: 32px 72px 0 32px;
+}
+
+.slide-interaction-overlay--large .slide-player__interaction-title {
+  font-size: 22px;
+  line-height: 30px;
+}
+
+.slide-interaction-overlay--large .slide-player__interaction-body {
+  min-height: 0;
+  max-height: 640px;
+  flex: 0 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 4px 32px 24px;
+  overscroll-behavior: contain;
+}
+
+.slide-interaction-overlay--large .content-render .custom-variable-container {
+  width: 100%;
+  margin-top: 20px;
+  padding: 16px 20px;
+  border-radius: 12px;
+}
+
+.slide-interaction-overlay--large
+  .content-render
+  .single-select-container
+  > span {
+  column-gap: 16px;
+  row-gap: 14px;
+}
+
+.slide-interaction-overlay--large
+  .content-render
+  .single-select-container
+  button {
+  min-height: 48px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 21px;
+  line-height: 28px;
+}
+
+.slide-interaction-overlay--large .content-render .multi-select-container {
+  gap: 18px;
+  padding: 8px 0;
+}
+
+.slide-interaction-overlay--large
+  .content-render
+  .multi-select-container
+  > span:first-child {
+  column-gap: 28px;
+  row-gap: 16px;
+}
+
+.slide-interaction-overlay--large
+  .content-render
+  .multi-select-container
+  label {
+  font-size: 21px;
+  line-height: 28px;
+}
+
+.slide-interaction-overlay--large
+  .content-render
+  .multi-select-container
+  label
+  > span:first-child
+  > span:last-child {
+  width: 24px;
+  height: 24px;
+  border-width: 2px;
+  border-radius: 6px;
+}
+
+.slide-interaction-overlay--large
+  .content-render
+  .multi-select-container
+  label
+  > span:first-child
+  > span:last-child
+  svg {
+  width: 18px;
+  height: 18px;
+}
+
+.slide-interaction-overlay--large
+  .content-render
+  .multi-select-container
+  > span.block,
+.slide-interaction-overlay--large
+  .content-render
+  .custom-variable-container
+  .rc-textarea,
+.slide-interaction-overlay--large .content-render .input-container {
+  max-width: 720px;
+}
+
+.slide-interaction-overlay--large .content-render .input-container {
+  border-width: 2px;
+  border-radius: 12px;
+}
+
+.slide-interaction-overlay--large textarea.rc-textarea,
+.slide-interaction-overlay--large
+  .content-render
+  .input-container
+  [data-slot="input-group-control"] {
+  min-height: 48px;
+}
+
+.slide-interaction-overlay--large textarea.rc-textarea {
+  /* rc-textarea writes its measured minimum height inline. */
+  min-height: 48px !important;
+}
+
+.slide-interaction-overlay--large
+  .content-render
+  .input-container
+  [data-slot="input-group-control"] {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 16px;
+  font-size: 24px;
+  line-height: 32px;
+}
+
+.slide-interaction-overlay--large
+  .content-render
+  .input-container
+  [data-slot="button"] {
+  width: 40px;
+  height: 40px;
+}
+
+.slide-interaction-overlay--large
+  .content-render
+  .input-container
+  [data-slot="button"]
+  img {
+  width: 32px;
+  height: 32px;
+}
+
+.slide-interaction-overlay--large .content-render .multi-select-confirm-button {
+  min-height: 48px;
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-size: 21px;
+  line-height: 28px;
+}
+
 .slide-interaction-overlay--dragging {
   opacity: 0.36;
   transition: none;
@@ -403,10 +600,11 @@
 }
 
 .slide-interaction-overlay--with-player {
-  bottom: calc(
+  --slide-interaction-bottom-position: calc(
     var(--slide-player-bottom-offset) + var(--slide-player-height) +
       var(--slide-interaction-gap)
   );
+  bottom: var(--slide-interaction-bottom-position);
 }
 
 .slide--browser-fullscreen .slide-interaction-overlay {
@@ -423,7 +621,8 @@
 }
 
 .slide-interaction-overlay--standalone {
-  bottom: 24px !important;
+  --slide-interaction-bottom-position: 24px;
+  bottom: var(--slide-interaction-bottom-position) !important;
 }
 
 .slide--mobile-device .slide-interaction-overlay {

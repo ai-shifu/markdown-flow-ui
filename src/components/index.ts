@@ -21,6 +21,7 @@ export type {
 export type {
   Element,
   ElementSubtitleCue,
+  SlideInteractionOverlaySize,
   SlideInteractionTexts,
   SlidePlayerControlsVisibility,
   SlideProps,

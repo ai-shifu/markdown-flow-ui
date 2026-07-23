@@ -122,6 +122,8 @@ export type SlideBufferingTextConfig =
   | string
   | Partial<Record<SlideBufferingReason, string>>;
 
+export type SlideInteractionOverlaySize = "default" | "large";
+
 const resolveBufferingTextByReason = (
   bufferingText: SlideBufferingTextConfig,
   reason: SlideBufferingReason
@@ -300,6 +302,13 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   bufferingText?: SlideBufferingTextConfig;
   interactionTitle?: string;
   interactionTexts?: SlideInteractionTexts;
+  /**
+   * Controls the interaction overlay size on desktop presentation surfaces.
+   *
+   * Use `"large"` for classroom projection. Mobile layouts keep the compact
+   * overlay so controls remain inside the available viewport.
+   */
+  interactionOverlaySize?: SlideInteractionOverlaySize;
   playerTexts?: SlidePlayerTexts;
   playerAutoHideDelay?: number;
   markerAutoAdvanceDelay?: number;
@@ -344,6 +353,7 @@ const Slide: React.FC<SlideProps> = ({
   bufferingText,
   interactionTitle,
   interactionTexts,
+  interactionOverlaySize = "default",
   playerTexts,
   playerAutoHideDelay = 3000,
   markerAutoAdvanceDelay = DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS,
@@ -2143,6 +2153,7 @@ const Slide: React.FC<SlideProps> = ({
   }, [
     getInteractionOverlayDragBounds,
     interactionOverlayDragOffset,
+    interactionOverlaySize,
     isInteractionOverlayDragging,
     playerControlsVisible,
     shouldMountPlayer,
@@ -2439,6 +2450,9 @@ const Slide: React.FC<SlideProps> = ({
               playerControlsVisible && shouldMountPlayer
                 ? "slide-interaction-overlay--with-player"
                 : "slide-interaction-overlay--standalone",
+              !isMobileDevice &&
+                interactionOverlaySize === "large" &&
+                "slide-interaction-overlay--large",
               isInteractionOverlayDragging &&
                 "slide-interaction-overlay--dragging"
             )}

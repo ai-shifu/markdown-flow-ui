@@ -26,6 +26,7 @@ export {
 };
 export type {
   SlideInteractionTexts,
+  SlideInteractionOverlaySize,
   SlideFullscreenHeader,
   SlidePlayerControlsVisibility,
   SlideProps,

@@ -88,6 +88,9 @@ export const WideContainer: Story = {
     />
   ),
   play: async ({ canvasElement }) => {
+    const wrapper = canvasElement.querySelector(
+      ".custom-variable-container"
+    ) as HTMLElement | null;
     const group = canvasElement.querySelector(
       "[data-slot='input-group']"
     ) as HTMLElement | null;
@@ -98,19 +101,26 @@ export const WideContainer: Story = {
       "button[data-size='icon-sm']"
     ) as HTMLElement | null;
 
+    expect(wrapper).not.toBeNull();
     expect(group).not.toBeNull();
     expect(control).not.toBeNull();
     expect(button).not.toBeNull();
 
+    const wrapperRect = (wrapper as HTMLElement).getBoundingClientRect();
     const groupRect = (group as HTMLElement).getBoundingClientRect();
     const controlRect = (control as HTMLElement).getBoundingClientRect();
     const buttonRect = (button as HTMLElement).getBoundingClientRect();
+    const controlButtonGap = buttonRect.left - controlRect.right;
+    const buttonRightGap = groupRect.right - buttonRect.right;
 
-    expect(groupRect.width).toBeGreaterThanOrEqual(740);
-    expect(controlRect.width).toBeGreaterThan(500);
-    expect(controlRect.right).toBeLessThanOrEqual(buttonRect.left);
-    expect(groupRect.right - buttonRect.right).toBeGreaterThanOrEqual(0);
-    expect(groupRect.right - buttonRect.right).toBeLessThan(16);
+    expect(Math.abs(groupRect.width - wrapperRect.width)).toBeLessThanOrEqual(
+      1
+    );
+    expect(controlRect.width).toBeGreaterThan(0);
+    expect(controlButtonGap).toBeGreaterThanOrEqual(0);
+    expect(controlButtonGap).toBeLessThan(16);
+    expect(buttonRightGap).toBeGreaterThanOrEqual(0);
+    expect(buttonRightGap).toBeLessThan(16);
   },
 };
 

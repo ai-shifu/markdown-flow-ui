@@ -321,7 +321,6 @@
 }
 .custom-variable-container .rc-textarea {
   width: 100%;
-  max-width: 500px;
 }
 .custom-variable-container textarea {
   color: #0a0a0a;

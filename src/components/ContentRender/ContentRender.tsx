@@ -237,6 +237,21 @@ type CustomComponents = ComponentsWithCustomVariable & {
   }>;
 };
 
+type MarkdownComponentRuntimeValues = {
+  beforeSend?: (param: OnSendContentParams) => boolean;
+  locale?: MarkdownFlowLocale;
+  onClickCustomButtonAfterContent?: () => void;
+  onSend?: (content: OnSendContentParams) => void;
+  readonly: boolean;
+  renderContent: string;
+  resolvedConfirmButtonText: string;
+  resolvedCopiedButtonText: string;
+  resolvedCopyButtonText: string;
+  resolvedDefaultButtonText?: string;
+  resolvedDefaultInputText?: string;
+  resolvedDefaultSelectedValues?: string[];
+};
+
 const remarkPlugins: PluggableList = [
   remarkGfm,
   remarkMath,
@@ -301,6 +316,26 @@ const splitTextByCharacterChunk = (value: string, chunkSize: number) => {
     chunk: characters.slice(0, safeChunkSize).join(""),
     rest: characters.slice(safeChunkSize).join(""),
   };
+};
+
+const areStringArraysEqual = (left?: string[], right?: string[]) => {
+  if (left === right) {
+    return true;
+  }
+  if (!left || !right || left.length !== right.length) {
+    return false;
+  }
+  return left.every((value, index) => value === right[index]);
+};
+
+const useStableStringArray = (values?: string[]) => {
+  const valuesRef = useRef<string[] | undefined>(values);
+
+  if (!areStringArraysEqual(valuesRef.current, values)) {
+    valuesRef.current = values;
+  }
+
+  return valuesRef.current;
 };
 
 const ContentRender: React.FC<ContentRenderProps> = ({
@@ -480,104 +515,156 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   const resolvedDefaultSelectedValues = defaultSelectedValues?.length
     ? defaultSelectedValues
     : interactionDefaults.selectedValues || fallbackSelectedValues;
+  const stableDefaultSelectedValues = useStableStringArray(
+    resolvedDefaultSelectedValues
+  );
+  const componentRuntimeValuesRef = useRef<MarkdownComponentRuntimeValues>({
+    beforeSend,
+    locale,
+    onClickCustomButtonAfterContent,
+    onSend,
+    readonly,
+    renderContent,
+    resolvedConfirmButtonText,
+    resolvedCopiedButtonText,
+    resolvedCopyButtonText,
+    resolvedDefaultButtonText,
+    resolvedDefaultInputText,
+    resolvedDefaultSelectedValues: stableDefaultSelectedValues,
+  });
 
-  const components: CustomComponents = {
-    "custom-button-after-content": ({
-      children,
-    }: {
-      children: React.ReactNode;
-    }) => {
-      return (
-        <button
-          className="content-render-custom-button-after-content"
-          onClick={onClickCustomButtonAfterContent}
-        >
-          <span className="content-render-custom-button-after-content-inner">
-            {children}
-          </span>
-        </button>
-      );
-    },
-    "custom-variable": (props) => (
-      <CustomButtonInputVariable
-        {...props}
-        readonly={readonly}
-        defaultButtonText={resolvedDefaultButtonText}
-        defaultInputText={resolvedDefaultInputText}
-        defaultSelectedValues={resolvedDefaultSelectedValues}
-        onSend={onSend}
-        beforeSend={beforeSend}
-        locale={locale}
-        confirmButtonText={resolvedConfirmButtonText}
-        // tooltipMinLength={tooltipMinLength}
-      />
-    ),
-    code: (props) => {
-      const { className, children, ...rest } = props as {
-        className?: string;
-        children?: React.ReactNode;
-      };
-      const match = /language-(\w+)/.exec(className || "");
-      const language = match?.[1];
-      if (language === "mermaid") {
-        const chartContent = children?.toString().replace(/\n$/, "") || "";
-        const frozen = mermaidBlockIsComplete(renderContent, chartContent);
-        return <MermaidChart chart={chartContent} frozen={frozen} />;
-      }
-
-      return (
-        <code className={className} {...rest}>
-          {children}
-        </code>
-      );
-    },
-    table: ({ ...props }) => (
-      <div className="content-render-table-container">
-        <table className="content-render-table" {...props} />
-      </div>
-    ),
-    th: ({ ...props }) => <th className="content-render-th" {...props} />,
-    td: ({ ...props }) => <td className="content-render-td" {...props} />,
-    tr: ({ ...props }) => <tr className="content-render-tr" {...props} />,
-    li: ({ node, ...props }) => {
-      const className = node?.properties?.className;
-      const hasTaskListItem =
-        (typeof className === "string" &&
-          className.includes("task-list-item")) ||
-        (Array.isArray(className) && className.includes("task-list-item"));
-      if (hasTaskListItem) {
-        return <li className="content-render-task-list-item" {...props} />;
-      }
-      return <li {...props} />;
-    },
-    ol: ({ ...props }) => <ol className="content-render-ol" {...props} />,
-    ul: ({ ...props }) => <ul className="content-render-ul" {...props} />,
-    input: ({ ...props }) => {
-      if (props.type === "checkbox") {
-        return (
-          <input
-            type="checkbox"
-            className="content-render-checkbox"
-            disabled
-            {...props}
-          />
-        );
-      }
-      return <input {...props} />;
-    },
-    a: ({ children, ...props }) => (
-      <a target="_blank" rel="noopener noreferrer" {...props}>
-        {children}
-      </a>
-    ),
-    pre: (props) => (
-      <CodeBlock
-        {...props}
-        copyButtonText={resolvedCopyButtonText}
-        copiedButtonText={resolvedCopiedButtonText}
-      />
-    ),
+  componentRuntimeValuesRef.current = {
+    beforeSend,
+    locale,
+    onClickCustomButtonAfterContent,
+    onSend,
+    readonly,
+    renderContent,
+    resolvedConfirmButtonText,
+    resolvedCopiedButtonText,
+    resolvedCopyButtonText,
+    resolvedDefaultButtonText,
+    resolvedDefaultInputText,
+    resolvedDefaultSelectedValues: stableDefaultSelectedValues,
   };
+
+  const components = useMemo<CustomComponents>(
+    () => ({
+      "custom-button-after-content": ({
+        children,
+      }: {
+        children: React.ReactNode;
+      }) => {
+        return (
+          <button
+            className="content-render-custom-button-after-content"
+            onClick={
+              componentRuntimeValuesRef.current.onClickCustomButtonAfterContent
+            }
+          >
+            <span className="content-render-custom-button-after-content-inner">
+              {children}
+            </span>
+          </button>
+        );
+      },
+      "custom-variable": (props) => (
+        <CustomButtonInputVariable
+          {...props}
+          readonly={componentRuntimeValuesRef.current.readonly}
+          defaultButtonText={
+            componentRuntimeValuesRef.current.resolvedDefaultButtonText
+          }
+          defaultInputText={
+            componentRuntimeValuesRef.current.resolvedDefaultInputText
+          }
+          defaultSelectedValues={
+            componentRuntimeValuesRef.current.resolvedDefaultSelectedValues
+          }
+          onSend={componentRuntimeValuesRef.current.onSend}
+          beforeSend={componentRuntimeValuesRef.current.beforeSend}
+          locale={componentRuntimeValuesRef.current.locale}
+          confirmButtonText={
+            componentRuntimeValuesRef.current.resolvedConfirmButtonText
+          }
+          // tooltipMinLength={tooltipMinLength}
+        />
+      ),
+      code: (props) => {
+        const { className, children, ...rest } = props as {
+          className?: string;
+          children?: React.ReactNode;
+        };
+        const match = /language-(\w+)/.exec(className || "");
+        const language = match?.[1];
+        if (language === "mermaid") {
+          const chartContent = children?.toString().replace(/\n$/, "") || "";
+          const frozen = mermaidBlockIsComplete(
+            componentRuntimeValuesRef.current.renderContent,
+            chartContent
+          );
+          return <MermaidChart chart={chartContent} frozen={frozen} />;
+        }
+
+        return (
+          <code className={className} {...rest}>
+            {children}
+          </code>
+        );
+      },
+      table: ({ ...props }) => (
+        <div className="content-render-table-container">
+          <table className="content-render-table" {...props} />
+        </div>
+      ),
+      th: ({ ...props }) => <th className="content-render-th" {...props} />,
+      td: ({ ...props }) => <td className="content-render-td" {...props} />,
+      tr: ({ ...props }) => <tr className="content-render-tr" {...props} />,
+      li: ({ node, ...props }) => {
+        const className = node?.properties?.className;
+        const hasTaskListItem =
+          (typeof className === "string" &&
+            className.includes("task-list-item")) ||
+          (Array.isArray(className) && className.includes("task-list-item"));
+        if (hasTaskListItem) {
+          return <li className="content-render-task-list-item" {...props} />;
+        }
+        return <li {...props} />;
+      },
+      ol: ({ ...props }) => <ol className="content-render-ol" {...props} />,
+      ul: ({ ...props }) => <ul className="content-render-ul" {...props} />,
+      input: ({ ...props }) => {
+        if (props.type === "checkbox") {
+          return (
+            <input
+              type="checkbox"
+              className="content-render-checkbox"
+              disabled
+              {...props}
+            />
+          );
+        }
+        return <input {...props} />;
+      },
+      a: ({ children, ...props }) => (
+        <a target="_blank" rel="noopener noreferrer" {...props}>
+          {children}
+        </a>
+      ),
+      pre: (props) => (
+        <CodeBlock
+          {...props}
+          copyButtonText={
+            componentRuntimeValuesRef.current.resolvedCopyButtonText
+          }
+          copiedButtonText={
+            componentRuntimeValuesRef.current.resolvedCopiedButtonText
+          }
+        />
+      ),
+    }),
+    []
+  );
 
   const hasPotentialSandboxTags = useMemo(
     () => SANDBOX_TAG_HINT_PATTERN.test(renderContent),

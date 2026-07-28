@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { expect, userEvent, waitFor } from "storybook/test";
 
 import runStreamFixtureText from "../../../测试数据.json?raw";
 import ContentRender, {
@@ -32,6 +33,74 @@ const meta = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+const CONTENT_RENDER_INPUT_CHURN_CONTENT =
+  "?[%{{content_render_input_churn}}...Type your answer]";
+
+const ContentRenderInputPropChurnPreview = () => {
+  const [renderCount, setRenderCount] = useState(0);
+
+  return (
+    <div>
+      <button
+        type="button"
+        data-testid="rerender-content-render"
+        onClick={() => setRenderCount((count) => count + 1)}
+      >
+        Rerender
+      </button>
+      <ContentRender
+        content={CONTENT_RENDER_INPUT_CHURN_CONTENT}
+        defaultSelectedValues={["Existing choice"]}
+        beforeSend={() => true}
+        onSend={() => undefined}
+        sandboxLoadingText={`Render ${renderCount}`}
+      />
+    </div>
+  );
+};
+
+export const InputKeepsFocusDuringPropChurn: Story = {
+  args: {},
+  parameters: {
+    layout: "centered",
+  },
+  render: () => <ContentRenderInputPropChurnPreview />,
+  play: async ({ canvasElement }) => {
+    const textarea = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        "textarea"
+      ) as HTMLTextAreaElement | null;
+
+      expect(element).not.toBeNull();
+      return element as HTMLTextAreaElement;
+    });
+    const typedValue = "Input survives prop churn";
+    const rerenderButton = canvasElement.querySelector(
+      '[data-testid="rerender-content-render"]'
+    ) as HTMLButtonElement | null;
+
+    expect(rerenderButton).not.toBeNull();
+
+    await userEvent.click(textarea);
+    await userEvent.type(textarea, typedValue);
+
+    expect(document.activeElement).toBe(textarea);
+    expect(textarea.value).toBe(typedValue);
+
+    rerenderButton?.click();
+
+    await waitFor(() => {
+      const currentTextarea = canvasElement.querySelector(
+        "textarea"
+      ) as HTMLTextAreaElement | null;
+
+      expect(currentTextarea).toBe(textarea);
+      expect(document.activeElement).toBe(textarea);
+      expect(currentTextarea?.value).toBe(typedValue);
+    });
+  },
+};
 
 // ==============================================================================
 // Markdown Test Content Constants

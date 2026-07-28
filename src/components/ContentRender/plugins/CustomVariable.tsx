@@ -249,6 +249,13 @@ const CustomButtonInputVariable = ({
   const [selectedValues, setSelectedValues] = React.useState<string[]>(
     defaultSelectedValues || []
   );
+  const interactionDefinitionKey = JSON.stringify({
+    buttonTexts: node.properties?.buttonTexts,
+    buttonValues: node.properties?.buttonValues,
+    isMultiSelect: node.properties?.isMultiSelect,
+    placeholder: node.properties?.placeholder,
+    variableName: node.properties?.variableName,
+  });
   const isMultiSelect = node.properties?.isMultiSelect ?? false;
   const baseButtonTexts = node.properties?.buttonTexts || [];
   const shouldUseFallbackButton =
@@ -354,11 +361,11 @@ const CustomButtonInputVariable = ({
 
   React.useEffect(() => {
     setInputValue(defaultInputText || "");
-  }, [defaultInputText, node]);
+  }, [defaultInputText, interactionDefinitionKey]);
 
   React.useEffect(() => {
     setSelectedValues(defaultSelectedValues || []);
-  }, [defaultSelectedValues, node]);
+  }, [defaultSelectedValues, interactionDefinitionKey]);
 
   return (
     <span className="custom-variable-container inline-flex items-center flex-wrap">

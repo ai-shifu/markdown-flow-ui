@@ -41,8 +41,6 @@ describe("resolveMobileViewportLandscape", () => {
       resolveMobileViewportLandscape({
         matchMediaLandscape: true,
         orientationType: "portrait-primary",
-        innerWidth: 390,
-        innerHeight: 844,
       })
     ).toBe(false);
   });
@@ -51,8 +49,6 @@ describe("resolveMobileViewportLandscape", () => {
     expect(
       resolveMobileViewportLandscape({
         orientationType: "landscape-primary",
-        innerWidth: 390,
-        innerHeight: 844,
       })
     ).toBe(true);
   });
@@ -61,8 +57,6 @@ describe("resolveMobileViewportLandscape", () => {
     expect(
       resolveMobileViewportLandscape({
         matchMediaLandscape: true,
-        innerWidth: 390,
-        innerHeight: 844,
       })
     ).toBe(true);
   });
@@ -70,8 +64,6 @@ describe("resolveMobileViewportLandscape", () => {
   it("falls back to stable screen dimensions when orientation metadata is missing", () => {
     expect(
       resolveMobileViewportLandscape({
-        innerWidth: 844,
-        innerHeight: 390,
         screenWidth: 844,
         screenHeight: 390,
       })
@@ -84,17 +76,46 @@ describe("resolveMobileViewportLandscape", () => {
 });
 
 describe("subscribeMobileDeviceChange", () => {
-  it("ignores keyboard-driven viewport resizes", () => {
-    const screenOrientation = new EventTarget();
+  const createMobileWindow = () => {
+    const screenOrientation = Object.assign(new EventTarget(), {
+      type: "portrait-primary",
+    });
     const visualViewport = new EventTarget();
     const win = new EventTarget() as EventTarget & {
+      matchMedia: Window["matchMedia"];
       innerWidth: number;
-      screen: { orientation: EventTarget };
+      screen: {
+        height: number;
+        orientation: EventTarget & { type: string };
+        width: number;
+      };
       visualViewport: EventTarget;
     };
     win.innerWidth = 390;
-    win.screen = { orientation: screenOrientation };
+    win.matchMedia = ((query: string) => ({
+      matches:
+        query === "(orientation: landscape)" &&
+        screenOrientation.type.includes("landscape"),
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    })) as Window["matchMedia"];
+    win.screen = {
+      height: 844,
+      orientation: screenOrientation,
+      width: 390,
+    };
     win.visualViewport = visualViewport;
+
+    return { screenOrientation, visualViewport, win };
+  };
+
+  it("ignores keyboard-driven viewport resizes", () => {
+    const { visualViewport, win } = createMobileWindow();
     let changeCount = 0;
 
     const unsubscribe = subscribeMobileDeviceChange(
@@ -108,23 +129,67 @@ describe("subscribeMobileDeviceChange", () => {
     visualViewport.dispatchEvent(new Event("resize"));
 
     expect(changeCount).toBe(0);
+    unsubscribe();
+  });
+
+  it("ignores same-orientation width changes", () => {
+    const { win } = createMobileWindow();
+    let changeCount = 0;
+
+    const unsubscribe = subscribeMobileDeviceChange(
+      () => {
+        changeCount += 1;
+      },
+      win as unknown as Window
+    );
 
     win.innerWidth = 500;
     win.dispatchEvent(new Event("resize"));
 
-    expect(changeCount).toBe(1);
+    expect(changeCount).toBe(0);
+    unsubscribe();
+  });
+
+  it("notifies once for duplicate events from the same orientation change", () => {
+    const { screenOrientation, win } = createMobileWindow();
+    let changeCount = 0;
+
+    const unsubscribe = subscribeMobileDeviceChange(
+      () => {
+        changeCount += 1;
+      },
+      win as unknown as Window
+    );
+
+    screenOrientation.type = "landscape-primary";
+    win.screen.width = 844;
+    win.screen.height = 390;
 
     win.dispatchEvent(new Event("orientationchange"));
+    win.dispatchEvent(new Event("resize"));
     screenOrientation.dispatchEvent(new Event("change"));
 
-    expect(changeCount).toBe(3);
+    expect(changeCount).toBe(1);
+    unsubscribe();
+  });
+
+  it("stops notifying after unsubscribe", () => {
+    const { screenOrientation, win } = createMobileWindow();
+    let changeCount = 0;
+
+    const unsubscribe = subscribeMobileDeviceChange(
+      () => {
+        changeCount += 1;
+      },
+      win as unknown as Window
+    );
 
     unsubscribe();
-    win.innerWidth = 600;
-    win.dispatchEvent(new Event("resize"));
+
+    screenOrientation.type = "landscape-primary";
     win.dispatchEvent(new Event("orientationchange"));
     screenOrientation.dispatchEvent(new Event("change"));
 
-    expect(changeCount).toBe(3);
+    expect(changeCount).toBe(0);
   });
 });

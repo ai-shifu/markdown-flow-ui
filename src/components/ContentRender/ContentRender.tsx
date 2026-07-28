@@ -237,6 +237,21 @@ type CustomComponents = ComponentsWithCustomVariable & {
   }>;
 };
 
+type MarkdownComponentRuntimeValues = {
+  beforeSend?: (param: OnSendContentParams) => boolean;
+  locale?: MarkdownFlowLocale;
+  onClickCustomButtonAfterContent?: () => void;
+  onSend?: (content: OnSendContentParams) => void;
+  readonly: boolean;
+  renderContent: string;
+  resolvedConfirmButtonText: string;
+  resolvedCopiedButtonText: string;
+  resolvedCopyButtonText: string;
+  resolvedDefaultButtonText?: string;
+  resolvedDefaultInputText?: string;
+  resolvedDefaultSelectedValues?: string[];
+};
+
 const remarkPlugins: PluggableList = [
   remarkGfm,
   remarkMath,
@@ -301,6 +316,26 @@ const splitTextByCharacterChunk = (value: string, chunkSize: number) => {
     chunk: characters.slice(0, safeChunkSize).join(""),
     rest: characters.slice(safeChunkSize).join(""),
   };
+};
+
+const areStringArraysEqual = (left?: string[], right?: string[]) => {
+  if (left === right) {
+    return true;
+  }
+  if (!left || !right || left.length !== right.length) {
+    return false;
+  }
+  return left.every((value, index) => value === right[index]);
+};
+
+const useStableStringArray = (values?: string[]) => {
+  const valuesRef = useRef<string[] | undefined>(values);
+
+  if (!areStringArraysEqual(valuesRef.current, values)) {
+    valuesRef.current = values;
+  }
+
+  return valuesRef.current;
 };
 
 const ContentRender: React.FC<ContentRenderProps> = ({
@@ -480,6 +515,38 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   const resolvedDefaultSelectedValues = defaultSelectedValues?.length
     ? defaultSelectedValues
     : interactionDefaults.selectedValues || fallbackSelectedValues;
+  const stableDefaultSelectedValues = useStableStringArray(
+    resolvedDefaultSelectedValues
+  );
+  const componentRuntimeValuesRef = useRef<MarkdownComponentRuntimeValues>({
+    beforeSend,
+    locale,
+    onClickCustomButtonAfterContent,
+    onSend,
+    readonly,
+    renderContent,
+    resolvedConfirmButtonText,
+    resolvedCopiedButtonText,
+    resolvedCopyButtonText,
+    resolvedDefaultButtonText,
+    resolvedDefaultInputText,
+    resolvedDefaultSelectedValues: stableDefaultSelectedValues,
+  });
+
+  componentRuntimeValuesRef.current = {
+    beforeSend,
+    locale,
+    onClickCustomButtonAfterContent,
+    onSend,
+    readonly,
+    renderContent,
+    resolvedConfirmButtonText,
+    resolvedCopiedButtonText,
+    resolvedCopyButtonText,
+    resolvedDefaultButtonText,
+    resolvedDefaultInputText,
+    resolvedDefaultSelectedValues: stableDefaultSelectedValues,
+  };
 
   const components = useMemo<CustomComponents>(
     () => ({
@@ -491,7 +558,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         return (
           <button
             className="content-render-custom-button-after-content"
-            onClick={onClickCustomButtonAfterContent}
+            onClick={
+              componentRuntimeValuesRef.current.onClickCustomButtonAfterContent
+            }
           >
             <span className="content-render-custom-button-after-content-inner">
               {children}
@@ -502,14 +571,22 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       "custom-variable": (props) => (
         <CustomButtonInputVariable
           {...props}
-          readonly={readonly}
-          defaultButtonText={resolvedDefaultButtonText}
-          defaultInputText={resolvedDefaultInputText}
-          defaultSelectedValues={resolvedDefaultSelectedValues}
-          onSend={onSend}
-          beforeSend={beforeSend}
-          locale={locale}
-          confirmButtonText={resolvedConfirmButtonText}
+          readonly={componentRuntimeValuesRef.current.readonly}
+          defaultButtonText={
+            componentRuntimeValuesRef.current.resolvedDefaultButtonText
+          }
+          defaultInputText={
+            componentRuntimeValuesRef.current.resolvedDefaultInputText
+          }
+          defaultSelectedValues={
+            componentRuntimeValuesRef.current.resolvedDefaultSelectedValues
+          }
+          onSend={componentRuntimeValuesRef.current.onSend}
+          beforeSend={componentRuntimeValuesRef.current.beforeSend}
+          locale={componentRuntimeValuesRef.current.locale}
+          confirmButtonText={
+            componentRuntimeValuesRef.current.resolvedConfirmButtonText
+          }
           // tooltipMinLength={tooltipMinLength}
         />
       ),
@@ -522,7 +599,10 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         const language = match?.[1];
         if (language === "mermaid") {
           const chartContent = children?.toString().replace(/\n$/, "") || "";
-          const frozen = mermaidBlockIsComplete(renderContent, chartContent);
+          const frozen = mermaidBlockIsComplete(
+            componentRuntimeValuesRef.current.renderContent,
+            chartContent
+          );
           return <MermaidChart chart={chartContent} frozen={frozen} />;
         }
 
@@ -574,25 +654,16 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       pre: (props) => (
         <CodeBlock
           {...props}
-          copyButtonText={resolvedCopyButtonText}
-          copiedButtonText={resolvedCopiedButtonText}
+          copyButtonText={
+            componentRuntimeValuesRef.current.resolvedCopyButtonText
+          }
+          copiedButtonText={
+            componentRuntimeValuesRef.current.resolvedCopiedButtonText
+          }
         />
       ),
     }),
-    [
-      beforeSend,
-      locale,
-      onClickCustomButtonAfterContent,
-      onSend,
-      readonly,
-      renderContent,
-      resolvedConfirmButtonText,
-      resolvedCopiedButtonText,
-      resolvedCopyButtonText,
-      resolvedDefaultButtonText,
-      resolvedDefaultInputText,
-      resolvedDefaultSelectedValues,
-    ]
+    []
   );
 
   const hasPotentialSandboxTags = useMemo(

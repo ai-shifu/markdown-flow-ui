@@ -6,8 +6,6 @@ export type MobileDeviceCapabilities = {
 export type MobileViewportOrientation = {
   matchMediaLandscape?: boolean;
   orientationType?: string;
-  innerWidth?: number;
-  innerHeight?: number;
   screenWidth?: number;
   screenHeight?: number;
 };
@@ -86,8 +84,6 @@ export const isLandscapeViewport = (win?: Window): boolean => {
   return resolveMobileViewportLandscape({
     matchMediaLandscape,
     orientationType: currentWindow.screen?.orientation?.type,
-    innerWidth: currentWindow.innerWidth,
-    innerHeight: currentWindow.innerHeight,
     screenWidth: currentWindow.screen?.width,
     screenHeight: currentWindow.screen?.height,
   });
@@ -99,23 +95,27 @@ export const subscribeMobileDeviceChange = (
 ) => {
   const currentWindow = win ?? window;
   const screenOrientation = currentWindow.screen?.orientation;
-  let lastWidth = currentWindow.innerWidth;
+  let lastLandscape = isLandscapeViewport(currentWindow);
 
-  const handleResize = () => {
-    if (currentWindow.innerWidth === lastWidth) {
+  const handleOrientationChange = () => {
+    const nextLandscape = isLandscapeViewport(currentWindow);
+    if (nextLandscape === lastLandscape) {
       return;
     }
-    lastWidth = currentWindow.innerWidth;
+    lastLandscape = nextLandscape;
     onChange();
   };
 
-  currentWindow.addEventListener("orientationchange", onChange);
-  currentWindow.addEventListener("resize", handleResize);
-  screenOrientation?.addEventListener?.("change", onChange);
+  currentWindow.addEventListener("orientationchange", handleOrientationChange);
+  currentWindow.addEventListener("resize", handleOrientationChange);
+  screenOrientation?.addEventListener?.("change", handleOrientationChange);
 
   return () => {
-    currentWindow.removeEventListener("orientationchange", onChange);
-    currentWindow.removeEventListener("resize", handleResize);
-    screenOrientation?.removeEventListener?.("change", onChange);
+    currentWindow.removeEventListener(
+      "orientationchange",
+      handleOrientationChange
+    );
+    currentWindow.removeEventListener("resize", handleOrientationChange);
+    screenOrientation?.removeEventListener?.("change", handleOrientationChange);
   };
 };

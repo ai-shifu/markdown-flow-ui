@@ -2431,7 +2431,13 @@ const MobileViewportResizeSlidePreview = ({
         className="h-full w-full"
         {...props}
         elementList={elementList}
+        interactionDefaultValueOptions={{
+          resolveDefaultValues: () => ({
+            selectedValues: ["Existing choice"],
+          }),
+        }}
         interactionTitle={`Interaction ${viewportResizeCount}`}
+        onSend={() => undefined}
       />
     </div>
   );

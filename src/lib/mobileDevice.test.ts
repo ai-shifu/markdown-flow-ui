@@ -80,17 +80,22 @@ describe("subscribeMobileDeviceChange", () => {
     const screenOrientation = Object.assign(new EventTarget(), {
       type: "portrait-primary",
     });
-    const visualViewport = new EventTarget();
+    const visualViewport = Object.assign(new EventTarget(), {
+      height: 844,
+      width: 390,
+    });
     const win = new EventTarget() as EventTarget & {
       matchMedia: Window["matchMedia"];
+      innerHeight: number;
       innerWidth: number;
       screen: {
         height: number;
         orientation: EventTarget & { type: string };
         width: number;
       };
-      visualViewport: EventTarget;
+      visualViewport: EventTarget & { height: number; width: number };
     };
+    win.innerHeight = 844;
     win.innerWidth = 390;
     win.matchMedia = ((query: string) => ({
       matches:
@@ -125,6 +130,8 @@ describe("subscribeMobileDeviceChange", () => {
       win as unknown as Window
     );
 
+    win.innerHeight = 300;
+    visualViewport.height = 300;
     win.dispatchEvent(new Event("resize"));
     visualViewport.dispatchEvent(new Event("resize"));
 

@@ -2212,6 +2212,7 @@ const createTestVisualViewport = (): TestVisualViewport => {
   viewport.setSize = (width, height) => {
     viewport.width = width;
     viewport.height = height;
+    viewport.dispatchEvent(new Event("resize"));
   };
 
   return viewport;
@@ -2365,50 +2366,58 @@ const MobileViewportResizeSlidePreview = ({
       type: "portrait-primary",
       unlock: () => undefined,
     });
-    const restoreUserAgent = installWindowValueOverride(
-      window.navigator,
-      "userAgent",
-      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)"
-    );
-    const restoreVisualViewport = installWindowValueOverride(
-      window,
-      "visualViewport",
-      visualViewport as VisualViewport
-    );
-    const restoreScreenOrientation = installWindowValueOverride(
-      window.screen,
-      "orientation",
-      screenOrientation as ScreenOrientation
-    );
-    const restoreMatchMedia = installWindowValueOverride(
-      window,
-      "matchMedia",
-      ((query: string) => ({
-        matches:
-          query === "(orientation: landscape)" &&
-          visualViewport.width > visualViewport.height,
-        media: query,
-        onchange: null,
-        addEventListener: () => undefined,
-        removeEventListener: () => undefined,
-        addListener: () => undefined,
-        removeListener: () => undefined,
-        dispatchEvent: () => false,
-      })) as Window["matchMedia"]
-    );
+    const restorers: Array<() => void> = [];
     const handleViewportResize = () => {
       setViewportResizeCount((count) => count + 1);
     };
 
-    visualViewport.addEventListener("resize", handleViewportResize);
-    setIsReady(true);
+    try {
+      restorers.push(
+        installWindowValueOverride(
+          window.navigator,
+          "userAgent",
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)"
+        )
+      );
+      restorers.push(
+        installWindowValueOverride(
+          window,
+          "visualViewport",
+          visualViewport as VisualViewport
+        )
+      );
+      restorers.push(
+        installWindowValueOverride(
+          window.screen,
+          "orientation",
+          screenOrientation as ScreenOrientation
+        )
+      );
+      restorers.push(
+        installWindowValueOverride(window, "matchMedia", ((query: string) => ({
+          matches:
+            query === "(orientation: landscape)" &&
+            visualViewport.width > visualViewport.height,
+          media: query,
+          onchange: null,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+          addListener: () => undefined,
+          removeListener: () => undefined,
+          dispatchEvent: () => false,
+        })) as Window["matchMedia"])
+      );
+
+      visualViewport.addEventListener("resize", handleViewportResize);
+      setIsReady(true);
+    } catch (error) {
+      [...restorers].reverse().forEach((restore) => restore());
+      throw error;
+    }
 
     return () => {
       visualViewport.removeEventListener("resize", handleViewportResize);
-      restoreMatchMedia();
-      restoreScreenOrientation();
-      restoreVisualViewport();
-      restoreUserAgent();
+      [...restorers].reverse().forEach((restore) => restore());
     };
   }, []);
 
@@ -2866,7 +2875,6 @@ export const MobileInteractionInputViewportResize: Story = {
     const visualViewport =
       window.visualViewport as unknown as TestVisualViewport;
     visualViewport.setSize(390, 320);
-    visualViewport.dispatchEvent(new Event("resize"));
 
     await waitFor(() => {
       const currentTextarea = canvasElement.querySelector(

@@ -67,13 +67,19 @@ describe("resolveMobileViewportLandscape", () => {
     ).toBe(true);
   });
 
-  it("falls back to layout viewport dimensions when orientation metadata is missing", () => {
+  it("falls back to stable screen dimensions when orientation metadata is missing", () => {
     expect(
       resolveMobileViewportLandscape({
         innerWidth: 844,
         innerHeight: 390,
+        screenWidth: 844,
+        screenHeight: 390,
       })
     ).toBe(true);
+  });
+
+  it("returns false when no orientation metadata or stable dimensions are available", () => {
+    expect(resolveMobileViewportLandscape({})).toBe(false);
   });
 });
 
@@ -82,9 +88,11 @@ describe("subscribeMobileDeviceChange", () => {
     const screenOrientation = new EventTarget();
     const visualViewport = new EventTarget();
     const win = new EventTarget() as EventTarget & {
+      innerWidth: number;
       screen: { orientation: EventTarget };
       visualViewport: EventTarget;
     };
+    win.innerWidth = 390;
     win.screen = { orientation: screenOrientation };
     win.visualViewport = visualViewport;
     let changeCount = 0;
@@ -101,15 +109,22 @@ describe("subscribeMobileDeviceChange", () => {
 
     expect(changeCount).toBe(0);
 
+    win.innerWidth = 500;
+    win.dispatchEvent(new Event("resize"));
+
+    expect(changeCount).toBe(1);
+
     win.dispatchEvent(new Event("orientationchange"));
     screenOrientation.dispatchEvent(new Event("change"));
 
-    expect(changeCount).toBe(2);
+    expect(changeCount).toBe(3);
 
     unsubscribe();
+    win.innerWidth = 600;
+    win.dispatchEvent(new Event("resize"));
     win.dispatchEvent(new Event("orientationchange"));
     screenOrientation.dispatchEvent(new Event("change"));
 
-    expect(changeCount).toBe(2);
+    expect(changeCount).toBe(3);
   });
 });

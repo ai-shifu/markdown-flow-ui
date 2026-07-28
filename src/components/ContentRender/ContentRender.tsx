@@ -481,103 +481,119 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     ? defaultSelectedValues
     : interactionDefaults.selectedValues || fallbackSelectedValues;
 
-  const components: CustomComponents = {
-    "custom-button-after-content": ({
-      children,
-    }: {
-      children: React.ReactNode;
-    }) => {
-      return (
-        <button
-          className="content-render-custom-button-after-content"
-          onClick={onClickCustomButtonAfterContent}
-        >
-          <span className="content-render-custom-button-after-content-inner">
-            {children}
-          </span>
-        </button>
-      );
-    },
-    "custom-variable": (props) => (
-      <CustomButtonInputVariable
-        {...props}
-        readonly={readonly}
-        defaultButtonText={resolvedDefaultButtonText}
-        defaultInputText={resolvedDefaultInputText}
-        defaultSelectedValues={resolvedDefaultSelectedValues}
-        onSend={onSend}
-        beforeSend={beforeSend}
-        locale={locale}
-        confirmButtonText={resolvedConfirmButtonText}
-        // tooltipMinLength={tooltipMinLength}
-      />
-    ),
-    code: (props) => {
-      const { className, children, ...rest } = props as {
-        className?: string;
-        children?: React.ReactNode;
-      };
-      const match = /language-(\w+)/.exec(className || "");
-      const language = match?.[1];
-      if (language === "mermaid") {
-        const chartContent = children?.toString().replace(/\n$/, "") || "";
-        const frozen = mermaidBlockIsComplete(renderContent, chartContent);
-        return <MermaidChart chart={chartContent} frozen={frozen} />;
-      }
-
-      return (
-        <code className={className} {...rest}>
-          {children}
-        </code>
-      );
-    },
-    table: ({ ...props }) => (
-      <div className="content-render-table-container">
-        <table className="content-render-table" {...props} />
-      </div>
-    ),
-    th: ({ ...props }) => <th className="content-render-th" {...props} />,
-    td: ({ ...props }) => <td className="content-render-td" {...props} />,
-    tr: ({ ...props }) => <tr className="content-render-tr" {...props} />,
-    li: ({ node, ...props }) => {
-      const className = node?.properties?.className;
-      const hasTaskListItem =
-        (typeof className === "string" &&
-          className.includes("task-list-item")) ||
-        (Array.isArray(className) && className.includes("task-list-item"));
-      if (hasTaskListItem) {
-        return <li className="content-render-task-list-item" {...props} />;
-      }
-      return <li {...props} />;
-    },
-    ol: ({ ...props }) => <ol className="content-render-ol" {...props} />,
-    ul: ({ ...props }) => <ul className="content-render-ul" {...props} />,
-    input: ({ ...props }) => {
-      if (props.type === "checkbox") {
+  const components = useMemo<CustomComponents>(
+    () => ({
+      "custom-button-after-content": ({
+        children,
+      }: {
+        children: React.ReactNode;
+      }) => {
         return (
-          <input
-            type="checkbox"
-            className="content-render-checkbox"
-            disabled
-            {...props}
-          />
+          <button
+            className="content-render-custom-button-after-content"
+            onClick={onClickCustomButtonAfterContent}
+          >
+            <span className="content-render-custom-button-after-content-inner">
+              {children}
+            </span>
+          </button>
         );
-      }
-      return <input {...props} />;
-    },
-    a: ({ children, ...props }) => (
-      <a target="_blank" rel="noopener noreferrer" {...props}>
-        {children}
-      </a>
-    ),
-    pre: (props) => (
-      <CodeBlock
-        {...props}
-        copyButtonText={resolvedCopyButtonText}
-        copiedButtonText={resolvedCopiedButtonText}
-      />
-    ),
-  };
+      },
+      "custom-variable": (props) => (
+        <CustomButtonInputVariable
+          {...props}
+          readonly={readonly}
+          defaultButtonText={resolvedDefaultButtonText}
+          defaultInputText={resolvedDefaultInputText}
+          defaultSelectedValues={resolvedDefaultSelectedValues}
+          onSend={onSend}
+          beforeSend={beforeSend}
+          locale={locale}
+          confirmButtonText={resolvedConfirmButtonText}
+          // tooltipMinLength={tooltipMinLength}
+        />
+      ),
+      code: (props) => {
+        const { className, children, ...rest } = props as {
+          className?: string;
+          children?: React.ReactNode;
+        };
+        const match = /language-(\w+)/.exec(className || "");
+        const language = match?.[1];
+        if (language === "mermaid") {
+          const chartContent = children?.toString().replace(/\n$/, "") || "";
+          const frozen = mermaidBlockIsComplete(renderContent, chartContent);
+          return <MermaidChart chart={chartContent} frozen={frozen} />;
+        }
+
+        return (
+          <code className={className} {...rest}>
+            {children}
+          </code>
+        );
+      },
+      table: ({ ...props }) => (
+        <div className="content-render-table-container">
+          <table className="content-render-table" {...props} />
+        </div>
+      ),
+      th: ({ ...props }) => <th className="content-render-th" {...props} />,
+      td: ({ ...props }) => <td className="content-render-td" {...props} />,
+      tr: ({ ...props }) => <tr className="content-render-tr" {...props} />,
+      li: ({ node, ...props }) => {
+        const className = node?.properties?.className;
+        const hasTaskListItem =
+          (typeof className === "string" &&
+            className.includes("task-list-item")) ||
+          (Array.isArray(className) && className.includes("task-list-item"));
+        if (hasTaskListItem) {
+          return <li className="content-render-task-list-item" {...props} />;
+        }
+        return <li {...props} />;
+      },
+      ol: ({ ...props }) => <ol className="content-render-ol" {...props} />,
+      ul: ({ ...props }) => <ul className="content-render-ul" {...props} />,
+      input: ({ ...props }) => {
+        if (props.type === "checkbox") {
+          return (
+            <input
+              type="checkbox"
+              className="content-render-checkbox"
+              disabled
+              {...props}
+            />
+          );
+        }
+        return <input {...props} />;
+      },
+      a: ({ children, ...props }) => (
+        <a target="_blank" rel="noopener noreferrer" {...props}>
+          {children}
+        </a>
+      ),
+      pre: (props) => (
+        <CodeBlock
+          {...props}
+          copyButtonText={resolvedCopyButtonText}
+          copiedButtonText={resolvedCopiedButtonText}
+        />
+      ),
+    }),
+    [
+      beforeSend,
+      locale,
+      onClickCustomButtonAfterContent,
+      onSend,
+      readonly,
+      renderContent,
+      resolvedConfirmButtonText,
+      resolvedCopiedButtonText,
+      resolvedCopyButtonText,
+      resolvedDefaultButtonText,
+      resolvedDefaultInputText,
+      resolvedDefaultSelectedValues,
+    ]
+  );
 
   const hasPotentialSandboxTags = useMemo(
     () => SANDBOX_TAG_HINT_PATTERN.test(renderContent),

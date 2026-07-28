@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   resolveMobileDevice,
   resolveMobileViewportLandscape,
+  subscribeMobileDeviceChange,
 } from "./mobileDevice";
 
 describe("resolveMobileDevice", () => {
@@ -35,7 +36,7 @@ describe("resolveMobileDevice", () => {
 });
 
 describe("resolveMobileViewportLandscape", () => {
-  it("prefers matchMedia when it is available", () => {
+  it("prefers screen orientation over viewport media queries", () => {
     expect(
       resolveMobileViewportLandscape({
         matchMediaLandscape: true,
@@ -43,10 +44,10 @@ describe("resolveMobileViewportLandscape", () => {
         innerWidth: 390,
         innerHeight: 844,
       })
-    ).toBe(true);
+    ).toBe(false);
   });
 
-  it("falls back to screen orientation when matchMedia is unavailable", () => {
+  it("uses screen orientation when matchMedia is unavailable", () => {
     expect(
       resolveMobileViewportLandscape({
         orientationType: "landscape-primary",
@@ -56,7 +57,17 @@ describe("resolveMobileViewportLandscape", () => {
     ).toBe(true);
   });
 
-  it("falls back to viewport dimensions when orientation metadata is missing", () => {
+  it("falls back to matchMedia when screen orientation is unavailable", () => {
+    expect(
+      resolveMobileViewportLandscape({
+        matchMediaLandscape: true,
+        innerWidth: 390,
+        innerHeight: 844,
+      })
+    ).toBe(true);
+  });
+
+  it("falls back to layout viewport dimensions when orientation metadata is missing", () => {
     expect(
       resolveMobileViewportLandscape({
         innerWidth: 844,
@@ -64,15 +75,41 @@ describe("resolveMobileViewportLandscape", () => {
       })
     ).toBe(true);
   });
+});
 
-  it("uses visual viewport dimensions before layout viewport dimensions", () => {
-    expect(
-      resolveMobileViewportLandscape({
-        innerWidth: 390,
-        innerHeight: 844,
-        visualViewportWidth: 844,
-        visualViewportHeight: 390,
-      })
-    ).toBe(true);
+describe("subscribeMobileDeviceChange", () => {
+  it("ignores keyboard-driven viewport resizes", () => {
+    const screenOrientation = new EventTarget();
+    const visualViewport = new EventTarget();
+    const win = new EventTarget() as EventTarget & {
+      screen: { orientation: EventTarget };
+      visualViewport: EventTarget;
+    };
+    win.screen = { orientation: screenOrientation };
+    win.visualViewport = visualViewport;
+    let changeCount = 0;
+
+    const unsubscribe = subscribeMobileDeviceChange(
+      () => {
+        changeCount += 1;
+      },
+      win as unknown as Window
+    );
+
+    win.dispatchEvent(new Event("resize"));
+    visualViewport.dispatchEvent(new Event("resize"));
+
+    expect(changeCount).toBe(0);
+
+    win.dispatchEvent(new Event("orientationchange"));
+    screenOrientation.dispatchEvent(new Event("change"));
+
+    expect(changeCount).toBe(2);
+
+    unsubscribe();
+    win.dispatchEvent(new Event("orientationchange"));
+    screenOrientation.dispatchEvent(new Event("change"));
+
+    expect(changeCount).toBe(2);
   });
 });

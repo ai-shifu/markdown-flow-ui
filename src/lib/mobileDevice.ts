@@ -8,8 +8,6 @@ export type MobileViewportOrientation = {
   orientationType?: string;
   innerWidth?: number;
   innerHeight?: number;
-  visualViewportWidth?: number;
-  visualViewportHeight?: number;
 };
 
 const MOBILE_USER_AGENT_PATTERN =
@@ -54,13 +52,7 @@ export const resolveMobileViewportLandscape = ({
   orientationType,
   innerWidth,
   innerHeight,
-  visualViewportWidth,
-  visualViewportHeight,
 }: MobileViewportOrientation): boolean => {
-  if (typeof matchMediaLandscape === "boolean") {
-    return matchMediaLandscape;
-  }
-
   const orientationLandscape =
     resolveLandscapeFromOrientationType(orientationType);
 
@@ -68,20 +60,15 @@ export const resolveMobileViewportLandscape = ({
     return orientationLandscape;
   }
 
-  const viewportWidth =
-    typeof visualViewportWidth === "number" && visualViewportWidth > 0
-      ? visualViewportWidth
-      : innerWidth;
-  const viewportHeight =
-    typeof visualViewportHeight === "number" && visualViewportHeight > 0
-      ? visualViewportHeight
-      : innerHeight;
+  if (typeof matchMediaLandscape === "boolean") {
+    return matchMediaLandscape;
+  }
 
-  if (typeof viewportWidth !== "number" || typeof viewportHeight !== "number") {
+  if (typeof innerWidth !== "number" || typeof innerHeight !== "number") {
     return false;
   }
 
-  return viewportWidth > viewportHeight;
+  return innerWidth > innerHeight;
 };
 
 export const isMobileDevice = (win?: Window): boolean =>
@@ -99,8 +86,6 @@ export const isLandscapeViewport = (win?: Window): boolean => {
     orientationType: currentWindow.screen?.orientation?.type,
     innerWidth: currentWindow.innerWidth,
     innerHeight: currentWindow.innerHeight,
-    visualViewportWidth: currentWindow.visualViewport?.width,
-    visualViewportHeight: currentWindow.visualViewport?.height,
   });
 };
 
@@ -110,17 +95,12 @@ export const subscribeMobileDeviceChange = (
 ) => {
   const currentWindow = win ?? window;
   const screenOrientation = currentWindow.screen?.orientation;
-  const visualViewport = currentWindow.visualViewport;
 
   currentWindow.addEventListener("orientationchange", onChange);
-  currentWindow.addEventListener("resize", onChange);
   screenOrientation?.addEventListener?.("change", onChange);
-  visualViewport?.addEventListener("resize", onChange);
 
   return () => {
     currentWindow.removeEventListener("orientationchange", onChange);
-    currentWindow.removeEventListener("resize", onChange);
     screenOrientation?.removeEventListener?.("change", onChange);
-    visualViewport?.removeEventListener("resize", onChange);
   };
 };

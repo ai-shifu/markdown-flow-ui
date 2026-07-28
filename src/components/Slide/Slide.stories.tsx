@@ -2173,6 +2173,59 @@ const DRAG_TEST_ELEMENT_LIST: Element[] = [
   }),
 ];
 
+const MOBILE_VIEWPORT_INPUT_TEST_ELEMENT_LIST: Element[] = [
+  createExampleElement({
+    sequenceNumber: 1,
+    type: "interaction",
+    content: "?[%{{mobile_resize_input}}...Type your answer]",
+    isNew: true,
+    readonly: false,
+  }),
+];
+
+type TestVisualViewport = EventTarget & {
+  height: number;
+  offsetLeft: number;
+  offsetTop: number;
+  onresize: ((event: Event) => void) | null;
+  onscroll: ((event: Event) => void) | null;
+  pageLeft: number;
+  pageTop: number;
+  scale: number;
+  setSize: (width: number, height: number) => void;
+  width: number;
+};
+
+const createTestVisualViewport = (): TestVisualViewport => {
+  const viewport = Object.assign(new EventTarget(), {
+    height: 844,
+    offsetLeft: 0,
+    offsetTop: 0,
+    onresize: null,
+    onscroll: null,
+    pageLeft: 0,
+    pageTop: 0,
+    scale: 1,
+    width: 390,
+  }) as TestVisualViewport;
+
+  viewport.setSize = (width, height) => {
+    viewport.width = width;
+    viewport.height = height;
+  };
+
+  return viewport;
+};
+
+type PointerTestEventOptions = {
+  button?: number;
+  buttons?: number;
+  clientX: number;
+  clientY: number;
+  pointerId?: number;
+  pointerType?: string;
+};
+
 const dispatchPointerEvent = (
   element: HTMLElement,
   type: string,
@@ -2183,14 +2236,7 @@ const dispatchPointerEvent = (
     clientY,
     pointerId = POINTER_TEST_ID,
     pointerType = "mouse",
-  }: {
-    button?: number;
-    buttons?: number;
-    clientX: number;
-    clientY: number;
-    pointerId?: number;
-    pointerType?: string;
-  }
+  }: PointerTestEventOptions
 ) => {
   element.dispatchEvent(
     new PointerEvent(type, {
@@ -2227,8 +2273,8 @@ const getOverlayDragOffsets = (overlay: HTMLElement) => ({
 
 const triggerPointerDrag = (
   element: HTMLElement,
-  start: { clientX: number; clientY: number },
-  end: { clientX: number; clientY: number }
+  start: PointerTestEventOptions,
+  end: PointerTestEventOptions
 ) => {
   dispatchPointerEvent(element, "pointerdown", start);
   dispatchPointerEvent(element, "pointermove", end);
@@ -2299,6 +2345,85 @@ const MobilePointerDragSlidePreview = ({
   return (
     <div className="mx-auto h-[100dvh] w-[390px] bg-background">
       <Slide className="h-full w-full" {...props} elementList={elementList} />
+    </div>
+  );
+};
+
+const MobileViewportResizeSlidePreview = ({
+  elementList = [],
+  ...props
+}: React.ComponentProps<typeof Slide>) => {
+  const [isReady, setIsReady] = useState(false);
+  const [viewportResizeCount, setViewportResizeCount] = useState(0);
+
+  useEffect(() => {
+    const visualViewport = createTestVisualViewport();
+    const screenOrientation = Object.assign(new EventTarget(), {
+      angle: 0,
+      lock: async () => undefined,
+      onchange: null,
+      type: "portrait-primary",
+      unlock: () => undefined,
+    });
+    const restoreUserAgent = installWindowValueOverride(
+      window.navigator,
+      "userAgent",
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)"
+    );
+    const restoreVisualViewport = installWindowValueOverride(
+      window,
+      "visualViewport",
+      visualViewport as VisualViewport
+    );
+    const restoreScreenOrientation = installWindowValueOverride(
+      window.screen,
+      "orientation",
+      screenOrientation as ScreenOrientation
+    );
+    const restoreMatchMedia = installWindowValueOverride(
+      window,
+      "matchMedia",
+      ((query: string) => ({
+        matches:
+          query === "(orientation: landscape)" &&
+          visualViewport.width > visualViewport.height,
+        media: query,
+        onchange: null,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        dispatchEvent: () => false,
+      })) as Window["matchMedia"]
+    );
+    const handleViewportResize = () => {
+      setViewportResizeCount((count) => count + 1);
+    };
+
+    visualViewport.addEventListener("resize", handleViewportResize);
+    setIsReady(true);
+
+    return () => {
+      visualViewport.removeEventListener("resize", handleViewportResize);
+      restoreMatchMedia();
+      restoreScreenOrientation();
+      restoreVisualViewport();
+      restoreUserAgent();
+    };
+  }, []);
+
+  if (!isReady) {
+    return null;
+  }
+
+  return (
+    <div className="mx-auto h-[100dvh] w-[390px] bg-background">
+      <Slide
+        className="h-full w-full"
+        {...props}
+        elementList={elementList}
+        interactionTitle={`Interaction ${viewportResizeCount}`}
+      />
     </div>
   );
 };
@@ -2703,6 +2828,58 @@ export const MobileInteractionOverlayPointerDrag: Story = {
     await waitFor(() => {
       expect(capturedPointerIds).toContain(POINTER_TEST_ID);
       expect(getOverlayDragOffsets(overlay)).not.toEqual(beforeOffsets);
+    });
+  },
+};
+
+export const MobileInteractionInputViewportResize: Story = {
+  args: {
+    elementList: MOBILE_VIEWPORT_INPUT_TEST_ELEMENT_LIST,
+    playerControlsVisibility: "visible",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Keeps the mobile interaction textarea mounted, focused, and unchanged when the virtual viewport resizes for the on-screen keyboard.",
+      },
+    },
+  },
+  render: (args) => <MobileViewportResizeSlidePreview {...args} />,
+  play: async ({ canvasElement }) => {
+    const textarea = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide--mobile-device .slide-interaction-overlay textarea"
+      ) as HTMLTextAreaElement | null;
+
+      expect(element).not.toBeNull();
+      return element as HTMLTextAreaElement;
+    });
+    const typedValue = "Keyboard input stays here";
+
+    await userEvent.click(textarea);
+    await userEvent.type(textarea, typedValue);
+
+    expect(document.activeElement).toBe(textarea);
+    expect(textarea.value).toBe(typedValue);
+
+    const visualViewport =
+      window.visualViewport as unknown as TestVisualViewport;
+    visualViewport.setSize(390, 320);
+    visualViewport.dispatchEvent(new Event("resize"));
+
+    await waitFor(() => {
+      const currentTextarea = canvasElement.querySelector(
+        ".slide--mobile-device .slide-interaction-overlay textarea"
+      ) as HTMLTextAreaElement | null;
+      const interactionTitle = canvasElement.querySelector(
+        ".slide-player__interaction-title"
+      );
+
+      expect(interactionTitle?.textContent).toBe("Interaction 1");
+      expect(currentTextarea).toBe(textarea);
+      expect(document.activeElement).toBe(textarea);
+      expect(currentTextarea?.value).toBe(typedValue);
     });
   },
 };

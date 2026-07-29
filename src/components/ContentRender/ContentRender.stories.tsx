@@ -1353,6 +1353,45 @@ export const ChineseMultiSelectDemo: Story = {
   },
 };
 
+export const NonAssignmentInteractionDemo: Story = {
+  name: "Non-Assignment Interaction Demo",
+  args: {
+    content: `# Non-Assignment Interactions (no variable)
+
+Interactions without \`%{{variable}}\` collect an answer that is not stored in
+any variable — the host feeds it back into the conversation context instead.
+\`variableName\` arrives as an empty string in the onSend params.
+
+## Single Select
+?[Continue | Skip | Go Back]
+
+## Custom Button Values
+?[Save//save-action | Cancel//cancel-action]
+
+## Multi-Select
+?[JavaScript||TypeScript||Python||Go]
+
+## Text Input
+?[...Anything you want to add?]
+
+## Buttons + Text Input
+?[Option A | Option B | ...Other, please specify]
+
+## Multi-Select + Text Input
+?[React||Vue||Angular||...Other frameworks]`,
+    confirmButtonText: "Submit",
+    onSend: (params) => {
+      console.log("Non-assignment interaction received:", params);
+      alert(
+        `variableName: ${JSON.stringify(params.variableName)}\n` +
+          `buttonText: ${params.buttonText ?? ""}\n` +
+          `selectedValues: ${(params.selectedValues ?? []).join(", ")}\n` +
+          `inputText: ${params.inputText ?? ""}`
+      );
+    },
+  },
+};
+
 export const NativeHtmlElements: Story = {
   name: "Native HTML Elements",
   args: {

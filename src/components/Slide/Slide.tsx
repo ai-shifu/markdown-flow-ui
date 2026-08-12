@@ -103,6 +103,7 @@ const DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET: InteractionOverlayDragOffset = {
   x: 0,
   y: 0,
 };
+const INTERACTION_OVERLAY_LAYOUT_EPSILON_PX = 0.5;
 type InteractionOverlayLayoutRect = Pick<DOMRect, "left" | "top">;
 const useIsomorphicLayoutEffect =
   typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -115,6 +116,24 @@ const INTERACTION_ACTIVITY_SELECTOR = [
   '[contenteditable="plaintext-only"]',
 ].join(", ");
 const DEFAULT_BUFFERING_REASON: SlideBufferingReason = "waitingForAudio";
+
+const normalizeInteractionOverlayDragOffset = ({
+  x,
+  y,
+}: InteractionOverlayDragOffset): InteractionOverlayDragOffset => ({
+  x: Number(x.toFixed(2)),
+  y: Number(y.toFixed(2)),
+});
+
+const hasMeaningfulInteractionOverlayLayoutDelta = (delta: number) =>
+  Math.abs(delta) >= INTERACTION_OVERLAY_LAYOUT_EPSILON_PX;
+
+const areInteractionOverlayDragOffsetsEqual = (
+  first: InteractionOverlayDragOffset,
+  second: InteractionOverlayDragOffset
+) =>
+  Math.abs(first.x - second.x) < INTERACTION_OVERLAY_LAYOUT_EPSILON_PX &&
+  Math.abs(first.y - second.y) < INTERACTION_OVERLAY_LAYOUT_EPSILON_PX;
 
 export type { SlideBufferingReason } from "./slideI18n";
 
@@ -576,6 +595,17 @@ const Slide: React.FC<SlideProps> = ({
   }, []);
   const togglePlayerCustomActionActive = useCallback(() => {
     setIsPlayerCustomActionActive((previous) => !previous);
+  }, []);
+  const resetInteractionOverlayDragState = useCallback(() => {
+    setInteractionOverlayDragOffset((previousOffset) =>
+      previousOffset.x === DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET.x &&
+      previousOffset.y === DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET.y
+        ? previousOffset
+        : DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET
+    );
+    setIsInteractionOverlayDragging(false);
+    interactionOverlayDragRef.current = null;
+    interactionOverlayLayoutRectRef.current = null;
   }, []);
   const { mountedStepStates, currentMountedStateIndex } = useMemo(() => {
     const nextMountedStepStates: Array<{
@@ -1170,20 +1200,44 @@ const Slide: React.FC<SlideProps> = ({
 
     const syncViewportFullscreenPreference = () => {
       setIsViewportFullscreenPreferred(getIsFullscreenPreferredViewport());
+      resetInteractionOverlayDragState();
+    };
+    const handleOrientationChange = () => {
+      resetInteractionOverlayDragState();
     };
 
     syncViewportFullscreenPreference();
+    window.addEventListener("orientationchange", handleOrientationChange);
+    window.screen?.orientation?.addEventListener?.(
+      "change",
+      handleOrientationChange
+    );
+    const unsubscribeMobileDeviceChange = subscribeMobileDeviceChange(
+      syncViewportFullscreenPreference
+    );
 
-    return subscribeMobileDeviceChange(syncViewportFullscreenPreference);
-  }, [isMobileDevice]);
+    return () => {
+      unsubscribeMobileDeviceChange();
+      window.removeEventListener("orientationchange", handleOrientationChange);
+      window.screen?.orientation?.removeEventListener?.(
+        "change",
+        handleOrientationChange
+      );
+    };
+  }, [isMobileDevice, resetInteractionOverlayDragState]);
 
   useEffect(() => {
     onMobileViewModeChange?.(effectiveMobileViewMode);
   }, [effectiveMobileViewMode, onMobileViewModeChange]);
 
   useEffect(() => {
+    if (
+      previousEffectiveMobileViewModeRef.current !== effectiveMobileViewMode
+    ) {
+      resetInteractionOverlayDragState();
+    }
     previousEffectiveMobileViewModeRef.current = effectiveMobileViewMode;
-  }, [effectiveMobileViewMode]);
+  }, [effectiveMobileViewMode, resetInteractionOverlayDragState]);
 
   useEffect(() => {
     onStepChange?.(currentStepElement, currentIndex);
@@ -1609,11 +1663,8 @@ const Slide: React.FC<SlideProps> = ({
   }, [activeInteractionElement, isInteractionOverlayOpen]);
 
   useEffect(() => {
-    setInteractionOverlayDragOffset(DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET);
-    setIsInteractionOverlayDragging(false);
-    interactionOverlayDragRef.current = null;
-    interactionOverlayLayoutRectRef.current = null;
-  }, [activeInteractionElement]);
+    resetInteractionOverlayDragState();
+  }, [activeInteractionElement, resetInteractionOverlayDragState]);
 
   useEffect(() => {
     if (!shouldShowInteractionOverlay) {
@@ -2115,21 +2166,40 @@ const Slide: React.FC<SlideProps> = ({
     const currentRect = overlayElement.getBoundingClientRect();
 
     if (!previousRect || isInteractionOverlayDragging) {
-      interactionOverlayLayoutRectRef.current = currentRect;
+      interactionOverlayLayoutRectRef.current = {
+        left: currentRect.left,
+        top: currentRect.top,
+      };
+      return;
+    }
+
+    const deltaX = previousRect.left - currentRect.left;
+    const deltaY = previousRect.top - currentRect.top;
+
+    if (
+      !hasMeaningfulInteractionOverlayLayoutDelta(deltaX) &&
+      !hasMeaningfulInteractionOverlayLayoutDelta(deltaY)
+    ) {
+      interactionOverlayLayoutRectRef.current = {
+        left: currentRect.left,
+        top: currentRect.top,
+      };
       return;
     }
 
     const nextOffset = {
-      x: interactionOverlayDragOffset.x + previousRect.left - currentRect.left,
-      y: interactionOverlayDragOffset.y + previousRect.top - currentRect.top,
+      x: interactionOverlayDragOffset.x + deltaX,
+      y: interactionOverlayDragOffset.y + deltaY,
     };
     const bounds = getInteractionOverlayDragBounds(
       overlayElement,
       interactionOverlayDragOffset
     );
-    const clampedOffset = bounds
-      ? clampInteractionOverlayDragOffset(nextOffset, bounds)
-      : nextOffset;
+    const clampedOffset = normalizeInteractionOverlayDragOffset(
+      bounds
+        ? clampInteractionOverlayDragOffset(nextOffset, bounds)
+        : nextOffset
+    );
 
     interactionOverlayLayoutRectRef.current = {
       left: currentRect.left + clampedOffset.x - interactionOverlayDragOffset.x,
@@ -2137,10 +2207,16 @@ const Slide: React.FC<SlideProps> = ({
     };
 
     if (
-      clampedOffset.x !== interactionOverlayDragOffset.x ||
-      clampedOffset.y !== interactionOverlayDragOffset.y
+      !areInteractionOverlayDragOffsetsEqual(
+        clampedOffset,
+        interactionOverlayDragOffset
+      )
     ) {
-      setInteractionOverlayDragOffset(clampedOffset);
+      setInteractionOverlayDragOffset((previousOffset) =>
+        areInteractionOverlayDragOffsetsEqual(previousOffset, clampedOffset)
+          ? previousOffset
+          : clampedOffset
+      );
     }
   }, [
     getInteractionOverlayDragBounds,
@@ -2173,7 +2249,9 @@ const Slide: React.FC<SlideProps> = ({
       }
 
       event.preventDefault();
-      event.currentTarget.setPointerCapture(event.pointerId);
+      if (event.currentTarget.hasPointerCapture?.(event.pointerId) !== true) {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
       interactionOverlayDragRef.current = {
         pointerId: event.pointerId,
         startClientX: event.clientX,

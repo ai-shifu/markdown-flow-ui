@@ -155,7 +155,8 @@
     "prepublishOnly": "npm run build",
     "start": "next start",
     "storybook": "storybook dev -p 6006",
-    "test": "echo \"No tests specified\" && exit 0",
+    "test": "vitest run --project unit",
+    "test:storybook": "vitest run --project storybook",
     "typecheck:exports": "pnpm exec tsc -p tsconfig.exports.json --pretty false"
   },
   "typesVersions": {
@@ -174,7 +175,7 @@
       ]
     }
   },
-  "version": "0.2.8",
+  "version": "0.2.9",
   "type": "module",
   "exports": {
     ".": {

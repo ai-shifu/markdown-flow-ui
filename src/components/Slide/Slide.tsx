@@ -2249,7 +2249,9 @@ const Slide: React.FC<SlideProps> = ({
       }
 
       event.preventDefault();
-      event.currentTarget.setPointerCapture(event.pointerId);
+      if (event.currentTarget.hasPointerCapture?.(event.pointerId) !== true) {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
       interactionOverlayDragRef.current = {
         pointerId: event.pointerId,
         startClientX: event.clientX,

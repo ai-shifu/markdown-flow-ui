@@ -36,3 +36,6 @@ jobs:
 
       - name: Prettier format check
         run: npm run format:check
+
+      - name: Run Storybook browser tests
+        run: npm run test:storybook -- src/components/Slide/Slide.stories.tsx

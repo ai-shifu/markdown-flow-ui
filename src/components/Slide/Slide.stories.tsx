@@ -2184,6 +2184,7 @@ const MOBILE_VIEWPORT_INPUT_TEST_ELEMENT_LIST: Element[] = [
 ];
 
 type TestVisualViewport = EventTarget & {
+  dispatchOrientationChange: () => void;
   height: number;
   offsetLeft: number;
   offsetTop: number;
@@ -2208,6 +2209,10 @@ const createTestVisualViewport = (): TestVisualViewport => {
     scale: 1,
     width: 390,
   }) as TestVisualViewport;
+
+  viewport.dispatchOrientationChange = () => {
+    window.dispatchEvent(new Event("orientationchange"));
+  };
 
   viewport.setSize = (width, height) => {
     viewport.width = width;
@@ -2254,13 +2259,49 @@ const dispatchPointerEvent = (
   );
 };
 
-const installPointerCaptureSpy = (element: HTMLElement) => {
+const ensurePointerCaptureTracking = (element: HTMLElement) => {
   const capturedPointerIds: number[] = [];
+  const capturedPointerIdSet = new Set<number>();
+  const originalSetPointerCapture = element.setPointerCapture?.bind(element);
+  const originalHasPointerCapture = element.hasPointerCapture?.bind(element);
+  const originalReleasePointerCapture =
+    element.releasePointerCapture?.bind(element);
 
   Object.defineProperty(element, "setPointerCapture", {
     configurable: true,
     value: (pointerId: number) => {
-      capturedPointerIds.push(pointerId);
+      if (!capturedPointerIdSet.has(pointerId)) {
+        capturedPointerIdSet.add(pointerId);
+        capturedPointerIds.push(pointerId);
+      }
+
+      try {
+        originalSetPointerCapture?.(pointerId);
+      } catch {
+        // Browser story tests synthesize the drag chain, so pointer capture may
+        // not have a native active pointer behind it. The component only needs
+        // the capture state to stay coherent for the rest of the chain.
+      }
+    },
+  });
+
+  Object.defineProperty(element, "hasPointerCapture", {
+    configurable: true,
+    value: (pointerId: number) =>
+      capturedPointerIdSet.has(pointerId) ||
+      originalHasPointerCapture?.(pointerId) === true,
+  });
+
+  Object.defineProperty(element, "releasePointerCapture", {
+    configurable: true,
+    value: (pointerId: number) => {
+      capturedPointerIdSet.delete(pointerId);
+
+      try {
+        originalReleasePointerCapture?.(pointerId);
+      } catch {
+        // See setPointerCapture fallback above.
+      }
     },
   });
 
@@ -2272,6 +2313,32 @@ const getOverlayDragOffsets = (overlay: HTMLElement) => ({
   y: overlay.style.getPropertyValue("--slide-interaction-drag-y").trim(),
 });
 
+const getOverlayDragOffsetNumbers = (overlay: HTMLElement) => {
+  const offsets = getOverlayDragOffsets(overlay);
+
+  return {
+    x: Number.parseFloat(offsets.x) || 0,
+    y: Number.parseFloat(offsets.y) || 0,
+  };
+};
+
+const expectOverlayHasMoved = async (overlay: HTMLElement) => {
+  await waitFor(() => {
+    const offsets = getOverlayDragOffsetNumbers(overlay);
+
+    expect(Math.abs(offsets.x) + Math.abs(offsets.y)).toBeGreaterThan(0);
+  });
+};
+
+const expectOverlayIsReset = async (overlay: HTMLElement) => {
+  await waitFor(() => {
+    expect(getOverlayDragOffsets(overlay)).toEqual({
+      x: "0px",
+      y: "0px",
+    });
+  });
+};
+
 const triggerPointerDrag = (
   element: HTMLElement,
   start: PointerTestEventOptions,
@@ -2280,6 +2347,34 @@ const triggerPointerDrag = (
   dispatchPointerEvent(element, "pointerdown", start);
   dispatchPointerEvent(element, "pointermove", end);
   dispatchPointerEvent(element, "pointerup", end);
+};
+
+const triggerSyntheticPointerDrag = (
+  handle: HTMLElement,
+  deltaX: number,
+  deltaY: number,
+  pointerId = POINTER_TEST_ID
+) => {
+  const rect = handle.getBoundingClientRect();
+
+  expect(rect.width).toBeGreaterThan(0);
+  expect(rect.height).toBeGreaterThan(0);
+
+  triggerPointerDrag(
+    handle,
+    {
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height / 2,
+      pointerId,
+      pointerType: "touch",
+    },
+    {
+      clientX: rect.left + rect.width / 2 + deltaX,
+      clientY: rect.top + rect.height / 2 + deltaY,
+      pointerId,
+      pointerType: "touch",
+    }
+  );
 };
 
 const installWindowValueOverride = <T extends object, K extends keyof T>(
@@ -2748,7 +2843,9 @@ export const DesktopInteractionOverlayPointerDrag: Story = {
     expect(handle).not.toBeNull();
     expect(body).not.toBeNull();
 
-    const capturedPointerIds = installPointerCaptureSpy(handle as HTMLElement);
+    const capturedPointerIds = ensurePointerCaptureTracking(
+      handle as HTMLElement
+    );
     const beforeOffsets = getOverlayDragOffsets(overlay);
     const handleRect = (handle as HTMLElement).getBoundingClientRect();
 
@@ -2822,7 +2919,9 @@ export const MobileInteractionOverlayPointerDrag: Story = {
 
     expect(handle).not.toBeNull();
 
-    const capturedPointerIds = installPointerCaptureSpy(handle as HTMLElement);
+    const capturedPointerIds = ensurePointerCaptureTracking(
+      handle as HTMLElement
+    );
     const beforeOffsets = getOverlayDragOffsets(overlay);
     const handleRect = (handle as HTMLElement).getBoundingClientRect();
 
@@ -2870,39 +2969,53 @@ export const MobileInteractionOverlayViewportReset: Story = {
       expect(element).not.toBeNull();
       return element as HTMLElement;
     });
-    const handle = overlay.querySelector(
+    const handle = canvasElement.querySelector(
       '[aria-label="Move interaction"]'
     ) as HTMLElement | null;
 
     expect(handle).not.toBeNull();
+    ensurePointerCaptureTracking(handle as HTMLElement);
 
-    const handleRect = (handle as HTMLElement).getBoundingClientRect();
-
-    triggerPointerDrag(
+    triggerSyntheticPointerDrag(
       handle as HTMLElement,
-      {
-        clientX: handleRect.left + handleRect.width / 2,
-        clientY: handleRect.top + handleRect.height / 2,
-        pointerType: "touch",
-      },
-      {
-        clientX: handleRect.left + handleRect.width / 2 + 36,
-        clientY: handleRect.top + handleRect.height / 2 + 52,
-        pointerType: "touch",
-      }
+      36,
+      52,
+      POINTER_TEST_ID + 1
     );
-
-    await waitFor(() => {
-      expect(getOverlayDragOffsets(overlay)).not.toEqual({
-        x: "0px",
-        y: "0px",
-      });
-    });
+    await expectOverlayHasMoved(overlay);
 
     const visualViewport =
       window.visualViewport as unknown as TestVisualViewport;
+
     visualViewport.setSize(844, 390);
-    window.dispatchEvent(new Event("orientationchange"));
+    await expectOverlayIsReset(overlay);
+
+    triggerSyntheticPointerDrag(
+      handle as HTMLElement,
+      -42,
+      34,
+      POINTER_TEST_ID + 2
+    );
+    await expectOverlayHasMoved(overlay);
+
+    visualViewport.dispatchOrientationChange();
+    await expectOverlayIsReset(overlay);
+
+    visualViewport.setSize(390, 844);
+    await expectOverlayIsReset(overlay);
+
+    triggerSyntheticPointerDrag(
+      handle as HTMLElement,
+      28,
+      -46,
+      POINTER_TEST_ID + 3
+    );
+    await expectOverlayHasMoved(overlay);
+
+    visualViewport.dispatchOrientationChange();
+    await expectOverlayIsReset(overlay);
+
+    visualViewport.setSize(844, 390);
 
     await waitFor(() => {
       expect(
@@ -2910,11 +3023,8 @@ export const MobileInteractionOverlayViewportReset: Story = {
           ".slide--mobile-device .slide-interaction-overlay"
         )
       ).toBe(overlay);
-      expect(getOverlayDragOffsets(overlay)).toEqual({
-        x: "0px",
-        y: "0px",
-      });
     });
+    await expectOverlayIsReset(overlay);
   },
 };
 

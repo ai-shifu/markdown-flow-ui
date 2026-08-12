@@ -598,10 +598,8 @@ const Slide: React.FC<SlideProps> = ({
   }, []);
   const resetInteractionOverlayDragState = useCallback(() => {
     setInteractionOverlayDragOffset((previousOffset) =>
-      areInteractionOverlayDragOffsetsEqual(
-        previousOffset,
-        DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET
-      )
+      previousOffset.x === DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET.x &&
+      previousOffset.y === DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET.y
         ? previousOffset
         : DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET
     );

@@ -2847,6 +2847,77 @@ export const MobileInteractionOverlayPointerDrag: Story = {
   },
 };
 
+export const MobileInteractionOverlayViewportReset: Story = {
+  args: {
+    elementList: DRAG_TEST_ELEMENT_LIST,
+    playerControlsVisibility: "visible",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Resets stale mobile interaction drag offsets when the viewport orientation changes without remounting or moving away from the interaction step.",
+      },
+    },
+  },
+  render: (args) => <MobileViewportResizeSlidePreview {...args} />,
+  play: async ({ canvasElement }) => {
+    const overlay = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide--mobile-device .slide-interaction-overlay"
+      ) as HTMLElement | null;
+
+      expect(element).not.toBeNull();
+      return element as HTMLElement;
+    });
+    const handle = overlay.querySelector(
+      '[aria-label="Move interaction"]'
+    ) as HTMLElement | null;
+
+    expect(handle).not.toBeNull();
+
+    const handleRect = (handle as HTMLElement).getBoundingClientRect();
+
+    triggerPointerDrag(
+      handle as HTMLElement,
+      {
+        clientX: handleRect.left + handleRect.width / 2,
+        clientY: handleRect.top + handleRect.height / 2,
+        pointerType: "touch",
+      },
+      {
+        clientX: handleRect.left + handleRect.width / 2 + 36,
+        clientY: handleRect.top + handleRect.height / 2 + 52,
+        pointerType: "touch",
+      }
+    );
+
+    await waitFor(() => {
+      expect(getOverlayDragOffsets(overlay)).not.toEqual({
+        x: "0px",
+        y: "0px",
+      });
+    });
+
+    const visualViewport =
+      window.visualViewport as unknown as TestVisualViewport;
+    visualViewport.setSize(844, 390);
+    window.dispatchEvent(new Event("orientationchange"));
+
+    await waitFor(() => {
+      expect(
+        canvasElement.querySelector(
+          ".slide--mobile-device .slide-interaction-overlay"
+        )
+      ).toBe(overlay);
+      expect(getOverlayDragOffsets(overlay)).toEqual({
+        x: "0px",
+        y: "0px",
+      });
+    });
+  },
+};
+
 export const MobileInteractionInputViewportResize: Story = {
   args: {
     elementList: MOBILE_VIEWPORT_INPUT_TEST_ELEMENT_LIST,

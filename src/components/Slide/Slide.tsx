@@ -56,6 +56,10 @@ import { resolveMarkdownScalingMode } from "./utils/markdownScaling";
 import { shouldWakePlayerControlsAfterNavigation } from "./utils/playerNavigationContext";
 import { shouldAutoAdvanceIntoAppendedMarker } from "./utils/appendedMarkerAdvance";
 import {
+  hasUnplayedStepAudio,
+  resolvePendingStepAudioKey,
+} from "./utils/stepAudioProgress";
+import {
   getPlaybackSequenceTransition,
   shouldStartDefaultAudioSequence,
 } from "./utils/playbackSequence";
@@ -509,6 +513,10 @@ const Slide: React.FC<SlideProps> = ({
     useState<SlideBufferingReason>(DEFAULT_BUFFERING_REASON);
   const [hasCompletedCurrentStepAudio, setHasCompletedCurrentStepAudio] =
     useState(false);
+  // Audio keys already played within the current step. A step's audio arrives
+  // progressively while content is still being generated, so "completed" has to
+  // mean "every key played" rather than "reached the end of the list once".
+  const playedAudioKeysRef = useRef<Set<string>>(new Set());
   const [hasCurrentAudioPlaybackStarted, setHasCurrentAudioPlaybackStarted] =
     useState(false);
   const [isSubtitleEnabled, setIsSubtitleEnabled] = useState(true);
@@ -862,6 +870,7 @@ const Slide: React.FC<SlideProps> = ({
       setIsAudioLoadingVisible(false);
       setAudioLoadingReason(DEFAULT_BUFFERING_REASON);
       setHasCompletedCurrentStepAudio(false);
+      playedAudioKeysRef.current = new Set();
       setHasCurrentAudioPlaybackStarted(false);
       setSubtitleSeekRequest(null);
       if (!options.preservePendingSubtitleJump) {
@@ -892,13 +901,19 @@ const Slide: React.FC<SlideProps> = ({
   );
 
   const startCurrentAudioSequence = useCallback(() => {
-    const nextAudioKey = currentAudioSequenceKeys[0];
+    // Resume at the first key that has not played yet. Falling back to index 0
+    // unconditionally would replay the opening segment every time late audio
+    // extends the current step.
+    const nextAudioKey = resolvePendingStepAudioKey(
+      currentAudioSequenceKeys,
+      playedAudioKeysRef.current
+    );
 
     if (!nextAudioKey) {
       return false;
     }
 
-    // Start the first audio segment for the current step immediately.
+    // Start the first pending audio segment for the current step immediately.
     setCurrentAudioKey(nextAudioKey);
     return true;
   }, [currentAudioSequenceKeys]);
@@ -1543,6 +1558,29 @@ const Slide: React.FC<SlideProps> = ({
     shouldBlockPlaybackForInteraction,
   ]);
 
+  // A step's audio can keep arriving after the last available segment finished,
+  // because narration is synthesized while the lesson is still streaming. The
+  // step-completed flag is otherwise only cleared when the reset key changes -
+  // which tracks the step index and the interaction content, neither of which
+  // moves while new audio is appended to the step the learner is already on.
+  // Without this, everything synthesized after that first gap stays silent.
+  useEffect(() => {
+    if (!hasCompletedCurrentStepAudio) {
+      return;
+    }
+
+    if (
+      !hasUnplayedStepAudio(
+        currentAudioSequenceKeys,
+        playedAudioKeysRef.current
+      )
+    ) {
+      return;
+    }
+
+    setHasCompletedCurrentStepAudio(false);
+  }, [currentAudioSequenceKeys, hasCompletedCurrentStepAudio]);
+
   useEffect(() => {
     const shouldSkipDefaultAudioStart =
       shouldSkipDefaultAudioStartForSubtitleJumpRef.current;
@@ -2049,6 +2087,8 @@ const Slide: React.FC<SlideProps> = ({
       if (endedAudioKey !== currentAudioKey) {
         return;
       }
+
+      playedAudioKeysRef.current.add(endedAudioKey);
 
       const activeSequencePosition = currentAudioSequenceKeys.findIndex(
         (audioSequenceKey) => audioSequenceKey === endedAudioKey

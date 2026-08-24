@@ -26,6 +26,7 @@ export default defineConfig({
         editor: resolve(__dirname, "src/editor.ts"),
         renderer: resolve(__dirname, "src/renderer.ts"),
         slide: resolve(__dirname, "src/slide.ts"),
+        scroll: resolve(__dirname, "src/scroll.ts"),
       },
     },
 

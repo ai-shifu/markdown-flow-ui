@@ -170,6 +170,9 @@
       "renderer": [
         "dist/renderer.d.ts"
       ],
+      "scroll": [
+        "dist/scroll.d.ts"
+      ],
       "slide": [
         "dist/slide.d.ts"
       ]
@@ -192,6 +195,11 @@
       "types": "./dist/renderer.d.ts",
       "import": "./dist/renderer.es.js",
       "require": "./dist/renderer.cjs"
+    },
+    "./scroll": {
+      "types": "./dist/scroll.d.ts",
+      "import": "./dist/scroll.es.js",
+      "require": "./dist/scroll.cjs"
     },
     "./editor": {
       "types": "./dist/editor.d.ts",

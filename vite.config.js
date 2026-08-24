@@ -1,7 +1,19 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
+import { createRequire } from "module";
 import dts from "vite-plugin-dts";
+
+const require = createRequire(import.meta.url);
+const packageJson = require("./package.json");
+const externalPackages = [
+  ...Object.keys(packageJson.dependencies ?? {}),
+  ...Object.keys(packageJson.peerDependencies ?? {}),
+];
+const isExternal = (id) =>
+  externalPackages.some(
+    (dependency) => id === dependency || id.startsWith(`${dependency}/`)
+  );
 
 export default defineConfig({
   plugins: [
@@ -30,13 +42,7 @@ export default defineConfig({
     },
 
     rollupOptions: {
-      external: [
-        "react",
-        "react-dom",
-        "next",
-        "next/router",
-        "react-dom/client",
-      ],
+      external: isExternal,
 
       output: [
         {
@@ -52,8 +58,8 @@ export default defineConfig({
           exports: "named",
           preserveModules: true,
           preserveModulesRoot: "src",
-          entryFileNames: "[name].cjs.js",
-          chunkFileNames: "chunks/[name]-[hash].cjs.js",
+          entryFileNames: "[name].cjs",
+          chunkFileNames: "chunks/[name]-[hash].cjs",
           assetFileNames: "assets/[name][extname]",
         },
       ],

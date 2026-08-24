@@ -1,5 +1,3 @@
-import "highlight.js/styles/github.css";
-import "katex/dist/katex.min.css";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";

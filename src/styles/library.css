@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "highlight.js/styles/github.css";
+@import "katex/dist/katex.min.css";
 @source "../**/**/*.{ts,tsx,js,jsx}";
 @source "../**/*.{ts,tsx,js,jsx}";
 @import "./globals.css";

@@ -122,7 +122,7 @@
       "prettier --write"
     ]
   },
-  "main": "dist/index.cjs.js",
+  "main": "dist/index.cjs",
   "module": "dist/index.es.js",
   "types": "dist/index.d.ts",
   "name": "markdown-flow-ui",
@@ -181,27 +181,27 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.es.js",
-      "require": "./dist/index.cjs.js"
+      "require": "./dist/index.cjs"
     },
     "./render": {
       "types": "./dist/renderer.d.ts",
       "import": "./dist/renderer.es.js",
-      "require": "./dist/renderer.cjs.js"
+      "require": "./dist/renderer.cjs"
     },
     "./renderer": {
       "types": "./dist/renderer.d.ts",
       "import": "./dist/renderer.es.js",
-      "require": "./dist/renderer.cjs.js"
+      "require": "./dist/renderer.cjs"
     },
     "./editor": {
       "types": "./dist/editor.d.ts",
       "import": "./dist/editor.es.js",
-      "require": "./dist/editor.cjs.js"
+      "require": "./dist/editor.cjs"
     },
     "./slide": {
       "types": "./dist/slide.d.ts",
       "import": "./dist/slide.es.js",
-      "require": "./dist/slide.cjs.js"
+      "require": "./dist/slide.cjs"
     },
     "./dist/markdown-flow-ui.css": {
       "default": "./dist/assets/markdown-flow-ui.css"

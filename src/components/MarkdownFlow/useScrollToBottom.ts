@@ -1,175 +1,216 @@
-import { useRef, useEffect, useCallback, RefObject, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 
-interface UseScrollToBottomOptions {
-  behavior?: "smooth" | "auto";
-  autoScrollOnInit?: boolean;
-  scrollDelay?: number;
+export type ScrollBehavior = "smooth" | "auto";
+export type ScrollTarget = HTMLElement | Document | Window;
+export type ScrollTargetRef = RefObject<ScrollTarget | null>;
+
+export interface UseScrollToBottomOptions {
+  contentRef?: RefObject<HTMLElement | null>;
+  scrollTarget?: ScrollTarget | ScrollTargetRef | null;
   scrollThreshold?: number;
+  contentVersion?: unknown;
+  followNewContent?: boolean;
+  autoScrollOnInit?: boolean;
+  behavior?: ScrollBehavior;
 }
 
-interface UseScrollToBottomReturn {
+export interface UseScrollToBottomReturn {
   showScrollToBottom: boolean;
-  scrollToBottom: () => void;
-  handleUserScrollToBottom: () => void;
   isAtBottom: boolean;
   followNewContent: boolean;
+  scrollToBottom: (behavior?: ScrollBehavior) => void;
+  refresh: () => void;
 }
 
-const useScrollToBottom = (
-  containerRef: RefObject<HTMLDivElement | null>,
-  dependencies: any[] = [],
+const isWindow = (target: ScrollTarget): target is Window =>
+  typeof Window !== "undefined" && target instanceof Window;
+
+const isDocument = (target: ScrollTarget): target is Document =>
+  typeof Document !== "undefined" && target instanceof Document;
+
+const getDocumentScroller = (target: Document | Window): HTMLElement | null => {
+  const document = isWindow(target) ? target.document : target;
+  return (document.scrollingElement || document.documentElement) as HTMLElement;
+};
+
+export const getScrollMetrics = (target: ScrollTarget) => {
+  if (isWindow(target) || isDocument(target)) {
+    const scroller = getDocumentScroller(target);
+    const viewportHeight = isWindow(target)
+      ? target.innerHeight
+      : scroller?.clientHeight || 0;
+    return {
+      scrollTop: scroller?.scrollTop || 0,
+      scrollHeight: scroller?.scrollHeight || 0,
+      clientHeight: viewportHeight,
+    };
+  }
+  return {
+    scrollTop: target.scrollTop,
+    scrollHeight: target.scrollHeight,
+    clientHeight: target.clientHeight,
+  };
+};
+
+const scrollTargetValue = (
+  target: ScrollTarget | ScrollTargetRef | null | undefined
+): ScrollTarget | null => {
+  if (!target) return null;
+  return "current" in target ? target.current : target;
+};
+
+const isScrollable = (element: HTMLElement) => {
+  const style =
+    typeof window !== "undefined" ? window.getComputedStyle(element) : null;
+  const overflow = style?.overflowY || style?.overflow;
+  return element.scrollHeight > element.clientHeight && overflow !== "visible";
+};
+
+export const resolveScrollTarget = (
+  contentRef: RefObject<HTMLElement | null> | undefined,
+  explicitTarget: ScrollTarget | ScrollTargetRef | null | undefined
+): ScrollTarget | null => {
+  const explicit = scrollTargetValue(explicitTarget);
+  if (explicit) return explicit;
+  const content = contentRef?.current;
+  if (!content) return null;
+  if (isScrollable(content)) return content;
+  let parent = content.parentElement;
+  while (parent) {
+    if (isScrollable(parent)) return parent;
+    parent = parent.parentElement;
+  }
+  return typeof window !== "undefined" ? window : null;
+};
+
+export const useScrollToBottom = (
+  containerRef: RefObject<HTMLElement | null>,
   options: UseScrollToBottomOptions = {}
 ): UseScrollToBottomReturn => {
   const {
+    contentRef = containerRef,
+    scrollTarget,
+    scrollThreshold = 150,
+    contentVersion,
+    followNewContent: followNewContentOption = true,
+    autoScrollOnInit = false,
     behavior = "smooth",
-    autoScrollOnInit = true,
-    scrollDelay = 100,
-    scrollThreshold = 10,
   } = options;
-
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
-  const followNewContent = useRef(true);
-  const isFirstLoad = useRef(true);
-  const timers = useRef({
-    scroll: null as NodeJS.Timeout | null,
-    init: null as NodeJS.Timeout | null,
-    content: null as NodeJS.Timeout | null,
-  });
+  const followingRef = useRef(followNewContentOption);
+  const mountedRef = useRef(false);
+  const frameRef = useRef<number | null>(null);
 
-  // Clear all timers
-  const clearAllTimers = useCallback(() => {
-    Object.values(timers.current).forEach((timer) => {
-      if (timer) clearTimeout(timer);
-    });
-  }, []);
-
-  // Check if scrolled to bottom
-  const checkIfAtBottom = useCallback((): boolean => {
-    const container = containerRef.current;
-    if (!container) return true;
-
-    const { scrollTop, scrollHeight, clientHeight } = container;
-    return scrollTop + clientHeight >= scrollHeight - scrollThreshold;
-  }, [containerRef, scrollThreshold]);
-
-  // Scroll to bottom
-  const scrollToBottom = useCallback(() => {
-    const container = containerRef.current;
-    if (container) {
-      container.scrollTo({
-        top: container.scrollHeight,
-        behavior,
-      });
-    }
-  }, [containerRef, behavior]);
-
-  // Update scroll state
-  const updateScrollState = useCallback(() => {
-    const atBottom = checkIfAtBottom();
+  const refresh = useCallback(() => {
+    const target = resolveScrollTarget(contentRef, scrollTarget);
+    if (!target) return;
+    const { scrollTop, scrollHeight, clientHeight } = getScrollMetrics(target);
+    const atBottom = scrollTop + clientHeight >= scrollHeight - scrollThreshold;
     setIsAtBottom(atBottom);
-    setShowScrollToBottom(!atBottom);
-    return atBottom;
-  }, [checkIfAtBottom]);
+    setShowScrollToBottom(!atBottom && scrollHeight > clientHeight);
+    if (atBottom) followingRef.current = true;
+  }, [contentRef, scrollTarget, scrollThreshold]);
 
-  // Handle user manually scrolling to bottom
-  const handleUserScrollToBottom = useCallback(() => {
-    scrollToBottom();
-    followNewContent.current = true;
-    setShowScrollToBottom(false);
-    setIsAtBottom(true);
-  }, [scrollToBottom]);
-
-  // Scroll event listener
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      // Debounce handling
-      if (timers.current.scroll) {
-        clearTimeout(timers.current.scroll);
-      }
-
-      timers.current.scroll = setTimeout(() => {
-        const atBottom = updateScrollState();
-
-        // Key logic: disable auto-follow when user manually scrolls
-        if (!atBottom) {
-          followNewContent.current = false;
-        } else {
-          followNewContent.current = true;
-        }
-      }, 150);
-    };
-
-    container.addEventListener("scroll", handleScroll);
-    // Initialize state
-    updateScrollState();
-
-    return () => {
-      container.removeEventListener("scroll", handleScroll);
-      if (timers.current.scroll) {
-        clearTimeout(timers.current.scroll);
-      }
-    };
-  }, [containerRef, updateScrollState]);
-
-  // Auto-scroll on first load
-  useEffect(() => {
-    if (autoScrollOnInit && isFirstLoad.current) {
-      timers.current.init = setTimeout(() => {
-        scrollToBottom();
-        setIsAtBottom(true);
-        setShowScrollToBottom(false);
-        followNewContent.current = true;
-        isFirstLoad.current = false;
-      }, scrollDelay);
-    }
-
-    return () => {
-      if (timers.current.init) {
-        clearTimeout(timers.current.init);
-      }
-    };
-  }, [autoScrollOnInit, scrollToBottom, scrollDelay]);
-
-  // Handle content changes
-  useEffect(() => {
-    if (isFirstLoad.current) return;
-
-    timers.current.content = setTimeout(() => {
-      if (followNewContent.current) {
-        // Auto-scroll when user hasn't manually scrolled
-        scrollToBottom();
-        setIsAtBottom(true);
-        setShowScrollToBottom(false);
+  const scrollToBottom = useCallback(
+    (requestedBehavior: ScrollBehavior = behavior) => {
+      const target = resolveScrollTarget(contentRef, scrollTarget);
+      if (!target) return;
+      const reducedMotion =
+        typeof window !== "undefined" &&
+        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      const actualBehavior =
+        requestedBehavior === "smooth" && reducedMotion
+          ? "auto"
+          : requestedBehavior;
+      const top = getScrollMetrics(target).scrollHeight;
+      if (isWindow(target)) {
+        target.scrollTo({ top, behavior: actualBehavior });
+      } else if (isDocument(target)) {
+        getDocumentScroller(target)?.scrollTo({
+          top,
+          behavior: actualBehavior,
+        });
       } else {
-        // Only update button state after user manual scroll
-        updateScrollState();
+        target.scrollTo({ top, behavior: actualBehavior });
       }
-    }, 50);
+      followingRef.current = true;
+      setIsAtBottom(true);
+      setShowScrollToBottom(false);
+    },
+    [behavior, contentRef, scrollTarget]
+  );
 
-    return () => {
-      if (timers.current.content) {
-        clearTimeout(timers.current.content);
-      }
-    };
-  }, [...dependencies, scrollToBottom, updateScrollState]);
-
-  // Cleanup on component unmount
   useEffect(() => {
-    return () => {
-      clearAllTimers();
+    const target = resolveScrollTarget(contentRef, scrollTarget);
+    if (!target) return;
+    const handleScroll = () => {
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+      frameRef.current = requestAnimationFrame(() => {
+        frameRef.current = null;
+        const metrics = getScrollMetrics(target);
+        if (
+          metrics.scrollTop + metrics.clientHeight <
+          metrics.scrollHeight - scrollThreshold
+        ) {
+          followingRef.current = false;
+        }
+        refresh();
+      });
     };
-  }, [clearAllTimers]);
+    const handleResize = () => handleScroll();
+    target.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleResize);
+    const observer =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(handleResize)
+        : null;
+    if (contentRef.current) observer?.observe(contentRef.current);
+    if (
+      typeof Element !== "undefined" &&
+      target instanceof Element &&
+      target !== contentRef.current
+    ) {
+      observer?.observe(target);
+    }
+    refresh();
+    return () => {
+      target.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
+      observer?.disconnect();
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+    };
+  }, [contentRef, refresh, scrollTarget, scrollThreshold]);
+
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      if (autoScrollOnInit) scrollToBottom("auto");
+      return;
+    }
+    if (followingRef.current) {
+      const frame = requestAnimationFrame(() => scrollToBottom("auto"));
+      return () => cancelAnimationFrame(frame);
+    }
+    refresh();
+  }, [autoScrollOnInit, contentVersion, refresh, scrollToBottom]);
+
+  useEffect(() => {
+    followingRef.current = followNewContentOption;
+  }, [followNewContentOption]);
 
   return {
     showScrollToBottom,
-    scrollToBottom: handleUserScrollToBottom,
-    handleUserScrollToBottom,
     isAtBottom,
-    followNewContent: followNewContent.current,
+    followNewContent: followingRef.current,
+    scrollToBottom,
+    refresh,
   };
 };
 

@@ -1,5 +1,8 @@
 // src/renderer.ts
 import MarkdownFlow from "./components/MarkdownFlow";
+import ScrollableMarkdownFlow from "./components/MarkdownFlow/ScrollableMarkdownFlow";
+import ScrollToBottomButton from "./components/MarkdownFlow/ScrollToBottomButton";
+import useScrollToBottom from "./components/MarkdownFlow/useScrollToBottom";
 import ContentRender from "./components/ContentRender";
 import MarkdownFlowInput from "./components/ContentRender/MarkdownFlowInput";
 import IframeSandbox from "./components/ContentRender/IframeSandbox";
@@ -10,6 +13,7 @@ import {
 import { RenderSegment } from "./components/ContentRender/utils/split-content";
 import { splitContentSegments } from "./components/ContentRender/utils/split-content";
 import type { MarkdownFlowProps } from "./components/MarkdownFlow/MarkdownFlow";
+import type { ScrollableMarkdownFlowProps } from "./components/MarkdownFlow/ScrollableMarkdownFlow";
 import type { ContentRenderProps } from "./components/ContentRender/ContentRender";
 import type { MarkdownFlowInputProps } from "./components/ContentRender/MarkdownFlowInput";
 import type {
@@ -22,6 +26,9 @@ export default ContentRender;
 
 export {
   MarkdownFlow,
+  ScrollableMarkdownFlow,
+  ScrollToBottomButton,
+  useScrollToBottom,
   ContentRender,
   MarkdownFlowInput,
   IframeSandbox,
@@ -34,6 +41,7 @@ export type {
   OnSendContentParams,
   CustomRenderBarProps,
   MarkdownFlowProps,
+  ScrollableMarkdownFlowProps,
   ContentRenderProps,
   MarkdownFlowInputProps,
   IframeSandboxProps,

@@ -2,8 +2,7 @@ import React, { useRef } from "react";
 import MarkdownFlow from "./MarkdownFlow";
 import useScrollToBottom from "./useScrollToBottom";
 // import type { OnSendContentParams, CustomRenderBarProps } from "../types";
-import { ChevronDown } from "lucide-react";
-import { Button } from "../ui/button";
+import ScrollToBottomButton from "./ScrollToBottomButton";
 import type { MarkdownFlowProps } from "./MarkdownFlow";
 import { getContentRenderLocaleTexts } from "../ContentRender/contentRenderI18n";
 
@@ -25,6 +24,8 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
   confirmButtonText,
   copyButtonText,
   copiedButtonText,
+  beforeSend,
+  interactionDefaultValueOptions,
   scrollToBottomAriaLabel,
   ...restProps
 }) => {
@@ -33,18 +34,12 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
   const resolvedScrollToBottomAriaLabel =
     scrollToBottomAriaLabel || localeTexts.scrollToBottomLabel;
 
-  const { showScrollToBottom, handleUserScrollToBottom } = useScrollToBottom(
+  const { showScrollToBottom, scrollToBottom } = useScrollToBottom(
     containerRef,
-    [
-      initialContentList?.length >= 1
-        ? JSON.stringify(initialContentList[initialContentList?.length - 1])
-        : null,
-    ],
     {
-      // Listen for content count changes
-      behavior: "smooth",
+      contentVersion: initialContentList,
       autoScrollOnInit: true,
-      scrollDelay: 100,
+      scrollThreshold: 150,
     }
   );
 
@@ -56,6 +51,7 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
     >
       <div ref={containerRef} style={{ height: "100%", overflow: "auto" }}>
         <MarkdownFlow
+          {...restProps}
           initialContentList={initialContentList}
           customRenderBar={customRenderBar}
           onSend={onSend}
@@ -63,19 +59,16 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
           confirmButtonText={confirmButtonText}
           copyButtonText={copyButtonText}
           copiedButtonText={copiedButtonText}
+          beforeSend={beforeSend}
+          interactionDefaultValueOptions={interactionDefaultValueOptions}
         />
       </div>
       {showScrollToBottom && (
-        <Button
-          className="h-6 w-6 border hover:bg-gray-200 scroll-to-bottom-btn"
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={handleUserScrollToBottom}
-          aria-label={resolvedScrollToBottomAriaLabel}
-        >
-          <ChevronDown />
-        </Button>
+        <ScrollToBottomButton
+          visible={showScrollToBottom}
+          onClick={() => scrollToBottom()}
+          ariaLabel={resolvedScrollToBottomAriaLabel}
+        />
       )}
     </div>
   );

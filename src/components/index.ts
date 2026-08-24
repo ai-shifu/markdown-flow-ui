@@ -1,6 +1,14 @@
 export { default as ContentRender } from "./ContentRender";
 export { default as MarkdownFlow } from "./MarkdownFlow";
-export { default as ScrollableMarkdown } from "./MarkdownFlow/ScrollableMarkdownFlow";
+export { default as ScrollableMarkdownFlow } from "./MarkdownFlow/ScrollableMarkdownFlow";
+export { default as ScrollToBottomButton } from "./MarkdownFlow/ScrollToBottomButton";
+export { default as useScrollToBottom } from "./MarkdownFlow/useScrollToBottom";
+export type {
+  ScrollTarget,
+  ScrollTargetRef,
+  UseScrollToBottomOptions,
+  UseScrollToBottomReturn,
+} from "./MarkdownFlow/useScrollToBottom";
 export { default as MarkdownFlowEditor } from "./MarkdownFlowEditor";
 export { default as Slide } from "./Slide";
 export { Player, useSlide } from "./Slide";

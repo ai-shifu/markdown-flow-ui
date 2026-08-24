@@ -5,11 +5,38 @@
   position: absolute;
   bottom: 20px;
   right: 20px;
-  border-radius: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 999px;
+  background: var(--base-card, white);
+  color: inherit;
   cursor: pointer;
   z-index: 1;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+}
+
+.scroll-to-bottom-btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.scroll-to-bottom-btn svg {
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
 }
 
 .scroll-to-bottom-btn:hover {
   background-color: var(--primary-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-to-bottom-btn {
+    scroll-behavior: auto;
+  }
 }

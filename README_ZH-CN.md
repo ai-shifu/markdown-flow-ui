@@ -206,6 +206,26 @@ interface ScrollableMarkdownFlowProps extends MarkdownFlowProps {
 />
 ```
 
+需要把滚动按钮放到宿主容器或复杂内容布局中时，可直接复用同一套滚动判断：
+
+```tsx
+const contentRef = useRef<HTMLDivElement>(null);
+const { showScrollToBottom, scrollToBottom } = useScrollToBottom(contentRef, {
+  contentVersion: streamedItems,
+  scrollTarget: scrollContainerRef,
+  scrollThreshold: 150,
+});
+
+<ScrollToBottomButton
+  visible={showScrollToBottom}
+  onClick={() => scrollToBottom()}
+  ariaLabel="滚动到底部"
+  portalTarget={mobilePortalTarget}
+/>
+```
+
+`useScrollToBottom` 会监听滚动、ResizeObserver 和视口变化；用户主动离开底部后不会被新内容抢回，回到底部或点击按钮后会恢复跟随。`scrollTarget` 可为本地容器、父容器或 `window`/`document`，省略时会自动解析。
+
 #### ContentRender
 
 用于渲染单个 markdown 块的核心组件。

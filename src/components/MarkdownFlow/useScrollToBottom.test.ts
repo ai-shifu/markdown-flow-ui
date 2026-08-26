@@ -221,6 +221,16 @@ describe("scroll target resolution", () => {
       resolveScrollTargets(fixture.viewportRef, fixture.parent, "always")
     ).toEqual([fixture.parent]);
   });
+
+  it.each([null, { current: null }, () => null])(
+    "does not infer roots for a supplied unresolved target %s",
+    (target) => {
+      const fixture = createTargetFixture(false);
+      expect(
+        resolveScrollTargets(fixture.viewportRef, target, "always")
+      ).toEqual([]);
+    }
+  );
 });
 
 describe("scroll motion", () => {

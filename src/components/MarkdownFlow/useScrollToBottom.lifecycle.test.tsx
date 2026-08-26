@@ -99,6 +99,45 @@ describe("legacy calls without dependencies", () => {
   });
 });
 
+describe.each([true, false])(
+  "pending explicit target (initial scroll: %s)",
+  (autoScrollOnInit) => {
+    it.each(["ref", "resolver"])(
+      "waits for the supplied %s without scrolling fallback roots",
+      (kind) => {
+        const viewport = createScroller();
+        const target = createScroller();
+        const viewportRef = { current: viewport };
+        const targetRef: { current: HTMLElement | null } = { current: null };
+        const scrollTarget =
+          kind === "ref" ? targetRef : () => targetRef.current;
+        const { result, rerender } = renderHook(() =>
+          useScrollToBottom(viewportRef, { scrollTarget, autoScrollOnInit })
+        );
+        flushFrames();
+        act(() => result.current.scrollToBottom("auto"));
+        fireEvent.resize(window);
+        flushFrames();
+        expect(viewport.scrollTo).not.toHaveBeenCalled();
+        expect(target.scrollTo).not.toHaveBeenCalled();
+        expect(result.current.showScrollToBottom).toBe(false);
+
+        targetRef.current = target;
+        rerender();
+        flushFrames();
+        expect(viewport.scrollTo).not.toHaveBeenCalled();
+        if (autoScrollOnInit) expect(target.scrollTo).toHaveBeenCalledOnce();
+        else expect(target.scrollTo).not.toHaveBeenCalled();
+        flushFrames();
+        target.scrollTop = 100;
+        fireEvent.scroll(target);
+        expect(result.current.showScrollToBottom).toBe(true);
+        expect(result.current.followNewContent).toBe(false);
+      }
+    );
+  }
+);
+
 describe.each<ScrollBehavior>(["smooth", "auto"])(
   "%s scroll completion cleanup",
   (behavior) => {

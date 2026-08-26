@@ -35,7 +35,7 @@ export interface UseScrollToBottomOptions {
   contentRef?: RefObject<HTMLElement | null>;
   /** Optional bottom anchor used to preserve nested-container scrollIntoView behavior. */
   endRef?: RefObject<HTMLElement | null>;
-  /** Explicit scroll target or resolver. Omit to evaluate the viewport, its parent, and the configured page fallback. */
+  /** Explicit scroll target or resolver. Unresolved targets stay inactive; omit to infer viewport, parent and page roots. */
   scrollTarget?: ScrollTargetInput;
   /** Whether page scrolling joins the viewport and parent targets. */
   pageScrollFallback?: PageScrollFallback;
@@ -176,7 +176,7 @@ export const resolveScrollTargets = (
   pageScrollFallback: PageScrollFallback = "auto"
 ): ScrollTarget[] => {
   const explicit = scrollTargetValue(explicitTarget);
-  if (explicit) return [explicit];
+  if (explicitTarget !== undefined) return explicit ? [explicit] : [];
 
   const viewport = viewportRef?.current;
   if (!viewport) {
@@ -564,6 +564,8 @@ export function useScrollToBottom(
     const targets = getResolvedTargets();
     const targetWindow = targets[0] ? getTargetWindow(targets[0]) : null;
     ensureTargetBinding();
+    // An explicit ref may mount later; defer initialization until it resolves.
+    if (targets.length === 0) return;
     const shouldAutoScrollOnInit = !initializedRef.current && autoScrollOnInit;
 
     if (!initializedRef.current) {
@@ -598,6 +600,7 @@ export function useScrollToBottom(
     };
   }, [
     autoScrollOnInit,
+    bindingRevision,
     contentVersion,
     ensureTargetBinding,
     getResolvedTargets,

@@ -756,6 +756,74 @@ export const LegacyOptionsWithoutDependencies: Story = {
   render: () => <LegacyClickFixture omitDependencies />,
 };
 
+const PendingTargetFixture = () => {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const targetRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setMounted(true)}
+        data-testid="mount-target"
+      >
+        Mount the explicit target
+      </button>
+      <div
+        ref={viewportRef}
+        data-testid="fallback-viewport"
+        style={{ height: 280, overflowY: "auto" }}
+      >
+        {mounted ? (
+          <div
+            ref={targetRef}
+            data-testid="explicit-viewport"
+            style={{ height: 200, overflowY: "auto" }}
+          >
+            <div style={{ height: 1000 }}>Explicit target content</div>
+          </div>
+        ) : null}
+        <div style={{ height: 1000 }}>Fallback content must not move</div>
+      </div>
+      <ScrollToBottomControl
+        viewportRef={viewportRef}
+        scrollTarget={targetRef}
+        autoScrollOnInit
+        ariaLabel="Pending target scroll control"
+      />
+    </div>
+  );
+};
+
+export const ExplicitTargetWaitsUntilMounted: Story = {
+  render: () => <PendingTargetFixture />,
+  play: async ({ canvasElement }) => {
+    const fallback = canvasElement.querySelector<HTMLElement>(
+      '[data-testid="fallback-viewport"]'
+    )!;
+    const button = canvasElement.querySelector<HTMLButtonElement>(
+      '[aria-label="Pending target scroll control"]'
+    )!;
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    );
+    expect(fallback.scrollTop).toBe(0);
+    expect(button).toHaveAttribute("data-visible", "false");
+    await userEvent.click(
+      canvasElement.querySelector<HTMLButtonElement>(
+        '[data-testid="mount-target"]'
+      )!
+    );
+    const target = canvasElement.querySelector<HTMLElement>(
+      '[data-testid="explicit-viewport"]'
+    )!;
+    await waitFor(() => expectAtBottom(target));
+    expect(fallback.scrollTop).toBe(0);
+    scrollToTop(target);
+    await waitFor(() => expect(button).toHaveAttribute("data-visible", "true"));
+  },
+};
+
 export const StableViewportRefRebindsAfterReplacement: Story = {
   render: () => <CleanupFixture />,
   play: async ({ canvasElement }) => {

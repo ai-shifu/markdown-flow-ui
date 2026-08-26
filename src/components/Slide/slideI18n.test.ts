@@ -1,8 +1,29 @@
 import { describe, expect, it } from "vitest";
+import { MARKDOWN_FLOW_LOCALES } from "../../lib/locale";
 
 import { getSlideLocaleTexts } from "./slideI18n";
 
 describe("getSlideLocaleTexts", () => {
+  it("keeps every locale bundle complete against the Chinese source", () => {
+    const chinese = getSlideLocaleTexts("zh-CN");
+    for (const locale of MARKDOWN_FLOW_LOCALES) {
+      const texts = getSlideLocaleTexts(locale);
+      expect(Object.keys(texts)).toEqual(Object.keys(chinese));
+      for (const bundle of [
+        "playerTexts",
+        "interactionTexts",
+        "bufferingText",
+      ] as const) {
+        expect(Object.keys(texts[bundle])).toEqual(
+          Object.keys(chinese[bundle])
+        );
+        expect(
+          Object.values(texts[bundle]).every((value) => value.length > 0)
+        ).toBe(true);
+      }
+    }
+  });
+
   it.each([
     ["en-US", "Move interaction"],
     ["fr-FR", "Déplacer le panneau d’interaction"],

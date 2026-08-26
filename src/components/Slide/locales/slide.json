@@ -1,0 +1,197 @@
+{
+  "en-US": {
+    "bufferingText": {
+      "waitingForAudio": "Waiting for current slide audio...",
+      "loadingAudio": "Loading audio...",
+      "waitingForMoreAudio": "Waiting for more audio..."
+    },
+    "fullscreenBackAriaLabel": "Back to non-full screen",
+    "interactionTexts": {
+      "title": "Submit the content below to continue.",
+      "confirmButtonText": "Submit",
+      "copyButtonText": "Copy",
+      "copiedButtonText": "Copied",
+      "dragHandleAriaLabel": "Move interaction"
+    },
+    "playerTexts": {
+      "closeSettingsLabel": "Close settings",
+      "enterFullscreenLabel": "Enter fullscreen",
+      "exitFullscreenLabel": "Exit fullscreen",
+      "moreOptionsAriaLabel": "More options",
+      "nextLabel": "Next page",
+      "nextSubtitleLabel": "Next sentence",
+      "notesLabel": "Notes",
+      "pauseAutoplayLabel": "Pause autoplay",
+      "pauseLabel": "Pause",
+      "playAutoplayLabel": "Play autoplay",
+      "playLabel": "Play",
+      "previousLabel": "Previous page",
+      "previousSubtitleLabel": "Previous sentence",
+      "screenModeLabel": "Screen mode",
+      "settingsTitle": "Settings",
+      "subtitleLabel": "Subtitles",
+      "subtitleToggleAriaLabel": "Toggle subtitles",
+      "volumeAriaLabel": "Volume",
+      "screenLabel": "Screen",
+      "nonFullscreenLabel": "Non-fullscreen",
+      "fullscreenLabel": "Fullscreen",
+      "fullscreenHintText": "Please rotate your screen for the best experience"
+    }
+  },
+  "fr-FR": {
+    "bufferingText": {
+      "waitingForAudio": "En attente de l'audio de la diapositive actuelle...",
+      "loadingAudio": "Chargement audio...",
+      "waitingForMoreAudio": "En attente de plus d'audio..."
+    },
+    "fullscreenBackAriaLabel": "Retour au mode non plein écran",
+    "interactionTexts": {
+      "title": "Soumettez le contenu ci-dessous pour continuer.",
+      "confirmButtonText": "Soumettre",
+      "copyButtonText": "Copier",
+      "copiedButtonText": "Copié",
+      "dragHandleAriaLabel": "Déplacer le panneau d’interaction"
+    },
+    "playerTexts": {
+      "closeSettingsLabel": "Fermer les paramètres",
+      "enterFullscreenLabel": "Passer en plein écran",
+      "exitFullscreenLabel": "Quitter le plein écran",
+      "moreOptionsAriaLabel": "Plus d'options",
+      "nextLabel": "Page suivante",
+      "nextSubtitleLabel": "Phrase suivante",
+      "notesLabel": "Notes",
+      "pauseAutoplayLabel": "Suspendre la lecture automatique",
+      "pauseLabel": "Pause",
+      "playAutoplayLabel": "Lancer la lecture automatique",
+      "playLabel": "Lecture",
+      "previousLabel": "Page précédente",
+      "previousSubtitleLabel": "Phrase précédente",
+      "screenModeLabel": "Mode d'affichage",
+      "settingsTitle": "Paramètres",
+      "subtitleLabel": "Sous-titres",
+      "subtitleToggleAriaLabel": "Afficher ou masquer les sous-titres",
+      "volumeAriaLabel": "Volume",
+      "screenLabel": "Écran",
+      "nonFullscreenLabel": "Hors plein écran",
+      "fullscreenLabel": "Plein écran",
+      "fullscreenHintText": "Veuillez tourner votre écran pour une meilleure expérience"
+    }
+  },
+  "zh-CN": {
+    "bufferingText": {
+      "waitingForAudio": "正在等待当前页音频...",
+      "loadingAudio": "正在加载音频",
+      "waitingForMoreAudio": "正在等待音频"
+    },
+    "fullscreenBackAriaLabel": "返回非全屏",
+    "interactionTexts": {
+      "title": "提交下面的内容以继续",
+      "confirmButtonText": "提交",
+      "copyButtonText": "复制",
+      "copiedButtonText": "已复制",
+      "dragHandleAriaLabel": "移动交互面板"
+    },
+    "playerTexts": {
+      "closeSettingsLabel": "关闭设置",
+      "enterFullscreenLabel": "进入全屏",
+      "exitFullscreenLabel": "退出全屏",
+      "moreOptionsAriaLabel": "更多选项",
+      "nextLabel": "下一页",
+      "nextSubtitleLabel": "下一句",
+      "notesLabel": "笔记",
+      "pauseAutoplayLabel": "暂停自动播放",
+      "pauseLabel": "暂停",
+      "playAutoplayLabel": "开始自动播放",
+      "playLabel": "播放",
+      "previousLabel": "上一页",
+      "previousSubtitleLabel": "上一句",
+      "screenModeLabel": "屏幕模式",
+      "settingsTitle": "设置",
+      "subtitleLabel": "字幕",
+      "subtitleToggleAriaLabel": "切换字幕",
+      "volumeAriaLabel": "音量",
+      "screenLabel": "屏幕",
+      "nonFullscreenLabel": "非全屏",
+      "fullscreenLabel": "全屏",
+      "fullscreenHintText": "请旋转屏幕以获得最佳体验"
+    }
+  },
+  "ar-SA": {
+    "bufferingText": {
+      "waitingForAudio": "في انتظار صوت الشريحة الحالية...",
+      "loadingAudio": "جارٍ تحميل الصوت...",
+      "waitingForMoreAudio": "في انتظار المزيد من الصوت..."
+    },
+    "fullscreenBackAriaLabel": "العودة إلى العرض العادي",
+    "interactionTexts": {
+      "title": "أرسل المحتوى أدناه للمتابعة.",
+      "confirmButtonText": "إرسال",
+      "copyButtonText": "نسخ",
+      "copiedButtonText": "تم النسخ",
+      "dragHandleAriaLabel": "تحريك لوحة التفاعل"
+    },
+    "playerTexts": {
+      "closeSettingsLabel": "إغلاق الإعدادات",
+      "enterFullscreenLabel": "الدخول إلى ملء الشاشة",
+      "exitFullscreenLabel": "الخروج من ملء الشاشة",
+      "moreOptionsAriaLabel": "مزيد من الخيارات",
+      "nextLabel": "الصفحة التالية",
+      "nextSubtitleLabel": "الجملة التالية",
+      "notesLabel": "الملاحظات",
+      "pauseAutoplayLabel": "إيقاف التشغيل التلقائي مؤقتًا",
+      "pauseLabel": "إيقاف مؤقت",
+      "playAutoplayLabel": "بدء التشغيل التلقائي",
+      "playLabel": "تشغيل",
+      "previousLabel": "الصفحة السابقة",
+      "previousSubtitleLabel": "الجملة السابقة",
+      "screenModeLabel": "وضع الشاشة",
+      "settingsTitle": "الإعدادات",
+      "subtitleLabel": "الترجمة النصية",
+      "subtitleToggleAriaLabel": "تبديل الترجمة النصية",
+      "volumeAriaLabel": "مستوى الصوت",
+      "screenLabel": "الشاشة",
+      "nonFullscreenLabel": "الوضع العادي",
+      "fullscreenLabel": "ملء الشاشة",
+      "fullscreenHintText": "يرجى تدوير الشاشة للحصول على أفضل تجربة"
+    }
+  },
+  "th-TH": {
+    "bufferingText": {
+      "waitingForAudio": "กำลังรอเสียงของสไลด์ปัจจุบัน...",
+      "loadingAudio": "กำลังโหลดเสียง...",
+      "waitingForMoreAudio": "กำลังรอเสียงเพิ่มเติม..."
+    },
+    "fullscreenBackAriaLabel": "กลับสู่โหมดปกติ",
+    "interactionTexts": {
+      "title": "ส่งเนื้อหาด้านล่างเพื่อดำเนินการต่อ",
+      "confirmButtonText": "ส่งคำตอบ",
+      "copyButtonText": "คัดลอก",
+      "copiedButtonText": "คัดลอกแล้ว",
+      "dragHandleAriaLabel": "ย้ายแผงโต้ตอบ"
+    },
+    "playerTexts": {
+      "closeSettingsLabel": "ปิดการตั้งค่า",
+      "enterFullscreenLabel": "เข้าสู่โหมดเต็มหน้าจอ",
+      "exitFullscreenLabel": "ออกจากโหมดเต็มหน้าจอ",
+      "moreOptionsAriaLabel": "ตัวเลือกเพิ่มเติม",
+      "nextLabel": "หน้าถัดไป",
+      "nextSubtitleLabel": "ประโยคถัดไป",
+      "notesLabel": "บันทึกย่อ",
+      "pauseAutoplayLabel": "หยุดเล่นอัตโนมัติชั่วคราว",
+      "pauseLabel": "หยุดชั่วคราว",
+      "playAutoplayLabel": "เริ่มเล่นอัตโนมัติ",
+      "playLabel": "เล่น",
+      "previousLabel": "หน้าก่อนหน้า",
+      "previousSubtitleLabel": "ประโยคก่อนหน้า",
+      "screenModeLabel": "โหมดหน้าจอ",
+      "settingsTitle": "การตั้งค่า",
+      "subtitleLabel": "คำบรรยาย",
+      "subtitleToggleAriaLabel": "สลับคำบรรยาย",
+      "volumeAriaLabel": "ระดับเสียง",
+      "screenLabel": "หน้าจอ",
+      "nonFullscreenLabel": "โหมดไม่เต็มหน้าจอ",
+      "fullscreenLabel": "เต็มหน้าจอ",
+      "fullscreenHintText": "โปรดหมุนหน้าจอเพื่อประสบการณ์การใช้งานที่ดีที่สุด"
+    }
+  }
+}

@@ -25,7 +25,7 @@ const appendJavaScriptExtension = (filePath, specifier) => {
   const sourceTarget = resolve(sourceImporterDirectory, specifier);
   const resolvesToIndex = ["index.ts", "index.tsx", "index.js", "index.jsx"]
     .map((fileName) => resolve(sourceTarget, fileName))
-    .some(existsSync);
+    .some((filePath) => existsSync(filePath));
   return resolvesToIndex ? `${specifier}/index.js` : `${specifier}.js`;
 };
 

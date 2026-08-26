@@ -44,9 +44,5 @@ const scrollControl: Scroll.ScrollToBottomControlProps = control;
 // @ts-expect-error Invalid placement must not become an untyped public API.
 const invalidPlacement: Renderer.ScrollToBottomPlacement = "top-left";
 
-void aliases;
-void hooks;
-void scrollButton;
-void scrollControl;
-void invalidPlacement;
+export { aliases, hooks, scrollButton, scrollControl, invalidPlacement };
 export type { PublicScrollTypes };

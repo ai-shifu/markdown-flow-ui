@@ -28,6 +28,10 @@
   width: 100%;
 }
 
+.content-render code {
+  unicode-bidi: isolate;
+}
+
 .content-render .content-render-custom-bar {
   /* Keep custom render bar left aligned regardless of surrounding text alignment */
   display: flex;

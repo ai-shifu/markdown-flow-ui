@@ -634,7 +634,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         }
 
         return (
-          <code className={className} {...rest}>
+          <code className={className} {...rest} dir="ltr">
             {children}
           </code>
         );

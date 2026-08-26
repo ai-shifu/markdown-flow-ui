@@ -305,6 +305,38 @@ export const ArabicCodeBlocks: Story = {
   },
 };
 
+export const IsolatedInlineCode: Story = {
+  render: () => (
+    <div dir="rtl">
+      {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
+        <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
+          <ContentRender
+            locale={locale}
+            content={'استخدم `call("مرحبا");` ثم `https://example.com/a?b=1`.'}
+          />
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const locale of ["ar-SA", "th-TH", "inherit"]) {
+      const fixture = canvas.getByTestId(locale);
+      expect(getComputedStyle(fixture.querySelector("p")!).direction).toBe(
+        locale === "th-TH" ? "ltr" : "rtl"
+      );
+      const snippets = fixture.querySelectorAll("code");
+      expect(snippets).toHaveLength(2);
+      expect(snippets[0]).toHaveTextContent('call("مرحبا");');
+      expect(snippets[1]).toHaveTextContent("https://example.com/a?b=1");
+      for (const snippet of snippets) {
+        expect(getComputedStyle(snippet).direction).toBe("ltr");
+        expect(getComputedStyle(snippet).unicodeBidi).toBe("isolate");
+      }
+    }
+  },
+};
+
 const TableDirectionFixture = () => {
   const [locale, setLocale] = useState<MarkdownFlowLocale>();
   return (

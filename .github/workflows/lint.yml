@@ -41,7 +41,7 @@ jobs:
         run: npm test
 
       - name: Install the package build tool
-        run: npm install --global pnpm@10.14.0
+        run: npm install --global --ignore-scripts pnpm@10.14.0
 
       - name: Build and verify package assets
         run: npm run test:package

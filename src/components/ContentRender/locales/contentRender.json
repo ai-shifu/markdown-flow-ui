@@ -9,7 +9,9 @@
     "sandboxFullscreenButtonText": "Fullscreen",
     "sandboxExitFullscreenButtonText": "Exit fullscreen",
     "sendButtonLabel": "Send",
-    "scrollToBottomLabel": "Scroll to bottom"
+    "scrollToBottomLabel": "Scroll to bottom",
+    "mermaidLoadingText": "Loading Mermaid chart...",
+    "mermaidEmptyChartText": "Empty chart content"
   },
   "fr-FR": {
     "confirmButtonText": "Soumettre",
@@ -21,7 +23,9 @@
     "sandboxFullscreenButtonText": "Plein écran",
     "sandboxExitFullscreenButtonText": "Quitter le plein écran",
     "sendButtonLabel": "Envoyer",
-    "scrollToBottomLabel": "Faire défiler jusqu'en bas"
+    "scrollToBottomLabel": "Faire défiler jusqu'en bas",
+    "mermaidLoadingText": "Chargement du diagramme Mermaid...",
+    "mermaidEmptyChartText": "Le diagramme est vide"
   },
   "zh-CN": {
     "confirmButtonText": "提交",
@@ -33,7 +37,9 @@
     "sandboxFullscreenButtonText": "全屏浏览",
     "sandboxExitFullscreenButtonText": "退出全屏",
     "sendButtonLabel": "发送",
-    "scrollToBottomLabel": "滚动到底部"
+    "scrollToBottomLabel": "滚动到底部",
+    "mermaidLoadingText": "正在加载 Mermaid 图表...",
+    "mermaidEmptyChartText": "图表内容为空"
   },
   "ar-SA": {
     "confirmButtonText": "إرسال",
@@ -45,7 +51,9 @@
     "sandboxFullscreenButtonText": "ملء الشاشة",
     "sandboxExitFullscreenButtonText": "الخروج من ملء الشاشة",
     "sendButtonLabel": "إرسال",
-    "scrollToBottomLabel": "التمرير إلى الأسفل"
+    "scrollToBottomLabel": "التمرير إلى الأسفل",
+    "mermaidLoadingText": "جارٍ تحميل مخطط Mermaid...",
+    "mermaidEmptyChartText": "محتوى المخطط فارغ"
   },
   "th-TH": {
     "confirmButtonText": "ส่งคำตอบ",
@@ -57,6 +65,8 @@
     "sandboxFullscreenButtonText": "เต็มหน้าจอ",
     "sandboxExitFullscreenButtonText": "ออกจากเต็มหน้าจอ",
     "sendButtonLabel": "ส่ง",
-    "scrollToBottomLabel": "เลื่อนไปด้านล่าง"
+    "scrollToBottomLabel": "เลื่อนไปด้านล่าง",
+    "mermaidLoadingText": "กำลังโหลดแผนภาพ Mermaid...",
+    "mermaidEmptyChartText": "ไม่มีเนื้อหาในแผนภาพ"
   }
 }

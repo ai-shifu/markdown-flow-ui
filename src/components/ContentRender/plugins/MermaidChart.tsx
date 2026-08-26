@@ -35,7 +35,7 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
       const cleaned = preprocessChart(chart);
 
       if (!cleaned) {
-        setError(messages?.emptyChart ?? DEFAULT_MESSAGES.emptyChart);
+        setError(DEFAULT_MESSAGES.emptyChart);
         setSvg("");
         return;
       }
@@ -90,7 +90,9 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
         <div className="px-4 py-3 bg-gray-100 border-b border-gray-200 flex items-center gap-2">
           <span className="text-yellow-600">⚠️</span>
           <span className="text-sm text-yellow-700 font-medium whitespace-pre-wrap">
-            {error}
+            {preprocessChart(chart)
+              ? error
+              : (messages?.emptyChart ?? DEFAULT_MESSAGES.emptyChart)}
           </span>
         </div>
         <div className="relative">
@@ -122,5 +124,11 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
 };
 
 export default React.memo(MermaidChart, (prev, next) => {
-  return prev.chart === next.chart && prev.frozen === next.frozen;
+  return (
+    prev.chart === next.chart &&
+    prev.frozen === next.frozen &&
+    prev.messages?.emptyChart === next.messages?.emptyChart &&
+    prev.messages?.loading === next.messages?.loading &&
+    prev.messages?.badge === next.messages?.badge
+  );
 });

@@ -15,6 +15,8 @@ export interface ContentRenderLocaleTexts {
   sandboxExitFullscreenButtonText: string;
   sendButtonLabel: string;
   scrollToBottomLabel: string;
+  mermaidLoadingText: string;
+  mermaidEmptyChartText: string;
 }
 
 export const CONTENT_RENDER_LOCALE_TEXTS: Record<

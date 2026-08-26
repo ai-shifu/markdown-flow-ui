@@ -137,6 +137,43 @@ export const PlayerDirectionOverride: Story = {
 const sourceCode =
   'const greeting = "مرحبا";\nconst url = "https://example.com/a?b=1";';
 
+const MermaidLocaleFixture = () => {
+  const [locale, setLocale] = useState<MarkdownFlowLocale>("ar-SA");
+  return (
+    <div>
+      <button onClick={() => setLocale("th-TH")}>Thai</button>
+      <ContentRender
+        locale={locale}
+        content={"```mermaid\n\n```\n\n~~~mermaid\n\n~~~"}
+      />
+    </div>
+  );
+};
+
+export const MermaidLocaleMessages: Story = {
+  render: () => <MermaidLocaleFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(() =>
+      expect(
+        canvas.getAllByText(
+          getContentRenderLocaleTexts("ar-SA").mermaidEmptyChartText
+        )
+      ).toHaveLength(2)
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Thai", exact: true })
+    );
+    await waitFor(() =>
+      expect(
+        canvas.getAllByText(
+          getContentRenderLocaleTexts("th-TH").mermaidEmptyChartText
+        )
+      ).toHaveLength(2)
+    );
+  },
+};
+
 export const ArabicCodeBlocks: Story = {
   render: () => (
     <ContentRender

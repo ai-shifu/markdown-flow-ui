@@ -1,0 +1,57 @@
+// @vitest-environment jsdom
+import React from "react";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import ContentRender from "./ContentRender";
+import MermaidChart from "./plugins/MermaidChart";
+import { getContentRenderLocaleTexts } from "./contentRenderI18n";
+
+vi.mock("mermaid", () => ({
+  default: {
+    initialize: vi.fn(),
+    parse: vi.fn(() => new Promise(() => {})),
+    render: vi.fn(),
+  },
+}));
+vi.mock("./IframeSandbox", () => ({ default: () => null }));
+vi.mock("./plugins/CustomVariable", () => ({ default: () => null }));
+
+afterEach(cleanup);
+
+describe.each([
+  ["standalone segment", (chart: string) => `\`\`\`mermaid\n${chart}\n\`\`\``],
+  [
+    "sandbox-adjacent segment",
+    (chart: string) =>
+      `<html><body>Preview</body></html>\n\n\`\`\`mermaid\n${chart}\n\`\`\``,
+  ],
+  ["markdown code renderer", (chart: string) => `~~~mermaid\n${chart}\n~~~`],
+] as const)("Mermaid locale in %s", (_name, contentFor) => {
+  it.each(["loading", "empty"] as const)(
+    "updates the %s message when the locale changes without changing the chart",
+    (state) => {
+      const content = contentFor(state === "loading" ? "graph TD; A-->B" : "");
+      const { rerender } = render(
+        <ContentRender content={content} locale="ar-SA" />
+      );
+      for (const locale of ["ar-SA", "th-TH", undefined] as const) {
+        rerender(<ContentRender content={content} locale={locale} />);
+        const texts = getContentRenderLocaleTexts(locale);
+        const label =
+          state === "loading"
+            ? texts.mermaidLoadingText
+            : texts.mermaidEmptyChartText;
+        expect(screen.getByText(label)).toBeTruthy();
+      }
+    }
+  );
+});
+
+it("preserves standalone Mermaid message overrides and English defaults", () => {
+  const { rerender } = render(
+    <MermaidChart chart="" messages={{ emptyChart: "Custom empty chart" }} />
+  );
+  expect(screen.getByText("Custom empty chart")).toBeTruthy();
+  rerender(<MermaidChart chart="" />);
+  expect(screen.getByText("Empty chart content")).toBeTruthy();
+});

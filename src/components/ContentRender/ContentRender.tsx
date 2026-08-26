@@ -19,7 +19,7 @@ import CodeBlock from "./CodeBlock";
 import CustomButtonInputVariable, {
   ComponentsWithCustomVariable,
 } from "./plugins/CustomVariable";
-import MermaidChart from "./plugins/MermaidChart";
+import MermaidChart, { type MermaidChartProps } from "./plugins/MermaidChart";
 import {
   preserveCustomVariableProperties,
   restoreCustomVariableProperties,
@@ -241,6 +241,7 @@ type CustomComponents = ComponentsWithCustomVariable & {
 };
 
 type MarkdownComponentRuntimeValues = {
+  mermaidMessages: MermaidChartProps["messages"];
   beforeSend?: (param: OnSendContentParams) => boolean;
   locale?: MarkdownFlowLocale;
   onClickCustomButtonAfterContent?: () => void;
@@ -372,6 +373,13 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   // tooltipMinLength,
 }) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
+  const mermaidMessages = useMemo(
+    () => ({
+      loading: localeTexts.mermaidLoadingText,
+      emptyChart: localeTexts.mermaidEmptyChartText,
+    }),
+    [localeTexts]
+  );
   const direction = getMarkdownFlowDirection(locale);
   const resolvedConfirmButtonText =
     confirmButtonText || localeTexts.confirmButtonText;
@@ -523,6 +531,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     resolvedDefaultSelectedValues
   );
   const componentRuntimeValuesRef = useRef<MarkdownComponentRuntimeValues>({
+    mermaidMessages,
     beforeSend,
     locale,
     onClickCustomButtonAfterContent,
@@ -538,6 +547,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   });
 
   componentRuntimeValuesRef.current = {
+    mermaidMessages,
     beforeSend,
     locale,
     onClickCustomButtonAfterContent,
@@ -607,7 +617,13 @@ const ContentRender: React.FC<ContentRenderProps> = ({
             componentRuntimeValuesRef.current.renderContent,
             chartContent
           );
-          return <MermaidChart chart={chartContent} frozen={frozen} />;
+          return (
+            <MermaidChart
+              chart={chartContent}
+              frozen={frozen}
+              messages={componentRuntimeValuesRef.current.mermaidMessages}
+            />
+          );
         }
 
         return (
@@ -713,7 +729,12 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
       if (seg.type === "mermaid") {
         return (
-          <MermaidChart key={key} chart={seg.value} frozen={!seg.complete} />
+          <MermaidChart
+            key={key}
+            chart={seg.value}
+            frozen={!seg.complete}
+            messages={mermaidMessages}
+          />
         );
       }
 
@@ -774,6 +795,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               key={index}
               chart={seg.value}
               frozen={!seg.complete}
+              messages={mermaidMessages}
             />
           );
         }

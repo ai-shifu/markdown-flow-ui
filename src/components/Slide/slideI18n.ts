@@ -16,6 +16,8 @@ export interface SlidePlayerLocaleTexts {
   pauseLabel: string;
   playAutoplayLabel: string;
   playLabel: string;
+  /** Display name of the spacebar in playback hints; does not change the key binding. */
+  playbackShortcutLabel: string;
   previousLabel: string;
   previousSubtitleLabel: string;
   screenModeLabel: string;

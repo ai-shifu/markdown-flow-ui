@@ -4,6 +4,18 @@ import { MARKDOWN_FLOW_LOCALES } from "../../lib/locale";
 import { getSlideLocaleTexts } from "./slideI18n";
 
 describe("getSlideLocaleTexts", () => {
+  it.each([
+    ["zh-CN", "空格键"],
+    ["ar-SA", "مفتاح المسافة"],
+    ["th-TH", "แป้นเว้นวรรค"],
+    ["fr-FR", "Barre d’espace"],
+    ["en-US", "Space"],
+  ])("localizes the playback key display name for %s", (locale, label) => {
+    expect(getSlideLocaleTexts(locale).playerTexts.playbackShortcutLabel).toBe(
+      label
+    );
+  });
+
   it("keeps every locale bundle complete against the Chinese source", () => {
     const chinese = getSlideLocaleTexts("zh-CN");
     for (const locale of MARKDOWN_FLOW_LOCALES) {

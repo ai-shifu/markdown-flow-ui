@@ -273,7 +273,6 @@ const PLAYER_SHORTCUT_LABELS = {
   next: "→",
   nextSubtitle: "Shift+→",
   notes: "N",
-  playback: "Space",
   previous: "←",
   previousSubtitle: "Shift+←",
   subtitle: "C",
@@ -467,7 +466,7 @@ const Player = ({
   );
   const playbackShortcutMetadata = getShortcutMetadata(
     toggleAriaLabel,
-    PLAYER_SHORTCUT_LABELS.playback,
+    playerTexts.playbackShortcutLabel,
     "Space"
   );
   const nextShortcutMetadata = getShortcutMetadata(

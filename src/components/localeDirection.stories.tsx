@@ -384,6 +384,114 @@ export const PlayerDirectionOverride: Story = {
   },
 };
 
+const PlaybackShortcutLocaleFixture = () => {
+  const [locale, setLocale] = useState<MarkdownFlowLocale>();
+  const [auto, setAuto] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [enabled, setEnabled] = useState(true);
+  const [override, setOverride] = useState(false);
+  return (
+    <div>
+      {(["zh-CN", "ar-SA", "th-TH", "fr-FR", "en-US", undefined] as const).map(
+        (value) => (
+          <button
+            type="button"
+            key={value ?? "default"}
+            onClick={() => setLocale(value)}
+          >
+            {value ?? "default"}
+          </button>
+        )
+      )}
+      <button type="button" onClick={() => setAuto(true)}>
+        Autoplay toggle
+      </button>
+      <button type="button" onClick={() => setOverride(true)}>
+        Override key name
+      </button>
+      <button type="button" onClick={() => setEnabled(false)}>
+        Disable key binding
+      </button>
+      <Player
+        locale={locale}
+        tabIndex={0}
+        defaultPlaying={false}
+        useAutoAdvanceToggle={auto}
+        isAutoAdvanceEnabled={playing}
+        onAutoAdvanceToggle={setPlaying}
+        enableKeyboardShortcuts={enabled}
+        texts={
+          override ? { playbackShortcutLabel: "Custom space key" } : undefined
+        }
+      />
+    </div>
+  );
+};
+
+export const LocalizedPlaybackShortcut: Story = {
+  render: () => <PlaybackShortcutLocaleFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const player = canvasElement.querySelector<HTMLElement>(".slide-player")!;
+    const toggle = player.querySelector(".slide-player__toggle")!;
+    for (const locale of [
+      "zh-CN",
+      "ar-SA",
+      "th-TH",
+      "fr-FR",
+      "en-US",
+      undefined,
+    ]) {
+      await userEvent.click(
+        canvas.getByRole("button", { name: locale ?? "default" })
+      );
+      const labels = getSlidePlayerTexts(locale);
+      expect(toggle).toHaveAttribute(
+        "title",
+        `${labels.playLabel} (${labels.playbackShortcutLabel})`
+      );
+      expect(toggle).toHaveAttribute("aria-keyshortcuts", "Space");
+    }
+    await userEvent.click(canvas.getByRole("button", { name: "th-TH" }));
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Autoplay toggle" })
+    );
+    const labels = getSlidePlayerTexts("th-TH");
+    expect(toggle).toHaveAttribute(
+      "title",
+      `${labels.playAutoplayLabel} (${labels.playbackShortcutLabel})`
+    );
+    player.focus();
+    await userEvent.keyboard(" ");
+    await waitFor(() =>
+      expect(toggle).toHaveAttribute(
+        "title",
+        `${labels.pauseAutoplayLabel} (${labels.playbackShortcutLabel})`
+      )
+    );
+    await userEvent.keyboard(" ");
+    await waitFor(() =>
+      expect(toggle).toHaveAttribute("aria-label", labels.playAutoplayLabel)
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Override key name" })
+    );
+    expect(toggle).toHaveAttribute(
+      "title",
+      `${labels.playAutoplayLabel} (Custom space key)`
+    );
+    expect(toggle).toHaveAttribute("aria-keyshortcuts", "Space");
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Disable key binding" })
+    );
+    expect(toggle).toHaveAttribute("title", labels.playAutoplayLabel);
+    expect(toggle).not.toHaveAttribute("aria-keyshortcuts");
+    player.focus();
+    await userEvent.keyboard(" ");
+    expect(toggle).toHaveAttribute("aria-label", labels.playAutoplayLabel);
+  },
+};
+
 const MobileLandscapePlayerFixture = () => {
   const [action, setAction] = useState("");
   return (

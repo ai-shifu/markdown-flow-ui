@@ -5,7 +5,9 @@ import type { MarkdownFlowLocale } from "../lib/locale";
 import ContentRender from "./ContentRender";
 import MarkdownFlowInput from "./ContentRender/MarkdownFlowInput";
 import MarkdownFlow from "./MarkdownFlow/MarkdownFlow";
-import MarkdownFlowEditor from "./MarkdownFlowEditor/MarkdownFlowEditor";
+import MarkdownFlowEditor, {
+  EditMode,
+} from "./MarkdownFlowEditor/MarkdownFlowEditor";
 import { getEditorLocaleMessages } from "./MarkdownFlowEditor/editorI18n";
 import Slide from "./Slide/Slide";
 import Player from "./Slide/Player";
@@ -423,6 +425,56 @@ export const EditorDialogCloseLabels: Story = {
         await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
       }
     }
+  },
+};
+
+export const InheritedEditorPortalDirection: Story = {
+  render: () => (
+    <div dir="rtl" data-testid="editor-host">
+      <MarkdownFlowEditor
+        content="Variable: {{learner}}"
+        editMode={EditMode.QuickEdit}
+        variables={[{ name: "learner" }]}
+      />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    const host = canvas.getByTestId("editor-host");
+    const root = host.querySelector(".markdown-flow-editor")!;
+    expect(root).not.toHaveAttribute("dir");
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: getEditorLocaleMessages().toolbarInsertImage,
+        exact: true,
+      })
+    );
+    const dialog = await page.findByRole("dialog");
+    await waitFor(() => expect(getComputedStyle(dialog).direction).toBe("rtl"));
+    host.dir = "ltr";
+    await waitFor(() => expect(getComputedStyle(dialog).direction).toBe("ltr"));
+    await userEvent.click(
+      within(dialog).getByRole("button", {
+        name: getEditorLocaleMessages().dialogCloseLabel,
+        exact: true,
+      })
+    );
+    await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
+    await userEvent.click(
+      host.querySelector<HTMLElement>(".tag-variable .tag-placeholder-content")!
+    );
+    const popover = await page.findByRole("dialog");
+    await waitFor(() =>
+      expect(getComputedStyle(popover).direction).toBe("ltr")
+    );
+    host.dir = "rtl";
+    await waitFor(() =>
+      expect(getComputedStyle(popover).direction).toBe("rtl")
+    );
+    expect(root).not.toHaveAttribute("dir");
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
   },
 };
 

@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+} from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { autocompletion } from "@codemirror/autocomplete";
 import { EditorView, ViewUpdate } from "@codemirror/view";
@@ -254,6 +261,33 @@ const Editor: React.FC<EditorProps> = ({
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const editorRootRef = useRef<HTMLDivElement>(null);
+  const [inheritedDirection, setInheritedDirection] = useState<"ltr" | "rtl">();
+  const portalDirection = direction ?? inheritedDirection;
+
+  useLayoutEffect(() => {
+    const root = editorRootRef.current;
+    if (direction || (!dialogOpen && !popoverOpen) || !root) return;
+    const updateDirection = () => {
+      setInheritedDirection(
+        getComputedStyle(root).direction === "rtl" ? "rtl" : "ltr"
+      );
+    };
+    updateDirection();
+    // Portals cannot inherit from the editor, so track its host while open.
+    const observer = new MutationObserver(updateDirection);
+    for (
+      let ancestor: HTMLElement | null = root;
+      ancestor;
+      ancestor = ancestor.parentElement
+    ) {
+      observer.observe(ancestor, {
+        attributes: true,
+        attributeFilter: ["dir", "class", "style"],
+      });
+    }
+    return () => observer.disconnect();
+  }, [direction, dialogOpen, popoverOpen]);
   const [popoverPosition, setPopoverPosition] =
     useState<PopoverPosition | null>(null);
   const [variables, setVariables] = useState<Variable[]>(
@@ -1056,6 +1090,7 @@ const Editor: React.FC<EditorProps> = ({
   return (
     <div
       className="markdown-flow-editor"
+      ref={editorRootRef}
       dir={direction}
       data-disabled={disabled ? "true" : undefined}
       aria-disabled={disabled}
@@ -1107,7 +1142,7 @@ const Editor: React.FC<EditorProps> = ({
           />
           {!disabled && (
             <CustomDialog
-              dir={direction}
+              dir={portalDirection}
               labels={{
                 closeButtonLabel: t("dialogCloseLabel"),
                 title:
@@ -1137,7 +1172,7 @@ const Editor: React.FC<EditorProps> = ({
           )}
 
           {!disabled && (
-            <CustomPopover dir={direction}>
+            <CustomPopover dir={portalDirection}>
               <VariableSelect
                 variables={variables}
                 systemVariables={systemVariables}

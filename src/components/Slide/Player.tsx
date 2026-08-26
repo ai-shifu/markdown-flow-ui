@@ -1901,7 +1901,7 @@ const Player = ({
         <>
           <MobilePlayerSettingsSheet
             container={settingsPortalContainer}
-            dir={direction}
+            dir={direction ?? shortcutDirection}
             lang={portalLanguage}
             labels={{
               closeSettings: playerTexts.closeSettingsLabel,

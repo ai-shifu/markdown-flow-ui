@@ -350,6 +350,50 @@ export const PlayerDirectionOverride: Story = {
   },
 };
 
+const InheritedPlayerSettingsFixture = () => {
+  const [direction, setDirection] = useState("rtl");
+  return (
+    <div dir={direction}>
+      <button
+        type="button"
+        onClick={() => setDirection(direction === "rtl" ? "ltr" : "rtl")}
+      >
+        Change host direction
+      </button>
+      <Player defaultPlaying={false} enableKeyboardShortcuts={false} />
+    </div>
+  );
+};
+
+export const InheritedPlayerSettingsDirection: Story = {
+  render: () => <InheritedPlayerSettingsFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    const player = canvasElement.querySelector(".slide-player")!;
+    expect(player).not.toHaveAttribute("dir");
+    player
+      .querySelector<HTMLButtonElement>(".slide-player__action--mobile-more")!
+      .click();
+    for (const direction of ["rtl", "ltr", "rtl"]) {
+      await waitFor(() => {
+        const dialog = page.getByRole("dialog");
+        expect(player.contains(dialog)).toBe(false);
+        expect(getComputedStyle(player).direction).toBe(direction);
+        expect(getComputedStyle(dialog).direction).toBe(direction);
+      });
+      // Simulate a host update while the modal keeps the page inert.
+      canvas.getByText("Change host direction").click();
+    }
+    await userEvent.click(
+      page.getByRole("button", {
+        name: getSlidePlayerTexts().closeSettingsLabel,
+      })
+    );
+    await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
+  },
+};
+
 const KeyboardDirectionFixture = () => {
   const [locale, setLocale] = useState<MarkdownFlowLocale | undefined>("ar-SA");
   const [dir, setDir] = useState<string>();

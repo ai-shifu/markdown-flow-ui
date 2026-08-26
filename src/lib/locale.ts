@@ -38,5 +38,8 @@ export const normalizeMarkdownFlowLocale = (
 
 export const getMarkdownFlowDirection = (
   locale?: string | null
-): MarkdownFlowDirection =>
-  normalizeMarkdownFlowLocale(locale) === "ar-SA" ? "rtl" : "ltr";
+): MarkdownFlowDirection | undefined => {
+  // An omitted locale must not override the embedding page's direction.
+  if (!locale) return undefined;
+  return normalizeMarkdownFlowLocale(locale) === "ar-SA" ? "rtl" : "ltr";
+};

@@ -43,6 +43,13 @@ describe("normalizeMarkdownFlowLocale", () => {
 });
 
 describe("getMarkdownFlowDirection", () => {
+  it.each([undefined, null, ""])(
+    "preserves inherited direction when locale is %s",
+    (locale) => {
+      expect(getMarkdownFlowDirection(locale)).toBeUndefined();
+    }
+  );
+
   it("uses RTL for Arabic and LTR for all other supported locales", () => {
     expect(getMarkdownFlowDirection("ar-SA")).toBe("rtl");
     expect(getMarkdownFlowDirection("ar_SA")).toBe("rtl");

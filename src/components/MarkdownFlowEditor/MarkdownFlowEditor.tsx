@@ -133,14 +133,17 @@ const Editor: React.FC<EditorProps> = ({
   systemVariables: initialSystemVariables,
   onChange,
   onBlur,
-  locale = DEFAULT_EDITOR_LOCALE,
+  locale,
   uploadProps,
   disabled = false,
   toolbarActionsRight,
   onReady,
 }) => {
   const { t, i18n } = useTranslation();
-  const resolvedLocale = normalizeMarkdownFlowLocale(locale || i18n.language);
+  const resolvedLocale = normalizeMarkdownFlowLocale(
+    locale ?? DEFAULT_EDITOR_LOCALE
+  );
+  const direction = getMarkdownFlowDirection(locale);
 
   useEffect(() => {
     if (i18n.language !== resolvedLocale) {
@@ -1053,7 +1056,7 @@ const Editor: React.FC<EditorProps> = ({
   return (
     <div
       className="markdown-flow-editor"
-      dir={getMarkdownFlowDirection(resolvedLocale)}
+      dir={direction}
       data-disabled={disabled ? "true" : undefined}
       aria-disabled={disabled}
     >
@@ -1104,7 +1107,7 @@ const Editor: React.FC<EditorProps> = ({
           />
           {!disabled && (
             <CustomDialog
-              dir={getMarkdownFlowDirection(resolvedLocale)}
+              dir={direction}
               labels={{
                 title:
                   selectedOption === SelectedOption.Image
@@ -1133,7 +1136,7 @@ const Editor: React.FC<EditorProps> = ({
           )}
 
           {!disabled && (
-            <CustomPopover dir={getMarkdownFlowDirection(resolvedLocale)}>
+            <CustomPopover dir={direction}>
               <VariableSelect
                 variables={variables}
                 systemVariables={systemVariables}

@@ -458,18 +458,18 @@ export const DirectionAwareMarkdownStructure: Story = {
         const style = getComputedStyle(list);
         expect(style.direction).toBe(rtl ? "rtl" : "ltr");
         expect(
-          parseFloat(rtl ? style.paddingRight : style.paddingLeft)
+          Number.parseFloat(rtl ? style.paddingRight : style.paddingLeft)
         ).toBeGreaterThan(0);
-        expect(parseFloat(rtl ? style.paddingLeft : style.paddingRight)).toBe(
-          0
-        );
+        expect(
+          Number.parseFloat(rtl ? style.paddingLeft : style.paddingRight)
+        ).toBe(0);
       }
       const quote = getComputedStyle(fixture.querySelector("blockquote")!);
       expect(
-        parseFloat(rtl ? quote.borderRightWidth : quote.borderLeftWidth)
+        Number.parseFloat(rtl ? quote.borderRightWidth : quote.borderLeftWidth)
       ).toBeGreaterThan(0);
       expect(
-        parseFloat(rtl ? quote.borderLeftWidth : quote.borderRightWidth)
+        Number.parseFloat(rtl ? quote.borderLeftWidth : quote.borderRightWidth)
       ).toBe(0);
     }
   },
@@ -582,7 +582,10 @@ export const DirectionAwareToolbarActions: Story = {
         rtl
           ? actionRect.left - toolbarRect.left
           : toolbarRect.right - actionRect.right
-      ).toBeCloseTo(parseFloat(getComputedStyle(toolbar).paddingInlineEnd), 0);
+      ).toBeCloseTo(
+        Number.parseFloat(getComputedStyle(toolbar).paddingInlineEnd),
+        0
+      );
       expect(
         rtl
           ? primaryRect.left - actionRect.right
@@ -659,8 +662,10 @@ const expectSearchAffordance = (input: HTMLInputElement) => {
       ? inputRect.right - iconRect.right
       : iconRect.left - inputRect.left
   ).toBeCloseTo(12, 0);
-  expect(parseFloat(style.paddingInlineStart)).toBeGreaterThanOrEqual(32);
-  expect(parseFloat(style.paddingInlineEnd)).toBeLessThan(32);
+  expect(Number.parseFloat(style.paddingInlineStart)).toBeGreaterThanOrEqual(
+    32
+  );
+  expect(Number.parseFloat(style.paddingInlineEnd)).toBeLessThan(32);
 };
 
 export const InheritedEditorPortalDirection: Story = {

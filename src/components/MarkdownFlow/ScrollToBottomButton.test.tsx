@@ -1,12 +1,15 @@
+// @vitest-environment jsdom
 import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import ScrollToBottomButton from "./ScrollToBottomButton";
 import ScrollToBottomControl from "./ScrollToBottomControl";
 
+afterEach(cleanup);
+
 describe("scroll-to-bottom placement", () => {
   it("composes host classes with the shared class utility", () => {
-    const markup = renderToStaticMarkup(
+    render(
       <ScrollToBottomButton
         visible
         ariaLabel="Latest content"
@@ -14,44 +17,56 @@ describe("scroll-to-bottom placement", () => {
       />
     );
 
-    expect(markup).toContain('class="scroll-to-bottom-btn host-scroll w-12"');
+    const button = screen.getByRole("button", { name: "Latest content" });
+    expect(button.className).toBe("scroll-to-bottom-btn host-scroll w-12");
     expect(ScrollToBottomButton.displayName).toBe("ScrollToBottomButton");
   });
 
   it("keeps a hidden control out of keyboard and screen-reader navigation", () => {
-    const markup = renderToStaticMarkup(
+    const { rerender } = render(
       <ScrollToBottomButton visible={false} ariaLabel="Latest content" />
     );
 
-    expect(markup).toContain('aria-label="Latest content"');
-    expect(markup).toContain('aria-hidden="true"');
-    expect(markup).toContain('tabindex="-1"');
+    expect(screen.queryByRole("button")).toBeNull();
+    const button = screen.getByRole("button", { hidden: true });
+    expect(button.getAttribute("aria-label")).toBe("Latest content");
+    expect(button.getAttribute("aria-hidden")).toBe("true");
+    expect(button.tabIndex).toBe(-1);
+    rerender(<ScrollToBottomButton visible ariaLabel="Latest content" />);
+    expect(screen.getByRole("button", { name: "Latest content" })).toBe(button);
+    expect(button.tabIndex).toBe(0);
   });
 
   it("defaults to bottom-center without changing the bottom offset", () => {
-    const markup = renderToStaticMarkup(
-      <ScrollToBottomButton visible ariaLabel="Scroll to bottom" />
-    );
+    render(<ScrollToBottomButton visible ariaLabel="Scroll to bottom" />);
 
-    expect(markup).toContain('data-placement="bottom-center"');
-    expect(markup).toContain("--scroll-to-bottom-bottom:20px");
-    expect(markup).toContain("--scroll-to-bottom-position:absolute");
+    const button = screen.getByRole("button", { name: "Scroll to bottom" });
+    expect(button.dataset.placement).toBe("bottom-center");
+    expect(button.style.getPropertyValue("--scroll-to-bottom-bottom")).toBe(
+      "20px"
+    );
+    expect(button.style.getPropertyValue("--scroll-to-bottom-position")).toBe(
+      "absolute"
+    );
   });
 
   it("uses the same default placement through the complete control", () => {
-    const markup = renderToStaticMarkup(
+    render(
       <ScrollToBottomControl
         viewportRef={{ current: null }}
         ariaLabel="Scroll to bottom"
       />
     );
 
-    expect(markup).toContain('data-placement="bottom-center"');
-    expect(markup).toContain("--scroll-to-bottom-bottom:20px");
+    const button = screen.getByRole("button", { hidden: true });
+    expect(button.dataset.placement).toBe("bottom-center");
+    expect(button.style.getPropertyValue("--scroll-to-bottom-bottom")).toBe(
+      "20px"
+    );
   });
 
   it("preserves explicit bottom-right placement and offsets", () => {
-    const markup = renderToStaticMarkup(
+    render(
       <ScrollToBottomButton
         visible
         ariaLabel="Scroll to bottom"
@@ -61,8 +76,40 @@ describe("scroll-to-bottom placement", () => {
       />
     );
 
-    expect(markup).toContain('data-placement="bottom-right"');
-    expect(markup).toContain("--scroll-to-bottom-bottom:32px");
-    expect(markup).toContain("--scroll-to-bottom-horizontal:24px");
+    const button = screen.getByRole("button", { name: "Scroll to bottom" });
+    expect(button.dataset.placement).toBe("bottom-right");
+    expect(button.style.getPropertyValue("--scroll-to-bottom-bottom")).toBe(
+      "32px"
+    );
+    expect(button.style.getPropertyValue("--scroll-to-bottom-horizontal")).toBe(
+      "24px"
+    );
+  });
+
+  it("renders into the host portal and preserves native click handling", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const onClick = vi.fn();
+    try {
+      const { unmount } = render(
+        <ScrollToBottomButton
+          visible
+          ariaLabel="Latest content"
+          portalTarget={host}
+          onClick={onClick}
+        />
+      );
+      const button = screen.getByRole("button", { name: "Latest content" });
+      expect(button.parentElement).toBe(host);
+      expect(button.querySelector("svg")?.getAttribute("aria-hidden")).toBe(
+        "true"
+      );
+      fireEvent.click(button);
+      expect(onClick).toHaveBeenCalledOnce();
+      unmount();
+      expect(host.childElementCount).toBe(0);
+    } finally {
+      host.remove();
+    }
   });
 });

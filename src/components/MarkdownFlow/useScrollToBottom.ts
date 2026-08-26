@@ -614,7 +614,7 @@ export function useScrollToBottom(
   useEffect(
     () => () => {
       clearProgrammaticFrame();
-      clearSettleTimer();
+      finishProgrammaticScroll();
       const targets = getResolvedTargets();
       const targetWindow = targets[0] ? getTargetWindow(targets[0]) : null;
       if (eventFrameRef.current !== null && targetWindow) {
@@ -624,7 +624,7 @@ export function useScrollToBottom(
         targetWindow.cancelAnimationFrame(contentFrameRef.current);
       }
     },
-    [clearProgrammaticFrame, clearSettleTimer, getResolvedTargets]
+    [clearProgrammaticFrame, finishProgrammaticScroll, getResolvedTargets]
   );
 
   const handleUserScrollToBottom = useCallback(() => {

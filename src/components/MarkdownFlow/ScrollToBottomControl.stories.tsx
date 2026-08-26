@@ -2,6 +2,7 @@ import React, { useCallback, useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, userEvent, waitFor } from "storybook/test";
 import ScrollToBottomControl from "./ScrollToBottomControl";
+import ScrollToBottomButton from "./ScrollToBottomButton";
 import useScrollToBottom, { type ScrollBehavior } from "./useScrollToBottom";
 import "./markdownFlow.css";
 
@@ -819,4 +820,97 @@ export const StableViewportRefRebindsAfterReplacement: Story = {
 export const StableExplicitRefRebindsAfterReplacement: Story = {
   ...StableViewportRefRebindsAfterReplacement,
   render: () => <CleanupFixture explicitTarget />,
+};
+
+const MidScrollTargetSwitchFixture = () => {
+  const firstRef = useRef<HTMLDivElement>(null);
+  const secondRef = useRef<HTMLDivElement>(null);
+  const [secondActive, setSecondActive] = useState(false);
+  const [height, setHeight] = useState(1600);
+  const scroll = useScrollToBottom(firstRef, {
+    scrollTarget: secondActive ? secondRef : firstRef,
+    pageScrollFallback: "never",
+  });
+  return (
+    <div style={{ position: "relative", maxWidth: 640 }}>
+      <button
+        type="button"
+        data-testid="switch-during-scroll"
+        onClick={() => {
+          scroll.scrollToBottom();
+          setSecondActive((current) => !current);
+        }}
+      >
+        Start scrolling and switch target
+      </button>
+      <button
+        type="button"
+        data-testid="grow-switched-target"
+        onClick={() => setHeight((current) => current + 200)}
+      >
+        Grow content
+      </button>
+      {[firstRef, secondRef].map((ref, index) => (
+        <div
+          key={index}
+          ref={ref}
+          data-testid={`switch-target-${index}`}
+          style={{ height: 240, overflowY: "auto", border: "1px solid #aaa" }}
+        >
+          <div style={{ height }}>
+            Scroll target {index + 1}
+            {secondActive === (index === 1) ? " (active)" : ""}
+          </div>
+        </div>
+      ))}
+      <ScrollToBottomButton
+        visible={scroll.showScrollToBottom}
+        ariaLabel="Latest content in active target"
+        onClick={scroll.handleUserScrollToBottom}
+      />
+    </div>
+  );
+};
+
+export const TargetSwitchDuringSmoothScroll: Story = {
+  render: () => <MidScrollTargetSwitchFixture />,
+  play: async ({ canvasElement }) => {
+    const button = canvasElement.querySelector<HTMLButtonElement>(
+      '[aria-label="Latest content in active target"]'
+    )!;
+    await waitFor(() => expect(button).toHaveAttribute("data-visible", "true"));
+    await userEvent.click(
+      canvasElement.querySelector<HTMLButtonElement>(
+        '[data-testid="switch-during-scroll"]'
+      )!
+    );
+    await waitFor(() => expect(button).toHaveAttribute("data-visible", "true"));
+    const target = canvasElement.querySelector<HTMLElement>(
+      '[data-testid="switch-target-1"]'
+    )!;
+    target.scrollTop = 100;
+    target.dispatchEvent(new Event("scroll"));
+    const previousHeight = target.scrollHeight;
+    await userEvent.click(
+      canvasElement.querySelector<HTMLButtonElement>(
+        '[data-testid="grow-switched-target"]'
+      )!
+    );
+    await waitFor(() =>
+      expect(target.scrollHeight).toBeGreaterThan(previousHeight)
+    );
+    // Wait for the observer frame to check that content growth does not resume follow.
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    );
+    expect(target.scrollTop).toBe(100);
+    expect(button).toHaveAttribute("data-visible", "true");
+    await userEvent.click(button);
+    await waitFor(() =>
+      expect(
+        target.scrollHeight - target.clientHeight - target.scrollTop
+      ).toBeLessThan(2)
+    );
+    expect(button).toHaveAttribute("data-visible", "false");
+  },
 };

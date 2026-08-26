@@ -436,7 +436,8 @@ export function useScrollToBottom(
     };
 
     const handleScroll = () => {
-      scheduleEvent(() => refresh());
+      // Record user intent before an observer or content frame can follow growth.
+      refresh();
     };
 
     const handleLayoutChange = () => {

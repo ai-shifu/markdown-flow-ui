@@ -452,6 +452,59 @@ export const StreamingGrowthRespectsUserPosition: Story = {
   },
 };
 
+export const UserScrollWinsSameFrameGrowth: Story = {
+  args: {
+    autoScrollOnInit: true,
+    initialSections: 6,
+    viewportHeight: 280,
+  },
+  play: async ({ canvasElement }) => {
+    const viewport = getViewport(canvasElement);
+    const button = getButton(canvasElement);
+    const growth = canvasElement.querySelector<HTMLElement>(
+      '[data-testid="async-growth"]'
+    )!;
+    await waitFor(() => expectAtBottom(viewport));
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+
+    const view = viewport.ownerDocument.defaultView!;
+    const originalRequestFrame = view.requestAnimationFrame;
+    const originalCancelFrame = view.cancelAnimationFrame;
+    const frames = new Map<number, FrameRequestCallback>();
+    let nextFrame = 1000000;
+    view.requestAnimationFrame = (callback) => {
+      frames.set(++nextFrame, callback);
+      return nextFrame;
+    };
+    view.cancelAnimationFrame = (id) => {
+      frames.delete(id);
+    };
+    try {
+      // Flush the queued layout frame before a later native scroll event can mask the race.
+      scrollToTop(viewport);
+      growth.appendChild(document.createTextNode("New streamed content"));
+      growth.style.height = "400px";
+      view.dispatchEvent(new Event("resize"));
+      const queued = Array.from(frames.values());
+      frames.clear();
+      queued.forEach((callback) => callback(performance.now()));
+      expect(viewport.scrollTop).toBe(0);
+    } finally {
+      view.requestAnimationFrame = originalRequestFrame;
+      view.cancelAnimationFrame = originalCancelFrame;
+    }
+
+    await waitFor(() => {
+      expect(viewport.scrollTop).toBe(0);
+      expect(button).toHaveAttribute("data-visible", "true");
+    });
+    await userEvent.click(button);
+    await waitFor(() => expectAtBottom(viewport));
+  },
+};
+
 export const ViewportResizeReevaluatesControl: Story = {
   args: {
     followNewContent: false,

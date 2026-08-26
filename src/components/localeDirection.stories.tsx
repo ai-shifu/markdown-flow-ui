@@ -1214,6 +1214,47 @@ export const DirectionAwareFootnotes: Story = {
   },
 };
 
+export const DirectionAwareFootnoteTarget: Story = {
+  render: () => (
+    <div dir="rtl">
+      {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
+        <ContentRender
+          key={locale ?? "inherit"}
+          locale={locale}
+          content={`Reference[^${locale ?? "inherit"}].\n\n[^${locale ?? "inherit"}]: Footnote text`}
+        />
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const view = canvasElement.ownerDocument.defaultView!;
+    const previousUrl = view.location.href;
+    try {
+      const renderers = canvasElement.querySelectorAll(".content-render");
+      expect(renderers).toHaveLength(3);
+      for (const renderer of renderers) {
+        const reference = renderer.querySelector<HTMLAnchorElement>(
+          "[data-footnote-ref]"
+        )!;
+        const note = renderer.querySelector(".footnotes ol > li")!;
+        view.location.hash = reference.hash;
+        await waitFor(() => {
+          expect(note.matches(":target")).toBe(true);
+          const highlight = view.getComputedStyle(note, "::before");
+          const rtl = view.getComputedStyle(note).direction === "rtl";
+          expect(highlight.borderTopWidth).toBe("2px");
+          expect(highlight.left).toBe(rtl ? "-8px" : "-24px");
+          expect(highlight.right).toBe(rtl ? "-24px" : "-8px");
+          expect(highlight.top).toBe("-8px");
+          expect(highlight.bottom).toBe("-8px");
+        });
+      }
+    } finally {
+      view.history.replaceState(view.history.state, "", previousUrl);
+    }
+  },
+};
+
 const wrappedChoices = [
   {
     id: "arabic",

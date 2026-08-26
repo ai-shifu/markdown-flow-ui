@@ -973,9 +973,9 @@
 .markdown-body .footnotes li:target::before {
   position: absolute;
   top: calc(var(--base-size-8) * -1);
-  right: calc(var(--base-size-8) * -1);
+  inset-inline-end: calc(var(--base-size-8) * -1);
   bottom: calc(var(--base-size-8) * -1);
-  left: calc(var(--base-size-24) * -1);
+  inset-inline-start: calc(var(--base-size-24) * -1);
   pointer-events: none;
   content: "";
   border: 2px solid var(--borderColor-accent-emphasis);

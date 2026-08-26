@@ -115,10 +115,19 @@ describe("scroll-to-bottom metrics", () => {
 
 describe("scroll target resolution", () => {
   const createTargetFixture = (localOverflow: boolean) => {
-    const page = { nodeType: 9 } as Document;
+    const overflowModes = new Map<HTMLElement, string>();
+    const page = {
+      nodeType: 9,
+      defaultView: {
+        getComputedStyle: (target: HTMLElement) => ({
+          overflowY: overflowModes.get(target) ?? "auto",
+        }),
+      },
+    } as unknown as Document;
     const parent = {
       clientHeight: 400,
       scrollHeight: 400,
+      ownerDocument: page,
     } as HTMLElement;
     const viewport = {
       clientHeight: 400,
@@ -127,12 +136,48 @@ describe("scroll target resolution", () => {
       scrollHeight: localOverflow ? 900 : 400,
     } as HTMLElement;
     return {
+      overflowModes,
       page,
       parent,
       viewport,
       viewportRef: { current: viewport },
     };
   };
+
+  it.each(["visible", "clip"])(
+    "does not let a parent with overflow %s suppress document fallback",
+    (overflow) => {
+      const fixture = createTargetFixture(false);
+      Object.defineProperty(fixture.parent, "scrollHeight", { value: 1200 });
+      fixture.overflowModes.set(fixture.parent, overflow);
+
+      expect(resolveScrollTargets(fixture.viewportRef, undefined)).toEqual([
+        fixture.viewport,
+        fixture.page,
+      ]);
+    }
+  );
+
+  it("preserves programmatically scrollable hidden parents", () => {
+    const fixture = createTargetFixture(false);
+    Object.defineProperty(fixture.parent, "scrollHeight", { value: 1200 });
+    fixture.overflowModes.set(fixture.parent, "hidden");
+
+    expect(resolveScrollTargets(fixture.viewportRef, undefined)).toEqual([
+      fixture.viewport,
+      fixture.parent,
+    ]);
+  });
+
+  it("ignores visible overflow on an inferred viewport as well", () => {
+    const fixture = createTargetFixture(true);
+    fixture.overflowModes.set(fixture.viewport, "visible");
+    fixture.overflowModes.set(fixture.parent, "visible");
+
+    expect(resolveScrollTargets(fixture.viewportRef, undefined)).toEqual([
+      fixture.page,
+    ]);
+  });
 
   it("uses the viewport and parent without page fallback when local content scrolls", () => {
     const fixture = createTargetFixture(true);

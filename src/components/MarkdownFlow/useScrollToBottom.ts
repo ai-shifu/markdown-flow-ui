@@ -164,6 +164,12 @@ const hasScrollableContent = (target: ScrollTarget) => {
   return scrollHeight > clientHeight + 1;
 };
 
+const permitsElementScrolling = (target: HTMLElement) => {
+  const overflowY =
+    target.ownerDocument.defaultView?.getComputedStyle(target).overflowY;
+  return ["auto", "scroll", "hidden", "overlay"].includes(overflowY ?? "");
+};
+
 export const resolveScrollTargets = (
   viewportRef: RefObject<HTMLElement | null> | undefined,
   explicitTarget: ScrollTargetInput | undefined,
@@ -179,8 +185,13 @@ export const resolveScrollTargets = (
       : [];
   }
 
-  const localTargets: ScrollTarget[] = [viewport];
-  if (viewport.parentElement) localTargets.push(viewport.parentElement);
+  const localTargets: ScrollTarget[] = [
+    viewport,
+    viewport.parentElement,
+  ].filter(
+    (target): target is HTMLElement =>
+      target !== null && permitsElementScrolling(target)
+  );
 
   const shouldUsePageScroll =
     pageScrollFallback === "always" ||

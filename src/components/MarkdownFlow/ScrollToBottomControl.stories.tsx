@@ -550,6 +550,15 @@ export const DocumentFallback: Story = {
   },
 };
 
+export const VisibleOverflowParentUsesDocumentFallback: Story = {
+  ...DocumentFallback,
+  render: () => (
+    <div style={{ height: 200, overflowY: "visible" }}>
+      <PageFallbackFixture />
+    </div>
+  ),
+};
+
 export const ReducedMotionUsesImmediateScroll: Story = {
   args: {
     initialSections: 8,

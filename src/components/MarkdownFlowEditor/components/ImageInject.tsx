@@ -329,6 +329,7 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
             <Input
               type="text"
               placeholder={t("imageUrlPlaceholder", "Please enter image URL")}
+              dir="ltr"
               value={tempUrl}
               onChange={handleUrlChange}
               autoComplete="off"

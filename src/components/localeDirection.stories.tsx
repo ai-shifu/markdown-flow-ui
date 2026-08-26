@@ -759,6 +759,61 @@ export const EditorDialogCloseLabels: Story = {
   },
 };
 
+export const EditorUrlDirection: Story = {
+  render: () => <EditorDialogLocaleFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    const url = "https://example.com/path?a=1&b=2#part";
+    for (const locale of ["ar-SA", "th-TH"] as const) {
+      if (locale === "th-TH") {
+        await userEvent.click(canvas.getByRole("button", { name: "Thai" }));
+      }
+      const texts = getEditorLocaleMessages(locale);
+      for (const [trigger, title, placeholder] of [
+        [
+          texts.toolbarInsertImage,
+          texts.dialogTitleImage,
+          texts.imageUrlPlaceholder,
+        ],
+        [
+          texts.toolbarInsertVideo,
+          texts.dialogTitleVideo,
+          texts.videoUrlPlaceholder,
+        ],
+      ]) {
+        await userEvent.click(canvas.getByRole("button", { name: trigger }));
+        const dialog = await page.findByRole("dialog", { name: title });
+        const input = within(dialog).getByPlaceholderText(
+          placeholder
+        ) as HTMLInputElement;
+        expect(getComputedStyle(input).direction).toBe("ltr");
+        const direction = locale === "ar-SA" ? "rtl" : "ltr";
+        expect(getComputedStyle(dialog).direction).toBe(direction);
+        for (const label of dialog.querySelectorAll("label")) {
+          expect(getComputedStyle(label).direction).toBe(direction);
+        }
+        const titleInput = within(dialog).queryByPlaceholderText(
+          texts.videoTitlePlaceholder
+        );
+        if (titleInput)
+          expect(getComputedStyle(titleInput).direction).toBe(direction);
+        await userEvent.type(input, url);
+        expect(input).toHaveValue(url);
+        const queryValueStart = url.indexOf("1&");
+        input.setSelectionRange(queryValueStart, queryValueStart + 1);
+        await userEvent.keyboard("7");
+        expect(input).toHaveValue(url.replace("a=1", "a=7"));
+        expect(input.selectionStart).toBe(queryValueStart + 1);
+        await userEvent.click(
+          within(dialog).getByRole("button", { name: texts.dialogCloseLabel })
+        );
+        await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
+      }
+    }
+  },
+};
+
 const expectSearchAffordance = (input: HTMLInputElement) => {
   const style = getComputedStyle(input);
   const inputRect = input.getBoundingClientRect();

@@ -127,6 +127,7 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
           <Input
             type="text"
             value={inputUrl}
+            dir="ltr"
             onChange={(e) => setInputUrl(e.target.value?.trim())}
             placeholder={t(
               "videoUrlPlaceholder",

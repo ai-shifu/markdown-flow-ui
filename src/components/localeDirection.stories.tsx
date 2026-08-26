@@ -205,6 +205,55 @@ export const ArabicCodeBlocks: Story = {
   },
 };
 
+const TableDirectionFixture = () => {
+  const [locale, setLocale] = useState<MarkdownFlowLocale>();
+  return (
+    <div dir="rtl">
+      <button onClick={() => setLocale("ar-SA")}>Arabic</button>
+      <button onClick={() => setLocale("th-TH")}>Thai</button>
+      <ContentRender
+        locale={locale}
+        content={
+          "| افتراضي | يسار | وسط | يمين |\n| --- | :--- | :---: | ---: |\n| نص | نص | نص | نص |"
+        }
+      />
+    </div>
+  );
+};
+
+export const DirectionAwareTables: Story = {
+  render: () => <TableDirectionFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const locale of [undefined, "ar-SA", "th-TH"] as const) {
+      if (locale) {
+        await userEvent.click(
+          canvas.getByRole("button", {
+            name: locale === "ar-SA" ? "Arabic" : "Thai",
+            exact: true,
+          })
+        );
+      }
+      const rows = canvasElement.querySelectorAll("tr");
+      expect(rows).toHaveLength(2);
+      for (const row of rows) {
+        const cells = row.querySelectorAll("th, td");
+        expect(cells).toHaveLength(4);
+        for (const [index, alignment] of [
+          "start",
+          "left",
+          "center",
+          "right",
+        ].entries()) {
+          const style = getComputedStyle(cells[index]);
+          expect(style.direction).toBe(locale === "th-TH" ? "ltr" : "rtl");
+          expect(style.textAlign).toBe(alignment);
+        }
+      }
+    }
+  },
+};
+
 export const StandaloneArabicInput: Story = {
   render: () => (
     <div dir="ltr" style={{ width: 360 }}>

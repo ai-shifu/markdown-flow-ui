@@ -84,7 +84,7 @@
 .content-render-th,
 .content-render-td {
   border: 1px solid #d1d5db;
-  text-align: left;
+  text-align: start;
 }
 
 .content-render-th {

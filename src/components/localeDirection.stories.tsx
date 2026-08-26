@@ -496,6 +496,66 @@ export const StandaloneArabicInput: Story = {
   },
 };
 
+const ToolbarDirectionFixture = () => {
+  const [lastAction, setLastAction] = useState("");
+  return (
+    <div dir="rtl" style={{ width: 900, maxWidth: "100%" }}>
+      <output data-testid="toolbar-action-result">{lastAction}</output>
+      {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
+        <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
+          <MarkdownFlowEditor
+            locale={locale}
+            toolbarActionsRight={[
+              {
+                key: "custom",
+                label: "Custom action",
+                onClick: () => setLastAction(locale ?? "inherit"),
+              },
+            ]}
+          />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export const DirectionAwareToolbarActions: Story = {
+  render: () => <ToolbarDirectionFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const locale of ["ar-SA", "th-TH", "inherit"]) {
+      const fixture = canvas.getByTestId(locale);
+      const toolbar = fixture.querySelector(".markdown-flow-editor-toolbar")!;
+      const actions = fixture.querySelector(
+        ".markdown-flow-editor-toolbar-right-wrapper"
+      )!;
+      const primary = fixture.querySelector(
+        ".markdown-flow-editor-toolbar-left"
+      )!;
+      const toolbarRect = toolbar.getBoundingClientRect();
+      const actionRect = actions.getBoundingClientRect();
+      const primaryRect = primary.getBoundingClientRect();
+      const rtl = locale !== "th-TH";
+      expect(
+        rtl
+          ? actionRect.left - toolbarRect.left
+          : toolbarRect.right - actionRect.right
+      ).toBeCloseTo(parseFloat(getComputedStyle(toolbar).paddingInlineEnd), 0);
+      expect(
+        rtl
+          ? primaryRect.left - actionRect.right
+          : actionRect.left - primaryRect.right
+      ).toBeGreaterThan(20);
+      await userEvent.click(
+        within(fixture).getByRole("button", { name: "Custom action" })
+      );
+      expect(canvas.getByTestId("toolbar-action-result")).toHaveTextContent(
+        locale
+      );
+    }
+  },
+};
+
 const EditorDialogLocaleFixture = () => {
   const [locale, setLocale] = useState<MarkdownFlowLocale>("ar-SA");
   return (

@@ -247,7 +247,7 @@
 }
 
 .markdown-flow-editor-toolbar-right-wrapper {
-  margin-left: auto;
+  margin-inline-start: auto;
   display: flex;
   align-items: center;
 }

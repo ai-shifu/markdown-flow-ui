@@ -99,6 +99,7 @@ For an existing streaming layout, use the complete control instead of
 reimplementing visibility and follow state:
 
 ```tsx
+import { useRef } from "react";
 import { ScrollToBottomControl } from "markdown-flow-ui/scroll";
 
 const viewportRef = useRef<HTMLDivElement>(null);

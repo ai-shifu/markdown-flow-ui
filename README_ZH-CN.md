@@ -211,6 +211,7 @@ interface ScrollableMarkdownFlowProps extends MarkdownFlowProps {
 已有流式内容布局需要滚动按钮时，直接使用完整控制组件，不要在宿主重复实现显隐和跟随状态：
 
 ```tsx
+import { useRef } from "react";
 import { ScrollToBottomControl } from "markdown-flow-ui/scroll";
 
 const viewportRef = useRef<HTMLDivElement>(null);

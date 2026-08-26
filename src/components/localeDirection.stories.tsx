@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { expect, userEvent, waitFor, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import type { MarkdownFlowLocale } from "../lib/locale";
 import ContentRender from "./ContentRender";
 import MarkdownFlowInput from "./ContentRender/MarkdownFlowInput";
@@ -483,6 +483,67 @@ export const DirectionAwareMarkdownStructure: Story = {
         0
       );
       expect(Number.parseFloat(quote[`border${end}Width`])).toBe(0);
+    }
+  },
+};
+
+const wrappedChoices = [
+  {
+    id: "arabic",
+    locale: "ar-SA",
+    label:
+      "أرغب في تعلم كيفية تصميم تجربة تعليمية تفاعلية تناسب احتياجات المتعلم",
+  },
+  {
+    id: "thai",
+    locale: "th-TH",
+    label:
+      "ฉันต้องการเรียนรู้วิธีออกแบบประสบการณ์การเรียนรู้ที่เหมาะกับผู้เรียนแต่ละคน",
+  },
+  {
+    id: "inherited",
+    locale: undefined,
+    label: "A longer choice that wraps across several lines in a narrow layout",
+  },
+] as const;
+const onWrappedChoiceSend = fn();
+
+export const DirectionAwareWrappedChoices: Story = {
+  render: () => (
+    <div dir="rtl" style={{ width: 180 }}>
+      {wrappedChoices.map(({ id, locale, label }) => (
+        <div key={id} data-testid={id}>
+          <ContentRender
+            locale={locale}
+            content={`?[%{{choice}}${label}|Short]`}
+            onSend={onWrappedChoiceSend}
+          />
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    onWrappedChoiceSend.mockClear();
+    const canvas = within(canvasElement);
+    for (const { id, locale, label } of wrappedChoices) {
+      const button = within(canvas.getByTestId(id)).getByRole("button", {
+        name: label,
+      });
+      const style = getComputedStyle(button);
+      expect(style.direction).toBe(locale === "th-TH" ? "ltr" : "rtl");
+      expect(style.textAlign).toBe("start");
+      const range = canvasElement.ownerDocument.createRange();
+      range.selectNodeContents(button);
+      const lines = Array.from(range.getClientRects());
+      expect(
+        new Set(lines.map((line) => Math.round(line.top))).size
+      ).toBeGreaterThan(1);
+      expect(button.getBoundingClientRect().width).toBeLessThanOrEqual(180);
+      await userEvent.click(button);
+      expect(onWrappedChoiceSend).toHaveBeenLastCalledWith({
+        variableName: "choice",
+        buttonText: label,
+      });
     }
   },
 };

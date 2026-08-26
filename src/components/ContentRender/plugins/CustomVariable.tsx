@@ -173,7 +173,7 @@ const SingleSelectSection = ({
             size="sm"
             onClick={() => handleButtonClick(buttonValue)}
             className={cn(
-              "max-w-full shrink whitespace-normal break-words text-left leading-5 h-auto min-h-8 px-3 py-1.5",
+              "max-w-full shrink whitespace-normal break-words text-start leading-5 h-auto min-h-8 px-3 py-1.5",
               "hover:bg-gray-200",
               resolvedDefaultButtonText === text && "select"
             )}

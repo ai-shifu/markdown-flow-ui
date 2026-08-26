@@ -167,7 +167,7 @@ const VideoInject: React.FC<VideoInjectProps> = ({ value, onSelect }) => {
         {embedUrl ? (
           <iframe
             ref={iframeRef}
-            title="video-preview"
+            title={t("videoPreviewTitle")}
             className="w-full h-full border-0"
             src={embedUrl}
             allowFullScreen

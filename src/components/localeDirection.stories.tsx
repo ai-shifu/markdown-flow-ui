@@ -11,7 +11,7 @@ import MarkdownFlowEditor, {
 import { getEditorLocaleMessages } from "./MarkdownFlowEditor/editorI18n";
 import Slide from "./Slide/Slide";
 import Player from "./Slide/Player";
-import type { Element } from "./Slide/types";
+import type { Element as SlideElement } from "./Slide/types";
 import { getSlidePlayerTexts } from "./Slide/slideI18n";
 import IframeSandbox from "./ContentRender/IframeSandbox";
 import { getContentRenderLocaleTexts } from "./ContentRender/contentRenderI18n";
@@ -99,17 +99,11 @@ export const InheritedAndExplicitDirection: Story = {
       });
     };
     await checkDirection("rtl", false);
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Arabic", exact: true })
-    );
+    await userEvent.click(canvas.getByRole("button", { name: "Arabic" }));
     await checkDirection("rtl", true);
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Thai", exact: true })
-    );
+    await userEvent.click(canvas.getByRole("button", { name: "Thai" }));
     await checkDirection("ltr", true);
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Inherit", exact: true })
-    );
+    await userEvent.click(canvas.getByRole("button", { name: "Inherit" }));
     await checkDirection("rtl", false);
   },
 };
@@ -143,9 +137,7 @@ export const PlayerDirectionOverride: Story = {
     const page = within(canvasElement.ownerDocument.body);
     const labels = getSlidePlayerTexts("ar-SA");
     for (const dir of ["ltr", "rtl", "auto"]) {
-      await userEvent.click(
-        canvas.getByRole("button", { name: dir, exact: true })
-      );
+      await userEvent.click(canvas.getByRole("button", { name: dir }));
       expect(canvasElement.querySelector(".slide-player")).toHaveAttribute(
         "dir",
         dir
@@ -157,9 +149,7 @@ export const PlayerDirectionOverride: Story = {
         [labels.previousLabel, "previous"],
         [labels.nextLabel, "next"],
       ]) {
-        await userEvent.click(
-          canvas.getByRole("button", { name, exact: true })
-        );
+        await userEvent.click(canvas.getByRole("button", { name }));
         expect(canvas.getByTestId("navigation-result")).toHaveTextContent(
           action
         );
@@ -179,7 +169,7 @@ export const PlayerDirectionOverride: Story = {
   },
 };
 
-const slideDirectionElements: { id: string; element: Element }[] = [
+const slideDirectionElements: { id: string; element: SlideElement }[] = [
   {
     id: "markdown-slide",
     element: { type: "text", content: "Default slide content" },
@@ -303,9 +293,7 @@ export const MermaidLocaleMessages: Story = {
         )
       ).toHaveLength(2)
     );
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Thai", exact: true })
-    );
+    await userEvent.click(canvas.getByRole("button", { name: "Thai" }));
     await waitFor(() =>
       expect(
         canvas.getAllByText(
@@ -423,7 +411,6 @@ export const DirectionAwareTables: Story = {
         await userEvent.click(
           canvas.getByRole("button", {
             name: locale === "ar-SA" ? "Arabic" : "Thai",
-            exact: true,
           })
         );
       }
@@ -689,7 +676,6 @@ const EditorDialogLocaleFixture = () => {
 const expectDialogClosePlacement = (dialog: HTMLElement, label: string) => {
   const close = within(dialog).getByRole("button", {
     name: label,
-    exact: true,
   });
   expect(getComputedStyle(close).insetInlineEnd).toBe("16px");
   const title = within(dialog).getByRole("heading");
@@ -710,30 +696,25 @@ export const EditorDialogCloseLabels: Story = {
     const page = within(canvasElement.ownerDocument.body);
     for (const locale of ["ar-SA", "th-TH"] as const) {
       if (locale === "th-TH") {
-        await userEvent.click(
-          canvas.getByRole("button", { name: "Thai", exact: true })
-        );
+        await userEvent.click(canvas.getByRole("button", { name: "Thai" }));
       }
       const texts = getEditorLocaleMessages(locale);
       for (const [trigger, title] of [
         [texts.toolbarInsertImage, texts.dialogTitleImage],
         [texts.toolbarInsertVideo, texts.dialogTitleVideo],
       ]) {
-        await userEvent.click(
-          canvas.getByRole("button", { name: trigger, exact: true })
-        );
+        await userEvent.click(canvas.getByRole("button", { name: trigger }));
         const dialog = await page.findByRole("dialog", { name: title });
         expect(getComputedStyle(dialog).direction).toBe(
           locale === "ar-SA" ? "rtl" : "ltr"
         );
         expectDialogClosePlacement(dialog, texts.dialogCloseLabel);
         expect(
-          within(dialog).queryByRole("button", { name: "Close", exact: true })
+          within(dialog).queryByRole("button", { name: "Close" })
         ).toBeNull();
         await userEvent.click(
           within(dialog).getByRole("button", {
             name: texts.dialogCloseLabel,
-            exact: true,
           })
         );
         await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
@@ -778,7 +759,6 @@ export const InheritedEditorPortalDirection: Story = {
     await userEvent.click(
       canvas.getByRole("button", {
         name: getEditorLocaleMessages().toolbarInsertImage,
-        exact: true,
       })
     );
     const dialog = await page.findByRole("dialog");
@@ -796,7 +776,6 @@ export const InheritedEditorPortalDirection: Story = {
     await userEvent.click(
       within(dialog).getByRole("button", {
         name: getEditorLocaleMessages().dialogCloseLabel,
-        exact: true,
       })
     );
     await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
@@ -934,13 +913,9 @@ export const SandboxLocaleDirection: Story = {
       });
     };
     await checkLoadingDirection("ar-SA", "rtl");
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Thai", exact: true })
-    );
+    await userEvent.click(canvas.getByRole("button", { name: "Thai" }));
     await checkLoadingDirection("th-TH", "ltr");
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Arabic", exact: true })
-    );
+    await userEvent.click(canvas.getByRole("button", { name: "Arabic" }));
     await checkLoadingDirection("ar-SA", "rtl");
     await userEvent.click(
       canvas.getByRole("button", { name: "Render content" })

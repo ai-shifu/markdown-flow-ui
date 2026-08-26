@@ -3006,7 +3006,6 @@ export const ArabicFullscreenBackIcon: Story = {
     await userEvent.click(
       page.getByRole("radio", {
         name: labels.playerTexts.fullscreenLabel,
-        exact: true,
       })
     );
     const back = await waitFor(() => {

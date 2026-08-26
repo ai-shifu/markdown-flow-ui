@@ -23,7 +23,6 @@ it.each([undefined, "إغلاق", "ปิด", "Dismiss settings"])(
     fireEvent.click(
       screen.getByRole("button", {
         name: closeButtonLabel ?? "Close",
-        exact: true,
       })
     );
     expect(onOpenChange).toHaveBeenCalledWith(false);

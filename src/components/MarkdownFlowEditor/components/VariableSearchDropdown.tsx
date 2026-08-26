@@ -64,8 +64,10 @@ const VariableSearchDropdown: React.FC<VariableSearchDropdownProps> = ({
       setHighlightIndex(-1);
       return;
     }
+    const view = anchorElement?.ownerDocument.defaultView;
+    if (!view) return;
     updatePosition();
-    const focusTimer = window.setTimeout(() => {
+    const focusTimer = view.setTimeout(() => {
       inputRef.current?.focus();
     }, 0);
     const handleClick = (event: MouseEvent) => {
@@ -80,15 +82,15 @@ const VariableSearchDropdown: React.FC<VariableSearchDropdownProps> = ({
       }
     };
     const handleScroll = () => updatePosition();
-    window.addEventListener("mousedown", handleClick);
-    window.addEventListener("scroll", handleScroll, true);
-    window.addEventListener("resize", handleScroll);
+    view.addEventListener("mousedown", handleClick);
+    view.addEventListener("scroll", handleScroll, true);
+    view.addEventListener("resize", handleScroll);
 
     return () => {
-      window.clearTimeout(focusTimer);
-      window.removeEventListener("mousedown", handleClick);
-      window.removeEventListener("scroll", handleScroll, true);
-      window.removeEventListener("resize", handleScroll);
+      view.clearTimeout(focusTimer);
+      view.removeEventListener("mousedown", handleClick);
+      view.removeEventListener("scroll", handleScroll, true);
+      view.removeEventListener("resize", handleScroll);
     };
   }, [open, anchorElement, onClose, updatePosition]);
 

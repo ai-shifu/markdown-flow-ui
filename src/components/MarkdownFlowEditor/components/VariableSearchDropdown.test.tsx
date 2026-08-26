@@ -59,3 +59,69 @@ it.each([
     }
   }
 );
+
+it("uses the anchor window for repositioning, outside clicks, and cleanup", () => {
+  const iframe = document.createElement("iframe");
+  document.body.appendChild(iframe);
+  const doc = iframe.contentDocument!;
+  const view = doc.defaultView!;
+  const anchor = doc.createElement("button");
+  const host = doc.createElement("div");
+  doc.body.append(anchor, host);
+  let top = 10;
+  const measure = vi
+    .spyOn(anchor, "getBoundingClientRect")
+    .mockImplementation(() => new DOMRect(40, top, 20, 20));
+  const add = vi.spyOn(view, "addEventListener");
+  const remove = vi.spyOn(view, "removeEventListener");
+  const onClose = vi.fn();
+  const { container, unmount } = render(
+    <VariableSearchDropdown
+      open
+      anchorElement={anchor}
+      onClose={onClose}
+      onSelect={vi.fn()}
+      variables={[]}
+      systemVariables={[]}
+      labels={{
+        searchPlaceholder: "Search",
+        systemLabel: "System",
+        customLabel: "Custom",
+        emptyLabel: "Empty",
+      }}
+    />,
+    { container: host, baseElement: doc.body }
+  );
+  try {
+    const panel = container.firstElementChild as HTMLElement;
+    expect(panel.style.top).toBe("38px");
+    top = 50;
+    fireEvent.resize(view);
+    expect(panel.style.top).toBe("78px");
+    top = 80;
+    fireEvent.scroll(anchor);
+    expect(panel.style.top).toBe("108px");
+    fireEvent.mouseDown(anchor);
+    fireEvent.mouseDown(panel);
+    fireEvent.mouseDown(window);
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.mouseDown(doc.body);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    unmount();
+    for (const type of ["mousedown", "scroll", "resize"]) {
+      const registration = add.mock.calls.find(([name]) => name === type);
+      expect(registration).toBeDefined();
+      expect(remove.mock.calls).toContainEqual(registration);
+    }
+    measure.mockClear();
+    onClose.mockClear();
+    fireEvent.resize(view);
+    fireEvent.scroll(anchor);
+    fireEvent.mouseDown(doc.body);
+    expect(measure).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  } finally {
+    unmount();
+    iframe.remove();
+  }
+});

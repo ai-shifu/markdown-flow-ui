@@ -147,9 +147,11 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const sandboxLanguage = useDetachedLanguage(containerRef, language);
   const { resolvedDirection } = useResolvedDirection(containerRef, direction);
+  const markdownContainerRef = useRef<HTMLDivElement>(null);
   const markdownContentRef = useRef<HTMLElement>(null);
   const setMarkdownContentContainerRef = useCallback(
     (node: HTMLDivElement | null) => {
+      markdownContainerRef.current = node;
       markdownContentRef.current =
         node?.querySelector<HTMLElement>(".content-render") ?? null;
     },
@@ -254,6 +256,15 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       window.location.origin
     );
   }, []);
+
+  useEffect(() => {
+    if (type !== "markdown" || mode !== "blackboard") return;
+    const container = markdownContainerRef.current;
+    if (!container) return;
+    const handleClick = () => emitSandboxInteraction("click");
+    container.addEventListener("click", handleClick);
+    return () => container.removeEventListener("click", handleClick);
+  }, [emitSandboxInteraction, mode, type]);
 
   const clearDeferredRenderTimer = () => {
     if (deferRenderTimerRef.current === null) return;
@@ -933,10 +944,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
         </button>
       )}
       {mode === "blackboard" && type === "markdown" ? (
-        <div
-          ref={setMarkdownContentContainerRef}
-          onClick={() => emitSandboxInteraction("click")}
-        >
+        <div ref={setMarkdownContentContainerRef}>
           <ContentRender
             content={content}
             locale={locale}

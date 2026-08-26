@@ -46,6 +46,7 @@ import {
 } from "./utils";
 import ImgPlaceholder from "./plugins/ImgPlaceholder";
 import VideoPlaceholder from "./plugins/VideoPlaceholder";
+import { mediaPlaceholderLabels } from "./plugins/mediaPlaceholderLabels";
 import VariablePlaceholder from "./plugins/VariablePlaceholder";
 import SyntaxHighlighter from "./plugins/SyntaxHighlighter";
 // import createFixedTextPlaceholder from "./plugins/FixedTextPlaceholder";
@@ -951,6 +952,17 @@ const Editor: React.FC<EditorProps> = ({
     };
   }, [handleTagClick]);
 
+  const imagePlaceholderTitle = t("imageDefaultTitle");
+  const videoPlaceholderTitle = t("videoDefaultTitle");
+  const mediaPlaceholderLabelsExtension = useMemo(
+    () =>
+      mediaPlaceholderLabels.of({
+        image: imagePlaceholderTitle,
+        video: videoPlaceholderTitle,
+      }),
+    [imagePlaceholderTitle, videoPlaceholderTitle]
+  );
+
   const editorExtensions = useMemo(() => {
     const extensions = [
       EditorView.lineWrapping,
@@ -965,6 +977,7 @@ const Editor: React.FC<EditorProps> = ({
 
     if (editMode === EditMode.QuickEdit) {
       extensions.push(
+        mediaPlaceholderLabelsExtension,
         ImgPlaceholder,
         VideoPlaceholder,
         VariablePlaceholder
@@ -980,7 +993,13 @@ const Editor: React.FC<EditorProps> = ({
     );
 
     return extensions;
-  }, [disabled, editMode, slashCommandsExtension, handleEditorUpdate]);
+  }, [
+    disabled,
+    editMode,
+    slashCommandsExtension,
+    handleEditorUpdate,
+    mediaPlaceholderLabelsExtension,
+  ]);
 
   const handleContentChange = useCallback(
     (value: string) => {

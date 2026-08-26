@@ -798,6 +798,91 @@ export const InheritedEditorPortalDirection: Story = {
   },
 };
 
+const mediaPlaceholderSource = [
+  '<img src="https://example.com/unnamed.png">',
+  "![](https://example.com/markdown.png)",
+  '=== <img src="https://example.com/fixed.png"> ===',
+  '<img src="https://example.com/alt.png" alt="Authored image alt">',
+  '<img src="https://example.com/title.png" title="Authored image title">',
+  "![Authored Markdown alt](https://example.com/authored.png)",
+  '<iframe data-tag="video" src="https://example.com/video"></iframe>',
+  '=== <iframe data-tag="video" src="https://example.com/fixed-video"></iframe> ===',
+  '<iframe data-tag="video" data-title="Authored &amp; video" src="https://example.com/authored-video"></iframe>',
+].join("\n");
+const mediaPlaceholderLocales = ["ar-SA", "th-TH", "zh-CN", "en-US"] as const;
+
+const MediaPlaceholderLocaleFixture = () => {
+  const [locale, setLocale] = useState<MarkdownFlowLocale>("ar-SA");
+  const [source, setSource] = useState("");
+  return (
+    <div>
+      {mediaPlaceholderLocales.map((value) => (
+        <button type="button" key={value} onClick={() => setLocale(value)}>
+          {value}
+        </button>
+      ))}
+      <MarkdownFlowEditor
+        locale={locale}
+        editMode={EditMode.QuickEdit}
+        content={mediaPlaceholderSource}
+        toolbarActionsRight={[
+          {
+            key: "source",
+            label: "Read source",
+            onClick: (api) => setSource(api.getContent()),
+          },
+        ]}
+      />
+      <output data-testid="media-source">{source}</output>
+    </div>
+  );
+};
+
+export const LocalizedMediaPlaceholders: Story = {
+  render: () => <MediaPlaceholderLocaleFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const editor = canvasElement.querySelector(".cm-editor");
+    for (const locale of [...mediaPlaceholderLocales, "ar-SA"] as const) {
+      await userEvent.click(canvas.getByRole("button", { name: locale }));
+      const texts = getEditorLocaleMessages(locale);
+      await waitFor(() => {
+        const images = canvasElement.querySelectorAll<HTMLElement>(
+          ".tag-image .tag-placeholder-label"
+        );
+        const videos = canvasElement.querySelectorAll<HTMLElement>(
+          ".tag-video .tag-placeholder-label"
+        );
+        expect(Array.from(images, (label) => label.textContent)).toEqual([
+          texts.imageDefaultTitle,
+          texts.imageDefaultTitle,
+          texts.imageDefaultTitle,
+          "Authored image alt",
+          "Authored image title",
+          "Authored Markdown alt",
+        ]);
+        expect(Array.from(videos, (label) => label.textContent)).toEqual([
+          texts.videoDefaultTitle,
+          texts.videoDefaultTitle,
+          "Authored & video",
+        ]);
+        expect(images[0].dataset.title).toBe("");
+        expect(videos[0].dataset.title).toBe("");
+        expect(
+          canvasElement.querySelectorAll(".tag-fixed-output-marker")
+        ).toHaveLength(4);
+      });
+      expect(canvasElement.querySelector(".cm-editor")).toBe(editor);
+      await userEvent.click(
+        canvas.getByRole("button", { name: "Read source" })
+      );
+      expect(canvas.getByTestId("media-source").textContent).toBe(
+        mediaPlaceholderSource
+      );
+    }
+  },
+};
+
 const VariablePickerLocaleFixture = () => {
   const [locale, setLocale] = useState<MarkdownFlowLocale>("ar-SA");
   const [content, setContent] = useState("{{learner}}");

@@ -9,6 +9,7 @@ import {
 import { SelectedOption } from "../types";
 import { unwrapFixedOutput } from "../utils";
 import PlaceholderWidget from "./PlaceholderWidget";
+import { mediaPlaceholderLabels } from "./mediaPlaceholderLabels";
 
 const biliVideoContextRegexp =
   /===\s*<iframe\s[^>]*data-tag="video"[^>]*><\/iframe>\s*===|<iframe\s[^>]*data-tag="video"[^>]*><\/iframe>/gi;
@@ -53,7 +54,7 @@ const biliUrlMatcher = new MatchDecorator({
 
     return Decoration.replace({
       widget: new PlaceholderWidget(
-        titleAttr || "Video", // Display title from data-title
+        titleAttr || view.state.facet(mediaPlaceholderLabels).video,
         {
           tag: "video",
           url: originalUrl, // Decoded original Bilibili URL
@@ -75,6 +76,13 @@ const VideoPlaceholder = ViewPlugin.fromClass(
       this.placeholders = biliUrlMatcher.createDeco(view);
     }
     update(update: ViewUpdate) {
+      if (
+        update.startState.facet(mediaPlaceholderLabels) !==
+        update.state.facet(mediaPlaceholderLabels)
+      ) {
+        this.placeholders = biliUrlMatcher.createDeco(update.view);
+        return;
+      }
       this.placeholders = biliUrlMatcher.updateDeco(update, this.placeholders);
     }
   },

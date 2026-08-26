@@ -389,10 +389,12 @@ const Slide: React.FC<SlideProps> = ({
   enableMarkdownScaling = true,
   disableLoadingOverlay = false,
   className,
+  dir,
   onPointerDown,
   onFocusCapture,
   ...props
 }) => {
+  const direction = dir ?? getMarkdownFlowDirection(locale);
   const localeTexts = useMemo(() => getSlideLocaleTexts(locale), [locale]);
   const resolvedBufferingText = useMemo(
     () =>
@@ -2451,7 +2453,7 @@ const Slide: React.FC<SlideProps> = ({
         isNativeMobileFullscreen && "slide--mobile-landscape-native",
         className
       )}
-      dir={getMarkdownFlowDirection(locale)}
+      dir={direction}
       onClick={handleSurfaceClick}
       onFocusCapture={handleSurfaceFocusCapture}
       onPointerDown={handleSurfacePointerDown}
@@ -2630,6 +2632,7 @@ const Slide: React.FC<SlideProps> = ({
             value={keyboardShortcutContextValue}
           >
             <Player
+              dir={direction}
               audioList={audioList}
               className={cn(
                 "absolute left-1/2 z-[2] -translate-x-1/2",

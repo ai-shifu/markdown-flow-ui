@@ -2994,9 +2994,15 @@ export const ArabicFullscreenBackIcon: Story = {
       expect(button).not.toBeNull();
       return button!;
     });
+    expect(
+      getComputedStyle(canvasElement.querySelector(".slide-player")!).direction
+    ).toBe(parameters.expectedDirection);
     more.click();
     const page = within(canvasElement.ownerDocument.body);
     await waitFor(() => expect(page.getByRole("dialog")).toBeVisible());
+    expect(getComputedStyle(page.getByRole("dialog")).direction).toBe(
+      parameters.expectedDirection
+    );
     await userEvent.click(
       page.getByRole("radio", {
         name: labels.playerTexts.fullscreenLabel,
@@ -3031,6 +3037,12 @@ export const ThaiFullscreenBackIcon: Story = {
   ...ArabicFullscreenBackIcon,
   args: { ...ArabicFullscreenBackIcon.args, locale: "th-TH" },
   parameters: { expectedDirection: "ltr" },
+};
+
+export const ThaiFullscreenBackIconRtlOverride: Story = {
+  ...ThaiFullscreenBackIcon,
+  args: { ...ThaiFullscreenBackIcon.args, dir: "rtl" },
+  parameters: { expectedDirection: "rtl" },
 };
 
 export const InheritedRtlFullscreenBackIcon: Story = {

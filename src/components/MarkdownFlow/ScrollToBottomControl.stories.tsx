@@ -202,14 +202,18 @@ const PageFallbackFixture: React.FC = () => {
   );
 };
 
-const CleanupFixture: React.FC = () => {
+const CleanupFixture: React.FC<{ explicitTarget?: boolean }> = ({
+  explicitTarget = false,
+}) => {
   const viewportRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
+  const [revision, setRevision] = useState(0);
 
   return (
     <div style={{ position: "relative", height: 260 }}>
       <div
+        key={revision}
         ref={viewportRef}
         data-testid="cleanup-viewport"
         style={{ height: 220, overflowY: "auto" }}
@@ -222,6 +226,7 @@ const CleanupFixture: React.FC = () => {
       {mounted ? (
         <ScrollToBottomControl
           viewportRef={viewportRef}
+          scrollTarget={explicitTarget ? viewportRef : undefined}
           endRef={endRef}
           ariaLabel="Cleanup scroll control"
         />
@@ -232,6 +237,13 @@ const CleanupFixture: React.FC = () => {
         onClick={() => setMounted((current) => !current)}
       >
         Toggle control
+      </button>
+      <button
+        type="button"
+        data-testid="replace-viewport"
+        onClick={() => setRevision((current) => current + 1)}
+      >
+        Replace viewport
       </button>
     </div>
   );
@@ -734,4 +746,77 @@ export const LegacyHandlerAcceptsReactClickEvents: Story = {
       expect(button).toHaveAttribute("data-visible", "false");
     });
   },
+};
+
+export const StableViewportRefRebindsAfterReplacement: Story = {
+  render: () => <CleanupFixture />,
+  play: async ({ canvasElement }) => {
+    const view = canvasElement.ownerDocument.defaultView as Window &
+      typeof globalThis;
+    const originalResizeObserver = view.ResizeObserver;
+    const originalMutationObserver = view.MutationObserver;
+    // A responsive React commit must rebind even without a resize or mutation callback.
+    view.ResizeObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
+    view.MutationObserver = class {
+      observe() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    };
+    let removedScrollListeners = 0;
+    const oldViewport = canvasElement.querySelector<HTMLElement>(
+      '[data-testid="cleanup-viewport"]'
+    )!;
+    const originalRemoveListener = oldViewport.removeEventListener;
+    oldViewport.removeEventListener = function (type, listener, options) {
+      if (type === "scroll") removedScrollListeners += 1;
+      return originalRemoveListener.call(this, type, listener, options);
+    };
+    try {
+      await userEvent.click(
+        canvasElement.querySelector<HTMLButtonElement>(
+          '[data-testid="toggle-control"]'
+        )!
+      );
+      const button = canvasElement.querySelector<HTMLButtonElement>(
+        '[aria-label="Cleanup scroll control"]'
+      )!;
+      await waitFor(() =>
+        expect(button).toHaveAttribute("data-visible", "true")
+      );
+      await userEvent.click(
+        canvasElement.querySelector<HTMLButtonElement>(
+          '[data-testid="replace-viewport"]'
+        )!
+      );
+      await waitFor(() => expect(removedScrollListeners).toBeGreaterThan(0));
+      const replacement = canvasElement.querySelector<HTMLElement>(
+        '[data-testid="cleanup-viewport"]'
+      )!;
+      expect(replacement).not.toBe(oldViewport);
+      replacement.scrollTop = replacement.scrollHeight;
+      replacement.dispatchEvent(new Event("scroll"));
+      await waitFor(() =>
+        expect(button).toHaveAttribute("data-visible", "false")
+      );
+      scrollToTop(replacement);
+      await waitFor(() =>
+        expect(button).toHaveAttribute("data-visible", "true")
+      );
+    } finally {
+      oldViewport.removeEventListener = originalRemoveListener;
+      view.ResizeObserver = originalResizeObserver;
+      view.MutationObserver = originalMutationObserver;
+    }
+  },
+};
+
+export const StableExplicitRefRebindsAfterReplacement: Story = {
+  ...StableViewportRefRebindsAfterReplacement,
+  render: () => <CleanupFixture explicitTarget />,
 };

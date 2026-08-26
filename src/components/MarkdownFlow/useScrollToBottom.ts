@@ -264,6 +264,8 @@ export function useScrollToBottom(
   const followEnabledRef = useRef(followNewContentOption);
   const initializedRef = useRef(false);
   const boundTargetsRef = useRef<ScrollTarget[]>([]);
+  const boundViewportRef = useRef<HTMLElement | null>(null);
+  const boundContentRef = useRef<HTMLElement | null>(null);
   const programmaticScrollRef = useRef(false);
   const eventFrameRef = useRef<number | null>(null);
   const contentFrameRef = useRef<number | null>(null);
@@ -408,23 +410,36 @@ export function useScrollToBottom(
 
   const ensureTargetBinding = useCallback(() => {
     const nextTargets = getResolvedTargets();
-    if (sameTargets(nextTargets, boundTargetsRef.current)) return false;
+    const nextViewport = viewportRef.current;
+    const nextContent = resolveObservedContent(viewportRef, contentRef);
+    if (
+      sameTargets(nextTargets, boundTargetsRef.current) &&
+      nextViewport === boundViewportRef.current &&
+      nextContent === boundContentRef.current
+    )
+      return false;
     boundTargetsRef.current = nextTargets;
+    boundViewportRef.current = nextViewport;
+    boundContentRef.current = nextContent;
     setBindingRevision((current) => current + 1);
     return true;
-  }, [getResolvedTargets]);
+  }, [contentRef, getResolvedTargets, viewportRef]);
 
   useEffect(() => {
     const targets = getResolvedTargets();
-    if (targets.length === 0) return;
+    const targetWindow = targets[0]
+      ? getTargetWindow(targets[0])
+      : (viewportRef.current?.ownerDocument.defaultView ?? null);
+    if (targets.length === 0 && !targetWindow) return;
 
     boundTargetsRef.current = targets;
-    const targetWindow = getTargetWindow(targets[0]);
+    boundViewportRef.current = viewportRef.current;
+    boundContentRef.current = resolveObservedContent(viewportRef, contentRef);
     const eventTargets = new Set(targets.map(getScrollEventTarget));
     const targetWindows = new Set(
-      targets
-        .map(getTargetWindow)
-        .filter((view): view is Window => view !== null)
+      [...targets.map(getTargetWindow), targetWindow].filter(
+        (view): view is Window => view !== null
+      )
     );
     const visualViewports = new Set(
       Array.from(targetWindows)
@@ -536,6 +551,11 @@ export function useScrollToBottom(
     scrollToBottom,
     viewportRef,
   ]);
+
+  // Ref objects are stable even when a host replaces their nodes during commit.
+  useEffect(() => {
+    ensureTargetBinding();
+  });
 
   useEffect(() => {
     const targets = getResolvedTargets();

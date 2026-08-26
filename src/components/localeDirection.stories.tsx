@@ -625,6 +625,23 @@ const EditorDialogLocaleFixture = () => {
   );
 };
 
+const expectDialogClosePlacement = (dialog: HTMLElement, label: string) => {
+  const close = within(dialog).getByRole("button", {
+    name: label,
+    exact: true,
+  });
+  expect(getComputedStyle(close).insetInlineEnd).toBe("16px");
+  const title = within(dialog).getByRole("heading");
+  const range = dialog.ownerDocument.createRange();
+  range.selectNodeContents(title);
+  const titleRect = range.getBoundingClientRect();
+  const closeRect = close.getBoundingClientRect();
+  const rtl = getComputedStyle(dialog).direction === "rtl";
+  expect(rtl ? closeRect.right : titleRect.right).toBeLessThan(
+    rtl ? titleRect.left : closeRect.left
+  );
+};
+
 export const EditorDialogCloseLabels: Story = {
   render: () => <EditorDialogLocaleFixture />,
   play: async ({ canvasElement }) => {
@@ -648,6 +665,7 @@ export const EditorDialogCloseLabels: Story = {
         expect(getComputedStyle(dialog).direction).toBe(
           locale === "ar-SA" ? "rtl" : "ltr"
         );
+        expectDialogClosePlacement(dialog, texts.dialogCloseLabel);
         expect(
           within(dialog).queryByRole("button", { name: "Close", exact: true })
         ).toBeNull();
@@ -704,8 +722,16 @@ export const InheritedEditorPortalDirection: Story = {
     );
     const dialog = await page.findByRole("dialog");
     await waitFor(() => expect(getComputedStyle(dialog).direction).toBe("rtl"));
+    expectDialogClosePlacement(
+      dialog,
+      getEditorLocaleMessages().dialogCloseLabel
+    );
     host.dir = "ltr";
     await waitFor(() => expect(getComputedStyle(dialog).direction).toBe("ltr"));
+    expectDialogClosePlacement(
+      dialog,
+      getEditorLocaleMessages().dialogCloseLabel
+    );
     await userEvent.click(
       within(dialog).getByRole("button", {
         name: getEditorLocaleMessages().dialogCloseLabel,

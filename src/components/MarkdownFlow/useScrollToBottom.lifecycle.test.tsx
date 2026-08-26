@@ -486,6 +486,47 @@ describe.each([true, false])(
   }
 );
 
+describe("growth before queued native completion", () => {
+  it.each(["unchanged scroll event", "auto completion frame"])(
+    "keeps following when growth precedes an %s",
+    (completion) => {
+      const target = createScroller();
+      target.scrollTop = 800;
+      vi.mocked(target.scrollTo).mockImplementation(() => {
+        target.scrollTop = target.scrollHeight - target.clientHeight;
+      });
+      const ref = { current: target };
+      const { result } = renderHook(() => useScrollToBottom(ref));
+      flushFrames();
+      if (completion === "auto completion frame") {
+        act(() => result.current.scrollToBottom("auto"));
+      }
+      Object.defineProperty(target, "scrollHeight", { value: 1200 });
+      if (completion === "unchanged scroll event") {
+        fireEvent.scroll(target);
+        fireEvent.scroll(target);
+      } else flushFrames();
+      expect(result.current.followNewContent).toBe(true);
+      fireEvent.resize(window);
+      flushFrames();
+      expect(target.scrollTop).toBe(1000);
+      fireEvent.scroll(target);
+      flushFrames();
+      expect(result.current.showScrollToBottom).toBe(false);
+
+      target.scrollTop = 700;
+      fireEvent.scroll(target);
+      Object.defineProperty(target, "scrollHeight", { value: 1400 });
+      fireEvent.scroll(target);
+      fireEvent.resize(window);
+      flushFrames();
+      expect(target.scrollTop).toBe(700);
+      expect(result.current.followNewContent).toBe(false);
+      expect(result.current.showScrollToBottom).toBe(true);
+    }
+  );
+});
+
 describe("resolver identity and actual target lifetime", () => {
   it.each<ScrollBehavior>(["smooth", "auto"])(
     "preserves %s scrolling through inline resolver rerenders without replaying effects",

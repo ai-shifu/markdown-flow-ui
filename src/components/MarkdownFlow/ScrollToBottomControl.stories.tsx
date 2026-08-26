@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, fn, userEvent, waitFor } from "storybook/test";
 import ScrollToBottomControl from "./ScrollToBottomControl";
@@ -303,7 +304,9 @@ const LegacyClickFixture: React.FC<{ omitDependencies?: boolean }> = ({
   );
 };
 
-const InlineResolverFixture: React.FC = () => {
+const InlineResolverFixture: React.FC<{ queueScrollAfterGrowth?: boolean }> = ({
+  queueScrollAfterGrowth = false,
+}) => {
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [revision, setRevision] = useState(0);
@@ -344,7 +347,13 @@ const InlineResolverFixture: React.FC = () => {
       <button
         type="button"
         data-testid="grow-content"
-        onClick={() => setHeight((value) => value + 200)}
+        onClick={() => {
+          if (queueScrollAfterGrowth) {
+            // Deliver a trailing native event after DOM growth, before its observer.
+            flushSync(() => setHeight((value) => value + 200));
+            viewportRef.current?.dispatchEvent(new Event("scroll"));
+          } else setHeight((value) => value + 200);
+        }}
       >
         Grow content
       </button>
@@ -810,6 +819,11 @@ export const InlineResolverPreservesSmoothScrolling: Story = {
       viewport.scrollTo = originalScroll;
     }
   },
+};
+
+export const ContentGrowthBeforeQueuedScrollKeepsFollowing: Story = {
+  ...InlineResolverPreservesSmoothScrolling,
+  render: () => <InlineResolverFixture queueScrollAfterGrowth />,
 };
 
 export const UserScrollWinsSameFrameGrowth: Story = {

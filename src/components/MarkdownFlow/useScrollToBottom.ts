@@ -224,6 +224,11 @@ const sameTargets = (left: ScrollTarget[], right: ScrollTarget[]) =>
   left.length === right.length &&
   left.every((target, index) => target === right[index]);
 
+const getScrollPositions = (targets: ScrollTarget[]) =>
+  new Map(
+    targets.map((target) => [target, getScrollMetrics(target).scrollTop])
+  );
+
 const getScrollEventTarget = (target: ScrollTarget): EventTarget =>
   isDocument(target) ? target.defaultView || target : target;
 
@@ -325,6 +330,7 @@ export function useScrollToBottom(
   const [isFollowing, setIsFollowing] = useState(followNewContentOption);
   const [bindingRevision, setBindingRevision] = useState(0);
   const followingRef = useRef(followNewContentOption);
+  const followingPositionsRef = useRef<Map<ScrollTarget, number> | null>(null);
   const followEnabledRef = useRef(followNewContentOption);
   const initializedRef = useRef(false);
   const boundTargetsRef = useRef<ScrollTarget[]>([]);
@@ -417,16 +423,34 @@ export function useScrollToBottom(
         if (presentation.distanceFromBottom <= 1) {
           finishProgrammaticScroll();
           setFollowing(followEnabledRef.current);
+          followingPositionsRef.current = followEnabledRef.current
+            ? getScrollPositions(targets)
+            : null;
         }
         return presentation;
       }
 
       setShowScrollToBottom(presentation.showScrollToBottom);
-      setFollowing(
+      const followingPositions = followingPositionsRef.current;
+      // A queued native event can arrive after content grows but before its
+      // observer runs. Unchanged positions are not a request to stop following.
+      const stayedAtFollowingPosition =
+        followingRef.current &&
+        followingPositions !== null &&
+        sameTargets(targets, [...followingPositions.keys()]) &&
+        targets.every(
+          (target) =>
+            getScrollMetrics(target).scrollTop ===
+            followingPositions.get(target)
+        );
+      const nextFollowing =
         !interruptedPositionsRef.current &&
-          presentation.isAtBottom &&
-          followEnabledRef.current
-      );
+        (presentation.isAtBottom || stayedAtFollowingPosition) &&
+        followEnabledRef.current;
+      followingPositionsRef.current = nextFollowing
+        ? getScrollPositions(targets)
+        : null;
+      setFollowing(nextFollowing);
       return presentation;
     },
     [
@@ -458,6 +482,7 @@ export function useScrollToBottom(
         actualBehavior === "auto" ? "instant" : actualBehavior;
 
       interruptedPositionsRef.current = null;
+      followingPositionsRef.current = null;
       programmaticScrollRef.current = true;
       programmaticTargetsRef.current = targets;
       setFollowing(followEnabledRef.current);
@@ -478,6 +503,17 @@ export function useScrollToBottom(
       }
 
       if (actualBehavior === "auto") {
+        // Immediate native scrolling has already reached its destination;
+        // retain that position if content grows before the completion frame.
+        if (
+          followEnabledRef.current &&
+          getCombinedScrollPresentation(
+            targets.map(getScrollMetrics),
+            scrollThreshold
+          ).isAtBottom
+        ) {
+          followingPositionsRef.current = getScrollPositions(targets);
+        }
         if (view) {
           const id = view.requestAnimationFrame(() => {
             programmaticFrameRef.current = null;
@@ -505,6 +541,7 @@ export function useScrollToBottom(
       finishProgrammaticScroll,
       getResolvedTargets,
       refresh,
+      scrollThreshold,
       setFollowing,
     ]
   );

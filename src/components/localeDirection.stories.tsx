@@ -2312,7 +2312,16 @@ const AutoSandboxDirectionFixture = () => {
       <button type="button" onClick={() => setContent("<p>مرحبا بالعالم</p>")}>
         Arabic content
       </button>
-      <IframeSandbox type="sandbox" content={content} dir="auto" />
+      {(["sandbox", "markdown"] as const).map((type) => (
+        <div key={type} data-testid={`auto-${type}`}>
+          <IframeSandbox
+            type={type}
+            mode={type === "markdown" ? "blackboard" : undefined}
+            content={content}
+            dir="auto"
+          />
+        </div>
+      ))}
     </div>
   );
 };
@@ -2321,28 +2330,34 @@ export const AutoSandboxFullscreenDirection: Story = {
   render: () => <AutoSandboxDirectionFixture />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const root = canvasElement.querySelector<HTMLElement>(
-      ".content-render-iframe-sandbox"
-    )!;
-    const iframe = root.querySelector("iframe")!;
-    const fullscreen = within(root).getByRole("button");
     const check = async (direction: "ltr" | "rtl") => {
       await waitFor(() => {
-        const sandbox =
-          iframe.contentDocument!.querySelector<HTMLElement>(
-            ".sandbox-wrapper"
-          )!;
-        expect(root).toHaveAttribute("dir", "auto");
-        expect(getComputedStyle(sandbox).direction).toBe(direction);
-        expect(fullscreen).toHaveAttribute("dir", direction);
-        expect(getComputedStyle(fullscreen).insetInlineEnd).toBe("8px");
-        const rootRect = root.getBoundingClientRect();
-        const buttonRect = fullscreen.getBoundingClientRect();
-        expect(
-          direction === "rtl"
-            ? buttonRect.left - rootRect.left
-            : rootRect.right - buttonRect.right
-        ).toBeCloseTo(8, 0);
+        for (const type of ["sandbox", "markdown"]) {
+          const root = canvas
+            .getByTestId(`auto-${type}`)
+            .querySelector<HTMLElement>(".content-render-iframe-sandbox")!;
+          const fullscreen =
+            root.querySelector<HTMLButtonElement>(":scope > button")!;
+          const renderedContent =
+            type === "sandbox"
+              ? root
+                  .querySelector("iframe")!
+                  .contentDocument!.querySelector<HTMLElement>(
+                    ".sandbox-wrapper"
+                  )!
+              : root.querySelector<HTMLElement>(".content-render")!;
+          expect(root).toHaveAttribute("dir", "auto");
+          expect(getComputedStyle(renderedContent).direction).toBe(direction);
+          expect(fullscreen).toHaveAttribute("dir", direction);
+          expect(getComputedStyle(fullscreen).insetInlineEnd).toBe("8px");
+          const rootRect = root.getBoundingClientRect();
+          const buttonRect = fullscreen.getBoundingClientRect();
+          expect(
+            direction === "rtl"
+              ? buttonRect.left - rootRect.left
+              : rootRect.right - buttonRect.right
+          ).toBeCloseTo(8, 0);
+        }
       });
     };
     await check("rtl");

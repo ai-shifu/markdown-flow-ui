@@ -147,6 +147,18 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const sandboxLanguage = useDetachedLanguage(containerRef, language);
   const { resolvedDirection } = useResolvedDirection(containerRef, direction);
+  const markdownContentRef = useRef<HTMLElement>(null);
+  const setMarkdownContentContainerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      markdownContentRef.current =
+        node?.querySelector<HTMLElement>(".content-render") ?? null;
+    },
+    []
+  );
+  const { resolvedDirection: markdownContentDirection } = useResolvedDirection(
+    markdownContentRef,
+    direction
+  );
   const sandboxDirection = direction ?? resolvedDirection;
   const requestedDirectionRef = useRef(direction);
   requestedDirectionRef.current = direction;
@@ -155,10 +167,15 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   const [sandboxContentDirection, setSandboxContentDirection] = useState<
     "ltr" | "rtl"
   >();
-  const fullscreenControlDirection =
-    direction === "auto" && type === "sandbox"
-      ? (sandboxContentDirection ?? resolvedDirection)
-      : undefined;
+  let fullscreenControlDirection: "ltr" | "rtl" | undefined;
+  if (direction === "auto") {
+    fullscreenControlDirection = resolvedDirection;
+    if (type === "sandbox") {
+      fullscreenControlDirection = sandboxContentDirection ?? resolvedDirection;
+    } else if (mode === "blackboard") {
+      fullscreenControlDirection = markdownContentDirection;
+    }
+  }
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const rootRef = useRef<Root | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
@@ -916,7 +933,10 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
         </button>
       )}
       {mode === "blackboard" && type === "markdown" ? (
-        <div onClick={() => emitSandboxInteraction("click")}>
+        <div
+          ref={setMarkdownContentContainerRef}
+          onClick={() => emitSandboxInteraction("click")}
+        >
           <ContentRender
             content={content}
             locale={locale}

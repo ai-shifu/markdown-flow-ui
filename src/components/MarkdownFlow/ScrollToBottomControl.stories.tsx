@@ -256,9 +256,11 @@ const LegacyClickFixture: React.FC<{ omitDependencies?: boolean }> = ({
   omitDependencies = false,
 }) => {
   const viewportRef = useRef<HTMLDivElement>(null);
+  const [revision, setRevision] = useState(0);
+  const [unrelatedValue, setUnrelatedValue] = useState(0);
   const { handleUserScrollToBottom, showScrollToBottom } = useScrollToBottom(
     viewportRef,
-    omitDependencies ? undefined : [],
+    omitDependencies ? undefined : [revision],
     { autoScrollOnInit: false, scrollTarget: viewportRef, behavior: "auto" }
   );
 
@@ -278,6 +280,21 @@ const LegacyClickFixture: React.FC<{ omitDependencies?: boolean }> = ({
         data-visible={showScrollToBottom}
       >
         Scroll using the legacy handler
+      </button>
+      <button
+        type="button"
+        data-testid="unrelated-render"
+        data-render-count={unrelatedValue}
+        onClick={() => setUnrelatedValue((value) => value + 1)}
+      >
+        Unrelated render
+      </button>
+      <button
+        type="button"
+        data-testid="change-dependency"
+        onClick={() => setRevision((value) => value + 1)}
+      >
+        Change dependency
       </button>
     </div>
   );
@@ -951,6 +968,56 @@ export const LegacyHandlerAcceptsReactClickEvents: Story = {
       expectAtBottom(viewport);
       expect(button).toHaveAttribute("data-visible", "false");
     });
+  },
+};
+
+export const LegacyDependenciesIgnoreUnrelatedRenders: Story = {
+  render: () => <LegacyClickFixture />,
+  play: async ({ canvasElement }) => {
+    const viewport = getViewport(canvasElement);
+    const button = canvasElement.querySelector<HTMLButtonElement>(
+      '[data-testid="legacy-scroll"]'
+    )!;
+    await viewport.ownerDocument.fonts.ready;
+    await userEvent.click(button);
+    await waitFor(() => expectAtBottom(viewport));
+    // Wait for initial observer delivery before measuring dependency-driven scrolls.
+    await new Promise<void>((resolve) => {
+      const observer = new ResizeObserver(() => {
+        observer.disconnect();
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      });
+      observer.observe(viewport);
+    });
+    const originalScroll = viewport.scrollTo;
+    let scrollCalls = 0;
+    viewport.scrollTo = (options?: ScrollToOptions | number, y?: number) => {
+      scrollCalls += 1;
+      Reflect.apply(
+        originalScroll,
+        viewport,
+        typeof options === "number" ? [options, y ?? 0] : [options]
+      );
+    };
+    try {
+      await userEvent.click(
+        canvasElement.querySelector<HTMLButtonElement>(
+          '[data-testid="unrelated-render"]'
+        )!
+      );
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      );
+      expect(scrollCalls).toBe(0);
+      await userEvent.click(
+        canvasElement.querySelector<HTMLButtonElement>(
+          '[data-testid="change-dependency"]'
+        )!
+      );
+      await waitFor(() => expect(scrollCalls).toBe(1));
+    } finally {
+      viewport.scrollTo = originalScroll;
+    }
   },
 };
 

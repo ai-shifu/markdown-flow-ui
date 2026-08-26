@@ -114,6 +114,74 @@ describe.each([false, true])(
   }
 );
 
+describe("legacy dependency value semantics", () => {
+  it.each(["empty", "primitive", "object"])(
+    "ignores new %s dependency arrays until their values change",
+    (kind) => {
+      const target = createScroller();
+      target.scrollTop = 800;
+      const ref = { current: target };
+      const object = {};
+      const options = { autoScrollOnInit: false, scrollTarget: ref };
+      const { result, rerender } = renderHook(
+        ({ value }) => useScrollToBottom(ref, value, options),
+        {
+          initialProps: {
+            value: (kind === "empty"
+              ? []
+              : [kind === "object" ? object : 1]) as unknown[],
+          },
+        }
+      );
+      flushFrames();
+      expect(result.current.followNewContent).toBe(true);
+      rerender({
+        value: kind === "empty" ? [] : [kind === "object" ? object : 1],
+      });
+      flushFrames();
+      expect(target.scrollTo).not.toHaveBeenCalled();
+      rerender({ value: [kind === "object" ? {} : 2] });
+      flushFrames();
+      expect(target.scrollTo).toHaveBeenCalledExactlyOnceWith({
+        top: 1000,
+        behavior: "instant",
+      });
+      flushFrames();
+    }
+  );
+
+  it("compares values with Object.is rather than serialization or reference equality", () => {
+    const target = createScroller();
+    target.scrollTop = 800;
+    const ref = { current: target };
+    const dependencies = [NaN, 0];
+    const { rerender } = renderHook(
+      ({ value }) => useScrollToBottom(ref, value, { autoScrollOnInit: false }),
+      { initialProps: { value: dependencies } }
+    );
+    rerender({ value: [NaN, 0] });
+    flushFrames();
+    expect(target.scrollTo).not.toHaveBeenCalled();
+    dependencies[1] = -0;
+    rerender({ value: dependencies });
+    flushFrames();
+    expect(target.scrollTo).toHaveBeenCalledOnce();
+  });
+
+  it("retains identity semantics for modern array contentVersion values", () => {
+    const target = createScroller();
+    target.scrollTop = 800;
+    const ref = { current: target };
+    const { rerender } = renderHook(
+      ({ version }) => useScrollToBottom(ref, { contentVersion: version }),
+      { initialProps: { version: [1] } }
+    );
+    rerender({ version: [1] });
+    flushFrames();
+    expect(target.scrollTo).toHaveBeenCalledOnce();
+  });
+});
+
 describe("legacy calls without dependencies", () => {
   it("honors explicit threshold, behavior and follow options", () => {
     const target = createScroller();

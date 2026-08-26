@@ -274,6 +274,26 @@ export function useScrollToBottom(
   optionsOrDependencies?: UseScrollToBottomOptions | readonly unknown[],
   legacyOptions?: LegacyUseScrollToBottomOptions
 ): UseScrollToBottomReturn {
+  const committedDependencies = useRef<readonly unknown[] | undefined>(
+    undefined
+  );
+  const dependencies = Array.isArray(optionsOrDependencies)
+    ? optionsOrDependencies
+    : undefined;
+  const previousDependencies = committedDependencies.current;
+  const stableDependencies = dependencies
+    ? previousDependencies?.length === dependencies.length &&
+      dependencies.every((value, index) =>
+        Object.is(value, previousDependencies[index])
+      )
+      ? previousDependencies
+      : [...dependencies]
+    : undefined;
+  // Commit a snapshot so unrelated renders preserve legacy dependency values,
+  // including NaN and object identity, without leaking an abandoned render.
+  useEffect(() => {
+    committedDependencies.current = stableDependencies;
+  }, [stableDependencies]);
   const isLegacyCall =
     Array.isArray(optionsOrDependencies) ||
     (optionsOrDependencies === undefined && legacyOptions !== undefined);
@@ -282,7 +302,7 @@ export function useScrollToBottom(
         autoScrollOnInit: true,
         scrollThreshold: 10,
         ...legacyOptions,
-        contentVersion: optionsOrDependencies ?? legacyOptions?.contentVersion,
+        contentVersion: stableDependencies ?? legacyOptions?.contentVersion,
       }
     : ((optionsOrDependencies as UseScrollToBottomOptions | undefined) ?? {});
   const {

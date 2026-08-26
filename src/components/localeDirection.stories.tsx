@@ -451,26 +451,23 @@ export const DirectionAwareMarkdownStructure: Story = {
     const canvas = within(canvasElement);
     for (const locale of ["ar-SA", "th-TH", "inherit"]) {
       const fixture = canvas.getByTestId(locale);
-      const rtl = locale !== "th-TH";
+      const [start, end, direction] =
+        locale === "th-TH"
+          ? (["Left", "Right", "ltr"] as const)
+          : (["Right", "Left", "rtl"] as const);
       const lists = fixture.querySelectorAll("ul, ol");
       expect(lists).toHaveLength(5);
       for (const list of lists) {
         const style = getComputedStyle(list);
-        expect(style.direction).toBe(rtl ? "rtl" : "ltr");
-        expect(
-          Number.parseFloat(rtl ? style.paddingRight : style.paddingLeft)
-        ).toBeGreaterThan(0);
-        expect(
-          Number.parseFloat(rtl ? style.paddingLeft : style.paddingRight)
-        ).toBe(0);
+        expect(style.direction).toBe(direction);
+        expect(Number.parseFloat(style[`padding${start}`])).toBeGreaterThan(0);
+        expect(Number.parseFloat(style[`padding${end}`])).toBe(0);
       }
       const quote = getComputedStyle(fixture.querySelector("blockquote")!);
-      expect(
-        Number.parseFloat(rtl ? quote.borderRightWidth : quote.borderLeftWidth)
-      ).toBeGreaterThan(0);
-      expect(
-        Number.parseFloat(rtl ? quote.borderLeftWidth : quote.borderRightWidth)
-      ).toBe(0);
+      expect(Number.parseFloat(quote[`border${start}Width`])).toBeGreaterThan(
+        0
+      );
+      expect(Number.parseFloat(quote[`border${end}Width`])).toBe(0);
     }
   },
 };

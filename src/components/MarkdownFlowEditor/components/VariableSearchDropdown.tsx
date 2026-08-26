@@ -1,5 +1,10 @@
-import React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Search } from "lucide-react";
 import { Variable } from "../types";
 import { Input } from "../../ui/input";

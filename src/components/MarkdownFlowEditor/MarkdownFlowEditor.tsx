@@ -920,8 +920,12 @@ const Editor: React.FC<EditorProps> = ({
       if (type === SelectedOption.Variable) {
         if (target) {
           const rect = target.getBoundingClientRect();
+          const anchorDirection =
+            target.ownerDocument.defaultView?.getComputedStyle(
+              editorRootRef.current ?? target
+            ).direction;
           setPopoverPosition({
-            x: rect.left,
+            x: anchorDirection === "rtl" ? rect.right : rect.left,
             y: rect.bottom,
           });
         }

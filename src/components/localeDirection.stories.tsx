@@ -1355,9 +1355,32 @@ const expectSearchAffordance = (input: HTMLInputElement) => {
   expect(Number.parseFloat(style.paddingInlineEnd)).toBeLessThan(32);
 };
 
+const expectVariablePopoverAnchor = async (
+  host: HTMLElement,
+  popover: HTMLElement,
+  direction: string
+) => {
+  await waitFor(() => {
+    const trigger = host.querySelector(
+      ".tag-variable .tag-placeholder-content"
+    )!;
+    const edge = direction === "rtl" ? "right" : "left";
+    expect(
+      Math.abs(
+        popover.getBoundingClientRect()[edge] -
+          trigger.getBoundingClientRect()[edge]
+      )
+    ).toBeLessThanOrEqual(1);
+  });
+};
+
 export const InheritedEditorPortalDirection: Story = {
   render: () => (
-    <div dir="rtl" data-testid="editor-host">
+    <div
+      dir="rtl"
+      data-testid="editor-host"
+      style={{ width: 320, marginInline: "auto" }}
+    >
       <MarkdownFlowEditor
         content="Variable: {{learner}}"
         editMode={EditMode.QuickEdit}
@@ -1402,12 +1425,20 @@ export const InheritedEditorPortalDirection: Story = {
       expect(getComputedStyle(popover).direction).toBe("ltr")
     );
     expectSearchAffordance(popover.querySelector("input")!);
+    await expectVariablePopoverAnchor(host, popover, "ltr");
     host.dir = "rtl";
     await waitFor(() =>
       expect(getComputedStyle(popover).direction).toBe("rtl")
     );
     expectSearchAffordance(popover.querySelector("input")!);
     expect(root).not.toHaveAttribute("dir");
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
+    await userEvent.click(
+      host.querySelector<HTMLElement>(".tag-variable .tag-placeholder-content")!
+    );
+    const rtlPopover = await page.findByRole("dialog");
+    await expectVariablePopoverAnchor(host, rtlPopover, "rtl");
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
   },
@@ -1502,7 +1533,7 @@ const VariablePickerLocaleFixture = () => {
   const [locale, setLocale] = useState<MarkdownFlowLocale>("ar-SA");
   const [content, setContent] = useState("{{learner}}");
   return (
-    <div>
+    <div style={{ width: 320, marginInline: "auto" }}>
       <button
         type="button"
         onClick={() => {
@@ -1542,6 +1573,11 @@ export const VariablePickerDirection: Story = {
       if (locale === "th-TH")
         await userEvent.click(canvas.getByRole("button", { name: "Thai" }));
       const picker = await openPicker();
+      await expectVariablePopoverAnchor(
+        canvasElement,
+        picker,
+        locale === "ar-SA" ? "rtl" : "ltr"
+      );
       for (const name of ["learner", "system"]) {
         const option = within(picker).getByText(name).closest("button")!;
         expect(getComputedStyle(option).direction).toBe(

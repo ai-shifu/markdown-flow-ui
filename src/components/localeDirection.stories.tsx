@@ -758,6 +758,48 @@ export const DirectionAwareMarkdownStructure: Story = {
   },
 };
 
+export const TaskListCheckboxSpacing: Story = {
+  render: () => (
+    <div dir="rtl">
+      {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
+        <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
+          <ContentRender
+            locale={locale}
+            content={"- [ ] Unchecked task\n- [x] Completed task"}
+          />
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const locale of ["ar-SA", "th-TH", "inherit"]) {
+      const boxes = canvas
+        .getByTestId(locale)
+        .querySelectorAll<HTMLInputElement>(".content-render-checkbox");
+      expect(boxes).toHaveLength(2);
+      for (const [index, box] of Array.from(boxes).entries()) {
+        expect(box.checked).toBe(index === 1);
+        expect(box).toBeDisabled();
+        const style = getComputedStyle(box);
+        expect(style.marginInlineEnd).toBe("8px");
+        expect(style.marginInlineStart).toBe("0px");
+        const row = box.closest("li")!;
+        const range = row.ownerDocument.createRange();
+        range.setStartAfter(box);
+        range.setEnd(row, row.childNodes.length);
+        const label = range.getBoundingClientRect();
+        const checkbox = box.getBoundingClientRect();
+        expect(
+          locale === "th-TH"
+            ? label.left - checkbox.right
+            : checkbox.left - label.right
+        ).toBeGreaterThanOrEqual(8);
+      }
+    }
+  },
+};
+
 export const DirectionAwareFootnotes: Story = {
   render: () => (
     <div dir="rtl">

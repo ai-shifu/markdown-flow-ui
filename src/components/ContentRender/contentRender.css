@@ -107,8 +107,8 @@
   margin-bottom: 0.25rem;
 }
 
-.content-render-checkbox {
-  margin-right: 0.5rem;
+.content-render .content-render-checkbox {
+  margin-inline-end: 0.5rem;
   height: 1rem;
   width: 1rem;
   border-radius: 0.25rem;

@@ -28,6 +28,7 @@ import {
   type MarkdownFlowLocale,
 } from "../../lib/locale";
 import { useDetachedLanguage } from "../../lib/useDetachedLanguage";
+import { usePlayerShortcutDirection } from "./utils/usePlayerShortcutDirection";
 import { cn } from "../../lib/utils";
 import MobilePlayerSettingsSheet from "./MobilePlayerSettingsSheet";
 import { getSlidePlayerTexts, type SlidePlayerLocaleTexts } from "./slideI18n";
@@ -331,6 +332,11 @@ const Player = ({
   const localKeyboardShortcutOwnerId = useId();
   const keyboardShortcutContext = useContext(PlayerKeyboardShortcutContext);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { shortcutDirection, readDirection } = usePlayerShortcutDirection(
+    audioRef,
+    direction
+  );
+  const isRtlNavigation = shortcutDirection === "rtl";
   const portalLanguage = useDetachedLanguage(audioRef, language);
   const previousInteractionOpenRef = useRef(isInteractionOpen);
   const audioSrcRef = useRef<string | null>(null);
@@ -451,8 +457,10 @@ const Player = ({
   );
   const previousShortcutMetadata = getShortcutMetadata(
     playerTexts.previousLabel,
-    PLAYER_SHORTCUT_LABELS.previous,
-    "ArrowLeft"
+    isRtlNavigation
+      ? PLAYER_SHORTCUT_LABELS.next
+      : PLAYER_SHORTCUT_LABELS.previous,
+    isRtlNavigation ? "ArrowRight" : "ArrowLeft"
   );
   const previousSubtitleShortcutMetadata = getShortcutMetadata(
     playerTexts.previousSubtitleLabel,
@@ -466,8 +474,10 @@ const Player = ({
   );
   const nextShortcutMetadata = getShortcutMetadata(
     playerTexts.nextLabel,
-    PLAYER_SHORTCUT_LABELS.next,
-    "ArrowRight"
+    isRtlNavigation
+      ? PLAYER_SHORTCUT_LABELS.previous
+      : PLAYER_SHORTCUT_LABELS.next,
+    isRtlNavigation ? "ArrowLeft" : "ArrowRight"
   );
   const nextSubtitleShortcutMetadata = getShortcutMetadata(
     playerTexts.nextSubtitleLabel,
@@ -1831,7 +1841,7 @@ const Player = ({
         return;
       }
 
-      const action = getPlayerKeyboardShortcutAction(event);
+      const action = getPlayerKeyboardShortcutAction(event, readDirection());
 
       if (!action || shouldIgnorePlayerKeyboardShortcutEvent(event, action)) {
         return;
@@ -1854,7 +1864,7 @@ const Player = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [keyboardShortcutOwnerId, shouldEnableKeyboardShortcuts]);
+  }, [keyboardShortcutOwnerId, readDirection, shouldEnableKeyboardShortcuts]);
 
   useEffect(() => {
     onPlaybackTimeChange?.(playbackTimeMsRef.current);

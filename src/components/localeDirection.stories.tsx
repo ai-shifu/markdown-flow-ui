@@ -350,6 +350,114 @@ export const PlayerDirectionOverride: Story = {
   },
 };
 
+const KeyboardDirectionFixture = () => {
+  const [locale, setLocale] = useState<MarkdownFlowLocale | undefined>("ar-SA");
+  const [dir, setDir] = useState<string>();
+  const [hostDir, setHostDir] = useState("rtl");
+  const [text, setText] = useState("معاينة");
+  const [lastAction, setLastAction] = useState("");
+  const [enabled, setEnabled] = useState(true);
+  return (
+    <div>
+      {(["ar-SA", "th-TH", undefined] as const).map((value) => (
+        <button
+          key={value ?? "inherit"}
+          onClick={() => {
+            setLocale(value);
+            setDir(undefined);
+          }}
+        >
+          {value ?? "inherit"}
+        </button>
+      ))}
+      {["ltr", "rtl", "auto"].map((value) => (
+        <button key={value} onClick={() => setDir(value)}>
+          {value}
+        </button>
+      ))}
+      <button onClick={() => setHostDir("ltr")}>Change host</button>
+      <button onClick={() => setText("Preview")}>Change text</button>
+      <button onClick={() => setEnabled(false)}>Disable shortcuts</button>
+      <output data-testid="keyboard-result">{lastAction}</output>
+      <div dir={hostDir}>
+        <Player
+          locale={locale}
+          dir={dir}
+          defaultPlaying={false}
+          enableKeyboardShortcuts={enabled}
+          onPrev={() => setLastAction("previous")}
+          onNext={() => setLastAction("next")}
+          customActions={<span>{text}</span>}
+        />
+      </div>
+    </div>
+  );
+};
+
+export const DirectionAwarePageShortcuts: Story = {
+  render: () => <KeyboardDirectionFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const player = canvasElement.querySelector<HTMLElement>(".slide-player")!;
+    const previous = player.querySelector<HTMLButtonElement>(
+      ".slide-player__action--prev"
+    )!;
+    const next = player.querySelector<HTMLButtonElement>(
+      ".slide-player__action--next"
+    )!;
+    const check = async (direction: "ltr" | "rtl") => {
+      const previousKey = direction === "rtl" ? "ArrowRight" : "ArrowLeft";
+      const nextKey = direction === "rtl" ? "ArrowLeft" : "ArrowRight";
+      await waitFor(() => {
+        expect(getComputedStyle(player).direction).toBe(direction);
+        expect(previous).toHaveAttribute("aria-keyshortcuts", previousKey);
+        expect(next).toHaveAttribute("aria-keyshortcuts", nextKey);
+        expect(
+          previous.title.endsWith(direction === "rtl" ? "(→)" : "(←)")
+        ).toBe(true);
+        expect(next.title.endsWith(direction === "rtl" ? "(←)" : "(→)")).toBe(
+          true
+        );
+      });
+      expectPlayerNavigationDirection(player);
+      await userEvent.click(previous);
+      await userEvent.keyboard(`{${nextKey}}`);
+      expect(canvas.getByTestId("keyboard-result")).toHaveTextContent("next");
+      await userEvent.keyboard(`{${previousKey}}`);
+      expect(canvas.getByTestId("keyboard-result")).toHaveTextContent(
+        "previous"
+      );
+      expect(
+        player.querySelector(".slide-player__action--prev-subtitle")
+      ).toHaveAttribute("aria-keyshortcuts", "Shift+ArrowLeft");
+      expect(
+        player.querySelector(".slide-player__action--next-subtitle")
+      ).toHaveAttribute("aria-keyshortcuts", "Shift+ArrowRight");
+    };
+    await check("rtl");
+    for (const [button, direction] of [
+      ["ltr", "ltr"],
+      ["th-TH", "ltr"],
+      ["rtl", "rtl"],
+      ["inherit", "rtl"],
+      ["Change host", "ltr"],
+      ["auto", "rtl"],
+      ["Change text", "ltr"],
+    ] as const) {
+      await userEvent.click(canvas.getByRole("button", { name: button }));
+      await check(direction);
+    }
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Disable shortcuts" })
+    );
+    expect(previous).not.toHaveAttribute("aria-keyshortcuts");
+    expect(next).not.toHaveAttribute("aria-keyshortcuts");
+    await userEvent.click(previous);
+    await userEvent.keyboard("{ArrowRight}");
+    expect(canvas.getByTestId("keyboard-result")).toHaveTextContent("previous");
+  },
+};
+
 const slideDirectionElements: { id: string; element: SlideElement }[] = [
   {
     id: "markdown-slide",

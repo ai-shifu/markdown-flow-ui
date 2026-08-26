@@ -128,11 +128,18 @@ export const ScrollViewportLocaleDirection: Story = {
   },
 };
 
+const getCustomToolbarTooltip = (locale?: MarkdownFlowLocale) => {
+  if (locale === "ar-SA") return "إجراء مخصص";
+  if (locale === "th-TH") return "การดำเนินการกำหนดเอง";
+  return "Custom tooltip";
+};
+
 const LanguageBoundaryFixture = () => {
   const [locale, setLocale] = useState<MarkdownFlowLocale>();
   const [lang, setLang] = useState<string>();
   const [hostLanguage, setHostLanguage] = useState("fr");
   const props = { locale, lang };
+  const customTooltip = getCustomToolbarTooltip(locale);
   const html = '<div><p>Default language</p><p lang="it">Ciao</p></div>';
   return (
     <div lang={hostLanguage}>
@@ -160,6 +167,14 @@ const LanguageBoundaryFixture = () => {
           editMode={EditMode.QuickEdit}
           content="{{learner}}"
           variables={[{ name: "learner" }]}
+          toolbarActionsRight={[
+            {
+              key: "custom",
+              label: "Custom action",
+              tooltip: customTooltip,
+              onClick: () => undefined,
+            },
+          ]}
         />
       </div>
       <div data-testid="language-player">
@@ -199,6 +214,27 @@ const LanguageBoundaryFixture = () => {
         <ContentRender {...props} content={html} />
       </div>
     </div>
+  );
+};
+
+const expectDetachedTooltip = async (
+  body: HTMLElement,
+  trigger: HTMLElement,
+  text: string,
+  language: string,
+  direction: "ltr" | "rtl"
+) => {
+  const page = within(body);
+  await userEvent.hover(trigger);
+  const tooltip = await page.findByRole("tooltip", { name: text });
+  const content = tooltip.parentElement!;
+  expect(content).toHaveAttribute("lang", language);
+  expect(content).toHaveAttribute("dir", direction);
+  expect(tooltip.closest("[lang]")).toBe(content);
+  expect(getComputedStyle(tooltip).direction).toBe(direction);
+  await userEvent.unhover(trigger);
+  await waitFor(() =>
+    expect(page.queryByRole("tooltip", { name: text })).toBeNull()
   );
 };
 
@@ -251,6 +287,23 @@ export const LanguageAcrossBoundaries: Story = {
       });
       const editor = within(canvas.getByTestId("language-editor"));
       const texts = getEditorLocaleMessages(locale);
+      const direction = locale === "ar-SA" ? "rtl" : "ltr";
+      await expectDetachedTooltip(
+        canvasElement.ownerDocument.body,
+        editor.getByRole("button", {
+          name: texts.toolbarInsertExistingVariable,
+        }),
+        texts.toolbarInsertExistingVariable,
+        language,
+        direction
+      );
+      await expectDetachedTooltip(
+        canvasElement.ownerDocument.body,
+        editor.getByRole("button", { name: "Custom action" }),
+        getCustomToolbarTooltip(locale),
+        language,
+        direction
+      );
       await userEvent.click(
         editor.getByRole("button", { name: texts.toolbarInsertImage })
       );

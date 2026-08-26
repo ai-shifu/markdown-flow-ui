@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useState,
-  useCallback,
-  useRef,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-} from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { autocompletion } from "@codemirror/autocomplete";
 import { EditorView, ViewUpdate } from "@codemirror/view";
@@ -66,6 +59,7 @@ import {
   type MarkdownFlowLocale,
 } from "../../lib/locale";
 import { useDetachedLanguage } from "../../lib/useDetachedLanguage";
+import { useResolvedDirection } from "../../lib/useResolvedDirection";
 
 if (!i18next.isInitialized) {
   i18next.use(initReactI18next).init({
@@ -270,32 +264,10 @@ const Editor: React.FC<EditorProps> = ({
   const [popoverOpen, setPopoverOpen] = useState(false);
   const editorRootRef = useRef<HTMLDivElement>(null);
   const portalLanguage = useDetachedLanguage(editorRootRef, language);
-  const [inheritedDirection, setInheritedDirection] = useState<"ltr" | "rtl">();
-  const portalDirection = direction ?? inheritedDirection;
-
-  useLayoutEffect(() => {
-    const root = editorRootRef.current;
-    if (direction || (!dialogOpen && !popoverOpen) || !root) return;
-    const updateDirection = () => {
-      setInheritedDirection(
-        getComputedStyle(root).direction === "rtl" ? "rtl" : "ltr"
-      );
-    };
-    updateDirection();
-    // Portals cannot inherit from the editor, so track its host while open.
-    const observer = new MutationObserver(updateDirection);
-    for (
-      let ancestor: HTMLElement | null = root;
-      ancestor;
-      ancestor = ancestor.parentElement
-    ) {
-      observer.observe(ancestor, {
-        attributes: true,
-        attributeFilter: ["dir", "class", "style"],
-      });
-    }
-    return () => observer.disconnect();
-  }, [direction, dialogOpen, popoverOpen]);
+  const { resolvedDirection: portalDirection } = useResolvedDirection(
+    editorRootRef,
+    direction
+  );
   const [popoverPosition, setPopoverPosition] =
     useState<PopoverPosition | null>(null);
   const [variables, setVariables] = useState<Variable[]>(
@@ -1095,7 +1067,13 @@ const Editor: React.FC<EditorProps> = ({
           const wrapped = action.tooltip ? (
             <Tooltip>
               <TooltipTrigger asChild>{button}</TooltipTrigger>
-              <TooltipContent side="top">{action.tooltip}</TooltipContent>
+              <TooltipContent
+                side="top"
+                dir={portalDirection}
+                lang={portalLanguage}
+              >
+                {action.tooltip}
+              </TooltipContent>
             </Tooltip>
           ) : (
             button
@@ -1111,7 +1089,14 @@ const Editor: React.FC<EditorProps> = ({
         })}
       </div>
     );
-  }, [disabled, editorApi, handleToolbarActionClick, toolbarActionsRight]);
+  }, [
+    disabled,
+    editorApi,
+    handleToolbarActionClick,
+    portalDirection,
+    portalLanguage,
+    toolbarActionsRight,
+  ]);
 
   useEffect(() => {
     onReady?.(editorApi);
@@ -1129,6 +1114,8 @@ const Editor: React.FC<EditorProps> = ({
       <EditorToolbar
         disabled={disabled}
         labels={toolbarLabels}
+        tooltipDirection={portalDirection}
+        tooltipLanguage={portalLanguage}
         onSelect={onSelectedOption}
         onInsertVariablePlaceholder={insertVariableTemplate}
         onVariableSearchToggle={handleVariableSearchToggle}

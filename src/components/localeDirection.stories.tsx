@@ -1425,6 +1425,30 @@ const markdownAlertVariants = [
   ["caution", "rgb(207, 34, 46)"],
 ] as const;
 
+const buildMarkdownAlert = (variant: string, dir?: string) => {
+  const dirAttribute = dir ? ` dir="${dir}"` : "";
+  return `<aside class="markdown-alert markdown-alert-${variant}"${dirAttribute}><p class="markdown-alert-title">${variant}</p><p>Alert content</p></aside>`;
+};
+
+const expectMarkdownAlert = (alert: Element, color: string, locale: string) => {
+  const style = getComputedStyle(alert);
+  const direction =
+    alert.getAttribute("dir") ?? (locale === "th-TH" ? "ltr" : "rtl");
+  expect(style.direction).toBe(direction);
+  expect(
+    Number.parseFloat(
+      direction === "rtl" ? style.borderRightWidth : style.borderLeftWidth
+    )
+  ).toBeGreaterThan(0);
+  expect(
+    direction === "rtl" ? style.borderLeftWidth : style.borderRightWidth
+  ).toBe("0px");
+  expect(
+    direction === "rtl" ? style.borderRightColor : style.borderLeftColor
+  ).toBe(color);
+  expect(alert).toHaveTextContent("Alert content");
+};
+
 const buildHeadingAnchor = (context: "heading" | "summary", dir?: string) => {
   const dirAttribute = dir ? ` dir="${dir}"` : "";
   const heading = `<h2${dirAttribute}><a class="anchor" href="#anchor-${context}-${dir ?? "inherited"}">#</a>Heading</h2>`;
@@ -1496,9 +1520,8 @@ export const DirectionAwareMarkdownAlerts: Story = {
     <LocaleContentFixture
       content={markdownAlertVariants
         .flatMap(([variant]) =>
-          [undefined, "ltr", "rtl"].map(
-            (dir) =>
-              `<aside class="markdown-alert markdown-alert-${variant}"${dir ? ` dir="${dir}"` : ""}><p class="markdown-alert-title">${variant}</p><p>Alert content</p></aside>`
+          [undefined, "ltr", "rtl"].map((dir) =>
+            buildMarkdownAlert(variant, dir)
           )
         )
         .join("\n\n")}
@@ -1512,24 +1535,7 @@ export const DirectionAwareMarkdownAlerts: Story = {
         const alerts = fixture.querySelectorAll(`.markdown-alert-${variant}`);
         expect(alerts).toHaveLength(3);
         for (const alert of alerts) {
-          const style = getComputedStyle(alert);
-          const direction =
-            alert.getAttribute("dir") ?? (locale === "th-TH" ? "ltr" : "rtl");
-          expect(style.direction).toBe(direction);
-          expect(
-            Number.parseFloat(
-              direction === "rtl"
-                ? style.borderRightWidth
-                : style.borderLeftWidth
-            )
-          ).toBeGreaterThan(0);
-          expect(
-            direction === "rtl" ? style.borderLeftWidth : style.borderRightWidth
-          ).toBe("0px");
-          expect(
-            direction === "rtl" ? style.borderRightColor : style.borderLeftColor
-          ).toBe(color);
-          expect(alert).toHaveTextContent("Alert content");
+          expectMarkdownAlert(alert, color, locale);
         }
       }
     }

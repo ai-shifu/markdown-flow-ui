@@ -122,6 +122,40 @@ export const PlayerDirectionOverride: Story = {
   },
 };
 
+const sourceCode =
+  'const greeting = "مرحبا";\nconst url = "https://example.com/a?b=1";';
+
+export const ArabicCodeBlocks: Story = {
+  render: () => (
+    <ContentRender
+      locale="ar-SA"
+      content={`نص عربي\n\n\`\`\`javascript\n${sourceCode}\n\`\`\`\n\n\`\`\`\n${sourceCode}\n\`\`\``}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const blocks = canvasElement.querySelectorAll(".code-block-container");
+    expect(blocks).toHaveLength(2);
+    expect(getComputedStyle(canvasElement.querySelector("p")!).direction).toBe(
+      "rtl"
+    );
+    for (const block of blocks) {
+      const pre = block.querySelector("pre")!;
+      expect(getComputedStyle(pre).direction).toBe("ltr");
+      expect(getComputedStyle(pre).textAlign).toBe("left");
+      expect(getComputedStyle(pre).unicodeBidi).toBe("isolate");
+      expect(getComputedStyle(pre.querySelector("code")!).direction).toBe(
+        "ltr"
+      );
+      expect(pre.textContent?.trim()).toBe(sourceCode);
+      const copyButton = block.querySelector("button")!;
+      expect(getComputedStyle(copyButton).direction).toBe("rtl");
+      expect(copyButton).toHaveTextContent(
+        getContentRenderLocaleTexts("ar-SA").copyButtonText
+      );
+    }
+  },
+};
+
 const SandboxDirectionFixture = ({
   mode,
 }: {

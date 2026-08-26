@@ -92,7 +92,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
           {isCopied ? copiedButtonText : copyButtonText}
         </button>
       </div>
-      <pre className={preClassName}>{children}</pre>
+      <pre className={preClassName} dir="ltr">
+        {children}
+      </pre>
     </div>
   );
 };

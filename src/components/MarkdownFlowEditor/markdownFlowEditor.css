@@ -364,7 +364,7 @@
 
 .variable-search-item {
   width: 100%;
-  text-align: left;
+  text-align: start;
   border: none;
   background: transparent;
   border-radius: 6px;

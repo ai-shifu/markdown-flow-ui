@@ -418,18 +418,25 @@ export const EditorDialogCloseLabels: Story = {
 };
 
 export const ArabicVariableDropdown: Story = {
-  render: () => (
+  parameters: { dropdownLocale: "ar-SA" },
+  render: (_args, { parameters }) => (
     <div style={{ width: 320, marginLeft: "auto" }}>
       <MarkdownFlowEditor
-        locale="ar-SA"
-        variables={[{ name: "learner", label: "متعلم" }]}
+        locale={parameters.dropdownLocale}
+        variables={[
+          {
+            name: "learner",
+            label: parameters.dropdownLocale === "ar-SA" ? "متعلم" : "ผู้เรียน",
+          },
+        ]}
       />
     </div>
   ),
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, parameters }) => {
     const canvas = within(canvasElement);
     const trigger = canvas.getByRole("button", {
-      name: getEditorLocaleMessages("ar-SA").toolbarInsertExistingVariable,
+      name: getEditorLocaleMessages(parameters.dropdownLocale)
+        .toolbarInsertExistingVariable,
     });
     await userEvent.click(trigger);
     await waitFor(() => {
@@ -442,9 +449,33 @@ export const ArabicVariableDropdown: Story = {
       expect(rect.right).toBeLessThanOrEqual(
         canvasElement.ownerDocument.documentElement.clientWidth - 8
       );
-      expect(rect.right).toBeCloseTo(trigger.getBoundingClientRect().right, 0);
+      if (parameters.dropdownLocale === "ar-SA") {
+        expect(rect.right).toBeCloseTo(
+          trigger.getBoundingClientRect().right,
+          0
+        );
+      }
+      const item = panel.querySelector(".variable-search-item")!;
+      expect(item).not.toBeNull();
+      for (const element of [
+        item,
+        ...item.querySelectorAll(
+          ".variable-search-item-name, .variable-search-item-label"
+        ),
+      ]) {
+        const style = getComputedStyle(element);
+        expect(style.direction).toBe(
+          parameters.dropdownLocale === "ar-SA" ? "rtl" : "ltr"
+        );
+        expect(style.textAlign).toBe("start");
+      }
     });
   },
+};
+
+export const ThaiVariableDropdown: Story = {
+  ...ArabicVariableDropdown,
+  parameters: { dropdownLocale: "th-TH" },
 };
 
 const SandboxDirectionFixture = ({

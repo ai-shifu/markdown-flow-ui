@@ -1414,6 +1414,72 @@ const markdownAlertVariants = [
   ["caution", "rgb(207, 34, 46)"],
 ] as const;
 
+const buildHeadingAnchor = (context: "heading" | "summary", dir?: string) => {
+  const dirAttribute = dir ? ` dir="${dir}"` : "";
+  const heading = `<h2${dirAttribute}><a class="anchor" href="#anchor-${context}-${dir ?? "inherited"}">#</a>Heading</h2>`;
+  return context === "summary"
+    ? `<details open><summary>${heading}</summary><p>Details</p></details>`
+    : heading;
+};
+
+const expectHeadingAnchorPosition = (
+  anchor: Element,
+  direction: "ltr" | "rtl",
+  margin: string
+) => {
+  const style = getComputedStyle(anchor);
+  expect(style.direction).toBe(direction);
+  expect(style.cssFloat).toBe("inline-start");
+  expect(direction === "rtl" ? style.paddingLeft : style.paddingRight).toBe(
+    "4px"
+  );
+  expect(direction === "rtl" ? style.paddingRight : style.paddingLeft).toBe(
+    "0px"
+  );
+  expect(direction === "rtl" ? style.marginRight : style.marginLeft).toBe(
+    margin
+  );
+  expect(direction === "rtl" ? style.marginLeft : style.marginRight).toBe(
+    "0px"
+  );
+};
+
+export const DirectionAwareHeadingAnchors: Story = {
+  render: () => (
+    <LocaleContentFixture
+      content={([undefined, "ltr", "rtl"] as const)
+        .flatMap((dir) => [
+          buildHeadingAnchor("heading", dir),
+          buildHeadingAnchor("summary", dir),
+        ])
+        .join("\n\n")}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const locale of ["ar-SA", "th-TH", "inherit"]) {
+      const fixture = canvas.getByTestId(locale);
+      const expectedInheritedDirection = locale === "th-TH" ? "ltr" : "rtl";
+      const anchors = fixture.querySelectorAll(".anchor");
+      expect(anchors).toHaveLength(6);
+      for (const [index, direction] of [
+        expectedInheritedDirection,
+        expectedInheritedDirection,
+        "ltr",
+        "ltr",
+        "rtl",
+        "rtl",
+      ].entries()) {
+        expectHeadingAnchorPosition(
+          anchors[index],
+          direction as "ltr" | "rtl",
+          index % 2 === 0 ? "-20px" : "-40px"
+        );
+      }
+    }
+  },
+};
+
 export const DirectionAwareMarkdownAlerts: Story = {
   render: () => (
     <LocaleContentFixture

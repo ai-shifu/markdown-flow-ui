@@ -555,9 +555,9 @@
 }
 
 .markdown-body .anchor {
-  float: left;
-  padding-right: var(--base-size-4);
-  margin-left: -20px;
+  float: inline-start;
+  padding-inline-end: var(--base-size-4);
+  margin-inline-start: -20px;
   line-height: 1;
 }
 
@@ -645,7 +645,7 @@
 .markdown-body summary h4 .anchor,
 .markdown-body summary h5 .anchor,
 .markdown-body summary h6 .anchor {
-  margin-left: -40px;
+  margin-inline-start: -40px;
 }
 
 .markdown-body summary h1,

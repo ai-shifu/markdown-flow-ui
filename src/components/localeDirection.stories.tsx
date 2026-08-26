@@ -901,6 +901,17 @@ export const SlideContentDirectionOverride: Story = {
         expect(inputs).toHaveLength(2);
         for (const input of inputs)
           expect(getComputedStyle(input).direction).toBe(dir);
+        const interactionHeader = canvas
+          .getByTestId("interaction-slide")
+          .querySelector(".slide-player__interaction-header")!;
+        const headerStyle = getComputedStyle(interactionHeader);
+        expect(headerStyle.paddingTop).toBe("24px");
+        expect(
+          dir === "rtl" ? headerStyle.paddingRight : headerStyle.paddingLeft
+        ).toBe("24px");
+        expect(
+          dir === "rtl" ? headerStyle.paddingLeft : headerStyle.paddingRight
+        ).toBe("56px");
         const iframe = canvas
           .getByTestId("html-slide")
           .querySelector("iframe")!;

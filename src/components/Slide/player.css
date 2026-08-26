@@ -295,7 +295,8 @@
 }
 
 .slide-player__interaction-header {
-  padding: 24px 56px 0 24px;
+  padding-block: 24px 0;
+  padding-inline: 24px 56px;
 }
 
 .slide-player__interaction-title {

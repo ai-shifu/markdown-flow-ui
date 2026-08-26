@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
+import mermaid from "mermaid";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ContentRender from "./ContentRender";
@@ -27,6 +28,23 @@ describe.each([
   ],
   ["markdown code renderer", (chart: string) => `~~~mermaid\n${chart}\n~~~`],
 ] as const)("Mermaid locale in %s", (_name, contentFor) => {
+  it("keeps invalid source LTR without changing the message direction", async () => {
+    vi.mocked(mermaid.parse).mockRejectedValueOnce(
+      new Error("Invalid Mermaid source")
+    );
+    const chart = 'invalid ??? ["مرحبا"] -->;';
+    const { container } = render(
+      <ContentRender content={contentFor(chart)} locale="ar-SA" />
+    );
+    const message = await screen.findByText("error: invalid mermaid source");
+    const pre = container.querySelector("code")!.parentElement!;
+    expect(pre.getAttribute("dir")).toBe("ltr");
+    expect(pre.querySelector("code")?.textContent).toBe(chart);
+    expect(message.closest("[dir]")?.getAttribute("dir")).toBe(
+      _name === "markdown code renderer" ? "ltr" : "rtl"
+    );
+  });
+
   it.each(["loading", "empty"] as const)(
     "updates the %s message when the locale changes without changing the chart",
     (state) => {

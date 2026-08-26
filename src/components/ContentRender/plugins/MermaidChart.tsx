@@ -97,7 +97,10 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
           </span>
         </div>
         <div className="relative">
-          <pre className="p-4 text-sm font-mono text-yellow-800">
+          <pre
+            dir="ltr"
+            className="p-4 text-sm font-mono text-yellow-800 text-start [unicode-bidi:isolate]"
+          >
             <code>{displayChart}</code>
           </pre>
           <div className="absolute top-2 right-2 px-2 py-1 text-xs text-yellow-700 bg-white/90 rounded border border-gray-200">

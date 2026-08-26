@@ -644,6 +644,29 @@ export const MermaidLocaleMessages: Story = {
   },
 };
 
+export const MermaidErrorSourceDirection: Story = {
+  render: () => (
+    <ContentRender
+      locale="ar-SA"
+      content={'```mermaid\ninvalid ??? ["مرحبا"] -->;\n```'}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    await waitFor(() => {
+      const pre = canvasElement.querySelector("pre")!;
+      expect(pre).not.toBeNull();
+      expect(getComputedStyle(pre).direction).toBe("ltr");
+      expect(getComputedStyle(pre).unicodeBidi).toBe("isolate");
+      expect(getComputedStyle(pre).textAlign).toBe("start");
+      expect(pre.querySelector("code")!.textContent).toBe(
+        'invalid ??? ["مرحبا"] -->;'
+      );
+      const message = pre.parentElement!.previousElementSibling!;
+      expect(getComputedStyle(message).direction).toBe("rtl");
+    });
+  },
+};
+
 export const ArabicCodeBlocks: Story = {
   render: () => (
     <ContentRender

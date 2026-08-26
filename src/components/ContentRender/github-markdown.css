@@ -957,12 +957,12 @@
 }
 
 .markdown-body .footnotes ol {
-  padding-left: var(--base-size-16);
+  padding-inline-start: var(--base-size-16);
 }
 
 .markdown-body .footnotes ol ul {
   display: inline-block;
-  padding-left: var(--base-size-16);
+  padding-inline-start: var(--base-size-16);
   margin-top: var(--base-size-16);
 }
 

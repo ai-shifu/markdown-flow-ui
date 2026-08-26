@@ -474,6 +474,42 @@ export const DirectionAwareMarkdownStructure: Story = {
   },
 };
 
+export const DirectionAwareFootnotes: Story = {
+  render: () => (
+    <div dir="rtl">
+      {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
+        <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
+          <ContentRender
+            locale={locale}
+            content={[
+              "نص مع حاشية[^note].",
+              "",
+              "[^note]: Footnote text",
+              "",
+              "    - Nested item",
+              "      - Deeper item",
+            ].join("\n")}
+          />
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const locale of ["ar-SA", "th-TH", "inherit"]) {
+      const fixture = canvas.getByTestId(locale);
+      const lists = fixture.querySelectorAll(".footnotes ol, .footnotes ul");
+      expect(lists).toHaveLength(3);
+      for (const list of lists) {
+        const style = getComputedStyle(list);
+        expect(style.direction).toBe(locale === "th-TH" ? "ltr" : "rtl");
+        expect(style.paddingInlineStart).toBe("16px");
+        expect(style.paddingInlineEnd).toBe("0px");
+      }
+    }
+  },
+};
+
 const wrappedChoices = [
   {
     id: "arabic",

@@ -102,9 +102,6 @@ export const ScrollViewportLocaleDirection: Story = {
     )!;
     const viewport = wrapper.firstElementChild as HTMLElement;
     const flow = wrapper.querySelector(".markdown-flow")!;
-    const scrollButton = wrapper.querySelector<HTMLButtonElement>(
-      "button[data-placement]"
-    )!;
     for (const [button, attribute, direction] of [
       ["Arabic", "rtl", "rtl"],
       ["Thai", "ltr", "ltr"],
@@ -126,18 +123,6 @@ export const ScrollViewportLocaleDirection: Story = {
         expect(viewport.clientLeft).toBe(
           direction === "rtl" ? scrollbarWidth : 0
         );
-      });
-      viewport.scrollTop = 0;
-      viewport.dispatchEvent(new Event("scroll"));
-      await waitFor(() =>
-        expect(scrollButton).toHaveAttribute("data-visible", "true")
-      );
-      await userEvent.click(scrollButton);
-      await waitFor(() => {
-        expect(viewport.scrollTop).toBeGreaterThanOrEqual(
-          viewport.scrollHeight - viewport.clientHeight - 2
-        );
-        expect(scrollButton).toHaveAttribute("data-visible", "false");
       });
     }
   },

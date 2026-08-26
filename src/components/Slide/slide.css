@@ -62,6 +62,10 @@
   color: inherit;
 }
 
+.slide-landscape-header__back:dir(rtl) .slide-landscape-header__icon {
+  transform: scaleX(-1);
+}
+
 .slide__viewport-content--with-header {
   box-sizing: border-box;
   padding: calc(

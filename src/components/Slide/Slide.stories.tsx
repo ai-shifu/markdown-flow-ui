@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
-import { expect, userEvent, waitFor } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import historyFixtureText from "../../../测试历史数据.json?raw";
 import runStreamFixtureText from "../../../测试数据.json?raw";
@@ -2974,6 +2974,73 @@ export const CustomInteractionDragHandle: Story = {
     ...ArabicInteractionDragHandle.args,
     interactionTexts: { dragHandleAriaLabel: "Move answer panel" },
   },
+};
+
+export const ArabicFullscreenBackIcon: Story = {
+  args: {
+    elementList: DRAG_TEST_ELEMENT_LIST,
+    locale: "ar-SA",
+    playerEnabled: true,
+    playerControlsVisibility: "visible",
+  },
+  parameters: { expectedDirection: "rtl" },
+  render: (args) => <MobilePointerDragSlidePreview {...args} />,
+  play: async ({ canvasElement, args, parameters }) => {
+    const labels = getSlideLocaleTexts(args.locale);
+    const more = await waitFor(() => {
+      const button = canvasElement.querySelector<HTMLButtonElement>(
+        ".slide-player__action--mobile-more"
+      );
+      expect(button).not.toBeNull();
+      return button!;
+    });
+    more.click();
+    const page = within(canvasElement.ownerDocument.body);
+    await waitFor(() => expect(page.getByRole("dialog")).toBeVisible());
+    await userEvent.click(
+      page.getByRole("radio", {
+        name: labels.playerTexts.fullscreenLabel,
+        exact: true,
+      })
+    );
+    const back = await waitFor(() => {
+      const button = within(canvasElement).getByRole("button", {
+        name: labels.fullscreenBackAriaLabel,
+      });
+      expect(button).toBeVisible();
+      return button;
+    });
+    expect(getComputedStyle(back).direction).toBe(parameters.expectedDirection);
+    const transform = getComputedStyle(back.querySelector("svg")!).transform;
+    const scaleX = transform === "none" ? 1 : new DOMMatrix(transform).a;
+    expect(scaleX).toBe(parameters.expectedDirection === "rtl" ? -1 : 1);
+    await userEvent.click(back);
+    await waitFor(() =>
+      expect(canvasElement.querySelector(".slide-landscape-header")).toBeNull()
+    );
+  },
+};
+
+export const ArabicFullscreenBackIconLtrOverride: Story = {
+  ...ArabicFullscreenBackIcon,
+  args: { ...ArabicFullscreenBackIcon.args, dir: "ltr" },
+  parameters: { expectedDirection: "ltr" },
+};
+
+export const ThaiFullscreenBackIcon: Story = {
+  ...ArabicFullscreenBackIcon,
+  args: { ...ArabicFullscreenBackIcon.args, locale: "th-TH" },
+  parameters: { expectedDirection: "ltr" },
+};
+
+export const InheritedRtlFullscreenBackIcon: Story = {
+  ...ArabicFullscreenBackIcon,
+  args: { ...ArabicFullscreenBackIcon.args, locale: undefined },
+  render: (args) => (
+    <div dir="rtl">
+      <MobilePointerDragSlidePreview {...args} />
+    </div>
+  ),
 };
 
 export const MobileInteractionOverlayViewportReset: Story = {

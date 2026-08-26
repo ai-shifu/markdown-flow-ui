@@ -112,3 +112,48 @@ export const CodeAndMathKeepRendererStyles: Story = {
     });
   },
 };
+
+export const EmbeddedFlowDoesNotMoveOuterPage: Story = {
+  args: { height: 240, initialContentList: longContent },
+  render: (args) => (
+    <div
+      data-testid="outer-scroller"
+      style={{ height: 300, overflowY: "auto" }}
+    >
+      <div style={{ height: 800 }}>Content before the embedded flow</div>
+      <ScrollableMarkdownFlow {...args} />
+      <div style={{ height: 800 }}>Content after the embedded flow</div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const outer = canvasElement.querySelector<HTMLElement>(
+      '[data-testid="outer-scroller"]'
+    )!;
+    const viewport = getScrollContainer(canvasElement);
+    const button = getScrollButton(canvasElement);
+    const expectLocalBottom = () => {
+      expect(viewport.scrollTop).toBeGreaterThanOrEqual(
+        viewport.scrollHeight - viewport.clientHeight - 2
+      );
+    };
+    await waitFor(expectLocalBottom);
+    expect(outer.scrollTop).toBe(0);
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+
+    const growth = document.createElement("div");
+    growth.style.height = "400px";
+    viewport.firstElementChild!.appendChild(growth);
+    await waitFor(expectLocalBottom);
+    expect(outer.scrollTop).toBe(0);
+
+    outer.scrollTop = 800;
+    viewport.scrollTop = 0;
+    viewport.dispatchEvent(new Event("scroll"));
+    await waitFor(() => expect(button).toHaveAttribute("data-visible", "true"));
+    await userEvent.click(button);
+    await waitFor(expectLocalBottom);
+    expect(outer.scrollTop).toBe(800);
+  },
+};

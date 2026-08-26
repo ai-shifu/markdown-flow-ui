@@ -22,7 +22,6 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = (
   } = props;
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const endRef = useRef<HTMLDivElement>(null);
   const initialContentList = markdownFlowProps.initialContentList ?? [];
   const localeTexts = getContentRenderLocaleTexts(markdownFlowProps.locale);
   const resolvedScrollToBottomAriaLabel =
@@ -39,13 +38,12 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = (
             {...markdownFlowProps}
             initialContentList={initialContentList}
           />
-          <div ref={endRef} aria-hidden="true" />
         </div>
       </div>
       <ScrollToBottomControl
         viewportRef={viewportRef}
         contentRef={contentRef}
-        endRef={endRef}
+        scrollTarget={viewportRef}
         contentVersion={initialContentList}
         autoScrollOnInit
         scrollThreshold={150}

@@ -303,6 +303,55 @@ const LegacyClickFixture: React.FC<{ omitDependencies?: boolean }> = ({
   );
 };
 
+const InlineResolverFixture: React.FC = () => {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [revision, setRevision] = useState(0);
+  const [height, setHeight] = useState(2400);
+  const scroll = useScrollToBottom(viewportRef, {
+    scrollTarget: () => viewportRef.current,
+    contentRef,
+  });
+  return (
+    <div style={{ width: 640, maxWidth: "100%", margin: "0 auto" }}>
+      <div style={{ position: "relative" }}>
+        <div
+          ref={viewportRef}
+          data-testid="scroll-viewport"
+          style={{ height: 240, overflowY: "auto" }}
+        >
+          <div ref={contentRef} style={{ height, background: "#f3f7ff" }}>
+            Native smooth scrolling with an inline target resolver
+          </div>
+        </div>
+        <ScrollToBottomButton
+          visible={scroll.showScrollToBottom}
+          ariaLabel="Scroll to bottom"
+          onClick={scroll.handleUserScrollToBottom}
+        />
+      </div>
+      <output data-testid="following-state">
+        {scroll.followNewContent ? "Following" : "Paused"}
+      </output>
+      <button
+        type="button"
+        data-testid="rerender-resolver"
+        data-revision={revision}
+        onClick={() => setRevision((value) => value + 1)}
+      >
+        Rerender with a new resolver
+      </button>
+      <button
+        type="button"
+        data-testid="grow-content"
+        onClick={() => setHeight((value) => value + 200)}
+      >
+        Grow content
+      </button>
+    </div>
+  );
+};
+
 const NearBottomInterruptionFixture: React.FC = () => {
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -690,6 +739,70 @@ export const NearBottomInterruptionWaitsForUserMovement: Story = {
       expectAtBottom(viewport);
       expect(state).toHaveTextContent("Following");
     });
+  },
+};
+
+export const InlineResolverPreservesSmoothScrolling: Story = {
+  render: () => <InlineResolverFixture />,
+  play: async ({ canvasElement }) => {
+    const viewport = getViewport(canvasElement);
+    const button = getButton(canvasElement);
+    const following = canvasElement.querySelector(
+      '[data-testid="following-state"]'
+    )!;
+    await waitFor(() => {
+      expect(button).toHaveAttribute("data-visible", "true");
+      expect(getComputedStyle(button).opacity).toBe("1");
+    });
+    const originalScroll = viewport.scrollTo;
+    let onScrollEnd: () => void = () => {};
+    const scrollEnded = new Promise<void>((resolve) => {
+      onScrollEnd = resolve;
+    });
+    viewport.addEventListener("scrollend", onScrollEnd, { once: true });
+    const behaviors: (ScrollOptions["behavior"] | undefined)[] = [];
+    viewport.scrollTo = (options?: ScrollToOptions | number, y?: number) => {
+      behaviors.push(
+        typeof options === "object" ? options.behavior : undefined
+      );
+      Reflect.apply(
+        originalScroll,
+        viewport,
+        typeof options === "number" ? [options, y ?? 0] : [options]
+      );
+    };
+    try {
+      await userEvent.click(button);
+      await userEvent.click(
+        canvasElement.querySelector<HTMLButtonElement>(
+          '[data-testid="rerender-resolver"]'
+        )!
+      );
+      await waitFor(() => expect(viewport.scrollTop).toBeGreaterThan(0));
+      expect(viewport.scrollTop).toBeLessThan(
+        viewport.scrollHeight - viewport.clientHeight
+      );
+      expect(button).toHaveAttribute("data-visible", "false");
+      expect(following).toHaveTextContent("Following");
+      expect(behaviors).toEqual(["smooth"]);
+      await waitFor(() => expectAtBottom(viewport));
+      // Wait for the native animation's final events before testing later growth.
+      await scrollEnded;
+      expect(behaviors).toEqual(["smooth"]);
+      await userEvent.click(
+        canvasElement.querySelector<HTMLButtonElement>(
+          '[data-testid="grow-content"]'
+        )!
+      );
+      await waitFor(() => {
+        expect(viewport.scrollHeight).toBe(2600);
+        expectAtBottom(viewport);
+        expect(following).toHaveTextContent("Following");
+      });
+    } finally {
+      viewport.removeEventListener("scrollend", onScrollEnd);
+      viewport.scrollTo = originalScroll;
+    }
   },
 };
 

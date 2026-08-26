@@ -1,10 +1,14 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type RefObject,
 } from "react";
+
+const useCommittedLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 export type ScrollBehavior = "smooth" | "auto";
 export type PageScrollFallback = "auto" | "always" | "never";
@@ -327,6 +331,7 @@ export function useScrollToBottom(
   const boundViewportRef = useRef<HTMLElement | null>(null);
   const boundContentRef = useRef<HTMLElement | null>(null);
   const programmaticScrollRef = useRef(false);
+  const programmaticTargetsRef = useRef<ScrollTarget[]>([]);
   const interruptedPositionsRef = useRef<Map<ScrollTarget, number> | null>(
     null
   );
@@ -364,13 +369,34 @@ export function useScrollToBottom(
     clearSettleTimer();
   }, [clearSettleTimer]);
 
-  const getResolvedTargets = useCallback(
-    () => resolveScrollTargets(viewportRef, scrollTarget, pageScrollFallback),
-    [pageScrollFallback, scrollTarget, viewportRef]
-  );
+  const targetInputsRef = useRef({
+    viewportRef,
+    scrollTarget,
+    pageScrollFallback,
+  });
+  // Read the latest committed inputs without replaying effects for equivalent
+  // inline resolver functions. Abandoned renders must not change live targets.
+  useCommittedLayoutEffect(() => {
+    targetInputsRef.current = { viewportRef, scrollTarget, pageScrollFallback };
+  });
+  const getResolvedTargets = useCallback(() => {
+    const inputs = targetInputsRef.current;
+    return resolveScrollTargets(
+      inputs.viewportRef,
+      inputs.scrollTarget,
+      inputs.pageScrollFallback
+    );
+  }, []);
 
   const applyPresentation = useCallback(
     (targets: ScrollTarget[]) => {
+      if (
+        programmaticScrollRef.current &&
+        !sameTargets(targets, programmaticTargetsRef.current)
+      ) {
+        clearProgrammaticFrame();
+        finishProgrammaticScroll();
+      }
       if (
         interruptedPositionsRef.current &&
         !sameTargets(targets, [...interruptedPositionsRef.current.keys()])
@@ -403,7 +429,12 @@ export function useScrollToBottom(
       );
       return presentation;
     },
-    [finishProgrammaticScroll, scrollThreshold, setFollowing]
+    [
+      clearProgrammaticFrame,
+      finishProgrammaticScroll,
+      scrollThreshold,
+      setFollowing,
+    ]
   );
 
   const refresh = useCallback(() => {
@@ -428,6 +459,7 @@ export function useScrollToBottom(
 
       interruptedPositionsRef.current = null;
       programmaticScrollRef.current = true;
+      programmaticTargetsRef.current = targets;
       setFollowing(followEnabledRef.current);
       setShowScrollToBottom(false);
       clearProgrammaticFrame();
@@ -487,12 +519,16 @@ export function useScrollToBottom(
       nextContent === boundContentRef.current
     )
       return false;
+    // Reconcile before any queued layout frame can follow the replacement.
+    if (!sameTargets(nextTargets, boundTargetsRef.current)) {
+      applyPresentation(nextTargets);
+    }
     boundTargetsRef.current = nextTargets;
     boundViewportRef.current = nextViewport;
     boundContentRef.current = nextContent;
     setBindingRevision((current) => current + 1);
     return true;
-  }, [contentRef, getResolvedTargets, viewportRef]);
+  }, [applyPresentation, contentRef, getResolvedTargets, viewportRef]);
 
   useEffect(() => {
     const targets = getResolvedTargets();
@@ -744,16 +780,8 @@ export function useScrollToBottom(
     () => () => {
       clearProgrammaticFrame();
       finishProgrammaticScroll();
-      const targets = getResolvedTargets();
-      const targetWindow = targets[0] ? getTargetWindow(targets[0]) : null;
-      if (eventFrameRef.current !== null && targetWindow) {
-        targetWindow.cancelAnimationFrame(eventFrameRef.current);
-      }
-      if (contentFrameRef.current !== null && targetWindow) {
-        targetWindow.cancelAnimationFrame(contentFrameRef.current);
-      }
     },
-    [clearProgrammaticFrame, finishProgrammaticScroll, getResolvedTargets]
+    [clearProgrammaticFrame, finishProgrammaticScroll]
   );
 
   const handleUserScrollToBottom = useCallback(() => {

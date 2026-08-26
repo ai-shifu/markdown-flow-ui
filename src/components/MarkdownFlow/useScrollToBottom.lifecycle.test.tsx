@@ -486,6 +486,118 @@ describe.each([true, false])(
   }
 );
 
+describe("resolver identity and actual target lifetime", () => {
+  it.each<ScrollBehavior>(["smooth", "auto"])(
+    "preserves %s scrolling through inline resolver rerenders without replaying effects",
+    (behavior) => {
+      const target = createScroller();
+      const ref = { current: target };
+      const add = vi.spyOn(target, "addEventListener");
+      const remove = vi.spyOn(target, "removeEventListener");
+      const { result, rerender, unmount } = renderHook(() =>
+        useScrollToBottom(ref, { scrollTarget: () => ref.current })
+      );
+      flushFrames();
+      add.mockClear();
+      remove.mockClear();
+      act(() => result.current.scrollToBottom(behavior));
+      const completionFrame = nextFrame;
+      rerender();
+      rerender();
+      expect(result.current.followNewContent).toBe(true);
+      expect(result.current.showScrollToBottom).toBe(false);
+      expect(add).not.toHaveBeenCalled();
+      expect(remove).not.toHaveBeenCalled();
+      if (behavior === "smooth") {
+        expect(vi.getTimerCount()).toBe(1);
+        target.scrollTop = 200;
+        fireEvent.scroll(target);
+        flushFrames();
+        expect(result.current.followNewContent).toBe(true);
+        expect(result.current.showScrollToBottom).toBe(false);
+        expect(target.scrollTo).toHaveBeenCalledExactlyOnceWith({
+          top: 1000,
+          behavior: "smooth",
+        });
+      } else {
+        expect(frames.has(completionFrame)).toBe(true);
+      }
+      target.scrollTop = 800;
+      fireEvent.scroll(target);
+      flushFrames();
+      expect(result.current.followNewContent).toBe(true);
+      expect(result.current.showScrollToBottom).toBe(false);
+      unmount();
+      expect(frames.size).toBe(0);
+      expect(vi.getTimerCount()).toBe(0);
+    }
+  );
+
+  describe.each<ScrollBehavior>(["smooth", "auto"])(
+    "%s target replacement",
+    (behavior) => {
+      it.each(["inline", "stable", "ref"])(
+        "cleans completion work when a %s input resolves to a different target",
+        (kind) => {
+          const original = createScroller();
+          const replacement = createScroller();
+          const ref = { current: original };
+          const selected = { current: original as HTMLElement | null };
+          const resolve = () => selected.current;
+          const { result, rerender, unmount } = renderHook(() =>
+            useScrollToBottom(ref, {
+              scrollTarget:
+                kind === "inline"
+                  ? () => selected.current
+                  : kind === "ref"
+                    ? selected
+                    : resolve,
+            })
+          );
+          act(() => result.current.scrollToBottom(behavior));
+          const completionFrame = nextFrame;
+          if (behavior === "smooth") expect(vi.getTimerCount()).toBe(1);
+          else expect(frames.has(completionFrame)).toBe(true);
+          selected.current = replacement;
+          rerender();
+          expect(vi.getTimerCount()).toBe(0);
+          expect(frames.has(completionFrame)).toBe(false);
+          expect(result.current.showScrollToBottom).toBe(true);
+          expect(result.current.followNewContent).toBe(false);
+          act(() => result.current.scrollToBottom(behavior));
+          const replacementFrame = nextFrame;
+          selected.current = null;
+          rerender();
+          expect(vi.getTimerCount()).toBe(0);
+          expect(frames.has(replacementFrame)).toBe(false);
+          flushFrames();
+          unmount();
+          expect(frames.size).toBe(0);
+        }
+      );
+    }
+  );
+
+  it("preserves an animation when fallback policy changes but the resolved roots do not", () => {
+    const target = createScroller();
+    const ref = { current: target };
+    const { result, rerender, unmount } = renderHook(
+      (options: UseScrollToBottomOptions) => useScrollToBottom(ref, options),
+      { initialProps: { pageScrollFallback: "auto" } }
+    );
+    act(() => result.current.scrollToBottom("smooth"));
+    rerender({ pageScrollFallback: "never" });
+    expect(vi.getTimerCount()).toBe(1);
+    flushFrames();
+    expect(target.scrollTo).toHaveBeenCalledExactlyOnceWith({
+      top: 1000,
+      behavior: "smooth",
+    });
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
 describe.each<ScrollBehavior>(["smooth", "auto"])(
   "%s scroll completion cleanup",
   (behavior) => {
@@ -495,59 +607,77 @@ describe.each<ScrollBehavior>(["smooth", "auto"])(
         const original = createScroller();
         const replacement = createScroller();
         const viewportRef = { current: original };
-        const initialProps: UseScrollToBottomOptions =
-          change === "explicit target"
-            ? { scrollTarget: original }
-            : { pageScrollFallback: "auto" };
-        const { result, rerender, unmount } = renderHook(
-          (options: UseScrollToBottomOptions) =>
-            useScrollToBottom(viewportRef, options),
-          { initialProps }
+        const originalScroller = Object.getOwnPropertyDescriptor(
+          document,
+          "scrollingElement"
         );
-        flushFrames();
-        expect(result.current.showScrollToBottom).toBe(true);
-        act(() => result.current.scrollToBottom(behavior));
-        expect(result.current.showScrollToBottom).toBe(false);
-        expect(result.current.followNewContent).toBe(true);
-        const completionFrame = nextFrame;
-        if (behavior === "smooth") expect(vi.getTimerCount()).toBe(1);
-        else expect(frames.has(completionFrame)).toBe(true);
-
-        const nextOptions: UseScrollToBottomOptions =
-          change === "explicit target"
-            ? { scrollTarget: replacement }
-            : { pageScrollFallback: "never" };
-        rerender(nextOptions);
-        if (behavior === "smooth") expect(vi.getTimerCount()).toBe(0);
-        else expect(frames.has(completionFrame)).toBe(false);
-
-        const target = change === "explicit target" ? replacement : original;
-        target.scrollTop = 100;
-        fireEvent.scroll(target);
-        expect(result.current.showScrollToBottom).toBe(true);
-        expect(result.current.followNewContent).toBe(false);
-
-        vi.mocked(target.scrollTo).mockClear();
-        Object.defineProperty(target, "scrollHeight", { value: 1200 });
-        rerender({ ...nextOptions, contentVersion: 1 });
-        flushFrames();
-        act(() => vi.advanceTimersByTime(2000));
-        expect(target.scrollTo).not.toHaveBeenCalled();
-        expect(result.current.showScrollToBottom).toBe(true);
-
-        act(() => result.current.scrollToBottom("auto"));
-        expect(target.scrollTo).toHaveBeenCalledWith({
-          top: 1200,
-          behavior: "instant",
+        Object.defineProperty(document, "scrollingElement", {
+          configurable: true,
+          value: original,
         });
-        target.scrollTop = 1000;
-        fireEvent.scroll(target);
-        flushFrames();
-        expect(result.current.showScrollToBottom).toBe(false);
-        expect(result.current.followNewContent).toBe(true);
-        unmount();
-        expect(frames.size).toBe(0);
-        expect(vi.getTimerCount()).toBe(0);
+        try {
+          const initialProps: UseScrollToBottomOptions =
+            change === "explicit target"
+              ? { scrollTarget: original }
+              : { pageScrollFallback: "always" };
+          const { result, rerender, unmount } = renderHook(
+            (options: UseScrollToBottomOptions) =>
+              useScrollToBottom(viewportRef, options),
+            { initialProps }
+          );
+          flushFrames();
+          expect(result.current.showScrollToBottom).toBe(true);
+          act(() => result.current.scrollToBottom(behavior));
+          expect(result.current.showScrollToBottom).toBe(false);
+          expect(result.current.followNewContent).toBe(true);
+          const completionFrame = nextFrame;
+          if (behavior === "smooth") expect(vi.getTimerCount()).toBe(1);
+          else expect(frames.has(completionFrame)).toBe(true);
+
+          const nextOptions: UseScrollToBottomOptions =
+            change === "explicit target"
+              ? { scrollTarget: replacement }
+              : { pageScrollFallback: "never" };
+          rerender(nextOptions);
+          if (behavior === "smooth") expect(vi.getTimerCount()).toBe(0);
+          else expect(frames.has(completionFrame)).toBe(false);
+
+          const target = change === "explicit target" ? replacement : original;
+          target.scrollTop = 100;
+          fireEvent.scroll(target);
+          expect(result.current.showScrollToBottom).toBe(true);
+          expect(result.current.followNewContent).toBe(false);
+
+          vi.mocked(target.scrollTo).mockClear();
+          Object.defineProperty(target, "scrollHeight", { value: 1200 });
+          rerender({ ...nextOptions, contentVersion: 1 });
+          flushFrames();
+          act(() => vi.advanceTimersByTime(2000));
+          expect(target.scrollTo).not.toHaveBeenCalled();
+          expect(result.current.showScrollToBottom).toBe(true);
+
+          act(() => result.current.scrollToBottom("auto"));
+          expect(target.scrollTo).toHaveBeenCalledWith({
+            top: 1200,
+            behavior: "instant",
+          });
+          target.scrollTop = 1000;
+          fireEvent.scroll(target);
+          flushFrames();
+          expect(result.current.showScrollToBottom).toBe(false);
+          expect(result.current.followNewContent).toBe(true);
+          unmount();
+          expect(frames.size).toBe(0);
+          expect(vi.getTimerCount()).toBe(0);
+        } finally {
+          if (originalScroller)
+            Object.defineProperty(
+              document,
+              "scrollingElement",
+              originalScroller
+            );
+          else Reflect.deleteProperty(document, "scrollingElement");
+        }
       }
     );
 

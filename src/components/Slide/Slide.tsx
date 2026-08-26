@@ -12,6 +12,7 @@ import { ChevronLeft, GripHorizontal } from "lucide-react";
 
 import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
+import { useResolvedDirection } from "../../lib/useResolvedDirection";
 import {
   getMarkdownFlowDirection,
   getMarkdownFlowLanguage,
@@ -422,6 +423,7 @@ const Slide: React.FC<SlideProps> = ({
   });
   const keyboardShortcutOwnerId = useId();
   const sectionRef = useRef<HTMLElement | null>(null);
+  const { resolvedDirection } = useResolvedDirection(sectionRef, direction);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const stageLayerRef = useRef<HTMLDivElement | null>(null);
   const lastElementRef = useRef<HTMLDivElement | null>(null);
@@ -2648,7 +2650,7 @@ const Slide: React.FC<SlideProps> = ({
             value={keyboardShortcutContextValue}
           >
             <Player
-              dir={direction}
+              dir={direction === "auto" ? resolvedDirection : direction}
               lang={language}
               audioList={audioList}
               className={cn(

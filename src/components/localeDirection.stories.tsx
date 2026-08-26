@@ -637,6 +637,67 @@ export const SlideContentDirectionOverride: Story = {
   },
 };
 
+const AutoSlidePlayerDirectionFixture = () => {
+  const [content, setContent] = useState("مرحبا بالعالم");
+  return (
+    <div dir="rtl">
+      <button type="button" onClick={() => setContent("Hello world")}>
+        English content
+      </button>
+      {(["text", "slot"] as const).map((type) => (
+        <div key={type} data-testid={`auto-slide-${type}`}>
+          <Slide
+            dir="auto"
+            elementList={[
+              {
+                type,
+                content,
+                sequence_number: 1,
+                is_new: true,
+                is_renderable: true,
+                is_marker: true,
+              },
+            ]}
+          />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export const AutoSlidePlayerDirection: Story = {
+  render: () => <AutoSlidePlayerDirectionFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const text of ["مرحبا بالعالم", "Hello world"]) {
+      if (text === "Hello world") {
+        await userEvent.click(
+          canvas.getByRole("button", { name: "English content" })
+        );
+      }
+      await waitFor(() => {
+        for (const type of ["text", "slot"]) {
+          const section = canvas
+            .getByTestId(`auto-slide-${type}`)
+            .querySelector("section")!;
+          const player = section.querySelector(".slide-player")!;
+          expect(section).toHaveTextContent(text);
+          expect(section).toHaveAttribute("dir", "auto");
+          if (type === "slot") {
+            expect(getComputedStyle(section).direction).toBe(
+              text === "Hello world" ? "ltr" : "rtl"
+            );
+          }
+          expect(getComputedStyle(player).direction).toBe(
+            getComputedStyle(section).direction
+          );
+          expectPlayerNavigationDirection(player);
+        }
+      });
+    }
+  },
+};
+
 const sourceCode =
   'const greeting = "مرحبا";\nconst url = "https://example.com/a?b=1";';
 

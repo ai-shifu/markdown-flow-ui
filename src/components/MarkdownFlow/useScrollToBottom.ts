@@ -234,17 +234,20 @@ export function useScrollToBottom(
 ): UseScrollToBottomReturn;
 export function useScrollToBottom(
   viewportRef: RefObject<HTMLElement | null>,
-  optionsOrDependencies: UseScrollToBottomOptions | readonly unknown[] = {},
-  legacyOptions: LegacyUseScrollToBottomOptions = {}
+  optionsOrDependencies?: UseScrollToBottomOptions | readonly unknown[],
+  legacyOptions?: LegacyUseScrollToBottomOptions
 ): UseScrollToBottomReturn {
-  const options: UseScrollToBottomOptions = Array.isArray(optionsOrDependencies)
+  const isLegacyCall =
+    Array.isArray(optionsOrDependencies) ||
+    (optionsOrDependencies === undefined && legacyOptions !== undefined);
+  const options: UseScrollToBottomOptions = isLegacyCall
     ? {
         autoScrollOnInit: true,
         scrollThreshold: 10,
         ...legacyOptions,
-        contentVersion: optionsOrDependencies,
+        contentVersion: optionsOrDependencies ?? legacyOptions?.contentVersion,
       }
-    : (optionsOrDependencies as UseScrollToBottomOptions);
+    : ((optionsOrDependencies as UseScrollToBottomOptions | undefined) ?? {});
   const {
     contentRef,
     endRef,

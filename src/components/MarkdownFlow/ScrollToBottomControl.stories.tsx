@@ -250,11 +250,13 @@ const CleanupFixture: React.FC<{ explicitTarget?: boolean }> = ({
   );
 };
 
-const LegacyClickFixture: React.FC = () => {
+const LegacyClickFixture: React.FC<{ omitDependencies?: boolean }> = ({
+  omitDependencies = false,
+}) => {
   const viewportRef = useRef<HTMLDivElement>(null);
   const { handleUserScrollToBottom, showScrollToBottom } = useScrollToBottom(
     viewportRef,
-    [],
+    omitDependencies ? undefined : [],
     { autoScrollOnInit: false, scrollTarget: viewportRef, behavior: "auto" }
   );
 
@@ -747,6 +749,11 @@ export const LegacyHandlerAcceptsReactClickEvents: Story = {
       expect(button).toHaveAttribute("data-visible", "false");
     });
   },
+};
+
+export const LegacyOptionsWithoutDependencies: Story = {
+  ...LegacyHandlerAcceptsReactClickEvents,
+  render: () => <LegacyClickFixture omitDependencies />,
 };
 
 export const StableViewportRefRebindsAfterReplacement: Story = {

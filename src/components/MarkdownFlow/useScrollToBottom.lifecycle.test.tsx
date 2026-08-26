@@ -52,6 +52,53 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe("legacy calls without dependencies", () => {
+  it("honors explicit threshold, behavior and follow options", () => {
+    const target = createScroller();
+    target.scrollTop = 750;
+    const ref = { current: target };
+    const { result } = renderHook(() =>
+      useScrollToBottom(ref, undefined, {
+        scrollThreshold: 10,
+        behavior: "auto",
+        autoScrollOnInit: false,
+        followNewContent: false,
+      })
+    );
+    flushFrames();
+    expect(target.scrollTo).not.toHaveBeenCalled();
+    expect(result.current.showScrollToBottom).toBe(true);
+    expect(result.current.followNewContent).toBe(false);
+    act(() => result.current.handleUserScrollToBottom());
+    expect(target.scrollTo).toHaveBeenCalledWith({
+      top: 1000,
+      behavior: "auto",
+    });
+    expect(result.current.followNewContent).toBe(false);
+  });
+
+  it("retains legacy initial scrolling when a third options argument is supplied", () => {
+    const target = createScroller();
+    const ref = { current: target };
+    renderHook(() => useScrollToBottom(ref, undefined, {}));
+    flushFrames();
+    expect(target.scrollTo).toHaveBeenCalledWith({
+      top: 1000,
+      behavior: "auto",
+    });
+  });
+
+  it("keeps modern defaults when both optional arguments are absent", () => {
+    const target = createScroller();
+    target.scrollTop = 750;
+    const ref = { current: target };
+    const { result } = renderHook(() => useScrollToBottom(ref, undefined));
+    flushFrames();
+    expect(target.scrollTo).not.toHaveBeenCalled();
+    expect(result.current.showScrollToBottom).toBe(false);
+  });
+});
+
 describe.each<ScrollBehavior>(["smooth", "auto"])(
   "%s scroll completion cleanup",
   (behavior) => {

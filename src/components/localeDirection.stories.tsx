@@ -163,6 +163,7 @@ const SlideContentDirectionFixture = () => {
   return (
     <div>
       <button
+        type="button"
         onClick={() => {
           setLocale("th-TH");
           setDir("rtl");
@@ -236,7 +237,9 @@ const MermaidLocaleFixture = () => {
   const [locale, setLocale] = useState<MarkdownFlowLocale>("ar-SA");
   return (
     <div>
-      <button onClick={() => setLocale("th-TH")}>Thai</button>
+      <button type="button" onClick={() => setLocale("th-TH")}>
+        Thai
+      </button>
       <ContentRender
         locale={locale}
         content={"```mermaid\n\n```\n\n~~~mermaid\n\n~~~"}
@@ -304,8 +307,12 @@ const TableDirectionFixture = () => {
   const [locale, setLocale] = useState<MarkdownFlowLocale>();
   return (
     <div dir="rtl">
-      <button onClick={() => setLocale("ar-SA")}>Arabic</button>
-      <button onClick={() => setLocale("th-TH")}>Thai</button>
+      <button type="button" onClick={() => setLocale("ar-SA")}>
+        Arabic
+      </button>
+      <button type="button" onClick={() => setLocale("th-TH")}>
+        Thai
+      </button>
       <ContentRender
         locale={locale}
         content={
@@ -373,7 +380,9 @@ const EditorDialogLocaleFixture = () => {
   const [locale, setLocale] = useState<MarkdownFlowLocale>("ar-SA");
   return (
     <div>
-      <button onClick={() => setLocale("th-TH")}>Thai</button>
+      <button type="button" onClick={() => setLocale("th-TH")}>
+        Thai
+      </button>
       <MarkdownFlowEditor locale={locale} />
     </div>
   );

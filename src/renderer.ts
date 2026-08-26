@@ -1,5 +1,9 @@
 // src/renderer.ts
 import MarkdownFlow from "./components/MarkdownFlow";
+import ScrollableMarkdownFlow from "./components/MarkdownFlow/ScrollableMarkdownFlow";
+import ScrollToBottomButton from "./components/MarkdownFlow/ScrollToBottomButton";
+import ScrollToBottomControl from "./components/MarkdownFlow/ScrollToBottomControl";
+import useScrollToBottom from "./components/MarkdownFlow/useScrollToBottom";
 import ContentRender from "./components/ContentRender";
 import MarkdownFlowInput from "./components/ContentRender/MarkdownFlowInput";
 import IframeSandbox from "./components/ContentRender/IframeSandbox";
@@ -10,6 +14,26 @@ import {
 import { RenderSegment } from "./components/ContentRender/utils/split-content";
 import { splitContentSegments } from "./components/ContentRender/utils/split-content";
 import type { MarkdownFlowProps } from "./components/MarkdownFlow/MarkdownFlow";
+import type { ScrollableMarkdownFlowProps } from "./components/MarkdownFlow/ScrollableMarkdownFlow";
+import type {
+  ScrollToBottomButtonProps,
+  ScrollToBottomPlacement,
+  ScrollToBottomPosition,
+} from "./components/MarkdownFlow/ScrollToBottomButton";
+import type { ScrollToBottomControlProps } from "./components/MarkdownFlow/ScrollToBottomControl";
+import type {
+  LegacyUseScrollToBottomOptions,
+  PageScrollFallback,
+  ScrollBehavior,
+  ScrollMetrics,
+  ScrollPresentation,
+  ScrollTarget,
+  ScrollTargetInput,
+  ScrollTargetRef,
+  ScrollTargetResolver,
+  UseScrollToBottomOptions,
+  UseScrollToBottomReturn,
+} from "./components/MarkdownFlow/useScrollToBottom";
 import type { ContentRenderProps } from "./components/ContentRender/ContentRender";
 import type { MarkdownFlowInputProps } from "./components/ContentRender/MarkdownFlowInput";
 import type {
@@ -22,6 +46,11 @@ export default ContentRender;
 
 export {
   MarkdownFlow,
+  ScrollableMarkdownFlow,
+  ScrollableMarkdownFlow as ScrollableMarkdown,
+  ScrollToBottomButton,
+  ScrollToBottomControl,
+  useScrollToBottom,
   ContentRender,
   MarkdownFlowInput,
   IframeSandbox,
@@ -34,6 +63,22 @@ export type {
   OnSendContentParams,
   CustomRenderBarProps,
   MarkdownFlowProps,
+  ScrollableMarkdownFlowProps,
+  ScrollToBottomButtonProps,
+  ScrollToBottomPlacement,
+  ScrollToBottomPosition,
+  ScrollToBottomControlProps,
+  LegacyUseScrollToBottomOptions,
+  PageScrollFallback,
+  ScrollBehavior,
+  ScrollMetrics,
+  ScrollPresentation,
+  ScrollTarget,
+  ScrollTargetInput,
+  ScrollTargetRef,
+  ScrollTargetResolver,
+  UseScrollToBottomOptions,
+  UseScrollToBottomReturn,
   ContentRenderProps,
   MarkdownFlowInputProps,
   IframeSandboxProps,

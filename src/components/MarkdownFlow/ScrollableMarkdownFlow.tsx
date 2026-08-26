@@ -1,10 +1,6 @@
 import React, { useRef } from "react";
-import MarkdownFlow from "./MarkdownFlow";
-import useScrollToBottom from "./useScrollToBottom";
-// import type { OnSendContentParams, CustomRenderBarProps } from "../types";
-import { ChevronDown } from "lucide-react";
-import { Button } from "../ui/button";
-import type { MarkdownFlowProps } from "./MarkdownFlow";
+import MarkdownFlow, { type MarkdownFlowProps } from "./MarkdownFlow";
+import ScrollToBottomControl from "./ScrollToBottomControl";
 import { getContentRenderLocaleTexts } from "../ContentRender/contentRenderI18n";
 
 import "./markdownFlow.css";
@@ -15,68 +11,44 @@ export interface ScrollableMarkdownFlowProps extends MarkdownFlowProps {
   scrollToBottomAriaLabel?: string;
 }
 
-const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = ({
-  initialContentList = [],
-  customRenderBar,
-  onSend,
-  height = "100%",
-  className = "",
-  locale,
-  confirmButtonText,
-  copyButtonText,
-  copiedButtonText,
-  scrollToBottomAriaLabel,
-  ...restProps
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const localeTexts = getContentRenderLocaleTexts(locale);
+const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = (
+  props
+) => {
+  const {
+    height = "100%",
+    className = "",
+    scrollToBottomAriaLabel,
+    ...markdownFlowProps
+  } = props;
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const initialContentList = markdownFlowProps.initialContentList ?? [];
+  const localeTexts = getContentRenderLocaleTexts(markdownFlowProps.locale);
   const resolvedScrollToBottomAriaLabel =
     scrollToBottomAriaLabel || localeTexts.scrollToBottomLabel;
 
-  const { showScrollToBottom, handleUserScrollToBottom } = useScrollToBottom(
-    containerRef,
-    [
-      initialContentList?.length >= 1
-        ? JSON.stringify(initialContentList[initialContentList?.length - 1])
-        : null,
-    ],
-    {
-      // Listen for content count changes
-      behavior: "smooth",
-      autoScrollOnInit: true,
-      scrollDelay: 100,
-    }
-  );
-
   return (
     <div
-      className={`scrollable-markdown-container ${className}`}
+      className={`scrollable-markdown-container ${className}`.trim()}
       style={{ height, position: "relative" }}
-      {...restProps}
     >
-      <div ref={containerRef} style={{ height: "100%", overflow: "auto" }}>
-        <MarkdownFlow
-          initialContentList={initialContentList}
-          customRenderBar={customRenderBar}
-          onSend={onSend}
-          locale={locale}
-          confirmButtonText={confirmButtonText}
-          copyButtonText={copyButtonText}
-          copiedButtonText={copiedButtonText}
-        />
+      <div ref={viewportRef} style={{ height: "100%", overflowY: "auto" }}>
+        <div ref={contentRef}>
+          <MarkdownFlow
+            {...markdownFlowProps}
+            initialContentList={initialContentList}
+          />
+        </div>
       </div>
-      {showScrollToBottom && (
-        <Button
-          className="h-6 w-6 border hover:bg-gray-200 scroll-to-bottom-btn"
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={handleUserScrollToBottom}
-          aria-label={resolvedScrollToBottomAriaLabel}
-        >
-          <ChevronDown />
-        </Button>
-      )}
+      <ScrollToBottomControl
+        viewportRef={viewportRef}
+        contentRef={contentRef}
+        scrollTarget={viewportRef}
+        contentVersion={initialContentList}
+        autoScrollOnInit
+        scrollThreshold={150}
+        ariaLabel={resolvedScrollToBottomAriaLabel}
+      />
     </div>
   );
 };

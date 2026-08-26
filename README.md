@@ -107,6 +107,13 @@ const CustomBar: CustomRenderBarProps = ({ displayContent, onSend }) => {
 <MarkdownFlow customRenderBar={CustomBar} initialContentList={messages} />;
 ```
 
+## Development verification
+
+Run `npm test` for unit tests and `npm run test:package` for distribution checks.
+The package check rebuilds the library before testing both exported stylesheets,
+scroll-control visibility and accessibility rules, and bundled math fonts.
+CI runs both commands alongside the Storybook browser tests.
+
 ## 🌐 MarkdownFlow Ecosystem
 
 markdown-flow-ui is part of the MarkdownFlow ecosystem for creating personalized, AI-driven interactive documents:

@@ -37,8 +37,26 @@ jobs:
       - name: Prettier format check
         run: npm run format:check
 
+      - name: Run unit tests
+        run: npm test
+
+      - name: Install the package build tool
+        run: |
+          corepack enable pnpm
+          corepack install
+
+      - name: Build and verify package assets
+        run: npm run test:package
+
+      - name: Verify public type exports
+        run: npm run typecheck:exports
+
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
       - name: Run Storybook browser tests
-        run: npm run test:storybook -- src/components/Slide/Slide.stories.tsx
+        run: >-
+          npm run test:storybook --
+          src/components/Slide/Slide.stories.tsx
+          src/components/MarkdownFlow/ScrollToBottomControl.stories.tsx
+          src/components/MarkdownFlow/ScrollableMarkdownFlow.stories.tsx

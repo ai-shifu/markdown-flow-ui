@@ -60,6 +60,7 @@
     "@storybook/nextjs-vite": "^9.0.16",
     "@tailwindcss/cli": "^4.1.11",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/react": "16.3.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -76,6 +77,7 @@
     "eslint-plugin-storybook": "^9.0.16",
     "gsap": "3.12.7",
     "husky": "^9.1.7",
+    "jsdom": "26.1.0",
     "lint-staged": "^16.1.6",
     "markdownlint-cli": "^0.45.0",
     "next": "15.3.6",
@@ -122,7 +124,7 @@
       "prettier --write"
     ]
   },
-  "main": "dist/index.cjs.js",
+  "main": "dist/index.cjs",
   "module": "dist/index.es.js",
   "types": "dist/index.d.ts",
   "name": "markdown-flow-ui",
@@ -139,7 +141,7 @@
   },
   "scripts": {
     "//build": "next build",
-    "build:css": "pnpm exec tailwindcss --input src/styles/library.css --output dist/markdown-flow-ui-lib.css --config tailwind.build.config.ts --minify",
+    "build:css": "pnpm exec tailwindcss --input src/styles/library.css --output dist/markdown-flow-ui-lib.css --config tailwind.build.config.ts --minify && node scripts/copy-katex-fonts.mjs",
     "build:fonts": "node scripts/copy-fonts.mjs",
     "build": "vite build && pnpm run build:css",
     "build-storybook": "storybook build",
@@ -156,6 +158,7 @@
     "start": "next start",
     "storybook": "storybook dev -p 6006",
     "test": "vitest run --project unit",
+    "test:package": "npm run build && node --test tests/package/*.test.mjs",
     "test:storybook": "vitest run --project storybook",
     "typecheck:exports": "pnpm exec tsc -p tsconfig.exports.json --pretty false"
   },
@@ -170,38 +173,46 @@
       "renderer": [
         "dist/renderer.d.ts"
       ],
+      "scroll": [
+        "dist/scroll.d.ts"
+      ],
       "slide": [
         "dist/slide.d.ts"
       ]
     }
   },
-  "version": "0.2.10",
+  "version": "0.2.14",
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.es.js",
-      "require": "./dist/index.cjs.js"
+      "require": "./dist/index.cjs"
     },
     "./render": {
       "types": "./dist/renderer.d.ts",
       "import": "./dist/renderer.es.js",
-      "require": "./dist/renderer.cjs.js"
+      "require": "./dist/renderer.cjs"
     },
     "./renderer": {
       "types": "./dist/renderer.d.ts",
       "import": "./dist/renderer.es.js",
-      "require": "./dist/renderer.cjs.js"
+      "require": "./dist/renderer.cjs"
+    },
+    "./scroll": {
+      "types": "./dist/scroll.d.ts",
+      "import": "./dist/scroll.es.js",
+      "require": "./dist/scroll.cjs"
     },
     "./editor": {
       "types": "./dist/editor.d.ts",
       "import": "./dist/editor.es.js",
-      "require": "./dist/editor.cjs.js"
+      "require": "./dist/editor.cjs"
     },
     "./slide": {
       "types": "./dist/slide.d.ts",
       "import": "./dist/slide.es.js",
-      "require": "./dist/slide.cjs.js"
+      "require": "./dist/slide.cjs"
     },
     "./dist/markdown-flow-ui.css": {
       "default": "./dist/assets/markdown-flow-ui.css"

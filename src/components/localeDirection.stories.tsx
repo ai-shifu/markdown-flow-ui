@@ -1214,6 +1214,60 @@ export const DirectionAwareFootnotes: Story = {
   },
 };
 
+const markdownAlertVariants = [
+  ["default", "rgb(209, 217, 224)"],
+  ["note", "rgb(9, 105, 218)"],
+  ["important", "rgb(130, 80, 223)"],
+  ["warning", "rgb(154, 103, 0)"],
+  ["tip", "rgb(26, 127, 55)"],
+  ["caution", "rgb(207, 34, 46)"],
+] as const;
+
+export const DirectionAwareMarkdownAlerts: Story = {
+  render: () => (
+    <LocaleContentFixture
+      content={markdownAlertVariants
+        .flatMap(([variant]) =>
+          [undefined, "ltr", "rtl"].map(
+            (dir) =>
+              `<aside class="markdown-alert markdown-alert-${variant}"${dir ? ` dir="${dir}"` : ""}><p class="markdown-alert-title">${variant}</p><p>Alert content</p></aside>`
+          )
+        )
+        .join("\n\n")}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const locale of ["ar-SA", "th-TH", "inherit"]) {
+      const fixture = canvas.getByTestId(locale);
+      for (const [variant, color] of markdownAlertVariants) {
+        const alerts = fixture.querySelectorAll(`.markdown-alert-${variant}`);
+        expect(alerts).toHaveLength(3);
+        for (const alert of alerts) {
+          const style = getComputedStyle(alert);
+          const direction =
+            alert.getAttribute("dir") ?? (locale === "th-TH" ? "ltr" : "rtl");
+          expect(style.direction).toBe(direction);
+          expect(
+            Number.parseFloat(
+              direction === "rtl"
+                ? style.borderRightWidth
+                : style.borderLeftWidth
+            )
+          ).toBeGreaterThan(0);
+          expect(
+            direction === "rtl" ? style.borderLeftWidth : style.borderRightWidth
+          ).toBe("0px");
+          expect(
+            direction === "rtl" ? style.borderRightColor : style.borderLeftColor
+          ).toBe(color);
+          expect(alert).toHaveTextContent("Alert content");
+        }
+      }
+    }
+  },
+};
+
 export const DirectionAwareFootnoteTarget: Story = {
   render: () => (
     <div dir="rtl">

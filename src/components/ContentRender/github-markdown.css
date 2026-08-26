@@ -1196,7 +1196,7 @@
   padding: var(--base-size-8) var(--base-size-16);
   margin-bottom: var(--base-size-16);
   color: inherit;
-  border-left: 0.25em solid var(--borderColor-default);
+  border-inline-start: 0.25em solid var(--borderColor-default);
 }
 
 .markdown-body .markdown-alert > :first-child {
@@ -1215,7 +1215,7 @@
 }
 
 .markdown-body .markdown-alert.markdown-alert-note {
-  border-left-color: var(--borderColor-accent-emphasis);
+  border-inline-start-color: var(--borderColor-accent-emphasis);
 }
 
 .markdown-body .markdown-alert.markdown-alert-note .markdown-alert-title {
@@ -1223,7 +1223,7 @@
 }
 
 .markdown-body .markdown-alert.markdown-alert-important {
-  border-left-color: var(--borderColor-done-emphasis);
+  border-inline-start-color: var(--borderColor-done-emphasis);
 }
 
 .markdown-body .markdown-alert.markdown-alert-important .markdown-alert-title {
@@ -1231,7 +1231,7 @@
 }
 
 .markdown-body .markdown-alert.markdown-alert-warning {
-  border-left-color: var(--borderColor-attention-emphasis);
+  border-inline-start-color: var(--borderColor-attention-emphasis);
 }
 
 .markdown-body .markdown-alert.markdown-alert-warning .markdown-alert-title {
@@ -1239,7 +1239,7 @@
 }
 
 .markdown-body .markdown-alert.markdown-alert-tip {
-  border-left-color: var(--borderColor-success-emphasis);
+  border-inline-start-color: var(--borderColor-success-emphasis);
 }
 
 .markdown-body .markdown-alert.markdown-alert-tip .markdown-alert-title {
@@ -1247,7 +1247,7 @@
 }
 
 .markdown-body .markdown-alert.markdown-alert-caution {
-  border-left-color: var(--borderColor-danger-emphasis);
+  border-inline-start-color: var(--borderColor-danger-emphasis);
 }
 
 .markdown-body .markdown-alert.markdown-alert-caution .markdown-alert-title {

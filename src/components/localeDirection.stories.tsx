@@ -14,9 +14,15 @@ const DirectionFixture = () => {
   const [locale, setLocale] = useState<MarkdownFlowLocale>();
   return (
     <div dir="rtl">
-      <button onClick={() => setLocale("ar-SA")}>Arabic</button>
-      <button onClick={() => setLocale("th-TH")}>Thai</button>
-      <button onClick={() => setLocale(undefined)}>Inherit</button>
+      <button type="button" onClick={() => setLocale("ar-SA")}>
+        Arabic
+      </button>
+      <button type="button" onClick={() => setLocale("th-TH")}>
+        Thai
+      </button>
+      <button type="button" onClick={() => setLocale(undefined)}>
+        Inherit
+      </button>
       <div data-testid="renderer">
         <ContentRender content="Direction preview" locale={locale} />
       </div>
@@ -81,9 +87,14 @@ const SandboxDirectionFixture = ({
   const [content, setContent] = useState("");
   return (
     <div>
-      <button onClick={() => setLocale("th-TH")}>Thai</button>
-      <button onClick={() => setLocale("ar-SA")}>Arabic</button>
+      <button type="button" onClick={() => setLocale("th-TH")}>
+        Thai
+      </button>
+      <button type="button" onClick={() => setLocale("ar-SA")}>
+        Arabic
+      </button>
       <button
+        type="button"
         onClick={() => setContent('<p>مرحبا</p><p dir="ltr">Code: 123</p>')}
       >
         Render content

@@ -223,6 +223,43 @@ const sameTargets = (left: ScrollTarget[], right: ScrollTarget[]) =>
 const getScrollEventTarget = (target: ScrollTarget): EventTarget =>
   isDocument(target) ? target.defaultView || target : target;
 
+const scrollTargetTo = (target: ScrollTarget, options: ScrollToOptions) => {
+  if (isDocument(target)) getDocumentScroller(target)?.scrollTo(options);
+  else target.scrollTo(options);
+};
+
+const isScrollInput = (event: Event) => {
+  if (event.defaultPrevented) return false;
+  if (event.type === "wheel") return (event as WheelEvent).deltaY !== 0;
+  if (event.type === "pointerdown")
+    return !((event as PointerEvent).button > 0);
+  if (event.type !== "keydown") return true;
+  const key = event as KeyboardEvent;
+  if (key.ctrlKey || key.metaKey || key.altKey) return false;
+  if (
+    ![
+      "ArrowUp",
+      "ArrowDown",
+      "PageUp",
+      "PageDown",
+      "Home",
+      "End",
+      " ",
+    ].includes(key.key)
+  )
+    return false;
+  const element = event.target as Element | null;
+  if (
+    element?.closest?.(
+      'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'
+    )
+  )
+    return false;
+  return (
+    key.key !== " " || !element?.closest?.('button, a[href], [role="button"]')
+  );
+};
+
 export function useScrollToBottom(
   viewportRef: RefObject<HTMLElement | null>,
   options?: UseScrollToBottomOptions
@@ -369,16 +406,7 @@ export function useScrollToBottom(
       } else {
         targets.forEach((target) => {
           const top = getScrollMetrics(target).scrollHeight;
-          if (isWindow(target)) {
-            target.scrollTo({ top, behavior: nativeBehavior });
-          } else if (isDocument(target)) {
-            getDocumentScroller(target)?.scrollTo({
-              top,
-              behavior: nativeBehavior,
-            });
-          } else {
-            target.scrollTo({ top, behavior: nativeBehavior });
-          }
+          scrollTargetTo(target, { top, behavior: nativeBehavior });
         });
       }
 
@@ -467,7 +495,35 @@ export function useScrollToBottom(
       });
     };
 
+    const lastPositions = new Map(
+      targets.map((target) => [target, getScrollMetrics(target).scrollTop])
+    );
+    const interruptProgrammaticScroll = () => {
+      if (!programmaticScrollRef.current) return;
+      clearProgrammaticFrame();
+      finishProgrammaticScroll();
+      setFollowing(false);
+      targets.forEach((target) => {
+        // Stop the native animation as well as the library's completion work.
+        scrollTargetTo(target, {
+          top: getScrollMetrics(target).scrollTop,
+          behavior: "instant",
+        });
+      });
+      refresh();
+    };
+    const handleInput = (event: Event) => {
+      if (isScrollInput(event)) interruptProgrammaticScroll();
+    };
     const handleScroll = () => {
+      let movedAway = false;
+      targets.forEach((target) => {
+        const top = getScrollMetrics(target).scrollTop;
+        if (top < (lastPositions.get(target) ?? top) - 1) movedAway = true;
+        lastPositions.set(target, top);
+      });
+      // Scrollbar dragging may not emit a content pointer event in every browser.
+      if (movedAway) interruptProgrammaticScroll();
       // Record user intent before an observer or content frame can follow growth.
       refresh();
     };
@@ -483,9 +539,16 @@ export function useScrollToBottom(
       });
     };
 
-    eventTargets.forEach((eventTarget) =>
-      eventTarget.addEventListener("scroll", handleScroll, { passive: true })
-    );
+    const inputEvents = ["wheel", "touchstart", "pointerdown", "keydown"];
+    eventTargets.forEach((eventTarget) => {
+      eventTarget.addEventListener("scroll", handleScroll, { passive: true });
+      inputEvents.forEach((type) =>
+        eventTarget.addEventListener(type, handleInput, {
+          passive: true,
+          capture: true,
+        })
+      );
+    });
     targetWindows.forEach((view) =>
       view.addEventListener("resize", handleLayoutChange)
     );
@@ -528,9 +591,12 @@ export function useScrollToBottom(
 
     refresh();
     return () => {
-      eventTargets.forEach((eventTarget) =>
-        eventTarget.removeEventListener("scroll", handleScroll)
-      );
+      eventTargets.forEach((eventTarget) => {
+        eventTarget.removeEventListener("scroll", handleScroll);
+        inputEvents.forEach((type) =>
+          eventTarget.removeEventListener(type, handleInput, true)
+        );
+      });
       targetWindows.forEach((view) =>
         view.removeEventListener("resize", handleLayoutChange)
       );
@@ -550,11 +616,14 @@ export function useScrollToBottom(
   }, [
     applyPresentation,
     bindingRevision,
+    clearProgrammaticFrame,
     contentRef,
     ensureTargetBinding,
+    finishProgrammaticScroll,
     getResolvedTargets,
     refresh,
     scrollToBottom,
+    setFollowing,
     viewportRef,
   ]);
 

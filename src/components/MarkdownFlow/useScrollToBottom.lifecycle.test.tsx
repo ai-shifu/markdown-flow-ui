@@ -161,6 +161,108 @@ describe("legacy calls without dependencies", () => {
   });
 });
 
+describe.each(["element", "document"])(
+  "smooth-scroll interruption on %s",
+  (path) => {
+    it.each([
+      "wheel",
+      "touchstart",
+      "pointerdown",
+      "keydown",
+      "reverse scroll",
+    ])(
+      "pauses follow immediately after %s and cleans input listeners",
+      (input) => {
+        const target = createScroller();
+        const ref = { current: target };
+        const originalScroller = Object.getOwnPropertyDescriptor(
+          document,
+          "scrollingElement"
+        );
+        Object.defineProperty(document, "scrollingElement", {
+          configurable: true,
+          value: target,
+        });
+        const root = path === "document" ? window : target;
+        const add = vi.spyOn(root, "addEventListener");
+        const remove = vi.spyOn(root, "removeEventListener");
+        const options = {
+          scrollTarget: path === "document" ? document : target,
+        };
+        try {
+          const { result, rerender, unmount } = renderHook(
+            (props) => useScrollToBottom(ref, props),
+            { initialProps: { ...options, contentVersion: 0 } }
+          );
+          act(() => result.current.scrollToBottom("smooth"));
+          target.scrollTop = 400;
+          fireEvent.scroll(root);
+          expect(result.current.followNewContent).toBe(true);
+          if (input === "wheel") fireEvent.wheel(root, { deltaY: -100 });
+          if (input === "touchstart") fireEvent.touchStart(root);
+          if (input === "pointerdown")
+            fireEvent.pointerDown(root, { button: 0 });
+          if (input === "keydown") fireEvent.keyDown(root, { key: "PageUp" });
+          target.scrollTop = 100;
+          fireEvent.scroll(root);
+          expect(result.current.showScrollToBottom).toBe(true);
+          expect(result.current.followNewContent).toBe(false);
+          expect(vi.getTimerCount()).toBe(0);
+
+          vi.mocked(target.scrollTo).mockClear();
+          Object.defineProperty(target, "scrollHeight", { value: 1400 });
+          rerender({ ...options, contentVersion: 1 });
+          fireEvent.resize(window);
+          flushFrames();
+          act(() => vi.advanceTimersByTime(1200));
+          expect(target.scrollTo).not.toHaveBeenCalled();
+          expect(result.current.showScrollToBottom).toBe(true);
+
+          act(() => result.current.handleUserScrollToBottom());
+          target.scrollTop = 1200;
+          fireEvent.scroll(root);
+          expect(result.current.followNewContent).toBe(true);
+          unmount();
+          for (const [type, listener] of add.mock.calls) {
+            if (
+              ["wheel", "touchstart", "pointerdown", "keydown"].includes(type)
+            ) {
+              expect(remove).toHaveBeenCalledWith(type, listener, true);
+            }
+          }
+          expect(frames.size).toBe(0);
+          expect(vi.getTimerCount()).toBe(0);
+        } finally {
+          cleanup();
+          if (originalScroller)
+            Object.defineProperty(
+              document,
+              "scrollingElement",
+              originalScroller
+            );
+          else Reflect.deleteProperty(document, "scrollingElement");
+        }
+      }
+    );
+  }
+);
+
+it("does not interrupt smooth scrolling for non-scroll keys or text editing", () => {
+  const target = createScroller();
+  const input = document.createElement("input");
+  target.appendChild(input);
+  const ref = { current: target };
+  const { result } = renderHook(() => useScrollToBottom(ref));
+  act(() => result.current.scrollToBottom("smooth"));
+  fireEvent.keyDown(target, { key: "a" });
+  fireEvent.keyDown(input, { key: "ArrowUp" });
+  fireEvent.keyDown(target, { key: "Home", ctrlKey: true });
+  fireEvent.wheel(target, { deltaX: 100, deltaY: 0 });
+  expect(result.current.followNewContent).toBe(true);
+  expect(result.current.showScrollToBottom).toBe(false);
+  expect(vi.getTimerCount()).toBe(1);
+});
+
 describe.each([true, false])(
   "pending explicit target (initial scroll: %s)",
   (autoScrollOnInit) => {

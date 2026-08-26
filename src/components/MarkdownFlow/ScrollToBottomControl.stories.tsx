@@ -523,6 +523,52 @@ export const DirectAutoFollowIgnoresCssSmoothScrolling: Story = {
   args: { ...AutoFollowIgnoresCssSmoothScrolling.args, useEndAnchor: false },
 };
 
+export const UserInterruptsSmoothScrollBeforeContentGrowth: Story = {
+  args: { initialSections: 30, viewportHeight: 240 },
+  play: async ({ canvasElement }) => {
+    const viewport = getViewport(canvasElement);
+    const button = getButton(canvasElement);
+    await waitFor(() => {
+      expect(button).toHaveAttribute("data-visible", "true");
+      expect(getComputedStyle(button).opacity).toBe("1");
+    });
+    await userEvent.click(button);
+    await waitFor(() => expect(viewport.scrollTop).toBeGreaterThan(10));
+    expect(
+      viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop
+    ).toBeGreaterThan(150);
+    viewport.dispatchEvent(
+      new WheelEvent("wheel", { deltaY: -100, bubbles: true })
+    );
+    viewport.scrollTo({
+      top: Math.max(0, viewport.scrollTop - 50),
+      behavior: "instant",
+    });
+    await waitFor(() => expect(button).toHaveAttribute("data-visible", "true"));
+    // Let the browser deliver the cancelled animation's final queued scroll event.
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    );
+    const heldPosition = viewport.scrollTop;
+    const previousHeight = viewport.scrollHeight;
+    await userEvent.click(
+      canvasElement.querySelector<HTMLButtonElement>(
+        '[data-testid="grow-content"]'
+      )!
+    );
+    await waitFor(() =>
+      expect(viewport.scrollHeight).toBeGreaterThan(previousHeight)
+    );
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    );
+    expect(viewport.scrollTop).toBe(heldPosition);
+    expect(button).toHaveAttribute("data-visible", "true");
+    await userEvent.click(button);
+    await waitFor(() => expectAtBottom(viewport));
+  },
+};
+
 export const UserScrollWinsSameFrameGrowth: Story = {
   args: {
     autoScrollOnInit: true,

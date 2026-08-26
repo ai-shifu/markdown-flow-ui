@@ -255,6 +255,7 @@ export const InheritedAndExplicitDirection: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const checkDirection = async (dir: "rtl" | "ltr", explicit: boolean) => {
+      const explicitLanguage = dir === "rtl" ? "ar-SA" : "th-TH";
       await waitFor(() => {
         for (const name of [
           "renderer",
@@ -267,10 +268,10 @@ export const InheritedAndExplicitDirection: Story = {
           const root = canvas.getByTestId(name).firstElementChild!;
           expect(root.getAttribute("dir")).toBe(explicit ? dir : null);
           expect(root.getAttribute("lang")).toBe(
-            explicit ? (dir === "rtl" ? "ar-SA" : "th-TH") : null
+            explicit ? explicitLanguage : null
           );
           expect(root.closest("[lang]")?.getAttribute("lang")).toBe(
-            explicit ? (dir === "rtl" ? "ar-SA" : "th-TH") : "fr"
+            explicit ? explicitLanguage : "fr"
           );
           expect(getComputedStyle(root).direction).toBe(dir);
         }

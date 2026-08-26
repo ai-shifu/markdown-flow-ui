@@ -6,6 +6,7 @@ export default MarkdownFlow;
 export {
   MarkdownFlow,
   ScrollableMarkdownFlow,
+  ScrollableMarkdownFlow as ScrollableMarkdown,
   ScrollToBottomButton,
   ScrollToBottomControl,
 };

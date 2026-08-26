@@ -47,6 +47,7 @@ export default ContentRender;
 export {
   MarkdownFlow,
   ScrollableMarkdownFlow,
+  ScrollableMarkdownFlow as ScrollableMarkdown,
   ScrollToBottomButton,
   ScrollToBottomControl,
   useScrollToBottom,

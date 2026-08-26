@@ -1,6 +1,7 @@
 export { default as ContentRender } from "./ContentRender";
 export { default as MarkdownFlow } from "./MarkdownFlow";
 export { default as ScrollableMarkdownFlow } from "./MarkdownFlow/ScrollableMarkdownFlow";
+export { default as ScrollableMarkdown } from "./MarkdownFlow/ScrollableMarkdownFlow";
 export { default as ScrollToBottomButton } from "./MarkdownFlow/ScrollToBottomButton";
 export { default as ScrollToBottomControl } from "./MarkdownFlow/ScrollToBottomControl";
 export { default as useScrollToBottom } from "./MarkdownFlow/useScrollToBottom";

@@ -358,6 +358,49 @@ export const DirectionAwareTables: Story = {
   },
 };
 
+export const DirectionAwareMarkdownStructure: Story = {
+  render: () => (
+    <div dir="rtl">
+      {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
+        <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
+          <ContentRender
+            locale={locale}
+            content={
+              "1. First\n   - Nested\n\n- Second\n  1. Nested ordered\n\n> Quoted text\n>\n> - Quoted list"
+            }
+          />
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const locale of ["ar-SA", "th-TH", "inherit"]) {
+      const fixture = canvas.getByTestId(locale);
+      const rtl = locale !== "th-TH";
+      const lists = fixture.querySelectorAll("ul, ol");
+      expect(lists).toHaveLength(5);
+      for (const list of lists) {
+        const style = getComputedStyle(list);
+        expect(style.direction).toBe(rtl ? "rtl" : "ltr");
+        expect(
+          parseFloat(rtl ? style.paddingRight : style.paddingLeft)
+        ).toBeGreaterThan(0);
+        expect(parseFloat(rtl ? style.paddingLeft : style.paddingRight)).toBe(
+          0
+        );
+      }
+      const quote = getComputedStyle(fixture.querySelector("blockquote")!);
+      expect(
+        parseFloat(rtl ? quote.borderRightWidth : quote.borderLeftWidth)
+      ).toBeGreaterThan(0);
+      expect(
+        parseFloat(rtl ? quote.borderLeftWidth : quote.borderRightWidth)
+      ).toBe(0);
+    }
+  },
+};
+
 export const StandaloneArabicInput: Story = {
   render: () => (
     <div dir="ltr" style={{ width: 360 }}>

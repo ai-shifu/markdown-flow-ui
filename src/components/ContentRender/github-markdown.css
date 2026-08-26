@@ -450,14 +450,14 @@
   margin: 0;
   padding: 0 1em;
   color: var(--fgColor-muted);
-  border-left: 0.25em solid var(--borderColor-default);
+  border-inline-start: 0.25em solid var(--borderColor-default);
 }
 
 .markdown-body ul,
 .markdown-body ol {
   margin-top: 0;
   margin-bottom: 0;
-  padding-left: 2em;
+  padding-inline-start: 2em;
 }
 
 .markdown-body ol ol,

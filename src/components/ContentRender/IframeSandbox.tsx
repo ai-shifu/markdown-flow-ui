@@ -866,7 +866,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
           type="button"
           onClick={toggleFullscreen}
           className={
-            "absolute top-2 right-2 z-50 p-1.5 bg-black/75 text-white rounded-md cursor-pointer"
+            "absolute top-2 end-2 z-50 p-1.5 bg-black/75 text-white rounded-md cursor-pointer"
           }
         >
           {isFullscreen

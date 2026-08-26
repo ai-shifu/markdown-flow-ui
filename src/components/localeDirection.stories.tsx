@@ -1220,6 +1220,44 @@ export const ThaiVariableDropdown: Story = {
   parameters: { dropdownLocale: "th-TH" },
 };
 
+export const SandboxFullscreenPlacement: Story = {
+  render: () => (
+    <div dir="rtl">
+      {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
+        <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
+          <IframeSandbox
+            type="markdown"
+            mode="blackboard"
+            content="Fullscreen content"
+            locale={locale}
+          />
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const locale of ["ar-SA", "th-TH", "inherit"]) {
+      const root = canvas
+        .getByTestId(locale)
+        .querySelector<HTMLElement>(".content-render-iframe-sandbox")!;
+      const button = root.querySelector("button")!;
+      const rtl = locale !== "th-TH";
+      expect(getComputedStyle(button).insetInlineEnd).toBe("8px");
+      const rect = root.getBoundingClientRect();
+      const control = button.getBoundingClientRect();
+      expect(
+        rtl ? control.left - rect.left : rect.right - control.right
+      ).toBeCloseTo(8, 0);
+      expect(button).toBeEnabled();
+      expect(button).toHaveTextContent(
+        getContentRenderLocaleTexts(locale === "inherit" ? undefined : locale)
+          .sandboxFullscreenButtonText
+      );
+    }
+  },
+};
+
 const SandboxDirectionFixture = ({
   mode,
 }: {

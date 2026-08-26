@@ -320,7 +320,7 @@ export const ArabicCodeBlocks: Story = {
     for (const block of blocks) {
       const pre = block.querySelector("pre")!;
       expect(getComputedStyle(pre).direction).toBe("ltr");
-      expect(getComputedStyle(pre).textAlign).toBe("left");
+      expect(getComputedStyle(pre).textAlign).toBe("start");
       expect(getComputedStyle(pre).unicodeBidi).toBe("isolate");
       expect(getComputedStyle(pre.querySelector("code")!).direction).toBe(
         "ltr"
@@ -378,6 +378,52 @@ export const IsolatedInlineCode: Story = {
         expect(getComputedStyle(snippet).direction).toBe(computed);
         expect(getComputedStyle(snippet).unicodeBidi).toBe("isolate");
       }
+    }
+  },
+};
+
+export const AuthoredPreformattedDirection: Story = {
+  render: () => (
+    <div dir="rtl">
+      {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
+        <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
+          <ContentRender
+            locale={locale}
+            content={[
+              '<pre dir="rtl">مرحبا 123!</pre>',
+              '<pre dir="ltr">hello 123!</pre>',
+              '<pre dir="auto">مرحبا 123!</pre>',
+              '<pre dir="auto">hello 123!</pre>',
+              "<pre>hello 123!</pre>",
+              "```javascript\nconst value = 123;\n```",
+            ].join("\n\n")}
+          />
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const locale of ["ar-SA", "th-TH", "inherit"]) {
+      const fixture = canvas.getByTestId(locale);
+      const blocks = fixture.querySelectorAll("pre");
+      expect(blocks).toHaveLength(6);
+      for (const [index, [attribute, direction]] of [
+        ["rtl", "rtl"],
+        ["ltr", "ltr"],
+        ["auto", "rtl"],
+        ["auto", "ltr"],
+        ["ltr", "ltr"],
+        ["ltr", "ltr"],
+      ].entries()) {
+        const block = blocks[index];
+        expect(block).toHaveAttribute("dir", attribute);
+        expect(getComputedStyle(block).direction).toBe(direction);
+        expect(getComputedStyle(block).unicodeBidi).toBe("isolate");
+        expect(getComputedStyle(block).textAlign).toBe("start");
+      }
+      expect(blocks[0]).toHaveTextContent("مرحبا 123!");
+      expect(blocks[5]).toHaveTextContent("const value = 123;");
     }
   },
 };

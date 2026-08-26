@@ -10,6 +10,8 @@ export interface CodeBlockProps {
   children?: React.ReactNode;
   /** Optional CSS class name for the pre element. */
   className?: string;
+  /** Authored text direction; defaults to LTR for ordinary source code. */
+  dir?: React.HTMLAttributes<HTMLPreElement>["dir"];
   /** Text to display on the copy button (i18n support). */
   copyButtonText?: string;
   /** Text to display when code is copied (i18n support). */
@@ -34,6 +36,7 @@ const getCodeString = (children: ReactNode): string => {
 const CodeBlock: React.FC<CodeBlockProps> = ({
   children,
   className: preClassName,
+  dir = "ltr",
   copyButtonText = "Copy",
   copiedButtonText = "Copied",
 }) => {
@@ -92,7 +95,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
           {isCopied ? copiedButtonText : copyButtonText}
         </button>
       </div>
-      <pre className={preClassName} dir="ltr">
+      <pre className={preClassName} dir={dir}>
         {children}
       </pre>
     </div>

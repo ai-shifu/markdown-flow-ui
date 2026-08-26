@@ -50,7 +50,7 @@
 }
 
 .code-block-container pre {
-  text-align: left;
+  text-align: start;
   unicode-bidi: isolate;
   margin: 0 !important;
   padding: 12px 16px 16px 16px; /* Adjust padding to balance header */

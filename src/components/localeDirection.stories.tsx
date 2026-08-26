@@ -940,6 +940,14 @@ export const AuthoredPreformattedDirection: Story = {
         '<pre dir="auto">hello 123!</pre>',
         "<pre>hello 123!</pre>",
         "```javascript\nconst value = 123;\n```",
+        '<pre dir="rtl"><code>مرحبا 123!</code></pre>',
+        '<pre dir="ltr"><code>hello 123!</code></pre>',
+        '<pre dir="auto"><code>مرحبا 123!</code></pre>',
+        '<pre dir="auto"><code>hello 123!</code></pre>',
+        "<pre><code>hello 123!</code></pre>",
+        '<pre dir="rtl"><code dir="ltr">hello 123!</code></pre>',
+        '<pre dir="ltr"><code dir="rtl">مرحبا 123!</code></pre>',
+        '<pre dir="rtl"><code dir="auto">hello 123!</code></pre>',
       ].join("\n\n")}
     />
   ),
@@ -948,7 +956,7 @@ export const AuthoredPreformattedDirection: Story = {
     for (const locale of ["ar-SA", "th-TH", "inherit"]) {
       const fixture = canvas.getByTestId(locale);
       const blocks = fixture.querySelectorAll("pre");
-      expect(blocks).toHaveLength(6);
+      expect(blocks).toHaveLength(14);
       for (const [index, [attribute, direction]] of [
         ["rtl", "rtl"],
         ["ltr", "ltr"],
@@ -956,6 +964,14 @@ export const AuthoredPreformattedDirection: Story = {
         ["auto", "ltr"],
         ["ltr", "ltr"],
         ["ltr", "ltr"],
+        ["rtl", "rtl"],
+        ["ltr", "ltr"],
+        ["auto", "rtl"],
+        ["auto", "ltr"],
+        ["ltr", "ltr"],
+        ["rtl", "rtl"],
+        ["ltr", "ltr"],
+        ["rtl", "rtl"],
       ].entries()) {
         const block = blocks[index];
         expect(block).toHaveAttribute("dir", attribute);
@@ -965,6 +981,20 @@ export const AuthoredPreformattedDirection: Story = {
       }
       expect(blocks[0]).toHaveTextContent("مرحبا 123!");
       expect(blocks[5]).toHaveTextContent("const value = 123;");
+      for (const [index, [attribute, direction]] of [
+        [null, "rtl"],
+        [null, "ltr"],
+        [null, "rtl"],
+        [null, "ltr"],
+        [null, "ltr"],
+        ["ltr", "ltr"],
+        ["rtl", "rtl"],
+        ["auto", "ltr"],
+      ].entries()) {
+        const code = blocks[index + 6].querySelector("code")!;
+        expect(code.getAttribute("dir")).toBe(attribute);
+        expect(getComputedStyle(code).direction).toBe(direction);
+      }
     }
   },
 };

@@ -15,7 +15,7 @@ import "./contentRender.css";
 import "./github-markdown-light.css";
 import "highlight.js/styles/github.css";
 import "katex/dist/katex.min.css";
-import CodeBlock from "./CodeBlock";
+import CodeBlock, { CodeBlockContext } from "./CodeBlock";
 import CustomButtonInputVariable, {
   ComponentsWithCustomVariable,
 } from "./plugins/CustomVariable";
@@ -633,7 +633,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
           // tooltipMinLength={tooltipMinLength}
         />
       ),
-      code: (props) => {
+      code: function Code(props) {
+        const isInCodeBlock = React.useContext(CodeBlockContext);
         const { className, children, ...rest } = props as {
           className?: string;
           children?: React.ReactNode;
@@ -657,7 +658,11 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         }
 
         return (
-          <code className={className} {...rest} dir={rest.dir ?? "ltr"}>
+          <code
+            className={className}
+            {...rest}
+            dir={rest.dir ?? (isInCodeBlock ? undefined : "ltr")}
+          >
             {children}
           </code>
         );

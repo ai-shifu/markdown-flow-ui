@@ -148,6 +148,17 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   const sandboxLanguage = useDetachedLanguage(containerRef, language);
   const { resolvedDirection } = useResolvedDirection(containerRef, direction);
   const sandboxDirection = direction ?? resolvedDirection;
+  const requestedDirectionRef = useRef(direction);
+  requestedDirectionRef.current = direction;
+  // Auto direction cannot inspect text across the iframe document boundary.
+  // Mirror the rendered sandbox direction to host controls instead.
+  const [sandboxContentDirection, setSandboxContentDirection] = useState<
+    "ltr" | "rtl"
+  >();
+  const fullscreenControlDirection =
+    direction === "auto" && type === "sandbox"
+      ? (sandboxContentDirection ?? resolvedDirection)
+      : undefined;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const rootRef = useRef<Root | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
@@ -698,9 +709,24 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       resizeObserver?.observe(rootEl);
     }
 
+    const syncSandboxContentDirection = () => {
+      if (type !== "sandbox" || requestedDirectionRef.current !== "auto") {
+        return;
+      }
+      const wrapper = doc.querySelector<HTMLElement>(".sandbox-wrapper");
+      const view = doc.defaultView;
+      if (!wrapper || !view) return;
+      const nextDirection =
+        view.getComputedStyle(wrapper).direction === "rtl" ? "rtl" : "ltr";
+      setSandboxContentDirection((currentDirection) =>
+        currentDirection === nextDirection ? currentDirection : nextDirection
+      );
+    };
+
     // MutationObserver: detect DOM changes that ResizeObserver might miss
     // (e.g. content injected by scripts, images loading, dynamic rendering)
     const mutationObserver = new MutationObserver(() => {
+      syncSandboxContentDirection();
       scheduleHeightUpdate();
       if (!isHostVisible()) {
         needsTailwindRefreshAfterHidden = true;
@@ -710,9 +736,10 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     });
     mutationObserver.observe(doc.body, {
       childList: true,
+      characterData: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["style", "class"],
+      attributeFilter: ["style", "class", "dir"],
     });
 
     return () => {
@@ -877,6 +904,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       {!hideFullScreen && (
         <button
           type="button"
+          dir={fullscreenControlDirection}
           onClick={toggleFullscreen}
           className={
             "absolute top-2 end-2 z-50 p-1.5 bg-black/75 text-white rounded-md cursor-pointer"

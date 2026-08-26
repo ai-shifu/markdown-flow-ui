@@ -2302,6 +2302,61 @@ export const SandboxFullscreenPlacement: Story = {
   },
 };
 
+const AutoSandboxDirectionFixture = () => {
+  const [content, setContent] = useState("<p>مرحبا بالعالم</p>");
+  return (
+    <div dir="ltr">
+      <button type="button" onClick={() => setContent("<p>Hello world</p>")}>
+        English content
+      </button>
+      <button type="button" onClick={() => setContent("<p>مرحبا بالعالم</p>")}>
+        Arabic content
+      </button>
+      <IframeSandbox type="sandbox" content={content} dir="auto" />
+    </div>
+  );
+};
+
+export const AutoSandboxFullscreenDirection: Story = {
+  render: () => <AutoSandboxDirectionFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const root = canvasElement.querySelector<HTMLElement>(
+      ".content-render-iframe-sandbox"
+    )!;
+    const iframe = root.querySelector("iframe")!;
+    const fullscreen = within(root).getByRole("button");
+    const check = async (direction: "ltr" | "rtl") => {
+      await waitFor(() => {
+        const sandbox =
+          iframe.contentDocument!.querySelector<HTMLElement>(
+            ".sandbox-wrapper"
+          )!;
+        expect(root).toHaveAttribute("dir", "auto");
+        expect(getComputedStyle(sandbox).direction).toBe(direction);
+        expect(fullscreen).toHaveAttribute("dir", direction);
+        expect(getComputedStyle(fullscreen).insetInlineEnd).toBe("8px");
+        const rootRect = root.getBoundingClientRect();
+        const buttonRect = fullscreen.getBoundingClientRect();
+        expect(
+          direction === "rtl"
+            ? buttonRect.left - rootRect.left
+            : rootRect.right - buttonRect.right
+        ).toBeCloseTo(8, 0);
+      });
+    };
+    await check("rtl");
+    await userEvent.click(
+      canvas.getByRole("button", { name: "English content" })
+    );
+    await check("ltr");
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Arabic content" })
+    );
+    await check("rtl");
+  },
+};
+
 const InheritedSandboxFixture = () => {
   const [direction, setDirection] = useState("rtl");
   const [locale, setLocale] = useState<MarkdownFlowLocale>();

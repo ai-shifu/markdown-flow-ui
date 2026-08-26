@@ -433,6 +433,49 @@ export const DirectionAwareMarkdownStructure: Story = {
   },
 };
 
+export const DirectionAwareCheckboxLabels: Story = {
+  render: () => (
+    <div dir="rtl">
+      {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
+        <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
+          <ContentRender
+            locale={locale}
+            content="?[%{{choice}}First||Second]"
+          />
+          <ContentRender
+            locale={locale}
+            content="?[%{{readonlyChoice}}Disabled||Unavailable]"
+            readonly
+          />
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const locale of ["ar-SA", "th-TH", "inherit"]) {
+      const fixture = canvas.getByTestId(locale);
+      const checkboxes = within(fixture).getAllByRole("checkbox");
+      expect(checkboxes).toHaveLength(4);
+      for (const checkbox of checkboxes) {
+        const label = checkbox.closest("label")!;
+        const box = label.firstElementChild!.getBoundingClientRect();
+        const text = label.lastElementChild!.getBoundingClientRect();
+        expect(
+          locale === "th-TH" ? text.left - box.right : box.left - text.right
+        ).toBeCloseTo(8, 0);
+      }
+      await userEvent.click(checkboxes[0].closest("label")!);
+      expect(checkboxes[0]).toBeChecked();
+      await userEvent.click(checkboxes[0].closest("label")!);
+      expect(checkboxes[0]).not.toBeChecked();
+      expect(checkboxes[2]).toBeDisabled();
+      await userEvent.click(checkboxes[2].closest("label")!);
+      expect(checkboxes[2]).not.toBeChecked();
+    }
+  },
+};
+
 export const StandaloneArabicInput: Story = {
   render: () => (
     <div dir="ltr" style={{ width: 360 }}>

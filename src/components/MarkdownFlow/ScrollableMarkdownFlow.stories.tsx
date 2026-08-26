@@ -26,6 +26,14 @@ const getScrollContainer = (canvasElement: HTMLElement) => {
   return element as HTMLElement;
 };
 
+const getScrollButton = (canvasElement: HTMLElement) => {
+  const button = canvasElement.querySelector<HTMLButtonElement>(
+    '[aria-label="Scroll to bottom"]'
+  );
+  expect(button).not.toBeNull();
+  return button as HTMLButtonElement;
+};
+
 export const ShortContentHidesControl: Story = {
   args: {
     height: 240,
@@ -35,9 +43,11 @@ export const ShortContentHidesControl: Story = {
   },
   play: async ({ canvasElement }) => {
     getScrollContainer(canvasElement);
-    expect(
-      canvasElement.querySelector('[aria-label="Scroll to bottom"]')
-    ).toBeNull();
+    const button = getScrollButton(canvasElement);
+    await waitFor(() => {
+      expect(button).toHaveAttribute("data-visible", "false");
+      expect(button).toHaveAttribute("aria-hidden", "true");
+    });
   },
 };
 
@@ -48,19 +58,28 @@ export const LongContentScrollsToBottom: Story = {
   },
   play: async ({ canvasElement }) => {
     const scrollContainer = getScrollContainer(canvasElement);
+    const button = getScrollButton(canvasElement);
 
     scrollContainer.scrollTop = 0;
     scrollContainer.dispatchEvent(new Event("scroll"));
 
-    const button = await waitFor(() => {
-      const element = canvasElement.querySelector<HTMLButtonElement>(
-        '[aria-label="Scroll to bottom"]'
-      );
-      expect(element).not.toBeNull();
-      return element as HTMLButtonElement;
+    await waitFor(() => {
+      expect(button).toHaveAttribute("data-visible", "true");
     });
 
     expect(button.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    expect(button).toHaveAttribute("data-placement", "bottom-center");
+    expect(getComputedStyle(button).bottom).toBe("20px");
+    const containerBounds =
+      scrollContainer.parentElement!.getBoundingClientRect();
+    const buttonBounds = button.getBoundingClientRect();
+    expect(
+      Math.abs(
+        buttonBounds.left +
+          buttonBounds.width / 2 -
+          (containerBounds.left + containerBounds.width / 2)
+      )
+    ).toBeLessThan(1);
 
     await userEvent.click(button);
 
@@ -68,9 +87,7 @@ export const LongContentScrollsToBottom: Story = {
       expect(scrollContainer.scrollTop).toBeGreaterThanOrEqual(
         scrollContainer.scrollHeight - scrollContainer.clientHeight - 2
       );
-      expect(
-        canvasElement.querySelector('[aria-label="Scroll to bottom"]')
-      ).toBeNull();
+      expect(button).toHaveAttribute("data-visible", "false");
     });
   },
 };

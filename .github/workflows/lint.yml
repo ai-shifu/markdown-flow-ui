@@ -44,4 +44,5 @@ jobs:
         run: >-
           npm run test:storybook --
           src/components/Slide/Slide.stories.tsx
+          src/components/MarkdownFlow/ScrollToBottomControl.stories.tsx
           src/components/MarkdownFlow/ScrollableMarkdownFlow.stories.tsx

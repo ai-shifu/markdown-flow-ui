@@ -1,7 +1,51 @@
+import { existsSync } from "node:fs";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { resolve } from "path";
+import { dirname, relative, resolve } from "node:path";
 import dts from "vite-plugin-dts";
+
+const peerPackageNames = ["next", "react", "react-dom"];
+const sourceRoot = resolve(__dirname, "src");
+const outputRoot = resolve(__dirname, "dist");
+
+const isPeerImport = (id) =>
+  peerPackageNames.some(
+    (packageName) => id === packageName || id.startsWith(`${packageName}/`)
+  );
+
+const hasFileExtension = (specifier) => /\/[^/]+\.[^/]+$/.test(specifier);
+
+const appendJavaScriptExtension = (filePath, specifier) => {
+  if (hasFileExtension(specifier)) return specifier;
+
+  const outputRelativePath = relative(outputRoot, resolve(filePath));
+  const sourceImporterDirectory = dirname(
+    resolve(sourceRoot, outputRelativePath)
+  );
+  const sourceTarget = resolve(sourceImporterDirectory, specifier);
+  const resolvesToIndex = ["index.ts", "index.tsx", "index.js", "index.jsx"]
+    .map((fileName) => resolve(sourceTarget, fileName))
+    .some(existsSync);
+  return resolvesToIndex ? `${specifier}/index.js` : `${specifier}.js`;
+};
+
+const makeNodeNextCompatible = (filePath, content) =>
+  content
+    .replace(
+      /(\bfrom\s+)(["'])(\.{1,2}\/[^"']+)\2/g,
+      (_match, prefix, quote, specifier) =>
+        `${prefix}${quote}${appendJavaScriptExtension(filePath, specifier)}${quote}`
+    )
+    .replace(
+      /(\bimport\s+)(["'])(\.{1,2}\/[^"']+)\2/g,
+      (_match, prefix, quote, specifier) =>
+        `${prefix}${quote}${appendJavaScriptExtension(filePath, specifier)}${quote}`
+    )
+    .replace(
+      /(\bimport\s*\(\s*)(["'])(\.{1,2}\/[^"']+)\2/g,
+      (_match, prefix, quote, specifier) =>
+        `${prefix}${quote}${appendJavaScriptExtension(filePath, specifier)}${quote}`
+    );
 
 export default defineConfig({
   plugins: [
@@ -10,6 +54,12 @@ export default defineConfig({
       insertTypesEntry: true,
       entryRoot: "src",
       tsconfigPath: "tsconfig.build.json",
+      beforeWriteFile(filePath, content) {
+        return {
+          filePath,
+          content: makeNodeNextCompatible(filePath, content),
+        };
+      },
     }),
   ],
 
@@ -31,13 +81,7 @@ export default defineConfig({
     },
 
     rollupOptions: {
-      external: [
-        "react",
-        "react-dom",
-        "next",
-        "next/router",
-        "react-dom/client",
-      ],
+      external: isPeerImport,
 
       output: [
         {

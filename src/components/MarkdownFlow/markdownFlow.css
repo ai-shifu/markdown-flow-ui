@@ -2,22 +2,43 @@
 }
 
 .scroll-to-bottom-btn {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
+  position: var(--scroll-to-bottom-position, absolute);
+  bottom: var(--scroll-to-bottom-bottom, 20px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
-  border-radius: 999px;
-  background: var(--base-card, white);
-  color: inherit;
+  border: 1px solid rgb(0 0 0 / 8%);
+  border-radius: 50%;
+  background-color: #fff;
+  color: #666;
   cursor: pointer;
   z-index: 1;
   box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.scroll-to-bottom-btn[data-placement="bottom-center"] {
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.scroll-to-bottom-btn[data-placement="bottom-right"] {
+  right: var(--scroll-to-bottom-horizontal, 20px);
+  left: auto;
+  transform: none;
+}
+
+.scroll-to-bottom-btn[data-visible="true"] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .scroll-to-bottom-btn:focus-visible {
@@ -26,17 +47,19 @@
 }
 
 .scroll-to-bottom-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   pointer-events: none;
 }
 
 .scroll-to-bottom-btn:hover {
-  background-color: var(--primary-color);
+  background-color: #f9f9f9;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+  color: #333;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .scroll-to-bottom-btn {
-    scroll-behavior: auto;
+    transition: none;
   }
 }

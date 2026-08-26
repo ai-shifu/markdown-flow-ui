@@ -68,6 +68,7 @@ Enhanced version with auto-scrolling and scroll management.
 interface ScrollableMarkdownFlowProps extends MarkdownFlowProps {
   height?: string | number;
   className?: string;
+  scrollToBottomAriaLabel?: string;
 }
 ```
 
@@ -75,6 +76,7 @@ interface ScrollableMarkdownFlowProps extends MarkdownFlowProps {
 
 - `height` - Container height (default: "100%")
 - `className` - Additional CSS classes
+- `scrollToBottomAriaLabel` - Localized accessible name for the control
 
 **Features:**
 
@@ -92,6 +94,50 @@ interface ScrollableMarkdownFlowProps extends MarkdownFlowProps {
   className="chat-container"
 />
 ```
+
+For an existing streaming layout, use the complete control instead of
+reimplementing visibility and follow state:
+
+```tsx
+import { ScrollToBottomControl } from "markdown-flow-ui/scroll";
+
+const viewportRef = useRef<HTMLDivElement>(null);
+const contentRef = useRef<HTMLDivElement>(null);
+const endRef = useRef<HTMLDivElement>(null);
+
+return (
+  <div style={{ height: 400, position: "relative" }}>
+    <div ref={viewportRef} style={{ height: "100%", overflowY: "auto" }}>
+      <div ref={contentRef}>
+        {items.map(renderItem)}
+        <div ref={endRef} />
+      </div>
+    </div>
+    <ScrollToBottomControl
+      viewportRef={viewportRef}
+      contentRef={contentRef}
+      endRef={endRef}
+      pageScrollFallback={isPageDrivenLayout ? "always" : "auto"}
+      ariaLabel={translatedScrollToBottomLabel}
+      portalTarget={controlHost}
+    />
+  </div>
+);
+```
+
+`ScrollToBottomControl` owns target resolution, observers, follow state,
+button visibility, scrolling, icon, reduced-motion handling, accessibility,
+and optional portal rendering. By default it evaluates the viewport and its
+parent, then uses the document when neither local element scrolls. Use
+`pageScrollFallback="always"` when both local and page scrolling can be active.
+Content growth is observed automatically; `contentVersion` is only an optional
+explicit refresh signal. Portal rendering does not imply fixed positioning:
+use `position` and `bottomOffset` to match the supplied host's layout, including
+absolute positioning inside a fixed footer host.
+
+The button defaults to bottom-center placement, 20px above the bottom of its
+positioning container, using absolute positioning. Set `placement="bottom-right"`
+to opt into right alignment.
 
 ### ContentRender
 
@@ -195,37 +241,32 @@ Auto-scroll management for containers.
 
 ```typescript
 function useScrollToBottom(
-  containerRef: RefObject<HTMLElement>,
-  dependencies: any[],
-  options?: {
-    behavior?: "smooth" | "auto";
-    autoScrollOnInit?: boolean;
-    scrollDelay?: number;
-  }
+  viewportRef: RefObject<HTMLElement | null>,
+  options?: UseScrollToBottomOptions
 ): {
   showScrollToBottom: boolean;
-  handleUserScrollToBottom: () => void;
+  isAtBottom: boolean;
+  followNewContent: boolean;
+  scrollToBottom: (behavior?: "smooth" | "auto") => void;
+  refresh: () => void;
 };
 ```
 
 **Example:**
 
 ```tsx
-const containerRef = useRef(null);
-const { showScrollToBottom, handleUserScrollToBottom } = useScrollToBottom(
-  containerRef,
-  [messages.length],
-  { behavior: "smooth" }
-);
+const viewportRef = useRef<HTMLDivElement>(null);
+const { showScrollToBottom, scrollToBottom } = useScrollToBottom(viewportRef, {
+  contentVersion: messages,
+  scrollThreshold: 150,
+});
 
 return (
-  <div ref={containerRef}>
+  <div ref={viewportRef}>
     {messages.map((msg) => (
       <div key={msg.id}>{msg.text}</div>
     ))}
-    {showScrollToBottom && (
-      <button onClick={handleUserScrollToBottom}>↓</button>
-    )}
+    {showScrollToBottom && <button onClick={() => scrollToBottom()}>↓</button>}
   </div>
 );
 ```
@@ -261,6 +302,8 @@ type CustomRenderBarProps = React.ComponentType<{
 import type {
   MarkdownFlowProps,
   ScrollableMarkdownFlowProps,
+  ScrollToBottomControlProps,
+  UseScrollToBottomOptions,
   ContentRenderProps,
 } from "markdown-flow-ui";
 ```

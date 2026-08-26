@@ -181,6 +181,7 @@ type OnSendContentParams = {
 interface ScrollableMarkdownFlowProps extends MarkdownFlowProps {
   height?: string | number;
   className?: string;
+  scrollToBottomAriaLabel?: string;
 }
 ```
 
@@ -188,6 +189,7 @@ interface ScrollableMarkdownFlowProps extends MarkdownFlowProps {
 
 - `height` - 容器高度（默认："100%"）
 - `className` - 附加 CSS 类
+- `scrollToBottomAriaLabel` - 滚动按钮的本地化无障碍名称
 
 **功能：**
 
@@ -206,25 +208,38 @@ interface ScrollableMarkdownFlowProps extends MarkdownFlowProps {
 />
 ```
 
-需要把滚动按钮放到宿主容器或复杂内容布局中时，可直接复用同一套滚动判断：
+已有流式内容布局需要滚动按钮时，直接使用完整控制组件，不要在宿主重复实现显隐和跟随状态：
 
 ```tsx
-const contentRef = useRef<HTMLDivElement>(null);
-const { showScrollToBottom, scrollToBottom } = useScrollToBottom(contentRef, {
-  contentVersion: streamedItems,
-  scrollTarget: scrollContainerRef,
-  scrollThreshold: 150,
-});
+import { ScrollToBottomControl } from "markdown-flow-ui/scroll";
 
-<ScrollToBottomButton
-  visible={showScrollToBottom}
-  onClick={() => scrollToBottom()}
-  ariaLabel="滚动到底部"
-  portalTarget={mobilePortalTarget}
-/>;
+const viewportRef = useRef<HTMLDivElement>(null);
+const contentRef = useRef<HTMLDivElement>(null);
+const endRef = useRef<HTMLDivElement>(null);
+
+return (
+  <div style={{ height: 400, position: "relative" }}>
+    <div ref={viewportRef} style={{ height: "100%", overflowY: "auto" }}>
+      <div ref={contentRef}>
+        {items.map(renderItem)}
+        <div ref={endRef} />
+      </div>
+    </div>
+    <ScrollToBottomControl
+      viewportRef={viewportRef}
+      contentRef={contentRef}
+      endRef={endRef}
+      pageScrollFallback={isPageDrivenLayout ? "always" : "auto"}
+      ariaLabel={translatedScrollToBottomLabel}
+      portalTarget={controlHost}
+    />
+  </div>
+);
 ```
 
-`useScrollToBottom` 会监听滚动、ResizeObserver 和视口变化；用户主动离开底部后不会被新内容抢回，回到底部或点击按钮后会恢复跟随。`scrollTarget` 可为本地容器、父容器或 `window`/`document`，省略时会自动解析。
+`ScrollToBottomControl` 负责目标解析、观察器、跟随状态、按钮显隐、滚动、图标、reduced-motion、无障碍和可选 portal。默认同时判断视区和父容器；两者均不可滚时回退到 document。页面滚动和本地滚动可能同时存在时使用 `pageScrollFallback="always"`。
+
+内容增长会自动侦测，`contentVersion` 仅用于可选的显式刷新信号。Portal 不代表必须使用 fixed 定位：通过 `position` 和 `bottomOffset` 匹配宿主布局，例如在 fixed 页脚宿主内使用 absolute 定位。
 
 #### ContentRender
 
@@ -330,37 +345,32 @@ return (
 
 ```typescript
 function useScrollToBottom(
-  containerRef: RefObject<HTMLElement>,
-  dependencies: any[],
-  options?: {
-    behavior?: "smooth" | "auto";
-    autoScrollOnInit?: boolean;
-    scrollDelay?: number;
-  }
+  viewportRef: RefObject<HTMLElement | null>,
+  options?: UseScrollToBottomOptions
 ): {
   showScrollToBottom: boolean;
-  handleUserScrollToBottom: () => void;
+  isAtBottom: boolean;
+  followNewContent: boolean;
+  scrollToBottom: (behavior?: "smooth" | "auto") => void;
+  refresh: () => void;
 };
 ```
 
 **示例：**
 
 ```tsx
-const containerRef = useRef(null);
-const { showScrollToBottom, handleUserScrollToBottom } = useScrollToBottom(
-  containerRef,
-  [messages.length],
-  { behavior: "smooth" }
-);
+const viewportRef = useRef<HTMLDivElement>(null);
+const { showScrollToBottom, scrollToBottom } = useScrollToBottom(viewportRef, {
+  contentVersion: messages,
+  scrollThreshold: 150,
+});
 
 return (
-  <div ref={containerRef}>
+  <div ref={viewportRef}>
     {messages.map((msg) => (
       <div key={msg.id}>{msg.text}</div>
     ))}
-    {showScrollToBottom && (
-      <button onClick={handleUserScrollToBottom}>↓</button>
-    )}
+    {showScrollToBottom && <button onClick={() => scrollToBottom()}>↓</button>}
   </div>
 );
 ```
@@ -430,6 +440,8 @@ type CustomRenderBarProps = React.ComponentType<{
 import type {
   MarkdownFlowProps,
   ScrollableMarkdownFlowProps,
+  ScrollToBottomControlProps,
+  UseScrollToBottomOptions,
   ContentRenderProps,
 } from "markdown-flow-ui";
 ```

@@ -59,6 +59,23 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const expectPlayerNavigationDirection = (root: Element) => {
+  const rtl = getComputedStyle(root).direction === "rtl";
+  for (const action of ["prev", "next", "prev-subtitle", "next-subtitle"]) {
+    const icon = root.querySelector(`.slide-player__action--${action} svg`)!;
+    expect(getComputedStyle(icon).transform).toBe(
+      rtl && (action === "prev" || action === "next")
+        ? "matrix(-1, 0, 0, 1, 0, 0)"
+        : "none"
+    );
+  }
+  const previous = root.querySelector(".slide-player__action--prev")!;
+  const next = root.querySelector(".slide-player__action--next")!;
+  expect(
+    previous.getBoundingClientRect().left < next.getBoundingClientRect().left
+  ).toBe(!rtl);
+};
+
 export const InheritedAndExplicitDirection: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -76,6 +93,9 @@ export const InheritedAndExplicitDirection: Story = {
           expect(root.getAttribute("dir")).toBe(explicit ? dir : null);
           expect(getComputedStyle(root).direction).toBe(dir);
         }
+        expectPlayerNavigationDirection(
+          canvas.getByTestId("player").firstElementChild!
+        );
       });
     };
     await checkDirection("rtl", false);
@@ -96,6 +116,7 @@ export const InheritedAndExplicitDirection: Story = {
 
 const PlayerDirectionFixture = () => {
   const [dir, setDir] = useState("ltr");
+  const [lastAction, setLastAction] = useState("");
   return (
     <div>
       {["ltr", "rtl", "auto"].map((value) => (
@@ -103,7 +124,14 @@ const PlayerDirectionFixture = () => {
           {value}
         </button>
       ))}
-      <Player locale="ar-SA" dir={dir} defaultPlaying={false} />
+      <output data-testid="navigation-result">{lastAction}</output>
+      <Player
+        locale="ar-SA"
+        dir={dir}
+        defaultPlaying={false}
+        onPrev={() => setLastAction("previous")}
+        onNext={() => setLastAction("next")}
+      />
     </div>
   );
 };
@@ -122,6 +150,20 @@ export const PlayerDirectionOverride: Story = {
         "dir",
         dir
       );
+      expectPlayerNavigationDirection(
+        canvasElement.querySelector(".slide-player")!
+      );
+      for (const [name, action] of [
+        [labels.previousLabel, "previous"],
+        [labels.nextLabel, "next"],
+      ]) {
+        await userEvent.click(
+          canvas.getByRole("button", { name, exact: true })
+        );
+        expect(canvas.getByTestId("navigation-result")).toHaveTextContent(
+          action
+        );
+      }
       // Exercise the portal even when the story is viewed at desktop width.
       canvasElement
         .querySelector<HTMLButtonElement>(".slide-player__action--mobile-more")!

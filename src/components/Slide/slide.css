@@ -62,7 +62,9 @@
   color: inherit;
 }
 
-.slide-landscape-header__back:dir(rtl) .slide-landscape-header__icon {
+.slide-landscape-header__back:dir(rtl) .slide-landscape-header__icon,
+.slide-player__action--prev:dir(rtl) .slide-player__icon,
+.slide-player__action--next:dir(rtl) .slide-player__icon {
   transform: scaleX(-1);
 }
 

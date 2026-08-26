@@ -8,7 +8,10 @@ import {
   InputGroupButton,
   InputGroupTextarea,
 } from "../ui/inputGroup/input-group";
-import type { MarkdownFlowLocale } from "../../lib/locale";
+import {
+  getMarkdownFlowDirection,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 
 interface MarkdownFlowInputProps {
@@ -60,6 +63,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
 
   return (
     <InputGroup
+      dir={getMarkdownFlowDirection(locale)}
       data-disabled={disabled}
       className={`input-container h-auto items-end bg-white border-[#e5e5e5] shadow-[0_1px_2px_rgba(0,0,0,0.05)] ${className || ""}`}
     >
@@ -69,7 +73,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
         value={value}
         onChange={onChange}
         onKeyDown={handleKeyDown}
-        className={`text-[16px] leading-5 font-normal text-[#0A0A0A] placeholder:text-[rgba(99,114,128,1)] bg-transparent border-0 shadow-none pl-3 pr-0 py-1.5 min-h-[32px] ${textareaClassName || ""}`}
+        className={`text-[16px] leading-5 font-normal text-[#0A0A0A] placeholder:text-[rgba(99,114,128,1)] bg-transparent border-0 shadow-none ps-3 pe-0 py-1.5 min-h-[32px] ${textareaClassName || ""}`}
         title={title}
       />
       <InputGroupButton

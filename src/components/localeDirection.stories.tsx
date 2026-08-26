@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import type { MarkdownFlowLocale } from "../lib/locale";
 import ContentRender from "./ContentRender";
+import MarkdownFlowInput from "./ContentRender/MarkdownFlowInput";
 import MarkdownFlow from "./MarkdownFlow/MarkdownFlow";
 import MarkdownFlowEditor from "./MarkdownFlowEditor/MarkdownFlowEditor";
 import Slide from "./Slide/Slide";
@@ -26,6 +27,9 @@ const DirectionFixture = () => {
       </button>
       <div data-testid="renderer">
         <ContentRender content="Direction preview" locale={locale} />
+      </div>
+      <div data-testid="input">
+        <MarkdownFlowInput locale={locale} />
       </div>
       <div data-testid="flow">
         <MarkdownFlow locale={locale} />
@@ -56,7 +60,14 @@ export const InheritedAndExplicitDirection: Story = {
     const canvas = within(canvasElement);
     const checkDirection = async (dir: "rtl" | "ltr", explicit: boolean) => {
       await waitFor(() => {
-        for (const name of ["renderer", "flow", "editor", "slide", "player"]) {
+        for (const name of [
+          "renderer",
+          "input",
+          "flow",
+          "editor",
+          "slide",
+          "player",
+        ]) {
           const root = canvas.getByTestId(name).firstElementChild!;
           expect(root.getAttribute("dir")).toBe(explicit ? dir : null);
           expect(getComputedStyle(root).direction).toBe(dir);
@@ -153,6 +164,26 @@ export const ArabicCodeBlocks: Story = {
         getContentRenderLocaleTexts("ar-SA").copyButtonText
       );
     }
+  },
+};
+
+export const StandaloneArabicInput: Story = {
+  render: () => (
+    <div dir="ltr" style={{ width: 360 }}>
+      <MarkdownFlowInput locale="ar-SA" placeholder="اكتب إجابتك" />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const input = canvas.getByRole("textbox");
+    const button = canvas.getByRole("button", {
+      name: getContentRenderLocaleTexts("ar-SA").sendButtonLabel,
+    });
+    expect(getComputedStyle(input).direction).toBe("rtl");
+    expect(input).toHaveAttribute("placeholder", "اكتب إجابتك");
+    expect(button.getBoundingClientRect().right).toBeLessThanOrEqual(
+      input.getBoundingClientRect().left
+    );
   },
 };
 

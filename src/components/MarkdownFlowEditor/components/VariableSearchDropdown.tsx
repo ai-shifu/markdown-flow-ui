@@ -1,4 +1,4 @@
-import type React from "react";
+import React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { Variable } from "../types";
@@ -38,8 +38,17 @@ const VariableSearchDropdown: React.FC<VariableSearchDropdownProps> = ({
   const updatePosition = useCallback(() => {
     if (!anchorElement) return;
     const rect = anchorElement.getBoundingClientRect();
+    const doc = anchorElement.ownerDocument;
+    const view = doc.defaultView;
+    if (!view) return;
+    const width = containerRef.current?.getBoundingClientRect().width ?? 0;
+    const desiredLeft =
+      view.getComputedStyle(anchorElement).direction === "rtl"
+        ? rect.right - width
+        : rect.left;
+    const maxLeft = Math.max(8, doc.documentElement.clientWidth - width - 8);
     setPosition({
-      left: rect.left,
+      left: Math.min(Math.max(8, desiredLeft), maxLeft),
       top: rect.bottom + 8,
     });
   }, [anchorElement]);

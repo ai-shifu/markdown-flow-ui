@@ -317,6 +317,8 @@
 
 .markdown-flow-editor-variable-search {
   width: 260px;
+  max-width: calc(100vw - 16px);
+  box-sizing: border-box;
   border-radius: 8px;
   border: 1px solid var(--base-border, #e5e5e5);
   background: #fff;

@@ -6,6 +6,7 @@ import ContentRender from "./ContentRender";
 import MarkdownFlowInput from "./ContentRender/MarkdownFlowInput";
 import MarkdownFlow from "./MarkdownFlow/MarkdownFlow";
 import MarkdownFlowEditor from "./MarkdownFlowEditor/MarkdownFlowEditor";
+import { getEditorLocaleMessages } from "./MarkdownFlowEditor/editorI18n";
 import Slide from "./Slide/Slide";
 import Player from "./Slide/Player";
 import { getSlidePlayerTexts } from "./Slide/slideI18n";
@@ -184,6 +185,36 @@ export const StandaloneArabicInput: Story = {
     expect(button.getBoundingClientRect().right).toBeLessThanOrEqual(
       input.getBoundingClientRect().left
     );
+  },
+};
+
+export const ArabicVariableDropdown: Story = {
+  render: () => (
+    <div style={{ width: 320, marginLeft: "auto" }}>
+      <MarkdownFlowEditor
+        locale="ar-SA"
+        variables={[{ name: "learner", label: "متعلم" }]}
+      />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole("button", {
+      name: getEditorLocaleMessages("ar-SA").toolbarInsertExistingVariable,
+    });
+    await userEvent.click(trigger);
+    await waitFor(() => {
+      const panel = canvasElement.querySelector(
+        ".markdown-flow-editor-variable-search"
+      )!;
+      expect(panel).not.toBeNull();
+      const rect = panel.getBoundingClientRect();
+      expect(rect.left).toBeGreaterThanOrEqual(8);
+      expect(rect.right).toBeLessThanOrEqual(
+        canvasElement.ownerDocument.documentElement.clientWidth - 8
+      );
+      expect(rect.right).toBeCloseTo(trigger.getBoundingClientRect().right, 0);
+    });
   },
 };
 

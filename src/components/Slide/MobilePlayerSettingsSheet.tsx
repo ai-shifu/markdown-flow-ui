@@ -1,9 +1,9 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import type { ComponentProps } from "react";
 import { X } from "lucide-react";
 
 import { cn } from "../../lib/utils";
 import { Dialog, DialogOverlay, DialogPortal, DialogTitle } from "../ui/dialog";
-import type { MarkdownFlowDirection } from "../../lib/locale";
 import type { MobileViewMode } from "./utils/mobileScreenMode";
 
 export type MobilePlayerSettingsSheetLabels = {
@@ -19,7 +19,7 @@ export type MobilePlayerSettingsSheetLabels = {
 
 export type MobilePlayerSettingsSheetProps = {
   open: boolean;
-  dir?: MarkdownFlowDirection;
+  dir?: ComponentProps<typeof DialogPrimitive.Content>["dir"];
   labels: MobilePlayerSettingsSheetLabels;
   isSubtitleEnabled: boolean;
   viewMode: MobileViewMode;

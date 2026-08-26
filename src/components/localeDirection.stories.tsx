@@ -7,6 +7,7 @@ import MarkdownFlow from "./MarkdownFlow/MarkdownFlow";
 import MarkdownFlowEditor from "./MarkdownFlowEditor/MarkdownFlowEditor";
 import Slide from "./Slide/Slide";
 import Player from "./Slide/Player";
+import { getSlidePlayerTexts } from "./Slide/slideI18n";
 import IframeSandbox from "./ContentRender/IframeSandbox";
 import { getContentRenderLocaleTexts } from "./ContentRender/contentRenderI18n";
 
@@ -75,6 +76,49 @@ export const InheritedAndExplicitDirection: Story = {
       canvas.getByRole("button", { name: "Inherit", exact: true })
     );
     await checkDirection("rtl", false);
+  },
+};
+
+const PlayerDirectionFixture = () => {
+  const [dir, setDir] = useState("ltr");
+  return (
+    <div>
+      {["ltr", "rtl", "auto"].map((value) => (
+        <button type="button" key={value} onClick={() => setDir(value)}>
+          {value}
+        </button>
+      ))}
+      <Player locale="ar-SA" dir={dir} defaultPlaying={false} />
+    </div>
+  );
+};
+
+export const PlayerDirectionOverride: Story = {
+  render: () => <PlayerDirectionFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    const labels = getSlidePlayerTexts("ar-SA");
+    for (const dir of ["ltr", "rtl", "auto"]) {
+      await userEvent.click(
+        canvas.getByRole("button", { name: dir, exact: true })
+      );
+      expect(canvasElement.querySelector(".slide-player")).toHaveAttribute(
+        "dir",
+        dir
+      );
+      // Exercise the portal even when the story is viewed at desktop width.
+      canvasElement
+        .querySelector<HTMLButtonElement>(".slide-player__action--mobile-more")!
+        .click();
+      await waitFor(() =>
+        expect(page.getByRole("dialog")).toHaveAttribute("dir", dir)
+      );
+      await userEvent.click(
+        page.getByRole("button", { name: labels.closeSettingsLabel })
+      );
+      await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
+    }
   },
 };
 

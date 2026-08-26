@@ -324,6 +324,7 @@ const Player = ({
   onPointerDown,
   ...props
 }: PlayerProps) => {
+  const direction = props.dir ?? getMarkdownFlowDirection(locale);
   const localKeyboardShortcutOwnerId = useId();
   const keyboardShortcutContext = useContext(PlayerKeyboardShortcutContext);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -1858,7 +1859,7 @@ const Player = ({
   return (
     <div
       {...props}
-      dir={getMarkdownFlowDirection(locale)}
+      dir={direction}
       data-slide-player-shortcut-owner={keyboardShortcutOwnerId}
       className={cn("slide-player", className)}
       onFocusCapture={handleRootFocusCapture}
@@ -1885,7 +1886,7 @@ const Player = ({
         <>
           <MobilePlayerSettingsSheet
             container={settingsPortalContainer}
-            dir={getMarkdownFlowDirection(locale)}
+            dir={direction}
             labels={{
               closeSettings: playerTexts.closeSettingsLabel,
               fullscreen: playerTexts.fullscreenLabel,

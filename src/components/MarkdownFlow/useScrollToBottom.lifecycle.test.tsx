@@ -247,6 +247,122 @@ describe.each(["element", "document"])(
   }
 );
 
+describe.each(["element", "document"])(
+  "near-bottom interruption on %s",
+  (path) => {
+    it.each(
+      ["wheel", "touchstart", "pointerdown", "keydown"].flatMap((input) =>
+        [false, true].map((deliveredScroll) => ({ input, deliveredScroll }))
+      )
+    )(
+      "keeps $input paused across refreshes (scroll already delivered: $deliveredScroll)",
+      ({ input, deliveredScroll }) => {
+        const target = createScroller();
+        const ref = { current: target };
+        const originalScroller = Object.getOwnPropertyDescriptor(
+          document,
+          "scrollingElement"
+        );
+        Object.defineProperty(document, "scrollingElement", {
+          configurable: true,
+          value: target,
+        });
+        const root = path === "document" ? window : target;
+        const options = {
+          scrollTarget: path === "document" ? document : target,
+          contentVersion: 0,
+        };
+        try {
+          const { result, rerender, unmount } = renderHook(
+            (props) => useScrollToBottom(ref, props),
+            { initialProps: options }
+          );
+          act(() => result.current.scrollToBottom("smooth"));
+          target.scrollTop = 750;
+          if (deliveredScroll) fireEvent.scroll(root);
+          if (input === "wheel") fireEvent.wheel(root, { deltaY: -100 });
+          if (input === "touchstart") fireEvent.touchStart(root);
+          if (input === "pointerdown")
+            fireEvent.pointerDown(root, { button: 0 });
+          if (input === "keydown") fireEvent.keyDown(root, { key: "PageUp" });
+          expect(result.current.followNewContent).toBe(false);
+          expect(result.current.isAtBottom).toBe(true);
+          expect(result.current.showScrollToBottom).toBe(false);
+          expect(vi.getTimerCount()).toBe(0);
+          expect(target.scrollTo).toHaveBeenLastCalledWith({
+            top: 750,
+            behavior: "instant",
+          });
+          vi.mocked(target.scrollTo).mockClear();
+
+          // Native cancellation can emit a scroll event without user movement.
+          fireEvent.scroll(root);
+          act(() => result.current.refresh());
+          Object.defineProperty(target, "scrollHeight", { value: 1020 });
+          rerender({ ...options, contentVersion: 1 });
+          fireEvent.resize(window);
+          flushFrames();
+          expect(result.current.followNewContent).toBe(false);
+          expect(target.scrollTo).not.toHaveBeenCalled();
+
+          Object.defineProperty(target, "scrollHeight", { value: 1400 });
+          rerender({ ...options, contentVersion: 2 });
+          fireEvent.resize(window);
+          flushFrames();
+          act(() => vi.advanceTimersByTime(1200));
+          expect(result.current.showScrollToBottom).toBe(true);
+          expect(result.current.followNewContent).toBe(false);
+          expect(target.scrollTo).not.toHaveBeenCalled();
+
+          target.scrollTop = 600;
+          fireEvent.scroll(root);
+          expect(result.current.followNewContent).toBe(false);
+          target.scrollTop = 1200;
+          fireEvent.scroll(root);
+          expect(result.current.followNewContent).toBe(true);
+          expect(result.current.showScrollToBottom).toBe(false);
+          unmount();
+          expect(frames.size).toBe(0);
+          expect(vi.getTimerCount()).toBe(0);
+        } finally {
+          cleanup();
+          if (originalScroller)
+            Object.defineProperty(
+              document,
+              "scrollingElement",
+              originalScroller
+            );
+          else Reflect.deleteProperty(document, "scrollingElement");
+        }
+      }
+    );
+  }
+);
+
+it.each(["click", "target replacement"])(
+  "does not carry a pending interruption across %s",
+  (resume) => {
+    const target = createScroller();
+    const ref = { current: target };
+    const { result, rerender } = renderHook(() => useScrollToBottom(ref));
+    act(() => result.current.scrollToBottom("smooth"));
+    target.scrollTop = 750;
+    fireEvent.touchStart(target);
+    expect(result.current.followNewContent).toBe(false);
+    if (resume === "click") {
+      act(() => result.current.handleUserScrollToBottom());
+      target.scrollTop = 800;
+      fireEvent.scroll(target);
+    } else {
+      const replacement = createScroller();
+      replacement.scrollTop = 800;
+      ref.current = replacement;
+      rerender();
+    }
+    expect(result.current.followNewContent).toBe(true);
+  }
+);
+
 it("does not interrupt smooth scrolling for non-scroll keys or text editing", () => {
   const target = createScroller();
   const input = document.createElement("input");

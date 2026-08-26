@@ -307,6 +307,9 @@ export function useScrollToBottom(
   const boundViewportRef = useRef<HTMLElement | null>(null);
   const boundContentRef = useRef<HTMLElement | null>(null);
   const programmaticScrollRef = useRef(false);
+  const interruptedPositionsRef = useRef<Map<ScrollTarget, number> | null>(
+    null
+  );
   const eventFrameRef = useRef<number | null>(null);
   const contentFrameRef = useRef<number | null>(null);
   const programmaticFrameRef = useRef<{
@@ -348,6 +351,12 @@ export function useScrollToBottom(
 
   const applyPresentation = useCallback(
     (targets: ScrollTarget[]) => {
+      if (
+        interruptedPositionsRef.current &&
+        !sameTargets(targets, [...interruptedPositionsRef.current.keys()])
+      ) {
+        interruptedPositionsRef.current = null;
+      }
       const presentation = getCombinedScrollPresentation(
         targets.map(getScrollMetrics),
         scrollThreshold
@@ -358,7 +367,8 @@ export function useScrollToBottom(
         setShowScrollToBottom(
           presentation.isAtBottom ? presentation.showScrollToBottom : false
         );
-        if (presentation.isAtBottom) {
+        // The visibility threshold is not the native animation's destination.
+        if (presentation.distanceFromBottom <= 1) {
           finishProgrammaticScroll();
           setFollowing(followEnabledRef.current);
         }
@@ -366,7 +376,11 @@ export function useScrollToBottom(
       }
 
       setShowScrollToBottom(presentation.showScrollToBottom);
-      setFollowing(presentation.isAtBottom && followEnabledRef.current);
+      setFollowing(
+        !interruptedPositionsRef.current &&
+          presentation.isAtBottom &&
+          followEnabledRef.current
+      );
       return presentation;
     },
     [finishProgrammaticScroll, scrollThreshold, setFollowing]
@@ -392,6 +406,7 @@ export function useScrollToBottom(
       const nativeBehavior =
         actualBehavior === "auto" ? "instant" : actualBehavior;
 
+      interruptedPositionsRef.current = null;
       programmaticScrollRef.current = true;
       setFollowing(followEnabledRef.current);
       setShowScrollToBottom(false);
@@ -500,6 +515,9 @@ export function useScrollToBottom(
     );
     const interruptProgrammaticScroll = () => {
       if (!programmaticScrollRef.current) return;
+      interruptedPositionsRef.current = new Map(
+        targets.map((target) => [target, getScrollMetrics(target).scrollTop])
+      );
       clearProgrammaticFrame();
       finishProgrammaticScroll();
       setFollowing(false);
@@ -516,6 +534,19 @@ export function useScrollToBottom(
       if (isScrollInput(event)) interruptProgrammaticScroll();
     };
     const handleScroll = () => {
+      const interruptedPositions = interruptedPositionsRef.current;
+      // Cancellation itself can queue an unchanged scroll event. Only new
+      // positions can release the input pause; layout refreshes cannot.
+      if (
+        interruptedPositions &&
+        targets.some(
+          (target) =>
+            getScrollMetrics(target).scrollTop !==
+            interruptedPositions.get(target)
+        )
+      ) {
+        interruptedPositionsRef.current = null;
+      }
       let movedAway = false;
       targets.forEach((target) => {
         const top = getScrollMetrics(target).scrollTop;

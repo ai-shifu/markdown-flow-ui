@@ -283,6 +283,67 @@ const LegacyClickFixture: React.FC<{ omitDependencies?: boolean }> = ({
   );
 };
 
+const NearBottomInterruptionFixture: React.FC = () => {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(1000);
+  const scroll = useScrollToBottom(viewportRef, {
+    contentRef,
+    scrollTarget: viewportRef,
+  });
+
+  return (
+    <div style={{ maxWidth: 640, margin: "0 auto" }}>
+      <div style={{ position: "relative" }}>
+        <div
+          ref={viewportRef}
+          data-testid="scroll-viewport"
+          style={{ height: 240, overflowY: "auto" }}
+        >
+          <div ref={contentRef} style={{ height, background: "#f3f7ff" }}>
+            Interrupt near the bottom while streamed content grows.
+          </div>
+        </div>
+        <ScrollToBottomButton
+          visible={scroll.showScrollToBottom}
+          onClick={scroll.handleUserScrollToBottom}
+          ariaLabel="Scroll to bottom"
+        />
+      </div>
+      <output data-testid="follow-state">
+        {scroll.followNewContent ? "Following" : "Paused"}
+      </output>
+      <button
+        type="button"
+        data-testid="interrupt-near-bottom"
+        onClick={() => {
+          const viewport = viewportRef.current;
+          if (!viewport) return;
+          scroll.scrollToBottom("smooth");
+          // Place the native animation inside the threshold before its queued scroll event.
+          viewport.scrollTo({
+            top: viewport.scrollHeight - viewport.clientHeight - 50,
+            behavior: "instant",
+          });
+          viewport.dispatchEvent(
+            new WheelEvent("wheel", { deltaY: -100, bubbles: true })
+          );
+          setHeight((current) => current + 20);
+        }}
+      >
+        Interrupt near bottom and stream
+      </button>
+      <button
+        type="button"
+        data-testid="grow-content"
+        onClick={() => setHeight((current) => current + 180)}
+      >
+        Simulate async reflow
+      </button>
+    </div>
+  );
+};
+
 const meta = {
   title: "MarkdownFlow/ScrollToBottomControl",
   component: ScrollControlFixture,
@@ -566,6 +627,46 @@ export const UserInterruptsSmoothScrollBeforeContentGrowth: Story = {
     expect(button).toHaveAttribute("data-visible", "true");
     await userEvent.click(button);
     await waitFor(() => expectAtBottom(viewport));
+  },
+};
+
+export const NearBottomInterruptionWaitsForUserMovement: Story = {
+  render: () => <NearBottomInterruptionFixture />,
+  play: async ({ canvasElement }) => {
+    const viewport = getViewport(canvasElement);
+    const button = getButton(canvasElement);
+    const state = canvasElement.querySelector('[data-testid="follow-state"]')!;
+    await waitFor(() => {
+      expect(button).toHaveAttribute("data-visible", "true");
+      expect(getComputedStyle(button).opacity).toBe("1");
+    });
+    const heldPosition = viewport.scrollHeight - viewport.clientHeight - 50;
+    await userEvent.click(
+      canvasElement.querySelector<HTMLButtonElement>(
+        '[data-testid="interrupt-near-bottom"]'
+      )!
+    );
+    await waitFor(() => expect(viewport.scrollHeight).toBe(1020));
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    );
+    expect(state).toHaveTextContent("Paused");
+    expect(viewport.scrollTop).toBe(heldPosition);
+    expect(button).toHaveAttribute("data-visible", "false");
+
+    await userEvent.click(
+      canvasElement.querySelector<HTMLButtonElement>(
+        '[data-testid="grow-content"]'
+      )!
+    );
+    await waitFor(() => expect(button).toHaveAttribute("data-visible", "true"));
+    expect(state).toHaveTextContent("Paused");
+    expect(viewport.scrollTop).toBe(heldPosition);
+    await userEvent.click(button);
+    await waitFor(() => {
+      expectAtBottom(viewport);
+      expect(state).toHaveTextContent("Following");
+    });
   },
 };
 

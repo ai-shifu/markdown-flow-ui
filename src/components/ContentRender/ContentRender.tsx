@@ -282,17 +282,30 @@ const rehypePlugins: PluggableList = [
 export const MarkdownRenderer: React.FC<{
   content: string;
   components: CustomComponents;
-}> = ({ content: markdownContent, components }) => (
-  <div className="markdown-renderer">
-    <ReactMarkdown
-      remarkPlugins={remarkPlugins}
-      rehypePlugins={rehypePlugins}
-      components={components}
-    >
-      {markdownContent}
-    </ReactMarkdown>
-  </div>
-);
+  locale?: MarkdownFlowLocale;
+}> = ({ content: markdownContent, components, locale }) => {
+  const texts = getContentRenderLocaleTexts(locale);
+  return (
+    <div className="markdown-renderer">
+      <ReactMarkdown
+        remarkPlugins={remarkPlugins}
+        rehypePlugins={rehypePlugins}
+        remarkRehypeOptions={{
+          footnoteLabel: texts.footnoteLabel,
+          footnoteBackLabel: (referenceIndex, rereferenceIndex) => {
+            const reference =
+              String(referenceIndex + 1) +
+              (rereferenceIndex > 1 ? `-${rereferenceIndex}` : "");
+            return texts.footnoteBackLabel.replace("{reference}", reference);
+          },
+        }}
+        components={components}
+      >
+        {markdownContent}
+      </ReactMarkdown>
+    </div>
+  );
+};
 
 const mergeNonSandboxSegments = (segments: RenderSegment[]) => {
   if (segments.length <= 1) return segments;
@@ -738,6 +751,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         return (
           <MarkdownRenderer
             key={key}
+            locale={locale}
             components={components}
             content={seg.value}
           />
@@ -810,6 +824,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
           return (
             <MarkdownRenderer
               key={index}
+              locale={locale}
               components={components}
               content={seg.value}
             />

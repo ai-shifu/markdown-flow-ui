@@ -980,6 +980,16 @@ export const DirectionAwareFootnotes: Story = {
     for (const locale of ["ar-SA", "th-TH", "inherit"]) {
       const fixture = canvas.getByTestId(locale);
       const lists = fixture.querySelectorAll(".footnotes ol, .footnotes ul");
+      const texts = getContentRenderLocaleTexts(
+        locale === "inherit" ? undefined : locale
+      );
+      expect(fixture.querySelector(".footnotes h2")).toHaveTextContent(
+        texts.footnoteLabel
+      );
+      expect(fixture.querySelector("[data-footnote-backref]")).toHaveAttribute(
+        "aria-label",
+        texts.footnoteBackLabel.replace("{reference}", "1")
+      );
       expect(lists).toHaveLength(3);
       for (const list of lists) {
         const style = getComputedStyle(list);

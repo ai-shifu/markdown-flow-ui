@@ -11,7 +11,9 @@
     "sendButtonLabel": "Send",
     "scrollToBottomLabel": "Scroll to bottom",
     "mermaidLoadingText": "Loading Mermaid chart...",
-    "mermaidEmptyChartText": "Empty chart content"
+    "mermaidEmptyChartText": "Empty chart content",
+    "footnoteLabel": "Footnotes",
+    "footnoteBackLabel": "Back to reference {reference}"
   },
   "fr-FR": {
     "confirmButtonText": "Soumettre",
@@ -25,7 +27,9 @@
     "sendButtonLabel": "Envoyer",
     "scrollToBottomLabel": "Faire défiler jusqu'en bas",
     "mermaidLoadingText": "Chargement du diagramme Mermaid...",
-    "mermaidEmptyChartText": "Le diagramme est vide"
+    "mermaidEmptyChartText": "Le diagramme est vide",
+    "footnoteLabel": "Notes de bas de page",
+    "footnoteBackLabel": "Retour à la référence {reference}"
   },
   "zh-CN": {
     "confirmButtonText": "提交",
@@ -39,7 +43,9 @@
     "sendButtonLabel": "发送",
     "scrollToBottomLabel": "滚动到底部",
     "mermaidLoadingText": "正在加载 Mermaid 图表...",
-    "mermaidEmptyChartText": "图表内容为空"
+    "mermaidEmptyChartText": "图表内容为空",
+    "footnoteLabel": "脚注",
+    "footnoteBackLabel": "返回正文引用 {reference}"
   },
   "ar-SA": {
     "confirmButtonText": "إرسال",
@@ -53,7 +59,9 @@
     "sendButtonLabel": "إرسال",
     "scrollToBottomLabel": "التمرير إلى الأسفل",
     "mermaidLoadingText": "جارٍ تحميل مخطط Mermaid...",
-    "mermaidEmptyChartText": "محتوى المخطط فارغ"
+    "mermaidEmptyChartText": "محتوى المخطط فارغ",
+    "footnoteLabel": "الحواشي",
+    "footnoteBackLabel": "العودة إلى موضع الإحالة {reference}"
   },
   "th-TH": {
     "confirmButtonText": "ส่งคำตอบ",
@@ -67,6 +75,8 @@
     "sendButtonLabel": "ส่ง",
     "scrollToBottomLabel": "เลื่อนไปด้านล่าง",
     "mermaidLoadingText": "กำลังโหลดแผนภาพ Mermaid...",
-    "mermaidEmptyChartText": "ไม่มีเนื้อหาในแผนภาพ"
+    "mermaidEmptyChartText": "ไม่มีเนื้อหาในแผนภาพ",
+    "footnoteLabel": "เชิงอรรถ",
+    "footnoteBackLabel": "กลับไปยังจุดอ้างอิง {reference}"
   }
 }

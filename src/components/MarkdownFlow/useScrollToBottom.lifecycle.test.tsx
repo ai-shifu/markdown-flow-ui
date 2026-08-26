@@ -486,6 +486,70 @@ describe.each([true, false])(
   }
 );
 
+describe("implicit content observation", () => {
+  it.each([true, false])(
+    "observes later children and replacements (following: %s)",
+    async (following) => {
+      const viewport = createScroller();
+      viewport.scrollTop = following ? 800 : 100;
+      vi.mocked(viewport.scrollTo).mockImplementation(() => {
+        viewport.scrollTop = viewport.scrollHeight - viewport.clientHeight;
+      });
+      const first = document.createElement("div");
+      const second = document.createElement("img");
+      viewport.append(first, second);
+      const observed = new Set<Element>();
+      let deliverResize = (_element: Element) => {};
+      vi.stubGlobal(
+        "ResizeObserver",
+        class {
+          constructor(callback: ResizeObserverCallback) {
+            deliverResize = (element) => {
+              if (observed.has(element))
+                callback([], this as unknown as ResizeObserver);
+            };
+          }
+          observe(element: Element) {
+            observed.add(element);
+          }
+          unobserve(element: Element) {
+            observed.delete(element);
+          }
+          disconnect() {
+            observed.clear();
+          }
+        }
+      );
+      const viewportRef = { current: viewport };
+      const { result, unmount } = renderHook(() =>
+        useScrollToBottom(viewportRef)
+      );
+      expect(observed.has(first)).toBe(true);
+      expect(observed.has(second)).toBe(true);
+      Object.defineProperty(viewport, "scrollHeight", { value: 1200 });
+      act(() => deliverResize(second));
+      flushFrames();
+      expect(viewport.scrollTop).toBe(following ? 1000 : 100);
+      expect(result.current.showScrollToBottom).toBe(!following);
+
+      const replacement = document.createElement("img");
+      await act(async () => {
+        second.replaceWith(replacement);
+      });
+      expect(observed.has(second)).toBe(false);
+      expect(observed.has(replacement)).toBe(true);
+      Object.defineProperty(viewport, "scrollHeight", { value: 1400 });
+      act(() => deliverResize(replacement));
+      flushFrames();
+      expect(viewport.scrollTop).toBe(following ? 1200 : 100);
+      unmount();
+      expect(observed.size).toBe(0);
+      expect(frames.size).toBe(0);
+      expect(vi.getTimerCount()).toBe(0);
+    }
+  );
+});
+
 describe("growth before queued native completion", () => {
   it.each(["unchanged scroll event", "auto completion frame"])(
     "keeps following when growth precedes an %s",

@@ -361,6 +361,46 @@ const InlineResolverFixture: React.FC<{ queueScrollAfterGrowth?: boolean }> = ({
   );
 };
 
+const MultipleChildrenFixture: React.FC = () => {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [imageSize, setImageSize] = useState(0);
+  const imageSource = (height: number) =>
+    `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="${height}"><rect width="600" height="${height}" fill="#cce4ff"/></svg>`)}`;
+  return (
+    <div style={{ width: 600, maxWidth: "100%" }}>
+      <div style={{ position: "relative" }}>
+        <div
+          ref={viewportRef}
+          data-testid="scroll-viewport"
+          style={{ height: 240, overflowY: "auto" }}
+        >
+          <div style={{ height: 420 }}>First message</div>
+          {/* A native image is required to test intrinsic sizing, without Next.js image layout reservation. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            data-testid="later-image"
+            alt="Later lesson illustration"
+            src={imageSource(imageSize)}
+            style={{ display: "block", width: "100%" }}
+          />
+        </div>
+        <ScrollToBottomControl
+          viewportRef={viewportRef}
+          autoScrollOnInit
+          ariaLabel="Scroll to bottom"
+        />
+      </div>
+      <button
+        type="button"
+        data-testid="load-later-image"
+        onClick={() => setImageSize((size) => size + 900)}
+      >
+        Load a larger image in the second message
+      </button>
+    </div>
+  );
+};
+
 const NearBottomInterruptionFixture: React.FC = () => {
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -824,6 +864,42 @@ export const InlineResolverPreservesSmoothScrolling: Story = {
 export const ContentGrowthBeforeQueuedScrollKeepsFollowing: Story = {
   ...InlineResolverPreservesSmoothScrolling,
   render: () => <InlineResolverFixture queueScrollAfterGrowth />,
+};
+
+export const LaterImageGrowthWithoutContentRef: Story = {
+  render: () => <MultipleChildrenFixture />,
+  play: async ({ canvasElement }) => {
+    const viewport = getViewport(canvasElement);
+    const button = getButton(canvasElement);
+    const laterImage = canvasElement.querySelector<HTMLImageElement>(
+      '[data-testid="later-image"]'
+    )!;
+    const loadImage = canvasElement.querySelector<HTMLButtonElement>(
+      '[data-testid="load-later-image"]'
+    )!;
+    await waitFor(() => {
+      expect(laterImage.complete).toBe(true);
+      expectAtBottom(viewport);
+    });
+    await userEvent.click(loadImage);
+    await waitFor(() => {
+      expect(laterImage.naturalHeight).toBe(900);
+      expectAtBottom(viewport);
+      expect(button).toHaveAttribute("data-visible", "false");
+    });
+    scrollToTop(viewport);
+    await waitFor(() => expect(button).toHaveAttribute("data-visible", "true"));
+    const heldPosition = viewport.scrollTop;
+    await userEvent.click(loadImage);
+    await waitFor(() => expect(laterImage.naturalHeight).toBe(1800));
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    );
+    expect(viewport.scrollTop).toBe(heldPosition);
+    expect(button).toHaveAttribute("data-visible", "true");
+    await userEvent.click(button);
+    await waitFor(() => expectAtBottom(viewport));
+  },
 };
 
 export const UserScrollWinsSameFrameGrowth: Story = {

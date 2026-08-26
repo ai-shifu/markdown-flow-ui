@@ -35,7 +35,7 @@ export interface ScrollPresentation {
 }
 
 export interface UseScrollToBottomOptions {
-  /** Actual content box whose growth should be observed. Defaults to the viewport's first element child. */
+  /** Actual content box whose growth should be observed. Defaults to all direct element children of the viewport. */
   contentRef?: RefObject<HTMLElement | null>;
   /** Optional bottom anchor used to preserve nested-container scrollIntoView behavior. */
   endRef?: RefObject<HTMLElement | null>;
@@ -216,8 +216,7 @@ const resolveObservedContent = (
   contentRef: RefObject<HTMLElement | null> | undefined
 ) => {
   if (contentRef?.current) return contentRef.current;
-  const viewport = viewportRef.current;
-  return (viewport?.firstElementChild as HTMLElement | null) || viewport;
+  return viewportRef.current;
 };
 
 const sameTargets = (left: ScrollTarget[], right: ScrollTarget[]) =>
@@ -687,10 +686,17 @@ export function useScrollToBottom(
       : null;
     const observeResizeTargets = () => {
       resizeObserver?.disconnect();
-      const elements = new Set<HTMLElement>();
+      const elements = new Set<Element>();
       if (viewportRef.current) elements.add(viewportRef.current);
       const observedContent = resolveObservedContent(viewportRef, contentRef);
       if (observedContent) elements.add(observedContent);
+      // A fixed-height viewport does not resize when a later message or image
+      // grows. Without a content wrapper, every direct child is a resize root.
+      if (!contentRef?.current && viewportRef.current) {
+        Array.from(viewportRef.current.children).forEach((element) =>
+          elements.add(element)
+        );
+      }
       targets.forEach((target) => {
         if (!isWindow(target) && !isDocument(target)) elements.add(target);
       });

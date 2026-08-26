@@ -11,6 +11,27 @@ for (const entry of [
   "./dist/markdown-flow-ui.css",
   "./dist/markdown-flow-ui-lib.css",
 ]) {
+  test(`${entry} includes scroll control presentation and accessibility styles`, () => {
+    const css = readFileSync(
+      new URL(manifest.exports[entry].default, packageRoot),
+      "utf8"
+    );
+    assert.match(css, /\.scroll-to-bottom-btn\s*\{[^}]*visibility:\s*hidden/);
+    assert.match(
+      css,
+      /\.scroll-to-bottom-btn\[data-visible=["']?true["']?\]\s*\{[^}]*visibility:\s*visible/
+    );
+    assert.match(
+      css,
+      /\.scroll-to-bottom-btn\[data-placement=["']?bottom-center["']?\]\s*\{[^}]*left:\s*50%/
+    );
+    assert.match(css, /\.scroll-to-bottom-btn:focus-visible\s*\{[^}]*outline:/);
+    assert.match(
+      css,
+      /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{\s*\.scroll-to-bottom-btn\s*\{[^}]*transition:\s*none/
+    );
+  });
+
   test(`${entry} includes code highlighting and math styles`, () => {
     const cssUrl = new URL(manifest.exports[entry].default, packageRoot);
     const css = readFileSync(cssUrl, "utf8");

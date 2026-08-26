@@ -2,7 +2,7 @@ import React, { useCallback, useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, userEvent, waitFor } from "storybook/test";
 import ScrollToBottomControl from "./ScrollToBottomControl";
-import type { ScrollBehavior } from "./useScrollToBottom";
+import useScrollToBottom, { type ScrollBehavior } from "./useScrollToBottom";
 import "./markdownFlow.css";
 
 interface ScrollControlFixtureProps {
@@ -232,6 +232,35 @@ const CleanupFixture: React.FC = () => {
         onClick={() => setMounted((current) => !current)}
       >
         Toggle control
+      </button>
+    </div>
+  );
+};
+
+const LegacyClickFixture: React.FC = () => {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const { handleUserScrollToBottom, showScrollToBottom } = useScrollToBottom(
+    viewportRef,
+    [],
+    { autoScrollOnInit: false, scrollTarget: viewportRef, behavior: "auto" }
+  );
+
+  return (
+    <div>
+      <div
+        ref={viewportRef}
+        data-testid="scroll-viewport"
+        style={{ height: 240, overflowY: "auto" }}
+      >
+        <div style={{ height: 900 }}>Legacy click-handler compatibility</div>
+      </div>
+      <button
+        type="button"
+        onClick={handleUserScrollToBottom}
+        data-testid="legacy-scroll"
+        data-visible={showScrollToBottom}
+      >
+        Scroll using the legacy handler
       </button>
     </div>
   );
@@ -626,5 +655,21 @@ export const ShortLandscapeViewport: Story = {
     expect(button.getBoundingClientRect().height).toBe(36);
     await userEvent.click(button);
     await waitFor(() => expectAtBottom(viewport));
+  },
+};
+
+export const LegacyHandlerAcceptsReactClickEvents: Story = {
+  render: () => <LegacyClickFixture />,
+  play: async ({ canvasElement }) => {
+    const viewport = getViewport(canvasElement);
+    const button = canvasElement.querySelector<HTMLButtonElement>(
+      '[data-testid="legacy-scroll"]'
+    )!;
+    await waitFor(() => expect(button).toHaveAttribute("data-visible", "true"));
+    await userEvent.click(button);
+    await waitFor(() => {
+      expectAtBottom(viewport);
+      expect(button).toHaveAttribute("data-visible", "false");
+    });
   },
 };

@@ -56,7 +56,7 @@ export interface UseScrollToBottomReturn {
   isAtBottom: boolean;
   followNewContent: boolean;
   scrollToBottom: (behavior?: ScrollBehavior) => void;
-  /** Backward-compatible alias for scrollToBottom. */
+  /** Backward-compatible click handler that ignores React event arguments. */
   handleUserScrollToBottom: () => void;
   refresh: () => void;
 }
@@ -595,12 +595,16 @@ export function useScrollToBottom(
     [clearProgrammaticFrame, clearSettleTimer, getResolvedTargets]
   );
 
+  const handleUserScrollToBottom = useCallback(() => {
+    scrollToBottom();
+  }, [scrollToBottom]);
+
   return {
     showScrollToBottom,
     isAtBottom,
     followNewContent: isFollowing,
     scrollToBottom,
-    handleUserScrollToBottom: scrollToBottom,
+    handleUserScrollToBottom,
     refresh,
   };
 }

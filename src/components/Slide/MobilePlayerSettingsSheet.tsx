@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 
 import { cn } from "../../lib/utils";
 import { Dialog, DialogOverlay, DialogPortal, DialogTitle } from "../ui/dialog";
+import type { MarkdownFlowDirection } from "../../lib/locale";
 import type { MobileViewMode } from "./utils/mobileScreenMode";
 
 export type MobilePlayerSettingsSheetLabels = {
@@ -18,6 +19,7 @@ export type MobilePlayerSettingsSheetLabels = {
 
 export type MobilePlayerSettingsSheetProps = {
   open: boolean;
+  dir?: MarkdownFlowDirection;
   labels: MobilePlayerSettingsSheetLabels;
   isSubtitleEnabled: boolean;
   viewMode: MobileViewMode;
@@ -30,6 +32,7 @@ export type MobilePlayerSettingsSheetProps = {
 
 const MobilePlayerSettingsSheet = ({
   open,
+  dir,
   labels,
   isSubtitleEnabled,
   viewMode,
@@ -49,6 +52,7 @@ const MobilePlayerSettingsSheet = ({
         <DialogPrimitive.Content
           aria-describedby={undefined}
           data-player-keyboard-shortcuts-ignore="true"
+          dir={dir}
           className={cn(
             "fixed inset-x-0 bottom-0 z-[61] flex max-h-[min(360px,calc(100dvh-32px))] flex-col overflow-hidden rounded-t-[24px] border-t border-border bg-background shadow-[0_-12px_32px_rgba(28,44,64,0.16)] outline-none",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",

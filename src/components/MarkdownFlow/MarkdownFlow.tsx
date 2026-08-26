@@ -1,6 +1,9 @@
 import React from "react";
 import type { InteractionDefaultValueOptions } from "../../lib/interaction-defaults";
-import type { MarkdownFlowLocale } from "../../lib/locale";
+import {
+  getMarkdownFlowDirection,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
 import ContentRender from "../ContentRender";
 import { CustomRenderBarProps, OnSendContentParams } from "../types";
 import "./markdownFlow.css";
@@ -44,7 +47,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   interactionDefaultValueOptions,
 }) => {
   return (
-    <div className="markdown-flow">
+    <div className="markdown-flow" dir={getMarkdownFlowDirection(locale)}>
       {initialContentList.map((contentInfo, index) => {
         const isFinished = contentInfo.isFinished ?? false;
         const onSend = isFinished ? undefined : onSendProp;

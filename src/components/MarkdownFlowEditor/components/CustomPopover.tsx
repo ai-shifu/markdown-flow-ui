@@ -1,6 +1,7 @@
 import React, { useContext } from "react";
 import { Popover, PopoverContent, PopoverAnchor } from "../../ui/popover";
 import EditorContext from "../editor-context";
+import type { MarkdownFlowDirection } from "../../../lib/locale";
 import { cn } from "../../../lib/utils";
 
 type CustomPopoverProps = {
@@ -9,11 +10,13 @@ type CustomPopoverProps = {
 
 export interface CustomPopoverAllProps extends CustomPopoverProps {
   className?: string;
+  dir?: MarkdownFlowDirection;
 }
 
 const CustomPopover: React.FC<CustomPopoverAllProps> = ({
   children,
   className,
+  dir,
 }) => {
   const { popoverOpen, setPopoverOpen, popoverPosition } =
     useContext(EditorContext);
@@ -39,6 +42,7 @@ const CustomPopover: React.FC<CustomPopoverAllProps> = ({
           className
         )}
         align="start"
+        dir={dir}
         sideOffset={5}
       >
         {children}

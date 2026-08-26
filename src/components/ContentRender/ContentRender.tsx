@@ -43,7 +43,10 @@ import {
   getInteractionDefaultValues,
   type InteractionDefaultValueOptions,
 } from "../../lib/interaction-defaults";
-import type { MarkdownFlowLocale } from "../../lib/locale";
+import {
+  getMarkdownFlowDirection,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 
 const SANDBOX_TAG_HINT_PATTERN =
@@ -369,6 +372,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   // tooltipMinLength,
 }) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
+  const direction = getMarkdownFlowDirection(locale);
   const resolvedConfirmButtonText =
     confirmButtonText || localeTexts.confirmButtonText;
   const resolvedCopyButtonText = copyButtonText || localeTexts.copyButtonText;
@@ -723,7 +727,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
   if (hasSandbox) {
     return (
-      <div className="content-render markdown-body">
+      <div className="content-render markdown-body" dir={direction}>
         {mergedRenderSegments.map((segment, idx) =>
           segment.type === "sandbox" ? (
             <IframeSandbox
@@ -752,7 +756,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   }
 
   return (
-    <div className="content-render markdown-body">
+    <div className="content-render markdown-body" dir={direction}>
       {segments.map((seg, index) => {
         if (seg.type === "text") {
           return (

@@ -1,6 +1,7 @@
 import React, { useContext, forwardRef } from "react";
 import { Dialog, DialogContent, DialogTitle } from "../../ui/dialog";
 import EditorContext from "../editor-context";
+import type { MarkdownFlowDirection } from "../../../lib/locale";
 import { cn } from "../../../lib/utils";
 
 type CustomDialogProps = {
@@ -12,17 +13,19 @@ export interface CustomDialogLabels {
 }
 export interface CustomDialogAllProps extends CustomDialogProps {
   className?: string;
+  dir?: MarkdownFlowDirection;
   labels?: CustomDialogLabels;
 }
 
 const CustomDialog = forwardRef<HTMLDivElement, CustomDialogAllProps>(
-  ({ children, className, labels }, ref) => {
+  ({ children, className, dir, labels }, ref) => {
     const { dialogOpen, setDialogOpen } = useContext(EditorContext);
     return (
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen} modal>
         <DialogContent
           ref={ref}
           className={cn("min-w-[300px]", className)}
+          dir={dir}
           onPointerDownOutside={(e) => {
             e.preventDefault();
           }}

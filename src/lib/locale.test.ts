@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_MARKDOWN_FLOW_LOCALE,
+  getMarkdownFlowDirection,
   MARKDOWN_FLOW_LOCALES,
   normalizeMarkdownFlowLocale,
 } from "./locale";
@@ -38,5 +39,14 @@ describe("normalizeMarkdownFlowLocale", () => {
     expect(normalizeMarkdownFlowLocale("es-ES")).toBe(
       DEFAULT_MARKDOWN_FLOW_LOCALE
     );
+  });
+});
+
+describe("getMarkdownFlowDirection", () => {
+  it("uses RTL for Arabic and LTR for all other supported locales", () => {
+    expect(getMarkdownFlowDirection("ar-SA")).toBe("rtl");
+    expect(getMarkdownFlowDirection("ar_SA")).toBe("rtl");
+    expect(getMarkdownFlowDirection("en-US")).toBe("ltr");
+    expect(getMarkdownFlowDirection("th-TH")).toBe("ltr");
   });
 });

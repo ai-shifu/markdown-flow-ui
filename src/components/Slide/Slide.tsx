@@ -12,7 +12,10 @@ import { ChevronLeft, GripHorizontal } from "lucide-react";
 
 import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
-import type { MarkdownFlowLocale } from "../../lib/locale";
+import {
+  getMarkdownFlowDirection,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
 import LoadingOverlayCard from "../ui/loading-overlay-card";
 import ContentRender from "../ContentRender";
 import type { ContentRenderProps } from "../ContentRender/ContentRender";
@@ -2444,6 +2447,7 @@ const Slide: React.FC<SlideProps> = ({
         isNativeMobileFullscreen && "slide--mobile-landscape-native",
         className
       )}
+      dir={getMarkdownFlowDirection(locale)}
       onClick={handleSurfaceClick}
       onFocusCapture={handleSurfaceFocusCapture}
       onPointerDown={handleSurfacePointerDown}

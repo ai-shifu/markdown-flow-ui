@@ -22,8 +22,11 @@ import {
   Volume2,
 } from "lucide-react";
 
+import {
+  getMarkdownFlowDirection,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
 import { cn } from "../../lib/utils";
-import type { MarkdownFlowLocale } from "../../lib/locale";
 import MobilePlayerSettingsSheet from "./MobilePlayerSettingsSheet";
 import { getSlidePlayerTexts, type SlidePlayerLocaleTexts } from "./slideI18n";
 import type { SlideAudioItem } from "./useSlide";
@@ -1855,6 +1858,7 @@ const Player = ({
   return (
     <div
       {...props}
+      dir={getMarkdownFlowDirection(locale)}
       data-slide-player-shortcut-owner={keyboardShortcutOwnerId}
       className={cn("slide-player", className)}
       onFocusCapture={handleRootFocusCapture}
@@ -1881,6 +1885,7 @@ const Player = ({
         <>
           <MobilePlayerSettingsSheet
             container={settingsPortalContainer}
+            dir={getMarkdownFlowDirection(locale)}
             labels={{
               closeSettings: playerTexts.closeSettingsLabel,
               fullscreen: playerTexts.fullscreenLabel,

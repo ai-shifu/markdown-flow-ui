@@ -10,6 +10,8 @@ export const MARKDOWN_FLOW_LOCALES = [
 
 export type MarkdownFlowLocale = (typeof MARKDOWN_FLOW_LOCALES)[number];
 
+export type MarkdownFlowDirection = "ltr" | "rtl";
+
 const localeAliasMap: Record<string, MarkdownFlowLocale> = {
   en: "en-US",
   fr: "fr-FR",
@@ -33,3 +35,8 @@ export const normalizeMarkdownFlowLocale = (
   const baseLocale = normalizedLocale.split("-")[0]?.toLowerCase();
   return localeAliasMap[baseLocale] ?? DEFAULT_MARKDOWN_FLOW_LOCALE;
 };
+
+export const getMarkdownFlowDirection = (
+  locale?: string | null
+): MarkdownFlowDirection =>
+  normalizeMarkdownFlowLocale(locale) === "ar-SA" ? "rtl" : "ltr";

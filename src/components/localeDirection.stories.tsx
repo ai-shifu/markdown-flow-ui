@@ -798,6 +798,87 @@ export const InheritedEditorPortalDirection: Story = {
   },
 };
 
+const VariablePickerLocaleFixture = () => {
+  const [locale, setLocale] = useState<MarkdownFlowLocale>("ar-SA");
+  const [content, setContent] = useState("{{learner}}");
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => {
+          setLocale("th-TH");
+          setContent("{{learner}}");
+        }}
+      >
+        Thai
+      </button>
+      <output data-testid="picker-content">{content}</output>
+      <MarkdownFlowEditor
+        locale={locale}
+        editMode={EditMode.QuickEdit}
+        content={content}
+        onChange={setContent}
+        variables={[{ name: "learner", label: "متعلم ผู้เรียน" }]}
+        systemVariables={[{ name: "system", label: "نظام ระบบ" }]}
+      />
+    </div>
+  );
+};
+
+export const VariablePickerDirection: Story = {
+  render: () => <VariablePickerLocaleFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    const openPicker = async () => {
+      await userEvent.click(
+        canvasElement.querySelector<HTMLElement>(
+          ".tag-variable .tag-placeholder-content"
+        )!
+      );
+      return page.findByRole("dialog");
+    };
+    for (const locale of ["ar-SA", "th-TH"] as const) {
+      if (locale === "th-TH")
+        await userEvent.click(canvas.getByRole("button", { name: "Thai" }));
+      const picker = await openPicker();
+      for (const name of ["learner", "system"]) {
+        const option = within(picker).getByText(name).closest("button")!;
+        expect(getComputedStyle(option).direction).toBe(
+          locale === "ar-SA" ? "rtl" : "ltr"
+        );
+        expect(getComputedStyle(option).textAlign).toBe("start");
+      }
+      const add = within(picker).getByRole("button", {
+        name: getEditorLocaleMessages(locale).variableAddNew,
+      });
+      const iconStyle = getComputedStyle(add.querySelector("svg")!);
+      expect(iconStyle.marginInlineEnd).toBe("8px");
+      expect(iconStyle.marginInlineStart).toBe("0px");
+      expect(getComputedStyle(add).justifyContent).toBe("flex-start");
+      await userEvent.click(within(picker).getByText("system"));
+      await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
+      expect(canvas.getByTestId("picker-content")).toHaveTextContent(
+        "{{system}}"
+      );
+      const reopened = await openPicker();
+      await userEvent.click(
+        within(reopened).getByRole("button", {
+          name: getEditorLocaleMessages(locale).variableAddNew,
+        })
+      );
+      const input = within(reopened).getByPlaceholderText(
+        getEditorLocaleMessages(locale).variableNamePlaceholder
+      );
+      await userEvent.type(input, `added_${locale.slice(0, 2)}{Enter}`);
+      await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
+      expect(canvas.getByTestId("picker-content")).toHaveTextContent(
+        `{{added_${locale.slice(0, 2)}}}`
+      );
+    }
+  },
+};
+
 export const ArabicVariableDropdown: Story = {
   parameters: { dropdownLocale: "ar-SA" },
   render: (_args, { parameters }) => (

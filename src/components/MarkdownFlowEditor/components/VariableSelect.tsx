@@ -141,7 +141,7 @@ const VariableSelect = ({
                       key={`system-${variable.name}`}
                       onClick={() => onSelect?.(variable)}
                       className={cn(
-                        "flex w-full items-start justify-between rounded-md px-3 py-2 text-left transition-colors hover:bg-accent",
+                        "flex w-full items-start justify-between rounded-md px-3 py-2 text-start transition-colors hover:bg-accent",
                         selectedName === variable.name && "bg-accent"
                       )}
                     >
@@ -175,7 +175,7 @@ const VariableSelect = ({
                       key={`custom-${variable.name}`}
                       onClick={() => onSelect?.(variable)}
                       className={cn(
-                        "flex w-full items-start justify-between rounded-md px-3 py-2 text-left transition-colors hover:bg-accent",
+                        "flex w-full items-start justify-between rounded-md px-3 py-2 text-start transition-colors hover:bg-accent",
                         selectedName === variable.name && "bg-accent"
                       )}
                     >
@@ -255,7 +255,7 @@ const VariableSelect = ({
             onClick={() => setIsAddingNew(true)}
             className="w-full justify-start text-muted-foreground hover:text-foreground"
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="me-2 h-4 w-4" />
             {t("variableAddNew", "Add new variable")}
           </Button>
         )}

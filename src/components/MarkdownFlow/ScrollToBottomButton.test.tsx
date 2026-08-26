@@ -50,6 +50,68 @@ describe("scroll-to-bottom placement", () => {
     );
   });
 
+  it.each([false, true])(
+    "releases focus and rejects activation while hidden (portal: %s)",
+    (portal) => {
+      const host = document.createElement("div");
+      document.body.appendChild(host);
+      const onClick = vi.fn();
+      const props = {
+        ariaLabel: "Latest content",
+        portalTarget: portal ? host : undefined,
+        onClick,
+      };
+      try {
+        const { rerender, unmount } = render(
+          <ScrollToBottomButton {...props} visible />
+        );
+        const button = screen.getByRole<HTMLButtonElement>("button", {
+          name: "Latest content",
+        });
+        button.focus();
+        expect(document.activeElement).toBe(button);
+        rerender(<ScrollToBottomButton {...props} visible={false} />);
+        expect(document.activeElement).not.toBe(button);
+        expect(button.disabled).toBe(true);
+        fireEvent.click(button);
+        expect(onClick).not.toHaveBeenCalled();
+        rerender(<ScrollToBottomButton {...props} visible />);
+        expect(button.disabled).toBe(false);
+        fireEvent.click(button);
+        expect(onClick).toHaveBeenCalledOnce();
+        unmount();
+      } finally {
+        host.remove();
+      }
+    }
+  );
+
+  it("preserves host disabled state and does not steal another element's focus", () => {
+    const renderButtons = (visible: boolean) => (
+      <>
+        <input aria-label="Reply" />
+        <ScrollToBottomButton
+          visible={visible}
+          disabled
+          ariaLabel="Latest content"
+          tabIndex={3}
+        />
+      </>
+    );
+    const { rerender } = render(renderButtons(true));
+    const input = screen.getByRole("textbox");
+    const button = screen.getByRole<HTMLButtonElement>("button", {
+      name: "Latest content",
+    });
+    input.focus();
+    rerender(renderButtons(false));
+    expect(document.activeElement).toBe(input);
+    rerender(renderButtons(true));
+    expect(document.activeElement).toBe(input);
+    expect(button.disabled).toBe(true);
+    expect(button.tabIndex).toBe(3);
+  });
+
   it("uses the same default placement through the complete control", () => {
     render(
       <ScrollToBottomControl

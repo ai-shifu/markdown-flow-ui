@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { expect, userEvent, waitFor } from "storybook/test";
+import { expect, fn, userEvent, waitFor } from "storybook/test";
 import ScrollToBottomControl from "./ScrollToBottomControl";
 import ScrollToBottomButton from "./ScrollToBottomButton";
 import useScrollToBottom from "./useScrollToBottom";
@@ -13,6 +13,7 @@ interface ScrollControlFixtureProps {
   mobilePortal?: boolean;
   viewportHeight?: number;
   useEndAnchor?: boolean;
+  onScrollToBottom?: () => void;
 }
 
 const sectionStyle: React.CSSProperties = {
@@ -31,6 +32,7 @@ const ScrollControlFixture: React.FC<ScrollControlFixtureProps> = ({
   mobilePortal = false,
   viewportHeight = 320,
   useEndAnchor = true,
+  onScrollToBottom,
 }) => {
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -137,6 +139,7 @@ const ScrollControlFixture: React.FC<ScrollControlFixtureProps> = ({
           scrollThreshold={150}
           pageScrollFallback={mobilePortal ? "always" : "auto"}
           ariaLabel="Scroll to bottom"
+          onScrollToBottom={onScrollToBottom}
           portalTarget={mobilePortal ? portalTarget : null}
           placement="bottom-center"
           position={mobilePortal && !portalTarget ? "fixed" : "absolute"}
@@ -866,6 +869,37 @@ export const ReducedMotionUsesImmediateScroll: Story = {
       }
     }
   },
+};
+
+export const KeyboardActivationReleasesHiddenFocus: Story = {
+  args: { onScrollToBottom: fn() },
+  play: async ({ canvasElement, args }) => {
+    const button = getButton(canvasElement);
+    const notify = args.onScrollToBottom as ReturnType<typeof fn>;
+    notify.mockClear();
+    await waitFor(() => {
+      expect(button).toHaveAttribute("data-visible", "true");
+      expect(getComputedStyle(button).opacity).toBe("1");
+    });
+    button.focus({ preventScroll: true });
+    expect(button).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => {
+      expect(button).toHaveAttribute("data-visible", "false");
+      expect(button).not.toHaveFocus();
+      expect(button).toBeDisabled();
+    });
+    button.focus({ preventScroll: true });
+    expect(button).not.toHaveFocus();
+    // After blur, Space belongs to the page rather than the hidden control.
+    await userEvent.keyboard("{Enter} ");
+    expect(notify).toHaveBeenCalledOnce();
+  },
+};
+
+export const MobilePortalKeyboardActivationReleasesHiddenFocus: Story = {
+  ...KeyboardActivationReleasesHiddenFocus,
+  args: { mobilePortal: true, onScrollToBottom: fn() },
 };
 
 export const UnmountCleansObserversAndListeners: Story = {

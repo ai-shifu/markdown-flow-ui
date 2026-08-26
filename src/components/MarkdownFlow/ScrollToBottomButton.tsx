@@ -1,4 +1,4 @@
-import React, { type CSSProperties } from "react";
+import React, { useCallback, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { ChevronsDown } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -65,9 +65,18 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = ({
   className = "",
   style,
   tabIndex,
+  disabled,
   type = "button",
   ...props
 }) => {
+  const releaseHiddenFocus = useCallback(
+    (button: HTMLButtonElement | null) => {
+      if (!visible && button && button.ownerDocument.activeElement === button) {
+        button.blur();
+      }
+    },
+    [visible]
+  );
   const buttonStyle: ScrollToBottomButtonStyle = {
     "--scroll-to-bottom-bottom": toCssLength(bottomOffset),
     "--scroll-to-bottom-horizontal": toCssLength(horizontalOffset),
@@ -78,6 +87,8 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = ({
   const button = (
     <button
       {...props}
+      ref={releaseHiddenFocus}
+      disabled={!visible || disabled}
       type={type}
       className={cn("scroll-to-bottom-btn", className)}
       style={buttonStyle}

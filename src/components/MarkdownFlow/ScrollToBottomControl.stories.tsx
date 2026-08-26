@@ -525,7 +525,9 @@ export const ReducedMotionUsesImmediateScroll: Story = {
       expect(button).toHaveFocus();
       const focusStyle = getComputedStyle(button);
       expect(focusStyle.outlineStyle).not.toBe("none");
-      expect(Number.parseFloat(focusStyle.outlineWidth)).toBeGreaterThan(0);
+      expect(focusStyle.outlineWidth).toBe("2px");
+      expect(focusStyle.transitionProperty).not.toContain("all");
+      expect(focusStyle.transitionProperty).not.toContain("outline");
       await userEvent.keyboard("{Enter}");
       await waitFor(() => {
         expect(requestedBehavior).toBe("auto");

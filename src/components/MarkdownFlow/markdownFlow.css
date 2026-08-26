@@ -20,7 +20,13 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: all 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease,
+    background-color 0.3s ease,
+    box-shadow 0.3s ease,
+    color 0.3s ease,
+    transform 0.3s ease;
 }
 
 .scroll-to-bottom-btn[data-placement="bottom-center"] {

@@ -102,9 +102,9 @@ const MobilePlayerSettingsSheet = ({
               >
                 <span
                   className={cn(
-                    "absolute left-[2px] top-1/2 block h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-foreground transition-transform",
+                    "absolute start-[2px] top-1/2 block h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-foreground transition-transform",
                     isSubtitleEnabled
-                      ? "translate-x-[10px] bg-primary"
+                      ? "translate-x-[10px] [&:dir(rtl)]:-translate-x-[10px] bg-primary"
                       : "translate-x-0"
                   )}
                 />

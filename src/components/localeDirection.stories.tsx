@@ -292,6 +292,7 @@ export const InheritedAndExplicitDirection: Story = {
 const PlayerDirectionFixture = () => {
   const [dir, setDir] = useState("ltr");
   const [lastAction, setLastAction] = useState("");
+  const [subtitleEnabled, setSubtitleEnabled] = useState(true);
   return (
     <div>
       {["ltr", "rtl", "auto"].map((value) => (
@@ -306,6 +307,8 @@ const PlayerDirectionFixture = () => {
         defaultPlaying={false}
         onPrev={() => setLastAction("previous")}
         onNext={() => setLastAction("next")}
+        isSubtitleEnabled={subtitleEnabled}
+        onSubtitleToggle={() => setSubtitleEnabled((enabled) => !enabled)}
       />
     </div>
   );
@@ -342,6 +345,36 @@ export const PlayerDirectionOverride: Story = {
       await waitFor(() =>
         expect(page.getByRole("dialog")).toHaveAttribute("dir", dir)
       );
+      const subtitleToggle = within(page.getByRole("dialog")).getByRole(
+        "button",
+        {
+          name: labels.subtitleToggleAriaLabel,
+        }
+      );
+      for (const enabled of [true, false, true]) {
+        if (subtitleToggle.getAttribute("aria-pressed") !== String(enabled)) {
+          await userEvent.click(subtitleToggle);
+        }
+        await waitFor(() => {
+          expect(subtitleToggle).toHaveAttribute(
+            "aria-pressed",
+            String(enabled)
+          );
+          const track = subtitleToggle.firstElementChild!;
+          const thumb = track.firstElementChild!;
+          const trackRect = track.getBoundingClientRect();
+          const thumbRect = thumb.getBoundingClientRect();
+          const centerOffset =
+            thumbRect.left +
+            thumbRect.width / 2 -
+            trackRect.left -
+            trackRect.width / 2;
+          const isRtl = getComputedStyle(subtitleToggle).direction === "rtl";
+          expect(
+            enabled !== isRtl ? centerOffset : -centerOffset
+          ).toBeGreaterThan(3);
+        });
+      }
       await userEvent.click(
         page.getByRole("button", { name: labels.closeSettingsLabel })
       );

@@ -23,7 +23,10 @@ import {
   injectScalingSystem,
   type ScalingWindow,
 } from "./utils/iframe-scaling";
-import type { MarkdownFlowLocale } from "../../lib/locale";
+import {
+  getMarkdownFlowDirection,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 import { CJK_SAFE_SANS_FONT_FAMILY } from "./cjkFontFamily";
 
@@ -48,6 +51,8 @@ export interface IframeSandboxProps {
   content: string;
   className?: string;
   locale?: MarkdownFlowLocale;
+  /** Overrides locale-derived direction without replacing authored HTML direction. */
+  dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   loadingText?: string;
   styleLoadingText?: string;
   scriptLoadingText?: string;
@@ -114,6 +119,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   type,
   className,
   locale,
+  dir,
   loadingText,
   styleLoadingText,
   scriptLoadingText,
@@ -126,6 +132,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   disableLoadingOverlay = false,
 }) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
+  const direction = dir ?? getMarkdownFlowDirection(locale);
   const resolvedFullScreenButtonText =
     fullScreenButtonText || localeTexts.sandboxFullscreenButtonText;
   const resolvedExitFullScreenButtonText =
@@ -781,6 +788,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       <SandboxApp
         html={renderHtmlContent}
         locale={locale}
+        dir={direction}
         loadingText={loadingText}
         styleLoadingText={styleLoadingText}
         scriptLoadingText={scriptLoadingText}
@@ -816,6 +824,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   }, [
     renderHtmlContent,
     locale,
+    direction,
     loadingText,
     styleLoadingText,
     scriptLoadingText,
@@ -840,6 +849,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   return (
     <div
       ref={containerRef}
+      dir={direction}
       data-root-vh={hasRootVhHeight ? "true" : "false"}
       className={containerClassName}
       style={
@@ -869,6 +879,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
           <ContentRender
             content={content}
             locale={locale}
+            dir={direction}
             disableSandboxLoadingOverlay={disableLoadingOverlay}
           />
         </div>

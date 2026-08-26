@@ -16,6 +16,8 @@ import {
 export interface SandboxAppProps {
   html: string;
   locale?: MarkdownFlowLocale;
+  /** Overrides the wrapper direction while preserving explicit direction in authored HTML. */
+  dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   loadingText?: string;
   styleLoadingText?: string;
   scriptLoadingText?: string;
@@ -105,6 +107,7 @@ const reuseRenderedImages = (
 const SandboxApp: React.FC<SandboxAppProps> = ({
   html,
   locale,
+  dir,
   loadingText,
   styleLoadingText,
   scriptLoadingText,
@@ -451,7 +454,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     <div
       data-root-vh={hasRootVhHeight ? "true" : "false"}
       className="sandbox-wrapper"
-      dir={getMarkdownFlowDirection(locale)}
+      dir={dir ?? getMarkdownFlowDirection(locale)}
       style={sandboxWrapperStyle}
       aria-busy={!!overlayMessage}
     >

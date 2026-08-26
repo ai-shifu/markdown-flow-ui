@@ -7,6 +7,29 @@ import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 
 afterEach(cleanup);
 
+it("honors direction overrides while keeping authored direction intact", () => {
+  const { container, rerender } = render(
+    <SandboxApp
+      html={'<p dir="rtl">Authored direction</p>'}
+      locale="ar-SA"
+      dir="ltr"
+    />
+  );
+  expect(container.querySelector(".sandbox-wrapper")?.getAttribute("dir")).toBe(
+    "ltr"
+  );
+  expect(screen.getByText("Authored direction").getAttribute("dir")).toBe(
+    "rtl"
+  );
+  rerender(<SandboxApp html="" locale="th-TH" dir="rtl" />);
+  expect(container.querySelector(".sandbox-wrapper")?.getAttribute("dir")).toBe(
+    "rtl"
+  );
+  expect(screen.getByRole("status").textContent).toContain(
+    getContentRenderLocaleTexts("th-TH").sandboxLoadingText
+  );
+});
+
 it("updates sandbox loading direction without overriding authored content direction", () => {
   const { container, rerender } = render(<SandboxApp html="" locale="ar-SA" />);
   const wrapper = container.querySelector(".sandbox-wrapper")!;

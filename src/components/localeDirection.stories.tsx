@@ -9,6 +9,7 @@ import MarkdownFlowEditor from "./MarkdownFlowEditor/MarkdownFlowEditor";
 import { getEditorLocaleMessages } from "./MarkdownFlowEditor/editorI18n";
 import Slide from "./Slide/Slide";
 import Player from "./Slide/Player";
+import type { Element } from "./Slide/types";
 import { getSlidePlayerTexts } from "./Slide/slideI18n";
 import IframeSandbox from "./ContentRender/IframeSandbox";
 import { getContentRenderLocaleTexts } from "./ContentRender/contentRenderI18n";
@@ -130,6 +131,100 @@ export const PlayerDirectionOverride: Story = {
         page.getByRole("button", { name: labels.closeSettingsLabel })
       );
       await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
+    }
+  },
+};
+
+const slideDirectionElements: { id: string; element: Element }[] = [
+  {
+    id: "markdown-slide",
+    element: { type: "text", content: "Default slide content" },
+  },
+  {
+    id: "html-slide",
+    element: {
+      type: "html",
+      content: '<p>Default HTML content</p><p dir="rtl">Authored direction</p>',
+    },
+  },
+  {
+    id: "interaction-slide",
+    element: {
+      type: "interaction",
+      content: "?[%{{answer}}...Answer]\n\n?[%{{choice}}First|...Other]",
+      readonly: false,
+    },
+  },
+];
+
+const SlideContentDirectionFixture = () => {
+  const [locale, setLocale] = useState<MarkdownFlowLocale>("ar-SA");
+  const [dir, setDir] = useState("ltr");
+  return (
+    <div>
+      <button
+        onClick={() => {
+          setLocale("th-TH");
+          setDir("rtl");
+        }}
+      >
+        Thai RTL
+      </button>
+      {slideDirectionElements.map(({ id, element }) => (
+        <div key={id} data-testid={id}>
+          <Slide
+            locale={locale}
+            dir={dir}
+            elementList={[
+              {
+                ...element,
+                sequence_number: 1,
+                is_new: true,
+                is_renderable: true,
+                is_marker: true,
+              },
+            ]}
+          />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export const SlideContentDirectionOverride: Story = {
+  render: () => <SlideContentDirectionFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const dir of ["ltr", "rtl"]) {
+      if (dir === "rtl")
+        await userEvent.click(canvas.getByRole("button", { name: "Thai RTL" }));
+      await waitFor(() => {
+        const markdown = canvas
+          .getByTestId("markdown-slide")
+          .querySelector(".content-render")!;
+        expect(markdown).not.toBeNull();
+        expect(getComputedStyle(markdown).direction).toBe(dir);
+        const interaction = canvas
+          .getByTestId("interaction-slide")
+          .querySelector(".slide-player__interaction-body .content-render")!;
+        expect(interaction).not.toBeNull();
+        expect(getComputedStyle(interaction).direction).toBe(dir);
+        const inputs = interaction.querySelectorAll("textarea");
+        expect(inputs).toHaveLength(2);
+        for (const input of inputs)
+          expect(getComputedStyle(input).direction).toBe(dir);
+        const iframe = canvas
+          .getByTestId("html-slide")
+          .querySelector("iframe")!;
+        const paragraphs = iframe.contentDocument!.querySelectorAll("p");
+        expect(paragraphs).toHaveLength(2);
+        expect(
+          iframe.contentWindow!.getComputedStyle(paragraphs[0]).direction
+        ).toBe(dir);
+        expect(
+          iframe.contentWindow!.getComputedStyle(paragraphs[1]).direction
+        ).toBe("rtl");
+      });
     }
   },
 };

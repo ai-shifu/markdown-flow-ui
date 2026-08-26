@@ -26,6 +26,8 @@ interface CustomVariableNode {
 
 // Define custom variable component Props type
 interface CustomVariableProps {
+  /** Explicit direction for nested input controls. */
+  dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   node: CustomVariableNode;
   defaultButtonText?: string;
   defaultInputText?: string;
@@ -135,6 +137,7 @@ const MultiSelectSection = ({
 
 // Single select section( with buttons and input)
 interface SingleSelectSectionProps {
+  dir?: CustomVariableProps["dir"];
   node: CustomVariableNode;
   readonly?: boolean;
   locale?: MarkdownFlowLocale;
@@ -146,6 +149,7 @@ interface SingleSelectSectionProps {
 }
 
 const SingleSelectSection = ({
+  dir,
   node,
   readonly,
   locale,
@@ -182,6 +186,7 @@ const SingleSelectSection = ({
     {node.properties?.placeholder && (
       <span className="mt-[9px] mb-1">
         <MarkdownFlowInput
+          dir={dir}
           disabled={readonly}
           locale={locale}
           placeholder={node.properties.placeholder}
@@ -197,6 +202,7 @@ const SingleSelectSection = ({
 
 // Pure input
 interface InputSectionProps {
+  dir?: CustomVariableProps["dir"];
   readonly?: boolean;
   locale?: MarkdownFlowLocale;
   placeholder?: string;
@@ -206,6 +212,7 @@ interface InputSectionProps {
 }
 
 const InputSection = ({
+  dir,
   readonly,
   locale,
   placeholder,
@@ -219,6 +226,7 @@ const InputSection = ({
 
   return (
     <MarkdownFlowInput
+      dir={dir}
       disabled={readonly}
       locale={locale}
       placeholder={placeholder}
@@ -232,6 +240,7 @@ const InputSection = ({
 
 // Define custom variable component
 const CustomButtonInputVariable = ({
+  dir,
   node,
   readonly,
   locale,
@@ -385,6 +394,7 @@ const CustomButtonInputVariable = ({
 
       {!isMultiSelect && isSingleSelect && (
         <SingleSelectSection
+          dir={dir}
           node={singleSelectNode}
           readonly={readonly}
           locale={locale}
@@ -398,6 +408,7 @@ const CustomButtonInputVariable = ({
 
       {!isMultiSelect && !isSingleSelect && node.properties?.placeholder && (
         <InputSection
+          dir={dir}
           readonly={readonly}
           locale={locale}
           placeholder={node.properties.placeholder}

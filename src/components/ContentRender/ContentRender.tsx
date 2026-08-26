@@ -58,6 +58,8 @@ export interface ContentRenderProps {
   contentType?: string;
   /** Locale used for built-in UI text when a more specific text prop is not provided. */
   locale?: MarkdownFlowLocale;
+  /** Overrides locale-derived direction; omitted values inherit when no locale is set. */
+  dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   /**
    * Callback invoked when the custom button after content is clicked.
    * This button is rendered via the `<custom-button-after-content>` tag in markdown content.
@@ -241,6 +243,7 @@ type CustomComponents = ComponentsWithCustomVariable & {
 };
 
 type MarkdownComponentRuntimeValues = {
+  direction?: ContentRenderProps["dir"];
   mermaidMessages: MermaidChartProps["messages"];
   beforeSend?: (param: OnSendContentParams) => boolean;
   locale?: MarkdownFlowLocale;
@@ -346,6 +349,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   content,
   contentType,
   locale,
+  dir,
   customRenderBar,
   onSend,
   typingSpeed = 40,
@@ -380,7 +384,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     }),
     [localeTexts]
   );
-  const direction = getMarkdownFlowDirection(locale);
+  const direction = dir ?? getMarkdownFlowDirection(locale);
   const resolvedConfirmButtonText =
     confirmButtonText || localeTexts.confirmButtonText;
   const resolvedCopyButtonText = copyButtonText || localeTexts.copyButtonText;
@@ -531,6 +535,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     resolvedDefaultSelectedValues
   );
   const componentRuntimeValuesRef = useRef<MarkdownComponentRuntimeValues>({
+    direction,
     mermaidMessages,
     beforeSend,
     locale,
@@ -547,6 +552,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   });
 
   componentRuntimeValuesRef.current = {
+    direction,
     mermaidMessages,
     beforeSend,
     locale,
@@ -598,6 +604,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
           onSend={componentRuntimeValuesRef.current.onSend}
           beforeSend={componentRuntimeValuesRef.current.beforeSend}
           locale={componentRuntimeValuesRef.current.locale}
+          dir={componentRuntimeValuesRef.current.direction}
           confirmButtonText={
             componentRuntimeValuesRef.current.resolvedConfirmButtonText
           }
@@ -758,6 +765,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               content={segment.value}
               className="content-render-iframe"
               locale={locale}
+              dir={direction}
               loadingText={sandboxLoadingText}
               styleLoadingText={sandboxStyleLoadingText}
               scriptLoadingText={sandboxScriptLoadingText}

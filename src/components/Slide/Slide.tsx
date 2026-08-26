@@ -194,6 +194,7 @@ type RenderSlideElementOptions = {
 };
 
 interface InteractionOverlayCardProps {
+  dir?: ContentRenderProps["dir"];
   content: string;
   title: string;
   dragHandleAriaLabel: string;
@@ -234,6 +235,7 @@ const InteractionOverlayCard = memo(
     title,
     dragHandleAriaLabel,
     locale,
+    dir,
     defaultButtonText,
     defaultInputText,
     defaultSelectedValues,
@@ -270,6 +272,7 @@ const InteractionOverlayCard = memo(
         <ContentRender
           content={content}
           locale={locale}
+          dir={dir}
           defaultButtonText={defaultButtonText}
           defaultInputText={defaultInputText}
           defaultSelectedValues={defaultSelectedValues}
@@ -1814,6 +1817,7 @@ const Slide: React.FC<SlideProps> = ({
           disableLoadingOverlay={disableLoadingOverlay}
           hideFullScreen
           locale={locale}
+          dir={direction}
           mode="blackboard"
           replaceRootScreenHeightWithFull={
             options.replaceRootScreenHeightWithFull
@@ -1831,6 +1835,7 @@ const Slide: React.FC<SlideProps> = ({
         disableLoadingOverlay={disableLoadingOverlay}
         hideFullScreen
         locale={locale}
+        dir={direction}
         mode="blackboard"
         type="markdown"
         content={element.content as string}
@@ -2591,6 +2596,7 @@ const Slide: React.FC<SlideProps> = ({
             style={interactionOverlayStyle}
           >
             <InteractionOverlayCard
+              dir={direction}
               content={String(activeInteractionElement?.content ?? "")}
               dragHandleAriaLabel={
                 interactionTexts?.dragHandleAriaLabel ??

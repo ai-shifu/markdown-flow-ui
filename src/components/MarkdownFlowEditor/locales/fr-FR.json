@@ -3,6 +3,7 @@
   "placeholderCodeEdit": "Veuillez saisir votre contenu",
   "placeholderQuickEdit": "Veuillez saisir votre contenu, tapez '/' pour plus d'options",
   "dialogTitle": "Paramètres",
+  "dialogCloseLabel": "Fermer",
   "dialogTitleImage": "Ajouter une image",
   "dialogTitleVideo": "Ajouter une vidéo",
   "imageUrlPlaceholder": "Veuillez saisir l'URL de l'image",

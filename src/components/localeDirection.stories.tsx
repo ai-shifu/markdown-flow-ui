@@ -225,6 +225,54 @@ export const StandaloneArabicInput: Story = {
   },
 };
 
+const EditorDialogLocaleFixture = () => {
+  const [locale, setLocale] = useState<MarkdownFlowLocale>("ar-SA");
+  return (
+    <div>
+      <button onClick={() => setLocale("th-TH")}>Thai</button>
+      <MarkdownFlowEditor locale={locale} />
+    </div>
+  );
+};
+
+export const EditorDialogCloseLabels: Story = {
+  render: () => <EditorDialogLocaleFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    for (const locale of ["ar-SA", "th-TH"] as const) {
+      if (locale === "th-TH") {
+        await userEvent.click(
+          canvas.getByRole("button", { name: "Thai", exact: true })
+        );
+      }
+      const texts = getEditorLocaleMessages(locale);
+      for (const [trigger, title] of [
+        [texts.toolbarInsertImage, texts.dialogTitleImage],
+        [texts.toolbarInsertVideo, texts.dialogTitleVideo],
+      ]) {
+        await userEvent.click(
+          canvas.getByRole("button", { name: trigger, exact: true })
+        );
+        const dialog = await page.findByRole("dialog", { name: title });
+        expect(getComputedStyle(dialog).direction).toBe(
+          locale === "ar-SA" ? "rtl" : "ltr"
+        );
+        expect(
+          within(dialog).queryByRole("button", { name: "Close", exact: true })
+        ).toBeNull();
+        await userEvent.click(
+          within(dialog).getByRole("button", {
+            name: texts.dialogCloseLabel,
+            exact: true,
+          })
+        );
+        await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
+      }
+    }
+  },
+};
+
 export const ArabicVariableDropdown: Story = {
   render: () => (
     <div style={{ width: 320, marginLeft: "auto" }}>

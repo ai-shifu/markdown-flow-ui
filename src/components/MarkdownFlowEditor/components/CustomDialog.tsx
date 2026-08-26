@@ -10,6 +10,8 @@ type CustomDialogProps = {
 
 export interface CustomDialogLabels {
   title?: string;
+  /** Accessible label for the dialog close button. */
+  closeButtonLabel?: string;
 }
 export interface CustomDialogAllProps extends CustomDialogProps {
   className?: string;
@@ -30,6 +32,7 @@ const CustomDialog = forwardRef<HTMLDivElement, CustomDialogAllProps>(
           ref={ref}
           className={cn("min-w-[300px]", className)}
           dir={dir}
+          closeButtonLabel={labels?.closeButtonLabel}
           onPointerDownOutside={(e) => {
             e.preventDefault();
           }}

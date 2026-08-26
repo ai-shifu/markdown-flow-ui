@@ -1109,6 +1109,7 @@ const Editor: React.FC<EditorProps> = ({
             <CustomDialog
               dir={direction}
               labels={{
+                closeButtonLabel: t("dialogCloseLabel"),
                 title:
                   selectedOption === SelectedOption.Image
                     ? t("dialogTitleImage")

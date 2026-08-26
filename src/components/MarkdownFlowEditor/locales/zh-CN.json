@@ -3,6 +3,7 @@
   "placeholderCodeEdit": "请输入你的内容",
   "placeholderQuickEdit": "请输入你的内容，输入 / 唤起更多",
   "dialogTitle": "设置",
+  "dialogCloseLabel": "关闭",
   "dialogTitleImage": "添加图片",
   "dialogTitleVideo": "添加视频",
   "imageUrlPlaceholder": "请输入图片地址",

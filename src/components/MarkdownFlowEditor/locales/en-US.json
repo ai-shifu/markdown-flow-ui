@@ -3,6 +3,7 @@
   "placeholderCodeEdit": "Please enter your content",
   "placeholderQuickEdit": "Please enter your content, type '/' for more",
   "dialogTitle": "Settings",
+  "dialogCloseLabel": "Close",
   "dialogTitleImage": "Add Image",
   "dialogTitleVideo": "Add Video",
   "imageUrlPlaceholder": "Please enter image URL",

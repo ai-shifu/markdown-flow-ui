@@ -586,9 +586,12 @@ export const AutoFollowIgnoresCssSmoothScrolling: Story = {
         );
         await waitFor(() => expect(distances.length).toBeGreaterThan(0));
         expect(distances.every((distance) => distance < 2)).toBe(true);
-        expect(getButton(canvasElement)).toHaveAttribute(
-          "data-visible",
-          "false"
+        // Native positions update before React commits the visibility state.
+        await waitFor(() =>
+          expect(getButton(canvasElement)).toHaveAttribute(
+            "data-visible",
+            "false"
+          )
         );
       }
     } finally {

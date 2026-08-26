@@ -20,6 +20,8 @@ export type MobilePlayerSettingsSheetLabels = {
 export type MobilePlayerSettingsSheetProps = {
   open: boolean;
   dir?: ComponentProps<typeof DialogPrimitive.Content>["dir"];
+  /** Language of the detached settings content. */
+  lang?: string;
   labels: MobilePlayerSettingsSheetLabels;
   isSubtitleEnabled: boolean;
   viewMode: MobileViewMode;
@@ -33,6 +35,7 @@ export type MobilePlayerSettingsSheetProps = {
 const MobilePlayerSettingsSheet = ({
   open,
   dir,
+  lang,
   labels,
   isSubtitleEnabled,
   viewMode,
@@ -53,6 +56,7 @@ const MobilePlayerSettingsSheet = ({
           aria-describedby={undefined}
           data-player-keyboard-shortcuts-ignore="true"
           dir={dir}
+          lang={lang}
           className={cn(
             "fixed inset-x-0 bottom-0 z-[61] flex max-h-[min(360px,calc(100dvh-32px))] flex-col overflow-hidden rounded-t-[24px] border-t border-border bg-background shadow-[0_-12px_32px_rgba(28,44,64,0.16)] outline-none",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",

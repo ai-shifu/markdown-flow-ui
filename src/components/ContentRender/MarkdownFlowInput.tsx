@@ -10,6 +10,7 @@ import {
 } from "../ui/inputGroup/input-group";
 import {
   getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
   type MarkdownFlowLocale,
 } from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
@@ -19,6 +20,8 @@ interface MarkdownFlowInputProps {
   dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   disabled?: boolean;
   locale?: MarkdownFlowLocale;
+  /** Overrides the locale-derived language. */
+  lang?: string;
   placeholder?: string;
   sendButtonLabel?: string;
   value?: string;
@@ -35,6 +38,7 @@ const resolveAssetSrc = (asset: string | { src: string }) =>
 const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   disabled,
   locale,
+  lang,
   dir,
   placeholder,
   sendButtonLabel,
@@ -67,6 +71,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   return (
     <InputGroup
       dir={dir ?? getMarkdownFlowDirection(locale)}
+      lang={lang ?? getMarkdownFlowLanguage(locale)}
       data-disabled={disabled}
       className={`input-container h-auto items-end bg-white border-[#e5e5e5] shadow-[0_1px_2px_rgba(0,0,0,0.05)] ${className || ""}`}
     >

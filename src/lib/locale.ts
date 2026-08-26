@@ -43,3 +43,9 @@ export const getMarkdownFlowDirection = (
   if (!locale) return undefined;
   return normalizeMarkdownFlowLocale(locale) === "ar-SA" ? "rtl" : "ltr";
 };
+
+/** Omitted locales leave the host language in control. */
+export const getMarkdownFlowLanguage = (
+  locale?: string | null
+): MarkdownFlowLocale | undefined =>
+  locale ? normalizeMarkdownFlowLocale(locale) : undefined;

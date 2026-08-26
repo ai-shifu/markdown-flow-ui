@@ -15,12 +15,15 @@ export interface CustomPopoverAllProps extends CustomPopoverProps {
    * When omitted, the content inherits direction from its portal container, not the trigger.
    */
   dir?: MarkdownFlowDirection;
+  /** Language of the detached popover content. */
+  lang?: string;
 }
 
 const CustomPopover: React.FC<CustomPopoverAllProps> = ({
   children,
   className,
   dir,
+  lang,
 }) => {
   const { popoverOpen, setPopoverOpen, popoverPosition } =
     useContext(EditorContext);
@@ -47,6 +50,7 @@ const CustomPopover: React.FC<CustomPopoverAllProps> = ({
         )}
         align="start"
         dir={dir}
+        lang={lang}
         sideOffset={5}
       >
         {children}

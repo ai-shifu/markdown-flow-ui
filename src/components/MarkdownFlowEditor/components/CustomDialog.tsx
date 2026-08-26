@@ -20,11 +20,13 @@ export interface CustomDialogAllProps extends CustomDialogProps {
    * When omitted, the content inherits direction from its portal container, not the trigger.
    */
   dir?: MarkdownFlowDirection;
+  /** Language of the detached dialog content. */
+  lang?: string;
   labels?: CustomDialogLabels;
 }
 
 const CustomDialog = forwardRef<HTMLDivElement, CustomDialogAllProps>(
-  ({ children, className, dir, labels }, ref) => {
+  ({ children, className, dir, lang, labels }, ref) => {
     const { dialogOpen, setDialogOpen } = useContext(EditorContext);
     return (
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen} modal>
@@ -32,6 +34,7 @@ const CustomDialog = forwardRef<HTMLDivElement, CustomDialogAllProps>(
           ref={ref}
           className={cn("min-w-[300px]", className)}
           dir={dir}
+          lang={lang}
           closeButtonLabel={labels?.closeButtonLabel}
           onPointerDownOutside={(e) => {
             e.preventDefault();

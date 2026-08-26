@@ -61,9 +61,11 @@ import {
 } from "./editorI18n";
 import {
   getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
   normalizeMarkdownFlowLocale,
   type MarkdownFlowLocale,
 } from "../../lib/locale";
+import { useDetachedLanguage } from "../../lib/useDetachedLanguage";
 
 if (!i18next.isInitialized) {
   i18next.use(initReactI18next).init({
@@ -97,6 +99,8 @@ type EditorProps = {
   onChange?: (value: string) => void;
   onBlur?: () => void;
   locale?: MarkdownFlowLocale;
+  /** Overrides the locale-derived language. */
+  lang?: string;
   uploadProps?: UploadProps;
   disabled?: boolean;
   toolbarActionsRight?: EditorAction[];
@@ -142,6 +146,7 @@ const Editor: React.FC<EditorProps> = ({
   onChange,
   onBlur,
   locale,
+  lang,
   uploadProps,
   disabled = false,
   toolbarActionsRight,
@@ -152,6 +157,7 @@ const Editor: React.FC<EditorProps> = ({
     locale ?? DEFAULT_EDITOR_LOCALE
   );
   const direction = getMarkdownFlowDirection(locale);
+  const language = lang ?? getMarkdownFlowLanguage(locale);
 
   useEffect(() => {
     if (i18n.language !== resolvedLocale) {
@@ -263,6 +269,7 @@ const Editor: React.FC<EditorProps> = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const editorRootRef = useRef<HTMLDivElement>(null);
+  const portalLanguage = useDetachedLanguage(editorRootRef, language);
   const [inheritedDirection, setInheritedDirection] = useState<"ltr" | "rtl">();
   const portalDirection = direction ?? inheritedDirection;
 
@@ -1111,6 +1118,7 @@ const Editor: React.FC<EditorProps> = ({
       className="markdown-flow-editor"
       ref={editorRootRef}
       dir={direction}
+      lang={language}
       data-disabled={disabled ? "true" : undefined}
       aria-disabled={disabled}
     >
@@ -1162,6 +1170,7 @@ const Editor: React.FC<EditorProps> = ({
           {!disabled && (
             <CustomDialog
               dir={portalDirection}
+              lang={portalLanguage}
               labels={{
                 closeButtonLabel: t("dialogCloseLabel"),
                 title:
@@ -1191,7 +1200,7 @@ const Editor: React.FC<EditorProps> = ({
           )}
 
           {!disabled && (
-            <CustomPopover dir={portalDirection}>
+            <CustomPopover dir={portalDirection} lang={portalLanguage}>
               <VariableSelect
                 variables={variables}
                 systemVariables={systemVariables}

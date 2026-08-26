@@ -12,6 +12,8 @@ export interface CodeBlockProps {
   className?: string;
   /** Authored text direction; defaults to LTR for ordinary source code. */
   dir?: React.HTMLAttributes<HTMLPreElement>["dir"];
+  /** Preserves the language supplied on authored preformatted content. */
+  lang?: string;
   /** Text to display on the copy button (i18n support). */
   copyButtonText?: string;
   /** Text to display when code is copied (i18n support). */
@@ -37,6 +39,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   children,
   className: preClassName,
   dir = "ltr",
+  lang,
   copyButtonText = "Copy",
   copiedButtonText = "Copied",
 }) => {
@@ -95,7 +98,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
           {isCopied ? copiedButtonText : copyButtonText}
         </button>
       </div>
-      <pre className={preClassName} dir={dir}>
+      <pre className={preClassName} dir={dir} lang={lang}>
         {children}
       </pre>
     </div>

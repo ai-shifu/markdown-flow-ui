@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_MARKDOWN_FLOW_LOCALE,
   getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
   MARKDOWN_FLOW_LOCALES,
   normalizeMarkdownFlowLocale,
 } from "./locale";
@@ -55,5 +56,19 @@ describe("getMarkdownFlowDirection", () => {
     expect(getMarkdownFlowDirection("ar_SA")).toBe("rtl");
     expect(getMarkdownFlowDirection("en-US")).toBe("ltr");
     expect(getMarkdownFlowDirection("th-TH")).toBe("ltr");
+  });
+});
+
+describe("getMarkdownFlowLanguage", () => {
+  it.each([undefined, null, ""])("preserves inheritance for %s", (locale) => {
+    expect(getMarkdownFlowLanguage(locale)).toBeUndefined();
+  });
+  it.each([
+    ["ar_SA", "ar-SA"],
+    ["TH-th", "th-TH"],
+    ["fr", "fr-FR"],
+    ["unknown", "en-US"],
+  ])("normalizes %s to %s", (locale, expected) => {
+    expect(getMarkdownFlowLanguage(locale)).toBe(expected);
   });
 });

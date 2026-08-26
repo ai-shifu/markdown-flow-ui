@@ -14,6 +14,7 @@ import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
 import {
   getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
   type MarkdownFlowLocale,
 } from "../../lib/locale";
 import LoadingOverlayCard from "../ui/loading-overlay-card";
@@ -195,6 +196,7 @@ type RenderSlideElementOptions = {
 
 interface InteractionOverlayCardProps {
   dir?: ContentRenderProps["dir"];
+  lang?: string;
   content: string;
   title: string;
   dragHandleAriaLabel: string;
@@ -236,6 +238,7 @@ const InteractionOverlayCard = memo(
     dragHandleAriaLabel,
     locale,
     dir,
+    lang,
     defaultButtonText,
     defaultInputText,
     defaultSelectedValues,
@@ -273,6 +276,7 @@ const InteractionOverlayCard = memo(
           content={content}
           locale={locale}
           dir={dir}
+          lang={lang}
           defaultButtonText={defaultButtonText}
           defaultInputText={defaultInputText}
           defaultSelectedValues={defaultSelectedValues}
@@ -393,11 +397,13 @@ const Slide: React.FC<SlideProps> = ({
   disableLoadingOverlay = false,
   className,
   dir,
+  lang,
   onPointerDown,
   onFocusCapture,
   ...props
 }) => {
   const direction = dir ?? getMarkdownFlowDirection(locale);
+  const language = lang ?? getMarkdownFlowLanguage(locale);
   const localeTexts = useMemo(() => getSlideLocaleTexts(locale), [locale]);
   const resolvedBufferingText = useMemo(
     () =>
@@ -1818,6 +1824,7 @@ const Slide: React.FC<SlideProps> = ({
           hideFullScreen
           locale={locale}
           dir={direction}
+          lang={language}
           mode="blackboard"
           replaceRootScreenHeightWithFull={
             options.replaceRootScreenHeightWithFull
@@ -1836,6 +1843,7 @@ const Slide: React.FC<SlideProps> = ({
         hideFullScreen
         locale={locale}
         dir={direction}
+        lang={language}
         mode="blackboard"
         type="markdown"
         content={element.content as string}
@@ -2459,6 +2467,7 @@ const Slide: React.FC<SlideProps> = ({
         className
       )}
       dir={direction}
+      lang={language}
       onClick={handleSurfaceClick}
       onFocusCapture={handleSurfaceFocusCapture}
       onPointerDown={handleSurfacePointerDown}
@@ -2597,6 +2606,7 @@ const Slide: React.FC<SlideProps> = ({
           >
             <InteractionOverlayCard
               dir={direction}
+              lang={language}
               content={String(activeInteractionElement?.content ?? "")}
               dragHandleAriaLabel={
                 interactionTexts?.dragHandleAriaLabel ??
@@ -2639,6 +2649,7 @@ const Slide: React.FC<SlideProps> = ({
           >
             <Player
               dir={direction}
+              lang={language}
               audioList={audioList}
               className={cn(
                 "absolute left-1/2 z-[2] -translate-x-1/2",

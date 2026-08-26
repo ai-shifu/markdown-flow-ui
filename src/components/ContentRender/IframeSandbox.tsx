@@ -25,8 +25,10 @@ import {
 } from "./utils/iframe-scaling";
 import {
   getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
   type MarkdownFlowLocale,
 } from "../../lib/locale";
+import { useDetachedLanguage } from "../../lib/useDetachedLanguage";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 import { CJK_SAFE_SANS_FONT_FAMILY } from "./cjkFontFamily";
 
@@ -51,6 +53,8 @@ export interface IframeSandboxProps {
   content: string;
   className?: string;
   locale?: MarkdownFlowLocale;
+  /** Overrides the locale-derived language without changing authored HTML language. */
+  lang?: string;
   /** Overrides locale-derived direction without replacing authored HTML direction. */
   dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   loadingText?: string;
@@ -119,6 +123,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   type,
   className,
   locale,
+  lang,
   dir,
   loadingText,
   styleLoadingText,
@@ -133,11 +138,13 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
 }) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
   const direction = dir ?? getMarkdownFlowDirection(locale);
+  const language = lang ?? getMarkdownFlowLanguage(locale);
   const resolvedFullScreenButtonText =
     fullScreenButtonText || localeTexts.sandboxFullscreenButtonText;
   const resolvedExitFullScreenButtonText =
     exitFullScreenButtonText || localeTexts.sandboxExitFullscreenButtonText;
   const containerRef = useRef<HTMLDivElement>(null);
+  const sandboxLanguage = useDetachedLanguage(containerRef, language);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const rootRef = useRef<Root | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
@@ -789,6 +796,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
         html={renderHtmlContent}
         locale={locale}
         dir={direction}
+        lang={sandboxLanguage}
         loadingText={loadingText}
         styleLoadingText={styleLoadingText}
         scriptLoadingText={scriptLoadingText}
@@ -825,6 +833,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     renderHtmlContent,
     locale,
     direction,
+    sandboxLanguage,
     loadingText,
     styleLoadingText,
     scriptLoadingText,
@@ -850,6 +859,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     <div
       ref={containerRef}
       dir={direction}
+      lang={language}
       data-root-vh={hasRootVhHeight ? "true" : "false"}
       className={containerClassName}
       style={
@@ -880,6 +890,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
             content={content}
             locale={locale}
             dir={direction}
+            lang={language}
             disableSandboxLoadingOverlay={disableLoadingOverlay}
           />
         </div>

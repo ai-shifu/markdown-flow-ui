@@ -5,6 +5,7 @@ import type { MarkdownFlowLocale } from "../lib/locale";
 import ContentRender from "./ContentRender";
 import MarkdownFlowInput from "./ContentRender/MarkdownFlowInput";
 import MarkdownFlow from "./MarkdownFlow/MarkdownFlow";
+import ScrollableMarkdownFlow from "./MarkdownFlow/ScrollableMarkdownFlow";
 import MarkdownFlowEditor, {
   EditMode,
 } from "./MarkdownFlowEditor/MarkdownFlowEditor";
@@ -19,7 +20,7 @@ import { getContentRenderLocaleTexts } from "./ContentRender/contentRenderI18n";
 const DirectionFixture = () => {
   const [locale, setLocale] = useState<MarkdownFlowLocale>();
   return (
-    <div dir="rtl">
+    <div dir="rtl" lang="fr">
       <button type="button" onClick={() => setLocale("ar-SA")}>
         Arabic
       </button>
@@ -59,6 +60,180 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const LanguageBoundaryFixture = () => {
+  const [locale, setLocale] = useState<MarkdownFlowLocale>();
+  const [lang, setLang] = useState<string>();
+  const [hostLanguage, setHostLanguage] = useState("fr");
+  const props = { locale, lang };
+  const html = '<div><p>Default language</p><p lang="it">Ciao</p></div>';
+  return (
+    <div lang={hostLanguage}>
+      {(["ar-SA", "th-TH", undefined] as const).map((value) => (
+        <button
+          type="button"
+          key={value ?? "inherit"}
+          onClick={() => {
+            setLocale(value);
+            setLang(undefined);
+          }}
+        >
+          {value ?? "inherit"}
+        </button>
+      ))}
+      <button type="button" onClick={() => setLang("de")}>
+        Override language
+      </button>
+      <button type="button" onClick={() => setHostLanguage("zh-CN")}>
+        Change host language
+      </button>
+      <div data-testid="language-editor">
+        <MarkdownFlowEditor
+          {...props}
+          editMode={EditMode.QuickEdit}
+          content="{{learner}}"
+          variables={[{ name: "learner" }]}
+        />
+      </div>
+      <div data-testid="language-player">
+        <Player {...props} defaultPlaying={false} />
+      </div>
+      <div data-testid="language-sandbox">
+        <IframeSandbox {...props} type="sandbox" content={html} />
+      </div>
+      <div data-testid="language-scroll">
+        <ScrollableMarkdownFlow {...props} height={120} />
+      </div>
+      <div data-testid="language-slide">
+        <Slide
+          {...props}
+          playerEnabled={false}
+          elementList={[
+            {
+              type: "html",
+              content: html,
+              sequence_number: 1,
+              is_new: true,
+              is_renderable: true,
+              is_marker: true,
+            },
+          ]}
+        />
+      </div>
+      <div data-testid="language-renderer">
+        <ContentRender
+          {...props}
+          content={
+            'نص <span lang="it">Ciao</span>\n\n<pre lang="es">Hola</pre>\n\n?[%{{reply}}...Answer]'
+          }
+        />
+      </div>
+      <div data-testid="language-html-renderer">
+        <ContentRender {...props} content={html} />
+      </div>
+    </div>
+  );
+};
+
+export const LanguageAcrossBoundaries: Story = {
+  render: () => <LanguageBoundaryFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    const checkLanguage = async (
+      language: string,
+      rootLanguage?: string,
+      locale?: MarkdownFlowLocale
+    ) => {
+      await waitFor(() => {
+        for (const name of [
+          "editor",
+          "player",
+          "sandbox",
+          "scroll",
+          "slide",
+          "renderer",
+          "html-renderer",
+        ]) {
+          const root = canvas.getByTestId(
+            `language-${name}`
+          ).firstElementChild!;
+          expect(root.getAttribute("lang")).toBe(rootLanguage ?? null);
+          expect(root.closest("[lang]")?.getAttribute("lang")).toBe(language);
+        }
+        const frames = canvasElement.querySelectorAll("iframe");
+        expect(frames).toHaveLength(3);
+        for (const frame of frames) {
+          const wrapper =
+            frame.contentDocument!.querySelector(".sandbox-wrapper")!;
+          expect(wrapper).toHaveAttribute("lang", language);
+          expect(wrapper.querySelector("p[lang]")).toHaveAttribute(
+            "lang",
+            "it"
+          );
+        }
+        const renderer = canvas.getByTestId("language-renderer");
+        expect(renderer.querySelector("span[lang]")).toHaveAttribute(
+          "lang",
+          "it"
+        );
+        expect(renderer.querySelector("pre")).toHaveAttribute("lang", "es");
+        expect(
+          renderer.querySelector("textarea")!.closest("[lang]")
+        ).toHaveAttribute("lang", language);
+      });
+      const editor = within(canvas.getByTestId("language-editor"));
+      const texts = getEditorLocaleMessages(locale);
+      await userEvent.click(
+        editor.getByRole("button", { name: texts.toolbarInsertImage })
+      );
+      const dialog = await page.findByRole("dialog", {
+        name: texts.dialogTitleImage,
+      });
+      expect(dialog).toHaveAttribute("lang", language);
+      await userEvent.click(
+        within(dialog).getByRole("button", { name: texts.dialogCloseLabel })
+      );
+      await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
+      await userEvent.click(
+        canvas
+          .getByTestId("language-editor")
+          .querySelector<HTMLElement>(".tag-variable .tag-placeholder-content")!
+      );
+      const popover = await page.findByRole("dialog");
+      expect(popover).toHaveAttribute("lang", language);
+      await userEvent.keyboard("{Escape}");
+      await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
+      canvas
+        .getByTestId("language-player")
+        .querySelector<HTMLButtonElement>(".slide-player__action--mobile-more")!
+        .click();
+      const settings = await page.findByRole("dialog");
+      expect(settings).toHaveAttribute("lang", language);
+      await userEvent.click(
+        within(settings).getByRole("button", {
+          name: getSlidePlayerTexts(locale).closeSettingsLabel,
+        })
+      );
+      await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
+    };
+    await checkLanguage("fr");
+    for (const locale of ["ar-SA", "th-TH"] as const) {
+      await userEvent.click(canvas.getByRole("button", { name: locale }));
+      await checkLanguage(locale, locale, locale);
+    }
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Override language" })
+    );
+    await checkLanguage("de", "de", "th-TH");
+    await userEvent.click(canvas.getByRole("button", { name: "inherit" }));
+    await checkLanguage("fr");
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Change host language" })
+    );
+    await checkLanguage("zh-CN");
+  },
+};
+
 const expectPlayerNavigationDirection = (root: Element) => {
   const rtl = getComputedStyle(root).direction === "rtl";
   for (const action of ["prev", "next", "prev-subtitle", "next-subtitle"]) {
@@ -91,6 +266,12 @@ export const InheritedAndExplicitDirection: Story = {
         ]) {
           const root = canvas.getByTestId(name).firstElementChild!;
           expect(root.getAttribute("dir")).toBe(explicit ? dir : null);
+          expect(root.getAttribute("lang")).toBe(
+            explicit ? (dir === "rtl" ? "ar-SA" : "th-TH") : null
+          );
+          expect(root.closest("[lang]")?.getAttribute("lang")).toBe(
+            explicit ? (dir === "rtl" ? "ar-SA" : "th-TH") : "fr"
+          );
           expect(getComputedStyle(root).direction).toBe(dir);
         }
         expectPlayerNavigationDirection(

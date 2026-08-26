@@ -2,6 +2,7 @@ import React from "react";
 import type { InteractionDefaultValueOptions } from "../../lib/interaction-defaults";
 import {
   getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
   type MarkdownFlowLocale,
 } from "../../lib/locale";
 import ContentRender from "../ContentRender";
@@ -27,6 +28,8 @@ export interface MarkdownFlowProps {
    * When omitted, direction is inherited from the host and UI text uses the default locale.
    */
   locale?: MarkdownFlowLocale;
+  /** Overrides the locale-derived language. */
+  lang?: string;
   customRenderBar?: CustomRenderBarProps;
   onSend?: (content: OnSendContentParams) => void;
   // Multi-select confirm button text (i18n support)
@@ -42,6 +45,7 @@ export interface MarkdownFlowProps {
 const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   initialContentList = [],
   locale,
+  lang,
   customRenderBar,
   onSend: onSendProp,
   confirmButtonText,
@@ -51,7 +55,11 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   interactionDefaultValueOptions,
 }) => {
   return (
-    <div className="markdown-flow" dir={getMarkdownFlowDirection(locale)}>
+    <div
+      className="markdown-flow"
+      dir={getMarkdownFlowDirection(locale)}
+      lang={lang ?? getMarkdownFlowLanguage(locale)}
+    >
       {initialContentList.map((contentInfo, index) => {
         const isFinished = contentInfo.isFinished ?? false;
         const onSend = isFinished ? undefined : onSendProp;
@@ -69,6 +77,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             onSend={onSend}
             beforeSend={beforeSend}
             locale={locale}
+            lang={lang}
             interactionDefaultValueOptions={interactionDefaultValueOptions}
             onClickCustomButtonAfterContent={
               contentInfo.onClickCustomButtonAfterContent

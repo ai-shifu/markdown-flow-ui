@@ -24,8 +24,10 @@ import {
 
 import {
   getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
   type MarkdownFlowLocale,
 } from "../../lib/locale";
+import { useDetachedLanguage } from "../../lib/useDetachedLanguage";
 import { cn } from "../../lib/utils";
 import MobilePlayerSettingsSheet from "./MobilePlayerSettingsSheet";
 import { getSlidePlayerTexts, type SlidePlayerLocaleTexts } from "./slideI18n";
@@ -325,9 +327,11 @@ const Player = ({
   ...props
 }: PlayerProps) => {
   const direction = props.dir ?? getMarkdownFlowDirection(locale);
+  const language = props.lang ?? getMarkdownFlowLanguage(locale);
   const localKeyboardShortcutOwnerId = useId();
   const keyboardShortcutContext = useContext(PlayerKeyboardShortcutContext);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const portalLanguage = useDetachedLanguage(audioRef, language);
   const previousInteractionOpenRef = useRef(isInteractionOpen);
   const audioSrcRef = useRef<string | null>(null);
   const currentAudioKeyRef = useRef<string | null>(null);
@@ -1860,6 +1864,7 @@ const Player = ({
     <div
       {...props}
       dir={direction}
+      lang={language}
       data-slide-player-shortcut-owner={keyboardShortcutOwnerId}
       className={cn("slide-player", className)}
       onFocusCapture={handleRootFocusCapture}
@@ -1887,6 +1892,7 @@ const Player = ({
           <MobilePlayerSettingsSheet
             container={settingsPortalContainer}
             dir={direction}
+            lang={portalLanguage}
             labels={{
               closeSettings: playerTexts.closeSettingsLabel,
               fullscreen: playerTexts.fullscreenLabel,

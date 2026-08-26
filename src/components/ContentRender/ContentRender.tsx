@@ -45,6 +45,7 @@ import {
 } from "../../lib/interaction-defaults";
 import {
   getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
   type MarkdownFlowLocale,
 } from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
@@ -58,6 +59,8 @@ export interface ContentRenderProps {
   contentType?: string;
   /** Locale used for built-in UI text when a more specific text prop is not provided. */
   locale?: MarkdownFlowLocale;
+  /** Overrides the locale-derived language; omitted values inherit from the host. */
+  lang?: string;
   /** Overrides locale-derived direction; omitted values inherit when no locale is set. */
   dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   /**
@@ -244,6 +247,7 @@ type CustomComponents = ComponentsWithCustomVariable & {
 
 type MarkdownComponentRuntimeValues = {
   direction?: ContentRenderProps["dir"];
+  language?: string;
   mermaidMessages: MermaidChartProps["messages"];
   beforeSend?: (param: OnSendContentParams) => boolean;
   locale?: MarkdownFlowLocale;
@@ -349,6 +353,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   content,
   contentType,
   locale,
+  lang,
   dir,
   customRenderBar,
   onSend,
@@ -385,6 +390,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     [localeTexts]
   );
   const direction = dir ?? getMarkdownFlowDirection(locale);
+  const language = lang ?? getMarkdownFlowLanguage(locale);
   const resolvedConfirmButtonText =
     confirmButtonText || localeTexts.confirmButtonText;
   const resolvedCopyButtonText = copyButtonText || localeTexts.copyButtonText;
@@ -536,6 +542,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   );
   const componentRuntimeValuesRef = useRef<MarkdownComponentRuntimeValues>({
     direction,
+    language,
     mermaidMessages,
     beforeSend,
     locale,
@@ -553,6 +560,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
   componentRuntimeValuesRef.current = {
     direction,
+    language,
     mermaidMessages,
     beforeSend,
     locale,
@@ -605,6 +613,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
           beforeSend={componentRuntimeValuesRef.current.beforeSend}
           locale={componentRuntimeValuesRef.current.locale}
           dir={componentRuntimeValuesRef.current.direction}
+          lang={componentRuntimeValuesRef.current.language}
           confirmButtonText={
             componentRuntimeValuesRef.current.resolvedConfirmButtonText
           }
@@ -756,7 +765,11 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
   if (hasSandbox) {
     return (
-      <div className="content-render markdown-body" dir={direction}>
+      <div
+        className="content-render markdown-body"
+        dir={direction}
+        lang={language}
+      >
         {mergedRenderSegments.map((segment, idx) =>
           segment.type === "sandbox" ? (
             <IframeSandbox
@@ -767,6 +780,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               className="content-render-iframe"
               locale={locale}
               dir={direction}
+              lang={language}
               loadingText={sandboxLoadingText}
               styleLoadingText={sandboxStyleLoadingText}
               scriptLoadingText={sandboxScriptLoadingText}
@@ -786,7 +800,11 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   }
 
   return (
-    <div className="content-render markdown-body" dir={direction}>
+    <div
+      className="content-render markdown-body"
+      dir={direction}
+      lang={language}
+    >
       {segments.map((seg, index) => {
         if (seg.type === "text") {
           return (

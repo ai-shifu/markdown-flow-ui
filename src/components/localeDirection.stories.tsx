@@ -362,6 +362,7 @@ const KeyboardDirectionFixture = () => {
       {(["ar-SA", "th-TH", undefined] as const).map((value) => (
         <button
           key={value ?? "inherit"}
+          type="button"
           onClick={() => {
             setLocale(value);
             setDir(undefined);
@@ -371,13 +372,19 @@ const KeyboardDirectionFixture = () => {
         </button>
       ))}
       {["ltr", "rtl", "auto"].map((value) => (
-        <button key={value} onClick={() => setDir(value)}>
+        <button type="button" key={value} onClick={() => setDir(value)}>
           {value}
         </button>
       ))}
-      <button onClick={() => setHostDir("ltr")}>Change host</button>
-      <button onClick={() => setText("Preview")}>Change text</button>
-      <button onClick={() => setEnabled(false)}>Disable shortcuts</button>
+      <button type="button" onClick={() => setHostDir("ltr")}>
+        Change host
+      </button>
+      <button type="button" onClick={() => setText("Preview")}>
+        Change text
+      </button>
+      <button type="button" onClick={() => setEnabled(false)}>
+        Disable shortcuts
+      </button>
       <output data-testid="keyboard-result">{lastAction}</output>
       <div dir={hostDir}>
         <Player
@@ -624,23 +631,26 @@ export const ArabicCodeBlocks: Story = {
   },
 };
 
+const LocaleContentFixture = ({ content }: { content: string }) => (
+  <div dir="rtl">
+    {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
+      <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
+        <ContentRender locale={locale} content={content} />
+      </div>
+    ))}
+  </div>
+);
+
 export const IsolatedInlineCode: Story = {
   render: () => (
-    <div dir="rtl">
-      {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
-        <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
-          <ContentRender
-            locale={locale}
-            content={[
-              'استخدم `call("مرحبا");` ثم `https://example.com/a?b=1`.',
-              '<code dir="rtl">مرحبا</code> <code dir="ltr">hello</code>',
-              '<code dir="auto">مرحبا</code> <code dir="auto">hello</code>',
-              '<code>call("مرحبا");</code>',
-            ].join("\n\n")}
-          />
-        </div>
-      ))}
-    </div>
+    <LocaleContentFixture
+      content={[
+        'استخدم `call("مرحبا");` ثم `https://example.com/a?b=1`.',
+        '<code dir="rtl">مرحبا</code> <code dir="ltr">hello</code>',
+        '<code dir="auto">مرحبا</code> <code dir="auto">hello</code>',
+        '<code>call("مرحبا");</code>',
+      ].join("\n\n")}
+    />
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -673,23 +683,16 @@ export const IsolatedInlineCode: Story = {
 
 export const AuthoredPreformattedDirection: Story = {
   render: () => (
-    <div dir="rtl">
-      {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
-        <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
-          <ContentRender
-            locale={locale}
-            content={[
-              '<pre dir="rtl">مرحبا 123!</pre>',
-              '<pre dir="ltr">hello 123!</pre>',
-              '<pre dir="auto">مرحبا 123!</pre>',
-              '<pre dir="auto">hello 123!</pre>',
-              "<pre>hello 123!</pre>",
-              "```javascript\nconst value = 123;\n```",
-            ].join("\n\n")}
-          />
-        </div>
-      ))}
-    </div>
+    <LocaleContentFixture
+      content={[
+        '<pre dir="rtl">مرحبا 123!</pre>',
+        '<pre dir="ltr">hello 123!</pre>',
+        '<pre dir="auto">مرحبا 123!</pre>',
+        '<pre dir="auto">hello 123!</pre>',
+        "<pre>hello 123!</pre>",
+        "```javascript\nconst value = 123;\n```",
+      ].join("\n\n")}
+    />
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -719,16 +722,7 @@ export const AuthoredPreformattedDirection: Story = {
 
 export const IsolatedMathDirection: Story = {
   render: () => (
-    <div dir="rtl">
-      {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
-        <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
-          <ContentRender
-            locale={locale}
-            content={"قبل $1+2=3$ بعد.\n\n$$\n1+2=3\n$$"}
-          />
-        </div>
-      ))}
-    </div>
+    <LocaleContentFixture content={"قبل $1+2=3$ بعد.\n\n$$\n1+2=3\n$$"} />
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -868,16 +862,9 @@ export const DirectionAwareMarkdownStructure: Story = {
 
 export const TaskListCheckboxSpacing: Story = {
   render: () => (
-    <div dir="rtl">
-      {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
-        <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
-          <ContentRender
-            locale={locale}
-            content={"- [ ] Unchecked task\n- [x] Completed task"}
-          />
-        </div>
-      ))}
-    </div>
+    <LocaleContentFixture
+      content={"- [ ] Unchecked task\n- [x] Completed task"}
+    />
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -910,23 +897,16 @@ export const TaskListCheckboxSpacing: Story = {
 
 export const DirectionAwareFootnotes: Story = {
   render: () => (
-    <div dir="rtl">
-      {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
-        <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
-          <ContentRender
-            locale={locale}
-            content={[
-              "نص مع حاشية[^note].",
-              "",
-              "[^note]: Footnote text",
-              "",
-              "    - Nested item",
-              "      - Deeper item",
-            ].join("\n")}
-          />
-        </div>
-      ))}
-    </div>
+    <LocaleContentFixture
+      content={[
+        "نص مع حاشية[^note].",
+        "",
+        "[^note]: Footnote text",
+        "",
+        "    - Nested item",
+        "      - Deeper item",
+      ].join("\n")}
+    />
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

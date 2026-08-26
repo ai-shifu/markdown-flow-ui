@@ -118,6 +118,12 @@
 }
 
 /* KaTeX math formula styles */
+.content-render .katex-display,
+.content-render .katex {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
 .content-render .katex-display {
   margin: 1.5rem 0;
   text-align: center;

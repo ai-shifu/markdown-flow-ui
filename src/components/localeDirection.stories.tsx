@@ -382,6 +382,63 @@ export const IsolatedInlineCode: Story = {
   },
 };
 
+export const IsolatedMathDirection: Story = {
+  render: () => (
+    <div dir="rtl">
+      {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
+        <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
+          <ContentRender
+            locale={locale}
+            content={"قبل $1+2=3$ بعد.\n\n$$\n1+2=3\n$$"}
+          />
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const locale of ["ar-SA", "th-TH", "inherit"]) {
+      const fixture = canvas.getByTestId(locale);
+      const paragraph = fixture.querySelector("p")!;
+      expect(getComputedStyle(paragraph).direction).toBe(
+        locale === "th-TH" ? "ltr" : "rtl"
+      );
+      expect(paragraph.textContent).toContain("قبل");
+      expect(paragraph.textContent).toContain("بعد.");
+      const formulas = fixture.querySelectorAll(".katex");
+      expect(formulas).toHaveLength(2);
+      const display = fixture.querySelector(".katex-display")!;
+      expect(display).not.toBeNull();
+      expect(getComputedStyle(display).direction).toBe("ltr");
+      expect(getComputedStyle(display).unicodeBidi).toBe("isolate");
+      for (const formula of formulas) {
+        expect(getComputedStyle(formula).direction).toBe("ltr");
+        expect(getComputedStyle(formula).unicodeBidi).toBe("isolate");
+        expect(
+          formula.querySelector('annotation[encoding="application/x-tex"]')
+        ).toHaveTextContent("1+2=3");
+        const terms = formula.querySelectorAll(
+          ".katex-html .mord, .katex-html .mbin, .katex-html .mrel"
+        );
+        expect(Array.from(terms, (term) => term.textContent)).toEqual([
+          "1",
+          "+",
+          "2",
+          "=",
+          "3",
+        ]);
+        for (let index = 1; index < terms.length; index++) {
+          expect(
+            terms[index].getBoundingClientRect().left
+          ).toBeGreaterThanOrEqual(
+            terms[index - 1].getBoundingClientRect().right - 0.5
+          );
+        }
+      }
+    }
+  },
+};
+
 const TableDirectionFixture = () => {
   const [locale, setLocale] = useState<MarkdownFlowLocale>();
   return (

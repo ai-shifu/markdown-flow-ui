@@ -196,6 +196,7 @@ type RenderSlideElementOptions = {
 interface InteractionOverlayCardProps {
   content: string;
   title: string;
+  dragHandleAriaLabel: string;
   locale?: MarkdownFlowLocale;
   defaultButtonText?: string;
   defaultInputText?: string;
@@ -217,6 +218,8 @@ export interface SlideInteractionTexts
     "confirmButtonText" | "copyButtonText" | "copiedButtonText"
   > {
   title?: string;
+  /** Accessible label for the interaction panel drag handle. */
+  dragHandleAriaLabel?: string;
 }
 
 export type SlideFullscreenHeader = {
@@ -229,6 +232,7 @@ const InteractionOverlayCard = memo(
   ({
     content,
     title,
+    dragHandleAriaLabel,
     locale,
     defaultButtonText,
     defaultInputText,
@@ -247,7 +251,7 @@ const InteractionOverlayCard = memo(
       <button
         type="button"
         className="slide-player__interaction-drag-handle"
-        aria-label="Move interaction"
+        aria-label={dragHandleAriaLabel}
         onPointerCancel={onDragHandlePointerCancel}
         onPointerDown={onDragHandlePointerDown}
         onPointerMove={onDragHandlePointerMove}
@@ -2586,6 +2590,10 @@ const Slide: React.FC<SlideProps> = ({
           >
             <InteractionOverlayCard
               content={String(activeInteractionElement?.content ?? "")}
+              dragHandleAriaLabel={
+                interactionTexts?.dragHandleAriaLabel ??
+                localeTexts.interactionTexts.dragHandleAriaLabel
+              }
               locale={locale}
               defaultButtonText={interactionDefaults.buttonText ?? ""}
               defaultInputText={interactionDefaults.inputText ?? ""}

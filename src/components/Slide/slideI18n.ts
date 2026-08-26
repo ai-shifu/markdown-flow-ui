@@ -37,6 +37,7 @@ export interface SlideInteractionLocaleTexts {
   confirmButtonText: string;
   copyButtonText: string;
   copiedButtonText: string;
+  dragHandleAriaLabel: string;
 }
 
 export type SlideBufferingReason =
@@ -80,6 +81,7 @@ const SLIDE_INTERACTION_TEXT_KEYS = [
   "confirmButtonText",
   "copyButtonText",
   "copiedButtonText",
+  "dragHandleAriaLabel",
 ] as const satisfies readonly (keyof SlideInteractionLocaleTexts)[];
 
 const SLIDE_BUFFERING_TEXT_KEYS = [
@@ -153,6 +155,7 @@ export const DEFAULT_SLIDE_INTERACTION_TEXTS: SlideInteractionLocaleTexts =
     "Submit",
     "Copy",
     "Copied",
+    "Move interaction",
   ]);
 
 export const DEFAULT_SLIDE_BUFFERING_TEXTS = createSlideBufferingTexts([
@@ -181,6 +184,7 @@ export const SLIDE_LOCALE_TEXTS: Record<MarkdownFlowLocale, SlideLocaleTexts> =
         "Soumettre",
         "Copier",
         "Copié",
+        "Déplacer le panneau d’interaction",
       ],
       [
         "Fermer les paramètres",
@@ -210,7 +214,7 @@ export const SLIDE_LOCALE_TEXTS: Record<MarkdownFlowLocale, SlideLocaleTexts> =
     "zh-CN": createSlideLocaleTexts(
       "返回非全屏",
       ["正在等待当前页音频...", "正在加载音频", "正在等待音频"],
-      ["提交下面的内容以继续", "提交", "复制", "已复制"],
+      ["提交下面的内容以继续", "提交", "复制", "已复制", "移动交互面板"],
       [
         "关闭设置",
         "进入全屏",
@@ -243,7 +247,13 @@ export const SLIDE_LOCALE_TEXTS: Record<MarkdownFlowLocale, SlideLocaleTexts> =
         "جارٍ تحميل الصوت...",
         "في انتظار المزيد من الصوت...",
       ],
-      ["أرسل المحتوى أدناه للمتابعة.", "إرسال", "نسخ", "تم النسخ"],
+      [
+        "أرسل المحتوى أدناه للمتابعة.",
+        "إرسال",
+        "نسخ",
+        "تم النسخ",
+        "تحريك لوحة التفاعل",
+      ],
       [
         "إغلاق الإعدادات",
         "الدخول إلى ملء الشاشة",
@@ -281,6 +291,7 @@ export const SLIDE_LOCALE_TEXTS: Record<MarkdownFlowLocale, SlideLocaleTexts> =
         "ส่งคำตอบ",
         "คัดลอก",
         "คัดลอกแล้ว",
+        "ย้ายแผงโต้ตอบ",
       ],
       [
         "ปิดการตั้งค่า",

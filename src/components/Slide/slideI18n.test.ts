@@ -3,6 +3,18 @@ import { describe, expect, it } from "vitest";
 import { getSlideLocaleTexts } from "./slideI18n";
 
 describe("getSlideLocaleTexts", () => {
+  it.each([
+    ["en-US", "Move interaction"],
+    ["fr-FR", "Déplacer le panneau d’interaction"],
+    ["zh-CN", "移动交互面板"],
+    ["ar-SA", "تحريك لوحة التفاعل"],
+    ["th-TH", "ย้ายแผงโต้ตอบ"],
+  ])("localizes the interaction drag handle for %s", (locale, label) => {
+    expect(
+      getSlideLocaleTexts(locale).interactionTexts.dragHandleAriaLabel
+    ).toBe(label);
+  });
+
   it("uses selected ai-shifu slide text defaults while preserving interaction and waiting-for-audio copy", () => {
     expect(getSlideLocaleTexts("en-US")).toMatchObject({
       bufferingText: {

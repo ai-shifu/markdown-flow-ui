@@ -21,6 +21,7 @@ import {
 import { parseRunStreamFixture } from "./utils/runStreamFixture";
 
 import Slide from "./Slide";
+import { getSlideLocaleTexts } from "./slideI18n";
 import type { Element, ElementSubtitleCue } from "./Slide";
 
 const meta = {
@@ -2943,6 +2944,35 @@ export const MobileInteractionOverlayPointerDrag: Story = {
       expect(capturedPointerIds).toContain(POINTER_TEST_ID);
       expect(getOverlayDragOffsets(overlay)).not.toEqual(beforeOffsets);
     });
+  },
+};
+
+export const ArabicInteractionDragHandle: Story = {
+  args: { elementList: DRAG_TEST_ELEMENT_LIST, locale: "ar-SA" },
+  play: async ({ canvasElement, args }) => {
+    await waitFor(() => {
+      const handle = canvasElement.querySelector(
+        ".slide-player__interaction-drag-handle"
+      );
+      expect(handle).not.toBeNull();
+      expect(handle).toHaveAccessibleName(
+        args.interactionTexts?.dragHandleAriaLabel ??
+          getSlideLocaleTexts(args.locale).interactionTexts.dragHandleAriaLabel
+      );
+    });
+  },
+};
+
+export const ThaiInteractionDragHandle: Story = {
+  ...ArabicInteractionDragHandle,
+  args: { ...ArabicInteractionDragHandle.args, locale: "th-TH" },
+};
+
+export const CustomInteractionDragHandle: Story = {
+  ...ArabicInteractionDragHandle,
+  args: {
+    ...ArabicInteractionDragHandle.args,
+    interactionTexts: { dragHandleAriaLabel: "Move answer panel" },
   },
 };
 

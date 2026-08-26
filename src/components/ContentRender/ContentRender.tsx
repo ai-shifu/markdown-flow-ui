@@ -615,6 +615,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         const { className, children, ...rest } = props as {
           className?: string;
           children?: React.ReactNode;
+          dir?: string;
         };
         const match = /language-(\w+)/.exec(className || "");
         const language = match?.[1];
@@ -634,7 +635,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         }
 
         return (
-          <code className={className} {...rest} dir="ltr">
+          <code className={className} {...rest} dir={rest.dir ?? "ltr"}>
             {children}
           </code>
         );

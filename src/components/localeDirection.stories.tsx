@@ -354,7 +354,12 @@ export const IsolatedInlineCode: Story = {
         <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
           <ContentRender
             locale={locale}
-            content={'استخدم `call("مرحبا");` ثم `https://example.com/a?b=1`.'}
+            content={[
+              'استخدم `call("مرحبا");` ثم `https://example.com/a?b=1`.',
+              '<code dir="rtl">مرحبا</code> <code dir="ltr">hello</code>',
+              '<code dir="auto">مرحبا</code> <code dir="auto">hello</code>',
+              '<code>call("مرحبا");</code>',
+            ].join("\n\n")}
           />
         </div>
       ))}
@@ -368,11 +373,21 @@ export const IsolatedInlineCode: Story = {
         locale === "th-TH" ? "ltr" : "rtl"
       );
       const snippets = fixture.querySelectorAll("code");
-      expect(snippets).toHaveLength(2);
+      expect(snippets).toHaveLength(7);
       expect(snippets[0]).toHaveTextContent('call("مرحبا");');
       expect(snippets[1]).toHaveTextContent("https://example.com/a?b=1");
-      for (const snippet of snippets) {
-        expect(getComputedStyle(snippet).direction).toBe("ltr");
+      for (const [index, [attribute, computed]] of [
+        ["ltr", "ltr"],
+        ["ltr", "ltr"],
+        ["rtl", "rtl"],
+        ["ltr", "ltr"],
+        ["auto", "rtl"],
+        ["auto", "ltr"],
+        ["ltr", "ltr"],
+      ].entries()) {
+        const snippet = snippets[index];
+        expect(snippet).toHaveAttribute("dir", attribute);
+        expect(getComputedStyle(snippet).direction).toBe(computed);
         expect(getComputedStyle(snippet).unicodeBidi).toBe("isolate");
       }
     }

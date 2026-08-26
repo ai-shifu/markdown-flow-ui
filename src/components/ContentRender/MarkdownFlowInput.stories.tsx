@@ -15,7 +15,7 @@ const meta = {
   argTypes: {
     locale: {
       control: "select",
-      options: ["en-US", "fr-FR", "zh-CN"],
+      options: ["en-US", "fr-FR", "zh-CN", "ar-SA", "th-TH"],
       description: "Locale for the send button accessibility text",
     },
     placeholder: {

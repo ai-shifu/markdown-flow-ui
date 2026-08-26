@@ -357,6 +357,34 @@ Variable système: {{sys_user_language}}
   },
 };
 
+export const MarkdownFlowEditorArabicLocale: Story = {
+  args: {
+    content: `## مرحبًا
+
+اكتب '/' لإدراج صورة أو فيديو أو متغير.
+
+متغير النظام: {{sys_user_language}}
+`,
+    editMode: EditMode.QuickEdit,
+    locale: "ar-SA",
+    variables: [{ name: "sys_user_language" }, { name: "plan" }],
+  },
+};
+
+export const MarkdownFlowEditorThaiLocale: Story = {
+  args: {
+    content: `## สวัสดี
+
+พิมพ์ '/' เพื่อแทรกรูปภาพ วิดีโอ หรือตัวแปร
+
+ตัวแปรระบบ: {{sys_user_language}}
+`,
+    editMode: EditMode.QuickEdit,
+    locale: "th-TH",
+    variables: [{ name: "sys_user_language" }, { name: "plan" }],
+  },
+};
+
 export const MarkdownFlowEditorWithToolbarRight: Story = {
   render: (args) => {
     const apiRef = useRef<EditorApi | null>(null);

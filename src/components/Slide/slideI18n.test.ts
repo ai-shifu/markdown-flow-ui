@@ -49,6 +49,36 @@ describe("getSlideLocaleTexts", () => {
         fullscreenHintText: "请旋转屏幕以获得最佳体验",
       },
     });
+
+    expect(getSlideLocaleTexts("ar-SA")).toMatchObject({
+      bufferingText: {
+        waitingForAudio: "في انتظار صوت الشريحة الحالية...",
+        loadingAudio: "جارٍ تحميل الصوت...",
+        waitingForMoreAudio: "في انتظار المزيد من الصوت...",
+      },
+      fullscreenBackAriaLabel: "العودة إلى العرض العادي",
+      interactionTexts: {
+        title: "أرسل المحتوى أدناه للمتابعة.",
+      },
+      playerTexts: {
+        fullscreenHintText: "يرجى تدوير الشاشة للحصول على أفضل تجربة",
+      },
+    });
+
+    expect(getSlideLocaleTexts("th-TH")).toMatchObject({
+      bufferingText: {
+        waitingForAudio: "กำลังรอเสียงของสไลด์ปัจจุบัน...",
+        loadingAudio: "กำลังโหลดเสียง...",
+        waitingForMoreAudio: "กำลังรอเสียงเพิ่มเติม...",
+      },
+      fullscreenBackAriaLabel: "กลับสู่โหมดปกติ",
+      interactionTexts: {
+        title: "ส่งเนื้อหาด้านล่างเพื่อดำเนินการต่อ",
+      },
+      playerTexts: {
+        fullscreenHintText: "โปรดหมุนหน้าจอเพื่อประสบการณ์การใช้งานที่ดีที่สุด",
+      },
+    });
   });
 
   it("normalizes aliases and falls back to en-US for empty or unsupported locales", () => {
@@ -59,5 +89,9 @@ describe("getSlideLocaleTexts", () => {
 
     expect(getSlideLocaleTexts("fr")).toEqual(getSlideLocaleTexts("fr-FR"));
     expect(getSlideLocaleTexts("zh_CN")).toEqual(getSlideLocaleTexts("zh-CN"));
+    expect(getSlideLocaleTexts("ar")).toEqual(getSlideLocaleTexts("ar-SA"));
+    expect(getSlideLocaleTexts("ar_SA")).toEqual(getSlideLocaleTexts("ar-SA"));
+    expect(getSlideLocaleTexts("th")).toEqual(getSlideLocaleTexts("th-TH"));
+    expect(getSlideLocaleTexts("th_TH")).toEqual(getSlideLocaleTexts("th-TH"));
   });
 });

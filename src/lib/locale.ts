@@ -1,6 +1,12 @@
 export const DEFAULT_MARKDOWN_FLOW_LOCALE = "en-US";
 
-export const MARKDOWN_FLOW_LOCALES = ["en-US", "fr-FR", "zh-CN"] as const;
+export const MARKDOWN_FLOW_LOCALES = [
+  "en-US",
+  "fr-FR",
+  "zh-CN",
+  "ar-SA",
+  "th-TH",
+] as const;
 
 export type MarkdownFlowLocale = (typeof MARKDOWN_FLOW_LOCALES)[number];
 
@@ -8,6 +14,8 @@ const localeAliasMap: Record<string, MarkdownFlowLocale> = {
   en: "en-US",
   fr: "fr-FR",
   zh: "zh-CN",
+  ar: "ar-SA",
+  th: "th-TH",
 };
 
 export const normalizeMarkdownFlowLocale = (

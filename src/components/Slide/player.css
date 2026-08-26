@@ -118,7 +118,7 @@
   .slide-player__group:last-child {
   position: absolute;
   top: 50%;
-  right: 20px;
+  inset-inline-end: 20px;
   transform: translateY(-50%);
 }
 
@@ -189,7 +189,7 @@
   .slide-player__action--mobile-more {
   position: absolute;
   top: 50%;
-  left: 20px;
+  inset-inline-start: 20px;
   justify-self: auto;
   transform: translateY(-50%);
 }

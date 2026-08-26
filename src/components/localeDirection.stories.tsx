@@ -383,6 +383,94 @@ export const PlayerDirectionOverride: Story = {
   },
 };
 
+const MobileLandscapePlayerFixture = () => {
+  const [action, setAction] = useState("");
+  return (
+    <div>
+      <output data-testid="landscape-action">{action}</output>
+      {(["landscape", "landscape-native"] as const).flatMap((layout) =>
+        (["ltr", "rtl"] as const).map((dir) => (
+          <div
+            key={`${layout}-${dir}`}
+            data-testid={`${layout}-${dir}`}
+            className={`slide--mobile-device slide--mobile-${layout}`}
+            style={{ position: "relative", height: 120 }}
+          >
+            <Player
+              dir={dir}
+              defaultPlaying={false}
+              hasInteraction
+              onInteractionToggle={() => setAction(`${layout}-${dir}-notes`)}
+              customActions={
+                <button
+                  type="button"
+                  className="slide-player__action"
+                  onClick={() => setAction(`${layout}-${dir}-custom`)}
+                >
+                  Extra
+                </button>
+              }
+            />
+          </div>
+        ))
+      )}
+    </div>
+  );
+};
+
+export const MobileLandscapePlayerDirection: Story = {
+  render: () => <MobileLandscapePlayerFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    for (const layout of ["landscape", "landscape-native"]) {
+      for (const dir of ["ltr", "rtl"]) {
+        const fixture = canvas.getByTestId(`${layout}-${dir}`);
+        const player = fixture.querySelector(".slide-player")!;
+        const more = fixture.querySelector<HTMLButtonElement>(
+          ".slide-player__action--mobile-more"
+        )!;
+        const notes = fixture.querySelector<HTMLButtonElement>(
+          ".slide-player__action--notes"
+        )!;
+        const bounds = player.getBoundingClientRect();
+        const moreBounds = more.getBoundingClientRect();
+        const groupBounds = notes.parentElement!.getBoundingClientRect();
+        expect(
+          dir === "rtl"
+            ? bounds.right - moreBounds.right
+            : moreBounds.left - bounds.left
+        ).toBeCloseTo(20, 0);
+        expect(
+          dir === "rtl"
+            ? groupBounds.left - bounds.left
+            : bounds.right - groupBounds.right
+        ).toBeCloseTo(20, 0);
+        await userEvent.click(notes);
+        expect(canvas.getByTestId("landscape-action")).toHaveTextContent(
+          `${layout}-${dir}-notes`
+        );
+        await userEvent.click(
+          within(fixture).getByRole("button", { name: "Extra" })
+        );
+        expect(canvas.getByTestId("landscape-action")).toHaveTextContent(
+          `${layout}-${dir}-custom`
+        );
+        await userEvent.click(more);
+        await waitFor(() =>
+          expect(page.getByRole("dialog")).toHaveAttribute("dir", dir)
+        );
+        await userEvent.click(
+          within(page.getByRole("dialog")).getByRole("button", {
+            name: getSlidePlayerTexts().closeSettingsLabel,
+          })
+        );
+        await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
+      }
+    }
+  },
+};
+
 const InheritedPlayerSettingsFixture = () => {
   const [direction, setDirection] = useState("rtl");
   return (

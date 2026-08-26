@@ -55,3 +55,19 @@ it("preserves standalone Mermaid message overrides and English defaults", () => 
   rerender(<MermaidChart chart="" />);
   expect(screen.getByText("Empty chart content")).toBeTruthy();
 });
+
+it("shows localized loading when a streaming chart gains content", () => {
+  const { rerender } = render(
+    <ContentRender content={"```mermaid\n"} locale="ar-SA" />
+  );
+  expect(
+    screen.getByText(getContentRenderLocaleTexts("ar-SA").mermaidEmptyChartText)
+  ).toBeTruthy();
+  rerender(
+    <ContentRender content={"```mermaid\ngraph TD; A-->B"} locale="ar-SA" />
+  );
+  expect(
+    screen.getByText(getContentRenderLocaleTexts("ar-SA").mermaidLoadingText)
+  ).toBeTruthy();
+  expect(screen.queryByText("Empty chart content")).toBeNull();
+});

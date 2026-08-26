@@ -47,7 +47,7 @@ export interface UseScrollToBottomOptions {
   followNewContent?: boolean;
   /** Scroll to the end on the first mount. Defaults to false. */
   autoScrollOnInit?: boolean;
-  /** User-triggered scroll behavior; reduced motion always disables smooth scrolling. */
+  /** User-triggered behavior. Auto and reduced-motion scrolling are immediate, regardless of host CSS. */
   behavior?: ScrollBehavior;
 }
 
@@ -351,6 +351,9 @@ export function useScrollToBottom(
         requestedBehavior,
         prefersReducedMotion
       );
+      // Native "auto" can inherit CSS smooth scrolling; our auto path must finish immediately.
+      const nativeBehavior =
+        actualBehavior === "auto" ? "instant" : actualBehavior;
 
       programmaticScrollRef.current = true;
       setFollowing(followEnabledRef.current);
@@ -360,21 +363,21 @@ export function useScrollToBottom(
 
       if (endRef?.current) {
         endRef.current.scrollIntoView({
-          behavior: actualBehavior,
+          behavior: nativeBehavior,
           block: "end",
         });
       } else {
         targets.forEach((target) => {
           const top = getScrollMetrics(target).scrollHeight;
           if (isWindow(target)) {
-            target.scrollTo({ top, behavior: actualBehavior });
+            target.scrollTo({ top, behavior: nativeBehavior });
           } else if (isDocument(target)) {
             getDocumentScroller(target)?.scrollTo({
               top,
-              behavior: actualBehavior,
+              behavior: nativeBehavior,
             });
           } else {
-            target.scrollTo({ top, behavior: actualBehavior });
+            target.scrollTo({ top, behavior: nativeBehavior });
           }
         });
       }

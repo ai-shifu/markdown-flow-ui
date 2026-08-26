@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, userEvent, waitFor } from "storybook/test";
 import ScrollToBottomControl from "./ScrollToBottomControl";
 import ScrollToBottomButton from "./ScrollToBottomButton";
-import useScrollToBottom, { type ScrollBehavior } from "./useScrollToBottom";
+import useScrollToBottom from "./useScrollToBottom";
 import "./markdownFlow.css";
 
 interface ScrollControlFixtureProps {
@@ -12,6 +12,7 @@ interface ScrollControlFixtureProps {
   initialSections?: number;
   mobilePortal?: boolean;
   viewportHeight?: number;
+  useEndAnchor?: boolean;
 }
 
 const sectionStyle: React.CSSProperties = {
@@ -29,6 +30,7 @@ const ScrollControlFixture: React.FC<ScrollControlFixtureProps> = ({
   initialSections = 8,
   mobilePortal = false,
   viewportHeight = 320,
+  useEndAnchor = true,
 }) => {
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -129,7 +131,7 @@ const ScrollControlFixture: React.FC<ScrollControlFixtureProps> = ({
         <ScrollToBottomControl
           viewportRef={viewportRef}
           contentRef={contentRef}
-          endRef={endRef}
+          endRef={useEndAnchor ? endRef : undefined}
           autoScrollOnInit={autoScrollOnInit}
           followNewContent={followNewContent}
           scrollThreshold={150}
@@ -467,6 +469,60 @@ export const StreamingGrowthRespectsUserPosition: Story = {
   },
 };
 
+export const AutoFollowIgnoresCssSmoothScrolling: Story = {
+  args: { autoScrollOnInit: true, initialSections: 6, viewportHeight: 280 },
+  play: async ({ canvasElement }) => {
+    const viewport = getViewport(canvasElement);
+    const anchor = canvasElement.querySelector<HTMLElement>(
+      '[data-testid="bottom-anchor"]'
+    )!;
+    await waitFor(() => expectAtBottom(viewport));
+    viewport.style.scrollBehavior = "smooth";
+    const distances: number[] = [];
+    const recordPosition = () =>
+      distances.push(
+        viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop
+      );
+    const originalScroll = viewport.scrollTo;
+    const originalIntoView = anchor.scrollIntoView;
+    viewport.scrollTo = (options?: ScrollToOptions | number, y?: number) => {
+      if (typeof options === "number")
+        originalScroll.call(viewport, options, y ?? 0);
+      else originalScroll.call(viewport, options);
+      recordPosition();
+    };
+    anchor.scrollIntoView = (options) => {
+      originalIntoView.call(anchor, options);
+      recordPosition();
+    };
+    try {
+      for (const action of ["append-section", "grow-content"]) {
+        distances.length = 0;
+        await userEvent.click(
+          canvasElement.querySelector<HTMLButtonElement>(
+            `[data-testid="${action}"]`
+          )!
+        );
+        await waitFor(() => expect(distances.length).toBeGreaterThan(0));
+        expect(distances.every((distance) => distance < 2)).toBe(true);
+        expect(getButton(canvasElement)).toHaveAttribute(
+          "data-visible",
+          "false"
+        );
+      }
+    } finally {
+      viewport.scrollTo = originalScroll;
+      anchor.scrollIntoView = originalIntoView;
+      viewport.style.scrollBehavior = "";
+    }
+  },
+};
+
+export const DirectAutoFollowIgnoresCssSmoothScrolling: Story = {
+  ...AutoFollowIgnoresCssSmoothScrolling,
+  args: { ...AutoFollowIgnoresCssSmoothScrolling.args, useEndAnchor: false },
+};
+
 export const UserScrollWinsSameFrameGrowth: Story = {
   args: {
     autoScrollOnInit: true,
@@ -596,7 +652,7 @@ export const ReducedMotionUsesImmediateScroll: Story = {
     if (!targetWindow) return;
     const originalMatchMedia = targetWindow.matchMedia;
     const originalScrollIntoView = anchor?.scrollIntoView;
-    let requestedBehavior: ScrollBehavior | undefined;
+    let requestedBehavior: ScrollOptions["behavior"];
     targetWindow.matchMedia = ((query: string) =>
       ({
         matches: query === "(prefers-reduced-motion: reduce)",
@@ -636,7 +692,7 @@ export const ReducedMotionUsesImmediateScroll: Story = {
       expect(focusStyle.transitionProperty).not.toContain("outline");
       await userEvent.keyboard("{Enter}");
       await waitFor(() => {
-        expect(requestedBehavior).toBe("auto");
+        expect(requestedBehavior).toBe("instant");
         expect(button).toHaveAttribute("data-visible", "false");
       });
     } finally {

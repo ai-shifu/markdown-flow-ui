@@ -49,8 +49,70 @@ afterEach(() => {
   cleanup();
   elements.splice(0).forEach((element) => element.remove());
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   vi.useRealTimers();
 });
+
+describe.each([false, true])(
+  "immediate native scrolling (reduced motion: %s)",
+  (reducedMotion) => {
+    it.each(["element", "document", "window", "anchor"])(
+      "bypasses CSS smooth behavior for the %s path",
+      (path) => {
+        const target = createScroller();
+        target.style.scrollBehavior = "smooth";
+        const viewportRef = { current: target };
+        const originalScroller = Object.getOwnPropertyDescriptor(
+          document,
+          "scrollingElement"
+        );
+        Object.defineProperty(document, "scrollingElement", {
+          configurable: true,
+          value: target,
+        });
+        vi.stubGlobal(
+          "matchMedia",
+          vi.fn(() => ({ matches: reducedMotion }))
+        );
+        const windowScroll = vi
+          .spyOn(window, "scrollTo")
+          .mockImplementation(() => {});
+        target.scrollIntoView = vi.fn();
+        const scrollTarget =
+          path === "document" ? document : path === "window" ? window : target;
+        try {
+          const { result, unmount } = renderHook(() =>
+            useScrollToBottom(viewportRef, {
+              scrollTarget,
+              endRef: path === "anchor" ? viewportRef : undefined,
+            })
+          );
+          act(() =>
+            result.current.scrollToBottom(reducedMotion ? "smooth" : "auto")
+          );
+          const scroll =
+            path === "anchor"
+              ? target.scrollIntoView
+              : path === "window"
+                ? windowScroll
+                : target.scrollTo;
+          expect(scroll).toHaveBeenCalledWith(
+            expect.objectContaining({ behavior: "instant" })
+          );
+          unmount();
+        } finally {
+          if (originalScroller)
+            Object.defineProperty(
+              document,
+              "scrollingElement",
+              originalScroller
+            );
+          else Reflect.deleteProperty(document, "scrollingElement");
+        }
+      }
+    );
+  }
+);
 
 describe("legacy calls without dependencies", () => {
   it("honors explicit threshold, behavior and follow options", () => {
@@ -72,7 +134,7 @@ describe("legacy calls without dependencies", () => {
     act(() => result.current.handleUserScrollToBottom());
     expect(target.scrollTo).toHaveBeenCalledWith({
       top: 1000,
-      behavior: "auto",
+      behavior: "instant",
     });
     expect(result.current.followNewContent).toBe(false);
   });
@@ -84,7 +146,7 @@ describe("legacy calls without dependencies", () => {
     flushFrames();
     expect(target.scrollTo).toHaveBeenCalledWith({
       top: 1000,
-      behavior: "auto",
+      behavior: "instant",
     });
   });
 
@@ -190,7 +252,7 @@ describe.each<ScrollBehavior>(["smooth", "auto"])(
         act(() => result.current.scrollToBottom("auto"));
         expect(target.scrollTo).toHaveBeenCalledWith({
           top: 1200,
-          behavior: "auto",
+          behavior: "instant",
         });
         target.scrollTop = 1000;
         fireEvent.scroll(target);

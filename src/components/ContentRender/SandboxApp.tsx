@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import LoadingOverlayCard from "../ui/loading-overlay-card";
-import type { MarkdownFlowLocale } from "../../lib/locale";
+import {
+  getMarkdownFlowDirection,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 import type { ScalingWindow } from "./utils/iframe-scaling";
 import {
@@ -448,6 +451,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     <div
       data-root-vh={hasRootVhHeight ? "true" : "false"}
       className="sandbox-wrapper"
+      dir={getMarkdownFlowDirection(locale)}
       style={sandboxWrapperStyle}
       aria-busy={!!overlayMessage}
     >

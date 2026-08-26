@@ -60,6 +60,89 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const scrollDirectionContent = Array.from({ length: 12 }, (_, index) => ({
+  content: `## Section ${index + 1}\n\nLong content keeps this viewport scrollable while the locale and host direction change.`,
+}));
+
+const ScrollViewportDirectionFixture = () => {
+  const [locale, setLocale] = useState<MarkdownFlowLocale | undefined>("ar-SA");
+  const [hostDirection, setHostDirection] = useState("ltr");
+  return (
+    <div dir={hostDirection} style={{ width: 360 }}>
+      <button type="button" onClick={() => setLocale("ar-SA")}>
+        Arabic
+      </button>
+      <button type="button" onClick={() => setLocale("th-TH")}>
+        Thai
+      </button>
+      <button type="button" onClick={() => setLocale(undefined)}>
+        Inherit
+      </button>
+      <button type="button" onClick={() => setHostDirection("rtl")}>
+        Host RTL
+      </button>
+      <button type="button" onClick={() => setHostDirection("ltr")}>
+        Host LTR
+      </button>
+      <ScrollableMarkdownFlow
+        locale={locale}
+        height={160}
+        initialContentList={scrollDirectionContent}
+      />
+    </div>
+  );
+};
+
+export const ScrollViewportLocaleDirection: Story = {
+  render: () => <ScrollViewportDirectionFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const wrapper = canvasElement.querySelector<HTMLElement>(
+      ".scrollable-markdown-container"
+    )!;
+    const viewport = wrapper.firstElementChild as HTMLElement;
+    const flow = wrapper.querySelector(".markdown-flow")!;
+    const scrollButton = wrapper.querySelector<HTMLButtonElement>(
+      "button[data-placement]"
+    )!;
+    for (const [button, attribute, direction] of [
+      ["Arabic", "rtl", "rtl"],
+      ["Thai", "ltr", "ltr"],
+      ["Inherit", null, "ltr"],
+      ["Host RTL", null, "rtl"],
+      ["Arabic", "rtl", "rtl"],
+      ["Host LTR", "rtl", "rtl"],
+      ["Thai", "ltr", "ltr"],
+      ["Inherit", null, "ltr"],
+    ] as const) {
+      await userEvent.click(canvas.getByRole("button", { name: button }));
+      await waitFor(() => {
+        expect(wrapper.getAttribute("dir")).toBe(attribute);
+        for (const element of [wrapper, viewport, flow]) {
+          expect(getComputedStyle(element).direction).toBe(direction);
+        }
+        expect(viewport.scrollHeight).toBeGreaterThan(viewport.clientHeight);
+        const scrollbarWidth = viewport.offsetWidth - viewport.clientWidth;
+        expect(viewport.clientLeft).toBe(
+          direction === "rtl" ? scrollbarWidth : 0
+        );
+      });
+      viewport.scrollTop = 0;
+      viewport.dispatchEvent(new Event("scroll"));
+      await waitFor(() =>
+        expect(scrollButton).toHaveAttribute("data-visible", "true")
+      );
+      await userEvent.click(scrollButton);
+      await waitFor(() => {
+        expect(viewport.scrollTop).toBeGreaterThanOrEqual(
+          viewport.scrollHeight - viewport.clientHeight - 2
+        );
+        expect(scrollButton).toHaveAttribute("data-visible", "false");
+      });
+    }
+  },
+};
+
 const LanguageBoundaryFixture = () => {
   const [locale, setLocale] = useState<MarkdownFlowLocale>();
   const [lang, setLang] = useState<string>();

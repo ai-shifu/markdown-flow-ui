@@ -91,3 +91,24 @@ export const LongContentScrollsToBottom: Story = {
     });
   },
 };
+
+export const CodeAndMathKeepRendererStyles: Story = {
+  args: {
+    height: 320,
+    initialContentList: [
+      {
+        content:
+          "```python\ndef answer():\n    return 42\n```\n\n$$\nx^2 + y^2 = z^2\n$$",
+      },
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    await waitFor(() => {
+      const keyword = canvasElement.querySelector<HTMLElement>(".hljs-keyword");
+      const math = canvasElement.querySelector<HTMLElement>(".katex");
+      if (!keyword || !math) throw new Error("Code and math must render");
+      expect(getComputedStyle(keyword).color).toBe("rgb(215, 58, 73)");
+      expect(getComputedStyle(math).fontFamily).toContain("KaTeX_Main");
+    });
+  },
+};

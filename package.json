@@ -158,6 +158,7 @@
     "start": "next start",
     "storybook": "storybook dev -p 6006",
     "test": "vitest run --project unit",
+    "test:package": "npm run build && node --test tests/package/*.test.mjs",
     "test:storybook": "vitest run --project storybook",
     "typecheck:exports": "pnpm exec tsc -p tsconfig.exports.json --pretty false"
   },

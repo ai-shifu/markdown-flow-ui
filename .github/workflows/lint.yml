@@ -37,6 +37,15 @@ jobs:
       - name: Prettier format check
         run: npm run format:check
 
+      - name: Run unit tests
+        run: npm test
+
+      - name: Install the package build tool
+        run: npm install --global pnpm@10.14.0
+
+      - name: Build and verify package assets
+        run: npm run test:package
+
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 

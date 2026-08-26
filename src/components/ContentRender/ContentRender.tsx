@@ -263,6 +263,50 @@ type MarkdownComponentRuntimeValues = {
   resolvedDefaultSelectedValues?: string[];
 };
 
+const MarkdownComponentRuntimeContext =
+  React.createContext<React.RefObject<MarkdownComponentRuntimeValues> | null>(
+    null
+  );
+
+const MarkdownCode = (props: React.ComponentProps<"code">) => {
+  const runtimeValuesRef = React.useContext(MarkdownComponentRuntimeContext);
+  const isInCodeBlock = React.useContext(CodeBlockContext);
+  if (!runtimeValuesRef) {
+    throw new Error("Markdown code renderer requires ContentRender context.");
+  }
+  const { className, children, ...rest } = props as {
+    className?: string;
+    children?: React.ReactNode;
+    dir?: string;
+  };
+  const match = /language-(\w+)/.exec(className || "");
+  const language = match?.[1];
+  if (language === "mermaid") {
+    const chartContent = children?.toString().replace(/\n$/, "") || "";
+    const frozen = mermaidBlockIsComplete(
+      runtimeValuesRef.current.renderContent,
+      chartContent
+    );
+    return (
+      <MermaidChart
+        chart={chartContent}
+        frozen={frozen}
+        messages={runtimeValuesRef.current.mermaidMessages}
+      />
+    );
+  }
+
+  return (
+    <code
+      className={className}
+      {...rest}
+      dir={rest.dir ?? (isInCodeBlock ? undefined : "ltr")}
+    >
+      {children}
+    </code>
+  );
+};
+
 const remarkPlugins: PluggableList = [
   remarkGfm,
   remarkMath,
@@ -633,40 +677,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
           // tooltipMinLength={tooltipMinLength}
         />
       ),
-      code: function Code(props) {
-        const isInCodeBlock = React.useContext(CodeBlockContext);
-        const { className, children, ...rest } = props as {
-          className?: string;
-          children?: React.ReactNode;
-          dir?: string;
-        };
-        const match = /language-(\w+)/.exec(className || "");
-        const language = match?.[1];
-        if (language === "mermaid") {
-          const chartContent = children?.toString().replace(/\n$/, "") || "";
-          const frozen = mermaidBlockIsComplete(
-            componentRuntimeValuesRef.current.renderContent,
-            chartContent
-          );
-          return (
-            <MermaidChart
-              chart={chartContent}
-              frozen={frozen}
-              messages={componentRuntimeValuesRef.current.mermaidMessages}
-            />
-          );
-        }
-
-        return (
-          <code
-            className={className}
-            {...rest}
-            dir={rest.dir ?? (isInCodeBlock ? undefined : "ltr")}
-          >
-            {children}
-          </code>
-        );
-      },
+      code: MarkdownCode,
       table: ({ ...props }) => (
         <div className="content-render-table-container">
           <table className="content-render-table" {...props} />
@@ -754,12 +765,16 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
       if (seg.type === "text") {
         return (
-          <MarkdownRenderer
+          <MarkdownComponentRuntimeContext.Provider
             key={key}
-            locale={locale}
-            components={components}
-            content={seg.value}
-          />
+            value={componentRuntimeValuesRef}
+          >
+            <MarkdownRenderer
+              locale={locale}
+              components={components}
+              content={seg.value}
+            />
+          </MarkdownComponentRuntimeContext.Provider>
         );
       }
 
@@ -827,12 +842,16 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       {segments.map((seg, index) => {
         if (seg.type === "text") {
           return (
-            <MarkdownRenderer
+            <MarkdownComponentRuntimeContext.Provider
               key={index}
-              locale={locale}
-              components={components}
-              content={seg.value}
-            />
+              value={componentRuntimeValuesRef}
+            >
+              <MarkdownRenderer
+                locale={locale}
+                components={components}
+                content={seg.value}
+              />
+            </MarkdownComponentRuntimeContext.Provider>
           );
         }
 

@@ -755,10 +755,10 @@ export const InlineResolverPreservesSmoothScrolling: Story = {
       expect(getComputedStyle(button).opacity).toBe("1");
     });
     const originalScroll = viewport.scrollTo;
-    let onScrollEnd: () => void = () => {};
-    const scrollEnded = new Promise<void>((resolve) => {
-      onScrollEnd = resolve;
-    });
+    let scrollEnded = false;
+    const onScrollEnd = () => {
+      scrollEnded = true;
+    };
     viewport.addEventListener("scrollend", onScrollEnd, { once: true });
     const behaviors: (ScrollOptions["behavior"] | undefined)[] = [];
     viewport.scrollTo = (options?: ScrollToOptions | number, y?: number) => {
@@ -787,7 +787,13 @@ export const InlineResolverPreservesSmoothScrolling: Story = {
       expect(behaviors).toEqual(["smooth"]);
       await waitFor(() => expectAtBottom(viewport));
       // Wait for the native animation's final events before testing later growth.
-      await scrollEnded;
+      await waitFor(
+        () =>
+          expect(scrollEnded, "Native smooth scroll must emit scrollend").toBe(
+            true
+          ),
+        { timeout: 1500 }
+      );
       expect(behaviors).toEqual(["smooth"]);
       await userEvent.click(
         canvasElement.querySelector<HTMLButtonElement>(

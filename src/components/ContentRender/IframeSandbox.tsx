@@ -29,6 +29,7 @@ import {
   type MarkdownFlowLocale,
 } from "../../lib/locale";
 import { useDetachedLanguage } from "../../lib/useDetachedLanguage";
+import { useResolvedDirection } from "../../lib/useResolvedDirection";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 import { CJK_SAFE_SANS_FONT_FAMILY } from "./cjkFontFamily";
 
@@ -145,6 +146,8 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     exitFullScreenButtonText || localeTexts.sandboxExitFullscreenButtonText;
   const containerRef = useRef<HTMLDivElement>(null);
   const sandboxLanguage = useDetachedLanguage(containerRef, language);
+  const { resolvedDirection } = useResolvedDirection(containerRef, direction);
+  const sandboxDirection = direction ?? resolvedDirection;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const rootRef = useRef<Root | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
@@ -795,7 +798,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       <SandboxApp
         html={renderHtmlContent}
         locale={locale}
-        dir={direction}
+        dir={sandboxDirection}
         lang={sandboxLanguage}
         loadingText={loadingText}
         styleLoadingText={styleLoadingText}
@@ -832,7 +835,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   }, [
     renderHtmlContent,
     locale,
-    direction,
+    sandboxDirection,
     sandboxLanguage,
     loadingText,
     styleLoadingText,

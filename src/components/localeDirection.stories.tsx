@@ -1646,6 +1646,72 @@ export const SandboxFullscreenPlacement: Story = {
   },
 };
 
+const InheritedSandboxFixture = () => {
+  const [direction, setDirection] = useState("rtl");
+  const [locale, setLocale] = useState<MarkdownFlowLocale>();
+  return (
+    <div dir={direction}>
+      <button
+        type="button"
+        onClick={() => setDirection(direction === "rtl" ? "ltr" : "rtl")}
+      >
+        Change host
+      </button>
+      <button type="button" onClick={() => setLocale("th-TH")}>
+        Thai override
+      </button>
+      {(["content", "blackboard"] as const).map((mode) => (
+        <div key={mode} data-testid={`inherited-${mode}`}>
+          <IframeSandbox
+            mode={mode}
+            type="sandbox"
+            locale={locale}
+            content={
+              '<div><p>Inherited content</p><p dir="ltr">Authored LTR</p><p dir="rtl">نص عربي</p></div>'
+            }
+          />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export const InheritedSandboxDirection: Story = {
+  render: () => <InheritedSandboxFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const check = async (direction: string) => {
+      await waitFor(() => {
+        for (const mode of ["content", "blackboard"]) {
+          const iframe = canvas
+            .getByTestId(`inherited-${mode}`)
+            .querySelector("iframe")!;
+          const paragraphs = iframe.contentDocument!.querySelectorAll("p");
+          expect(paragraphs).toHaveLength(3);
+          expect(
+            iframe.contentWindow!.getComputedStyle(paragraphs[0]).direction
+          ).toBe(direction);
+          expect(
+            iframe.contentWindow!.getComputedStyle(paragraphs[1]).direction
+          ).toBe("ltr");
+          expect(
+            iframe.contentWindow!.getComputedStyle(paragraphs[2]).direction
+          ).toBe("rtl");
+        }
+      });
+    };
+    await check("rtl");
+    await userEvent.click(canvas.getByRole("button", { name: "Change host" }));
+    await check("ltr");
+    await userEvent.click(canvas.getByRole("button", { name: "Change host" }));
+    await check("rtl");
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Thai override" })
+    );
+    await check("ltr");
+  },
+};
+
 const SandboxDirectionFixture = ({
   mode,
 }: {

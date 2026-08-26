@@ -28,7 +28,7 @@ import {
   type MarkdownFlowLocale,
 } from "../../lib/locale";
 import { useDetachedLanguage } from "../../lib/useDetachedLanguage";
-import { usePlayerShortcutDirection } from "./utils/usePlayerShortcutDirection";
+import { useResolvedDirection } from "../../lib/useResolvedDirection";
 import { cn } from "../../lib/utils";
 import MobilePlayerSettingsSheet from "./MobilePlayerSettingsSheet";
 import { getSlidePlayerTexts, type SlidePlayerLocaleTexts } from "./slideI18n";
@@ -332,10 +332,8 @@ const Player = ({
   const localKeyboardShortcutOwnerId = useId();
   const keyboardShortcutContext = useContext(PlayerKeyboardShortcutContext);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const { shortcutDirection, readDirection } = usePlayerShortcutDirection(
-    audioRef,
-    direction
-  );
+  const { resolvedDirection: shortcutDirection, readDirection } =
+    useResolvedDirection(audioRef, direction);
   const isRtlNavigation = shortcutDirection === "rtl";
   const portalLanguage = useDetachedLanguage(audioRef, language);
   const previousInteractionOpenRef = useRef(isInteractionOpen);

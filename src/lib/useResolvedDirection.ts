@@ -1,29 +1,29 @@
 import { useCallback, useLayoutEffect, useState, type RefObject } from "react";
 
-/** Keep keyboard navigation aligned with the player containing the audio element. */
-export const usePlayerShortcutDirection = (
-  audioRef: RefObject<HTMLAudioElement | null>,
+/** Observe the host's effective direction for keyboard and detached UI surfaces. */
+export const useResolvedDirection = (
+  hostRef: RefObject<HTMLElement | null>,
   direction?: string
 ) => {
-  const [shortcutDirection, setShortcutDirection] = useState<"ltr" | "rtl">(
+  const [resolvedDirection, setResolvedDirection] = useState<"ltr" | "rtl">(
     direction === "rtl" ? "rtl" : "ltr"
   );
   const readDirection = useCallback(() => {
-    const root = audioRef.current?.parentElement;
+    const root = hostRef.current;
     return root?.ownerDocument.defaultView?.getComputedStyle(root).direction ===
       "rtl"
       ? "rtl"
       : "ltr";
-  }, [audioRef]);
+  }, [hostRef]);
 
   useLayoutEffect(() => {
-    const root = audioRef.current?.parentElement;
+    const root = hostRef.current;
     const view = root?.ownerDocument.defaultView;
     if (!root || !view) return;
     let autoHost: Element | null = null;
     const textObserver = new view.MutationObserver(() => updateDirection());
     const updateDirection = () => {
-      setShortcutDirection(readDirection());
+      setResolvedDirection(readDirection());
       const owner = root.closest("[dir]");
       const nextAutoHost =
         owner?.getAttribute("dir")?.toLowerCase() === "auto" ? owner : null;
@@ -56,7 +56,7 @@ export const usePlayerShortcutDirection = (
       textObserver.disconnect();
       view.removeEventListener("resize", updateDirection);
     };
-  }, [audioRef, direction, readDirection]);
+  }, [hostRef, direction, readDirection]);
 
-  return { shortcutDirection, readDirection };
+  return { resolvedDirection, readDirection };
 };

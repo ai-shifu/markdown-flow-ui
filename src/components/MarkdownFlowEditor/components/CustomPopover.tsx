@@ -10,6 +10,10 @@ type CustomPopoverProps = {
 
 export interface CustomPopoverAllProps extends CustomPopoverProps {
   className?: string;
+  /**
+   * Sets "ltr" or "rtl" on the popover content, including its reading and layout direction.
+   * When omitted, the content inherits direction from its portal container, not the trigger.
+   */
   dir?: MarkdownFlowDirection;
 }
 

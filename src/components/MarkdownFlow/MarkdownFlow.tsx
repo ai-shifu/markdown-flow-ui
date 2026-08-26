@@ -21,7 +21,11 @@ export interface MarkdownFlowProps {
     onClickCustomButtonAfterContent?: () => void;
     dynamicInteractionFormat?: string;
   }[];
-  /** Locale used for built-in UI text when a more specific text prop is not provided. */
+  /**
+   * Locale used for built-in UI text when a more specific text prop is not provided.
+   * Arabic sets RTL direction; other supported locales set LTR direction.
+   * When omitted, direction is inherited from the host and UI text uses the default locale.
+   */
   locale?: MarkdownFlowLocale;
   customRenderBar?: CustomRenderBarProps;
   onSend?: (content: OnSendContentParams) => void;

@@ -13,6 +13,10 @@ export interface CustomDialogLabels {
 }
 export interface CustomDialogAllProps extends CustomDialogProps {
   className?: string;
+  /**
+   * Sets "ltr" or "rtl" on the dialog content, including its reading and layout direction.
+   * When omitted, the content inherits direction from its portal container, not the trigger.
+   */
   dir?: MarkdownFlowDirection;
   labels?: CustomDialogLabels;
 }

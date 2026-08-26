@@ -1,10 +1,12 @@
 import React, { type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { ChevronsDown } from "lucide-react";
+import { cn } from "../../lib/utils";
 
 export type ScrollToBottomPlacement = "bottom-center" | "bottom-right";
 export type ScrollToBottomPosition = "absolute" | "fixed";
 
+/** Presentation and native button props for a localized scroll-to-bottom control. */
 export interface ScrollToBottomButtonProps
   extends Omit<
     React.ButtonHTMLAttributes<HTMLButtonElement>,
@@ -37,6 +39,20 @@ type ScrollToBottomButtonStyle = CSSProperties & {
 const toCssLength = (value: number | string) =>
   typeof value === "number" ? `${value}px` : value;
 
+/**
+ * Render the scroll control without owning scroll detection or follow state.
+ *
+ * @param props Visibility, localized accessible name, host layout and button events.
+ * @returns A native icon button, optionally rendered into the supplied portal host.
+ * @example
+ * ```tsx
+ * <ScrollToBottomButton
+ *   visible={showScrollToBottom}
+ *   ariaLabel="Scroll to bottom"
+ *   onClick={scrollToBottom}
+ * />
+ * ```
+ */
 export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = ({
   visible,
   ariaLabel,
@@ -63,7 +79,7 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = ({
     <button
       {...props}
       type={type}
-      className={`scroll-to-bottom-btn ${className}`.trim()}
+      className={cn("scroll-to-bottom-btn", className)}
       style={buttonStyle}
       aria-label={ariaLabel}
       aria-hidden={visible ? undefined : true}
@@ -76,5 +92,7 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = ({
   );
   return portalTarget ? createPortal(button, portalTarget) : button;
 };
+
+ScrollToBottomButton.displayName = "ScrollToBottomButton";
 
 export default ScrollToBottomButton;

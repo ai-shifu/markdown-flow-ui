@@ -5,6 +5,29 @@ import ScrollToBottomButton from "./ScrollToBottomButton";
 import ScrollToBottomControl from "./ScrollToBottomControl";
 
 describe("scroll-to-bottom placement", () => {
+  it("composes host classes with the shared class utility", () => {
+    const markup = renderToStaticMarkup(
+      <ScrollToBottomButton
+        visible
+        ariaLabel="Latest content"
+        className="host-scroll w-8 w-12"
+      />
+    );
+
+    expect(markup).toContain('class="scroll-to-bottom-btn host-scroll w-12"');
+    expect(ScrollToBottomButton.displayName).toBe("ScrollToBottomButton");
+  });
+
+  it("keeps a hidden control out of keyboard and screen-reader navigation", () => {
+    const markup = renderToStaticMarkup(
+      <ScrollToBottomButton visible={false} ariaLabel="Latest content" />
+    );
+
+    expect(markup).toContain('aria-label="Latest content"');
+    expect(markup).toContain('aria-hidden="true"');
+    expect(markup).toContain('tabindex="-1"');
+  });
+
   it("defaults to bottom-center without changing the bottom offset", () => {
     const markup = renderToStaticMarkup(
       <ScrollToBottomButton visible ariaLabel="Scroll to bottom" />

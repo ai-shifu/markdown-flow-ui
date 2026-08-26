@@ -331,7 +331,7 @@
 
 .variable-search-icon {
   position: absolute;
-  left: 12px;
+  inset-inline-start: 12px;
   top: 50%;
   transform: translateY(-50%);
   width: 16px;
@@ -340,7 +340,7 @@
 }
 
 .variable-search-input {
-  padding-left: 32px;
+  padding-inline-start: 32px;
   height: 36px;
   border-radius: 8px;
 }

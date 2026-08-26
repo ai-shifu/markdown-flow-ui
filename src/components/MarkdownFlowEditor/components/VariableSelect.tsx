@@ -117,13 +117,13 @@ const VariableSelect = ({
   return (
     <div className="w-full max-w-sm rounded-lg border bg-white">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
           placeholder={t("variableSearchPlaceholder", "Search variable")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-8 h-8 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="ps-8 h-8 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
         />
       </div>
 

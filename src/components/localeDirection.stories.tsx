@@ -503,6 +503,21 @@ export const EditorDialogCloseLabels: Story = {
   },
 };
 
+const expectSearchAffordance = (input: HTMLInputElement) => {
+  const style = getComputedStyle(input);
+  const inputRect = input.getBoundingClientRect();
+  const iconRect = input
+    .parentElement!.querySelector("svg")!
+    .getBoundingClientRect();
+  expect(
+    style.direction === "rtl"
+      ? inputRect.right - iconRect.right
+      : iconRect.left - inputRect.left
+  ).toBeCloseTo(12, 0);
+  expect(parseFloat(style.paddingInlineStart)).toBeGreaterThanOrEqual(32);
+  expect(parseFloat(style.paddingInlineEnd)).toBeLessThan(32);
+};
+
 export const InheritedEditorPortalDirection: Story = {
   render: () => (
     <div dir="rtl" data-testid="editor-host">
@@ -543,10 +558,12 @@ export const InheritedEditorPortalDirection: Story = {
     await waitFor(() =>
       expect(getComputedStyle(popover).direction).toBe("ltr")
     );
+    expectSearchAffordance(popover.querySelector("input")!);
     host.dir = "rtl";
     await waitFor(() =>
       expect(getComputedStyle(popover).direction).toBe("rtl")
     );
+    expectSearchAffordance(popover.querySelector("input")!);
     expect(root).not.toHaveAttribute("dir");
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
@@ -580,6 +597,7 @@ export const ArabicVariableDropdown: Story = {
         ".markdown-flow-editor-variable-search"
       )!;
       expect(panel).not.toBeNull();
+      expectSearchAffordance(panel.querySelector("input")!);
       const rect = panel.getBoundingClientRect();
       expect(rect.left).toBeGreaterThanOrEqual(8);
       expect(rect.right).toBeLessThanOrEqual(

@@ -39,6 +39,7 @@ import {
 } from "./utils";
 import ImgPlaceholder from "./plugins/ImgPlaceholder";
 import VideoPlaceholder from "./plugins/VideoPlaceholder";
+import { mediaPlaceholderLabels } from "./plugins/mediaPlaceholderLabels";
 import VariablePlaceholder from "./plugins/VariablePlaceholder";
 import SyntaxHighlighter from "./plugins/SyntaxHighlighter";
 // import createFixedTextPlaceholder from "./plugins/FixedTextPlaceholder";
@@ -52,9 +53,13 @@ import {
   getEditorLocaleMessages,
 } from "./editorI18n";
 import {
+  getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
   normalizeMarkdownFlowLocale,
   type MarkdownFlowLocale,
 } from "../../lib/locale";
+import { useDetachedLanguage } from "../../lib/useDetachedLanguage";
+import { useResolvedDirection } from "../../lib/useResolvedDirection";
 
 if (!i18next.isInitialized) {
   i18next.use(initReactI18next).init({
@@ -88,6 +93,8 @@ type EditorProps = {
   onChange?: (value: string) => void;
   onBlur?: () => void;
   locale?: MarkdownFlowLocale;
+  /** Overrides the locale-derived language. */
+  lang?: string;
   uploadProps?: UploadProps;
   disabled?: boolean;
   toolbarActionsRight?: EditorAction[];
@@ -132,14 +139,19 @@ const Editor: React.FC<EditorProps> = ({
   systemVariables: initialSystemVariables,
   onChange,
   onBlur,
-  locale = DEFAULT_EDITOR_LOCALE,
+  locale,
+  lang,
   uploadProps,
   disabled = false,
   toolbarActionsRight,
   onReady,
 }) => {
   const { t, i18n } = useTranslation();
-  const resolvedLocale = normalizeMarkdownFlowLocale(locale || i18n.language);
+  const resolvedLocale = normalizeMarkdownFlowLocale(
+    locale ?? DEFAULT_EDITOR_LOCALE
+  );
+  const direction = getMarkdownFlowDirection(locale);
+  const language = lang ?? getMarkdownFlowLanguage(locale);
 
   useEffect(() => {
     if (i18n.language !== resolvedLocale) {
@@ -250,6 +262,12 @@ const Editor: React.FC<EditorProps> = ({
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const editorRootRef = useRef<HTMLDivElement>(null);
+  const portalLanguage = useDetachedLanguage(editorRootRef, language);
+  const { resolvedDirection: portalDirection } = useResolvedDirection(
+    editorRootRef,
+    direction
+  );
   const [popoverPosition, setPopoverPosition] =
     useState<PopoverPosition | null>(null);
   const [variables, setVariables] = useState<Variable[]>(
@@ -874,8 +892,12 @@ const Editor: React.FC<EditorProps> = ({
       if (type === SelectedOption.Variable) {
         if (target) {
           const rect = target.getBoundingClientRect();
+          const anchorDirection =
+            target.ownerDocument.defaultView?.getComputedStyle(
+              editorRootRef.current ?? target
+            ).direction;
           setPopoverPosition({
-            x: rect.left,
+            x: anchorDirection === "rtl" ? rect.right : rect.left,
             y: rect.bottom,
           });
         }
@@ -913,6 +935,17 @@ const Editor: React.FC<EditorProps> = ({
     };
   }, [handleTagClick]);
 
+  const imagePlaceholderTitle = t("imageDefaultTitle");
+  const videoPlaceholderTitle = t("videoDefaultTitle");
+  const mediaPlaceholderLabelsExtension = useMemo(
+    () =>
+      mediaPlaceholderLabels.of({
+        image: imagePlaceholderTitle,
+        video: videoPlaceholderTitle,
+      }),
+    [imagePlaceholderTitle, videoPlaceholderTitle]
+  );
+
   const editorExtensions = useMemo(() => {
     const extensions = [
       EditorView.lineWrapping,
@@ -927,6 +960,7 @@ const Editor: React.FC<EditorProps> = ({
 
     if (editMode === EditMode.QuickEdit) {
       extensions.push(
+        mediaPlaceholderLabelsExtension,
         ImgPlaceholder,
         VideoPlaceholder,
         VariablePlaceholder
@@ -942,7 +976,13 @@ const Editor: React.FC<EditorProps> = ({
     );
 
     return extensions;
-  }, [disabled, editMode, slashCommandsExtension, handleEditorUpdate]);
+  }, [
+    disabled,
+    editMode,
+    slashCommandsExtension,
+    handleEditorUpdate,
+    mediaPlaceholderLabelsExtension,
+  ]);
 
   const handleContentChange = useCallback(
     (value: string) => {
@@ -1027,7 +1067,13 @@ const Editor: React.FC<EditorProps> = ({
           const wrapped = action.tooltip ? (
             <Tooltip>
               <TooltipTrigger asChild>{button}</TooltipTrigger>
-              <TooltipContent side="top">{action.tooltip}</TooltipContent>
+              <TooltipContent
+                side="top"
+                dir={portalDirection}
+                lang={portalLanguage}
+              >
+                {action.tooltip}
+              </TooltipContent>
             </Tooltip>
           ) : (
             button
@@ -1043,7 +1089,14 @@ const Editor: React.FC<EditorProps> = ({
         })}
       </div>
     );
-  }, [disabled, editorApi, handleToolbarActionClick, toolbarActionsRight]);
+  }, [
+    disabled,
+    editorApi,
+    handleToolbarActionClick,
+    portalDirection,
+    portalLanguage,
+    toolbarActionsRight,
+  ]);
 
   useEffect(() => {
     onReady?.(editorApi);
@@ -1052,12 +1105,17 @@ const Editor: React.FC<EditorProps> = ({
   return (
     <div
       className="markdown-flow-editor"
+      ref={editorRootRef}
+      dir={direction}
+      lang={language}
       data-disabled={disabled ? "true" : undefined}
       aria-disabled={disabled}
     >
       <EditorToolbar
         disabled={disabled}
         labels={toolbarLabels}
+        tooltipDirection={portalDirection}
+        tooltipLanguage={portalLanguage}
         onSelect={onSelectedOption}
         onInsertVariablePlaceholder={insertVariableTemplate}
         onVariableSearchToggle={handleVariableSearchToggle}
@@ -1102,7 +1160,10 @@ const Editor: React.FC<EditorProps> = ({
           />
           {!disabled && (
             <CustomDialog
+              dir={portalDirection}
+              lang={portalLanguage}
               labels={{
+                closeButtonLabel: t("dialogCloseLabel"),
                 title:
                   selectedOption === SelectedOption.Image
                     ? t("dialogTitleImage")
@@ -1130,7 +1191,7 @@ const Editor: React.FC<EditorProps> = ({
           )}
 
           {!disabled && (
-            <CustomPopover>
+            <CustomPopover dir={portalDirection} lang={portalLanguage}>
               <VariableSelect
                 variables={variables}
                 systemVariables={systemVariables}

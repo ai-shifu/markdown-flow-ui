@@ -43,6 +43,35 @@ describe("playerKeyboardShortcuts", () => {
     expect(getPlayerKeyboardShortcutAction({ key: "m" })).toBeNull();
   });
 
+  it("mirrors only page shortcuts in RTL", () => {
+    expect(getPlayerKeyboardShortcutAction({ key: "ArrowLeft" }, "rtl")).toBe(
+      "next"
+    );
+    expect(getPlayerKeyboardShortcutAction({ key: "ArrowRight" }, "rtl")).toBe(
+      "previous"
+    );
+    expect(
+      getPlayerKeyboardShortcutAction(
+        { key: "ArrowLeft", shiftKey: true },
+        "rtl"
+      )
+    ).toBe("previousSubtitle");
+    expect(
+      getPlayerKeyboardShortcutAction(
+        { key: "ArrowRight", shiftKey: true },
+        "rtl"
+      )
+    ).toBe("nextSubtitle");
+    for (const modifier of ["altKey", "ctrlKey", "metaKey"]) {
+      expect(
+        getPlayerKeyboardShortcutAction(
+          { key: "ArrowLeft", [modifier]: true },
+          "rtl"
+        )
+      ).toBeNull();
+    }
+  });
+
   it("ignores non-subtitle shortcuts with modifier keys", () => {
     expect(
       getPlayerKeyboardShortcutAction({ key: "f", metaKey: true })

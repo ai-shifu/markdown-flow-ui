@@ -7,6 +7,7 @@ export interface MermaidChartProps {
   messages?: {
     emptyChart?: string;
     loading?: string;
+    error?: string;
     badge?: string;
   };
   frozen?: boolean;
@@ -15,6 +16,7 @@ export interface MermaidChartProps {
 const DEFAULT_MESSAGES = {
   emptyChart: "Empty chart content",
   loading: "Loading Mermaid chart...",
+  error: "Unable to display the Mermaid chart",
   badge: "mermaid",
 } as const;
 
@@ -35,7 +37,7 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
       const cleaned = preprocessChart(chart);
 
       if (!cleaned) {
-        setError(messages?.emptyChart ?? DEFAULT_MESSAGES.emptyChart);
+        setError("");
         setSvg("");
         return;
       }
@@ -83,18 +85,30 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
     renderChart();
   }, [chart, frozen]);
 
-  if (error) {
-    const displayChart = preprocessChart(chart) || chart.trim();
+  const cleanedChart = preprocessChart(chart);
+  if (error || !cleanedChart) {
+    const displayChart = cleanedChart || chart.trim();
     return (
-      <div className="my-4 border border-gray-200 rounded-lg bg-gray-50">
+      <div
+        className="my-4 border border-gray-200 rounded-lg bg-gray-50"
+        data-mermaid-error={error || undefined}
+      >
         <div className="px-4 py-3 bg-gray-100 border-b border-gray-200 flex items-center gap-2">
           <span className="text-yellow-600">⚠️</span>
-          <span className="text-sm text-yellow-700 font-medium whitespace-pre-wrap">
-            {error}
+          <span
+            dir="auto"
+            className="text-sm text-yellow-700 font-medium whitespace-pre-wrap"
+          >
+            {cleanedChart
+              ? (messages?.error ?? DEFAULT_MESSAGES.error)
+              : (messages?.emptyChart ?? DEFAULT_MESSAGES.emptyChart)}
           </span>
         </div>
         <div className="relative">
-          <pre className="p-4 text-sm font-mono text-yellow-800">
+          <pre
+            dir="ltr"
+            className="p-4 text-sm font-mono text-yellow-800 text-start [unicode-bidi:isolate]"
+          >
             <code>{displayChart}</code>
           </pre>
           <div className="absolute top-2 right-2 px-2 py-1 text-xs text-yellow-700 bg-white/90 rounded border border-gray-200">
@@ -122,5 +136,12 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
 };
 
 export default React.memo(MermaidChart, (prev, next) => {
-  return prev.chart === next.chart && prev.frozen === next.frozen;
+  return (
+    prev.chart === next.chart &&
+    prev.frozen === next.frozen &&
+    prev.messages?.emptyChart === next.messages?.emptyChart &&
+    prev.messages?.loading === next.messages?.loading &&
+    prev.messages?.error === next.messages?.error &&
+    prev.messages?.badge === next.messages?.badge
+  );
 });

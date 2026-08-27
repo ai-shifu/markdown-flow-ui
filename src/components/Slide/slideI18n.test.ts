@@ -1,8 +1,53 @@
 import { describe, expect, it } from "vitest";
+import { MARKDOWN_FLOW_LOCALES } from "../../lib/locale";
 
 import { getSlideLocaleTexts } from "./slideI18n";
 
 describe("getSlideLocaleTexts", () => {
+  it.each([
+    ["zh-CN", "空格键"],
+    ["ar-SA", "مفتاح المسافة"],
+    ["th-TH", "แป้นเว้นวรรค"],
+    ["fr-FR", "Barre d’espace"],
+    ["en-US", "Space"],
+  ])("localizes the playback key display name for %s", (locale, label) => {
+    expect(getSlideLocaleTexts(locale).playerTexts.playbackShortcutLabel).toBe(
+      label
+    );
+  });
+
+  it("keeps every locale bundle complete against the Chinese source", () => {
+    const chinese = getSlideLocaleTexts("zh-CN");
+    for (const locale of MARKDOWN_FLOW_LOCALES) {
+      const texts = getSlideLocaleTexts(locale);
+      expect(Object.keys(texts)).toEqual(Object.keys(chinese));
+      for (const bundle of [
+        "playerTexts",
+        "interactionTexts",
+        "bufferingText",
+      ] as const) {
+        expect(Object.keys(texts[bundle])).toEqual(
+          Object.keys(chinese[bundle])
+        );
+        expect(
+          Object.values(texts[bundle]).every((value) => value.length > 0)
+        ).toBe(true);
+      }
+    }
+  });
+
+  it.each([
+    ["en-US", "Move interaction"],
+    ["fr-FR", "Déplacer le panneau d’interaction"],
+    ["zh-CN", "移动交互面板"],
+    ["ar-SA", "تحريك لوحة التفاعل"],
+    ["th-TH", "ย้ายแผงโต้ตอบ"],
+  ])("localizes the interaction drag handle for %s", (locale, label) => {
+    expect(
+      getSlideLocaleTexts(locale).interactionTexts.dragHandleAriaLabel
+    ).toBe(label);
+  });
+
   it("uses selected ai-shifu slide text defaults while preserving interaction and waiting-for-audio copy", () => {
     expect(getSlideLocaleTexts("en-US")).toMatchObject({
       bufferingText: {
@@ -49,6 +94,36 @@ describe("getSlideLocaleTexts", () => {
         fullscreenHintText: "请旋转屏幕以获得最佳体验",
       },
     });
+
+    expect(getSlideLocaleTexts("ar-SA")).toMatchObject({
+      bufferingText: {
+        waitingForAudio: "في انتظار صوت الشريحة الحالية...",
+        loadingAudio: "جارٍ تحميل الصوت...",
+        waitingForMoreAudio: "في انتظار المزيد من الصوت...",
+      },
+      fullscreenBackAriaLabel: "العودة إلى العرض العادي",
+      interactionTexts: {
+        title: "أرسل المحتوى أدناه للمتابعة.",
+      },
+      playerTexts: {
+        fullscreenHintText: "يرجى تدوير الشاشة للحصول على أفضل تجربة",
+      },
+    });
+
+    expect(getSlideLocaleTexts("th-TH")).toMatchObject({
+      bufferingText: {
+        waitingForAudio: "กำลังรอเสียงของสไลด์ปัจจุบัน...",
+        loadingAudio: "กำลังโหลดเสียง...",
+        waitingForMoreAudio: "กำลังรอเสียงเพิ่มเติม...",
+      },
+      fullscreenBackAriaLabel: "กลับสู่โหมดปกติ",
+      interactionTexts: {
+        title: "ส่งเนื้อหาด้านล่างเพื่อดำเนินการต่อ",
+      },
+      playerTexts: {
+        fullscreenHintText: "โปรดหมุนหน้าจอเพื่อประสบการณ์การใช้งานที่ดีที่สุด",
+      },
+    });
   });
 
   it("normalizes aliases and falls back to en-US for empty or unsupported locales", () => {
@@ -59,5 +134,9 @@ describe("getSlideLocaleTexts", () => {
 
     expect(getSlideLocaleTexts("fr")).toEqual(getSlideLocaleTexts("fr-FR"));
     expect(getSlideLocaleTexts("zh_CN")).toEqual(getSlideLocaleTexts("zh-CN"));
+    expect(getSlideLocaleTexts("ar")).toEqual(getSlideLocaleTexts("ar-SA"));
+    expect(getSlideLocaleTexts("ar_SA")).toEqual(getSlideLocaleTexts("ar-SA"));
+    expect(getSlideLocaleTexts("th")).toEqual(getSlideLocaleTexts("th-TH"));
+    expect(getSlideLocaleTexts("th_TH")).toEqual(getSlideLocaleTexts("th-TH"));
   });
 });

@@ -2,6 +2,9 @@ import React, { useState, ReactNode } from "react";
 import "./CodeBlock.css";
 import { Copy, Check } from "lucide-react";
 
+// Nested code inherits the pre element's direction unless the author overrides it.
+export const CodeBlockContext = React.createContext(false);
+
 /**
  * Props for the CodeBlock component.
  */
@@ -10,6 +13,10 @@ export interface CodeBlockProps {
   children?: React.ReactNode;
   /** Optional CSS class name for the pre element. */
   className?: string;
+  /** Authored text direction; defaults to LTR for ordinary source code. */
+  dir?: React.HTMLAttributes<HTMLPreElement>["dir"];
+  /** Preserves the language supplied on authored preformatted content. */
+  lang?: string;
   /** Text to display on the copy button (i18n support). */
   copyButtonText?: string;
   /** Text to display when code is copied (i18n support). */
@@ -34,6 +41,8 @@ const getCodeString = (children: ReactNode): string => {
 const CodeBlock: React.FC<CodeBlockProps> = ({
   children,
   className: preClassName,
+  dir = "ltr",
+  lang,
   copyButtonText = "Copy",
   copiedButtonText = "Copied",
 }) => {
@@ -92,7 +101,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
           {isCopied ? copiedButtonText : copyButtonText}
         </button>
       </div>
-      <pre className={preClassName}>{children}</pre>
+      <CodeBlockContext.Provider value={true}>
+        <pre className={preClassName} dir={dir} lang={lang}>
+          {children}
+        </pre>
+      </CodeBlockContext.Provider>
     </div>
   );
 };

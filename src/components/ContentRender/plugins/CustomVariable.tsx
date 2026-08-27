@@ -26,6 +26,10 @@ interface CustomVariableNode {
 
 // Define custom variable component Props type
 interface CustomVariableProps {
+  /** Explicit direction for nested input controls. */
+  dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
+  /** Explicit language for nested input controls. */
+  lang?: string;
   node: CustomVariableNode;
   defaultButtonText?: string;
   defaultInputText?: string;
@@ -135,6 +139,8 @@ const MultiSelectSection = ({
 
 // Single select section( with buttons and input)
 interface SingleSelectSectionProps {
+  dir?: CustomVariableProps["dir"];
+  lang?: string;
   node: CustomVariableNode;
   readonly?: boolean;
   locale?: MarkdownFlowLocale;
@@ -146,6 +152,8 @@ interface SingleSelectSectionProps {
 }
 
 const SingleSelectSection = ({
+  dir,
+  lang,
   node,
   readonly,
   locale,
@@ -169,7 +177,7 @@ const SingleSelectSection = ({
             size="sm"
             onClick={() => handleButtonClick(buttonValue)}
             className={cn(
-              "max-w-full shrink whitespace-normal break-words text-left leading-5 h-auto min-h-8 px-3 py-1.5",
+              "max-w-full shrink whitespace-normal break-words text-start leading-5 h-auto min-h-8 px-3 py-1.5",
               "hover:bg-gray-200",
               resolvedDefaultButtonText === text && "select"
             )}
@@ -182,6 +190,8 @@ const SingleSelectSection = ({
     {node.properties?.placeholder && (
       <span className="mt-[9px] mb-1">
         <MarkdownFlowInput
+          dir={dir}
+          lang={lang}
           disabled={readonly}
           locale={locale}
           placeholder={node.properties.placeholder}
@@ -197,6 +207,8 @@ const SingleSelectSection = ({
 
 // Pure input
 interface InputSectionProps {
+  dir?: CustomVariableProps["dir"];
+  lang?: string;
   readonly?: boolean;
   locale?: MarkdownFlowLocale;
   placeholder?: string;
@@ -206,6 +218,8 @@ interface InputSectionProps {
 }
 
 const InputSection = ({
+  dir,
+  lang,
   readonly,
   locale,
   placeholder,
@@ -219,6 +233,8 @@ const InputSection = ({
 
   return (
     <MarkdownFlowInput
+      dir={dir}
+      lang={lang}
       disabled={readonly}
       locale={locale}
       placeholder={placeholder}
@@ -232,6 +248,8 @@ const InputSection = ({
 
 // Define custom variable component
 const CustomButtonInputVariable = ({
+  dir,
+  lang,
   node,
   readonly,
   locale,
@@ -385,6 +403,8 @@ const CustomButtonInputVariable = ({
 
       {!isMultiSelect && isSingleSelect && (
         <SingleSelectSection
+          dir={dir}
+          lang={lang}
           node={singleSelectNode}
           readonly={readonly}
           locale={locale}
@@ -398,6 +418,8 @@ const CustomButtonInputVariable = ({
 
       {!isMultiSelect && !isSingleSelect && node.properties?.placeholder && (
         <InputSection
+          dir={dir}
+          lang={lang}
           readonly={readonly}
           locale={locale}
           placeholder={node.properties.placeholder}

@@ -1,6 +1,10 @@
 import React from "react";
 import type { InteractionDefaultValueOptions } from "../../lib/interaction-defaults";
-import type { MarkdownFlowLocale } from "../../lib/locale";
+import {
+  getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
 import ContentRender from "../ContentRender";
 import { CustomRenderBarProps, OnSendContentParams } from "../types";
 import "./markdownFlow.css";
@@ -18,8 +22,16 @@ export interface MarkdownFlowProps {
     onClickCustomButtonAfterContent?: () => void;
     dynamicInteractionFormat?: string;
   }[];
-  /** Locale used for built-in UI text when a more specific text prop is not provided. */
+  /**
+   * Locale used for built-in UI text when a more specific text prop is not provided.
+   * Arabic sets RTL direction; other supported locales set LTR direction.
+   * When omitted, direction is inherited from the host and UI text uses the default locale.
+   */
   locale?: MarkdownFlowLocale;
+  /** Overrides the locale-derived language. */
+  lang?: string;
+  /** Overrides the locale-derived direction. */
+  dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   customRenderBar?: CustomRenderBarProps;
   onSend?: (content: OnSendContentParams) => void;
   // Multi-select confirm button text (i18n support)
@@ -35,6 +47,8 @@ export interface MarkdownFlowProps {
 const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   initialContentList = [],
   locale,
+  lang,
+  dir,
   customRenderBar,
   onSend: onSendProp,
   confirmButtonText,
@@ -44,7 +58,11 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   interactionDefaultValueOptions,
 }) => {
   return (
-    <div className="markdown-flow">
+    <div
+      className="markdown-flow"
+      dir={dir ?? getMarkdownFlowDirection(locale)}
+      lang={lang ?? getMarkdownFlowLanguage(locale)}
+    >
       {initialContentList.map((contentInfo, index) => {
         const isFinished = contentInfo.isFinished ?? false;
         const onSend = isFinished ? undefined : onSendProp;
@@ -62,6 +80,8 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             onSend={onSend}
             beforeSend={beforeSend}
             locale={locale}
+            lang={lang}
+            dir={dir}
             interactionDefaultValueOptions={interactionDefaultValueOptions}
             onClickCustomButtonAfterContent={
               contentInfo.onClickCustomButtonAfterContent

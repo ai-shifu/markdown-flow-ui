@@ -23,7 +23,13 @@ import {
   injectScalingSystem,
   type ScalingWindow,
 } from "./utils/iframe-scaling";
-import type { MarkdownFlowLocale } from "../../lib/locale";
+import {
+  getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
+import { useDetachedLanguage } from "../../lib/useDetachedLanguage";
+import { useResolvedDirection } from "../../lib/useResolvedDirection";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 import { CJK_SAFE_SANS_FONT_FAMILY } from "./cjkFontFamily";
 
@@ -48,6 +54,10 @@ export interface IframeSandboxProps {
   content: string;
   className?: string;
   locale?: MarkdownFlowLocale;
+  /** Overrides the locale-derived language without changing authored HTML language. */
+  lang?: string;
+  /** Overrides locale-derived direction without replacing authored HTML direction. */
+  dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   loadingText?: string;
   styleLoadingText?: string;
   scriptLoadingText?: string;
@@ -114,6 +124,8 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   type,
   className,
   locale,
+  lang,
+  dir,
   loadingText,
   styleLoadingText,
   scriptLoadingText,
@@ -126,11 +138,46 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   disableLoadingOverlay = false,
 }) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
+  const direction = dir ?? getMarkdownFlowDirection(locale);
+  const language = lang ?? getMarkdownFlowLanguage(locale);
   const resolvedFullScreenButtonText =
     fullScreenButtonText || localeTexts.sandboxFullscreenButtonText;
   const resolvedExitFullScreenButtonText =
     exitFullScreenButtonText || localeTexts.sandboxExitFullscreenButtonText;
   const containerRef = useRef<HTMLDivElement>(null);
+  const sandboxLanguage = useDetachedLanguage(containerRef, language);
+  const { resolvedDirection } = useResolvedDirection(containerRef, direction);
+  const markdownContainerRef = useRef<HTMLDivElement>(null);
+  const markdownContentRef = useRef<HTMLElement>(null);
+  const setMarkdownContentContainerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      markdownContainerRef.current = node;
+      markdownContentRef.current =
+        node?.querySelector<HTMLElement>(".content-render") ?? null;
+    },
+    []
+  );
+  const { resolvedDirection: markdownContentDirection } = useResolvedDirection(
+    markdownContentRef,
+    direction
+  );
+  const sandboxDirection = direction ?? resolvedDirection;
+  const requestedDirectionRef = useRef(direction);
+  requestedDirectionRef.current = direction;
+  // Auto direction cannot inspect text across the iframe document boundary.
+  // Mirror the rendered sandbox direction to host controls instead.
+  const [sandboxContentDirection, setSandboxContentDirection] = useState<
+    "ltr" | "rtl"
+  >();
+  let fullscreenControlDirection: "ltr" | "rtl" | undefined;
+  if (direction === "auto") {
+    fullscreenControlDirection = resolvedDirection;
+    if (type === "sandbox") {
+      fullscreenControlDirection = sandboxContentDirection ?? resolvedDirection;
+    } else if (mode === "blackboard") {
+      fullscreenControlDirection = markdownContentDirection;
+    }
+  }
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const rootRef = useRef<Root | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
@@ -209,6 +256,15 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       window.location.origin
     );
   }, []);
+
+  useEffect(() => {
+    if (type !== "markdown" || mode !== "blackboard") return;
+    const container = markdownContainerRef.current;
+    if (!container) return;
+    const handleClick = () => emitSandboxInteraction("click");
+    container.addEventListener("click", handleClick);
+    return () => container.removeEventListener("click", handleClick);
+  }, [emitSandboxInteraction, mode, type]);
 
   const clearDeferredRenderTimer = () => {
     if (deferRenderTimerRef.current === null) return;
@@ -681,9 +737,24 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       resizeObserver?.observe(rootEl);
     }
 
+    const syncSandboxContentDirection = () => {
+      if (type !== "sandbox" || requestedDirectionRef.current !== "auto") {
+        return;
+      }
+      const wrapper = doc.querySelector<HTMLElement>(".sandbox-wrapper");
+      const view = doc.defaultView;
+      if (!wrapper || !view) return;
+      const nextDirection =
+        view.getComputedStyle(wrapper).direction === "rtl" ? "rtl" : "ltr";
+      setSandboxContentDirection((currentDirection) =>
+        currentDirection === nextDirection ? currentDirection : nextDirection
+      );
+    };
+
     // MutationObserver: detect DOM changes that ResizeObserver might miss
     // (e.g. content injected by scripts, images loading, dynamic rendering)
     const mutationObserver = new MutationObserver(() => {
+      syncSandboxContentDirection();
       scheduleHeightUpdate();
       if (!isHostVisible()) {
         needsTailwindRefreshAfterHidden = true;
@@ -693,9 +764,10 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     });
     mutationObserver.observe(doc.body, {
       childList: true,
+      characterData: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["style", "class"],
+      attributeFilter: ["style", "class", "dir"],
     });
 
     return () => {
@@ -781,6 +853,8 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       <SandboxApp
         html={renderHtmlContent}
         locale={locale}
+        dir={sandboxDirection}
+        lang={sandboxLanguage}
         loadingText={loadingText}
         styleLoadingText={styleLoadingText}
         scriptLoadingText={scriptLoadingText}
@@ -816,6 +890,8 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   }, [
     renderHtmlContent,
     locale,
+    sandboxDirection,
+    sandboxLanguage,
     loadingText,
     styleLoadingText,
     scriptLoadingText,
@@ -840,6 +916,8 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   return (
     <div
       ref={containerRef}
+      dir={direction}
+      lang={language}
       data-root-vh={hasRootVhHeight ? "true" : "false"}
       className={containerClassName}
       style={
@@ -854,9 +932,10 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       {!hideFullScreen && (
         <button
           type="button"
+          dir={fullscreenControlDirection}
           onClick={toggleFullscreen}
           className={
-            "absolute top-2 right-2 z-50 p-1.5 bg-black/75 text-white rounded-md cursor-pointer"
+            "absolute top-2 end-2 z-50 p-1.5 bg-black/75 text-white rounded-md cursor-pointer"
           }
         >
           {isFullscreen
@@ -865,10 +944,12 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
         </button>
       )}
       {mode === "blackboard" && type === "markdown" ? (
-        <div onClick={() => emitSandboxInteraction("click")}>
+        <div ref={setMarkdownContentContainerRef}>
           <ContentRender
             content={content}
             locale={locale}
+            dir={direction}
+            lang={language}
             disableSandboxLoadingOverlay={disableLoadingOverlay}
           />
         </div>

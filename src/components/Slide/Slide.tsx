@@ -12,7 +12,12 @@ import { ChevronLeft, GripHorizontal } from "lucide-react";
 
 import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
-import type { MarkdownFlowLocale } from "../../lib/locale";
+import { useResolvedDirection } from "../../lib/useResolvedDirection";
+import {
+  getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
 import LoadingOverlayCard from "../ui/loading-overlay-card";
 import ContentRender from "../ContentRender";
 import type { ContentRenderProps } from "../ContentRender/ContentRender";
@@ -191,8 +196,11 @@ type RenderSlideElementOptions = {
 };
 
 interface InteractionOverlayCardProps {
+  dir?: ContentRenderProps["dir"];
+  lang?: string;
   content: string;
   title: string;
+  dragHandleAriaLabel: string;
   locale?: MarkdownFlowLocale;
   defaultButtonText?: string;
   defaultInputText?: string;
@@ -214,6 +222,8 @@ export interface SlideInteractionTexts
     "confirmButtonText" | "copyButtonText" | "copiedButtonText"
   > {
   title?: string;
+  /** Accessible label for the interaction panel drag handle. */
+  dragHandleAriaLabel?: string;
 }
 
 export type SlideFullscreenHeader = {
@@ -226,7 +236,10 @@ const InteractionOverlayCard = memo(
   ({
     content,
     title,
+    dragHandleAriaLabel,
     locale,
+    dir,
+    lang,
     defaultButtonText,
     defaultInputText,
     defaultSelectedValues,
@@ -244,7 +257,7 @@ const InteractionOverlayCard = memo(
       <button
         type="button"
         className="slide-player__interaction-drag-handle"
-        aria-label="Move interaction"
+        aria-label={dragHandleAriaLabel}
         onPointerCancel={onDragHandlePointerCancel}
         onPointerDown={onDragHandlePointerDown}
         onPointerMove={onDragHandlePointerMove}
@@ -263,6 +276,8 @@ const InteractionOverlayCard = memo(
         <ContentRender
           content={content}
           locale={locale}
+          dir={dir}
+          lang={lang}
           defaultButtonText={defaultButtonText}
           defaultInputText={defaultInputText}
           defaultSelectedValues={defaultSelectedValues}
@@ -382,10 +397,14 @@ const Slide: React.FC<SlideProps> = ({
   enableMarkdownScaling = true,
   disableLoadingOverlay = false,
   className,
+  dir,
+  lang,
   onPointerDown,
   onFocusCapture,
   ...props
 }) => {
+  const direction = dir ?? getMarkdownFlowDirection(locale);
+  const language = lang ?? getMarkdownFlowLanguage(locale);
   const localeTexts = useMemo(() => getSlideLocaleTexts(locale), [locale]);
   const resolvedBufferingText = useMemo(
     () =>
@@ -404,6 +423,7 @@ const Slide: React.FC<SlideProps> = ({
   });
   const keyboardShortcutOwnerId = useId();
   const sectionRef = useRef<HTMLElement | null>(null);
+  const { resolvedDirection } = useResolvedDirection(sectionRef, direction);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const stageLayerRef = useRef<HTMLDivElement | null>(null);
   const lastElementRef = useRef<HTMLDivElement | null>(null);
@@ -1805,6 +1825,8 @@ const Slide: React.FC<SlideProps> = ({
           disableLoadingOverlay={disableLoadingOverlay}
           hideFullScreen
           locale={locale}
+          dir={direction}
+          lang={language}
           mode="blackboard"
           replaceRootScreenHeightWithFull={
             options.replaceRootScreenHeightWithFull
@@ -1822,6 +1844,8 @@ const Slide: React.FC<SlideProps> = ({
         disableLoadingOverlay={disableLoadingOverlay}
         hideFullScreen
         locale={locale}
+        dir={direction}
+        lang={language}
         mode="blackboard"
         type="markdown"
         content={element.content as string}
@@ -2444,6 +2468,8 @@ const Slide: React.FC<SlideProps> = ({
         isNativeMobileFullscreen && "slide--mobile-landscape-native",
         className
       )}
+      dir={direction}
+      lang={language}
       onClick={handleSurfaceClick}
       onFocusCapture={handleSurfaceFocusCapture}
       onPointerDown={handleSurfacePointerDown}
@@ -2581,7 +2607,13 @@ const Slide: React.FC<SlideProps> = ({
             style={interactionOverlayStyle}
           >
             <InteractionOverlayCard
+              dir={direction}
+              lang={language}
               content={String(activeInteractionElement?.content ?? "")}
+              dragHandleAriaLabel={
+                interactionTexts?.dragHandleAriaLabel ??
+                localeTexts.interactionTexts.dragHandleAriaLabel
+              }
               locale={locale}
               defaultButtonText={interactionDefaults.buttonText ?? ""}
               defaultInputText={interactionDefaults.inputText ?? ""}
@@ -2618,6 +2650,8 @@ const Slide: React.FC<SlideProps> = ({
             value={keyboardShortcutContextValue}
           >
             <Player
+              dir={direction === "auto" ? resolvedDirection : direction}
+              lang={language}
               audioList={audioList}
               className={cn(
                 "absolute left-1/2 z-[2] -translate-x-1/2",

@@ -2,6 +2,10 @@ import React, { useRef } from "react";
 import MarkdownFlow, { type MarkdownFlowProps } from "./MarkdownFlow";
 import ScrollToBottomControl from "./ScrollToBottomControl";
 import { getContentRenderLocaleTexts } from "../ContentRender/contentRenderI18n";
+import {
+  getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
+} from "../../lib/locale";
 
 import "./markdownFlow.css";
 
@@ -30,6 +34,14 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = (
   return (
     <div
       className={`scrollable-markdown-container ${className}`.trim()}
+      dir={
+        markdownFlowProps.dir ??
+        getMarkdownFlowDirection(markdownFlowProps.locale)
+      }
+      lang={
+        markdownFlowProps.lang ??
+        getMarkdownFlowLanguage(markdownFlowProps.locale)
+      }
       style={{ height, position: "relative" }}
     >
       <div ref={viewportRef} style={{ height: "100%", overflowY: "auto" }}>

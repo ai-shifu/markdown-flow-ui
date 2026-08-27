@@ -1,4 +1,5 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import type { ComponentProps } from "react";
 import { X } from "lucide-react";
 
 import { cn } from "../../lib/utils";
@@ -18,6 +19,9 @@ export type MobilePlayerSettingsSheetLabels = {
 
 export type MobilePlayerSettingsSheetProps = {
   open: boolean;
+  dir?: ComponentProps<typeof DialogPrimitive.Content>["dir"];
+  /** Language of the detached settings content. */
+  lang?: string;
   labels: MobilePlayerSettingsSheetLabels;
   isSubtitleEnabled: boolean;
   viewMode: MobileViewMode;
@@ -30,6 +34,8 @@ export type MobilePlayerSettingsSheetProps = {
 
 const MobilePlayerSettingsSheet = ({
   open,
+  dir,
+  lang,
   labels,
   isSubtitleEnabled,
   viewMode,
@@ -49,6 +55,8 @@ const MobilePlayerSettingsSheet = ({
         <DialogPrimitive.Content
           aria-describedby={undefined}
           data-player-keyboard-shortcuts-ignore="true"
+          dir={dir}
+          lang={lang}
           className={cn(
             "fixed inset-x-0 bottom-0 z-[61] flex max-h-[min(360px,calc(100dvh-32px))] flex-col overflow-hidden rounded-t-[24px] border-t border-border bg-background shadow-[0_-12px_32px_rgba(28,44,64,0.16)] outline-none",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
@@ -94,9 +102,9 @@ const MobilePlayerSettingsSheet = ({
               >
                 <span
                   className={cn(
-                    "absolute left-[2px] top-1/2 block h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-foreground transition-transform",
+                    "absolute start-[2px] top-1/2 block h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-foreground transition-transform",
                     isSubtitleEnabled
-                      ? "translate-x-[10px] bg-primary"
+                      ? "translate-x-[10px] [&:dir(rtl)]:-translate-x-[10px] bg-primary"
                       : "translate-x-0"
                   )}
                 />

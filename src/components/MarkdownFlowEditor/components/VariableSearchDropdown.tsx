@@ -1,5 +1,10 @@
-import type React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Search } from "lucide-react";
 import { Variable } from "../types";
 import { Input } from "../../ui/input";
@@ -38,8 +43,17 @@ const VariableSearchDropdown: React.FC<VariableSearchDropdownProps> = ({
   const updatePosition = useCallback(() => {
     if (!anchorElement) return;
     const rect = anchorElement.getBoundingClientRect();
+    const doc = anchorElement.ownerDocument;
+    const view = doc.defaultView;
+    if (!view) return;
+    const width = containerRef.current?.getBoundingClientRect().width ?? 0;
+    const desiredLeft =
+      view.getComputedStyle(anchorElement).direction === "rtl"
+        ? rect.right - width
+        : rect.left;
+    const maxLeft = Math.max(8, doc.documentElement.clientWidth - width - 8);
     setPosition({
-      left: rect.left,
+      left: Math.min(Math.max(8, desiredLeft), maxLeft),
       top: rect.bottom + 8,
     });
   }, [anchorElement]);
@@ -50,8 +64,10 @@ const VariableSearchDropdown: React.FC<VariableSearchDropdownProps> = ({
       setHighlightIndex(-1);
       return;
     }
+    const view = anchorElement?.ownerDocument.defaultView;
+    if (!view) return;
     updatePosition();
-    const focusTimer = window.setTimeout(() => {
+    const focusTimer = view.setTimeout(() => {
       inputRef.current?.focus();
     }, 0);
     const handleClick = (event: MouseEvent) => {
@@ -66,15 +82,15 @@ const VariableSearchDropdown: React.FC<VariableSearchDropdownProps> = ({
       }
     };
     const handleScroll = () => updatePosition();
-    window.addEventListener("mousedown", handleClick);
-    window.addEventListener("scroll", handleScroll, true);
-    window.addEventListener("resize", handleScroll);
+    view.addEventListener("mousedown", handleClick);
+    view.addEventListener("scroll", handleScroll, true);
+    view.addEventListener("resize", handleScroll);
 
     return () => {
-      window.clearTimeout(focusTimer);
-      window.removeEventListener("mousedown", handleClick);
-      window.removeEventListener("scroll", handleScroll, true);
-      window.removeEventListener("resize", handleScroll);
+      view.clearTimeout(focusTimer);
+      view.removeEventListener("mousedown", handleClick);
+      view.removeEventListener("scroll", handleScroll, true);
+      view.removeEventListener("resize", handleScroll);
     };
   }, [open, anchorElement, onClose, updatePosition]);
 

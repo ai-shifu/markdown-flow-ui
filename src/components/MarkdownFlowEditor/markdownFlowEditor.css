@@ -247,7 +247,7 @@
 }
 
 .markdown-flow-editor-toolbar-right-wrapper {
-  margin-left: auto;
+  margin-inline-start: auto;
   display: flex;
   align-items: center;
 }
@@ -317,6 +317,8 @@
 
 .markdown-flow-editor-variable-search {
   width: 260px;
+  max-width: calc(100vw - 16px);
+  box-sizing: border-box;
   border-radius: 8px;
   border: 1px solid var(--base-border, #e5e5e5);
   background: #fff;
@@ -329,7 +331,7 @@
 
 .variable-search-icon {
   position: absolute;
-  left: 12px;
+  inset-inline-start: 12px;
   top: 50%;
   transform: translateY(-50%);
   width: 16px;
@@ -338,7 +340,7 @@
 }
 
 .variable-search-input {
-  padding-left: 32px;
+  padding-inline-start: 32px;
   height: 36px;
   border-radius: 8px;
 }
@@ -362,7 +364,7 @@
 
 .variable-search-item {
   width: 100%;
-  text-align: left;
+  text-align: start;
   border: none;
   background: transparent;
   border-radius: 6px;

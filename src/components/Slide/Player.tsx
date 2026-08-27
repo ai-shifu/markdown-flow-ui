@@ -22,8 +22,14 @@ import {
   Volume2,
 } from "lucide-react";
 
+import {
+  getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
+import { useDetachedLanguage } from "../../lib/useDetachedLanguage";
+import { useResolvedDirection } from "../../lib/useResolvedDirection";
 import { cn } from "../../lib/utils";
-import type { MarkdownFlowLocale } from "../../lib/locale";
 import MobilePlayerSettingsSheet from "./MobilePlayerSettingsSheet";
 import { getSlidePlayerTexts, type SlidePlayerLocaleTexts } from "./slideI18n";
 import type { SlideAudioItem } from "./useSlide";
@@ -267,7 +273,6 @@ const PLAYER_SHORTCUT_LABELS = {
   next: "→",
   nextSubtitle: "Shift+→",
   notes: "N",
-  playback: "Space",
   previous: "←",
   previousSubtitle: "Shift+←",
   subtitle: "C",
@@ -321,9 +326,15 @@ const Player = ({
   onPointerDown,
   ...props
 }: PlayerProps) => {
+  const direction = props.dir ?? getMarkdownFlowDirection(locale);
+  const language = props.lang ?? getMarkdownFlowLanguage(locale);
   const localKeyboardShortcutOwnerId = useId();
   const keyboardShortcutContext = useContext(PlayerKeyboardShortcutContext);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { resolvedDirection: shortcutDirection, readDirection } =
+    useResolvedDirection(audioRef, direction);
+  const isRtlNavigation = shortcutDirection === "rtl";
+  const portalLanguage = useDetachedLanguage(audioRef, language);
   const previousInteractionOpenRef = useRef(isInteractionOpen);
   const audioSrcRef = useRef<string | null>(null);
   const currentAudioKeyRef = useRef<string | null>(null);
@@ -443,8 +454,10 @@ const Player = ({
   );
   const previousShortcutMetadata = getShortcutMetadata(
     playerTexts.previousLabel,
-    PLAYER_SHORTCUT_LABELS.previous,
-    "ArrowLeft"
+    isRtlNavigation
+      ? PLAYER_SHORTCUT_LABELS.next
+      : PLAYER_SHORTCUT_LABELS.previous,
+    isRtlNavigation ? "ArrowRight" : "ArrowLeft"
   );
   const previousSubtitleShortcutMetadata = getShortcutMetadata(
     playerTexts.previousSubtitleLabel,
@@ -453,13 +466,15 @@ const Player = ({
   );
   const playbackShortcutMetadata = getShortcutMetadata(
     toggleAriaLabel,
-    PLAYER_SHORTCUT_LABELS.playback,
+    playerTexts.playbackShortcutLabel,
     "Space"
   );
   const nextShortcutMetadata = getShortcutMetadata(
     playerTexts.nextLabel,
-    PLAYER_SHORTCUT_LABELS.next,
-    "ArrowRight"
+    isRtlNavigation
+      ? PLAYER_SHORTCUT_LABELS.previous
+      : PLAYER_SHORTCUT_LABELS.next,
+    isRtlNavigation ? "ArrowLeft" : "ArrowRight"
   );
   const nextSubtitleShortcutMetadata = getShortcutMetadata(
     playerTexts.nextSubtitleLabel,
@@ -1823,7 +1838,7 @@ const Player = ({
         return;
       }
 
-      const action = getPlayerKeyboardShortcutAction(event);
+      const action = getPlayerKeyboardShortcutAction(event, readDirection());
 
       if (!action || shouldIgnorePlayerKeyboardShortcutEvent(event, action)) {
         return;
@@ -1846,7 +1861,7 @@ const Player = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [keyboardShortcutOwnerId, shouldEnableKeyboardShortcuts]);
+  }, [keyboardShortcutOwnerId, readDirection, shouldEnableKeyboardShortcuts]);
 
   useEffect(() => {
     onPlaybackTimeChange?.(playbackTimeMsRef.current);
@@ -1855,6 +1870,8 @@ const Player = ({
   return (
     <div
       {...props}
+      dir={direction}
+      lang={language}
       data-slide-player-shortcut-owner={keyboardShortcutOwnerId}
       className={cn("slide-player", className)}
       onFocusCapture={handleRootFocusCapture}
@@ -1881,6 +1898,8 @@ const Player = ({
         <>
           <MobilePlayerSettingsSheet
             container={settingsPortalContainer}
+            dir={direction ?? shortcutDirection}
+            lang={portalLanguage}
             labels={{
               closeSettings: playerTexts.closeSettingsLabel,
               fullscreen: playerTexts.fullscreenLabel,

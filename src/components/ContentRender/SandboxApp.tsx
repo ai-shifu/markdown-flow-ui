@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import LoadingOverlayCard from "../ui/loading-overlay-card";
-import type { MarkdownFlowLocale } from "../../lib/locale";
+import {
+  getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 import type { ScalingWindow } from "./utils/iframe-scaling";
 import {
@@ -13,6 +17,10 @@ import {
 export interface SandboxAppProps {
   html: string;
   locale?: MarkdownFlowLocale;
+  /** Overrides the wrapper language without changing authored HTML language. */
+  lang?: string;
+  /** Overrides the wrapper direction while preserving explicit direction in authored HTML. */
+  dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   loadingText?: string;
   styleLoadingText?: string;
   scriptLoadingText?: string;
@@ -102,6 +110,8 @@ const reuseRenderedImages = (
 const SandboxApp: React.FC<SandboxAppProps> = ({
   html,
   locale,
+  dir,
+  lang,
   loadingText,
   styleLoadingText,
   scriptLoadingText,
@@ -448,6 +458,8 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     <div
       data-root-vh={hasRootVhHeight ? "true" : "false"}
       className="sandbox-wrapper"
+      dir={dir ?? getMarkdownFlowDirection(locale)}
+      lang={lang ?? getMarkdownFlowLanguage(locale)}
       style={sandboxWrapperStyle}
       aria-busy={!!overlayMessage}
     >

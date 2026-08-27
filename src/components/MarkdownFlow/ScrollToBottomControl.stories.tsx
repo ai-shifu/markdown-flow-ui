@@ -225,10 +225,8 @@ const CleanupFixture: React.FC<{ explicitTarget?: boolean }> = ({
         data-testid="cleanup-viewport"
         style={{ height: 220, overflowY: "auto" }}
       >
-        <div style={{ height: 700 }}>
-          Observer and listener cleanup fixture
-          <div ref={endRef} />
-        </div>
+        <div style={{ height: 700 }}>Observer and listener cleanup fixture</div>
+        <div ref={endRef} data-testid="cleanup-end-anchor" />
       </div>
       {mounted ? (
         <ScrollToBottomControl
@@ -1391,6 +1389,15 @@ export const StableViewportRefRebindsAfterReplacement: Story = {
         '[data-testid="cleanup-viewport"]'
       )!;
       expect(replacement).not.toBe(oldViewport);
+      const anchor = replacement.querySelector<HTMLElement>(
+        '[data-testid="cleanup-end-anchor"]'
+      )!;
+      // Following a replacement must target the actual bottom, not the first line.
+      expect(
+        anchor.getBoundingClientRect().bottom -
+          replacement.getBoundingClientRect().top +
+          replacement.scrollTop
+      ).toBeCloseTo(replacement.scrollHeight, 0);
       replacement.scrollTop = replacement.scrollHeight;
       replacement.dispatchEvent(new Event("scroll"));
       await waitFor(() =>

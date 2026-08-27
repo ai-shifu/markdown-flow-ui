@@ -1,6 +1,7 @@
 import React, { useContext, forwardRef } from "react";
 import { Dialog, DialogContent, DialogTitle } from "../../ui/dialog";
 import EditorContext from "../editor-context";
+import type { MarkdownFlowDirection } from "../../../lib/locale";
 import { cn } from "../../../lib/utils";
 
 type CustomDialogProps = {
@@ -9,20 +10,32 @@ type CustomDialogProps = {
 
 export interface CustomDialogLabels {
   title?: string;
+  /** Accessible label for the dialog close button. */
+  closeButtonLabel?: string;
 }
 export interface CustomDialogAllProps extends CustomDialogProps {
   className?: string;
+  /**
+   * Sets "ltr" or "rtl" on the dialog content, including its reading and layout direction.
+   * When omitted, the content inherits direction from its portal container, not the trigger.
+   */
+  dir?: MarkdownFlowDirection;
+  /** Language of the detached dialog content. */
+  lang?: string;
   labels?: CustomDialogLabels;
 }
 
 const CustomDialog = forwardRef<HTMLDivElement, CustomDialogAllProps>(
-  ({ children, className, labels }, ref) => {
+  ({ children, className, dir, lang, labels }, ref) => {
     const { dialogOpen, setDialogOpen } = useContext(EditorContext);
     return (
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen} modal>
         <DialogContent
           ref={ref}
           className={cn("min-w-[300px]", className)}
+          dir={dir}
+          lang={lang}
+          closeButtonLabel={labels?.closeButtonLabel}
           onPointerDownOutside={(e) => {
             e.preventDefault();
           }}

@@ -15,11 +15,11 @@ import "./contentRender.css";
 import "./github-markdown-light.css";
 import "highlight.js/styles/github.css";
 import "katex/dist/katex.min.css";
-import CodeBlock from "./CodeBlock";
+import CodeBlock, { CodeBlockContext } from "./CodeBlock";
 import CustomButtonInputVariable, {
   ComponentsWithCustomVariable,
 } from "./plugins/CustomVariable";
-import MermaidChart from "./plugins/MermaidChart";
+import MermaidChart, { type MermaidChartProps } from "./plugins/MermaidChart";
 import {
   preserveCustomVariableProperties,
   restoreCustomVariableProperties,
@@ -43,7 +43,11 @@ import {
   getInteractionDefaultValues,
   type InteractionDefaultValueOptions,
 } from "../../lib/interaction-defaults";
-import type { MarkdownFlowLocale } from "../../lib/locale";
+import {
+  getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 
 const SANDBOX_TAG_HINT_PATTERN =
@@ -55,6 +59,10 @@ export interface ContentRenderProps {
   contentType?: string;
   /** Locale used for built-in UI text when a more specific text prop is not provided. */
   locale?: MarkdownFlowLocale;
+  /** Overrides the locale-derived language; omitted values inherit from the host. */
+  lang?: string;
+  /** Overrides locale-derived direction; omitted values inherit when no locale is set. */
+  dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   /**
    * Callback invoked when the custom button after content is clicked.
    * This button is rendered via the `<custom-button-after-content>` tag in markdown content.
@@ -238,6 +246,9 @@ type CustomComponents = ComponentsWithCustomVariable & {
 };
 
 type MarkdownComponentRuntimeValues = {
+  direction?: ContentRenderProps["dir"];
+  language?: string;
+  mermaidMessages: MermaidChartProps["messages"];
   beforeSend?: (param: OnSendContentParams) => boolean;
   locale?: MarkdownFlowLocale;
   onClickCustomButtonAfterContent?: () => void;
@@ -250,6 +261,50 @@ type MarkdownComponentRuntimeValues = {
   resolvedDefaultButtonText?: string;
   resolvedDefaultInputText?: string;
   resolvedDefaultSelectedValues?: string[];
+};
+
+const MarkdownComponentRuntimeContext =
+  React.createContext<React.RefObject<MarkdownComponentRuntimeValues> | null>(
+    null
+  );
+
+const MarkdownCode = (props: React.ComponentProps<"code">) => {
+  const runtimeValuesRef = React.useContext(MarkdownComponentRuntimeContext);
+  const isInCodeBlock = React.useContext(CodeBlockContext);
+  if (!runtimeValuesRef) {
+    throw new Error("Markdown code renderer requires ContentRender context.");
+  }
+  const { className, children, ...rest } = props as {
+    className?: string;
+    children?: React.ReactNode;
+    dir?: string;
+  };
+  const match = /language-(\w+)/.exec(className || "");
+  const language = match?.[1];
+  if (language === "mermaid") {
+    const chartContent = children?.toString().replace(/\n$/, "") || "";
+    const frozen = mermaidBlockIsComplete(
+      runtimeValuesRef.current.renderContent,
+      chartContent
+    );
+    return (
+      <MermaidChart
+        chart={chartContent}
+        frozen={frozen}
+        messages={runtimeValuesRef.current.mermaidMessages}
+      />
+    );
+  }
+
+  return (
+    <code
+      className={className}
+      {...rest}
+      dir={rest.dir ?? (isInCodeBlock ? undefined : "ltr")}
+    >
+      {children}
+    </code>
+  );
 };
 
 const remarkPlugins: PluggableList = [
@@ -271,17 +326,30 @@ const rehypePlugins: PluggableList = [
 export const MarkdownRenderer: React.FC<{
   content: string;
   components: CustomComponents;
-}> = ({ content: markdownContent, components }) => (
-  <div className="markdown-renderer">
-    <ReactMarkdown
-      remarkPlugins={remarkPlugins}
-      rehypePlugins={rehypePlugins}
-      components={components}
-    >
-      {markdownContent}
-    </ReactMarkdown>
-  </div>
-);
+  locale?: MarkdownFlowLocale;
+}> = ({ content: markdownContent, components, locale }) => {
+  const texts = getContentRenderLocaleTexts(locale);
+  return (
+    <div className="markdown-renderer">
+      <ReactMarkdown
+        remarkPlugins={remarkPlugins}
+        rehypePlugins={rehypePlugins}
+        remarkRehypeOptions={{
+          footnoteLabel: texts.footnoteLabel,
+          footnoteBackLabel: (referenceIndex, rereferenceIndex) => {
+            const reference =
+              String(referenceIndex + 1) +
+              (rereferenceIndex > 1 ? `-${rereferenceIndex}` : "");
+            return texts.footnoteBackLabel.replace("{reference}", reference);
+          },
+        }}
+        components={components}
+      >
+        {markdownContent}
+      </ReactMarkdown>
+    </div>
+  );
+};
 
 const mergeNonSandboxSegments = (segments: RenderSegment[]) => {
   if (segments.length <= 1) return segments;
@@ -342,6 +410,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   content,
   contentType,
   locale,
+  lang,
+  dir,
   customRenderBar,
   onSend,
   typingSpeed = 40,
@@ -369,6 +439,16 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   // tooltipMinLength,
 }) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
+  const mermaidMessages = useMemo(
+    () => ({
+      loading: localeTexts.mermaidLoadingText,
+      emptyChart: localeTexts.mermaidEmptyChartText,
+      error: localeTexts.mermaidErrorText,
+    }),
+    [localeTexts]
+  );
+  const direction = dir ?? getMarkdownFlowDirection(locale);
+  const language = lang ?? getMarkdownFlowLanguage(locale);
   const resolvedConfirmButtonText =
     confirmButtonText || localeTexts.confirmButtonText;
   const resolvedCopyButtonText = copyButtonText || localeTexts.copyButtonText;
@@ -519,6 +599,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     resolvedDefaultSelectedValues
   );
   const componentRuntimeValuesRef = useRef<MarkdownComponentRuntimeValues>({
+    direction,
+    language,
+    mermaidMessages,
     beforeSend,
     locale,
     onClickCustomButtonAfterContent,
@@ -534,6 +617,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   });
 
   componentRuntimeValuesRef.current = {
+    direction,
+    language,
+    mermaidMessages,
     beforeSend,
     locale,
     onClickCustomButtonAfterContent,
@@ -584,34 +670,15 @@ const ContentRender: React.FC<ContentRenderProps> = ({
           onSend={componentRuntimeValuesRef.current.onSend}
           beforeSend={componentRuntimeValuesRef.current.beforeSend}
           locale={componentRuntimeValuesRef.current.locale}
+          dir={componentRuntimeValuesRef.current.direction}
+          lang={componentRuntimeValuesRef.current.language}
           confirmButtonText={
             componentRuntimeValuesRef.current.resolvedConfirmButtonText
           }
           // tooltipMinLength={tooltipMinLength}
         />
       ),
-      code: (props) => {
-        const { className, children, ...rest } = props as {
-          className?: string;
-          children?: React.ReactNode;
-        };
-        const match = /language-(\w+)/.exec(className || "");
-        const language = match?.[1];
-        if (language === "mermaid") {
-          const chartContent = children?.toString().replace(/\n$/, "") || "";
-          const frozen = mermaidBlockIsComplete(
-            componentRuntimeValuesRef.current.renderContent,
-            chartContent
-          );
-          return <MermaidChart chart={chartContent} frozen={frozen} />;
-        }
-
-        return (
-          <code className={className} {...rest}>
-            {children}
-          </code>
-        );
-      },
+      code: MarkdownCode,
       table: ({ ...props }) => (
         <div className="content-render-table-container">
           <table className="content-render-table" {...props} />
@@ -699,17 +766,27 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
       if (seg.type === "text") {
         return (
-          <MarkdownRenderer
+          <MarkdownComponentRuntimeContext.Provider
             key={key}
-            components={components}
-            content={seg.value}
-          />
+            value={componentRuntimeValuesRef}
+          >
+            <MarkdownRenderer
+              locale={locale}
+              components={components}
+              content={seg.value}
+            />
+          </MarkdownComponentRuntimeContext.Provider>
         );
       }
 
       if (seg.type === "mermaid") {
         return (
-          <MermaidChart key={key} chart={seg.value} frozen={!seg.complete} />
+          <MermaidChart
+            key={key}
+            chart={seg.value}
+            frozen={!seg.complete}
+            messages={mermaidMessages}
+          />
         );
       }
 
@@ -723,7 +800,11 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
   if (hasSandbox) {
     return (
-      <div className="content-render markdown-body">
+      <div
+        className="content-render markdown-body"
+        dir={direction}
+        lang={language}
+      >
         {mergedRenderSegments.map((segment, idx) =>
           segment.type === "sandbox" ? (
             <IframeSandbox
@@ -733,6 +814,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               content={segment.value}
               className="content-render-iframe"
               locale={locale}
+              dir={direction}
+              lang={language}
               loadingText={sandboxLoadingText}
               styleLoadingText={sandboxStyleLoadingText}
               scriptLoadingText={sandboxScriptLoadingText}
@@ -752,15 +835,24 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   }
 
   return (
-    <div className="content-render markdown-body">
+    <div
+      className="content-render markdown-body"
+      dir={direction}
+      lang={language}
+    >
       {segments.map((seg, index) => {
         if (seg.type === "text") {
           return (
-            <MarkdownRenderer
+            <MarkdownComponentRuntimeContext.Provider
               key={index}
-              components={components}
-              content={seg.value}
-            />
+              value={componentRuntimeValuesRef}
+            >
+              <MarkdownRenderer
+                locale={locale}
+                components={components}
+                content={seg.value}
+              />
+            </MarkdownComponentRuntimeContext.Provider>
           );
         }
 
@@ -770,6 +862,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               key={index}
               chart={seg.value}
               frozen={!seg.complete}
+              messages={mermaidMessages}
             />
           );
         }

@@ -9,6 +9,7 @@ import {
 import { SelectedOption } from "../types";
 import { unwrapFixedOutput } from "../utils";
 import PlaceholderWidget from "./PlaceholderWidget";
+import { mediaPlaceholderLabels } from "./mediaPlaceholderLabels";
 
 const imageMarkupRegexp = /!\[([^\]]*)\]\(([^)]+)\)|<img\b[^>]*>/i;
 const agiImgContextRegexp =
@@ -46,7 +47,7 @@ const getImageMatchInfo = (match: RegExpMatchArray) => {
       }
     }
     return {
-      text: alt || "Image",
+      text: alt,
       url: src,
       title: alt,
       scalePercent,
@@ -71,7 +72,7 @@ const imageUrlMatcher = new MatchDecorator({
     const info = getImageMatchInfo(match);
     return Decoration.replace({
       widget: new PlaceholderWidget(
-        info.text,
+        info.text || view.state.facet(mediaPlaceholderLabels).image,
         {
           tag: "image",
           url: info.url,
@@ -94,6 +95,13 @@ const ImgPlaceholder = ViewPlugin.fromClass(
       this.placeholders = imageUrlMatcher.createDeco(view);
     }
     update(update: ViewUpdate) {
+      if (
+        update.startState.facet(mediaPlaceholderLabels) !==
+        update.state.facet(mediaPlaceholderLabels)
+      ) {
+        this.placeholders = imageUrlMatcher.createDeco(update.view);
+        return;
+      }
       this.placeholders = imageUrlMatcher.updateDeco(update, this.placeholders);
     }
   },

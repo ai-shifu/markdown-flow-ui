@@ -53,7 +53,8 @@ const getTargetCandidate = (
 };
 
 export const getPlayerKeyboardShortcutAction = (
-  event: PlayerKeyboardShortcutEventLike
+  event: PlayerKeyboardShortcutEventLike,
+  direction: "ltr" | "rtl" = "ltr"
 ): PlayerKeyboardShortcutAction | null => {
   if (event.altKey || event.ctrlKey || event.metaKey) {
     return null;
@@ -82,9 +83,9 @@ export const getPlayerKeyboardShortcutAction = (
 
   switch (normalizedKey) {
     case "arrowleft":
-      return "previous";
+      return direction === "rtl" ? "next" : "previous";
     case "arrowright":
-      return "next";
+      return direction === "rtl" ? "previous" : "next";
     case "f":
       return "fullscreen";
     case "c":

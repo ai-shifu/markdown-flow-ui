@@ -67,16 +67,32 @@ const scrollDirectionContent = Array.from({ length: 12 }, (_, index) => ({
 const ScrollViewportDirectionFixture = () => {
   const [locale, setLocale] = useState<MarkdownFlowLocale | undefined>("ar-SA");
   const [hostDirection, setHostDirection] = useState("ltr");
+  const [directionOverride, setDirectionOverride] = useState<
+    "ltr" | "rtl" | undefined
+  >();
+  const selectLocale = (nextLocale?: MarkdownFlowLocale) => {
+    setLocale(nextLocale);
+    setDirectionOverride(undefined);
+  };
   return (
     <div dir={hostDirection} style={{ width: 360 }}>
-      <button type="button" onClick={() => setLocale("ar-SA")}>
+      <button type="button" onClick={() => selectLocale("ar-SA")}>
         Arabic
       </button>
-      <button type="button" onClick={() => setLocale("th-TH")}>
+      <button type="button" onClick={() => selectLocale("th-TH")}>
         Thai
       </button>
-      <button type="button" onClick={() => setLocale(undefined)}>
+      <button type="button" onClick={() => selectLocale()}>
         Inherit
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setLocale("en-US");
+          setDirectionOverride("rtl");
+        }}
+      >
+        English RTL override
       </button>
       <button type="button" onClick={() => setHostDirection("rtl")}>
         Host RTL
@@ -86,6 +102,7 @@ const ScrollViewportDirectionFixture = () => {
       </button>
       <ScrollableMarkdownFlow
         locale={locale}
+        dir={directionOverride}
         height={160}
         initialContentList={scrollDirectionContent}
       />
@@ -102,8 +119,10 @@ export const ScrollViewportLocaleDirection: Story = {
     )!;
     const viewport = wrapper.firstElementChild as HTMLElement;
     const flow = wrapper.querySelector(".markdown-flow")!;
+    const renderedItems = wrapper.querySelectorAll(".content-render");
     for (const [button, attribute, direction] of [
       ["Arabic", "rtl", "rtl"],
+      ["English RTL override", "rtl", "rtl"],
       ["Thai", "ltr", "ltr"],
       ["Inherit", null, "ltr"],
       ["Host RTL", null, "rtl"],
@@ -115,7 +134,7 @@ export const ScrollViewportLocaleDirection: Story = {
       await userEvent.click(canvas.getByRole("button", { name: button }));
       await waitFor(() => {
         expect(wrapper.getAttribute("dir")).toBe(attribute);
-        for (const element of [wrapper, viewport, flow]) {
+        for (const element of [wrapper, viewport, flow, ...renderedItems]) {
           expect(getComputedStyle(element).direction).toBe(direction);
         }
         expect(viewport.scrollHeight).toBeGreaterThan(viewport.clientHeight);

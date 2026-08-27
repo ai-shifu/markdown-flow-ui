@@ -34,7 +34,10 @@ const ScrollableMarkdownFlow: React.FC<ScrollableMarkdownFlowProps> = (
   return (
     <div
       className={`scrollable-markdown-container ${className}`.trim()}
-      dir={getMarkdownFlowDirection(markdownFlowProps.locale)}
+      dir={
+        markdownFlowProps.dir ??
+        getMarkdownFlowDirection(markdownFlowProps.locale)
+      }
       lang={
         markdownFlowProps.lang ??
         getMarkdownFlowLanguage(markdownFlowProps.locale)

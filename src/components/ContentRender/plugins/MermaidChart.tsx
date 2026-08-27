@@ -7,6 +7,7 @@ export interface MermaidChartProps {
   messages?: {
     emptyChart?: string;
     loading?: string;
+    error?: string;
     badge?: string;
   };
   frozen?: boolean;
@@ -15,6 +16,7 @@ export interface MermaidChartProps {
 const DEFAULT_MESSAGES = {
   emptyChart: "Empty chart content",
   loading: "Loading Mermaid chart...",
+  error: "Unable to display the Mermaid chart",
   badge: "mermaid",
 } as const;
 
@@ -87,12 +89,18 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
   if (error || !cleanedChart) {
     const displayChart = cleanedChart || chart.trim();
     return (
-      <div className="my-4 border border-gray-200 rounded-lg bg-gray-50">
+      <div
+        className="my-4 border border-gray-200 rounded-lg bg-gray-50"
+        data-mermaid-error={error || undefined}
+      >
         <div className="px-4 py-3 bg-gray-100 border-b border-gray-200 flex items-center gap-2">
           <span className="text-yellow-600">⚠️</span>
-          <span className="text-sm text-yellow-700 font-medium whitespace-pre-wrap">
+          <span
+            dir="auto"
+            className="text-sm text-yellow-700 font-medium whitespace-pre-wrap"
+          >
             {cleanedChart
-              ? error
+              ? (messages?.error ?? DEFAULT_MESSAGES.error)
               : (messages?.emptyChart ?? DEFAULT_MESSAGES.emptyChart)}
           </span>
         </div>
@@ -133,6 +141,7 @@ export default React.memo(MermaidChart, (prev, next) => {
     prev.frozen === next.frozen &&
     prev.messages?.emptyChart === next.messages?.emptyChart &&
     prev.messages?.loading === next.messages?.loading &&
+    prev.messages?.error === next.messages?.error &&
     prev.messages?.badge === next.messages?.badge
   );
 });

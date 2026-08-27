@@ -1086,15 +1086,31 @@ export const MermaidLocaleMessages: Story = {
   },
 };
 
+const MermaidErrorDirectionFixture = () => {
+  const [locale, setLocale] = useState<MarkdownFlowLocale>("ar-SA");
+  return (
+    <div>
+      <button type="button" onClick={() => setLocale("th-TH")}>
+        Thai
+      </button>
+      <ContentRender
+        locale={locale}
+        content={'```mermaid\ninvalid ??? ["مرحبا"] -->;\n```'}
+      />
+    </div>
+  );
+};
+
 export const MermaidErrorSourceDirection: Story = {
-  render: () => (
-    <ContentRender
-      locale="ar-SA"
-      content={'```mermaid\ninvalid ??? ["مرحبا"] -->;\n```'}
-    />
-  ),
+  render: () => <MermaidErrorDirectionFixture />,
   play: async ({ canvasElement }) => {
-    await waitFor(() => {
+    const canvas = within(canvasElement);
+    const check = async (
+      locale: MarkdownFlowLocale,
+      direction: "ltr" | "rtl"
+    ) => {
+      const errorText = getContentRenderLocaleTexts(locale).mermaidErrorText;
+      const message = await canvas.findByText(errorText);
       const pre = canvasElement.querySelector("pre")!;
       expect(pre).not.toBeNull();
       expect(getComputedStyle(pre).direction).toBe("ltr");
@@ -1103,9 +1119,15 @@ export const MermaidErrorSourceDirection: Story = {
       expect(pre.querySelector("code")!.textContent).toBe(
         'invalid ??? ["مرحبا"] -->;'
       );
-      const message = pre.parentElement!.previousElementSibling!;
-      expect(getComputedStyle(message).direction).toBe("rtl");
-    });
+      expect(message).toHaveAttribute("dir", "auto");
+      expect(getComputedStyle(message).direction).toBe(direction);
+      expect(message.closest("[data-mermaid-error]")).toHaveAttribute(
+        "data-mermaid-error"
+      );
+    };
+    await check("ar-SA", "rtl");
+    await userEvent.click(canvas.getByRole("button", { name: "Thai" }));
+    await check("th-TH", "ltr");
   },
 };
 

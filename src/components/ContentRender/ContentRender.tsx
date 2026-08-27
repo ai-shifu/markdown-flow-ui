@@ -443,6 +443,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     () => ({
       loading: localeTexts.mermaidLoadingText,
       emptyChart: localeTexts.mermaidEmptyChartText,
+      error: localeTexts.mermaidErrorText,
     }),
     [localeTexts]
   );

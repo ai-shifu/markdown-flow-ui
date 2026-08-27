@@ -28,21 +28,39 @@ describe.each([
   ],
   ["markdown code renderer", (chart: string) => `~~~mermaid\n${chart}\n~~~`],
 ] as const)("Mermaid locale in %s", (_name, contentFor) => {
-  it("keeps invalid source LTR without changing the message direction", async () => {
+  it("localizes invalid charts while keeping diagnostics separate", async () => {
     vi.mocked(mermaid.parse).mockRejectedValueOnce(
       new Error("Invalid Mermaid source")
     );
     const chart = 'invalid ??? ["مرحبا"] -->;';
-    const { container } = render(
+    const { container, rerender } = render(
       <ContentRender content={contentFor(chart)} locale="ar-SA" />
     );
-    const message = await screen.findByText("error: invalid mermaid source");
+    const message = await screen.findByText(
+      getContentRenderLocaleTexts("ar-SA").mermaidErrorText
+    );
     const pre = container.querySelector("code")!.parentElement!;
     expect(pre.getAttribute("dir")).toBe("ltr");
     expect(pre.querySelector("code")?.textContent).toBe(chart);
-    expect(message.closest("[dir]")?.getAttribute("dir")).toBe(
-      _name === "markdown code renderer" ? "ltr" : "rtl"
-    );
+    expect(message.getAttribute("dir")).toBe("auto");
+    expect(
+      message
+        .closest("[data-mermaid-error]")
+        ?.getAttribute("data-mermaid-error")
+    ).toBe("error: invalid mermaid source");
+    expect(screen.queryByText("error: invalid mermaid source")).toBeNull();
+
+    for (const locale of ["th-TH", undefined] as const) {
+      rerender(<ContentRender content={contentFor(chart)} locale={locale} />);
+      expect(
+        await screen.findByText(
+          getContentRenderLocaleTexts(locale).mermaidErrorText
+        )
+      ).toBeTruthy();
+    }
+    expect(
+      screen.queryByText(getContentRenderLocaleTexts("ar-SA").mermaidErrorText)
+    ).toBeNull();
   });
 
   it.each(["loading", "empty"] as const)(

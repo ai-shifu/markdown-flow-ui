@@ -17,6 +17,7 @@ export interface ContentRenderLocaleTexts {
   scrollToBottomLabel: string;
   mermaidLoadingText: string;
   mermaidEmptyChartText: string;
+  mermaidErrorText: string;
   footnoteLabel: string;
   footnoteBackLabel: string;
 }

@@ -84,20 +84,28 @@ describe("content-aware typewriter grapheme segmentation", () => {
       createContentAwareTypewriterQueue("e", null),
       "\u0301",
       null
-    );
+    ).queue;
     const emojiQueue = appendContentAwareTypewriterQueue(
       createContentAwareTypewriterQueue("👍", null),
       "🏽",
       null
-    );
+    ).queue;
     let hangulQueue = createContentAwareTypewriterQueue("ᄀ", null);
-    hangulQueue = appendContentAwareTypewriterQueue(hangulQueue, "ᅡ", null);
-    hangulQueue = appendContentAwareTypewriterQueue(hangulQueue, "ᆨ", null);
+    hangulQueue = appendContentAwareTypewriterQueue(
+      hangulQueue,
+      "ᅡ",
+      null
+    ).queue;
+    hangulQueue = appendContentAwareTypewriterQueue(
+      hangulQueue,
+      "ᆨ",
+      null
+    ).queue;
     let indicQueue = createContentAwareTypewriterQueue("क", null);
-    indicQueue = appendContentAwareTypewriterQueue(indicQueue, "्", null);
-    indicQueue = appendContentAwareTypewriterQueue(indicQueue, "ष", null);
-    indicQueue = appendContentAwareTypewriterQueue(indicQueue, "्", null);
-    indicQueue = appendContentAwareTypewriterQueue(indicQueue, "म", null);
+    indicQueue = appendContentAwareTypewriterQueue(indicQueue, "्", null).queue;
+    indicQueue = appendContentAwareTypewriterQueue(indicQueue, "ष", null).queue;
+    indicQueue = appendContentAwareTypewriterQueue(indicQueue, "्", null).queue;
+    indicQueue = appendContentAwareTypewriterQueue(indicQueue, "म", null).queue;
 
     expect(accentQueue.tokens.map(({ text }) => text)).toEqual(["e\u0301"]);
     expect(emojiQueue.tokens.map(({ text }) => text)).toEqual(["👍🏽"]);
@@ -112,7 +120,7 @@ describe("content-aware typewriter grapheme segmentation", () => {
       consumed.queue,
       "ᅡᆨ",
       null
-    );
+    ).queue;
 
     expect(consumed.chunk).toBe("A");
     expect(consumed.queue.head).toBe(1);
@@ -121,10 +129,71 @@ describe("content-aware typewriter grapheme segmentation", () => {
 
   it("repairs a fallback ZWJ sequence split across stream appends", () => {
     let queue = createContentAwareTypewriterQueue("👨‍", null);
-    queue = appendContentAwareTypewriterQueue(queue, "👩‍", null);
-    queue = appendContentAwareTypewriterQueue(queue, "👧‍👦", null);
+    queue = appendContentAwareTypewriterQueue(queue, "👩‍", null).queue;
+    queue = appendContentAwareTypewriterQueue(queue, "👧‍👦", null).queue;
 
     expect(queue.tokens.map(({ text }) => text)).toEqual(["👨‍👩‍👧‍👦"]);
+  });
+
+  it.each([
+    ["a combining accent", "e", "\u0301", "e\u0301"],
+    ["an Arabic mark", "ا", "َ", "اَ"],
+    ["a Thai mark", "ก", "ำ", "กำ"],
+    ["an emoji modifier", "👍", "🏽", "👍🏽"],
+    ["a regional flag", "🇺", "🇳", "🇺🇳"],
+    ["a Hangul Jamo syllable", "ᄀ", "ᅡᆨ", "각"],
+    ["an Indic conjunct", "क", "्ष", "क्ष"],
+    ["a family ZWJ sequence", "👨", "‍👩‍👧‍👦", "👨‍👩‍👧‍👦"],
+  ])(
+    "immediately repairs %s after its first part was consumed",
+    (_name, initial, suffix, completed) => {
+      const consumed = consumeContentAwareTypewriterQueue(
+        createContentAwareTypewriterQueue(initial, null),
+        CONTENT_AWARE_TYPEWRITER_TICK_BUDGET
+      );
+      const appended = appendContentAwareTypewriterQueue(
+        consumed.queue,
+        suffix,
+        null
+      );
+
+      expect(isContentAwareTypewriterQueueEmpty(consumed.queue)).toBe(true);
+      expect(appended.immediateChunk).toBe(suffix);
+      expect(appended.queue.trailingGrapheme).toBe(completed);
+      expect(isContentAwareTypewriterQueueEmpty(appended.queue)).toBe(true);
+    }
+  );
+
+  it("keeps a new grapheme queued after an already consumed tail", () => {
+    const consumed = consumeContentAwareTypewriterQueue(
+      createContentAwareTypewriterQueue("e", null),
+      CONTENT_AWARE_TYPEWRITER_TICK_BUDGET
+    );
+    const appended = appendContentAwareTypewriterQueue(
+      consumed.queue,
+      "x",
+      null
+    );
+
+    expect(appended.immediateChunk).toBe("");
+    expect(appended.queue.tokens).toEqual([{ text: "x", cost: 28 }]);
+    expect(appended.queue.trailingGrapheme).toBe("e");
+  });
+
+  it("repairs the consumed tail immediately and queues later graphemes", () => {
+    const consumed = consumeContentAwareTypewriterQueue(
+      createContentAwareTypewriterQueue("👍", null),
+      CONTENT_AWARE_TYPEWRITER_TICK_BUDGET
+    );
+    const appended = appendContentAwareTypewriterQueue(
+      consumed.queue,
+      "🏽中",
+      null
+    );
+
+    expect(appended.immediateChunk).toBe("🏽");
+    expect(appended.queue.trailingGrapheme).toBe("👍🏽");
+    expect(appended.queue.tokens).toEqual([{ text: "中", cost: 100 }]);
   });
 });
 

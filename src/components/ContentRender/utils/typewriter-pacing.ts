@@ -33,6 +33,12 @@ export interface ContentAwareTypewriterToken {
 export interface ContentAwareTypewriterQueue {
   tokens: readonly ContentAwareTypewriterToken[];
   head: number;
+  trailingGrapheme: string;
+}
+
+export interface ContentAwareTypewriterAppend {
+  queue: ContentAwareTypewriterQueue;
+  immediateChunk: string;
 }
 
 export interface ContentAwareTypewriterConsumption {
@@ -84,6 +90,14 @@ export const segmentTypewriterGraphemes = (
   }
 
   return Array.from(resolvedSegmenter.segment(value), ({ segment }) => segment);
+};
+
+export const getTrailingTypewriterGrapheme = (
+  value: string,
+  segmenter?: TypewriterGraphemeSegmenter | null
+) => {
+  const graphemes = segmentTypewriterGraphemes(value, segmenter);
+  return graphemes[graphemes.length - 1] ?? "";
 };
 
 const isEmojiGrapheme = (grapheme: string) =>
@@ -145,6 +159,7 @@ export const createContentAwareTypewriterQueue = (
 ): ContentAwareTypewriterQueue => ({
   tokens: tokenizeContentAwareTypewriterText(value, segmenter),
   head: 0,
+  trailingGrapheme: "",
 });
 
 export const isContentAwareTypewriterQueueEmpty = (
@@ -155,14 +170,44 @@ export const appendContentAwareTypewriterQueue = (
   queue: ContentAwareTypewriterQueue,
   suffix: string,
   segmenter?: TypewriterGraphemeSegmenter | null
-): ContentAwareTypewriterQueue => {
+): ContentAwareTypewriterAppend => {
   if (!suffix) {
-    return queue;
+    return { queue, immediateChunk: "" };
   }
 
   const remainingTokens = queue.tokens.slice(queue.head);
   if (remainingTokens.length === 0) {
-    return createContentAwareTypewriterQueue(suffix, segmenter);
+    const repairedTail = queue.trailingGrapheme
+      ? tokenizeContentAwareTypewriterText(
+          `${queue.trailingGrapheme}${suffix}`,
+          segmenter
+        )
+      : [];
+    const firstRepairedToken = repairedTail[0];
+
+    if (
+      firstRepairedToken?.text.startsWith(queue.trailingGrapheme) &&
+      firstRepairedToken.text.length > queue.trailingGrapheme.length
+    ) {
+      return {
+        queue: {
+          tokens: repairedTail.slice(1),
+          head: 0,
+          trailingGrapheme: firstRepairedToken.text,
+        },
+        immediateChunk: firstRepairedToken.text.slice(
+          queue.trailingGrapheme.length
+        ),
+      };
+    }
+
+    return {
+      queue: {
+        ...createContentAwareTypewriterQueue(suffix, segmenter),
+        trailingGrapheme: queue.trailingGrapheme,
+      },
+      immediateChunk: "",
+    };
   }
 
   const lastToken = remainingTokens[remainingTokens.length - 1];
@@ -172,8 +217,12 @@ export const appendContentAwareTypewriterQueue = (
   );
 
   return {
-    tokens: [...remainingTokens.slice(0, -1), ...repairedTail],
-    head: 0,
+    queue: {
+      tokens: [...remainingTokens.slice(0, -1), ...repairedTail],
+      head: 0,
+      trailingGrapheme: queue.trailingGrapheme,
+    },
+    immediateChunk: "",
   };
 };
 
@@ -184,6 +233,7 @@ export const consumeContentAwareTypewriterQueue = (
   let head = queue.head;
   let remainingBudget = Math.max(0, availableBudget);
   let chunk = "";
+  let trailingGrapheme = queue.trailingGrapheme;
 
   while (head < queue.tokens.length) {
     const token = queue.tokens[head];
@@ -194,6 +244,7 @@ export const consumeContentAwareTypewriterQueue = (
     chunk += token.text;
     remainingBudget -= token.cost;
     head += 1;
+    trailingGrapheme = token.text;
   }
 
   return {
@@ -201,6 +252,7 @@ export const consumeContentAwareTypewriterQueue = (
     queue: {
       tokens: queue.tokens,
       head,
+      trailingGrapheme,
     },
     remainingBudget,
   };

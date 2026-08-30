@@ -113,6 +113,107 @@ describe("ContentRender content-aware typewriter", () => {
     expect(getVisibleText(container)).toBe("甲乙丙丁");
   });
 
+  it.each([
+    ["a combining accent", "e", "e\u0301"],
+    ["an emoji modifier", "👍", "👍🏽"],
+  ])(
+    "immediately repairs %s appended after completion",
+    (_name, initial, completed) => {
+      const onTypeFinished = vi.fn();
+      const { container, rerender } = render(
+        <ContentRender
+          {...TYPEWRITER_PROPS}
+          content={initial}
+          onTypeFinished={onTypeFinished}
+        />
+      );
+
+      advanceTime(30);
+      expect(getVisibleText(container)).toBe(initial);
+      expect(onTypeFinished).toHaveBeenCalledTimes(1);
+
+      rerender(
+        <ContentRender
+          {...TYPEWRITER_PROPS}
+          content={completed}
+          onTypeFinished={onTypeFinished}
+        />
+      );
+
+      expect(getVisibleText(container)).toBe(completed);
+      expect(onTypeFinished).toHaveBeenCalledTimes(2);
+
+      advanceTime(60);
+      expect(getVisibleText(container)).toBe(completed);
+      expect(onTypeFinished).toHaveBeenCalledTimes(2);
+    }
+  );
+
+  it("repairs a consumed emoji tail without advancing the next normal tick", () => {
+    const { container, rerender } = render(
+      <ContentRender {...TYPEWRITER_PROPS} content="👍" />
+    );
+
+    advanceTime(30);
+    expect(getVisibleText(container)).toBe("👍");
+
+    rerender(<ContentRender {...TYPEWRITER_PROPS} content="👍🏽甲乙" />);
+    expect(getVisibleText(container)).toBe("👍🏽");
+
+    advanceTime(29);
+    expect(getVisibleText(container)).toBe("👍🏽");
+    advanceTime(1);
+    expect(getVisibleText(container)).toBe("👍🏽甲乙");
+  });
+
+  it("reseeds the displayed tail after a non-prefix rewrite", () => {
+    const { container, rerender } = render(
+      <ContentRender {...TYPEWRITER_PROPS} content="甲乙丙" />
+    );
+
+    advanceTime(30);
+    expect(getVisibleText(container)).toBe("甲乙");
+
+    rerender(<ContentRender {...TYPEWRITER_PROPS} content="👍" />);
+    expect(getVisibleText(container)).toBe("👍");
+
+    rerender(<ContentRender {...TYPEWRITER_PROPS} content="👍🏽" />);
+    expect(getVisibleText(container)).toBe("👍🏽");
+  });
+
+  it("keeps the displayed tail when pending content is rebuilt then removed", () => {
+    const { container, rerender } = render(
+      <ContentRender {...TYPEWRITER_PROPS} content="中e中" />
+    );
+
+    advanceTime(30);
+    expect(getVisibleText(container)).toBe("中e");
+
+    rerender(<ContentRender {...TYPEWRITER_PROPS} content="中e文" />);
+    rerender(<ContentRender {...TYPEWRITER_PROPS} content="中e" />);
+    rerender(<ContentRender {...TYPEWRITER_PROPS} content={"中e\u0301"} />);
+
+    expect(getVisibleText(container)).toBe("中e\u0301");
+  });
+
+  it("seeds the displayed tail when switching from fixed pacing", () => {
+    const fixedProps = {
+      enableTypewriter: true,
+      typingSpeed: 30,
+    } as const;
+    const { container, rerender } = render(
+      <ContentRender {...fixedProps} content="👍" />
+    );
+
+    advanceTime(30);
+    expect(getVisibleText(container)).toBe("👍");
+
+    rerender(<ContentRender {...TYPEWRITER_PROPS} content="👍" />);
+    rerender(<ContentRender {...TYPEWRITER_PROPS} content="👍🏽" />);
+
+    expect(getVisibleText(container)).toBe("👍🏽");
+  });
+
   it("resets fractional budget before content appended after completion", () => {
     const { container, rerender } = render(
       <ContentRender {...TYPEWRITER_PROPS} content="a" />

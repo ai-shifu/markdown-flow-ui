@@ -40,6 +40,7 @@ import {
   CONTENT_AWARE_TYPEWRITER_TICK_BUDGET,
   consumeContentAwareTypewriterQueue,
   createContentAwareTypewriterQueue,
+  getTrailingTypewriterGrapheme,
   isContentAwareTypewriterQueueEmpty,
   type ContentAwareTypewriterQueue,
 } from "./utils/typewriter-pacing";
@@ -488,6 +489,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   const contentAwareQueueRef = useRef<ContentAwareTypewriterQueue>({
     tokens: [],
     head: 0,
+    trailingGrapheme: "",
   });
   const contentAwareBudgetRef = useRef(0);
   const previousTypewriterEnabledRef = useRef(isTypewriterEnabled);
@@ -515,7 +517,11 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
     const clearPendingContent = () => {
       pendingContentRef.current = "";
-      contentAwareQueueRef.current = { tokens: [], head: 0 };
+      contentAwareQueueRef.current = {
+        tokens: [],
+        head: 0,
+        trailingGrapheme: "",
+      };
       contentAwareBudgetRef.current = 0;
     };
 
@@ -542,12 +548,28 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     if (!content.startsWith(visibleContent)) {
       clearPendingContent();
       updateDisplayContent(content);
+      if (typewriterPacing === "content-aware") {
+        contentAwareQueueRef.current = {
+          tokens: [],
+          head: 0,
+          trailingGrapheme: getTrailingTypewriterGrapheme(content),
+        };
+      }
       return;
     }
 
-    const nextPendingContent = content.slice(visibleContent.length);
+    let nextPendingContent = content.slice(visibleContent.length);
     if (!nextPendingContent) {
-      clearPendingContent();
+      pendingContentRef.current = "";
+      contentAwareBudgetRef.current = 0;
+      contentAwareQueueRef.current =
+        typewriterPacing === "content-aware"
+          ? {
+              tokens: [],
+              head: 0,
+              trailingGrapheme: getTrailingTypewriterGrapheme(visibleContent),
+            }
+          : { tokens: [], head: 0, trailingGrapheme: "" };
       return;
     }
 
@@ -562,23 +584,37 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         pendingContentRef.current === previousPendingContent;
 
       if (canAppendToCachedQueue) {
-        contentAwareQueueRef.current = appendContentAwareTypewriterQueue(
+        const appended = appendContentAwareTypewriterQueue(
           contentAwareQueueRef.current,
           content.slice(previousSourceContent.length)
         );
+        contentAwareQueueRef.current = appended.queue;
+
+        if (appended.immediateChunk) {
+          nextPendingContent = nextPendingContent.slice(
+            appended.immediateChunk.length
+          );
+          updateDisplayContent(`${visibleContent}${appended.immediateChunk}`);
+        }
       } else {
-        contentAwareQueueRef.current =
-          createContentAwareTypewriterQueue(nextPendingContent);
+        contentAwareQueueRef.current = {
+          ...createContentAwareTypewriterQueue(nextPendingContent),
+          trailingGrapheme: getTrailingTypewriterGrapheme(visibleContent),
+        };
         contentAwareBudgetRef.current = 0;
       }
     } else {
-      contentAwareQueueRef.current = { tokens: [], head: 0 };
+      contentAwareQueueRef.current = {
+        tokens: [],
+        head: 0,
+        trailingGrapheme: "",
+      };
       contentAwareBudgetRef.current = 0;
     }
 
     pendingContentRef.current = nextPendingContent;
 
-    if (!wasPending) {
+    if (!wasPending && nextPendingContent) {
       setTypewriterWakeVersion((version) => version + 1);
     }
   }, [content, isTypewriterEnabled, typewriterPacing]);
@@ -640,7 +676,14 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
       pendingContentRef.current = pendingContentRef.current.slice(chunk.length);
       if (!pendingContentRef.current) {
-        contentAwareQueueRef.current = { tokens: [], head: 0 };
+        contentAwareQueueRef.current =
+          typewriterPacing === "content-aware"
+            ? {
+                tokens: [],
+                head: 0,
+                trailingGrapheme: contentAwareQueueRef.current.trailingGrapheme,
+              }
+            : { tokens: [], head: 0, trailingGrapheme: "" };
         contentAwareBudgetRef.current = 0;
       }
 

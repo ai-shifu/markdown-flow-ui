@@ -5,6 +5,8 @@ import {
   splitContentSegments,
 } from "markdown-flow-ui/renderer";
 import type {
+  ContentRenderTypewriterPacing,
+  ContentRenderTypewriterState,
   InteractionDefaultValueOptions,
   OnSendContentParams,
   RenderSegment,
@@ -20,8 +22,12 @@ const runtimeExports = [
 let onSendContentParams: OnSendContentParams | undefined;
 let renderSegment: RenderSegment | undefined;
 let interactionDefaultValueOptions: InteractionDefaultValueOptions | undefined;
+const typewriterPacing: ContentRenderTypewriterPacing = "content-aware";
+let typewriterState: ContentRenderTypewriterState | undefined;
 
 void runtimeExports;
 void onSendContentParams;
 void renderSegment;
 void interactionDefaultValueOptions;
+void typewriterPacing;
+void typewriterState;

@@ -36,6 +36,14 @@ import {
 import { normalizeInlineHtml } from "./utils/normalize-inline-html";
 import IframeSandbox from "./IframeSandbox";
 import {
+  appendContentAwareTypewriterQueue,
+  CONTENT_AWARE_TYPEWRITER_TICK_BUDGET,
+  consumeContentAwareTypewriterQueue,
+  createContentAwareTypewriterQueue,
+  isContentAwareTypewriterQueueEmpty,
+  type ContentAwareTypewriterQueue,
+} from "./utils/typewriter-pacing";
+import {
   splitContentSegments,
   type RenderSegment,
 } from "./utils/split-content";
@@ -52,6 +60,9 @@ import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 
 const SANDBOX_TAG_HINT_PATTERN =
   /<(script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)\b/i;
+const FIXED_TYPEWRITER_CHUNK_SIZE = 2;
+
+export type ContentRenderTypewriterPacing = "fixed" | "content-aware";
 
 // Define component Props type
 export interface ContentRenderProps {
@@ -79,6 +90,8 @@ export interface ContentRenderProps {
   onSend?: (content: OnSendContentParams) => void;
   typingSpeed?: number;
   enableTypewriter?: boolean;
+  /** Controls how much text is revealed per tick. Defaults to the legacy fixed pacing. */
+  typewriterPacing?: ContentRenderTypewriterPacing;
   onTypeFinished?: () => void;
   onTypewriterStateChange?: (state: ContentRenderTypewriterState) => void;
   userInput?: string;
@@ -416,6 +429,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   onSend,
   typingSpeed = 40,
   enableTypewriter = false,
+  typewriterPacing = "fixed",
   onTypeFinished,
   onTypewriterStateChange,
   userInput,
@@ -463,42 +477,111 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     !contentType || contentType === "text";
   const isTypewriterEnabled =
     Boolean(enableTypewriter) && shouldApplyTypewriterByContentType;
-  const typewriterChunkSize = 2;
   const typewriterTickMs = Math.max(0, typingSpeed);
+  const fixedTypewriterContentVersion =
+    typewriterPacing === "fixed" ? content : undefined;
   const [displayContent, setDisplayContent] = useState(() =>
     isTypewriterEnabled ? "" : content
   );
+  const displayContentRef = useRef(displayContent);
   const pendingContentRef = useRef("");
+  const contentAwareQueueRef = useRef<ContentAwareTypewriterQueue>({
+    tokens: [],
+    head: 0,
+  });
+  const contentAwareBudgetRef = useRef(0);
   const previousTypewriterEnabledRef = useRef(isTypewriterEnabled);
+  const previousTypewriterPacingRef = useRef(typewriterPacing);
+  const previousSourceContentRef = useRef(content);
   const hasReportedTypeFinishedRef = useRef(false);
+  const [typewriterWakeVersion, setTypewriterWakeVersion] = useState(0);
 
   useEffect(() => {
     const wasTypewriterEnabled = previousTypewriterEnabledRef.current;
+    const previousTypewriterPacing = previousTypewriterPacingRef.current;
+    const previousSourceContent = previousSourceContentRef.current;
+    const wasPending = Boolean(pendingContentRef.current);
+
     previousTypewriterEnabledRef.current = isTypewriterEnabled;
-    hasReportedTypeFinishedRef.current = false;
+    previousTypewriterPacingRef.current = typewriterPacing;
+    previousSourceContentRef.current = content;
+
+    if (
+      content !== previousSourceContent ||
+      isTypewriterEnabled !== wasTypewriterEnabled
+    ) {
+      hasReportedTypeFinishedRef.current = false;
+    }
+
+    const clearPendingContent = () => {
+      pendingContentRef.current = "";
+      contentAwareQueueRef.current = { tokens: [], head: 0 };
+      contentAwareBudgetRef.current = 0;
+    };
+
+    const updateDisplayContent = (nextContent: string) => {
+      displayContentRef.current = nextContent;
+      setDisplayContent(nextContent);
+    };
 
     if (!isTypewriterEnabled) {
-      pendingContentRef.current = "";
-      setDisplayContent(content);
+      clearPendingContent();
+      updateDisplayContent(content);
       return;
     }
 
-    setDisplayContent((current) => {
-      const shouldRestartTyping = !wasTypewriterEnabled;
-      const canContinueTyping = content.startsWith(current);
+    if (!wasTypewriterEnabled) {
+      clearPendingContent();
+      updateDisplayContent("");
+    }
 
-      if (!shouldRestartTyping && !canContinueTyping) {
-        pendingContentRef.current = "";
-        return content;
+    const visibleContent = !wasTypewriterEnabled
+      ? ""
+      : displayContentRef.current;
+
+    if (!content.startsWith(visibleContent)) {
+      clearPendingContent();
+      updateDisplayContent(content);
+      return;
+    }
+
+    const nextPendingContent = content.slice(visibleContent.length);
+    if (!nextPendingContent) {
+      clearPendingContent();
+      return;
+    }
+
+    if (typewriterPacing === "content-aware") {
+      const previousPendingContent = previousSourceContent.slice(
+        visibleContent.length
+      );
+      const canAppendToCachedQueue =
+        wasTypewriterEnabled &&
+        previousTypewriterPacing === "content-aware" &&
+        content.startsWith(previousSourceContent) &&
+        pendingContentRef.current === previousPendingContent;
+
+      if (canAppendToCachedQueue) {
+        contentAwareQueueRef.current = appendContentAwareTypewriterQueue(
+          contentAwareQueueRef.current,
+          content.slice(previousSourceContent.length)
+        );
+      } else {
+        contentAwareQueueRef.current =
+          createContentAwareTypewriterQueue(nextPendingContent);
+        contentAwareBudgetRef.current = 0;
       }
+    } else {
+      contentAwareQueueRef.current = { tokens: [], head: 0 };
+      contentAwareBudgetRef.current = 0;
+    }
 
-      const nextVisibleContent =
-        shouldRestartTyping || !canContinueTyping ? "" : current;
+    pendingContentRef.current = nextPendingContent;
 
-      pendingContentRef.current = content.slice(nextVisibleContent.length);
-      return nextVisibleContent;
-    });
-  }, [content, isTypewriterEnabled]);
+    if (!wasPending) {
+      setTypewriterWakeVersion((version) => version + 1);
+    }
+  }, [content, isTypewriterEnabled, typewriterPacing]);
 
   useEffect(() => {
     if (!isTypewriterEnabled) {
@@ -523,28 +606,57 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     }
 
     const typewriterTimer = window.setTimeout(() => {
-      setDisplayContent((current) => {
-        const { chunk, rest } = splitTextByCharacterChunk(
-          pendingContentRef.current,
-          typewriterChunkSize
+      if (!pendingContentRef.current) {
+        return;
+      }
+
+      let chunk = "";
+
+      if (typewriterPacing === "content-aware") {
+        const result = consumeContentAwareTypewriterQueue(
+          contentAwareQueueRef.current,
+          contentAwareBudgetRef.current + CONTENT_AWARE_TYPEWRITER_TICK_BUDGET
         );
 
-        if (!chunk) {
-          return current;
-        }
+        chunk = result.chunk;
+        contentAwareQueueRef.current = result.queue;
 
-        pendingContentRef.current = rest;
-        return `${current}${chunk}`;
-      });
+        if (isContentAwareTypewriterQueueEmpty(result.queue)) {
+          contentAwareBudgetRef.current = 0;
+        } else {
+          contentAwareBudgetRef.current = result.remainingBudget;
+        }
+      } else {
+        const fixedChunk = splitTextByCharacterChunk(
+          pendingContentRef.current,
+          FIXED_TYPEWRITER_CHUNK_SIZE
+        );
+        chunk = fixedChunk.chunk;
+      }
+
+      if (!chunk) {
+        return;
+      }
+
+      pendingContentRef.current = pendingContentRef.current.slice(chunk.length);
+      if (!pendingContentRef.current) {
+        contentAwareQueueRef.current = { tokens: [], head: 0 };
+        contentAwareBudgetRef.current = 0;
+      }
+
+      const nextDisplayContent = `${displayContentRef.current}${chunk}`;
+      displayContentRef.current = nextDisplayContent;
+      setDisplayContent(nextDisplayContent);
     }, typewriterTickMs);
 
     return () => window.clearTimeout(typewriterTimer);
   }, [
-    content,
     displayContent,
+    fixedTypewriterContentVersion,
     isTypewriterEnabled,
-    typewriterChunkSize,
+    typewriterPacing,
     typewriterTickMs,
+    typewriterWakeVersion,
   ]);
 
   const typewriterState = useMemo<ContentRenderTypewriterState>(

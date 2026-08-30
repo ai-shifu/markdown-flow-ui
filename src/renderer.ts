@@ -34,7 +34,11 @@ import type {
   UseScrollToBottomOptions,
   UseScrollToBottomReturn,
 } from "./components/MarkdownFlow/useScrollToBottom";
-import type { ContentRenderProps } from "./components/ContentRender/ContentRender";
+import type {
+  ContentRenderProps,
+  ContentRenderTypewriterPacing,
+  ContentRenderTypewriterState,
+} from "./components/ContentRender/ContentRender";
 import type { MarkdownFlowInputProps } from "./components/ContentRender/MarkdownFlowInput";
 import type {
   OnSendContentParams,
@@ -80,6 +84,8 @@ export type {
   UseScrollToBottomOptions,
   UseScrollToBottomReturn,
   ContentRenderProps,
+  ContentRenderTypewriterPacing,
+  ContentRenderTypewriterState,
   MarkdownFlowInputProps,
   IframeSandboxProps,
   SandboxAppProps,

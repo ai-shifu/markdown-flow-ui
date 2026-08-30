@@ -7,7 +7,11 @@ export type { RenderSegment } from "./utils/split-content";
 export { splitContentSegments } from "./utils/split-content";
 
 export { default as ContentRender } from "./ContentRender";
-export type { ContentRenderProps } from "./ContentRender";
+export type {
+  ContentRenderProps,
+  ContentRenderTypewriterPacing,
+  ContentRenderTypewriterState,
+} from "./ContentRender";
 export type { MarkdownFlowLocale } from "../../lib/locale";
 export { default as MarkdownFlowInput } from "./MarkdownFlowInput";
 export type { MarkdownFlowInputProps } from "./MarkdownFlowInput";

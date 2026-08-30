@@ -42,6 +42,7 @@
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "tailwind-merge": "^3.3.1",
+    "unicode-segmenter": "0.17.3",
     "unified": "^11.0.5",
     "unist": "^0.0.1",
     "unist-util-visit": "^5.0.0"
@@ -181,7 +182,7 @@
       ]
     }
   },
-  "version": "0.2.15",
+  "version": "0.2.19",
   "type": "module",
   "exports": {
     ".": {

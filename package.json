@@ -144,7 +144,7 @@
     "//build": "next build",
     "build:css": "pnpm exec tailwindcss --input src/styles/library.css --output dist/markdown-flow-ui-lib.css --config tailwind.build.config.ts --minify && node scripts/copy-katex-fonts.mjs",
     "build:fonts": "node scripts/copy-fonts.mjs",
-    "build": "vite build && pnpm run build:css",
+    "build": "vite build && pnpm run build:css && node scripts/externalize-katex-fonts.mjs",
     "build-storybook": "storybook build",
     "commit": "cz",
     "dev": "next dev --turbopack",
@@ -182,7 +182,7 @@
       ]
     }
   },
-  "version": "0.2.20",
+  "version": "0.2.21",
   "type": "module",
   "exports": {
     ".": {

@@ -414,7 +414,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   dir,
   customRenderBar,
   onSend,
-  typingSpeed = 40,
+  typingSpeed = 30,
   enableTypewriter = false,
   onTypeFinished,
   onTypewriterStateChange,

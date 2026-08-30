@@ -430,7 +430,6 @@ This greatly enhances content expressiveness and interactivity!
 
 `;
 
-const TYPEWRITER_STREAM_TICK_MS = 40;
 const TYPEWRITER_SOURCE_PUSH_INTERVAL_MS = 180;
 const TYPEWRITER_STREAM_MAX_BLOCK_WIDTH = 1000;
 const TYPEWRITER_STREAM_ASK_LABEL = "追问";
@@ -783,7 +782,6 @@ const TypewriterStreamPreview = ({
                 <ContentRender
                   content={currentContent}
                   enableTypewriter={isTypewriterElement}
-                  typingSpeed={TYPEWRITER_STREAM_TICK_MS}
                   onTypewriterStateChange={(state) =>
                     updateElementTypewriterState(elementBid, state)
                   }
@@ -2646,7 +2644,7 @@ export const TypewriterStreamingChineseText: Story = {
     docs: {
       description: {
         story:
-          "Replays real ai-shifu learning-page element streaming, including follow-up actions and mixed text/html block rendering.",
+          "Replays real ai-shifu learning-page element streaming with the ContentRender default typewriter pacing, including follow-up actions and mixed text/html block rendering.",
       },
     },
   },

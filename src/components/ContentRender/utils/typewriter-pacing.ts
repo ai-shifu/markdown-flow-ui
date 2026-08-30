@@ -1,3 +1,5 @@
+import { splitGraphemes } from "unicode-segmenter/grapheme";
+
 export const CONTENT_AWARE_TYPEWRITER_TICK_BUDGET = 200;
 
 const TYPEWRITER_GRAPHEME_COST = {
@@ -10,13 +12,6 @@ const TYPEWRITER_GRAPHEME_COST = {
   whitespace: 0,
 } as const;
 
-const ZERO_WIDTH_JOINER = "\u200d";
-const CARRIAGE_RETURN = "\r";
-const LINE_FEED = "\n";
-
-const GRAPHEME_EXTEND_PATTERN = /\p{Grapheme_Extend}/u;
-const MARK_PATTERN = /\p{Mark}/u;
-const SPACING_MARK_PATTERN = /\p{Spacing_Mark}/u;
 const WHITESPACE_PATTERN = /^\s+$/u;
 const HAN_PATTERN = /\p{Script_Extensions=Han}/u;
 const LATIN_PATTERN = /\p{Script_Extensions=Latin}/u;
@@ -72,79 +67,10 @@ const isCodePointInRange = (codePoint: string, start: number, end: number) => {
 const isRegionalIndicator = (codePoint: string) =>
   isCodePointInRange(codePoint, 0x1f1e6, 0x1f1ff);
 
-const isVariationSelector = (codePoint: string) =>
-  isCodePointInRange(codePoint, 0xfe00, 0xfe0f) ||
-  isCodePointInRange(codePoint, 0xe0100, 0xe01ef);
-
 const isEmojiModifier = (codePoint: string) =>
   isCodePointInRange(codePoint, 0x1f3fb, 0x1f3ff);
-
-const isEmojiTag = (codePoint: string) =>
-  isCodePointInRange(codePoint, 0xe0020, 0xe007f);
-
-const isFallbackExtend = (codePoint: string) =>
-  GRAPHEME_EXTEND_PATTERN.test(codePoint) ||
-  MARK_PATTERN.test(codePoint) ||
-  SPACING_MARK_PATTERN.test(codePoint) ||
-  isVariationSelector(codePoint) ||
-  isEmojiModifier(codePoint) ||
-  isEmojiTag(codePoint) ||
-  codePoint === "\u20e3" ||
-  codePoint === "\u0e33";
-
-export const fallbackSegmentTypewriterGraphemes = (value: string) => {
-  const codePoints = Array.from(value);
-  const graphemes: string[] = [];
-
-  for (let index = 0; index < codePoints.length; index += 1) {
-    let grapheme = codePoints[index];
-
-    if (grapheme === CARRIAGE_RETURN && codePoints[index + 1] === LINE_FEED) {
-      grapheme += codePoints[index + 1];
-      index += 1;
-      graphemes.push(grapheme);
-      continue;
-    }
-
-    if (
-      isRegionalIndicator(grapheme) &&
-      isRegionalIndicator(codePoints[index + 1] || "")
-    ) {
-      grapheme += codePoints[index + 1];
-      index += 1;
-      graphemes.push(grapheme);
-      continue;
-    }
-
-    while (index + 1 < codePoints.length) {
-      const nextCodePoint = codePoints[index + 1];
-
-      if (isFallbackExtend(nextCodePoint)) {
-        grapheme += nextCodePoint;
-        index += 1;
-        continue;
-      }
-
-      if (nextCodePoint === ZERO_WIDTH_JOINER) {
-        grapheme += nextCodePoint;
-        index += 1;
-
-        if (index + 1 < codePoints.length) {
-          grapheme += codePoints[index + 1];
-          index += 1;
-        }
-
-        continue;
-      }
-
-      break;
-    }
-
-    graphemes.push(grapheme);
-  }
-
-  return graphemes;
-};
+export const fallbackSegmentTypewriterGraphemes = (value: string) =>
+  Array.from(splitGraphemes(value));
 
 export const segmentTypewriterGraphemes = (
   value: string,

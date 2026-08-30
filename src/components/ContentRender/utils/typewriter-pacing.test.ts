@@ -45,6 +45,10 @@ describe("content-aware typewriter grapheme segmentation", () => {
     ["an emoji modifier", "👍🏽", ["👍🏽"]],
     ["a regional flag", "🇺🇳", ["🇺🇳"]],
     ["a family ZWJ sequence", "👨‍👩‍👧‍👦", ["👨‍👩‍👧‍👦"]],
+    ["a Hangul Jamo syllable", "각", ["각"]],
+    ["a precomposed Hangul syllable with Jamo", "각", ["각"]],
+    ["an Indic virama conjunct", "क्ष", ["क्ष"]],
+    ["a Bengali virama conjunct", "ক্ষ", ["ক্ষ"]],
   ])("keeps %s intact with Intl.Segmenter", (_name, value, expected) => {
     expect(segmentTypewriterGraphemes(value)).toEqual(expected);
   });
@@ -58,9 +62,21 @@ describe("content-aware typewriter grapheme segmentation", () => {
     ["👍🏽", ["👍🏽"]],
     ["🇺🇳", ["🇺🇳"]],
     ["👨‍👩‍👧‍👦", ["👨‍👩‍👧‍👦"]],
+    ["각", ["각"]],
+    ["각", ["각"]],
+    ["क्ष", ["क्ष"]],
+    ["ক্ষ", ["ক্ষ"]],
   ])("keeps %s intact in the fallback", (value, expected) => {
     expect(segmentTypewriterGraphemes(value, null)).toEqual(expected);
     expect(fallbackSegmentTypewriterGraphemes(value)).toEqual(expected);
+  });
+
+  it.each([
+    ["ᄀᆨ", ["ᄀ", "ᆨ"]],
+    ["कष", ["क", "ष"]],
+    ["क्A", ["क्", "A"]],
+  ])("keeps fallback boundaries in %s", (value, expected) => {
+    expect(segmentTypewriterGraphemes(value, null)).toEqual(expected);
   });
 
   it("repairs an unconsumed grapheme when a stream append completes it", () => {
@@ -74,9 +90,33 @@ describe("content-aware typewriter grapheme segmentation", () => {
       "🏽",
       null
     );
+    let hangulQueue = createContentAwareTypewriterQueue("ᄀ", null);
+    hangulQueue = appendContentAwareTypewriterQueue(hangulQueue, "ᅡ", null);
+    hangulQueue = appendContentAwareTypewriterQueue(hangulQueue, "ᆨ", null);
+    let indicQueue = createContentAwareTypewriterQueue("क", null);
+    indicQueue = appendContentAwareTypewriterQueue(indicQueue, "्", null);
+    indicQueue = appendContentAwareTypewriterQueue(indicQueue, "ष", null);
+    indicQueue = appendContentAwareTypewriterQueue(indicQueue, "्", null);
+    indicQueue = appendContentAwareTypewriterQueue(indicQueue, "म", null);
 
     expect(accentQueue.tokens.map(({ text }) => text)).toEqual(["e\u0301"]);
     expect(emojiQueue.tokens.map(({ text }) => text)).toEqual(["👍🏽"]);
+    expect(hangulQueue.tokens.map(({ text }) => text)).toEqual(["각"]);
+    expect(indicQueue.tokens.map(({ text }) => text)).toEqual(["क्ष्म"]);
+  });
+
+  it("repairs the final pending grapheme after earlier tokens were consumed", () => {
+    const queue = createContentAwareTypewriterQueue("Aᄀ", null);
+    const consumed = consumeContentAwareTypewriterQueue(queue, 28);
+    const appended = appendContentAwareTypewriterQueue(
+      consumed.queue,
+      "ᅡᆨ",
+      null
+    );
+
+    expect(consumed.chunk).toBe("A");
+    expect(consumed.queue.head).toBe(1);
+    expect(appended.tokens.map(({ text }) => text)).toEqual(["각"]);
   });
 
   it("repairs a fallback ZWJ sequence split across stream appends", () => {

@@ -29,5 +29,4 @@ void runtimeExports;
 void onSendContentParams;
 void renderSegment;
 void interactionDefaultValueOptions;
-void typewriterPacing;
-void typewriterState;
+export { typewriterPacing, typewriterState };

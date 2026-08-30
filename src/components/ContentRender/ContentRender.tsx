@@ -39,7 +39,6 @@ import {
   appendContentAwareTypewriterQueue,
   CONTENT_AWARE_TYPEWRITER_TICK_BUDGET,
   consumeContentAwareTypewriterQueue,
-  createContentAwareTypewriterQueue,
   getTrailingTypewriterGrapheme,
   isContentAwareTypewriterQueueEmpty,
   type ContentAwareTypewriterQueue,
@@ -597,10 +596,23 @@ const ContentRender: React.FC<ContentRenderProps> = ({
           updateDisplayContent(`${visibleContent}${appended.immediateChunk}`);
         }
       } else {
-        contentAwareQueueRef.current = {
-          ...createContentAwareTypewriterQueue(nextPendingContent),
-          trailingGrapheme: getTrailingTypewriterGrapheme(visibleContent),
-        };
+        const appended = appendContentAwareTypewriterQueue(
+          {
+            tokens: [],
+            head: 0,
+            trailingGrapheme: getTrailingTypewriterGrapheme(visibleContent),
+          },
+          nextPendingContent
+        );
+        contentAwareQueueRef.current = appended.queue;
+
+        if (appended.immediateChunk) {
+          nextPendingContent = nextPendingContent.slice(
+            appended.immediateChunk.length
+          );
+          updateDisplayContent(`${visibleContent}${appended.immediateChunk}`);
+        }
+
         contentAwareBudgetRef.current = 0;
       }
     } else {

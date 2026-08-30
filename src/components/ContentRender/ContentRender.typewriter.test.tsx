@@ -214,6 +214,53 @@ describe("ContentRender content-aware typewriter", () => {
     expect(getVisibleText(container)).toBe("👍🏽");
   });
 
+  it("immediately repairs a split grapheme when switching from fixed pacing", () => {
+    const fixedProps = {
+      enableTypewriter: true,
+      typingSpeed: 30,
+    } as const;
+    const onTypeFinished = vi.fn();
+    const content = "👨‍👩‍👧‍👦";
+    const { container, rerender } = render(
+      <ContentRender
+        {...fixedProps}
+        content={content}
+        onTypeFinished={onTypeFinished}
+      />
+    );
+
+    advanceTime(30);
+    expect(getVisibleText(container)).toBe("👨‍");
+    expect(onTypeFinished).not.toHaveBeenCalled();
+
+    rerender(
+      <ContentRender
+        {...TYPEWRITER_PROPS}
+        content={content}
+        onTypeFinished={onTypeFinished}
+      />
+    );
+    expect(getVisibleText(container)).toBe(content);
+    expect(onTypeFinished).toHaveBeenCalledTimes(1);
+
+    const extendedContent = `${content}\u200d👶甲乙`;
+    rerender(
+      <ContentRender
+        {...TYPEWRITER_PROPS}
+        content={extendedContent}
+        onTypeFinished={onTypeFinished}
+      />
+    );
+    expect(getVisibleText(container)).toBe(`${content}\u200d👶`);
+    expect(onTypeFinished).toHaveBeenCalledTimes(1);
+
+    advanceTime(29);
+    expect(getVisibleText(container)).toBe(`${content}\u200d👶`);
+    advanceTime(1);
+    expect(getVisibleText(container)).toBe(extendedContent);
+    expect(onTypeFinished).toHaveBeenCalledTimes(2);
+  });
+
   it("resets fractional budget before content appended after completion", () => {
     const { container, rerender } = render(
       <ContentRender {...TYPEWRITER_PROPS} content="a" />

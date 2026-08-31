@@ -539,11 +539,14 @@ GitHub Action (`.github/workflows/publish-manual.yml`), so no local
 Coding agents may initiate and publish `dev` versions only by dispatching the
 **Publish (manual)** GitHub Action with `release_type=dev`. Coding agents may
 also dispatch the workflow with `release_type=release`, but only after a human
-explicitly confirms the exact version and source branch for the formal release.
-That confirmation authorizes those release inputs; changing either input
-requires new confirmation. Without confirmation, agents may only prepare and
-validate the release branch and present the workflow inputs. Agents must never
-run `npm publish` directly for any release type themselves.
+explicitly confirms the exact version, source branch, and full commit SHA for
+the formal release. That confirmation authorizes only those release inputs;
+changing any input requires new confirmation. Before dispatch, agents must
+verify that the source branch still points to the confirmed commit and pass the
+SHA through `confirmed_commit_sha` so the workflow can enforce the same check.
+Without confirmation, agents may only prepare and validate the release branch
+and present the workflow inputs. Agents must never run `npm publish` directly
+for any release type themselves.
 
 **Prerequisite — npm Trusted Publishing (OIDC)**: the workflow authenticates to
 npm with no token, via GitHub OIDC. A one-time setup is required on npm: open
@@ -569,7 +572,8 @@ not already taken) and auto-increments the `-dev.N` counter.
 
 1. Branch from main and push it: `git checkout -b release/0.1.128 && git push -u origin release/0.1.128`.
 2. **Actions → Publish (manual) → Run workflow** → pick your branch →
-   `version=0.1.128`, `release_type=dev` or `release`.
+   `version=0.1.128`, `release_type=dev` or `release`, and for a formal release
+   set `confirmed_commit_sha` to the full human-confirmed commit SHA.
 3. The Action validates → bumps `package.json` → `npm run build` →
    `npm publish` → commits `chore: release <version>` back to the branch.
 4. Open a PR from the branch to `main`.

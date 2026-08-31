@@ -42,7 +42,7 @@ description: 为 `markdown-flow-ui` 的幻灯片（`Slide`）新增或更新可�
 - 当这类“卡住的 SSE” story 还需要在 Storybook 中体现超时兜底时，优先在 run-stream preview wrapper 上增加可选 `streamTimeoutMs`，并在超时后由 story 自己维护错误态；`Slide` 视图不要追加 `error` marker element 到画面内部，而应在 story 外层显示 alert，并通过独立开关关闭 loading。
 - 当同一个 `Slide` SSE story 需要像 ai-shifu 一样在 Storybook 里切换“听课视图 / 阅读视图”时，优先在 story preview wrapper 顶部增加单独一行的分段切换按钮；`Slide` 继续复用原有 run-stream 回放，`ContentRender` 视图只需遍历当前 `elementList` 并按顺序渲染字符串 `content`，不要跟随 `Slide` 的 `is_renderable` 门禁去裁剪文本元素，也不要顺手加入额外业务能力。
 - 当交互块提交后、同一步里马上开始收到 follow-up 可播语音时，不要继续强制打开 resolved interaction overlay；否则交互步会和后续语音抢同一个 step，触发重复 reset，表现为首段音频反复从头播放。
-- 当播放器自动播放或用户通过 prev/next 重新进入 interaction step 时，应重新打开 interaction overlay 并点亮 notes icon；但如果只是当前 interaction step 在原地继续流式追加入 follow-up 语音，则保持 overlay 关闭，避免和后续语音竞争同一步播放状态。
+- 当播放器自动播放或用户通过 prev/next 重新进入 interaction step 时，应重新打开 interaction overlay；但如果只是当前 interaction step 在原地继续流式追加入 follow-up 语音，则保持 overlay 关闭，避免和后续语音竞争同一步播放状态。
 - 当播放器正停在“最后一个、且已提交完成的 interaction step”上，而 SSE 首次 append 进来的是新的 marker（例如 `html` 首屏）时，应立即把当前索引切到这个新 marker，不要继续停在旧 interaction step 上再额外等待 interaction auto-close 或 `markerAutoAdvanceDelay`，否则会出现“新页面到了但几秒后才翻页”的体感延迟。
 - 当纯流式播放里“当前 step 已经结束，但当时还没有下一步”，之后 SSE 再 append 出新的 marker 时，应在 `Slide` 播放层基于“marker 数量新增 + `canGoNext` 从 false 变 true + 当前 step 已完成”立即补一次 `goNext()`；不要只在 `useSlide` 里改索引，否则容易误判同一步 append 和真正的新 step 解锁。
 - 当 `Slide` 的静默 marker-only 步骤需要调整自动前进节奏时，应优先暴露组件级延时参数（如 `markerAutoAdvanceDelay`），并让默认值覆盖常见 html-to-html 切页场景，避免把间隔硬编码在 story 或业务侧定时器里。
@@ -56,10 +56,11 @@ description: 为 `markdown-flow-ui` 的幻灯片（`Slide`）新增或更新可�
 - 若 slide story 的 iframe sandbox 在流式阶段主要表现为图片或圆角头像持续闪动，应优先排查运行时 Tailwind 注入；相比继续调 React key，更可能是 iframe 内 Tailwind JIT 因 class 持续变化而反复重建样式表，此时应优先复用宿主页面静态样式或注入预构建 CSS，避免在流式过程中依赖运行时 Tailwind 编译。
 - 当 sandbox iframe 的内容主要依赖 Tailwind utility class 且会持续流式更新时，优先注入预构建好的静态 Tailwind CSS（例如库产物中的 `markdown-flow-ui-lib.css`），不要在该场景里继续使用运行时 Tailwind script；运行时编译更容易引发图片区域闪动、样式抖动或局部重绘。
 - 若当前 sandbox 仍必须继续使用 Tailwind 浏览器脚本，则图片闪动问题应进一步收敛到 `img` 首次可渲染时机与 iframe `head` 样式稳定窗口：流式更新包含图片时，先保留上一帧覆盖层，再等待新图片可解码且 `head` 中样式不再继续变动后再揭开，避免头像在 Tailwind 运行时样式重建期间暴露出来。
-- 当播放器右侧分组新增外部自定义按钮时，应同步处理 notes 相关浮层箭头偏移与移动端按钮栅格列数，避免新增按钮后交互定位或布局错位。
+- 当播放器尾部分组新增外部自定义按钮时，应同步处理 interaction 浮层定位与移动端按钮栅格列数，避免新增按钮后交互定位或布局错位；没有实际可渲染的自定义按钮时不要保留空分组。
 - 当 `Slide.playerCustomActions` 需要拿到当前播放 step 的 element 时，应优先支持 render function 形式 `(context) => ReactNode`，并通过 `context.currentElement/currentIndex` 在点击时向外透传，不要在 story 或业务层自行猜测当前播放器状态。
 - 当 `Slide.playerCustomActions` 需要在按钮高亮期间暂停当前播放进度时，应由 `Slide` 暴露 `context.isActive / setActive / toggleActive` 并配合默认开启的 `playerCustomActionPauseOnActive` 统一接管暂停与恢复，不要在业务侧重复维护音频和自动播放的暂停逻辑。
 - 当 `playerCustomActionPauseOnActive` 为 `true` 时，只要 `Slide` 发生 step 切换（无论是用户前进后退还是自动播放推进），都应立即重置自定义按钮高亮态，避免新 step 继承上一 step 的暂停状态。
+- 当 active 的 `playerCustomActions` 在同一步被动态移除时，应立即清掉 active 状态并恢复未完成 interaction 的自动浮层；后续重新挂载 action 时不能继承旧的高亮或暂停状态。
 - 当 iframe sandbox 使用 DaisyUI 并出现“系统深色模式触发内容变暗”时，优先在 iframe 引导阶段锁定 `documentElement` 的 `data-theme="light"` 与 `color-scheme: light`，不要依赖宿主页面主题，以避免 `@media (prefers-color-scheme: dark)` 覆盖 `bg-base-*` 等语义色变量。
 - 当 `Slide` 在同一步里持续收到 SSE append 更新时，不要因为 `elementList` 长度变化就重置当前播放序列；只有 step / interaction 播放上下文真正变化时才允许 reset。若当前 step 音频已经自然结束，也不要因后续 append 把同一 `audioKey` 从头再播一次。
 - 当 `Slide` 处理流式音频 loading 时，`is_speakable` 步骤应在“尚未返回任何可播音频”时显示 loading；只要首个 `audio_segments` 或 `audio_url` 到达就立即关闭 loading 开始播放；若当前音频播完但下一段还未返回，可再次显示 loading；一旦该步骤音频被判定彻底结束或用户手动切换 marker，必须立即关闭 loading。

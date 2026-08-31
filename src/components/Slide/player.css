@@ -194,11 +194,6 @@
   transform: translateY(-50%);
 }
 
-.slide--mobile-device.slide--mobile-landscape .slide-player__action--notes,
-.slide--mobile-device.slide--mobile-landscape-native
-  .slide-player__action--notes {
-  justify-self: auto;
-}
 .slide-player__controls {
   display: inline-flex;
   align-items: center;

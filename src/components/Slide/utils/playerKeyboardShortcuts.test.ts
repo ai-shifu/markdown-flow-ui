@@ -33,7 +33,6 @@ describe("playerKeyboardShortcuts", () => {
     ).toBe("nextSubtitle");
     expect(getPlayerKeyboardShortcutAction({ key: "f" })).toBe("fullscreen");
     expect(getPlayerKeyboardShortcutAction({ key: "C" })).toBe("subtitle");
-    expect(getPlayerKeyboardShortcutAction({ key: "n" })).toBe("interaction");
   });
 
   it("does not map unsupported media keys", () => {
@@ -41,6 +40,7 @@ describe("playerKeyboardShortcuts", () => {
     expect(getPlayerKeyboardShortcutAction({ key: "j" })).toBeNull();
     expect(getPlayerKeyboardShortcutAction({ key: "l" })).toBeNull();
     expect(getPlayerKeyboardShortcutAction({ key: "m" })).toBeNull();
+    expect(getPlayerKeyboardShortcutAction({ key: "n" })).toBeNull();
   });
 
   it("mirrors only page shortcuts in RTL", () => {

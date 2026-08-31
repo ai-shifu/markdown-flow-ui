@@ -5,6 +5,7 @@ interface ShouldPresentInteractionOverlayParams {
   hasPlaybackContextChanged: boolean;
   hasResolvedCurrentInteraction: boolean;
   currentStepHasSpeakableElement: boolean;
+  isPlayerCustomActionActive: boolean;
 }
 
 export const shouldPresentInteractionOverlay = ({
@@ -14,8 +15,9 @@ export const shouldPresentInteractionOverlay = ({
   hasPlaybackContextChanged,
   hasResolvedCurrentInteraction,
   currentStepHasSpeakableElement,
+  isPlayerCustomActionActive,
 }: ShouldPresentInteractionOverlayParams) => {
-  if (!hasInteraction) {
+  if (!hasInteraction || isPlayerCustomActionActive) {
     return false;
   }
 
@@ -27,9 +29,8 @@ export const shouldPresentInteractionOverlay = ({
     return true;
   }
 
-  // Re-open the interaction entry state whenever playback navigates into
-  // the interaction step so the notes action stays highlighted for history
-  // playback and manual prev/next navigation.
+  // Re-open the interaction entry state whenever playback navigates into the
+  // interaction step so history and manual prev/next navigation surface it.
   if (hasPlaybackContextChanged) {
     return true;
   }

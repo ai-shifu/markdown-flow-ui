@@ -11,6 +11,7 @@ export interface SlidePlayerLocaleTexts {
   moreOptionsAriaLabel: string;
   nextLabel: string;
   nextSubtitleLabel: string;
+  /** @deprecated The player no longer renders a manual interaction action. */
   notesLabel: string;
   pauseAutoplayLabel: string;
   pauseLabel: string;

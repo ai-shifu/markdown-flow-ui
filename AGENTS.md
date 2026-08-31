@@ -534,14 +534,16 @@ GitHub Action (`.github/workflows/publish-manual.yml`), so no local
 `npm publish` (and no interactive 2FA/OTP) is needed. The old push-on-`main`
 `publish.yml` is disabled (kept as `publish.yml.bk`).
 
-#### Critical rule: formal releases must be published by a human
+#### Critical rule: formal releases require explicit human confirmation
 
 Coding agents may initiate and publish `dev` versions only by dispatching the
-**Publish (manual)** GitHub Action with `release_type=dev`. Only a human may
-initiate publication of a formal `release` version. Coding agents may prepare
-and validate the release branch and tell the human how to run the workflow,
-but they must never dispatch the workflow with `release_type=release` or run
-`npm publish` directly for any release type themselves.
+**Publish (manual)** GitHub Action with `release_type=dev`. Coding agents may
+also dispatch the workflow with `release_type=release`, but only after a human
+explicitly confirms the exact version and source branch for the formal release.
+That confirmation authorizes those release inputs; changing either input
+requires new confirmation. Without confirmation, agents may only prepare and
+validate the release branch and present the workflow inputs. Agents must never
+run `npm publish` directly for any release type themselves.
 
 **Prerequisite — npm Trusted Publishing (OIDC)**: the workflow authenticates to
 npm with no token, via GitHub OIDC. A one-time setup is required on npm: open

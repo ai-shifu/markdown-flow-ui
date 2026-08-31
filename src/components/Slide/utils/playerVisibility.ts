@@ -10,10 +10,33 @@ export interface ResolvedSlidePlayerVisibility {
   playerControlsVisibility: SlidePlayerControlsVisibility;
 }
 
+export interface ResolveSlidePlayerLayoutStateOptions {
+  isAutoVisible: boolean;
+  playerControlsVisibility: SlidePlayerControlsVisibility;
+  shouldMountPlayer: boolean;
+}
+
+export interface ResolvedSlidePlayerLayoutState {
+  controlsVisible: boolean;
+  layoutReserved: boolean;
+}
+
 export const resolveSlidePlayerVisibility = ({
   playerEnabled,
   playerControlsVisibility,
 }: ResolveSlidePlayerVisibilityOptions): ResolvedSlidePlayerVisibility => ({
   playerEnabled: playerEnabled ?? true,
   playerControlsVisibility: playerControlsVisibility ?? "auto",
+});
+
+export const resolveSlidePlayerLayoutState = ({
+  isAutoVisible,
+  playerControlsVisibility,
+  shouldMountPlayer,
+}: ResolveSlidePlayerLayoutStateOptions): ResolvedSlidePlayerLayoutState => ({
+  controlsVisible:
+    shouldMountPlayer &&
+    playerControlsVisibility !== "hidden" &&
+    (playerControlsVisibility === "visible" || isAutoVisible),
+  layoutReserved: shouldMountPlayer,
 });

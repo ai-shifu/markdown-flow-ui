@@ -12,7 +12,6 @@ export interface SubtitleOverlayProps
   extraBottomOffset?: number;
   hasPlayerGap?: boolean;
   isEnabled?: boolean;
-  isPlayerHidden?: boolean;
   onVisibilityChange?: (visible: boolean) => void;
   playbackTimeStore: PlaybackTimeStore;
   subtitleCues?: ElementSubtitleCue[];
@@ -23,7 +22,6 @@ const SubtitleOverlay = ({
   extraBottomOffset = 0,
   hasPlayerGap = false,
   isEnabled = true,
-  isPlayerHidden = false,
   onVisibilityChange,
   playbackTimeStore,
   style,
@@ -51,7 +49,6 @@ const SubtitleOverlay = ({
       className={cn(
         "slide-subtitle-overlay",
         hasPlayerGap && "slide-subtitle-overlay--with-player-gap",
-        isPlayerHidden && "slide-subtitle-overlay--player-hidden",
         className
       )}
       style={

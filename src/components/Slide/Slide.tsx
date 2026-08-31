@@ -1510,6 +1510,13 @@ const Slide: React.FC<SlideProps> = ({
     clearInteractionOverlayOpenTimer();
     pendingInteractionOverlayStepIndexRef.current = null;
 
+    // A custom action may intentionally remain active without pausing ordinary
+    // playback. Unresolved interactions still gate progression even while that
+    // action temporarily owns the visible overlay surface.
+    if (shouldBlockPlaybackForInteraction) {
+      return;
+    }
+
     if (!shouldInitializeAudioSequence) {
       return;
     }

@@ -2680,24 +2680,52 @@ const CustomPlayerActionSlidePreview = ({
   );
 };
 
-const RemovableCustomActionSlidePreview = (
-  props: React.ComponentProps<typeof Slide>
-) => {
+interface CustomActionToggleLabels {
+  remove: {
+    ariaLabel: string;
+    buttonText: string;
+  };
+  restore: {
+    ariaLabel: string;
+    buttonText: string;
+  };
+}
+
+const CUSTOM_ACTION_INTERACTION_EXCLUSIVITY_LABELS: CustomActionToggleLabels = {
+  remove: {
+    ariaLabel: "Remove custom player action",
+    buttonText: "Remove custom action",
+  },
+  restore: {
+    ariaLabel: "Restore custom player action",
+    buttonText: "Restore custom action",
+  },
+};
+
+type RemovableCustomActionSlidePreviewProps = React.ComponentProps<
+  typeof Slide
+> & {
+  customActionToggleLabels: CustomActionToggleLabels;
+};
+
+const RemovableCustomActionSlidePreview = ({
+  customActionToggleLabels,
+  ...props
+}: RemovableCustomActionSlidePreviewProps) => {
   const [customActionEnabled, setCustomActionEnabled] = useState(true);
+  const toggleLabels = customActionEnabled
+    ? customActionToggleLabels.remove
+    : customActionToggleLabels.restore;
 
   return (
     <div className="flex h-[100dvh] w-full flex-col items-center justify-center gap-4 bg-muted/20 p-8">
       <button
-        aria-label={
-          customActionEnabled
-            ? "Remove custom player action"
-            : "Restore custom player action"
-        }
+        aria-label={toggleLabels.ariaLabel}
         className="rounded border border-border bg-background px-3 py-2 text-sm"
         onClick={() => setCustomActionEnabled((enabled) => !enabled)}
         type="button"
       >
-        {customActionEnabled ? "Remove custom action" : "Restore custom action"}
+        {toggleLabels.buttonText}
       </button>
       <CustomPlayerActionSlidePreview
         {...props}
@@ -3676,7 +3704,12 @@ export const CustomActionInteractionExclusivity: Story = {
       },
     },
   },
-  render: (args) => <RemovableCustomActionSlidePreview {...args} />,
+  render: (args) => (
+    <RemovableCustomActionSlidePreview
+      {...args}
+      customActionToggleLabels={CUSTOM_ACTION_INTERACTION_EXCLUSIVITY_LABELS}
+    />
+  ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const customAction = canvas.getByRole("button", {

@@ -744,6 +744,13 @@ export const MobileLandscapePlayerDirection: Story = {
     expect(
       fixtureWithoutCustomActions.querySelectorAll(".slide-player__group")
     ).toHaveLength(1);
+    expect(
+      getComputedStyle(
+        fixtureWithoutCustomActions.querySelector<HTMLElement>(
+          ".slide-player__group"
+        )!
+      ).position
+    ).not.toBe("absolute");
   },
 };
 

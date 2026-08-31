@@ -11,6 +11,7 @@ name: Publish (manual)
 #     - version:      base version, e.g. 0.1.128 (no -dev suffix)
 #     - release_type: dev (-> 0.1.128-dev.N on the `dev` dist-tag) or
 #                     release (-> 0.1.128 on `latest`)
+#     - confirmed_commit_sha: full confirmed commit SHA (required for release)
 #
 # Refuses to run on the default branch (main).
 
@@ -29,6 +30,10 @@ on:
         options:
           - dev
           - release
+      confirmed_commit_sha:
+        description: "Full confirmed source commit SHA (required for release)"
+        required: false
+        type: string
 
 jobs:
   publish:
@@ -45,10 +50,26 @@ jobs:
           echo "::error::Do not publish from 'main'. Run this workflow from a feature branch, then open a PR to merge the version bump back into main."
           exit 1
 
+      - name: Verify confirmed formal release commit
+        if: inputs.release_type == 'release'
+        env:
+          CONFIRMED_COMMIT_SHA: ${{ inputs.confirmed_commit_sha }}
+          DISPATCH_COMMIT_SHA: ${{ github.sha }}
+        run: |
+          if [[ ! "${CONFIRMED_COMMIT_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Formal releases require the full 40-character confirmed_commit_sha."
+            exit 1
+          fi
+
+          if [ "${DISPATCH_COMMIT_SHA}" != "${CONFIRMED_COMMIT_SHA}" ]; then
+            echo "::error::The selected branch points to ${DISPATCH_COMMIT_SHA}, not the confirmed commit ${CONFIRMED_COMMIT_SHA}. Obtain new confirmation before publishing."
+            exit 1
+          fi
+
       - name: Check out repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.sha }}
           token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 

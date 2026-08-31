@@ -85,6 +85,7 @@ import {
 } from "./utils/imageOnlyStepVisualReady";
 import { resolveSilentStepAutoAdvanceBehavior } from "./utils/silentStepAutoAdvance";
 import {
+  resolveSlidePlayerLayoutState,
   resolveSlidePlayerVisibility,
   type SlidePlayerControlsVisibility,
 } from "./utils/playerVisibility";
@@ -591,14 +592,18 @@ const Slide: React.FC<SlideProps> = ({
     ]
   );
   const previousEffectiveMobileViewModeRef = useRef(effectiveMobileViewMode);
-  const playerControlsVisible =
-    shouldMountPlayer &&
-    resolvedPlayerControlsVisibility !== "hidden" &&
-    (resolvedPlayerControlsVisibility === "visible" || isPlayerVisible);
+  const {
+    controlsVisible: playerControlsVisible,
+    layoutReserved: playerLayoutReserved,
+  } = resolveSlidePlayerLayoutState({
+    isAutoVisible: isPlayerVisible,
+    playerControlsVisibility: resolvedPlayerControlsVisibility,
+    shouldMountPlayer,
+  });
   const shouldShowFullscreenHeader =
     isImmersiveMobileFullscreen && playerControlsVisible;
   const shouldApplyFullscreenViewportPadding =
-    isImmersiveMobileFullscreen && playerControlsVisible;
+    isImmersiveMobileFullscreen && playerLayoutReserved;
   const shouldShowMobileFullscreenMask =
     isImmersiveMobileFullscreen || isNativeMobileFullscreen;
   const isDesktopBrowserFullscreen = isBrowserFullscreen && !isMobileDevice;
@@ -2286,8 +2291,7 @@ const Slide: React.FC<SlideProps> = ({
     getInteractionOverlayDragBounds,
     interactionOverlayDragOffset,
     isInteractionOverlayDragging,
-    playerControlsVisible,
-    shouldMountPlayer,
+    playerLayoutReserved,
     shouldShowInteractionOverlay,
   ]);
 
@@ -2569,9 +2573,8 @@ const Slide: React.FC<SlideProps> = ({
 
         <SubtitleOverlay
           extraBottomOffset={interactionOverlaySubtitleOffset}
-          hasPlayerGap={playerControlsVisible}
+          hasPlayerGap={playerLayoutReserved}
           isEnabled={isSubtitleEnabled && hasCurrentAudioPlaybackStarted}
-          isPlayerHidden={shouldMountPlayer && !playerControlsVisible}
           playbackTimeStore={playbackTimeStore}
           subtitleCues={currentSubtitleCues}
         />
@@ -2582,7 +2585,7 @@ const Slide: React.FC<SlideProps> = ({
             data-player-keyboard-shortcuts-ignore="true"
             className={cn(
               "slide-interaction-overlay",
-              playerControlsVisible && shouldMountPlayer
+              playerLayoutReserved
                 ? "slide-interaction-overlay--with-player"
                 : "slide-interaction-overlay--standalone",
               isInteractionOverlayDragging &&

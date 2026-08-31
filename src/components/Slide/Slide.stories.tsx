@@ -2400,6 +2400,120 @@ const installWindowValueOverride = <T extends object, K extends keyof T>(
   };
 };
 
+const createSilentWaveAudioBlob = (durationMs = 5000) => {
+  const sampleRate = 8000;
+  const sampleCount = Math.ceil((sampleRate * durationMs) / 1000);
+  const buffer = new ArrayBuffer(44 + sampleCount);
+  const view = new DataView(buffer);
+  const writeAscii = (offset: number, value: string) => {
+    for (let index = 0; index < value.length; index += 1) {
+      view.setUint8(offset + index, value.charCodeAt(index));
+    }
+  };
+
+  writeAscii(0, "RIFF");
+  view.setUint32(4, 36 + sampleCount, true);
+  writeAscii(8, "WAVE");
+  writeAscii(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate, true);
+  view.setUint16(32, 1, true);
+  view.setUint16(34, 8, true);
+  writeAscii(36, "data");
+  view.setUint32(40, sampleCount, true);
+
+  for (let index = 44; index < buffer.byteLength; index += 1) {
+    view.setUint8(index, 128);
+  }
+
+  return new Blob([buffer], { type: "audio/wav" });
+};
+
+const SubtitleLayoutStabilityPreview = (
+  props: React.ComponentProps<typeof Slide>
+) => {
+  const [audioUrl, setAudioUrl] = useState("");
+
+  useEffect(() => {
+    const nextAudioUrl = URL.createObjectURL(createSilentWaveAudioBlob());
+
+    setAudioUrl(nextAudioUrl);
+
+    return () => {
+      URL.revokeObjectURL(nextAudioUrl);
+    };
+  }, []);
+
+  const elementList = useMemo<Element[]>(
+    () =>
+      audioUrl
+        ? [
+            {
+              audio_url: audioUrl,
+              blockBid: "layout-stability-subtitle",
+              content: "Player controls can hide without moving this subtitle.",
+              is_marker: true,
+              is_new: true,
+              is_renderable: true,
+              is_speakable: true,
+              sequence_number: 1,
+              subtitle_cues: [
+                {
+                  end_ms: 5000,
+                  position: 0,
+                  segment_index: 0,
+                  start_ms: 0,
+                  text: "This subtitle keeps the player footprint reserved.",
+                },
+              ],
+              type: "text",
+            },
+          ]
+        : [],
+    [audioUrl]
+  );
+
+  if (!audioUrl) {
+    return null;
+  }
+
+  return (
+    <div className="flex h-[100dvh] w-full items-center justify-center bg-muted/20 p-8">
+      <Slide
+        className="h-full w-full max-w-4xl"
+        {...props}
+        elementList={elementList}
+      />
+    </div>
+  );
+};
+
+const getVerticalBounds = (element: HTMLElement) => {
+  const rect = element.getBoundingClientRect();
+
+  return {
+    bottom: rect.bottom,
+    top: rect.top,
+  };
+};
+
+const expectVerticalBoundsToStayStable = (
+  element: HTMLElement,
+  expectedBounds: ReturnType<typeof getVerticalBounds>
+) => {
+  const currentBounds = getVerticalBounds(element);
+
+  expect(Math.abs(currentBounds.top - expectedBounds.top)).toBeLessThanOrEqual(
+    1
+  );
+  expect(
+    Math.abs(currentBounds.bottom - expectedBounds.bottom)
+  ).toBeLessThanOrEqual(1);
+};
+
 const MobilePointerDragSlidePreview = ({
   elementList = [],
   ...props
@@ -2804,6 +2918,244 @@ export const ControlsAutoHide: Story = {
     elementList: exampleElementList,
     playerAutoHideDelay: 3000,
     playerControlsVisibility: "auto",
+  },
+};
+
+export const ControlsAutoHideSubtitleLayoutStability: Story = {
+  args: {
+    elementList: [],
+    playerAutoHideDelay: 600,
+    playerControlsVisibility: "auto",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Keeps the active subtitle anchored above the reserved player footprint while auto-hidden controls disappear and return.",
+      },
+    },
+  },
+  render: (args) => <SubtitleLayoutStabilityPreview {...args} />,
+  play: async ({ canvasElement }) => {
+    const slide = await waitFor(() => {
+      const element = canvasElement.querySelector("section") as HTMLElement;
+
+      expect(element).not.toBeNull();
+      return element;
+    });
+    const player = canvasElement.querySelector(".slide-player") as HTMLElement;
+    const audio = canvasElement.querySelector("audio") as HTMLAudioElement;
+
+    expect(player).not.toBeNull();
+    expect(audio).not.toBeNull();
+
+    audio.dispatchEvent(new Event("play"));
+
+    const subtitle = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide-subtitle-overlay"
+      ) as HTMLElement;
+
+      expect(element).not.toBeNull();
+      expect(element).toHaveClass("slide-subtitle-overlay--with-player-gap");
+      return element;
+    });
+    const initialBounds = getVerticalBounds(subtitle);
+
+    slide.click();
+
+    await waitFor(() => {
+      expect(player).toHaveClass("opacity-0");
+      expect(subtitle).toHaveClass("slide-subtitle-overlay--with-player-gap");
+      expectVerticalBoundsToStayStable(subtitle, initialBounds);
+    });
+
+    slide.click();
+
+    await waitFor(() => {
+      expect(player).not.toHaveClass("opacity-0");
+      expectVerticalBoundsToStayStable(subtitle, initialBounds);
+    });
+  },
+};
+
+export const ControlsAutoHideInteractionLayoutStability: Story = {
+  args: {
+    elementList: DRAG_TEST_ELEMENT_LIST,
+    playerAutoHideDelay: 300,
+    playerControlsVisibility: "auto",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Keeps a dragged desktop interaction anchored above the reserved player footprint across automatic control hiding and reveal.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="flex h-[100dvh] w-full items-center justify-center bg-muted/20 p-8">
+      <Slide className="h-full w-full max-w-4xl" {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const overlay = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide-interaction-overlay"
+      ) as HTMLElement;
+
+      expect(element).not.toBeNull();
+      expect(element).toHaveClass("slide-interaction-overlay--with-player");
+      return element;
+    });
+    const handle = overlay.querySelector(
+      '[aria-label="Move interaction"]'
+    ) as HTMLElement;
+    const player = canvasElement.querySelector(".slide-player") as HTMLElement;
+    const slide = canvasElement.querySelector("section") as HTMLElement;
+
+    expect(handle).not.toBeNull();
+    expect(player).not.toBeNull();
+    expect(slide).not.toBeNull();
+
+    ensurePointerCaptureTracking(handle);
+    triggerSyntheticPointerDrag(handle, 64, 36);
+    await expectOverlayHasMoved(overlay);
+
+    const draggedOffsets = getOverlayDragOffsets(overlay);
+    const draggedBounds = getVerticalBounds(overlay);
+
+    slide.click();
+
+    await waitFor(() => {
+      expect(player).toHaveClass("opacity-0");
+      expect(overlay).toHaveClass("slide-interaction-overlay--with-player");
+      expect(getOverlayDragOffsets(overlay)).toEqual(draggedOffsets);
+      expectVerticalBoundsToStayStable(overlay, draggedBounds);
+    });
+
+    slide.click();
+
+    await waitFor(() => {
+      expect(player).not.toHaveClass("opacity-0");
+      expect(getOverlayDragOffsets(overlay)).toEqual(draggedOffsets);
+      expectVerticalBoundsToStayStable(overlay, draggedBounds);
+    });
+  },
+};
+
+export const MobileFullscreenControlsAutoHideLayoutStability: Story = {
+  args: {
+    elementList: DRAG_TEST_ELEMENT_LIST,
+    playerAutoHideDelay: 300,
+    playerControlsVisibility: "auto",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Keeps mobile fullscreen content padding and a dragged interaction stable while the player controls and header auto-hide.",
+      },
+    },
+  },
+  render: (args) => <MobilePointerDragSlidePreview {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const labels = getSlideLocaleTexts(args.locale);
+    const more = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide-player__action--mobile-more"
+      ) as HTMLButtonElement;
+
+      expect(element).not.toBeNull();
+      return element;
+    });
+
+    await userEvent.click(more);
+
+    const page = within(canvasElement.ownerDocument.body);
+    await waitFor(() => expect(page.getByRole("dialog")).toBeVisible());
+    await userEvent.click(
+      page.getByRole("radio", {
+        name: labels.playerTexts.fullscreenLabel,
+      })
+    );
+
+    const slide = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        "section.slide--mobile-landscape"
+      ) as HTMLElement;
+
+      expect(element).not.toBeNull();
+      return element;
+    });
+    const viewportContent = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide__viewport-content--with-header"
+      ) as HTMLElement;
+
+      expect(element).not.toBeNull();
+      return element;
+    });
+    const overlay = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide-interaction-overlay"
+      ) as HTMLElement;
+
+      expect(element).not.toBeNull();
+      return element;
+    });
+    const handle = overlay.querySelector(
+      '[aria-label="Move interaction"]'
+    ) as HTMLElement;
+    const player = canvasElement.querySelector(".slide-player") as HTMLElement;
+    const controls = canvasElement.querySelector(
+      ".slide-player__controls"
+    ) as HTMLElement;
+
+    expect(viewportContent).not.toBeNull();
+    expect(overlay).not.toBeNull();
+    expect(handle).not.toBeNull();
+    expect(player).not.toBeNull();
+    expect(controls).not.toBeNull();
+
+    await userEvent.unhover(controls);
+    slide.click();
+    await waitFor(() => expect(player).not.toHaveClass("opacity-0"));
+
+    ensurePointerCaptureTracking(handle);
+    triggerSyntheticPointerDrag(handle, 36, 28, POINTER_TEST_ID + 10);
+    await expectOverlayHasMoved(overlay);
+
+    const draggedOffsets = getOverlayDragOffsets(overlay);
+    const draggedBounds = getVerticalBounds(overlay);
+
+    await userEvent.unhover(controls);
+    slide.click();
+
+    await waitFor(() => {
+      expect(player).toHaveClass("opacity-0");
+      expect(canvasElement.querySelector(".slide-landscape-header")).toBeNull();
+      expect(viewportContent).toHaveClass(
+        "slide__viewport-content--with-header"
+      );
+      expect(overlay).toHaveClass("slide-interaction-overlay--with-player");
+      expect(getOverlayDragOffsets(overlay)).toEqual(draggedOffsets);
+      expectVerticalBoundsToStayStable(overlay, draggedBounds);
+    });
+
+    slide.click();
+
+    await waitFor(() => {
+      expect(player).not.toHaveClass("opacity-0");
+      expect(
+        canvasElement.querySelector(".slide-landscape-header")
+      ).not.toBeNull();
+      expect(viewportContent).toHaveClass(
+        "slide__viewport-content--with-header"
+      );
+      expect(getOverlayDragOffsets(overlay)).toEqual(draggedOffsets);
+      expectVerticalBoundsToStayStable(overlay, draggedBounds);
+    });
   },
 };
 

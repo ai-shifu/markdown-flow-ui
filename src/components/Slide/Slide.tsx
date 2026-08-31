@@ -623,12 +623,46 @@ const Slide: React.FC<SlideProps> = ({
     handleMobileViewModeReset();
     fullscreenHeader?.onBack?.();
   }, [fullscreenHeader, handleMobileViewModeReset]);
-  const setPlayerCustomActionActive = useCallback((active: boolean) => {
-    setIsPlayerCustomActionActive(active);
+
+  const clearInteractionAutoCloseTimer = useCallback(() => {
+    if (interactionAutoCloseTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(interactionAutoCloseTimerRef.current);
+    interactionAutoCloseTimerRef.current = null;
   }, []);
+
+  const clearInteractionOverlayOpenTimer = useCallback(() => {
+    if (interactionOverlayOpenTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(interactionOverlayOpenTimerRef.current);
+    interactionOverlayOpenTimerRef.current = null;
+  }, []);
+
+  const closeInteractionOverlayForCustomAction = useCallback(() => {
+    clearInteractionAutoCloseTimer();
+    clearInteractionOverlayOpenTimer();
+    setIsInteractionOverlayOpen(false);
+    setInteractionOverlaySubtitleOffset(0);
+  }, [clearInteractionAutoCloseTimer, clearInteractionOverlayOpenTimer]);
+
+  const setPlayerCustomActionActive = useCallback(
+    (active: boolean) => {
+      if (active) {
+        closeInteractionOverlayForCustomAction();
+      }
+
+      setIsPlayerCustomActionActive(active);
+    },
+    [closeInteractionOverlayForCustomAction]
+  );
   const togglePlayerCustomActionActive = useCallback(() => {
-    setIsPlayerCustomActionActive((previous) => !previous);
-  }, []);
+    closeInteractionOverlayForCustomAction();
+    setIsPlayerCustomActionActive((previousActive) => !previousActive);
+  }, [closeInteractionOverlayForCustomAction]);
   const resetInteractionOverlayDragState = useCallback(() => {
     setInteractionOverlayDragOffset((previousOffset) =>
       previousOffset.x === DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET.x &&
@@ -733,6 +767,9 @@ const Slide: React.FC<SlideProps> = ({
       ),
     [playerCustomActionContext, playerCustomActions]
   );
+  const hasPlayerCustomActions = playerCustomActionCount > 0;
+  const isPlayerCustomActionEffectivelyActive =
+    hasPlayerCustomActions && isPlayerCustomActionActive;
   const interactionOverlayStyle = useMemo(
     () =>
       ({
@@ -788,9 +825,7 @@ const Slide: React.FC<SlideProps> = ({
   }, [audioList, currentAudioSequenceStartKey]);
   const hasCurrentStepAudioUrl = Boolean(currentStepAudioUrl);
   const shouldPausePlaybackForCustomAction =
-    playerCustomActionPauseOnActive &&
-    Boolean(playerCustomActions) &&
-    isPlayerCustomActionActive;
+    playerCustomActionPauseOnActive && isPlayerCustomActionEffectivelyActive;
   const shouldUseSilentStepAutoAdvanceToggle = useMemo(
     () =>
       shouldUseAutoAdvanceToggle({
@@ -842,24 +877,6 @@ const Slide: React.FC<SlideProps> = ({
 
     window.clearTimeout(playerHideTimerRef.current);
     playerHideTimerRef.current = null;
-  }, []);
-
-  const clearInteractionAutoCloseTimer = useCallback(() => {
-    if (interactionAutoCloseTimerRef.current === null) {
-      return;
-    }
-
-    window.clearTimeout(interactionAutoCloseTimerRef.current);
-    interactionAutoCloseTimerRef.current = null;
-  }, []);
-
-  const clearInteractionOverlayOpenTimer = useCallback(() => {
-    if (interactionOverlayOpenTimerRef.current === null) {
-      return;
-    }
-
-    window.clearTimeout(interactionOverlayOpenTimerRef.current);
-    interactionOverlayOpenTimerRef.current = null;
   }, []);
 
   const clearAutoAdvanceTimer = useCallback(() => {
@@ -1063,9 +1080,19 @@ const Slide: React.FC<SlideProps> = ({
 
   useEffect(() => {
     if (playerCustomActionPauseOnActive) {
+      setPlayerCustomActionActive(false);
+    }
+  }, [
+    currentIndex,
+    playerCustomActionPauseOnActive,
+    setPlayerCustomActionActive,
+  ]);
+
+  useEffect(() => {
+    if (!hasPlayerCustomActions) {
       setIsPlayerCustomActionActive(false);
     }
-  }, [currentIndex, playerCustomActionPauseOnActive]);
+  }, [hasPlayerCustomActions]);
 
   useEffect(() => {
     return () => {
@@ -1425,6 +1452,7 @@ const Slide: React.FC<SlideProps> = ({
       hasPlaybackContextChanged,
       hasResolvedCurrentInteraction,
       currentStepHasSpeakableElement,
+      isPlayerCustomActionActive: isPlayerCustomActionEffectivelyActive,
     });
 
     const pendingSubtitleJump = pendingSubtitleJumpRef.current;
@@ -1481,6 +1509,13 @@ const Slide: React.FC<SlideProps> = ({
 
     clearInteractionOverlayOpenTimer();
     pendingInteractionOverlayStepIndexRef.current = null;
+
+    // A custom action may intentionally remain active without pausing ordinary
+    // playback. Unresolved interactions still gate progression even while that
+    // action temporarily owns the visible overlay surface.
+    if (shouldBlockPlaybackForInteraction) {
+      return;
+    }
 
     if (!shouldInitializeAudioSequence) {
       return;
@@ -1539,6 +1574,7 @@ const Slide: React.FC<SlideProps> = ({
     disableLoadingOverlay,
     isAutoAdvanceEnabled,
     hasResolvedCurrentInteraction,
+    isPlayerCustomActionEffectivelyActive,
     shouldBlockPlaybackForInteraction,
     clearInteractionOverlayOpenTimer,
     resetAudioSequence,
@@ -2163,14 +2199,6 @@ const Slide: React.FC<SlideProps> = ({
     ]
   );
 
-  const handleInteractionToggle = useCallback(() => {
-    if (!activeInteractionElement) {
-      return;
-    }
-
-    setIsInteractionOverlayOpen((prevOpen) => !prevOpen);
-  }, [activeInteractionElement]);
-
   const handlePlayerControlsPointerEnter = useCallback(() => {
     isPointerInsidePlayerControlsRef.current = true;
     clearPlayerHideTimer();
@@ -2668,7 +2696,6 @@ const Slide: React.FC<SlideProps> = ({
               isPlaybackPaused={shouldPausePlaybackForCustomAction}
               isAutoAdvanceEnabled={isAutoAdvanceEnabled}
               locale={locale}
-              hasInteraction={Boolean(activeInteractionElement)}
               isInteractionOpen={isInteractionOverlayOpen}
               isSubtitleEnabled={isSubtitleEnabled}
               onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
@@ -2690,7 +2717,6 @@ const Slide: React.FC<SlideProps> = ({
               onMobileViewModeChange={handleMobileViewModeSelect}
               onControlsPointerEnter={handlePlayerControlsPointerEnter}
               onControlsPointerLeave={handlePlayerControlsPointerLeave}
-              onInteractionToggle={handleInteractionToggle}
               onNext={handleNext}
               onPrev={handlePrev}
               onSubtitleJump={handleSubtitleJump}

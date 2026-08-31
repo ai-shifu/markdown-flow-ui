@@ -13,7 +13,6 @@ import {
   CaptionsOff,
   EllipsisVertical,
   FastForward,
-  FilePenLine,
   Maximize,
   Rewind,
   ScanLine,
@@ -203,7 +202,9 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   onMobileViewModeChange?: (viewMode: MobileViewMode) => void;
   onEnded?: (audioIndex: number) => void;
   onAutoAdvanceToggle?: (enabled: boolean) => void;
+  /** @deprecated Manual interaction toggling is no longer exposed by the player. */
   onInteractionToggle?: () => void;
+  /** @deprecated Manual interaction toggling is no longer exposed by the player. */
   hasInteraction?: boolean;
   isInteractionOpen?: boolean;
   isSubtitleEnabled?: boolean;
@@ -272,7 +273,6 @@ const PLAYER_SHORTCUT_LABELS = {
   fullscreen: "F",
   next: "→",
   nextSubtitle: "Shift+→",
-  notes: "N",
   previous: "←",
   previousSubtitle: "Shift+←",
   subtitle: "C",
@@ -307,8 +307,8 @@ const Player = ({
   onMobileViewModeChange,
   onEnded,
   onAutoAdvanceToggle,
-  onInteractionToggle,
-  hasInteraction = false,
+  onInteractionToggle: _deprecatedOnInteractionToggle,
+  hasInteraction: _deprecatedHasInteraction,
   isInteractionOpen = false,
   isSubtitleEnabled = true,
   prevDisabled = false,
@@ -400,7 +400,7 @@ const Player = ({
     () => toPlayerCustomActionList(customActions, customActionContext),
     [customActionContext, customActions]
   );
-  const mobileVisibleActionCount = customActionList.length + 7;
+  const mobileVisibleActionCount = customActionList.length + 6;
   const controlsStyle = useMemo(
     () =>
       ({
@@ -485,11 +485,6 @@ const Player = ({
     fullscreenAriaLabel,
     PLAYER_SHORTCUT_LABELS.fullscreen,
     "f"
-  );
-  const notesShortcutMetadata = getShortcutMetadata(
-    playerTexts.notesLabel,
-    PLAYER_SHORTCUT_LABELS.notes,
-    "n"
   );
   const activateKeyboardShortcutOwner = useCallback(() => {
     if (!shouldEnableKeyboardShortcuts) {
@@ -1742,17 +1737,6 @@ const Player = ({
         onFullscreen();
         return true;
       },
-      interaction: () => {
-        if (!onInteractionToggle) {
-          return false;
-        }
-
-        if (hasInteraction) {
-          onInteractionToggle();
-        }
-
-        return true;
-      },
       next: () => {
         if (!onNext) {
           return false;
@@ -1808,11 +1792,9 @@ const Player = ({
     }),
     [
       getNavigationContext,
-      hasInteraction,
       jumpToSubtitleCue,
       nextDisabled,
       onFullscreen,
-      onInteractionToggle,
       onNext,
       onPrev,
       onSubtitleToggle,
@@ -2066,32 +2048,19 @@ const Player = ({
               ) : null}
             </div>
 
-            <div className="slide-player__separator" />
+            {customActionList.length > 0 ? (
+              <>
+                <div className="slide-player__separator" />
 
-            <div className="slide-player__group">
-              {customActionList.map((customAction, customActionIndex) => (
-                <React.Fragment key={`custom-action-${customActionIndex}`}>
-                  {customAction}
-                </React.Fragment>
-              ))}
-              <button
-                aria-label={playerTexts.notesLabel}
-                aria-keyshortcuts={notesShortcutMetadata.ariaKeyShortcuts}
-                className={cn(
-                  "slide-player__action slide-player__action--notes",
-                  isInteractionOpen && "slide-player__action--active"
-                )}
-                disabled={!hasInteraction}
-                onClick={onInteractionToggle}
-                title={notesShortcutMetadata.title}
-                type="button"
-              >
-                <FilePenLine
-                  className="slide-player__icon"
-                  strokeWidth={2.25}
-                />
-              </button>
-            </div>
+                <div className="slide-player__group slide-player__group--custom-actions">
+                  {customActionList.map((customAction, customActionIndex) => (
+                    <React.Fragment key={`custom-action-${customActionIndex}`}>
+                      {customAction}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </>
+            ) : null}
           </div>
         </>
       ) : null}

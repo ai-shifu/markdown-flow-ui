@@ -103,7 +103,7 @@ const meta = {
     playerCustomActions: {
       control: false,
       description:
-        "Custom player action nodes rendered before the default notes action",
+        "Custom player action nodes rendered after built-in controls",
       table: {
         type: {
           summary:
@@ -2174,6 +2174,16 @@ const DRAG_TEST_ELEMENT_LIST: Element[] = [
   }),
 ];
 
+const INTERACTION_GATE_TEST_SENTINEL = "Interaction gate regression sentinel";
+const INTERACTION_GATE_TEST_ELEMENT_LIST: Element[] = [
+  ...DRAG_TEST_ELEMENT_LIST,
+  createExampleElement({
+    sequenceNumber: 2,
+    type: "title",
+    content: INTERACTION_GATE_TEST_SENTINEL,
+  }),
+];
+
 const MOBILE_VIEWPORT_INPUT_TEST_ELEMENT_LIST: Element[] = [
   createExampleElement({
     sequenceNumber: 1,
@@ -2732,10 +2742,18 @@ const exampleElementList: Element[] = [
   }),
 ];
 
+type CustomPlayerActionSlidePreviewProps = React.ComponentProps<
+  typeof Slide
+> & {
+  customActionEnabled?: boolean;
+};
+
 const CustomPlayerActionSlidePreview = ({
+  customActionEnabled = true,
   elementList = [],
+  playerCustomActionPauseOnActive = true,
   ...props
-}: React.ComponentProps<typeof Slide>) => {
+}: CustomPlayerActionSlidePreviewProps) => {
   const handleCustomActionClick = useCallback((element?: Element) => {
     console.log("custom-player-action-clicked", element);
   }, []);
@@ -2770,9 +2788,65 @@ const CustomPlayerActionSlidePreview = ({
     <Slide
       {...props}
       elementList={elementList}
-      playerCustomActionPauseOnActive
-      playerCustomActions={customPlayerAction}
+      playerCustomActionPauseOnActive={playerCustomActionPauseOnActive}
+      playerCustomActions={customActionEnabled ? customPlayerAction : undefined}
     />
+  );
+};
+
+interface CustomActionToggleLabels {
+  remove: {
+    ariaLabel: string;
+    buttonText: string;
+  };
+  restore: {
+    ariaLabel: string;
+    buttonText: string;
+  };
+}
+
+const CUSTOM_ACTION_INTERACTION_EXCLUSIVITY_LABELS: CustomActionToggleLabels = {
+  remove: {
+    ariaLabel: "Remove custom player action",
+    buttonText: "Remove custom action",
+  },
+  restore: {
+    ariaLabel: "Restore custom player action",
+    buttonText: "Restore custom action",
+  },
+};
+
+type RemovableCustomActionSlidePreviewProps = React.ComponentProps<
+  typeof Slide
+> & {
+  customActionToggleLabels: CustomActionToggleLabels;
+};
+
+const RemovableCustomActionSlidePreview = ({
+  customActionToggleLabels,
+  ...props
+}: RemovableCustomActionSlidePreviewProps) => {
+  const [customActionEnabled, setCustomActionEnabled] = useState(true);
+  const toggleLabels = customActionEnabled
+    ? customActionToggleLabels.remove
+    : customActionToggleLabels.restore;
+
+  return (
+    <div className="flex h-[100dvh] w-full flex-col items-center justify-center gap-4 bg-muted/20 p-8">
+      <button
+        aria-label={toggleLabels.ariaLabel}
+        className="rounded border border-border bg-background px-3 py-2 text-sm"
+        onClick={() => setCustomActionEnabled((enabled) => !enabled)}
+        type="button"
+      >
+        {toggleLabels.buttonText}
+      </button>
+      <CustomPlayerActionSlidePreview
+        {...props}
+        className="w-full max-w-4xl"
+        customActionEnabled={customActionEnabled}
+      />
+    </div>
   );
 };
 
@@ -3956,7 +4030,7 @@ export const CustomPlayerActionButton: Story = {
     docs: {
       description: {
         story:
-          "Renders one external custom action button before the default notes action in the Slide player.",
+          "Renders one external custom action button after the built-in Slide player controls.",
       },
     },
   },
@@ -3965,6 +4039,91 @@ export const CustomPlayerActionButton: Story = {
       <CustomPlayerActionSlidePreview className="w-full" {...args} />
     </div>
   ),
+};
+
+export const CustomActionInteractionExclusivity: Story = {
+  args: {
+    elementList: INTERACTION_GATE_TEST_ELEMENT_LIST,
+    markerAutoAdvanceDelay: 40,
+    playerCustomActionPauseOnActive: false,
+    playerControlsVisibility: "visible",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Keeps a non-pausing custom player action mutually exclusive with an unresolved interaction, preserves the interaction playback gate, and restores the overlay after the custom action closes.",
+      },
+    },
+  },
+  render: (args) => (
+    <RemovableCustomActionSlidePreview
+      {...args}
+      customActionToggleLabels={CUSTOM_ACTION_INTERACTION_EXCLUSIVITY_LABELS}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const customAction = canvas.getByRole("button", {
+      name: "Custom player action",
+    });
+
+    await waitFor(() => {
+      expect(
+        canvasElement.querySelector(".slide-interaction-overlay")
+      ).not.toBeNull();
+    });
+    expect(
+      canvasElement.querySelector(".slide-player__action--notes")
+    ).toBeNull();
+
+    await userEvent.click(customAction);
+    await waitFor(() => {
+      expect(
+        canvasElement.querySelector(".slide-interaction-overlay")
+      ).toBeNull();
+    });
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+    expect(canvas.queryByText(INTERACTION_GATE_TEST_SENTINEL)).toBeNull();
+
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Remove custom player action" })
+    );
+    await waitFor(() => {
+      expect(
+        canvas.queryByRole("button", { name: "Custom player action" })
+      ).toBeNull();
+      expect(
+        canvasElement.querySelector(".slide-interaction-overlay")
+      ).not.toBeNull();
+    });
+
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Restore custom player action" })
+    );
+    const restoredCustomAction = await canvas.findByRole("button", {
+      name: "Custom player action",
+    });
+    expect(restoredCustomAction).not.toHaveClass(
+      "slide-player__action--active"
+    );
+    expect(
+      canvasElement.querySelector(".slide-interaction-overlay")
+    ).not.toBeNull();
+
+    await userEvent.click(restoredCustomAction);
+    await waitFor(() => {
+      expect(
+        canvasElement.querySelector(".slide-interaction-overlay")
+      ).toBeNull();
+    });
+    await userEvent.click(restoredCustomAction);
+    await waitFor(() => {
+      expect(
+        canvasElement.querySelector(".slide-interaction-overlay")
+      ).not.toBeNull();
+    });
+  },
 };
 
 export const FullViewportSlides: Story = {
@@ -5186,7 +5345,6 @@ export const HistorySlides: Story = {
       moreOptionsAriaLabel: "更多设置",
       nextLabel: "下一页",
       nextSubtitleLabel: "下一句",
-      notesLabel: "笔记",
       pauseAutoplayLabel: "暂停自动播放",
       pauseLabel: "暂停",
       playAutoplayLabel: "开启自动播放",

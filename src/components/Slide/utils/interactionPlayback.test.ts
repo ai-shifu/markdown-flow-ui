@@ -16,6 +16,7 @@ describe("shouldPresentInteractionOverlay", () => {
         hasPlaybackContextChanged: false,
         hasResolvedCurrentInteraction: false,
         currentStepHasSpeakableElement: false,
+        isPlayerCustomActionActive: false,
       })
     ).toBe(true);
   });
@@ -29,6 +30,7 @@ describe("shouldPresentInteractionOverlay", () => {
         hasPlaybackContextChanged: false,
         hasResolvedCurrentInteraction: true,
         currentStepHasSpeakableElement: false,
+        isPlayerCustomActionActive: false,
       })
     ).toBe(true);
   });
@@ -42,6 +44,7 @@ describe("shouldPresentInteractionOverlay", () => {
         hasPlaybackContextChanged: true,
         hasResolvedCurrentInteraction: true,
         currentStepHasSpeakableElement: true,
+        isPlayerCustomActionActive: false,
       })
     ).toBe(true);
   });
@@ -55,6 +58,21 @@ describe("shouldPresentInteractionOverlay", () => {
         hasPlaybackContextChanged: false,
         hasResolvedCurrentInteraction: true,
         currentStepHasSpeakableElement: true,
+        isPlayerCustomActionActive: false,
+      })
+    ).toBe(false);
+  });
+
+  it("keeps the interaction overlay closed while a custom action is active", () => {
+    expect(
+      shouldPresentInteractionOverlay({
+        hasInteraction: true,
+        shouldBlockPlaybackForInteraction: true,
+        shouldOpenInteractionOverlayAfterAudio: false,
+        hasPlaybackContextChanged: false,
+        hasResolvedCurrentInteraction: false,
+        currentStepHasSpeakableElement: false,
+        isPlayerCustomActionActive: true,
       })
     ).toBe(false);
   });

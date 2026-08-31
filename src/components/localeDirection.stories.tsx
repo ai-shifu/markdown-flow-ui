@@ -637,6 +637,13 @@ const MobileLandscapePlayerFixture = () => {
   return (
     <div>
       <output data-testid="landscape-action">{action}</output>
+      <div
+        data-testid="landscape-without-custom-actions"
+        className="slide--mobile-device slide--mobile-landscape"
+        style={{ position: "relative", height: 120 }}
+      >
+        <Player defaultPlaying={false} customActions={<></>} />
+      </div>
       {(["landscape", "landscape-native"] as const).flatMap((layout) =>
         (["ltr", "rtl"] as const).map((dir) => (
           <div
@@ -648,8 +655,6 @@ const MobileLandscapePlayerFixture = () => {
             <Player
               dir={dir}
               defaultPlaying={false}
-              hasInteraction
-              onInteractionToggle={() => setAction(`${layout}-${dir}-notes`)}
               customActions={
                 <button
                   type="button"
@@ -679,12 +684,21 @@ export const MobileLandscapePlayerDirection: Story = {
         const more = fixture.querySelector<HTMLButtonElement>(
           ".slide-player__action--mobile-more"
         )!;
-        const notes = fixture.querySelector<HTMLButtonElement>(
-          ".slide-player__action--notes"
+        const custom = within(fixture).getByRole("button", {
+          name: "Extra",
+        });
+        const controls = fixture.querySelector<HTMLElement>(
+          ".slide-player__controls"
         )!;
         const bounds = player.getBoundingClientRect();
         const moreBounds = more.getBoundingClientRect();
-        const groupBounds = notes.parentElement!.getBoundingClientRect();
+        const groupBounds = custom.parentElement!.getBoundingClientRect();
+        expect(
+          controls.style.getPropertyValue("--slide-player-mobile-control-count")
+        ).toBe("7");
+        expect(
+          fixture.querySelector(".slide-player__action--notes")
+        ).toBeNull();
         expect(
           dir === "rtl"
             ? bounds.right - moreBounds.right
@@ -695,13 +709,7 @@ export const MobileLandscapePlayerDirection: Story = {
             ? groupBounds.left - bounds.left
             : bounds.right - groupBounds.right
         ).toBeCloseTo(20, 0);
-        await userEvent.click(notes);
-        expect(canvas.getByTestId("landscape-action")).toHaveTextContent(
-          `${layout}-${dir}-notes`
-        );
-        await userEvent.click(
-          within(fixture).getByRole("button", { name: "Extra" })
-        );
+        await userEvent.click(custom);
         expect(canvas.getByTestId("landscape-action")).toHaveTextContent(
           `${layout}-${dir}-custom`
         );
@@ -717,6 +725,32 @@ export const MobileLandscapePlayerDirection: Story = {
         await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
       }
     }
+
+    const fixtureWithoutCustomActions = canvas.getByTestId(
+      "landscape-without-custom-actions"
+    );
+    const controlsWithoutCustomActions =
+      fixtureWithoutCustomActions.querySelector<HTMLElement>(
+        ".slide-player__controls"
+      )!;
+    expect(
+      controlsWithoutCustomActions.style.getPropertyValue(
+        "--slide-player-mobile-control-count"
+      )
+    ).toBe("6");
+    expect(
+      fixtureWithoutCustomActions.querySelector(".slide-player__separator")
+    ).toBeNull();
+    expect(
+      fixtureWithoutCustomActions.querySelectorAll(".slide-player__group")
+    ).toHaveLength(1);
+    expect(
+      getComputedStyle(
+        fixtureWithoutCustomActions.querySelector<HTMLElement>(
+          ".slide-player__group"
+        )!
+      ).position
+    ).not.toBe("absolute");
   },
 };
 

@@ -1,3 +1,4 @@
+import React from "react";
 import { describe, expect, it } from "vitest";
 
 import type { Element, SlidePlayerCustomActionContext } from "../types";
@@ -44,6 +45,34 @@ describe("playerCustomActions", () => {
         mockContext
       )
     ).toBe(2);
+  });
+
+  it("ignores empty fragments when counting custom actions", () => {
+    const emptyFragment = React.createElement(
+      React.Fragment,
+      null,
+      null,
+      false
+    );
+
+    expect(toPlayerCustomActionList(emptyFragment)).toEqual([]);
+    expect(getPlayerCustomActionCount(emptyFragment)).toBe(0);
+  });
+
+  it("flattens fragment children so the count matches rendered actions", () => {
+    const fragmentedActions = React.createElement(
+      React.Fragment,
+      null,
+      React.createElement("button", { key: "first", type: "button" }),
+      React.createElement(
+        React.Fragment,
+        null,
+        React.createElement("button", { key: "second", type: "button" })
+      )
+    );
+
+    expect(toPlayerCustomActionList(fragmentedActions)).toHaveLength(2);
+    expect(getPlayerCustomActionCount(fragmentedActions)).toBe(2);
   });
 
   it("prefers the currently playing audio element over the visible step element", () => {

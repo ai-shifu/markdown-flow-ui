@@ -2174,6 +2174,16 @@ const DRAG_TEST_ELEMENT_LIST: Element[] = [
   }),
 ];
 
+const INTERACTION_GATE_TEST_SENTINEL = "Interaction gate regression sentinel";
+const INTERACTION_GATE_TEST_ELEMENT_LIST: Element[] = [
+  ...DRAG_TEST_ELEMENT_LIST,
+  createExampleElement({
+    sequenceNumber: 2,
+    type: "title",
+    content: INTERACTION_GATE_TEST_SENTINEL,
+  }),
+];
+
 const MOBILE_VIEWPORT_INPUT_TEST_ELEMENT_LIST: Element[] = [
   createExampleElement({
     sequenceNumber: 1,
@@ -2627,6 +2637,7 @@ type CustomPlayerActionSlidePreviewProps = React.ComponentProps<
 const CustomPlayerActionSlidePreview = ({
   customActionEnabled = true,
   elementList = [],
+  playerCustomActionPauseOnActive = true,
   ...props
 }: CustomPlayerActionSlidePreviewProps) => {
   const handleCustomActionClick = useCallback((element?: Element) => {
@@ -2663,7 +2674,7 @@ const CustomPlayerActionSlidePreview = ({
     <Slide
       {...props}
       elementList={elementList}
-      playerCustomActionPauseOnActive
+      playerCustomActionPauseOnActive={playerCustomActionPauseOnActive}
       playerCustomActions={customActionEnabled ? customPlayerAction : undefined}
     />
   );
@@ -3652,14 +3663,16 @@ export const CustomPlayerActionButton: Story = {
 
 export const CustomActionInteractionExclusivity: Story = {
   args: {
-    elementList: DRAG_TEST_ELEMENT_LIST,
+    elementList: INTERACTION_GATE_TEST_ELEMENT_LIST,
+    markerAutoAdvanceDelay: 40,
+    playerCustomActionPauseOnActive: false,
     playerControlsVisibility: "visible",
   },
   parameters: {
     docs: {
       description: {
         story:
-          "Keeps a custom player action mutually exclusive with an unresolved interaction and restores the interaction after the custom action closes.",
+          "Keeps a non-pausing custom player action mutually exclusive with an unresolved interaction, preserves the interaction playback gate, and restores the overlay after the custom action closes.",
       },
     },
   },
@@ -3685,6 +3698,8 @@ export const CustomActionInteractionExclusivity: Story = {
         canvasElement.querySelector(".slide-interaction-overlay")
       ).toBeNull();
     });
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+    expect(canvas.queryByText(INTERACTION_GATE_TEST_SENTINEL)).toBeNull();
 
     await userEvent.click(
       canvas.getByRole("button", { name: "Remove custom player action" })

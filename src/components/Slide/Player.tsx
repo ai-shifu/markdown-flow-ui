@@ -2052,7 +2052,7 @@ const Player = ({
               <>
                 <div className="slide-player__separator" />
 
-                <div className="slide-player__group">
+                <div className="slide-player__group slide-player__group--custom-actions">
                   {customActionList.map((customAction, customActionIndex) => (
                     <React.Fragment key={`custom-action-${customActionIndex}`}>
                       {customAction}

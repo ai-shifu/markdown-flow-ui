@@ -55,13 +55,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22.22.2"
           registry-url: "https://registry.npmjs.org"
           cache: "npm"
 
-      # Trusted Publishing (OIDC) requires npm >= 11.5.1; npm 12 requires Node 22+.
+      # Trusted Publishing (OIDC) requires npm >= 11.5.1; keep npm aligned with the pinned Node runtime.
       - name: Upgrade npm for trusted publishing
-        run: npm install -g npm@11.6.4
+        run: npm install -g npm@12.0.2
 
       # The build runs `pnpm exec tailwindcss` (build:css); pnpm is not preinstalled.
       - name: Install pnpm

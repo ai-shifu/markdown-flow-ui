@@ -39,7 +39,10 @@ import type {
   ContentRenderTypewriterPacing,
   ContentRenderTypewriterState,
 } from "./components/ContentRender/ContentRender";
-import type { MarkdownFlowInputProps } from "./components/ContentRender/MarkdownFlowInput";
+import type {
+  MarkdownFlowInputProps,
+  MarkdownFlowInputSendShortcut,
+} from "./components/ContentRender/MarkdownFlowInput";
 import type {
   OnSendContentParams,
   CustomRenderBarProps,
@@ -87,6 +90,7 @@ export type {
   ContentRenderTypewriterPacing,
   ContentRenderTypewriterState,
   MarkdownFlowInputProps,
+  MarkdownFlowInputSendShortcut,
   IframeSandboxProps,
   SandboxAppProps,
   RenderSegment,

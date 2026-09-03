@@ -15,6 +15,8 @@ import {
 } from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 
+type MarkdownFlowInputSendShortcut = "enter" | "none";
+
 interface MarkdownFlowInputProps {
   /** Overrides locale-derived input direction. */
   dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
@@ -28,6 +30,13 @@ interface MarkdownFlowInputProps {
   title?: string;
   onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onSend?: () => void;
+  /**
+   * Keyboard policy for sending a multi-line input. `enter` sends on Enter
+   * while Shift+Enter keeps its native newline behavior. `none` leaves Enter
+   * untouched, which lets mobile consumers reserve the keyboard return key
+   * for newlines.
+   */
+  sendShortcut?: MarkdownFlowInputSendShortcut;
   className?: string;
   textareaClassName?: string;
 }
@@ -46,6 +55,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   title,
   onChange,
   onSend,
+  sendShortcut = "enter",
   className,
   textareaClassName,
 }) => {
@@ -54,7 +64,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
     sendButtonLabel || localeTexts.sendButtonLabel;
   const isSendDisabled = disabled || !value?.trim();
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (!onSend) {
+    if (sendShortcut !== "enter" || !onSend) {
       return;
     }
     if (e.nativeEvent.isComposing || e.keyCode === 229) {
@@ -109,5 +119,5 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   );
 };
 
-export type { MarkdownFlowInputProps };
+export type { MarkdownFlowInputProps, MarkdownFlowInputSendShortcut };
 export default MarkdownFlowInput;

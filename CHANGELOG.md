@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.24 - 2026-09-04
+
+### Added
+
+- Added a configurable `sendShortcut` policy to `MarkdownFlowInput` so host
+  applications can use Enter to send on desktop and preserve mobile newlines.
+
+### Fixed
+
+- Kept the legacy `markdown-flow-ui/dist/markdown-flow-ui.css` import path as
+  a physical package file for existing applications.
+
 ## 0.2.15 - 2026-08-27
 
 ### Added

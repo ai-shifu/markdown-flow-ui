@@ -350,6 +350,11 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   onMobileViewModeChange?: (viewMode: MobileViewMode) => void;
   onStepChange?: (element: Element | undefined, index: number) => void;
   /**
+   * Requests navigation to a slide step from the consuming application.
+   * The player still reports the resulting step through `onStepChange`.
+   */
+  requestedStepIndex?: number;
+  /**
    * Enables keyboard shortcuts for existing player actions.
    *
    * Defaults to `true`. The active slide responds after users click, touch, or
@@ -393,6 +398,7 @@ const Slide: React.FC<SlideProps> = ({
   onPlayerVisibilityChange,
   onMobileViewModeChange,
   onStepChange,
+  requestedStepIndex,
   enableKeyboardShortcuts = true,
   enableIframeScaling = true,
   enableMarkdownScaling = true,
@@ -477,6 +483,7 @@ const Slide: React.FC<SlideProps> = ({
     handleNext: goNext,
     handleGoTo: goTo,
   } = useSlide(elementList);
+  const lastRequestedStepIndexRef = useRef<number | null>(null);
   const currentStepElement = useMemo(() => {
     if (currentIndex < 0) {
       return undefined;
@@ -1309,6 +1316,24 @@ const Slide: React.FC<SlideProps> = ({
   useEffect(() => {
     onStepChange?.(currentStepElement, currentIndex);
   }, [currentIndex, currentStepElement, onStepChange]);
+
+  useEffect(() => {
+    if (
+      typeof requestedStepIndex !== "number" ||
+      !Number.isFinite(requestedStepIndex)
+    ) {
+      lastRequestedStepIndexRef.current = null;
+      return;
+    }
+
+    const nextStepIndex = Math.trunc(requestedStepIndex);
+    if (lastRequestedStepIndexRef.current === nextStepIndex) {
+      return;
+    }
+
+    lastRequestedStepIndexRef.current = nextStepIndex;
+    goTo(nextStepIndex);
+  }, [goTo, requestedStepIndex]);
 
   useEffect(() => {
     const previousState = appendedMarkerAdvanceStateRef.current;

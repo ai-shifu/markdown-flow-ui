@@ -69,6 +69,11 @@ const meta = {
       description:
         "Callback fired whenever the mobile view mode changes between non-fullscreen and fullscreen",
     },
+    requestedStepIndex: {
+      control: { type: "number", min: 0, step: 1 },
+      description:
+        "Requests navigation to a slide step from the consuming application",
+    },
     fullscreenHeader: {
       control: "object",
       description:

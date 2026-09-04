@@ -60,6 +60,7 @@ import {
 import { resolveMarkdownScalingMode } from "./utils/markdownScaling";
 import { shouldWakePlayerControlsAfterNavigation } from "./utils/playerNavigationContext";
 import { shouldAutoAdvanceIntoAppendedMarker } from "./utils/appendedMarkerAdvance";
+import { resolveRequestedStepNavigation } from "./utils/requestedStepNavigation";
 import {
   hasUnplayedStepAudio,
   resolvePendingStepAudioKey,
@@ -484,6 +485,15 @@ const Slide: React.FC<SlideProps> = ({
     handleGoTo: goTo,
   } = useSlide(elementList);
   const lastRequestedStepIndexRef = useRef<number | null>(null);
+  const requestedStepNavigation = useMemo(
+    () =>
+      resolveRequestedStepNavigation({
+        currentStepIndex: currentIndex,
+        requestedStepIndex,
+        slideStepCount: slideElementList.length,
+      }),
+    [currentIndex, requestedStepIndex, slideElementList.length]
+  );
   const currentStepElement = useMemo(() => {
     if (currentIndex < 0) {
       return undefined;
@@ -1313,27 +1323,39 @@ const Slide: React.FC<SlideProps> = ({
     previousEffectiveMobileViewModeRef.current = effectiveMobileViewMode;
   }, [effectiveMobileViewMode, resetInteractionOverlayDragState]);
 
-  useEffect(() => {
-    onStepChange?.(currentStepElement, currentIndex);
-  }, [currentIndex, currentStepElement, onStepChange]);
-
-  useEffect(() => {
-    if (
-      typeof requestedStepIndex !== "number" ||
-      !Number.isFinite(requestedStepIndex)
-    ) {
+  useLayoutEffect(() => {
+    if (!requestedStepNavigation) {
       lastRequestedStepIndexRef.current = null;
       return;
     }
 
-    const nextStepIndex = Math.trunc(requestedStepIndex);
-    if (lastRequestedStepIndexRef.current === nextStepIndex) {
+    if (!requestedStepNavigation.isAvailable) {
+      lastRequestedStepIndexRef.current = null;
       return;
     }
 
-    lastRequestedStepIndexRef.current = nextStepIndex;
-    goTo(nextStepIndex);
-  }, [goTo, requestedStepIndex]);
+    const { targetStepIndex } = requestedStepNavigation;
+
+    if (lastRequestedStepIndexRef.current === targetStepIndex) {
+      return;
+    }
+
+    lastRequestedStepIndexRef.current = targetStepIndex;
+    goTo(targetStepIndex);
+  }, [goTo, requestedStepNavigation]);
+
+  useEffect(() => {
+    if (requestedStepNavigation?.isPending) {
+      return;
+    }
+
+    onStepChange?.(currentStepElement, currentIndex);
+  }, [
+    currentIndex,
+    currentStepElement,
+    onStepChange,
+    requestedStepNavigation?.isPending,
+  ]);
 
   useEffect(() => {
     const previousState = appendedMarkerAdvanceStateRef.current;

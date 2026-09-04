@@ -9,7 +9,9 @@ import { cn } from "../../../lib/utils";
 
 type TextareaProps = RcTextAreaProps;
 
-const Textarea = React.forwardRef<TextAreaRef, TextareaProps>(
+const Textarea: React.ForwardRefExoticComponent<
+  React.PropsWithoutRef<TextareaProps> & React.RefAttributes<TextAreaRef>
+> = React.forwardRef<TextAreaRef, TextareaProps>(
   ({ className, autoSize = { minRows: 1 }, style, ...props }, ref) => {
     return (
       <RcTextArea

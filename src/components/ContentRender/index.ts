@@ -14,4 +14,7 @@ export type {
 } from "./ContentRender";
 export type { MarkdownFlowLocale } from "../../lib/locale";
 export { default as MarkdownFlowInput } from "./MarkdownFlowInput";
-export type { MarkdownFlowInputProps } from "./MarkdownFlowInput";
+export type {
+  MarkdownFlowInputProps,
+  MarkdownFlowInputSendShortcut,
+} from "./MarkdownFlowInput";

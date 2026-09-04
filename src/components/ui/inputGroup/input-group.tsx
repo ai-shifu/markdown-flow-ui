@@ -140,7 +140,9 @@ function InputGroupInput({
   );
 }
 
-const InputGroupTextarea = React.forwardRef<TextAreaRef, TextAreaProps>(
+const InputGroupTextarea: React.ForwardRefExoticComponent<
+  React.PropsWithoutRef<TextAreaProps> & React.RefAttributes<TextAreaRef>
+> = React.forwardRef<TextAreaRef, TextAreaProps>(
   ({ className, ...props }, ref) => {
     return (
       <Textarea

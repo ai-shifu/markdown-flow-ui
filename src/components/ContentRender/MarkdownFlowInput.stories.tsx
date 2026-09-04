@@ -26,6 +26,12 @@ const meta = {
       control: "boolean",
       description: "Disable input and send button",
     },
+    sendShortcut: {
+      control: "select",
+      options: ["enter", "none"],
+      description:
+        "Enter sends on desktop; none leaves the keyboard return key for newlines.",
+    },
   },
   args: {
     placeholder: "Ask a follow-up question...",
@@ -129,6 +135,18 @@ export const Disabled: Story = {
     disabled: true,
     value: "Disabled state",
   },
+};
+
+export const MobileNewline: Story = {
+  args: {
+    sendShortcut: "none",
+  },
+  render: (args) => (
+    <InteractiveMarkdownFlowInput
+      {...args}
+      initialValue="Press Return to add a new line."
+    />
+  ),
 };
 
 export const FrenchLocale: Story = {

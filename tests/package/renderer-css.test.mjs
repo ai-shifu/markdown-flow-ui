@@ -7,6 +7,21 @@ const manifest = JSON.parse(
   readFileSync(new URL("package.json", packageRoot), "utf8")
 );
 
+test("keeps the legacy CSS import path as a physical package file", () => {
+  const legacyCssUrl = new URL("dist/markdown-flow-ui.css", packageRoot);
+  assert.ok(existsSync(legacyCssUrl));
+
+  const css = readFileSync(legacyCssUrl, "utf8");
+  assert.match(css, /\.scroll-to-bottom-btn\b/);
+  for (const [, fontPath] of css.matchAll(/url\(([^)]+KaTeX_[^)]+)\)/g)) {
+    const path = fontPath.replaceAll(/["']/g, "");
+    assert.ok(
+      existsSync(new URL(path, legacyCssUrl)),
+      `Missing math font for the legacy stylesheet: ${path}`
+    );
+  }
+});
+
 for (const entry of [
   "./dist/markdown-flow-ui.css",
   "./dist/markdown-flow-ui-lib.css",

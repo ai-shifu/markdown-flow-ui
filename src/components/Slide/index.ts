@@ -27,8 +27,6 @@ export {
 export type {
   SlideInteractionTexts,
   SlideFullscreenHeader,
-  SlidePlaybackPosition,
-  SlidePlaybackResumeRequest,
   SlidePlayerControlsVisibility,
   SlideProps,
 } from "./Slide";

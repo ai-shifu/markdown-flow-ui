@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import React from "react";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -60,6 +61,35 @@ it("reports absolute playback time for the active logical audio item", async () 
       element: elementList[0],
       timeMs: 1_500,
     });
+  });
+});
+
+it("does not report every player animation frame to the consuming app", async () => {
+  const onPlaybackPositionChange = vi.fn();
+
+  render(
+    <Slide
+      elementList={elementList}
+      onPlaybackPositionChange={onPlaybackPositionChange}
+      playerEnabled
+    />
+  );
+
+  await waitFor(() => {
+    expect(playerPropsRef.current?.onPlaybackTimeChange).toBeDefined();
+  });
+  onPlaybackPositionChange.mockClear();
+
+  act(() => {
+    playerPropsRef.current?.onPlaybackTimeChange?.(1_500);
+    playerPropsRef.current?.onPlaybackTimeChange?.(1_900);
+  });
+
+  expect(onPlaybackPositionChange).toHaveBeenCalledTimes(1);
+  expect(onPlaybackPositionChange).toHaveBeenLastCalledWith({
+    audioKey: "audio-1",
+    element: elementList[0],
+    timeMs: 1_500,
   });
 });
 

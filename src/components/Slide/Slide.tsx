@@ -246,6 +246,8 @@ export interface SlidePlaybackResumeRequest {
   timeMs: number;
 }
 
+const PLAYBACK_POSITION_REPORT_INTERVAL_MS = 1_000;
+
 const InteractionOverlayCard = memo(
   ({
     content,
@@ -483,6 +485,10 @@ const Slide: React.FC<SlideProps> = ({
   } | null>(null);
   const subtitleSeekRequestIdRef = useRef(0);
   const lastPlaybackResumeRequestIdRef = useRef<number | string | null>(null);
+  const lastPlaybackPositionReportRef = useRef<{
+    audioKey: string;
+    timeMs: number;
+  } | null>(null);
   const playbackResetKeyRef = useRef<string | null>(null);
   const appendedMarkerAdvanceStateRef = useRef({
     markerCount: 0,
@@ -2145,20 +2151,36 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
-    const accepted = handleSubtitleJump(
-      {
-        audioIndex,
-        timeMs: playbackResumeRequest.timeMs,
-      },
-      {
-        shouldContinuePlayback: false,
-        shouldWakeControls: false,
-      }
-    );
-    if (accepted) {
-      lastPlaybackResumeRequestIdRef.current = playbackResumeRequest.id;
+    const targetSlideIndex = audioSlideIndexes[audioIndex];
+    if (targetSlideIndex == null || targetSlideIndex !== currentIndex) {
+      return;
     }
-  }, [audioList, handleSubtitleJump, playbackResumeRequest]);
+
+    const target = {
+      audioIndex,
+      timeMs: playbackResumeRequest.timeMs,
+    };
+    if (!canJumpToSubtitleTarget(target)) {
+      return;
+    }
+
+    // A resume request must not reuse the interactive subtitle-navigation
+    // handler: that handler resets the sequence and closes the active
+    // interaction overlay. The requested-step API has already navigated to
+    // this slide; only select and seek the intended audio while staying paused.
+    setIsPlaybackRequested(false);
+    shouldSkipDefaultAudioStartForSubtitleJumpRef.current = true;
+    setCurrentAudioKey(audioList[audioIndex]?.audioKey ?? null);
+    requestSubtitleCueSeek(target);
+    lastPlaybackResumeRequestIdRef.current = playbackResumeRequest.id;
+  }, [
+    audioList,
+    audioSlideIndexes,
+    canJumpToSubtitleTarget,
+    currentIndex,
+    playbackResumeRequest,
+    requestSubtitleCueSeek,
+  ]);
 
   const handlePlayerPlaybackTimeChange = useCallback(
     (timeMs: number) => {
@@ -2167,6 +2189,20 @@ const Slide: React.FC<SlideProps> = ({
       if (!currentAudioItem?.audioKey) {
         return;
       }
+
+      const previousReport = lastPlaybackPositionReportRef.current;
+      if (
+        previousReport?.audioKey === currentAudioItem.audioKey &&
+        Math.abs(previousReport.timeMs - timeMs) <
+          PLAYBACK_POSITION_REPORT_INTERVAL_MS
+      ) {
+        return;
+      }
+
+      lastPlaybackPositionReportRef.current = {
+        audioKey: currentAudioItem.audioKey,
+        timeMs,
+      };
 
       onPlaybackPositionChange?.({
         audioKey: currentAudioItem.audioKey,

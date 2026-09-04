@@ -89,7 +89,7 @@ jobs:
       - name: Install pnpm
         run: |
           corepack enable
-          corepack prepare pnpm@10.15.0 --activate
+          corepack prepare "$(node -p \"require('./package.json').packageManager\")" --activate
 
       - name: Install dependencies
         run: npm ci

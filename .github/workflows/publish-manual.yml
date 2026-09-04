@@ -89,7 +89,7 @@ jobs:
       - name: Install pnpm
         run: |
           corepack enable
-          package_manager="$(node -p 'require(\"./package.json\").packageManager')"
+          package_manager="$(node -p 'require("./package.json").packageManager')"
           corepack prepare "$package_manager" --activate
 
       - name: Install dependencies

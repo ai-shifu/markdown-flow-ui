@@ -69,6 +69,16 @@ const meta = {
       description:
         "Callback fired whenever the mobile view mode changes between non-fullscreen and fullscreen",
     },
+    onPlaybackPositionChange: {
+      control: false,
+      description:
+        "Optional callback reporting the active logical audio item and absolute playback time",
+    },
+    playbackResumeRequest: {
+      control: "object",
+      description:
+        "Optional request to restore a logical audio item at an absolute playback time without autoplay",
+    },
     requestedStepIndex: {
       control: { type: "number", min: 0, step: 1 },
       description:

@@ -49,6 +49,8 @@ export type {
   Element,
   ElementSubtitleCue,
   SlideInteractionTexts,
+  SlidePlaybackPosition,
+  SlidePlaybackResumeRequest,
   SlidePlayerControlsVisibility,
   SlideProps,
 } from "./Slide";

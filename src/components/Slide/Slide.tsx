@@ -234,6 +234,18 @@ export type SlideFullscreenHeader = {
   onBack?: () => void;
 };
 
+export interface SlidePlaybackPosition {
+  audioKey: string;
+  element?: Element;
+  timeMs: number;
+}
+
+export interface SlidePlaybackResumeRequest {
+  audioKey: string;
+  id: number | string;
+  timeMs: number;
+}
+
 const InteractionOverlayCard = memo(
   ({
     content,
@@ -350,6 +362,13 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   onPlayerVisibilityChange?: (visible: boolean) => void;
   onMobileViewModeChange?: (viewMode: MobileViewMode) => void;
   onStepChange?: (element: Element | undefined, index: number) => void;
+  /** Reports the active logical audio item and its absolute playback time. */
+  onPlaybackPositionChange?: (position: SlidePlaybackPosition) => void;
+  /**
+   * Requests playback restoration for a logical audio item. The request is
+   * applied without autoplay and may wait for a streaming segment to arrive.
+   */
+  playbackResumeRequest?: SlidePlaybackResumeRequest | null;
   /**
    * Requests navigation to a slide step from the consuming application.
    * The player still reports the resulting step through `onStepChange`.
@@ -399,6 +418,8 @@ const Slide: React.FC<SlideProps> = ({
   onPlayerVisibilityChange,
   onMobileViewModeChange,
   onStepChange,
+  onPlaybackPositionChange,
+  playbackResumeRequest = null,
   requestedStepIndex,
   enableKeyboardShortcuts = true,
   enableIframeScaling = true,
@@ -461,6 +482,7 @@ const Slide: React.FC<SlideProps> = ({
     timeMs: number;
   } | null>(null);
   const subtitleSeekRequestIdRef = useRef(0);
+  const lastPlaybackResumeRequestIdRef = useRef<number | string | null>(null);
   const playbackResetKeyRef = useRef<string | null>(null);
   const appendedMarkerAdvanceStateRef = useRef({
     markerCount: 0,
@@ -2108,6 +2130,53 @@ const Slide: React.FC<SlideProps> = ({
     ]
   );
 
+  useEffect(() => {
+    if (
+      !playbackResumeRequest ||
+      playbackResumeRequest.id === lastPlaybackResumeRequestIdRef.current
+    ) {
+      return;
+    }
+
+    const audioIndex = audioList.findIndex(
+      (audioItem) => audioItem.audioKey === playbackResumeRequest.audioKey
+    );
+    if (audioIndex < 0) {
+      return;
+    }
+
+    const accepted = handleSubtitleJump(
+      {
+        audioIndex,
+        timeMs: playbackResumeRequest.timeMs,
+      },
+      {
+        shouldContinuePlayback: false,
+        shouldWakeControls: false,
+      }
+    );
+    if (accepted) {
+      lastPlaybackResumeRequestIdRef.current = playbackResumeRequest.id;
+    }
+  }, [audioList, handleSubtitleJump, playbackResumeRequest]);
+
+  const handlePlayerPlaybackTimeChange = useCallback(
+    (timeMs: number) => {
+      playbackTimeStore.setTime(timeMs);
+
+      if (!currentAudioItem?.audioKey) {
+        return;
+      }
+
+      onPlaybackPositionChange?.({
+        audioKey: currentAudioItem.audioKey,
+        element: currentAudioItem.element,
+        timeMs,
+      });
+    },
+    [currentAudioItem, onPlaybackPositionChange, playbackTimeStore]
+  );
+
   const handlePrev = useCallback(
     (context?: SlidePlayerNavigationContext) => {
       syncPlaybackPreferenceBeforeNavigation(context);
@@ -2751,7 +2820,7 @@ const Slide: React.FC<SlideProps> = ({
                 setHasCurrentAudioPlaybackStarted(true);
               }}
               onPlaybackPreferenceChange={handlePlaybackPreferenceChange}
-              onPlaybackTimeChange={playbackTimeStore.setTime}
+              onPlaybackTimeChange={handlePlayerPlaybackTimeChange}
               onSubtitleToggle={() => {
                 setIsSubtitleEnabled((previousEnabled) => !previousEnabled);
               }}

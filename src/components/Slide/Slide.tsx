@@ -349,6 +349,10 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   onPlayerVisibilityChange?: (visible: boolean) => void;
   onMobileViewModeChange?: (viewMode: MobileViewMode) => void;
   onStepChange?: (element: Element | undefined, index: number) => void;
+  /** Emits a low-frequency checkpoint for the active logical audio item. */
+  onPlaybackCheckpoint?: (checkpoint: SlidePlaybackCheckpoint) => void;
+  /** Restores one logical audio item and continues its normal playback. */
+  playbackRestoreRequest?: SlidePlaybackRestoreRequest | null;
   /**
    * Enables keyboard shortcuts for existing player actions.
    *
@@ -373,6 +377,20 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   disableLoadingOverlay?: boolean;
 }
 
+export interface SlidePlaybackCheckpoint {
+  audioKey: string;
+  element: Element;
+  isComplete: boolean;
+  stepIndex: number;
+  timeMs: number;
+}
+
+export interface SlidePlaybackRestoreRequest {
+  audioKey: string;
+  id: number | string;
+  timeMs: number;
+}
+
 const Slide: React.FC<SlideProps> = ({
   elementList = [],
   locale,
@@ -393,6 +411,8 @@ const Slide: React.FC<SlideProps> = ({
   onPlayerVisibilityChange,
   onMobileViewModeChange,
   onStepChange,
+  onPlaybackCheckpoint,
+  playbackRestoreRequest = null,
   enableKeyboardShortcuts = true,
   enableIframeScaling = true,
   enableMarkdownScaling = true,
@@ -527,6 +547,12 @@ const Slide: React.FC<SlideProps> = ({
   const [isPlaybackRequested, setIsPlaybackRequested] = useState(true);
   const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(true);
   const [currentAudioKey, setCurrentAudioKey] = useState<string | null>(null);
+  const [pendingPlaybackRestore, setPendingPlaybackRestore] =
+    useState<SlidePlaybackRestoreRequest | null>(null);
+  const pendingPlaybackRestoreRef = useRef<SlidePlaybackRestoreRequest | null>(
+    null
+  );
+  const lastPlaybackRestoreRequestIdRef = useRef<number | string | null>(null);
   const [subtitleSeekRequest, setSubtitleSeekRequest] =
     useState<SlidePlayerSubtitleSeekRequest | null>(null);
   const [isAudioLoadingVisible, setIsAudioLoadingVisible] = useState(false);
@@ -727,6 +753,42 @@ const Slide: React.FC<SlideProps> = ({
     () => (currentAudioIndex >= 0 ? audioList[currentAudioIndex] : undefined),
     [audioList, currentAudioIndex]
   );
+
+  useEffect(() => {
+    if (
+      !playbackRestoreRequest ||
+      playbackRestoreRequest.id === lastPlaybackRestoreRequestIdRef.current
+    ) {
+      return;
+    }
+
+    const targetAudioIndex = audioList.findIndex(
+      (audioItem) => audioItem.audioKey === playbackRestoreRequest.audioKey
+    );
+    if (targetAudioIndex < 0) {
+      return;
+    }
+
+    const targetStepIndex = audioSlideIndexes[targetAudioIndex];
+    if (targetStepIndex == null) {
+      return;
+    }
+
+    lastPlaybackRestoreRequestIdRef.current = playbackRestoreRequest.id;
+    setIsPlaybackRequested(true);
+    setCurrentAudioKey(playbackRestoreRequest.audioKey);
+    pendingPlaybackRestoreRef.current = playbackRestoreRequest;
+    setPendingPlaybackRestore(playbackRestoreRequest);
+    if (currentIndex !== targetStepIndex) {
+      goTo(targetStepIndex);
+    }
+  }, [
+    audioList,
+    audioSlideIndexes,
+    currentIndex,
+    goTo,
+    playbackRestoreRequest,
+  ]);
   const currentSubtitleCues = currentAudioItem?.element?.subtitle_cues ?? [];
   const currentAudioSequenceStartKey = useMemo(
     () => currentAudioSequenceKeys[0] ?? "none",
@@ -1432,6 +1494,17 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
+    // A restore request sets the target audio in an earlier effect. Without
+    // this guard, the normal first-audio initializer in this same commit can
+    // overwrite that target before Player receives the restore request.
+    if (pendingPlaybackRestoreRef.current) {
+      // Record the target context before Player finishes its restore callback.
+      // The next sequence effect then sees this step as initialized instead of
+      // resetting it back to the default first audio item.
+      playbackResetKeyRef.current = currentPlaybackResetKey;
+      return;
+    }
+
     const { hasPlaybackContextChanged, shouldInitializeAudioSequence } =
       getPlaybackSequenceTransition({
         previousResetKey: playbackResetKeyRef.current,
@@ -1643,6 +1716,13 @@ const Slide: React.FC<SlideProps> = ({
   }, [currentAudioSequenceKeys, hasCompletedCurrentStepAudio]);
 
   useEffect(() => {
+    // A restore request may arrive after the slide itself mounts. Do not let
+    // this independent default-start path select the first audio item while
+    // the restore target is still being applied.
+    if (pendingPlaybackRestoreRef.current) {
+      return;
+    }
+
     const shouldSkipDefaultAudioStart =
       shouldSkipDefaultAudioStartForSubtitleJumpRef.current;
     shouldSkipDefaultAudioStartForSubtitleJumpRef.current = false;
@@ -2703,6 +2783,20 @@ const Slide: React.FC<SlideProps> = ({
               onPlaybackStarted={() => {
                 setHasCurrentAudioPlaybackStarted(true);
               }}
+              onPlaybackCheckpoint={({ isComplete, timeMs }) => {
+                if (!currentAudioItem?.audioKey || !currentAudioItem.element) {
+                  return;
+                }
+
+                onPlaybackCheckpoint?.({
+                  audioKey: currentAudioItem.audioKey,
+                  element: currentAudioItem.element,
+                  isComplete,
+                  stepIndex:
+                    audioSlideIndexes[currentAudioIndex] ?? currentIndex,
+                  timeMs,
+                });
+              }}
               onPlaybackPreferenceChange={handlePlaybackPreferenceChange}
               onPlaybackTimeChange={playbackTimeStore.setTime}
               onSubtitleToggle={() => {
@@ -2724,6 +2818,23 @@ const Slide: React.FC<SlideProps> = ({
               prevDisabled={!canGoPrev}
               showControls={playerControlsVisible}
               subtitleSeekRequest={subtitleSeekRequest}
+              playbackRestoreRequest={
+                pendingPlaybackRestore &&
+                pendingPlaybackRestore.audioKey === currentAudioItem?.audioKey
+                  ? {
+                      id: pendingPlaybackRestore.id,
+                      timeMs: pendingPlaybackRestore.timeMs,
+                    }
+                  : null
+              }
+              onPlaybackRestoreComplete={(requestId) => {
+                if (pendingPlaybackRestoreRef.current?.id !== requestId) {
+                  return;
+                }
+
+                pendingPlaybackRestoreRef.current = null;
+                setPendingPlaybackRestore(null);
+              }}
               texts={playerTexts}
               customActionContext={playerCustomActionContext}
               customActions={playerCustomActions}

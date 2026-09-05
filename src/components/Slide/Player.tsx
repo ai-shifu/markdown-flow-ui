@@ -89,6 +89,16 @@ export type SlidePlayerTexts = Partial<SlidePlayerLocaleTexts>;
 
 export type SlidePlayerLoadingReason = "loadingAudio" | "waitingForMoreAudio";
 
+export interface SlidePlayerPlaybackRestoreRequest {
+  id: number | string;
+  timeMs: number;
+}
+
+export interface SlidePlayerPlaybackCheckpoint {
+  isComplete: boolean;
+  timeMs: number;
+}
+
 export interface SlidePlayerNavigationContext {
   shouldContinuePlayback: boolean;
   /** Set false when navigation should not reveal hidden player controls. */
@@ -180,6 +190,12 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   onPlaybackPreferenceChange?: (playing: boolean) => void;
   onPlaybackStarted?: () => void;
   onPlaybackTimeChange?: (timeMs: number) => void;
+  /** Emits durable checkpoint candidates at lifecycle boundaries, never per frame. */
+  onPlaybackCheckpoint?: (checkpoint: SlidePlayerPlaybackCheckpoint) => void;
+  /** Restores the current logical audio item and resumes normal autoplay. */
+  playbackRestoreRequest?: SlidePlayerPlaybackRestoreRequest | null;
+  /** Called after a restore request has been applied to the active audio item. */
+  onPlaybackRestoreComplete?: (requestId: number | string) => void;
   onSubtitleToggle?: () => void;
   onPrev?: (context: SlidePlayerNavigationContext) => void;
   onNext?: (context: SlidePlayerNavigationContext) => void;
@@ -295,6 +311,9 @@ const Player = ({
   onPlaybackPreferenceChange,
   onPlaybackStarted,
   onPlaybackTimeChange,
+  onPlaybackCheckpoint,
+  playbackRestoreRequest = null,
+  onPlaybackRestoreComplete,
   onSubtitleToggle,
   onPrev,
   onNext,
@@ -365,6 +384,11 @@ const Player = ({
   const lastSubtitleJumpTargetRef =
     useRef<SlidePlayerSubtitleJumpTarget | null>(null);
   const lastSubtitleSeekRequestIdRef = useRef<number | string | null>(null);
+  const lastPlaybackRestoreRequestIdRef = useRef<number | string | null>(null);
+  const lastPlaybackCheckpointAtRef = useRef(0);
+  const hasCompletedCurrentAudioRef = useRef(false);
+  const onPlaybackCheckpointRef = useRef(onPlaybackCheckpoint);
+  const getCurrentPlaybackTimeMsRef = useRef<() => number>(() => 0);
   const subtitleCueTracksCacheRef = useRef<SubtitleCueTracksCache | null>(null);
   const playbackAccessModeRef = useRef<
     "unknown" | "auto" | "manual" | "blocked"
@@ -781,6 +805,14 @@ const Player = ({
     return Math.max(audioElement.currentTime, 0) * 1000;
   }, [getSegmentStartTimeMs]);
 
+  useEffect(() => {
+    onPlaybackCheckpointRef.current = onPlaybackCheckpoint;
+  }, [onPlaybackCheckpoint]);
+
+  useEffect(() => {
+    getCurrentPlaybackTimeMsRef.current = getCurrentPlaybackTimeMs;
+  }, [getCurrentPlaybackTimeMs]);
+
   const publishPlaybackTime = useCallback(
     (timeMs: number) => {
       const nextPlaybackTimeMs = Math.max(timeMs, 0);
@@ -809,6 +841,45 @@ const Player = ({
   const syncPlaybackTime = useCallback(() => {
     publishPlaybackTime(getCurrentPlaybackTimeMs());
   }, [getCurrentPlaybackTimeMs, publishPlaybackTime]);
+
+  const emitPlaybackCheckpoint = useCallback(
+    (force = false, isComplete = false) => {
+      if (!onPlaybackCheckpoint) {
+        return;
+      }
+
+      const now = Date.now();
+      if (!force && now - lastPlaybackCheckpointAtRef.current < 5_000) {
+        return;
+      }
+
+      lastPlaybackCheckpointAtRef.current = now;
+      hasCompletedCurrentAudioRef.current = isComplete;
+      onPlaybackCheckpoint({
+        isComplete,
+        timeMs: getCurrentPlaybackTimeMs(),
+      });
+    },
+    [getCurrentPlaybackTimeMs, onPlaybackCheckpoint]
+  );
+
+  useEffect(
+    () => () => {
+      if (hasCompletedCurrentAudioRef.current) {
+        return;
+      }
+
+      onPlaybackCheckpointRef.current?.({
+        isComplete: false,
+        timeMs: getCurrentPlaybackTimeMsRef.current(),
+      });
+    },
+    []
+  );
+
+  useEffect(() => {
+    hasCompletedCurrentAudioRef.current = false;
+  }, [currentAudioIndex]);
 
   const stopPlaybackTimeLoop = useCallback(() => {
     if (
@@ -992,6 +1063,38 @@ const Player = ({
     ]
   );
 
+  const seekUrlPlayback = useCallback(
+    (audioUrl: string, timeMs: number) => {
+      const audioElement = audioRef.current;
+
+      if (!audioElement) {
+        return false;
+      }
+
+      const targetTimeSeconds = Math.max(Number(timeMs), 0) / 1000;
+      if (audioSrcRef.current !== audioUrl) {
+        audioElement.pause();
+        audioElement.removeAttribute("src");
+        audioElement.load();
+        audioSrcRef.current = audioUrl;
+        activeSourceTypeRef.current = "url";
+        preferredSourceTypeRef.current = "url";
+        audioElement.src = audioUrl;
+        audioElement.load();
+      }
+
+      pendingSeekTimeRef.current = targetTimeSeconds;
+      publishPlaybackTime(targetTimeSeconds * 1000);
+      if (audioElement.readyState > 0) {
+        audioElement.currentTime = targetTimeSeconds;
+        pendingSeekTimeRef.current = null;
+      }
+
+      return true;
+    },
+    [publishPlaybackTime]
+  );
+
   const seekToPlaybackTimeMs = useCallback(
     (timeMs: number) => {
       const audioElement = audioRef.current;
@@ -1043,29 +1146,7 @@ const Player = ({
         );
       }
 
-      if (currentAudioUrl) {
-        const targetTimeSeconds = targetTimeMs / 1000;
-        const hasNewSrc = audioSrcRef.current !== currentAudioUrl;
-
-        if (hasNewSrc) {
-          audioElement.pause();
-          audioElement.removeAttribute("src");
-          audioElement.load();
-          audioSrcRef.current = currentAudioUrl;
-          activeSourceTypeRef.current = "url";
-          preferredSourceTypeRef.current = "url";
-          audioElement.src = currentAudioUrl;
-          audioElement.load();
-        }
-
-        pendingSeekTimeRef.current = targetTimeSeconds;
-        publishPlaybackTime(targetTimeMs);
-
-        if (audioElement.readyState > 0) {
-          audioElement.currentTime = targetTimeSeconds;
-          pendingSeekTimeRef.current = null;
-        }
-
+      if (currentAudioUrl && seekUrlPlayback(currentAudioUrl, targetTimeMs)) {
         if (!shouldResumePlayback) {
           pendingAutoPlayRef.current = false;
           audioElement.pause();
@@ -1082,12 +1163,61 @@ const Player = ({
       currentAudio,
       currentAudioUrl,
       isPlaybackPaused,
-      publishPlaybackTime,
+      seekUrlPlayback,
       startSegmentPlayback,
       stopPlaybackTimeLoop,
       tryPlayCurrentAudio,
       updateLoading,
       updatePlaybackPreference,
+    ]
+  );
+
+  const restorePlaybackTimeMs = useCallback(
+    (timeMs: number) => {
+      const audioElement = audioRef.current;
+
+      if (!audioElement || !currentAudio) {
+        return false;
+      }
+
+      const targetTimeMs = Math.max(Number(timeMs), 0);
+      const segmentSeekTarget = isPlaybackTimeCoveredBySegments(
+        currentAudioSegmentsRef.current,
+        targetTimeMs
+      )
+        ? resolveSegmentSeekTarget(
+            currentAudioSegmentsRef.current,
+            targetTimeMs
+          )
+        : null;
+
+      pendingAutoPlayRef.current = true;
+      updateLoading(false);
+
+      if (
+        segmentSeekTarget &&
+        (activeSourceTypeRef.current === "segment" || !currentAudioUrl)
+      ) {
+        return startSegmentPlayback(segmentSeekTarget.segmentIndex, "restore", {
+          seekTimeSeconds: segmentSeekTarget.segmentTimeSeconds,
+          shouldResume: true,
+        });
+      }
+
+      if (!currentAudioUrl || !seekUrlPlayback(currentAudioUrl, targetTimeMs)) {
+        return false;
+      }
+
+      tryPlayCurrentAudio("restore");
+      return true;
+    },
+    [
+      currentAudio,
+      currentAudioUrl,
+      seekUrlPlayback,
+      startSegmentPlayback,
+      tryPlayCurrentAudio,
+      updateLoading,
     ]
   );
 
@@ -1343,6 +1473,16 @@ const Player = ({
       return;
     }
 
+    // A restore can target a segment that has not arrived yet. Do not start the
+    // first available segment while the restore effect waits for the requested
+    // offset to become seekable.
+    if (
+      playbackRestoreRequest &&
+      playbackRestoreRequest.id !== lastPlaybackRestoreRequestIdRef.current
+    ) {
+      return;
+    }
+
     if (isPlaybackPaused) {
       pendingAutoPlayRef.current = false;
       updateLoading(false);
@@ -1375,21 +1515,7 @@ const Player = ({
           waitingSegmentIndexRef.current !== null
             ? getWaitingSegmentSeekTime()
             : 0;
-
-        audioElement.pause();
-        audioElement.removeAttribute("src");
-        audioElement.load();
-        audioSrcRef.current = currentAudioUrl;
-        activeSourceTypeRef.current = "url";
-        audioElement.src = currentAudioUrl;
-        audioElement.load();
-        pendingSeekTimeRef.current = nextSeekTime;
-        publishPlaybackTime(nextSeekTime * 1000);
-
-        if (audioElement.readyState > 0) {
-          audioElement.currentTime = nextSeekTime;
-          pendingSeekTimeRef.current = null;
-        }
+        seekUrlPlayback(currentAudioUrl, nextSeekTime * 1000);
       }
 
       pendingAutoPlayRef.current = shouldAutoResume;
@@ -1478,9 +1604,10 @@ const Player = ({
     currentAudioUrl,
     defaultPlaying,
     isPlaybackPaused,
+    playbackRestoreRequest,
     canStartPlaybackAutomatically,
-    publishPlaybackTime,
     resetAudio,
+    seekUrlPlayback,
     startSegmentPlayback,
     tryPlayCurrentAudio,
     getWaitingSegmentSeekTime,
@@ -1517,6 +1644,26 @@ const Player = ({
     subtitleSeekRequest,
   ]);
 
+  useEffect(() => {
+    if (
+      !playbackRestoreRequest ||
+      playbackRestoreRequest.id === lastPlaybackRestoreRequestIdRef.current ||
+      currentAudioIndex < 0
+    ) {
+      return;
+    }
+
+    if (restorePlaybackTimeMs(playbackRestoreRequest.timeMs)) {
+      lastPlaybackRestoreRequestIdRef.current = playbackRestoreRequest.id;
+      onPlaybackRestoreComplete?.(playbackRestoreRequest.id);
+    }
+  }, [
+    currentAudioIndex,
+    onPlaybackRestoreComplete,
+    playbackRestoreRequest,
+    restorePlaybackTimeMs,
+  ]);
+
   useEffect(() => resetAudio, [resetAudio]);
 
   useEffect(() => stopPlaybackTimeLoop, [stopPlaybackTimeLoop]);
@@ -1541,8 +1688,9 @@ const Player = ({
 
     stopPlaybackTimeLoop();
     syncPlaybackTime();
+    emitPlaybackCheckpoint(true);
     setIsPlaying(false);
-  }, [currentAudioIndex, stopPlaybackTimeLoop, syncPlaybackTime]);
+  }, [emitPlaybackCheckpoint, stopPlaybackTimeLoop, syncPlaybackTime]);
 
   const handleAudioCanPlay = useCallback(() => {
     const audioElement = audioRef.current;
@@ -1586,7 +1734,8 @@ const Player = ({
 
   const handleAudioTimeUpdate = useCallback(() => {
     syncPlaybackTime();
-  }, [syncPlaybackTime]);
+    emitPlaybackCheckpoint();
+  }, [emitPlaybackCheckpoint, syncPlaybackTime]);
 
   const handleAudioLoadStart = useCallback(() => {
     if (isWaitingForSegmentRef.current) {
@@ -1610,9 +1759,26 @@ const Player = ({
   }, [syncPlaybackTime]);
 
   const handleAudioEnded = useCallback(() => {
+    const activeAudio = currentAudioRef.current;
     const shouldFinishAsUrl =
       activeSourceTypeRef.current === "url" ||
       currentAudioSegmentsRef.current.length === 0;
+    const hasNextSegment = Boolean(
+      currentAudioSegmentsRef.current[currentSegmentIndexRef.current + 1]
+    );
+    const isFinalSegment = currentAudioSegmentsRef.current.some(
+      (segment) => segment.is_final
+    );
+    const isStreamingAudio = Boolean(activeAudio?.isAudioStreaming);
+
+    // A segment ending is not necessarily the end of the logical audio item.
+    // Clearing its checkpoint here would lose the resume point while the next
+    // segment is loading or while a stream is still being generated.
+    emitPlaybackCheckpoint(
+      true,
+      shouldFinishAsUrl ||
+        (!isStreamingAudio && !hasNextSegment && isFinalSegment)
+    );
 
     stopPlaybackTimeLoop();
     isSwitchingSegmentRef.current = false;
@@ -1623,7 +1789,12 @@ const Player = ({
     }
 
     handleSegmentEnded();
-  }, [finishAudioItem, handleSegmentEnded, stopPlaybackTimeLoop]);
+  }, [
+    emitPlaybackCheckpoint,
+    finishAudioItem,
+    handleSegmentEnded,
+    stopPlaybackTimeLoop,
+  ]);
 
   const handleAudioError = useCallback(() => {
     stopPlaybackTimeLoop();

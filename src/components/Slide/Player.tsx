@@ -95,6 +95,8 @@ export interface SlidePlayerPlaybackRestoreRequest {
 }
 
 export interface SlidePlayerPlaybackCheckpoint {
+  /** Identifies the logical audio item that produced this checkpoint. */
+  audioKey: string;
   isComplete: boolean;
   timeMs: number;
 }
@@ -295,6 +297,7 @@ const PLAYER_SHORTCUT_LABELS = {
 } as const;
 
 const SUBTITLE_JUMP_AVAILABILITY_UPDATE_INTERVAL_MS = 250;
+const PLAYBACK_RESTORE_WAIT_TIMEOUT_MS = 15_000;
 
 const getShortcutTitle = (label: string | undefined, shortcut: string) =>
   label ? `${label} (${shortcut})` : shortcut;
@@ -387,6 +390,7 @@ const Player = ({
   const lastPlaybackRestoreRequestIdRef = useRef<number | string | null>(null);
   const lastPlaybackCheckpointAtRef = useRef(0);
   const hasCompletedCurrentAudioRef = useRef(false);
+  const isResettingAudioRef = useRef(false);
   const onPlaybackCheckpointRef = useRef(onPlaybackCheckpoint);
   const getCurrentPlaybackTimeMsRef = useRef<() => number>(() => 0);
   const subtitleCueTracksCacheRef = useRef<SubtitleCueTracksCache | null>(null);
@@ -844,7 +848,9 @@ const Player = ({
 
   const emitPlaybackCheckpoint = useCallback(
     (force = false, isComplete = false) => {
-      if (!onPlaybackCheckpoint) {
+      const audioKey = currentAudioKeyRef.current;
+
+      if (!onPlaybackCheckpoint || !audioKey) {
         return;
       }
 
@@ -856,6 +862,7 @@ const Player = ({
       lastPlaybackCheckpointAtRef.current = now;
       hasCompletedCurrentAudioRef.current = isComplete;
       onPlaybackCheckpoint({
+        audioKey,
         isComplete,
         timeMs: getCurrentPlaybackTimeMs(),
       });
@@ -870,6 +877,7 @@ const Player = ({
       }
 
       onPlaybackCheckpointRef.current?.({
+        audioKey: currentAudioKeyRef.current ?? "none",
         isComplete: false,
         timeMs: getCurrentPlaybackTimeMsRef.current(),
       });
@@ -1356,6 +1364,10 @@ const Player = ({
       return;
     }
 
+    // The DOM pause event is delivered after React has rendered the new audio
+    // item. Save the outgoing item before changing its identity, then suppress
+    // that synthetic pause so it cannot be attributed to the new item.
+    emitPlaybackCheckpoint(true);
     currentAudioKeyRef.current = currentAudioKey;
     currentSegmentIndexRef.current = 0;
     waitingSegmentIndexRef.current = null;
@@ -1377,15 +1389,18 @@ const Player = ({
       return;
     }
 
+    isResettingAudioRef.current = true;
     audioElement.pause();
     audioElement.removeAttribute("src");
     audioElement.load();
+    isResettingAudioRef.current = false;
     setIsPlaying(false);
   }, [
     currentAudioIndex,
     currentAudioKey,
     currentAudioSegments.length,
     currentAudioUrl,
+    emitPlaybackCheckpoint,
     publishPlaybackTime,
     stopPlaybackTimeLoop,
     updateLoading,
@@ -1656,12 +1671,52 @@ const Player = ({
     if (restorePlaybackTimeMs(playbackRestoreRequest.timeMs)) {
       lastPlaybackRestoreRequestIdRef.current = playbackRestoreRequest.id;
       onPlaybackRestoreComplete?.(playbackRestoreRequest.id);
+      return;
+    }
+
+    // A completed item can no longer produce the requested offset. Release
+    // the restore guard so normal playback is not suppressed indefinitely.
+    if (!currentAudio?.isAudioStreaming) {
+      lastPlaybackRestoreRequestIdRef.current = playbackRestoreRequest.id;
+      onPlaybackRestoreComplete?.(playbackRestoreRequest.id);
     }
   }, [
+    currentAudio?.isAudioStreaming,
     currentAudioIndex,
     onPlaybackRestoreComplete,
     playbackRestoreRequest,
     restorePlaybackTimeMs,
+  ]);
+
+  useEffect(() => {
+    if (
+      !playbackRestoreRequest ||
+      playbackRestoreRequest.id === lastPlaybackRestoreRequestIdRef.current ||
+      currentAudioIndex < 0 ||
+      !currentAudio?.isAudioStreaming
+    ) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (
+        playbackRestoreRequest.id === lastPlaybackRestoreRequestIdRef.current
+      ) {
+        return;
+      }
+
+      lastPlaybackRestoreRequestIdRef.current = playbackRestoreRequest.id;
+      onPlaybackRestoreComplete?.(playbackRestoreRequest.id);
+    }, PLAYBACK_RESTORE_WAIT_TIMEOUT_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    currentAudio?.isAudioStreaming,
+    currentAudioIndex,
+    onPlaybackRestoreComplete,
+    playbackRestoreRequest,
   ]);
 
   useEffect(() => resetAudio, [resetAudio]);
@@ -1682,7 +1737,11 @@ const Player = ({
   ]);
 
   const handleAudioPause = useCallback(() => {
-    if (isWaitingForSegmentRef.current || isSwitchingSegmentRef.current) {
+    if (
+      isResettingAudioRef.current ||
+      isWaitingForSegmentRef.current ||
+      isSwitchingSegmentRef.current
+    ) {
       return;
     }
 

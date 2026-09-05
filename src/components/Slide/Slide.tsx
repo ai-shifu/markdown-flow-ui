@@ -2783,17 +2783,28 @@ const Slide: React.FC<SlideProps> = ({
               onPlaybackStarted={() => {
                 setHasCurrentAudioPlaybackStarted(true);
               }}
-              onPlaybackCheckpoint={({ isComplete, timeMs }) => {
-                if (!currentAudioItem?.audioKey || !currentAudioItem.element) {
+              onPlaybackCheckpoint={({ audioKey, isComplete, timeMs }) => {
+                const checkpointAudioIndex = audioList.findIndex(
+                  (audioItem) => audioItem.audioKey === audioKey
+                );
+                const checkpointAudioItem =
+                  checkpointAudioIndex >= 0
+                    ? audioList[checkpointAudioIndex]
+                    : undefined;
+
+                if (
+                  !checkpointAudioItem?.audioKey ||
+                  !checkpointAudioItem.element
+                ) {
                   return;
                 }
 
                 onPlaybackCheckpoint?.({
-                  audioKey: currentAudioItem.audioKey,
-                  element: currentAudioItem.element,
+                  audioKey: checkpointAudioItem.audioKey,
+                  element: checkpointAudioItem.element,
                   isComplete,
                   stepIndex:
-                    audioSlideIndexes[currentAudioIndex] ?? currentIndex,
+                    audioSlideIndexes[checkpointAudioIndex] ?? currentIndex,
                   timeMs,
                 });
               }}

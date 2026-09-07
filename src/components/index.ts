@@ -49,6 +49,8 @@ export type {
   Element,
   ElementSubtitleCue,
   SlideInteractionTexts,
+  SlidePlaybackCheckpoint,
+  SlidePlaybackRestoreRequest,
   SlidePlayerControlsVisibility,
   SlideProps,
 } from "./Slide";
@@ -59,5 +61,10 @@ export type {
   InteractionDefaultValues,
   InteractionParseResult,
 } from "../lib/interaction-defaults";
-export type { PlayerProps, SlidePlayerNavigationContext } from "./Slide";
+export type {
+  PlayerProps,
+  SlidePlayerNavigationContext,
+  SlidePlayerPlaybackCheckpoint,
+  SlidePlayerPlaybackRestoreRequest,
+} from "./Slide";
 export type { UseSlideResult } from "./Slide";

@@ -49,6 +49,8 @@ export interface SlideLocaleTexts {
   fullscreenBackAriaLabel: string;
   interactionTexts: SlideInteractionLocaleTexts;
   playerTexts: SlidePlayerLocaleTexts;
+  slideProgressAriaLabel: string;
+  slideProgressGeneratingLabel: string;
 }
 
 export const SLIDE_LOCALE_TEXTS: Record<MarkdownFlowLocale, SlideLocaleTexts> =

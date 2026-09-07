@@ -51,6 +51,7 @@ export type {
   SlidePlayerPlaybackCheckpoint,
   SlidePlayerNavigationContext,
   SlidePlayerPlaybackRestoreRequest,
+  SlidePlayerProgress,
   SlidePlayerTexts,
 } from "./Player";
 export type { MarkdownFlowLocale } from "../../lib/locale";

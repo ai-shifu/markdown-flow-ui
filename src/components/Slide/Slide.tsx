@@ -344,6 +344,15 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   playerTexts?: SlidePlayerTexts;
   playerAutoHideDelay?: number;
   markerAutoAdvanceDelay?: number;
+  /** Shows an interactive navigation timeline for generated slide steps. */
+  showSlideProgress?: boolean;
+  /** Indicates that more generated slide steps may still be appended. */
+  isSlideProgressGenerating?: boolean;
+  /** Fired when a generated slide is selected from the progress navigation. */
+  onSlideProgressNavigate?: (
+    element: Element | undefined,
+    index: number
+  ) => void;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   onSend?: (content: OnSendContentParams, element?: Element) => void;
   onPlayerVisibilityChange?: (visible: boolean) => void;
@@ -406,6 +415,9 @@ const Slide: React.FC<SlideProps> = ({
   playerTexts,
   playerAutoHideDelay = 3000,
   markerAutoAdvanceDelay = DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS,
+  showSlideProgress = false,
+  isSlideProgressGenerating = false,
+  onSlideProgressNavigate,
   interactionDefaultValueOptions,
   onSend,
   onPlayerVisibilityChange,
@@ -512,10 +524,8 @@ const Slide: React.FC<SlideProps> = ({
       ),
     [currentElementList]
   );
-  const visibleMarkerCount = slideElementList.filter(
-    (element) => element.is_renderable !== false
-  ).length;
-  const isSingleSlide = visibleMarkerCount === 1;
+  const generatedSlideCount = slideElementList.length;
+  const isSingleSlide = generatedSlideCount === 1;
   const shouldMountPlayer =
     resolvedPlayerEnabled &&
     (slideElementList.length > 0 ||
@@ -2183,6 +2193,37 @@ const Slide: React.FC<SlideProps> = ({
     ]
   );
 
+  const handleSlideProgressNavigate = useCallback(
+    (targetIndex: number, context: SlidePlayerNavigationContext) => {
+      if (
+        targetIndex < 0 ||
+        targetIndex >= slideElementList.length ||
+        targetIndex === currentIndex
+      ) {
+        return;
+      }
+
+      syncPlaybackPreferenceBeforeNavigation(context);
+      shouldScrollToBottomRef.current = true;
+      pendingInteractionOverlayStepIndexRef.current = null;
+      setIsAudioLoadingVisible(false);
+      setHasPlayerInteracted(true);
+      revealPlayerControls(true);
+      resetAudioSequence();
+      goTo(targetIndex);
+      onSlideProgressNavigate?.(slideElementList[targetIndex], targetIndex);
+    },
+    [
+      currentIndex,
+      goTo,
+      onSlideProgressNavigate,
+      resetAudioSequence,
+      revealPlayerControls,
+      slideElementList,
+      syncPlaybackPreferenceBeforeNavigation,
+    ]
+  );
+
   const handlePlayerLoadingChange = useCallback(
     ({
       loading,
@@ -2828,6 +2869,18 @@ const Slide: React.FC<SlideProps> = ({
               canJumpToSubtitleTarget={canJumpToSubtitleTarget}
               prevDisabled={!canGoPrev}
               showControls={playerControlsVisible}
+              slideProgress={
+                showSlideProgress
+                  ? {
+                      ariaLabel: localeTexts.slideProgressAriaLabel,
+                      currentIndex,
+                      generatingLabel: localeTexts.slideProgressGeneratingLabel,
+                      isGenerating: isSlideProgressGenerating,
+                      onNavigate: handleSlideProgressNavigate,
+                      totalSteps: generatedSlideCount,
+                    }
+                  : null
+              }
               subtitleSeekRequest={subtitleSeekRequest}
               playbackRestoreRequest={
                 pendingPlaybackRestore &&

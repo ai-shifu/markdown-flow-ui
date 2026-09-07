@@ -102,31 +102,35 @@
   align-items: center;
   gap: 5px;
   padding-left: 2px;
-  background: var(--background, #fff);
+  background: transparent;
   color: color-mix(in srgb, currentColor 55%, transparent);
   font-size: 12px;
   line-height: 20px;
   white-space: nowrap;
 }
 
-.slide-player__slide-progress-generating > span {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  animation: slide-progress-generating-pulse 1.2s ease-in-out infinite;
-  background: var(--primary, #0f63ee);
+.slide-player__slide-progress-generating[data-visible="false"] {
+  visibility: hidden;
 }
 
-@keyframes slide-progress-generating-pulse {
-  50% {
-    opacity: 0.35;
-    transform: scale(0.75);
+.slide-player__slide-progress-generating > svg {
+  display: block;
+  width: 12px;
+  height: 12px;
+  align-self: center;
+  animation: slide-progress-generating-spin 1s linear infinite;
+  color: var(--primary, #0f63ee);
+}
+
+@keyframes slide-progress-generating-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
 .slide--mobile-device .slide-player {
   width: 100% !important;
-  min-height: 80px;
+  min-height: 88px;
   align-items: stretch;
   overflow: visible;
   left: 0 !important;
@@ -143,6 +147,7 @@
   bottom: 4px;
   width: calc(100% - 40px);
   height: 24px;
+  gap: 6px;
 }
 .slide--mobile-device.slide--mobile-landscape-native .slide-player {
   min-height: 60px !important;
@@ -151,13 +156,12 @@
 .slide--mobile-device .slide-player__controls {
   display: grid !important;
   width: 100%;
-  padding: 0 20px !important;
+  padding: 0 20px 24px !important;
   grid-template-columns: repeat(
     var(--slide-player-mobile-control-count, 4),
     minmax(0, 1fr)
   );
   align-items: center;
-  padding: 0 20px;
   border: none !important;
   background: #fff !important;
   border-radius: 0 !important;

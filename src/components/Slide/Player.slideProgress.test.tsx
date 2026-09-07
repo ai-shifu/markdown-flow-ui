@@ -42,7 +42,7 @@ afterEach(() => {
 describe("slide player progress", () => {
   it("renders generated steps as an interactive slide timeline", () => {
     const onNavigate = vi.fn();
-    render(
+    const { rerender } = render(
       <Player
         defaultPlaying={false}
         slideProgress={{
@@ -77,9 +77,28 @@ describe("slide player progress", () => {
       shouldContinuePlayback: false,
     });
     expect(screen.getByText("Generating")).not.toBeNull();
+    expect(
+      screen.getByText("Generating").querySelector("svg.lucide-loader-circle")
+    ).not.toBeNull();
     expect(mockScrollTo).toHaveBeenCalledWith(
       expect.objectContaining({ behavior: "smooth" })
     );
+
+    mockScrollTo.mockClear();
+    rerender(
+      <Player
+        defaultPlaying={false}
+        slideProgress={{
+          ariaLabel: "Lesson slide progress",
+          currentIndex: 1,
+          generatingLabel: "Generating",
+          isGenerating: true,
+          onNavigate,
+          totalSteps: 5,
+        }}
+      />
+    );
+    expect(mockScrollTo).not.toHaveBeenCalled();
   });
 
   it("does not render a progress indicator for a single generated step", () => {

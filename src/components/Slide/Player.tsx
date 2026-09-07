@@ -13,6 +13,7 @@ import {
   CaptionsOff,
   EllipsisVertical,
   FastForward,
+  LoaderCircle,
   Maximize,
   Rewind,
   ScanLine,
@@ -649,7 +650,7 @@ const Player = ({
         progress.clientWidth / 2 +
         currentMarker.clientWidth / 2,
     });
-  }, [slideProgress?.currentIndex, slideProgress?.totalSteps]);
+  }, [slideProgress?.currentIndex]);
 
   const isAutoplayBlockedError = useCallback((error: unknown) => {
     if (!(error instanceof DOMException)) {
@@ -2374,12 +2375,14 @@ const Player = ({
                   )}
                 </div>
               </div>
-              {slideProgress.isGenerating ? (
-                <span className="slide-player__slide-progress-generating">
-                  <span aria-hidden="true" />
-                  {slideProgress.generatingLabel}
-                </span>
-              ) : null}
+              <span
+                aria-hidden={!slideProgress.isGenerating}
+                className="slide-player__slide-progress-generating"
+                data-visible={slideProgress.isGenerating ? "true" : "false"}
+              >
+                <LoaderCircle aria-hidden="true" />
+                {slideProgress.generatingLabel}
+              </span>
             </div>
           ) : null}
         </>

@@ -182,7 +182,7 @@
       ]
     }
   },
-  "version": "0.2.25-dev.4",
+  "version": "0.2.25",
   "type": "module",
   "exports": {
     ".": {

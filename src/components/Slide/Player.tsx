@@ -2120,7 +2120,13 @@ const Player = ({
       dir={direction}
       lang={language}
       data-slide-player-shortcut-owner={keyboardShortcutOwnerId}
-      className={cn("slide-player", className)}
+      className={cn(
+        "slide-player",
+        slideProgress &&
+          (slideProgress.totalSteps > 1 || slideProgress.isGenerating) &&
+          "slide-player--with-slide-progress",
+        className
+      )}
       onFocusCapture={handleRootFocusCapture}
       onPointerDown={handleRootPointerDown}
     >

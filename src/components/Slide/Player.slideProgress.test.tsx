@@ -60,6 +60,9 @@ describe("slide player progress", () => {
       name: "Lesson slide progress",
     });
     expect(
+      progress.closest(".slide-player--with-slide-progress")
+    ).not.toBeNull();
+    expect(
       Array.from(
         progress.querySelectorAll(".slide-player__slide-progress-segment")
       ).map((segment) => segment.getAttribute("data-state"))

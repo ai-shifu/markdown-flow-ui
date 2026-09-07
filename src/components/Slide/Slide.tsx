@@ -2807,7 +2807,11 @@ const Slide: React.FC<SlideProps> = ({
               audioList={audioList}
               className={cn(
                 "absolute left-1/2 z-[2] -translate-x-1/2",
-                isDesktopBrowserFullscreen ? "bottom-3" : "-bottom-3",
+                showSlideProgress
+                  ? "bottom-9"
+                  : isDesktopBrowserFullscreen
+                    ? "bottom-3"
+                    : "-bottom-3",
                 playerClassName,
                 !playerControlsVisible && "pointer-events-none opacity-0"
               )}

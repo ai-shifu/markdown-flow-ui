@@ -100,6 +100,10 @@ const meta = {
       description:
         "Auto-advance delay for silent marker-only steps in milliseconds",
     },
+    showSlideProgress: {
+      control: "boolean",
+      description: "Show navigation for generated slide positions",
+    },
     playerCustomActions: {
       control: false,
       description:
@@ -6165,6 +6169,45 @@ export const StreamingSpeakableDelayedAudioSlide: Story = {
   render: (args) => (
     <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
       <StreamingSlidePreview className="w-full" {...args} />
+    </div>
+  ),
+};
+
+export const GeneratedSlideNavigationTimeline: Story = {
+  args: {
+    showSlideProgress: true,
+    elementList: [
+      createExampleElement({
+        sequenceNumber: 1,
+        type: "text",
+        content: "First generated slide",
+        isNew: true,
+      }),
+      createExampleElement({
+        sequenceNumber: 2,
+        type: "text",
+        content: "Second generated slide",
+        isNew: true,
+      }),
+      createExampleElement({
+        sequenceNumber: 3,
+        type: "text",
+        content: "Third generated slide",
+        isNew: true,
+      }),
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Shows generated slide position as a non-interactive segmented indicator below the player controls.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
+      <Slide className="h-full w-full" {...args} />
     </div>
   ),
 };

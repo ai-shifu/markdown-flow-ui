@@ -6,6 +6,8 @@
       "waitingForMoreAudio": "Waiting for more audio..."
     },
     "fullscreenBackAriaLabel": "Back to non-full screen",
+    "slideProgressAriaLabel": "Lesson slide progress",
+    "slideProgressGeneratingLabel": "Generating",
     "interactionTexts": {
       "title": "Submit the content below to continue.",
       "confirmButtonText": "Submit",
@@ -46,6 +48,8 @@
       "waitingForMoreAudio": "En attente de plus d'audio..."
     },
     "fullscreenBackAriaLabel": "Retour au mode non plein écran",
+    "slideProgressAriaLabel": "Progression des diapositives de la leçon",
+    "slideProgressGeneratingLabel": "Génération en cours",
     "interactionTexts": {
       "title": "Soumettez le contenu ci-dessous pour continuer.",
       "confirmButtonText": "Soumettre",
@@ -86,6 +90,8 @@
       "waitingForMoreAudio": "正在等待音频"
     },
     "fullscreenBackAriaLabel": "返回非全屏",
+    "slideProgressAriaLabel": "课程页面进度",
+    "slideProgressGeneratingLabel": "生成中",
     "interactionTexts": {
       "title": "提交下面的内容以继续",
       "confirmButtonText": "提交",
@@ -126,6 +132,8 @@
       "waitingForMoreAudio": "في انتظار المزيد من الصوت..."
     },
     "fullscreenBackAriaLabel": "العودة إلى العرض العادي",
+    "slideProgressAriaLabel": "تقدم شرائح الدرس",
+    "slideProgressGeneratingLabel": "جارٍ الإنشاء",
     "interactionTexts": {
       "title": "أرسل المحتوى أدناه للمتابعة.",
       "confirmButtonText": "إرسال",
@@ -166,6 +174,8 @@
       "waitingForMoreAudio": "กำลังรอเสียงเพิ่มเติม..."
     },
     "fullscreenBackAriaLabel": "กลับสู่โหมดปกติ",
+    "slideProgressAriaLabel": "ความคืบหน้าของสไลด์บทเรียน",
+    "slideProgressGeneratingLabel": "กำลังสร้าง",
     "interactionTexts": {
       "title": "ส่งเนื้อหาด้านล่างเพื่อดำเนินการต่อ",
       "confirmButtonText": "ส่งคำตอบ",

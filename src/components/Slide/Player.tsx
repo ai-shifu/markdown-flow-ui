@@ -13,6 +13,7 @@ import {
   CaptionsOff,
   EllipsisVertical,
   FastForward,
+  LoaderCircle,
   Maximize,
   Rewind,
   ScanLine,
@@ -99,6 +100,15 @@ export interface SlidePlayerPlaybackCheckpoint {
   audioKey: string;
   isComplete: boolean;
   timeMs: number;
+}
+
+export interface SlidePlayerProgress {
+  ariaLabel: string;
+  currentIndex: number;
+  generatingLabel?: string;
+  isGenerating?: boolean;
+  onNavigate?: (index: number, context: SlidePlayerNavigationContext) => void;
+  totalSteps: number;
 }
 
 export interface SlidePlayerNavigationContext {
@@ -234,6 +244,8 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   onControlsPointerEnter?: React.PointerEventHandler<HTMLDivElement>;
   /** Fired when the pointer leaves the controls container to resume auto-hide. */
   onControlsPointerLeave?: React.PointerEventHandler<HTMLDivElement>;
+  /** Interactive navigation timeline for the generated slide sequence. */
+  slideProgress?: SlidePlayerProgress | null;
   /**
    * Enables document-level keyboard shortcuts for existing player actions.
    *
@@ -338,6 +350,7 @@ const Player = ({
   showControls = true,
   onControlsPointerEnter,
   onControlsPointerLeave,
+  slideProgress = null,
   enableKeyboardShortcuts = true,
   subtitleSeekRequest = null,
   customActions,
@@ -353,6 +366,8 @@ const Player = ({
   const localKeyboardShortcutOwnerId = useId();
   const keyboardShortcutContext = useContext(PlayerKeyboardShortcutContext);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const slideProgressRef = useRef<HTMLDivElement | null>(null);
+  const currentSlideProgressMarkerRef = useRef<HTMLButtonElement | null>(null);
   const { resolvedDirection: shortcutDirection, readDirection } =
     useResolvedDirection(audioRef, direction);
   const isRtlNavigation = shortcutDirection === "rtl";
@@ -616,6 +631,26 @@ const Player = ({
       }),
     };
   }, [useAutoAdvanceToggle]);
+
+  useEffect(() => {
+    const progress = slideProgressRef.current;
+    const currentMarker = currentSlideProgressMarkerRef.current;
+    if (
+      !progress ||
+      !currentMarker ||
+      typeof progress.scrollTo !== "function"
+    ) {
+      return;
+    }
+
+    progress.scrollTo({
+      behavior: "smooth",
+      left:
+        currentMarker.offsetLeft -
+        progress.clientWidth / 2 +
+        currentMarker.clientWidth / 2,
+    });
+  }, [slideProgress?.currentIndex]);
 
   const isAutoplayBlockedError = useCallback((error: unknown) => {
     if (!(error instanceof DOMException)) {
@@ -2085,7 +2120,13 @@ const Player = ({
       dir={direction}
       lang={language}
       data-slide-player-shortcut-owner={keyboardShortcutOwnerId}
-      className={cn("slide-player", className)}
+      className={cn(
+        "slide-player",
+        slideProgress &&
+          (slideProgress.totalSteps > 1 || slideProgress.isGenerating) &&
+          "slide-player--with-slide-progress",
+        className
+      )}
       onFocusCapture={handleRootFocusCapture}
       onPointerDown={handleRootPointerDown}
     >
@@ -2292,6 +2333,64 @@ const Player = ({
               </>
             ) : null}
           </div>
+          {slideProgress &&
+          (slideProgress.totalSteps > 1 || slideProgress.isGenerating) ? (
+            <div
+              aria-label={slideProgress.ariaLabel}
+              className="slide-player__slide-progress"
+              role="navigation"
+            >
+              <div
+                className="slide-player__slide-progress-viewport"
+                ref={slideProgressRef}
+              >
+                <div className="slide-player__slide-progress-track">
+                  {Array.from(
+                    { length: slideProgress.totalSteps },
+                    (_, index) => (
+                      <button
+                        aria-current={
+                          index === slideProgress.currentIndex
+                            ? "step"
+                            : undefined
+                        }
+                        aria-label={`${slideProgress.ariaLabel} ${index + 1}`}
+                        className="slide-player__slide-progress-segment"
+                        data-state={
+                          index < slideProgress.currentIndex
+                            ? "completed"
+                            : index === slideProgress.currentIndex
+                              ? "current"
+                              : "upcoming"
+                        }
+                        key={index}
+                        onClick={() =>
+                          slideProgress.onNavigate?.(
+                            index,
+                            getNavigationContext()
+                          )
+                        }
+                        ref={
+                          index === slideProgress.currentIndex
+                            ? currentSlideProgressMarkerRef
+                            : undefined
+                        }
+                        type="button"
+                      />
+                    )
+                  )}
+                </div>
+              </div>
+              <span
+                aria-hidden={!slideProgress.isGenerating}
+                className="slide-player__slide-progress-generating"
+                data-visible={slideProgress.isGenerating ? "true" : "false"}
+              >
+                <LoaderCircle aria-hidden="true" />
+                {slideProgress.generatingLabel}
+              </span>
+            </div>
+          ) : null}
         </>
       ) : null}
     </div>

@@ -7,9 +7,130 @@
   justify-content: center;
 }
 
+.slide-player__slide-progress {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  display: flex;
+  width: min(720px, calc(100vw - 64px));
+  height: 24px;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+}
+
+.slide-player__slide-progress-viewport {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.slide-player__slide-progress-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.slide-player__slide-progress-track {
+  position: relative;
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  height: 24px;
+  align-items: center;
+  gap: 18px;
+  padding: 0 2px;
+}
+
+.slide-player__slide-progress-track::before {
+  position: absolute;
+  right: 14px;
+  left: 14px;
+  height: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  content: "";
+}
+
+.slide-player__slide-progress-segment {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slide-player__slide-progress-segment::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary, #0f63ee) 42%, transparent);
+  content: "";
+  transform: translate(-50%, -50%);
+  transition:
+    width 120ms ease,
+    height 120ms ease,
+    background-color 120ms ease;
+}
+
+.slide-player__slide-progress-segment[data-state="current"]::before {
+  width: 12px;
+  height: 12px;
+  background: var(--primary, #0f63ee);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--primary, #0f63ee) 24%, transparent);
+}
+
+.slide-player__slide-progress-segment:focus-visible {
+  border-radius: 50%;
+  outline: 2px solid color-mix(in srgb, var(--primary, #0f63ee) 70%, white);
+  outline-offset: 0;
+}
+
+.slide-player__slide-progress-generating {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  padding-left: 2px;
+  background: transparent;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+  font-size: 12px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.slide-player__slide-progress-generating[data-visible="false"] {
+  visibility: hidden;
+}
+
+.slide-player__slide-progress-generating > svg {
+  display: block;
+  width: 12px;
+  height: 12px;
+  align-self: center;
+  animation: slide-progress-generating-spin 1s linear infinite;
+  color: var(--primary, #0f63ee);
+}
+
+@keyframes slide-progress-generating-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .slide--mobile-device .slide-player {
   width: 100% !important;
-  min-height: 80px;
+  min-height: 88px;
   align-items: stretch;
   overflow: visible;
   left: 0 !important;
@@ -19,6 +140,14 @@
   background: #fff !important;
   border-top: 1px solid #e5e5e5;
   border-bottom: 1px solid #e5e5e5;
+}
+
+.slide--mobile-device .slide-player__slide-progress {
+  top: auto;
+  bottom: 4px;
+  width: calc(100% - 40px);
+  height: 24px;
+  gap: 6px;
 }
 .slide--mobile-device.slide--mobile-landscape-native .slide-player {
   min-height: 60px !important;
@@ -33,11 +162,19 @@
     minmax(0, 1fr)
   );
   align-items: center;
-  padding: 0 20px;
   border: none !important;
   background: #fff !important;
   border-radius: 0 !important;
   box-shadow: none !important;
+}
+
+.slide--mobile-device
+  .slide-player--with-slide-progress
+  .slide-player__controls {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 60px;
 }
 
 .slide--mobile-device .slide-player__group {
@@ -97,6 +234,23 @@
 }
 
 .slide--mobile-device.slide--mobile-landscape .slide-player__controls {
+  height: 48px;
+}
+
+.slide--mobile-device.slide--mobile-landscape
+  .slide-player--with-slide-progress,
+.slide--mobile-device.slide--mobile-landscape-native
+  .slide-player--with-slide-progress {
+  min-height: 76px !important;
+}
+
+.slide--mobile-device.slide--mobile-landscape
+  .slide-player--with-slide-progress
+  .slide-player__controls,
+.slide--mobile-device.slide--mobile-landscape-native
+  .slide-player--with-slide-progress
+  .slide-player__controls {
+  top: 0;
   height: 48px;
 }
 

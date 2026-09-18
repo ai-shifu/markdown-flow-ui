@@ -14,6 +14,12 @@ const meta = {
   component: MarkdownFlowEditor,
   parameters: {
     layout: "centered",
+    docs: {
+      description: {
+        component:
+          "The editor does not bind search shortcuts. Ctrl+F (Cmd+F on macOS) uses the browser's page search instead of opening an editor search panel.",
+      },
+    },
   },
   tags: ["autodocs"],
   argTypes: {

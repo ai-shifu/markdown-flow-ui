@@ -1144,6 +1144,7 @@ const Editor: React.FC<EditorProps> = ({
             extensions={editorExtensions}
             basicSetup={{
               lineNumbers: false,
+              searchKeymap: false,
               syntaxHighlighting: true,
               highlightActiveLine: true,
               highlightActiveLineGutter: true,

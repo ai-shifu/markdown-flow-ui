@@ -47,3 +47,33 @@ describe("getInteractionDefaultSelectedValues", () => {
     expect(result).toEqual(["不知道怎么提问，AI 回答经常太泛"]);
   });
 });
+
+describe("options that escape the grammar's delimiters", () => {
+  // `?[…]` gives `|`, `//`, `...` and `]` structural meaning, and an option carrying one escapes
+  // it with a backslash. These go through remark-flow's parser, which is where an interaction is
+  // normally read: they pin that this library actually resolves the escapes rather than showing
+  // a learner the backslashes or losing half an option. (The shortcode regex in this file is the
+  // fallback for when that parser throws; it understands the same escapes, and nothing reachable
+  // from here exercises it.)
+  const ESCAPED_BRACKET_CONTENT =
+    "?[%{{pattern}}^[a-z\\]+$||array[0\\]||...something else]";
+
+  it("reads an option containing an escaped bracket whole", () => {
+    const result = getInteractionDefaultValues(
+      ESCAPED_BRACKET_CONTENT,
+      "^[a-z]+$"
+    );
+
+    // A multi-select restores its chosen options; `?[…]` no longer ends at the `]` inside one.
+    expect(result.selectedValues).toEqual(["^[a-z]+$"]);
+  });
+
+  it("restores a URL option whose slashes are escaped", () => {
+    const result = getInteractionDefaultValues(
+      "?[%{{link}}https:\\/\\/a\\.com\\/x|https:\\/\\/b\\.com\\/y]",
+      "https://b.com/y"
+    );
+
+    expect(result.buttonText).toBe("https://b.com/y");
+  });
+});

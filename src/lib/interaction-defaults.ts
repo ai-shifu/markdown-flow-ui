@@ -1,4 +1,7 @@
-import { createInteractionParser } from "remark-flow";
+import {
+  createInteractionParser,
+  INTERACTION_CONTENT_SOURCE,
+} from "remark-flow";
 
 export interface InteractionParseResult {
   buttonTexts?: string[];
@@ -36,7 +39,11 @@ interface StructuredInteractionPayload {
 
 const interactionParser = createInteractionParser();
 const INTERACTION_TAG_PATTERN = /<custom-variable\b/i;
-const INTERACTION_SHORTCODE_PATTERN = /\?\[%\{\{([^}]+)\}\}([\s\S]*?)\]/;
+// Same definition of where an interaction ends as the parser uses, so an option carrying a
+// `\]` is read whole instead of being cut at its first bracket.
+const INTERACTION_SHORTCODE_PATTERN = new RegExp(
+  `\\?\\[%\\{\\{([^}]+)\\}\\}(${INTERACTION_CONTENT_SOURCE})\\]`
+);
 const JSON_LIKE_VALUE_PATTERN = /^[\[{]/;
 const INTERACTION_VALUE_SEPARATOR_PATTERN = /^[\s,，\n]+/;
 

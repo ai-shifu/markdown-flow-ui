@@ -6,11 +6,20 @@ import {
   ViewUpdate,
 } from "@codemirror/view";
 import { RangeSetBuilder } from "@codemirror/state";
+import { INTERACTION_CONTENT_SOURCE, isEscape } from "remark-flow";
+
 import { createVariableExpressionRegexp } from "../utils";
 
 const broadVariableRegex = /\{\{.*?\}\}/g;
 const commentRegex = /<!--[\s\S]*?-->/g;
-const controlBlockRegex = /\?\[(.*?)\]/g;
+// The grammar's own definition of where an interaction ends, so a `\]` an option escaped does
+// not cut the highlight short, and the same `(?!\()` the parser uses, so `?[text](url)` stays a
+// markdown link. Taken from remark-flow rather than written again here: the editor and the
+// parser have to agree about what they are looking at.
+const controlBlockRegex = new RegExp(
+  `\\?\\[(${INTERACTION_CONTENT_SOURCE})\\](?!\\()`,
+  "g"
+);
 
 export interface SyntaxHighlightRange {
   from: number;
@@ -246,14 +255,31 @@ export function collectSyntaxHighlightRanges(
         [];
       const appliedTokenRanges: { from: number; to: number }[] = [];
 
-      // Inner operators | || ...
-      const innerRegex = /(\|\||\||\.\.\.)/g;
-      let innerMatch;
-      while ((innerMatch = innerRegex.exec(content)) !== null) {
+      // Inner operators | || ... -- skipping any an option escaped, the way the parser does.
+      // Painted as separators, they told the author the grammar had split an option that it
+      // had in fact left whole.
+      let scanIndex = 0;
+      while (scanIndex < content.length) {
+        if (isEscape(content, scanIndex)) {
+          scanIndex += 2;
+          continue;
+        }
+        const operator = content.startsWith("||", scanIndex)
+          ? "||"
+          : content[scanIndex] === "|"
+            ? "|"
+            : content.startsWith("...", scanIndex)
+              ? "..."
+              : null;
+        if (!operator) {
+          scanIndex += 1;
+          continue;
+        }
         operatorRanges.push({
-          from: contentStart + innerMatch.index,
-          to: contentStart + innerMatch.index + innerMatch[0].length,
+          from: contentStart + scanIndex,
+          to: contentStart + scanIndex + operator.length,
         });
+        scanIndex += operator.length;
       }
 
       // Variables inside control block content

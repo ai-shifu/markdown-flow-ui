@@ -110,3 +110,33 @@ describe("interactions whose options escape a bracket", () => {
     expect(closing[closing.length - 1].to).toBe(docText.length);
   });
 });
+
+describe("escaped delimiters inside an interaction", () => {
+  it("does not paint an escaped bar as a separator", () => {
+    // The parser reads `a\|b` as one option. Painted as a separator, the highlight told the
+    // author the grammar had split an option it had in fact left whole.
+    const docText = "?[%{{choice}}a\\|b|c]";
+
+    const separators = rangeTextsByClass(docText, "syntax-keyword");
+
+    // The `?` is a keyword too; what matters is that only the real separator joins it.
+    expect(separators.filter((text) => text !== "?")).toEqual(["|"]);
+  });
+
+  it("does not paint an escaped ellipsis as a text-input marker", () => {
+    // `\...` is the minimal escape: the first dot is escaped, so the run can no longer be read
+    // as the marker. A scan that does not know about escapes still sees three dots in a row.
+    const docText = "?[%{{choice}}wait\\...|go]";
+
+    const separators = rangeTextsByClass(docText, "syntax-keyword");
+
+    expect(separators.filter((text) => text !== "?")).toEqual(["|"]);
+  });
+
+  it("leaves a markdown link alone, as the parser does", () => {
+    // `?[text](url)` is a link, not an interaction; remark-flow rejects it with `(?!\()`.
+    const docText = "?[label](https://example.com)";
+
+    expect(rangeTextsByClass(docText, "syntax-bracket")).toEqual([]);
+  });
+});

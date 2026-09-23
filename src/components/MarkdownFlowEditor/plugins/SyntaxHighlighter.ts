@@ -6,11 +6,19 @@ import {
   ViewUpdate,
 } from "@codemirror/view";
 import { RangeSetBuilder } from "@codemirror/state";
+import { INTERACTION_CONTENT_SOURCE } from "remark-flow";
+
 import { createVariableExpressionRegexp } from "../utils";
 
 const broadVariableRegex = /\{\{.*?\}\}/g;
 const commentRegex = /<!--[\s\S]*?-->/g;
-const controlBlockRegex = /\?\[(.*?)\]/g;
+// The grammar's own definition of where an interaction ends, so a `\]` an option escaped
+// does not cut the highlight short. Taken from remark-flow rather than written again here:
+// the editor and the parser have to agree about what they are looking at.
+const controlBlockRegex = new RegExp(
+  `\\?\\[(${INTERACTION_CONTENT_SOURCE})\\]`,
+  "g"
+);
 
 export interface SyntaxHighlightRange {
   from: number;

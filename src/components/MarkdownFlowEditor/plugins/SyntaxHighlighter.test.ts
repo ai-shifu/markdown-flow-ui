@@ -94,3 +94,19 @@ describe("collectSyntaxHighlightRanges", () => {
     expect(commentTexts).toEqual([]);
   });
 });
+
+describe("interactions whose options escape a bracket", () => {
+  it("highlights to the interaction's real end, not the first bracket inside it", () => {
+    // `\]` is option text, so the closing bracket is the last one. Cut short, the highlight
+    // ended mid-option and the rest of the line was painted as prose.
+    const docText = "?[%{{pattern}}^[a-z\\]+$|array[0\\]]";
+
+    const brackets = rangeTextsByClass(docText, "syntax-bracket");
+
+    expect(brackets).toEqual(["[", "]"]);
+    const closing = collectSyntaxHighlightRanges(docText).filter(
+      (range) => range.className === "syntax-bracket"
+    );
+    expect(closing[closing.length - 1].to).toBe(docText.length);
+  });
+});

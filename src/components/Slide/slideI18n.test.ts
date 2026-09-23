@@ -6,6 +6,7 @@ import { getSlideLocaleTexts } from "./slideI18n";
 describe("getSlideLocaleTexts", () => {
   it.each([
     ["zh-CN", "空格键"],
+    ["es-ES", "Barra espaciadora"],
     ["ar-SA", "مفتاح المسافة"],
     ["th-TH", "แป้นเว้นวรรค"],
     ["fr-FR", "Barre d’espace"],
@@ -38,6 +39,7 @@ describe("getSlideLocaleTexts", () => {
 
   it.each([
     ["en-US", "Move interaction"],
+    ["es-ES", "Mover el panel de interacción"],
     ["fr-FR", "Déplacer le panneau d’interaction"],
     ["zh-CN", "移动交互面板"],
     ["ar-SA", "تحريك لوحة التفاعل"],
@@ -130,8 +132,9 @@ describe("getSlideLocaleTexts", () => {
     const englishTexts = getSlideLocaleTexts("en-US");
     expect(getSlideLocaleTexts(null)).toEqual(englishTexts);
     expect(getSlideLocaleTexts(undefined)).toEqual(englishTexts);
-    expect(getSlideLocaleTexts("es-ES")).toEqual(englishTexts);
+    expect(getSlideLocaleTexts("unsupported")).toEqual(englishTexts);
 
+    expect(getSlideLocaleTexts("es")).toEqual(getSlideLocaleTexts("es-ES"));
     expect(getSlideLocaleTexts("fr")).toEqual(getSlideLocaleTexts("fr-FR"));
     expect(getSlideLocaleTexts("zh_CN")).toEqual(getSlideLocaleTexts("zh-CN"));
     expect(getSlideLocaleTexts("ar")).toEqual(getSlideLocaleTexts("ar-SA"));

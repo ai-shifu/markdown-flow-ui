@@ -83,5 +83,22 @@
     "mermaidErrorText": "ไม่สามารถแสดงแผนภาพ Mermaid ได้",
     "footnoteLabel": "เชิงอรรถ",
     "footnoteBackLabel": "กลับไปยังจุดอ้างอิง {reference}"
+  },
+  "es-ES": {
+    "confirmButtonText": "Enviar",
+    "copyButtonText": "Copiar",
+    "copiedButtonText": "Copiado",
+    "sandboxLoadingText": "Cargando contenido...",
+    "sandboxStyleLoadingText": "Generando estilos...",
+    "sandboxScriptLoadingText": "Generando la caché de scripts...",
+    "sandboxFullscreenButtonText": "Pantalla completa",
+    "sandboxExitFullscreenButtonText": "Salir de pantalla completa",
+    "sendButtonLabel": "Enviar",
+    "scrollToBottomLabel": "Desplazarse hasta el final",
+    "mermaidLoadingText": "Cargando el diagrama Mermaid...",
+    "mermaidEmptyChartText": "El diagrama está vacío",
+    "mermaidErrorText": "No se puede mostrar el diagrama Mermaid",
+    "footnoteLabel": "Notas al pie",
+    "footnoteBackLabel": "Volver a la referencia {reference}"
   }
 }

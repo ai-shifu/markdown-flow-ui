@@ -2,6 +2,7 @@ export const DEFAULT_MARKDOWN_FLOW_LOCALE = "en-US";
 
 export const MARKDOWN_FLOW_LOCALES = [
   "en-US",
+  "es-ES",
   "fr-FR",
   "zh-CN",
   "ar-SA",
@@ -14,6 +15,7 @@ export type MarkdownFlowDirection = "ltr" | "rtl";
 
 const localeAliasMap: Record<string, MarkdownFlowLocale> = {
   en: "en-US",
+  es: "es-ES",
   fr: "fr-FR",
   zh: "zh-CN",
   ar: "ar-SA",

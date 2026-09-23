@@ -208,5 +208,47 @@
       "fullscreenLabel": "เต็มหน้าจอ",
       "fullscreenHintText": "โปรดหมุนหน้าจอเพื่อประสบการณ์การใช้งานที่ดีที่สุด"
     }
+  },
+  "es-ES": {
+    "bufferingText": {
+      "waitingForAudio": "Esperando el audio de la diapositiva actual...",
+      "loadingAudio": "Cargando audio...",
+      "waitingForMoreAudio": "Esperando más audio..."
+    },
+    "fullscreenBackAriaLabel": "Volver a la vista normal",
+    "slideProgressAriaLabel": "Progreso de las diapositivas de la lección",
+    "slideProgressGeneratingLabel": "Generando",
+    "interactionTexts": {
+      "title": "Envía el contenido siguiente para continuar.",
+      "confirmButtonText": "Enviar",
+      "copyButtonText": "Copiar",
+      "copiedButtonText": "Copiado",
+      "dragHandleAriaLabel": "Mover el panel de interacción"
+    },
+    "playerTexts": {
+      "closeSettingsLabel": "Cerrar ajustes",
+      "enterFullscreenLabel": "Entrar en pantalla completa",
+      "exitFullscreenLabel": "Salir de pantalla completa",
+      "moreOptionsAriaLabel": "Más opciones",
+      "nextLabel": "Página siguiente",
+      "nextSubtitleLabel": "Frase siguiente",
+      "notesLabel": "Notas",
+      "pauseAutoplayLabel": "Pausar la reproducción automática",
+      "pauseLabel": "Pausar",
+      "playAutoplayLabel": "Iniciar la reproducción automática",
+      "playLabel": "Reproducir",
+      "playbackShortcutLabel": "Barra espaciadora",
+      "previousLabel": "Página anterior",
+      "previousSubtitleLabel": "Frase anterior",
+      "screenModeLabel": "Modo de pantalla",
+      "settingsTitle": "Ajustes",
+      "subtitleLabel": "Subtítulos",
+      "subtitleToggleAriaLabel": "Mostrar u ocultar los subtítulos",
+      "volumeAriaLabel": "Volumen",
+      "screenLabel": "Pantalla",
+      "nonFullscreenLabel": "Vista normal",
+      "fullscreenLabel": "Pantalla completa",
+      "fullscreenHintText": "Gira la pantalla para disfrutar de una mejor experiencia"
+    }
   }
 }

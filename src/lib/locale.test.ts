@@ -9,9 +9,10 @@ import {
 } from "./locale";
 
 describe("normalizeMarkdownFlowLocale", () => {
-  it("includes Arabic and Thai in the public locale list", () => {
+  it("includes Spanish, Arabic and Thai in the public locale list", () => {
     expect(MARKDOWN_FLOW_LOCALES).toEqual([
       "en-US",
+      "es-ES",
       "fr-FR",
       "zh-CN",
       "ar-SA",
@@ -20,6 +21,10 @@ describe("normalizeMarkdownFlowLocale", () => {
   });
 
   it.each([
+    ["es", "es-ES"],
+    ["es-ES", "es-ES"],
+    ["es_ES", "es-ES"],
+    ["ES-es", "es-ES"],
     ["ar", "ar-SA"],
     ["ar-SA", "ar-SA"],
     ["ar_SA", "ar-SA"],
@@ -37,7 +42,7 @@ describe("normalizeMarkdownFlowLocale", () => {
     expect(normalizeMarkdownFlowLocale(null)).toBe(
       DEFAULT_MARKDOWN_FLOW_LOCALE
     );
-    expect(normalizeMarkdownFlowLocale("es-ES")).toBe(
+    expect(normalizeMarkdownFlowLocale("unsupported")).toBe(
       DEFAULT_MARKDOWN_FLOW_LOCALE
     );
   });
@@ -55,6 +60,7 @@ describe("getMarkdownFlowDirection", () => {
     expect(getMarkdownFlowDirection("ar-SA")).toBe("rtl");
     expect(getMarkdownFlowDirection("ar_SA")).toBe("rtl");
     expect(getMarkdownFlowDirection("en-US")).toBe("ltr");
+    expect(getMarkdownFlowDirection("es-ES")).toBe("ltr");
     expect(getMarkdownFlowDirection("th-TH")).toBe("ltr");
   });
 });
@@ -64,6 +70,7 @@ describe("getMarkdownFlowLanguage", () => {
     expect(getMarkdownFlowLanguage(locale)).toBeUndefined();
   });
   it.each([
+    ["es_ES", "es-ES"],
     ["ar_SA", "ar-SA"],
     ["TH-th", "th-TH"],
     ["fr", "fr-FR"],

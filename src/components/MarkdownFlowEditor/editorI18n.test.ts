@@ -6,7 +6,7 @@ describe("getEditorLocaleMessages", () => {
   it("provides the same editor keys for every supported locale", () => {
     const englishKeys = Object.keys(editorLocaleResources["en-US"].translation);
 
-    for (const locale of ["ar-SA", "th-TH"] as const) {
+    for (const locale of ["es-ES", "ar-SA", "th-TH"] as const) {
       const messages = getEditorLocaleMessages(locale);
 
       expect(Object.keys(messages)).toEqual(englishKeys);
@@ -17,7 +17,10 @@ describe("getEditorLocaleMessages", () => {
     }
   });
 
-  it("normalizes short Arabic and Thai locale aliases", () => {
+  it("normalizes Spanish, Arabic and Thai locale aliases", () => {
+    expect(getEditorLocaleMessages("es_ES")).toEqual(
+      getEditorLocaleMessages("es-ES")
+    );
     expect(getEditorLocaleMessages("ar")).toEqual(
       getEditorLocaleMessages("ar-SA")
     );

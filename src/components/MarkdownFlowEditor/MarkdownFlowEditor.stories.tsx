@@ -363,6 +363,20 @@ Variable système: {{sys_user_language}}
   },
 };
 
+export const MarkdownFlowEditorSpanishLocale: Story = {
+  args: {
+    content: `## Hola
+
+Escribe '/' para insertar una imagen, un vídeo o una variable.
+
+Variable del sistema: {{sys_user_language}}
+`,
+    editMode: EditMode.QuickEdit,
+    locale: "es-ES",
+    variables: [{ name: "sys_user_language" }, { name: "plan" }],
+  },
+};
+
 export const MarkdownFlowEditorArabicLocale: Story = {
   args: {
     content: `## مرحبًا

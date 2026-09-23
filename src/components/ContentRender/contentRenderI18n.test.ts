@@ -21,7 +21,10 @@ describe("getContentRenderLocaleTexts", () => {
     }
   });
 
-  it("normalizes short Arabic and Thai locale aliases", () => {
+  it("normalizes Spanish, Arabic and Thai locale aliases", () => {
+    expect(getContentRenderLocaleTexts("es")).toEqual(
+      getContentRenderLocaleTexts("es-ES")
+    );
     expect(getContentRenderLocaleTexts("ar")).toEqual(
       getContentRenderLocaleTexts("ar-SA")
     );

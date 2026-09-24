@@ -1,7 +1,10 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
-import type { MarkdownFlowLocale } from "../lib/locale";
+import {
+  getMarkdownFlowDirection,
+  type MarkdownFlowLocale,
+} from "../lib/locale";
 import ContentRender from "./ContentRender";
 import MarkdownFlowInput from "./ContentRender/MarkdownFlowInput";
 import MarkdownFlow from "./MarkdownFlow/MarkdownFlow";
@@ -149,6 +152,7 @@ export const ScrollViewportLocaleDirection: Story = {
 
 const getCustomToolbarTooltip = (locale?: MarkdownFlowLocale) => {
   if (locale === "ar-SA") return "إجراء مخصص";
+  if (locale === "ur-PK") return "حسب ضرورت عمل";
   if (locale === "th-TH") return "การดำเนินการกำหนดเอง";
   return "Custom tooltip";
 };
@@ -162,7 +166,7 @@ const LanguageBoundaryFixture = () => {
   const html = '<div><p>Default language</p><p lang="it">Ciao</p></div>';
   return (
     <div lang={hostLanguage}>
-      {(["ar-SA", "th-TH", undefined] as const).map((value) => (
+      {(["ar-SA", "ur-PK", "th-TH", undefined] as const).map((value) => (
         <button
           type="button"
           key={value ?? "inherit"}
@@ -306,7 +310,7 @@ export const LanguageAcrossBoundaries: Story = {
       });
       const editor = within(canvas.getByTestId("language-editor"));
       const texts = getEditorLocaleMessages(locale);
-      const direction = locale === "ar-SA" ? "rtl" : "ltr";
+      const direction = getMarkdownFlowDirection(locale) ?? "ltr";
       await expectDetachedTooltip(
         canvasElement.ownerDocument.body,
         editor.getByRole("button", {
@@ -357,7 +361,7 @@ export const LanguageAcrossBoundaries: Story = {
       await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
     };
     await checkLanguage("fr");
-    for (const locale of ["ar-SA", "th-TH"] as const) {
+    for (const locale of ["ar-SA", "ur-PK", "th-TH"] as const) {
       await userEvent.click(canvas.getByRole("button", { name: locale }));
       await checkLanguage(locale, locale, locale);
     }

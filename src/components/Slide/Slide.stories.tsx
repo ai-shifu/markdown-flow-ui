@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
+import { MARKDOWN_FLOW_LOCALES } from "../../lib/locale";
 
 import historyFixtureText from "../../../测试历史数据.json?raw";
 import runStreamFixtureText from "../../../测试数据.json?raw";
@@ -40,7 +41,7 @@ const meta = {
   argTypes: {
     locale: {
       control: "select",
-      options: ["en-US", "fr-FR", "zh-CN", "ar-SA", "th-TH"],
+      options: [...MARKDOWN_FLOW_LOCALES],
       description: "Locale for built-in player and interaction UI text",
     },
     elementList: {

@@ -208,5 +208,257 @@
       "fullscreenLabel": "เต็มหน้าจอ",
       "fullscreenHintText": "โปรดหมุนหน้าจอเพื่อประสบการณ์การใช้งานที่ดีที่สุด"
     }
+  },
+  "es-ES": {
+    "bufferingText": {
+      "waitingForAudio": "Esperando el audio de la diapositiva actual...",
+      "loadingAudio": "Cargando audio...",
+      "waitingForMoreAudio": "Esperando más audio..."
+    },
+    "fullscreenBackAriaLabel": "Volver a la vista normal",
+    "slideProgressAriaLabel": "Progreso de las diapositivas de la lección",
+    "slideProgressGeneratingLabel": "Generando",
+    "interactionTexts": {
+      "title": "Envía el contenido siguiente para continuar.",
+      "confirmButtonText": "Enviar",
+      "copyButtonText": "Copiar",
+      "copiedButtonText": "Copiado",
+      "dragHandleAriaLabel": "Mover el panel de interacción"
+    },
+    "playerTexts": {
+      "closeSettingsLabel": "Cerrar ajustes",
+      "enterFullscreenLabel": "Entrar en pantalla completa",
+      "exitFullscreenLabel": "Salir de pantalla completa",
+      "moreOptionsAriaLabel": "Más opciones",
+      "nextLabel": "Página siguiente",
+      "nextSubtitleLabel": "Frase siguiente",
+      "notesLabel": "Notas",
+      "pauseAutoplayLabel": "Pausar la reproducción automática",
+      "pauseLabel": "Pausar",
+      "playAutoplayLabel": "Iniciar la reproducción automática",
+      "playLabel": "Reproducir",
+      "playbackShortcutLabel": "Barra espaciadora",
+      "previousLabel": "Página anterior",
+      "previousSubtitleLabel": "Frase anterior",
+      "screenModeLabel": "Modo de pantalla",
+      "settingsTitle": "Ajustes",
+      "subtitleLabel": "Subtítulos",
+      "subtitleToggleAriaLabel": "Mostrar u ocultar los subtítulos",
+      "volumeAriaLabel": "Volumen",
+      "screenLabel": "Pantalla",
+      "nonFullscreenLabel": "Vista normal",
+      "fullscreenLabel": "Pantalla completa",
+      "fullscreenHintText": "Gira la pantalla para disfrutar de una mejor experiencia"
+    }
+  },
+  "de-DE": {
+    "bufferingText": {
+      "waitingForAudio": "Warten auf den Ton der aktuellen Folie...",
+      "loadingAudio": "Audio wird geladen...",
+      "waitingForMoreAudio": "Warten auf weitere Audiodaten..."
+    },
+    "fullscreenBackAriaLabel": "Zurück zur normalen Ansicht",
+    "slideProgressAriaLabel": "Fortschritt der Lektionsfolien",
+    "slideProgressGeneratingLabel": "Wird erstellt",
+    "interactionTexts": {
+      "title": "Senden Sie den folgenden Inhalt, um fortzufahren.",
+      "confirmButtonText": "Senden",
+      "copyButtonText": "Kopieren",
+      "copiedButtonText": "Kopiert",
+      "dragHandleAriaLabel": "Interaktionsbereich verschieben"
+    },
+    "playerTexts": {
+      "closeSettingsLabel": "Einstellungen schließen",
+      "enterFullscreenLabel": "Vollbild aktivieren",
+      "exitFullscreenLabel": "Vollbild verlassen",
+      "moreOptionsAriaLabel": "Weitere Optionen",
+      "nextLabel": "Nächste Seite",
+      "nextSubtitleLabel": "Nächster Satz",
+      "notesLabel": "Notizen",
+      "pauseAutoplayLabel": "Automatische Wiedergabe pausieren",
+      "pauseLabel": "Pause",
+      "playAutoplayLabel": "Automatische Wiedergabe starten",
+      "playLabel": "Abspielen",
+      "playbackShortcutLabel": "Leertaste",
+      "previousLabel": "Vorherige Seite",
+      "previousSubtitleLabel": "Vorheriger Satz",
+      "screenModeLabel": "Anzeigemodus",
+      "settingsTitle": "Einstellungen",
+      "subtitleLabel": "Untertitel",
+      "subtitleToggleAriaLabel": "Untertitel ein- oder ausblenden",
+      "volumeAriaLabel": "Lautstärke",
+      "screenLabel": "Bildschirm",
+      "nonFullscreenLabel": "Normale Ansicht",
+      "fullscreenLabel": "Vollbild",
+      "fullscreenHintText": "Bitte drehen Sie den Bildschirm für eine optimale Darstellung"
+    }
+  },
+  "ja-JP": {
+    "bufferingText": {
+      "waitingForAudio": "現在のスライドの音声を待っています...",
+      "loadingAudio": "音声を読み込んでいます...",
+      "waitingForMoreAudio": "続きの音声を待っています..."
+    },
+    "fullscreenBackAriaLabel": "通常表示に戻る",
+    "slideProgressAriaLabel": "レッスンのスライドの進行状況",
+    "slideProgressGeneratingLabel": "生成中",
+    "interactionTexts": {
+      "title": "続行するには、以下の内容を送信してください。",
+      "confirmButtonText": "送信",
+      "copyButtonText": "コピー",
+      "copiedButtonText": "コピーしました",
+      "dragHandleAriaLabel": "操作パネルを移動"
+    },
+    "playerTexts": {
+      "closeSettingsLabel": "設定を閉じる",
+      "enterFullscreenLabel": "全画面表示にする",
+      "exitFullscreenLabel": "全画面表示を終了",
+      "moreOptionsAriaLabel": "その他のオプション",
+      "nextLabel": "次のページ",
+      "nextSubtitleLabel": "次の文",
+      "notesLabel": "メモ",
+      "pauseAutoplayLabel": "自動再生を一時停止",
+      "pauseLabel": "一時停止",
+      "playAutoplayLabel": "自動再生を開始",
+      "playLabel": "再生",
+      "playbackShortcutLabel": "スペースキー",
+      "previousLabel": "前のページ",
+      "previousSubtitleLabel": "前の文",
+      "screenModeLabel": "画面モード",
+      "settingsTitle": "設定",
+      "subtitleLabel": "字幕",
+      "subtitleToggleAriaLabel": "字幕の表示を切り替え",
+      "volumeAriaLabel": "音量",
+      "screenLabel": "画面",
+      "nonFullscreenLabel": "通常表示",
+      "fullscreenLabel": "全画面表示",
+      "fullscreenHintText": "見やすくするには画面を回転してください"
+    }
+  },
+  "ur-PK": {
+    "bufferingText": {
+      "waitingForAudio": "موجودہ سلائیڈ کی آڈیو کا انتظار ہے...",
+      "loadingAudio": "آڈیو لوڈ ہو رہی ہے...",
+      "waitingForMoreAudio": "مزید آڈیو کا انتظار ہے..."
+    },
+    "fullscreenBackAriaLabel": "عام منظر پر واپس جائیں",
+    "slideProgressAriaLabel": "سبق کی سلائیڈز کی پیش رفت",
+    "slideProgressGeneratingLabel": "تیار کیا جا رہا ہے",
+    "interactionTexts": {
+      "title": "جاری رکھنے کے لیے نیچے دیا گیا مواد جمع کریں۔",
+      "confirmButtonText": "جمع کریں",
+      "copyButtonText": "کاپی کریں",
+      "copiedButtonText": "کاپی ہو گیا",
+      "dragHandleAriaLabel": "تعاملی پینل کو منتقل کریں"
+    },
+    "playerTexts": {
+      "closeSettingsLabel": "ترتیبات بند کریں",
+      "enterFullscreenLabel": "مکمل اسکرین پر جائیں",
+      "exitFullscreenLabel": "مکمل اسکرین سے باہر نکلیں",
+      "moreOptionsAriaLabel": "مزید اختیارات",
+      "nextLabel": "اگلا صفحہ",
+      "nextSubtitleLabel": "اگلا جملہ",
+      "notesLabel": "نوٹس",
+      "pauseAutoplayLabel": "خودکار چلانے کو عارضی طور پر روکیں",
+      "pauseLabel": "عارضی طور پر روکیں",
+      "playAutoplayLabel": "خودکار چلانا شروع کریں",
+      "playLabel": "چلائیں",
+      "playbackShortcutLabel": "اسپیس بار",
+      "previousLabel": "پچھلا صفحہ",
+      "previousSubtitleLabel": "پچھلا جملہ",
+      "screenModeLabel": "اسکرین موڈ",
+      "settingsTitle": "ترتیبات",
+      "subtitleLabel": "سب ٹائٹلز",
+      "subtitleToggleAriaLabel": "سب ٹائٹلز دکھائیں یا چھپائیں",
+      "volumeAriaLabel": "آواز کی سطح",
+      "screenLabel": "اسکرین",
+      "nonFullscreenLabel": "عام منظر",
+      "fullscreenLabel": "مکمل اسکرین",
+      "fullscreenHintText": "بہتر تجربے کے لیے براہِ کرم اپنی اسکرین گھمائیں"
+    }
+  },
+  "fil-PH": {
+    "bufferingText": {
+      "waitingForAudio": "Naghihintay sa audio ng kasalukuyang slide...",
+      "loadingAudio": "Nilo-load ang audio...",
+      "waitingForMoreAudio": "Naghihintay ng karagdagang audio..."
+    },
+    "fullscreenBackAriaLabel": "Bumalik sa karaniwang view",
+    "slideProgressAriaLabel": "Pag-usad ng mga slide sa aralin",
+    "slideProgressGeneratingLabel": "Binubuo",
+    "interactionTexts": {
+      "title": "Isumite ang nilalaman sa ibaba upang magpatuloy.",
+      "confirmButtonText": "Isumite",
+      "copyButtonText": "Kopyahin",
+      "copiedButtonText": "Nakopya na",
+      "dragHandleAriaLabel": "Ilipat ang panel ng interaksyon"
+    },
+    "playerTexts": {
+      "closeSettingsLabel": "Isara ang mga setting",
+      "enterFullscreenLabel": "Buksan ang buong screen",
+      "exitFullscreenLabel": "Lumabas sa buong screen",
+      "moreOptionsAriaLabel": "Higit pang mga opsyon",
+      "nextLabel": "Susunod na pahina",
+      "nextSubtitleLabel": "Susunod na pangungusap",
+      "notesLabel": "Mga tala",
+      "pauseAutoplayLabel": "I-pause ang awtomatikong pag-play",
+      "pauseLabel": "I-pause",
+      "playAutoplayLabel": "Simulan ang awtomatikong pag-play",
+      "playLabel": "I-play",
+      "playbackShortcutLabel": "Spacebar",
+      "previousLabel": "Nakaraang pahina",
+      "previousSubtitleLabel": "Nakaraang pangungusap",
+      "screenModeLabel": "Mode ng screen",
+      "settingsTitle": "Mga setting",
+      "subtitleLabel": "Mga subtitle",
+      "subtitleToggleAriaLabel": "Ipakita o itago ang mga subtitle",
+      "volumeAriaLabel": "Lakas ng tunog",
+      "screenLabel": "Screen",
+      "nonFullscreenLabel": "Karaniwang view",
+      "fullscreenLabel": "Buong screen",
+      "fullscreenHintText": "Pakiikot ang iyong screen para sa mas magandang karanasan"
+    }
+  },
+  "vi-VN": {
+    "bufferingText": {
+      "waitingForAudio": "Đang chờ âm thanh của trang trình chiếu hiện tại...",
+      "loadingAudio": "Đang tải âm thanh...",
+      "waitingForMoreAudio": "Đang chờ thêm âm thanh..."
+    },
+    "fullscreenBackAriaLabel": "Quay lại chế độ xem thông thường",
+    "slideProgressAriaLabel": "Tiến độ các trang trình chiếu của bài học",
+    "slideProgressGeneratingLabel": "Đang tạo",
+    "interactionTexts": {
+      "title": "Gửi nội dung bên dưới để tiếp tục.",
+      "confirmButtonText": "Gửi",
+      "copyButtonText": "Sao chép",
+      "copiedButtonText": "Đã sao chép",
+      "dragHandleAriaLabel": "Di chuyển bảng tương tác"
+    },
+    "playerTexts": {
+      "closeSettingsLabel": "Đóng cài đặt",
+      "enterFullscreenLabel": "Bật toàn màn hình",
+      "exitFullscreenLabel": "Thoát toàn màn hình",
+      "moreOptionsAriaLabel": "Tùy chọn khác",
+      "nextLabel": "Trang tiếp theo",
+      "nextSubtitleLabel": "Câu tiếp theo",
+      "notesLabel": "Ghi chú",
+      "pauseAutoplayLabel": "Tạm dừng phát tự động",
+      "pauseLabel": "Tạm dừng",
+      "playAutoplayLabel": "Bắt đầu phát tự động",
+      "playLabel": "Phát",
+      "playbackShortcutLabel": "Phím cách",
+      "previousLabel": "Trang trước",
+      "previousSubtitleLabel": "Câu trước",
+      "screenModeLabel": "Chế độ màn hình",
+      "settingsTitle": "Cài đặt",
+      "subtitleLabel": "Phụ đề",
+      "subtitleToggleAriaLabel": "Bật hoặc tắt phụ đề",
+      "volumeAriaLabel": "Âm lượng",
+      "screenLabel": "Màn hình",
+      "nonFullscreenLabel": "Chế độ thường",
+      "fullscreenLabel": "Toàn màn hình",
+      "fullscreenHintText": "Vui lòng xoay màn hình để có trải nghiệm tốt nhất"
+    }
   }
 }

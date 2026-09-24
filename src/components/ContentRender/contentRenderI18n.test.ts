@@ -21,6 +21,22 @@ describe("getContentRenderLocaleTexts", () => {
     }
   });
 
+  it("preserves interpolation placeholders in every localized message", () => {
+    const sourceTexts = getContentRenderLocaleTexts("en-US");
+
+    for (const locale of MARKDOWN_FLOW_LOCALES) {
+      const texts = getContentRenderLocaleTexts(locale);
+
+      for (const key of Object.keys(sourceTexts) as Array<
+        keyof typeof sourceTexts
+      >) {
+        expect(texts[key].match(/\{[^{}]+\}/g)).toEqual(
+          sourceTexts[key].match(/\{[^{}]+\}/g)
+        );
+      }
+    }
+  });
+
   it("normalizes Spanish, Arabic and Thai locale aliases", () => {
     expect(getContentRenderLocaleTexts("es")).toEqual(
       getContentRenderLocaleTexts("es-ES")

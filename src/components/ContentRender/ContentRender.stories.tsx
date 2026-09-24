@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, userEvent, waitFor } from "storybook/test";
+import { MARKDOWN_FLOW_LOCALES } from "../../lib/locale";
 
 import runStreamFixtureText from "../../../测试数据.json?raw";
 import ContentRender, {
@@ -30,6 +31,11 @@ const meta = {
   },
   tags: ["autodocs"],
   argTypes: {
+    locale: {
+      control: "select",
+      options: [...MARKDOWN_FLOW_LOCALES],
+      description: "Locale for built-in renderer and interaction UI text",
+    },
     content: {
       control: "text",
       description: "Markdown content to render",

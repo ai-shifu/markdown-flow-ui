@@ -11,6 +11,11 @@ describe("getSlideLocaleTexts", () => {
     ["th-TH", "แป้นเว้นวรรค"],
     ["fr-FR", "Barre d’espace"],
     ["en-US", "Space"],
+    ["de-DE", "Leertaste"],
+    ["ja-JP", "スペースキー"],
+    ["ur-PK", "اسپیس بار"],
+    ["fil-PH", "Spacebar"],
+    ["vi-VN", "Phím cách"],
   ])("localizes the playback key display name for %s", (locale, label) => {
     expect(getSlideLocaleTexts(locale).playerTexts.playbackShortcutLabel).toBe(
       label
@@ -44,6 +49,11 @@ describe("getSlideLocaleTexts", () => {
     ["zh-CN", "移动交互面板"],
     ["ar-SA", "تحريك لوحة التفاعل"],
     ["th-TH", "ย้ายแผงโต้ตอบ"],
+    ["de-DE", "Interaktionsbereich verschieben"],
+    ["ja-JP", "操作パネルを移動"],
+    ["ur-PK", "تعاملی پینل کو منتقل کریں"],
+    ["fil-PH", "Ilipat ang panel ng interaksyon"],
+    ["vi-VN", "Di chuyển bảng tương tác"],
   ])("localizes the interaction drag handle for %s", (locale, label) => {
     expect(
       getSlideLocaleTexts(locale).interactionTexts.dragHandleAriaLabel

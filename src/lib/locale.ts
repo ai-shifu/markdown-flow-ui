@@ -7,6 +7,11 @@ export const MARKDOWN_FLOW_LOCALES = [
   "zh-CN",
   "ar-SA",
   "th-TH",
+  "de-DE",
+  "ja-JP",
+  "ur-PK",
+  "fil-PH",
+  "vi-VN",
 ] as const;
 
 export type MarkdownFlowLocale = (typeof MARKDOWN_FLOW_LOCALES)[number];
@@ -20,6 +25,12 @@ const localeAliasMap: Record<string, MarkdownFlowLocale> = {
   zh: "zh-CN",
   ar: "ar-SA",
   th: "th-TH",
+  de: "de-DE",
+  ja: "ja-JP",
+  ur: "ur-PK",
+  fil: "fil-PH",
+  tl: "fil-PH",
+  vi: "vi-VN",
 };
 
 export const normalizeMarkdownFlowLocale = (
@@ -43,7 +54,10 @@ export const getMarkdownFlowDirection = (
 ): MarkdownFlowDirection | undefined => {
   // An omitted locale must not override the embedding page's direction.
   if (!locale) return undefined;
-  return normalizeMarkdownFlowLocale(locale) === "ar-SA" ? "rtl" : "ltr";
+  const resolvedLocale = normalizeMarkdownFlowLocale(locale);
+  return resolvedLocale === "ar-SA" || resolvedLocale === "ur-PK"
+    ? "rtl"
+    : "ltr";
 };
 
 /** Omitted locales leave the host language in control. */

@@ -6,10 +6,16 @@ import { getSlideLocaleTexts } from "./slideI18n";
 describe("getSlideLocaleTexts", () => {
   it.each([
     ["zh-CN", "空格键"],
+    ["es-ES", "Barra espaciadora"],
     ["ar-SA", "مفتاح المسافة"],
     ["th-TH", "แป้นเว้นวรรค"],
     ["fr-FR", "Barre d’espace"],
     ["en-US", "Space"],
+    ["de-DE", "Leertaste"],
+    ["ja-JP", "スペースキー"],
+    ["ur-PK", "اسپیس بار"],
+    ["fil-PH", "Spacebar"],
+    ["vi-VN", "Phím cách"],
   ])("localizes the playback key display name for %s", (locale, label) => {
     expect(getSlideLocaleTexts(locale).playerTexts.playbackShortcutLabel).toBe(
       label
@@ -38,10 +44,16 @@ describe("getSlideLocaleTexts", () => {
 
   it.each([
     ["en-US", "Move interaction"],
+    ["es-ES", "Mover el panel de interacción"],
     ["fr-FR", "Déplacer le panneau d’interaction"],
     ["zh-CN", "移动交互面板"],
     ["ar-SA", "تحريك لوحة التفاعل"],
     ["th-TH", "ย้ายแผงโต้ตอบ"],
+    ["de-DE", "Interaktionsbereich verschieben"],
+    ["ja-JP", "操作パネルを移動"],
+    ["ur-PK", "تعاملی پینل کو منتقل کریں"],
+    ["fil-PH", "Ilipat ang panel ng interaksyon"],
+    ["vi-VN", "Di chuyển bảng tương tác"],
   ])("localizes the interaction drag handle for %s", (locale, label) => {
     expect(
       getSlideLocaleTexts(locale).interactionTexts.dragHandleAriaLabel
@@ -130,8 +142,9 @@ describe("getSlideLocaleTexts", () => {
     const englishTexts = getSlideLocaleTexts("en-US");
     expect(getSlideLocaleTexts(null)).toEqual(englishTexts);
     expect(getSlideLocaleTexts(undefined)).toEqual(englishTexts);
-    expect(getSlideLocaleTexts("es-ES")).toEqual(englishTexts);
+    expect(getSlideLocaleTexts("unsupported")).toEqual(englishTexts);
 
+    expect(getSlideLocaleTexts("es")).toEqual(getSlideLocaleTexts("es-ES"));
     expect(getSlideLocaleTexts("fr")).toEqual(getSlideLocaleTexts("fr-FR"));
     expect(getSlideLocaleTexts("zh_CN")).toEqual(getSlideLocaleTexts("zh-CN"));
     expect(getSlideLocaleTexts("ar")).toEqual(getSlideLocaleTexts("ar-SA"));

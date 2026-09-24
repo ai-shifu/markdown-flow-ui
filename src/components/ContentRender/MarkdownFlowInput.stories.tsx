@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import React from "react";
 import { expect } from "storybook/test";
+import { MARKDOWN_FLOW_LOCALES } from "../../lib/locale";
 
 import MarkdownFlowInput from "./MarkdownFlowInput";
 import "./contentRender.css";
@@ -15,7 +16,7 @@ const meta = {
   argTypes: {
     locale: {
       control: "select",
-      options: ["en-US", "fr-FR", "zh-CN", "ar-SA", "th-TH"],
+      options: [...MARKDOWN_FLOW_LOCALES],
       description: "Locale for the send button accessibility text",
     },
     placeholder: {

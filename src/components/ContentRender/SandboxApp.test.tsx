@@ -37,6 +37,12 @@ it("updates sandbox loading direction without overriding authored content direct
   expect(screen.getByRole("status").textContent).toContain(
     getContentRenderLocaleTexts("ar-SA").sandboxLoadingText
   );
+  rerender(<SandboxApp html="" locale="ur-PK" />);
+  expect(wrapper.getAttribute("dir")).toBe("rtl");
+  expect(wrapper.getAttribute("lang")).toBe("ur-PK");
+  expect(screen.getByRole("status").textContent).toContain(
+    getContentRenderLocaleTexts("ur-PK").sandboxLoadingText
+  );
   rerender(<SandboxApp html="" locale="th-TH" />);
   expect(wrapper.getAttribute("dir")).toBe("ltr");
   expect(screen.getByRole("status").textContent).toContain(

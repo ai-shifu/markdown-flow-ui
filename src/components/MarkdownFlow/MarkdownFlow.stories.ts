@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { MARKDOWN_FLOW_LOCALES } from "../../lib/locale";
 
 // import { fn } from 'storybook/test';
 
@@ -14,7 +15,7 @@ const meta = {
   argTypes: {
     locale: {
       control: "select",
-      options: ["en-US", "fr-FR", "zh-CN", "ar-SA", "th-TH"],
+      options: [...MARKDOWN_FLOW_LOCALES],
       description: "Locale for built-in UI text",
     },
     initialContentList: {

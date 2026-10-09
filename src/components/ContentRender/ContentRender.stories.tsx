@@ -3042,3 +3042,144 @@ export const StableVideoWithEarlierMarkdown: Story = {
     expect(canvasElement.querySelector("details")).toBe(details);
   },
 };
+
+const WIDE_SVG_PREVIEW_SOURCE =
+  '<iframe title="Wide SVG lesson video" data-tag="video"></iframe>\n\n' +
+  '<svg width="1600" height="80" viewBox="0 0 800 40"><text x="10" y="20">Standalone wide SVG</text></svg>\n\n' +
+  'Before <svg width="1600" height="80" viewBox="0 0 800 40"><text x="10" y="20">Inline wide SVG</text></svg> after.\n\nLater prose.';
+
+const StableVideoWideSvgPreview = ({
+  enableTypewriter,
+  pacing,
+}: {
+  enableTypewriter: boolean;
+  pacing: "fixed" | "content-aware";
+}) => {
+  const [phase, setPhase] = useState(0);
+  const [state, setState] = useState<ContentRenderTypewriterState>();
+  const content =
+    WIDE_SVG_PREVIEW_SOURCE +
+    (phase > 0 ? "\n\nAppended prose." : "") +
+    (phase > 1 ? "\n\n<div>Received HTML card</div>" : "");
+  return (
+    <div
+      data-wide-svg-case
+      data-complete={state?.isComplete && state.totalLength === content.length}
+      style={{ width: 400 }}
+    >
+      <p>{`${enableTypewriter ? "Typing" : "Static"}, ${pacing}`}</p>
+      <button type="button" onClick={() => setPhase((value) => value + 1)}>
+        {phase === 0 ? "Receive more prose" : "Receive following HTML"}
+      </button>
+      <ContentRender
+        content={content}
+        enableTypewriter={enableTypewriter}
+        typingSpeed={5}
+        typewriterPacing={pacing}
+        onTypewriterStateChange={setState}
+        disableSandboxLoadingOverlay
+      />
+    </div>
+  );
+};
+
+export const StableVideoWithWideSvg: Story = {
+  name: "Stable Video with Wide SVG Scrolling",
+  render: () => (
+    <div style={{ display: "grid", gap: 24 }}>
+      {(["fixed", "content-aware"] as const).flatMap((pacing) =>
+        [true, false].map((enabled) => (
+          <StableVideoWideSvgPreview
+            key={`${pacing}-${enabled}`}
+            enableTypewriter={enabled}
+            pacing={pacing}
+          />
+        ))
+      )}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const cases = Array.from(
+      canvasElement.querySelectorAll<HTMLElement>("[data-wide-svg-case]")
+    );
+    expect(cases).toHaveLength(4);
+    await waitFor(() => {
+      for (const container of cases)
+        expect(
+          container.querySelector<HTMLIFrameElement>('iframe[data-tag="video"]')
+            ?.contentDocument?.readyState
+        ).toBe("complete");
+    });
+    // Settle each initial about:blank load before counting later reloads.
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+    const captures = cases.map((container) => {
+      const video = container.querySelector<HTMLIFrameElement>(
+        'iframe[data-tag="video"]'
+      )!;
+      expect(video).not.toBeNull();
+      const parent = video.parentNode;
+      const videoWindow = video.contentWindow!;
+      const sentinelWindow = videoWindow as Window & {
+        wideSvgSentinel?: string;
+      };
+      sentinelWindow.wideSvgSentinel = "playing";
+      let loads = 0;
+      let identityChanged = false;
+      const onLoad = () => loads++;
+      video.addEventListener("load", onLoad);
+      const sameVideo = () =>
+        container.querySelector('iframe[data-tag="video"]') === video &&
+        video.parentNode === parent &&
+        video.contentWindow === videoWindow;
+      const observer = new MutationObserver(() => {
+        if (!sameVideo()) identityChanged = true;
+      });
+      observer.observe(container, { childList: true, subtree: true });
+      return {
+        container,
+        assertStable: () => {
+          expect(sameVideo()).toBe(true);
+          expect(identityChanged).toBe(false);
+          expect(sentinelWindow.wideSvgSentinel).toBe("playing");
+          expect(loads).toBe(0);
+        },
+        cleanup: () => {
+          observer.disconnect();
+          video.removeEventListener("load", onLoad);
+        },
+      };
+    });
+    try {
+      for (let phase = 0; phase < 3; phase++) {
+        await waitFor(
+          () => {
+            for (const { container, assertStable } of captures) {
+              expect(container.dataset.complete).toBe("true");
+              assertStable();
+              const scrollers = container.querySelectorAll<HTMLElement>(
+                ".content-render-svg-scroll"
+              );
+              expect(scrollers).toHaveLength(2);
+              for (const scroller of scrollers) {
+                expect(getComputedStyle(scroller).display).toBe("block");
+                expect(getComputedStyle(scroller).overflowX).toBe("auto");
+                expect(scroller.clientWidth).toBe(400);
+                expect(scroller.scrollWidth).toBeGreaterThanOrEqual(1600);
+                scroller.scrollLeft = 100;
+                expect(scroller.scrollLeft).toBe(100);
+              }
+            }
+          },
+          { timeout: 5000 }
+        );
+        if (phase < 2)
+          for (const { container } of captures)
+            await userEvent.click(container.querySelector("button")!);
+      }
+    } finally {
+      for (const capture of captures) capture.cleanup();
+    }
+  },
+};

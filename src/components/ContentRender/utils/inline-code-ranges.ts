@@ -570,5 +570,5 @@ export const getMarkdownCodeRanges = (raw: string) =>
 export const getMarkdownLiteralRanges = (raw: string) =>
   getMarkdownSourceAnalysis(raw).literal;
 
-export const getMarkdownSourceTree = (raw: string) =>
+export const getMarkdownSourceTree = (raw: string): MarkdownSourceTree =>
   getMarkdownSourceAnalysis(raw).tree;

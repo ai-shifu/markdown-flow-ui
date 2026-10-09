@@ -42,6 +42,7 @@ import {
   type ContentAwareTypewriterQueue,
 } from "./utils/typewriter-pacing";
 import {
+  normalizeWrappedSandboxContent,
   splitContentSegments,
   type RenderSegment,
 } from "./utils/split-content";
@@ -493,11 +494,26 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     !contentType || contentType === "text";
   const isTypewriterEnabled =
     Boolean(enableTypewriter) && shouldApplyTypewriterByContentType;
-  // Parse the received source, never a typewriter-truncated HTML string.
-  const sourceSegments = useMemo(
-    () => mergeNonSandboxSegments(splitContentSegments(content, true, true)),
+  const sourceContent = useMemo(
+    () => normalizeWrappedSandboxContent(content),
     [content]
   );
+  // Parse the received source, never a typewriter-truncated HTML string.
+  const sourceSegments = useMemo(() => {
+    const segments = mergeNonSandboxSegments(
+      splitContentSegments(sourceContent, true, true)
+    );
+    if (
+      sourceContent !== content &&
+      segments.length &&
+      (segments[0].type === "sandbox" || isImmediateSegment(segments[0]))
+    ) {
+      // The removed opening quote occupied a prose slot before the wrapper
+      // completed. Retain its empty slot so the existing iframe keeps its key.
+      return [{ type: "text" as const, value: "" }, ...segments];
+    }
+    return segments;
+  }, [content, sourceContent]);
   const hasRichSegments = sourceSegments.some(
     (segment) => segment.type === "sandbox" || isImmediateSegment(segment)
   );
@@ -509,7 +525,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         )
         .map((segment) => segment.value)
         .join("")
-    : content;
+    : sourceContent;
   const typewriterTickMs = Math.max(0, typingSpeed);
   const fixedTypewriterContentVersion =
     typewriterPacing === "fixed" ? typewriterContent : undefined;
@@ -846,7 +862,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     ? mergedRenderSegments.map((segment) => segment.value).join("")
     : isTypewriterEnabled
       ? displayContent
-      : content;
+      : sourceContent;
   const normalizedContent = useMemo(
     () => (customRenderBar ? normalizeInlineHtml(renderContent) : ""),
     [customRenderBar, renderContent]
@@ -860,13 +876,13 @@ const ContentRender: React.FC<ContentRenderProps> = ({
             isTypewriterEnabled
               ? closeTypedInlineCode(
                   renderContent,
-                  content,
+                  sourceContent,
                   sourceInlineCodeRanges[0] ?? []
                 )
               : renderContent
           ),
     [
-      content,
+      sourceContent,
       hasRichSegments,
       isTypewriterEnabled,
       renderContent,

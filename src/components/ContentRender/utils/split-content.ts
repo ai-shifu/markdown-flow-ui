@@ -117,7 +117,11 @@ const normalizeBeforeFenceText = (before: string) => {
   return nonEmptyLines[0];
 };
 
-const normalizeQuotedMermaidContent = (raw: string, keepText: boolean) => {
+const normalizeQuotedMermaidContent = (
+  raw: string,
+  keepText: boolean,
+  preserveFenceLines = false
+) => {
   if (!WRAPPED_QUOTES_PATTERN.test(raw)) return raw;
 
   const unwrapped = raw.slice(1, -1);
@@ -138,7 +142,18 @@ const normalizeQuotedMermaidContent = (raw: string, keepText: boolean) => {
   }
 
   // Keep the essential nearby text around the mermaid block in wrapped payloads.
-  return `${leadingLine}${mermaidMatch[0]}${trailingLine}`;
+  const boundary = preserveFenceLines ? "\n" : "";
+  return `${leadingLine}${boundary}${mermaidMatch[0]}${boundary}${trailingLine}`;
+};
+
+// Preserve the legacy component's wrapped-sandbox projection without changing
+// literal quoted prose or making streaming HTML use the legacy block splitter.
+export const normalizeWrappedSandboxContent = (raw: string) => {
+  if (!WRAPPED_QUOTES_PATTERN.test(raw)) return raw;
+  const legacySegments = splitContentSegments(raw, true);
+  return legacySegments.some((segment) => segment.type === "sandbox")
+    ? normalizeQuotedMermaidContent(raw, true, true)
+    : raw;
 };
 
 const getFenceRanges = (raw: string): FenceRange[] => {

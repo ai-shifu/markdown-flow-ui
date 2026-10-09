@@ -11,6 +11,7 @@
 - Keep quoted, nested, and unfinished Markdown code examples out of HTML and SVG
   rendering.
 - Reuse bounded Markdown code ranges and skip unused parsing while typing.
+- Preserve legacy quoted HTML payloads and their Markdown diagram boundaries.
 
 ## 0.2.30 - 2026-10-09
 

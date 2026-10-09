@@ -1,6 +1,6 @@
 import {
   getInlineCodeRanges,
-  getMarkdownCodeRanges,
+  getMarkdownLiteralRanges,
 } from "./inline-code-ranges";
 import { findStreamingHtmlBlockEnd } from "./html-block-end";
 
@@ -448,7 +448,7 @@ export const splitContentSegments = (
     streaming ? value.length > 0 : Boolean(value.trim());
 
   const codeRanges = streaming
-    ? getMarkdownCodeRanges(source)
+    ? getMarkdownLiteralRanges(source)
     : getInlineCodeRanges(source);
   const fenceBlock = streaming
     ? extractFirstStreamingFenceBlock(source, codeRanges)

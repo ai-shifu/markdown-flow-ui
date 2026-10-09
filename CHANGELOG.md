@@ -16,6 +16,7 @@
 - Preserve headings, emphasis, and links around immediate native videos.
 - Mount received videos inside GFM tables immediately while preserving table
   structure and inert code examples.
+- Keep iframe examples inside inline and block math inert during video detection.
 
 ## 0.2.30 - 2026-10-09
 

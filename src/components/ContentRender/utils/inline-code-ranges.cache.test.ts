@@ -29,7 +29,11 @@ const sourceFor = (index: number, padding = 0) =>
 
 describe("bounded Markdown code range cache", () => {
   it("shares one parse across inline and block range consumers", async () => {
-    const { getInlineCodeRanges, getMarkdownCodeRanges } = await loadRanges();
+    const {
+      getInlineCodeRanges,
+      getMarkdownCodeRanges,
+      getMarkdownLiteralRanges,
+    } = await loadRanges();
     const raw = "Use `value`.\n\n~~~html\n<div>Code</div>\n~~~";
     const inline = getInlineCodeRanges(raw);
     const markdown = getMarkdownCodeRanges(raw);
@@ -39,6 +43,7 @@ describe("bounded Markdown code range cache", () => {
       { start: 4, end: 11 },
       { start: raw.indexOf("~~~"), end: raw.length },
     ]);
+    expect(getMarkdownLiteralRanges(raw)).toEqual(markdown);
     expect(parseCalls).toHaveBeenCalledTimes(1);
   });
 

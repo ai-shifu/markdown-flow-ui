@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getInlineCodeRanges,
   getMarkdownCodeRanges,
+  getMarkdownLiteralRanges,
 } from "./inline-code-ranges";
 
 describe("inline code paragraph boundaries", () => {
@@ -29,6 +30,22 @@ describe("inline code paragraph boundaries", () => {
 });
 
 describe("Markdown code source ranges", () => {
+  it.each([
+    '$<iframe data-tag="video"></iframe>$',
+    '$$\n<iframe data-tag="video"></iframe>\n$$',
+  ])(
+    "protects math literal offsets without classifying math as code: %s",
+    (math) => {
+      const prefix = "Intro\n\n";
+      const source = `${prefix}${math}`;
+      expect(getMarkdownLiteralRanges(source)).toEqual([
+        { start: prefix.length, end: source.length },
+      ]);
+      expect(getMarkdownCodeRanges(source)).toEqual([]);
+      expect(getInlineCodeRanges(source)).toEqual([]);
+    }
+  );
+
   it.each(["```", "~~~"])(
     "uses raw offsets for complete and unfinished quoted %s fences",
     (marker) => {

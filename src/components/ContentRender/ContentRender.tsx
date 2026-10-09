@@ -534,6 +534,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     const wasPending = Boolean(pendingContentRef.current);
     const receivedContentChanged =
       previousReceivedContentRef.current !== content;
+    const receivedContentAppended =
+      receivedContentChanged &&
+      content.startsWith(previousReceivedContentRef.current);
     previousReceivedContentRef.current = content;
 
     previousTypewriterEnabledRef.current = isTypewriterEnabled;
@@ -573,21 +576,33 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       updateDisplayContent("");
     }
 
-    const visibleContent = !wasTypewriterEnabled
-      ? ""
-      : displayContentRef.current;
+    let visibleContent = !wasTypewriterEnabled ? "" : displayContentRef.current;
 
     if (!typewriterContent.startsWith(visibleContent)) {
       clearPendingContent();
-      updateDisplayContent(typewriterContent);
-      if (typewriterPacing === "content-aware") {
-        contentAwareQueueRef.current = {
-          tokens: [],
-          head: 0,
-          trailingGrapheme: getTrailingTypewriterGrapheme(typewriterContent),
-        };
+      if (!receivedContentAppended) {
+        updateDisplayContent(typewriterContent);
+        if (typewriterPacing === "content-aware") {
+          contentAwareQueueRef.current = {
+            tokens: [],
+            head: 0,
+            trailingGrapheme: getTrailingTypewriterGrapheme(typewriterContent),
+          };
+        }
+        return;
       }
-      return;
+      // A newly recognized HTML tag can replace a previously literal prefix.
+      // Keep the shared prose visible and pace only the newly received prose.
+      let sharedLength = 0;
+      while (
+        sharedLength < visibleContent.length &&
+        sharedLength < typewriterContent.length &&
+        visibleContent[sharedLength] === typewriterContent[sharedLength]
+      ) {
+        sharedLength += 1;
+      }
+      visibleContent = visibleContent.slice(0, sharedLength);
+      updateDisplayContent(visibleContent);
     }
 
     let nextPendingContent = typewriterContent.slice(visibleContent.length);

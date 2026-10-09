@@ -80,7 +80,11 @@ describe("splitContentSegments", () => {
   ])(
     "keeps an unfinished video header pending until its quoted attributes finish: %s",
     (opening) => {
-      for (let length = 2; length < opening.length; length += 1) {
+      for (
+        let length = "<iframe ".length;
+        length < opening.length;
+        length += 1
+      ) {
         const received = opening.slice(0, length);
         expect(splitContentSegments(received, true, true)).toEqual([
           { type: "markdown", value: received, immediate: true, pending: true },
@@ -137,7 +141,7 @@ describe("splitContentSegments", () => {
   it.each(["div", "script", "style"])(
     "keeps self-closing %s roots on the sandbox path as they arrive",
     (tag) => {
-      for (const html of [`<${tag}`, `<${tag}/`, `<${tag}/>`]) {
+      for (const html of [`<${tag} `, `<${tag}/`, `<${tag}/>`]) {
         expect(splitContentSegments(`Intro\n${html}`, true, true)).toEqual([
           { type: "text", value: "Intro\n" },
           { type: "sandbox", value: html },
@@ -152,6 +156,53 @@ describe("splitContentSegments", () => {
       expect(splitContentSegments(raw, true, true)).toEqual([
         { type: "text", value: raw },
       ]);
+    }
+  );
+
+  it.each([false, true])(
+    "keeps tag names without a received boundary as literal prose (streaming=%s)",
+    (streaming) => {
+      for (const raw of [
+        "The token is <div",
+        "Compare <d",
+        "Intro <di",
+        "<!DOC",
+        "<!DOCTYPE",
+        "<i",
+        "<iframe",
+        "<script",
+        "<style",
+        "<dividend",
+      ]) {
+        expect(splitContentSegments(raw, true, streaming)).toEqual([
+          { type: "text", value: raw },
+        ]);
+      }
+    }
+  );
+
+  it.each([false, true])(
+    "recognizes received HTML headers before their content is complete (streaming=%s)",
+    (streaming) => {
+      for (const html of [
+        "<div ",
+        "<div/",
+        "<div>",
+        '<div title="received',
+        "<DIV>One",
+        "<div>One and Two",
+        "<script ",
+        "<style>",
+        "<!DOCTYPE>",
+        "<!DOCTYPE html",
+      ]) {
+        expect(splitContentSegments(`Intro\n${html}`, true, streaming)).toEqual(
+          [
+            { type: "text", value: "Intro\n" },
+            { type: "sandbox", value: html },
+          ]
+        );
+      }
     }
   );
 

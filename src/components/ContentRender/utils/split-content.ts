@@ -14,7 +14,7 @@ export type RenderSegment =
   | { type: "text"; value: string };
 
 const SANDBOX_START_PATTERN =
-  /<(?:!doctype\b|(?:script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)[\s/>])/i;
+  /<(?:!doctype(?=[\s>])|(?:script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)[\s/>])/i;
 
 const INLINE_SANDBOX_PATTERNS: RegExp[] = [
   /<svg[\s\S]*?<\/svg>/i,
@@ -404,7 +404,7 @@ export const splitContentSegments = (
     ...getInlineCodeRanges(source),
   ];
   // A fence-looking line inside an HTML block belongs to that HTML block.
-  let sandboxStartIndex = findFirstMatchOutsideFence(
+  const sandboxStartIndex = findFirstMatchOutsideFence(
     source,
     SANDBOX_START_PATTERN,
     fenceRanges
@@ -459,35 +459,6 @@ export const splitContentSegments = (
     return finalizeSegments(segments);
   }
 
-  if (streaming && sandboxStartIndex === -1) {
-    const partialTag = /<(!?[a-z]+)$/i.exec(source);
-    const sandboxTags = [
-      "!doctype",
-      "script",
-      "style",
-      "link",
-      "iframe",
-      "html",
-      "head",
-      "body",
-      "meta",
-      "title",
-      "base",
-      "template",
-      "div",
-      "section",
-      "article",
-      "main",
-    ];
-    if (
-      partialTag &&
-      !isEscaped(source, partialTag.index) &&
-      !isIndexInRanges(partialTag.index, fenceRanges) &&
-      sandboxTags.some((tag) => tag.startsWith(partialTag[1].toLowerCase()))
-    ) {
-      sandboxStartIndex = partialTag.index;
-    }
-  }
   const svgOpenIndex = findFirstMatchOutsideFence(
     source,
     /<svg\b/i,

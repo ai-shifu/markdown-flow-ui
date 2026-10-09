@@ -206,10 +206,10 @@ describe("ContentRender progressive HTML with typewriter", () => {
   });
 
   it.each(["div", "script", "style"])(
-    "keeps a self-closing %s root mounted through its closing slash",
+    "keeps a self-closing %s root mounted as its opening tag completes",
     (tag) => {
       const { container, rerender } = render(
-        <ContentRender {...TYPEWRITER_PROPS} content={`甲乙\n<${tag}`} />
+        <ContentRender {...TYPEWRITER_PROPS} content={`甲乙\n<${tag}/`} />
       );
       const sandbox = getSandboxes(container)[0];
       expect(sandbox).toBeDefined();
@@ -436,38 +436,74 @@ describe("ContentRender progressive HTML with typewriter", () => {
     expect(onTypeFinished).toHaveBeenCalledTimes(2);
   });
 
-  it("does not leak a split HTML opening tag or replay the preceding text", () => {
-    const { container, rerender } = render(
-      <ContentRender {...TYPEWRITER_PROPS} content={"甲乙\n<di"} />
-    );
+  it.each(["fixed", "content-aware"] as const)(
+    "keeps prose paced when a literal prefix becomes HTML with %s pacing",
+    (typewriterPacing) => {
+      const onTypeFinished = vi.fn();
+      const { container, rerender } = render(
+        <ContentRender
+          {...TYPEWRITER_PROPS}
+          typewriterPacing={typewriterPacing}
+          onTypeFinished={onTypeFinished}
+          content="甲乙<di"
+        />
+      );
+      for (let tick = 0; tick < 20; tick += 1) advanceTime(30);
+      expect(getVisibleText(container)).toBe("甲乙<di");
+      expect(getSandboxes(container)).toHaveLength(0);
+      expect(onTypeFinished).toHaveBeenCalledTimes(1);
 
-    advanceTime(30);
-    expect(getVisibleText(container)).toBe("甲乙");
-    advanceTime(90);
-    expect(getVisibleText(container)).toBe("甲乙");
+      const html = '<div class="card"><p>Received</p></div>';
+      rerender(
+        <ContentRender
+          {...TYPEWRITER_PROPS}
+          typewriterPacing={typewriterPacing}
+          onTypeFinished={onTypeFinished}
+          content={`甲乙${html}丙丁戊己`}
+        />
+      );
+      const sandbox = getSandboxes(container)[0];
+      expect(sandbox.getAttribute("data-content")).toBe(html);
+      expect(getVisibleText(container)).toBe("甲乙");
+      advanceTime(30);
+      expect(getVisibleText(container)).toBe("甲乙丙丁");
 
-    rerender(
-      <ContentRender
-        {...TYPEWRITER_PROPS}
-        content={'甲乙\n<div class="card"'}
-      />
-    );
-    expect(getVisibleText(container)).toBe("甲乙");
-    expect(getSandboxes(container)).toHaveLength(1);
+      rerender(
+        <ContentRender
+          {...TYPEWRITER_PROPS}
+          typewriterPacing={typewriterPacing}
+          onTypeFinished={onTypeFinished}
+          content={`甲乙${html}丙丁戊己庚辛`}
+        />
+      );
+      expect(getSandboxes(container)).toEqual([sandbox]);
+      expect(getVisibleText(container)).toBe("甲乙丙丁");
+      for (let tick = 0; tick < 20; tick += 1) advanceTime(30);
+      expect(getVisibleText(container)).toBe("甲乙丙丁戊己庚辛");
+      expect(onTypeFinished).toHaveBeenCalledTimes(2);
+    }
+  );
 
-    rerender(
-      <ContentRender
-        {...TYPEWRITER_PROPS}
-        content={'甲乙\n<div class="card"><p>Received'}
-      />
-    );
-    expect(getVisibleText(container)).toBe("甲乙");
-    expect(getSandboxes(container)[0].getAttribute("data-content")).toBe(
-      '<div class="card"><p>Received'
-    );
-    advanceTime(30);
-    expect(getVisibleText(container)).toBe("甲乙");
-  });
+  it.each([
+    [false, "The token is <div"],
+    [true, "The token is <div"],
+    [false, "Compare <d"],
+    [true, "Compare <d"],
+  ])(
+    "preserves an ambiguous tag prefix with typing %s: %s",
+    (enableTypewriter, content) => {
+      const { container } = render(
+        <ContentRender
+          {...TYPEWRITER_PROPS}
+          enableTypewriter={enableTypewriter}
+          content={content}
+        />
+      );
+      for (let tick = 0; tick < 40; tick += 1) advanceTime(30);
+      expect(getSandboxes(container)).toHaveLength(0);
+      expect(getVisibleText(container)).toBe(content.replace(/\s/g, ""));
+    }
+  );
 
   it("keeps HTML inside a code fence on the text typewriter path", () => {
     const content = '```html\n<div class="card">Source</div>\n```';
@@ -692,12 +728,12 @@ describe("ContentRender progressive HTML with typewriter", () => {
     const { container, rerender } = render(
       <ContentRender
         {...TYPEWRITER_PROPS}
-        content="<!DOC"
+        content="<!DOCTYPE "
         onTypeFinished={onTypeFinished}
       />
     );
     const sandbox = getSandboxes(container)[0];
-    expect(sandbox.getAttribute("data-content")).toBe("<!DOC");
+    expect(sandbox.getAttribute("data-content")).toBe("<!DOCTYPE ");
     expect(getVisibleText(container)).toBe("");
     const content = "<!DOCTYPE html>\n<html><body><p>Card";
     rerender(

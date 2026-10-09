@@ -7,6 +7,7 @@
 - Keep self-closing HTML and video frames visible during streaming, preserve
   literal less-than signs and ambiguous tag prefixes, and isolate HTML after
   unmatched backticks.
+- Preserve custom render bars for native videos and pending video headers.
 
 ## 0.2.30 - 2026-10-09
 

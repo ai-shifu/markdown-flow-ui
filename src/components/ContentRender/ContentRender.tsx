@@ -1035,6 +1035,16 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     });
   };
 
+  const customBar = customRenderBar ? (
+    <div className="content-render-custom-bar">
+      {React.createElement(customRenderBar, {
+        content,
+        displayContent: normalizedContent,
+        onSend,
+      })}
+    </div>
+  ) : null;
+
   if (hasRichSegments) {
     return (
       <div
@@ -1077,6 +1087,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
             </React.Fragment>
           )
         )}
+        {customBar}
       </div>
     );
   }
@@ -1119,15 +1130,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         }
       })}
 
-      {customRenderBar && (
-        <div className="content-render-custom-bar">
-          {React.createElement(customRenderBar, {
-            content,
-            displayContent: normalizedContent,
-            onSend,
-          })}
-        </div>
-      )}
+      {customBar}
     </div>
   );
 };

@@ -4,6 +4,13 @@
 
 ### Fixed
 
+- Keep self-closing HTML and video frames visible during streaming, preserve
+  literal less-than signs, and isolate HTML after unmatched backticks.
+
+## 0.2.30 - 2026-10-09
+
+### Fixed
+
 - Render received sandbox HTML progressively without applying the prose
   typewriter delay, while preserving typing order and stable iframe instances.
 

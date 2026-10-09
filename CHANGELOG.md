@@ -22,6 +22,7 @@
 - Preserve native code blocks, alerts, details, lists, and tables while making
   their received HTML visible immediately; keep embedded widget resources in
   the sandbox.
+- Reveal thematic breaks and line breaks at their prose typing boundaries.
 - Scan received snapshots once without recursively parsing Markdown suffixes.
 - Preserve the complete received Markdown tree while typing around native
   videos, including preceding sibling containers, reference definitions, escaped

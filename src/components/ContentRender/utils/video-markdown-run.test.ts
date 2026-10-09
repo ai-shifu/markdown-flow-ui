@@ -93,6 +93,87 @@ describe("received video Markdown tree projection", () => {
     expect(Object.isFrozen(plan.sourceTree)).toBe(true);
   });
 
+  it.each([
+    ["a thematic break", "\n\n---\n\nLater", "hr", 5],
+    ["a generated soft break", "\n\nFirst\nLater", "br", 8],
+    ["a CRLF soft break", "\r\n\r\nFirst\r\nLater", "br", 11],
+    ["a spaces hard break", "\n\nFirst  \nLater", "br", 10],
+    ["a backslash hard break", "\n\nFirst\\\nLater", "br", 9],
+    ["an authored HTML break", "\n\nFirst<br>Later", "br", 11],
+    ["an empty HTML leaf", "\n\nFirst<wbr>Later", "wbr", 12],
+    ["an empty paired HTML leaf", "\n\nFirst<mark></mark>Later", "mark", 20],
+  ])("activates %s only at its source end", (_name, after, tag, end) => {
+    const segments = source("", after as string);
+    const plan = prepare(segments);
+    const renderAt = (length: number) => {
+      const rendered = hidden(segments);
+      rendered[2] = { type: "text", value: (after as string).slice(0, length) };
+      return projectVideoMarkdownRun(plan, rendered);
+    };
+    expect(nodes(plan.tree!, tag as string)).toHaveLength(1);
+    for (const length of [0, (end as number) - 1, end as number]) {
+      const projected = renderAt(length);
+      expect(
+        getVideoMarkdownNodeState(nodes(projected, tag as string)[0])?.active
+      ).toBe(length >= (end as number));
+      expect(
+        getVideoMarkdownNodeState(nodes(projected, "iframe")[0])?.active
+      ).not.toBe(false);
+      expect(shape(projected)).toEqual(shape(plan.tree!));
+    }
+    expect(text(renderAt((end as number) + 2)).replace(/\s/g, "")).toBe(
+      tag === "hr" ? "" : "FirstLa"
+    );
+    expect(text(projectVideoMarkdownRun(plan, segments))).toBe(
+      text(plan.tree!)
+    );
+  });
+
+  it.each([false, true])(
+    "shares received HTML leaf budgets (pending=%s)",
+    (pending) => {
+      const html = "<details><summary>Title</summary><hr><br></details>";
+      const segments: RenderSegment[] = [
+        { type: "text", value: "Before\n\n" },
+        {
+          type: "markdown",
+          value: html,
+          immediate: true,
+          ...(pending ? { pending: true as const } : {}),
+        },
+        { type: "text", value: "\n\nLater" },
+      ];
+      const plan = prepare(segments);
+      const projected = projectVideoMarkdownRun(plan, hidden(segments));
+      for (const tag of ["hr", "br"])
+        expect(
+          getVideoMarkdownNodeState(nodes(projected, tag)[0])?.active
+        ).toBe(!pending);
+      expect(text(projected).replace(/\s/g, "")).toBe(pending ? "" : "Title");
+    }
+  );
+
+  it("maps successive generated breaks to their own newline inside containers", () => {
+    const before = "> - First\n>   Next\n>   Last ";
+    const segments = source(before, "");
+    const plan = prepare(segments);
+    const firstEnd = before.indexOf("\n") + 1;
+    const secondEnd = before.indexOf("\n", firstEnd) + 1;
+    for (let length = 0; length <= before.length; length += 1) {
+      const rendered = hidden(segments);
+      rendered[0] = { type: "text", value: before.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      expect(
+        nodes(projected, "br").map(
+          (node) => getVideoMarkdownNodeState(node)?.active
+        )
+      ).toEqual([length >= firstEnd, length >= secondEnd]);
+    }
+    expect(
+      text(projectVideoMarkdownRun(plan, segments)).replace(/\s/g, "")
+    ).toBe("FirstNextLast");
+  });
+
   it("resolves a reference link before its definition is typed", () => {
     const segments = source("[Watch ", "][clip]\n\n[clip]: /watch");
     const plan = prepare(segments);

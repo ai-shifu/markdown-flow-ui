@@ -336,7 +336,15 @@ export const prepareVideoMarkdownRun = (
     units?: ReturnType<typeof sourceUnits>;
     index: number;
     rawCursor: number;
+    breakEnd?: number;
   };
+  const unitsOf = (context: Cursor) =>
+    (context.units ??=
+      context.source?.type === "code"
+        ? blockCodeUnits(plan.fullSource, context.source)
+        : context.source?.type === "inlineCode"
+          ? inlineCodeUnits(plan.fullSource, context.source)
+          : sourceUnits(plan.fullSource, context.range, context.mode));
   const htmlRanges = [...sources.values()].filter(
     ({ type }) => type === "html"
   );
@@ -372,6 +380,31 @@ export const prepareVideoMarkdownRun = (
       const flow = flows[firstAtOrAfter(flowStarts, cursor)];
       if (flow && flow.end <= inherited.range.end) range = flow;
     }
+    // remark-breaks creates positionless breaks. Recover the authored newline
+    // from the same source cursor used by the adjacent text, including CRLF.
+    if (
+      !range &&
+      node.type === "element" &&
+      node.tagName === "br" &&
+      inherited
+    ) {
+      const units = unitsOf(inherited);
+      let index = inherited.index;
+      while (
+        index < units.length &&
+        (units[index].end <= inherited.rawCursor ||
+          units[index].character !== "\n")
+      )
+        index += 1;
+      const end = units[index]?.end;
+      if (end !== undefined) {
+        inherited.index = index + 1;
+        range = {
+          start: end - (plan.fullSource.slice(end - 2, end) === "\r\n" ? 2 : 1),
+          end,
+        };
+      }
+    }
     const source = range && sources.get(`${range.start}:${range.end}`);
     let context = inherited;
     const isCode = source?.type === "code" || source?.type === "inlineCode";
@@ -398,22 +431,28 @@ export const prepareVideoMarkdownRun = (
       // allocating the entire root's text map just to display these separators.
       if (!node.position && !node.value.trim() && context.mode !== "code")
         return;
-      context.units ??=
-        context.source?.type === "code"
-          ? blockCodeUnits(plan.fullSource, context.source)
-          : context.source?.type === "inlineCode"
-            ? inlineCodeUnits(plan.fullSource, context.source)
-            : sourceUnits(plan.fullSource, context.range, context.mode);
-      while (context.units[context.index]?.end <= context.rawCursor)
-        context.index += 1;
+      const units = unitsOf(context);
+      while (units[context.index]?.end <= context.rawCursor) context.index += 1;
       const ends: number[] = [];
-      for (const character of node.value.split("")) {
+      const characters = node.value.split("");
+      // mdast-to-hast adds a newline after a Markdown break. It represents the
+      // same source newline, rather than a second authored character to seek.
+      if (
+        context.breakEnd !== undefined &&
+        characters[0] === "\n" &&
+        !node.position?.start
+      ) {
+        ends.push(context.breakEnd);
+        characters.shift();
+      }
+      context.breakEnd = undefined;
+      for (const character of characters) {
         while (
-          context.index < context.units.length &&
-          context.units[context.index].character !== character
+          context.index < units.length &&
+          units[context.index].character !== character
         )
           context.index += 1;
-        ends.push(context.units[context.index]?.end ?? context.range.end);
+        ends.push(units[context.index]?.end ?? context.range.end);
         context.index += 1;
       }
       plan.visibility.set(node, { ends });
@@ -423,21 +462,32 @@ export const prepareVideoMarkdownRun = (
       const effectiveRange = range ?? context?.range;
       if (
         effectiveRange &&
-        (node.tagName === "img" ||
+        (node.children.length === 0 ||
           node.tagName === "input" ||
           node.tagName === "a" ||
           node.tagName.startsWith("custom-") ||
           node.tagName === "svg")
-      )
+      ) {
+        const index = segmentAt(plan, effectiveRange.start);
+        const segment = plan.segments[index];
         plan.visibility.set(node, {
           range: effectiveRange,
           svg: node.tagName === "svg",
           immediate:
-            node.tagName === "a" &&
-            plan.immediateOffsets[
-              firstAtOrAfter(plan.immediateOffsets, effectiveRange.start)
-            ] < effectiveRange.end,
+            // Link ancestors containing immediate HTML keep their stable host
+            // element. Leaves inside a received HTML span share its budget.
+            (node.tagName === "a" &&
+              plan.immediateOffsets[
+                firstAtOrAfter(plan.immediateOffsets, effectiveRange.start)
+              ] < effectiveRange.end) ||
+            (segment.type === "markdown" &&
+              segment.immediate &&
+              !segment.pending &&
+              effectiveRange.end <= plan.offsets[index] + segment.value.length),
         });
+      }
+      if (node.tagName === "br" && range && inherited && !htmlContains(range))
+        inherited.breakEnd = range.end;
     }
     if ("children" in node)
       for (const child of node.children) walk(child, context);

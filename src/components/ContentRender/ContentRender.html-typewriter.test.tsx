@@ -68,6 +68,29 @@ afterEach(() => {
 });
 
 describe("ContentRender progressive HTML with typewriter", () => {
+  it.each(["div", "script", "style"])(
+    "keeps a self-closing %s root mounted through its closing slash",
+    (tag) => {
+      const { container, rerender } = render(
+        <ContentRender {...TYPEWRITER_PROPS} content={`甲乙\n<${tag}`} />
+      );
+      const sandbox = getSandboxes(container)[0];
+      expect(sandbox).toBeDefined();
+
+      for (const html of [`<${tag}/`, `<${tag}/>`]) {
+        rerender(
+          <ContentRender {...TYPEWRITER_PROPS} content={`甲乙\n${html}`} />
+        );
+        expect(getSandboxes(container)).toEqual([sandbox]);
+        expect(sandbox.getAttribute("data-content")).toBe(html);
+        expect(getVisibleText(container)).toBe("");
+      }
+      advanceTime(30);
+      expect(getVisibleText(container)).toBe("甲乙");
+      expect(sandboxLifecycle.unmounts).toEqual([]);
+    }
+  );
+
   it("passes unfinished HTML to the sandbox before the preceding text is typed", () => {
     const html = '<div class="card"><p>Already received';
     const onTypeFinished = vi.fn();

@@ -6,7 +6,7 @@ export type RenderSegment =
   | { type: "text"; value: string };
 
 const SANDBOX_START_PATTERN =
-  /<(?:!doctype\b|(?:script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)[\s>])/i;
+  /<(?:!doctype\b|(?:script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)[\s/>])/i;
 
 const INLINE_SANDBOX_PATTERNS: RegExp[] = [
   /<svg[\s\S]*?<\/svg>/i,

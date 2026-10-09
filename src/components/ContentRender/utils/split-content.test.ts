@@ -74,6 +74,18 @@ describe("splitContentSegments", () => {
     expect(segments[2].type).toBe("text");
   });
 
+  it.each(["div", "script", "style"])(
+    "keeps self-closing %s roots on the sandbox path as they arrive",
+    (tag) => {
+      for (const html of [`<${tag}`, `<${tag}/`, `<${tag}/>`]) {
+        expect(splitContentSegments(`Intro\n${html}`, true, true)).toEqual([
+          { type: "text", value: "Intro\n" },
+          { type: "sandbox", value: html },
+        ]);
+      }
+    }
+  );
+
   it.each([
     "An unfinished `value.\n\n<div>Card</div>",
     "An unfinished `value.\n \t\n<div>Card</div>\n\nAnother ` paragraph.",

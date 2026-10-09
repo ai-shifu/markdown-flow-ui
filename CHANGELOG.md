@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.32 - 2026-10-10
+
+### Fixed
+
+- Reveal sandbox HTML, native HTML, and video frames only after preceding prose
+  has finished typing, while keeping HTML updates progressive and unpaced.
+- Report displayed source progress accurately and keep waiting HTML out of
+  custom render bars until it is reached.
+- Preserve displayed iframe instances and native Markdown structure as later
+  prose types and additional HTML arrives.
+
 ## 0.2.31 - 2026-10-09
 
 ### Fixed

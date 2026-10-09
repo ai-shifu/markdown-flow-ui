@@ -44,6 +44,7 @@ import {
   type ContentAwareTypewriterQueue,
 } from "./utils/typewriter-pacing";
 import {
+  getInlineCodeRanges,
   splitContentSegments,
   type RenderSegment,
 } from "./utils/split-content";
@@ -387,6 +388,38 @@ const mergeNonSandboxSegments = (segments: RenderSegment[]) => {
   });
 
   return merged;
+};
+
+const closeTypedInlineCode = (visible: string, source: string) => {
+  if (visible.length >= source.length) return visible;
+  const range = getInlineCodeRanges(source).find(
+    ({ start, end }) => start < visible.length && visible.length < end
+  );
+  if (!range) return visible;
+  const delimiter = /^`+/.exec(source.slice(range.start))?.[0];
+  if (!delimiter || visible.length < range.start + delimiter.length) {
+    return visible;
+  }
+  const lineStart = source.lastIndexOf("\n", range.start - 1) + 1;
+  const lineEnd = source.indexOf("\n", range.start);
+  if (
+    delimiter.length >= 3 &&
+    /^ {0,3}$/.test(source.slice(lineStart, range.start)) &&
+    !source
+      .slice(
+        range.start + delimiter.length,
+        lineEnd === -1 ? source.length : lineEnd
+      )
+      .includes("`")
+  ) {
+    return visible;
+  }
+  const closingStart = range.end - delimiter.length;
+  if (visible.length > closingStart) {
+    return visible + delimiter.slice(visible.length - closingStart);
+  }
+  // Close only the render copy so a typed prefix cannot activate code as HTML.
+  return visible + (visible.endsWith("`") ? " " : "") + delimiter;
 };
 
 const splitTextByCharacterChunk = (value: string, chunkSize: number) => {
@@ -778,6 +811,16 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     [renderContent]
   );
 
+  const safeMarkdownContent = useMemo(
+    () =>
+      normalizeInlineHtml(
+        isTypewriterEnabled
+          ? closeTypedInlineCode(renderContent, content)
+          : renderContent
+      ),
+    [content, isTypewriterEnabled, renderContent]
+  );
+
   const interactionDefaults = useMemo(
     () =>
       getInteractionDefaultValues(
@@ -944,8 +987,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   );
 
   const segments = useMemo(
-    () => parseMarkdownSegments(normalizedContent),
-    [normalizedContent]
+    () => parseMarkdownSegments(safeMarkdownContent),
+    [safeMarkdownContent]
   );
 
   const renderMarkdownSegments = (raw: string, keyPrefix: string) => {
@@ -1017,7 +1060,15 @@ const ContentRender: React.FC<ContentRenderProps> = ({
             />
           ) : (
             <React.Fragment key={`md-${idx}`}>
-              {renderMarkdownSegments(segment.value, `md-${idx}`)}
+              {renderMarkdownSegments(
+                isTypewriterEnabled
+                  ? closeTypedInlineCode(
+                      segment.value,
+                      sourceSegments[idx].value
+                    )
+                  : segment.value,
+                `md-${idx}`
+              )}
             </React.Fragment>
           )
         )}

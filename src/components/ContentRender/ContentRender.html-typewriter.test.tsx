@@ -411,6 +411,93 @@ describe("ContentRender progressive HTML with typewriter", () => {
     expect(getVisibleText(container)).toContain("<div>Literal</div>");
   });
 
+  it.each([false, true])(
+    "isolates HTML after an unmatched backtick with typewriter %s",
+    (enableTypewriter) => {
+      const html =
+        "<style data-inline-style>body { color: red; }</style><div data-inline-card>Card</div>";
+      const content = `Use \` carefully ${html}`;
+      const onTypeFinished = vi.fn();
+      const { container, rerender } = render(
+        <ContentRender
+          {...TYPEWRITER_PROPS}
+          enableTypewriter={enableTypewriter}
+          content={content}
+          onTypeFinished={onTypeFinished}
+        />
+      );
+      const sandbox = getSandboxes(container)[0];
+      expect(sandbox).toBeDefined();
+      expect(sandbox.getAttribute("data-content")).toBe(html);
+
+      for (let tick = 0; tick < 100; tick += 1) {
+        advanceTime(30);
+        expect(container.querySelector("style[data-inline-style]")).toBeNull();
+        expect(container.querySelector("[data-inline-card]")).toBeNull();
+      }
+      expect(getVisibleText(container)).toBe("Use`carefully");
+      expect(onTypeFinished).toHaveBeenCalledTimes(enableTypewriter ? 1 : 0);
+
+      rerender(
+        <ContentRender
+          {...TYPEWRITER_PROPS}
+          enableTypewriter={!enableTypewriter}
+          content={content}
+        />
+      );
+      expect(getSandboxes(container)).toEqual([sandbox]);
+      expect(container.querySelector("style[data-inline-style]")).toBeNull();
+      expect(container.querySelector("[data-inline-card]")).toBeNull();
+      expect(sandboxLifecycle.mounts).toEqual([1]);
+      expect(sandboxLifecycle.unmounts).toEqual([]);
+    }
+  );
+
+  it("reclassifies a received HTML snapshot when inline code closes", () => {
+    const html = "<style data-flow-style>body { color: red; }</style>";
+    const initial = `Use \`${html}`;
+    const { container, rerender } = render(
+      <ContentRender {...TYPEWRITER_PROPS} content={initial} />
+    );
+    expect(getSandboxes(container)).toHaveLength(1);
+    expect(getSandboxes(container)[0].getAttribute("data-content")).toBe(html);
+    for (let tick = 0; tick < 20; tick += 1) advanceTime(30);
+    expect(getVisibleText(container)).toBe("Use`");
+
+    rerender(<ContentRender {...TYPEWRITER_PROPS} content={`${initial}\``} />);
+    expect(getSandboxes(container)).toHaveLength(0);
+    for (let tick = 0; tick < 100; tick += 1) {
+      advanceTime(30);
+      expect(container.querySelector("style[data-flow-style]")).toBeNull();
+    }
+    expect(container.querySelector("code")?.textContent).toBe(html);
+    expect(sandboxLifecycle.mounts).toEqual([1]);
+    expect(sandboxLifecycle.unmounts).toEqual([1]);
+  });
+
+  it.each([
+    ["single backticks", "Use ", "`", ""],
+    ["double backticks around a single backtick", "Use ", "``", "x`"],
+    ["inline triple backticks at line start", "", "```", "x`"],
+  ])("keeps %s safe while typing", (_name, intro, delimiter, innerPrefix) => {
+    const html = "<style data-matched-style>body { color: red; }</style>";
+    const { container } = render(
+      <ContentRender
+        {...TYPEWRITER_PROPS}
+        content={`${intro}${delimiter}${innerPrefix}${html}${delimiter}`}
+      />
+    );
+
+    for (let tick = 0; tick < 100; tick += 1) {
+      advanceTime(30);
+      expect(container.querySelector("style[data-matched-style]")).toBeNull();
+      expect(getSandboxes(container)).toHaveLength(0);
+    }
+    expect(container.querySelector("code")?.textContent).toBe(
+      innerPrefix + html
+    );
+  });
+
   it("keeps an existing HTML block mounted when a later code fence streams in", () => {
     const initial = '甲\n<div class="card">Visual</div>\n乙\n';
     const { container, rerender } = render(

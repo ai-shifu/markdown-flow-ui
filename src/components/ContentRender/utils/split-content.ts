@@ -143,7 +143,7 @@ const isEscaped = (raw: string, index: number) => {
   return backslashes % 2 === 1;
 };
 
-const getInlineCodeRanges = (raw: string, streaming: boolean): FenceRange[] => {
+export const getInlineCodeRanges = (raw: string): FenceRange[] => {
   const ranges: FenceRange[] = [];
   const blankLines = /\r?\n[ \t]*\r?\n/g;
   let paragraphStart = 0;
@@ -152,30 +152,33 @@ const getInlineCodeRanges = (raw: string, streaming: boolean): FenceRange[] => {
     const boundary = blankLines.exec(raw);
     const paragraphEnd = boundary?.index ?? raw.length;
     const paragraph = raw.slice(paragraphStart, paragraphEnd);
-    const delimiters = /`+/g;
-    let match: RegExpExecArray | null;
+    const delimiters = Array.from(paragraph.matchAll(/`+/g), (match) => ({
+      start: match.index,
+      length: match[0].length,
+      escaped: isEscaped(paragraph, match.index),
+    }));
+    const nextMatchingDelimiter = new Array<number>(delimiters.length).fill(-1);
+    const nextByLength = new Map<number, number>();
 
-    while ((match = delimiters.exec(paragraph)) !== null) {
-      if (isEscaped(paragraph, match.index)) continue;
-      const start = paragraphStart + match.index;
-      const delimiter = match[0];
-      let closing: RegExpExecArray | null;
-      while ((closing = delimiters.exec(paragraph)) !== null) {
-        if (closing[0] === delimiter) {
-          ranges.push({
-            start,
-            end: paragraphStart + closing.index + delimiter.length,
-          });
-          break;
-        }
-      }
-      if (!closing) {
-        // An unfinished span can only continue in the current paragraph.
-        if (streaming && paragraphEnd === raw.length) {
-          ranges.push({ start, end: paragraphEnd });
-        }
-        break;
-      }
+    for (let index = delimiters.length - 1; index >= 0; index -= 1) {
+      const delimiter = delimiters[index];
+      nextMatchingDelimiter[index] = nextByLength.get(delimiter.length) ?? -1;
+      // Backslashes do not escape closing delimiters inside a code span.
+      nextByLength.set(delimiter.length, index);
+    }
+
+    for (let index = 0; index < delimiters.length; index += 1) {
+      const opening = delimiters[index];
+      if (opening.escaped) continue;
+      const closingIndex = nextMatchingDelimiter[index];
+      // Unmatched runs are literal text; later runs may still form valid spans.
+      if (closingIndex === -1) continue;
+      const closing = delimiters[closingIndex];
+      ranges.push({
+        start: paragraphStart + opening.start,
+        end: paragraphStart + closing.start + closing.length,
+      });
+      index = closingIndex;
     }
 
     if (!boundary) break;
@@ -366,7 +369,7 @@ export const splitContentSegments = (
           ]
         : []
       : getFenceRanges(source)),
-    ...getInlineCodeRanges(source, streaming),
+    ...getInlineCodeRanges(source),
   ];
   // A fence-looking line inside an HTML block belongs to that HTML block.
   let sandboxStartIndex = findFirstMatchOutsideFence(

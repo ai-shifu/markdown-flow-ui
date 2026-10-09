@@ -120,6 +120,60 @@ describe("splitContentSegments", () => {
     ]);
   });
 
+  it.each([
+    ["HTML", "<div>Card</div>"],
+    ["styles", "<style>body { color: red; }</style>"],
+  ])("sandboxes %s after an unmatched inline backtick", (_name, html) => {
+    const prose = "Use ` carefully ";
+
+    expect(splitContentSegments(`${prose}${html}`, true, true)).toEqual([
+      { type: "text", value: prose },
+      { type: "sandbox", value: html },
+    ]);
+  });
+
+  it.each([
+    "Use ` carefully then ``<div>Code</div>`` and ",
+    "Use \\` literally then ``<div>Code</div>`` and ",
+    "Use `<div>Code</div>\\` and ",
+    "Use \\\\`<div>Code</div>` and ",
+  ])(
+    "protects matched code after literal or escaped backticks: %s",
+    (prose) => {
+      const html = "<div>Card</div>";
+
+      expect(splitContentSegments(`${prose}${html}`, true, true)).toEqual([
+        { type: "text", value: prose },
+        { type: "sandbox", value: html },
+      ]);
+    }
+  );
+
+  it("finds matched code after many unmatched delimiter lengths", () => {
+    const unmatched = Array.from({ length: 128 }, (_value, index) =>
+      "`".repeat(index + 3)
+    ).join(" ");
+    const prose = `Use ${unmatched} then \`\`<style>Code</style>\`\` and `;
+
+    expect(splitContentSegments(`${prose}<div>Card</div>`, true, true)).toEqual(
+      [
+        { type: "text", value: prose },
+        { type: "sandbox", value: "<div>Card</div>" },
+      ]
+    );
+  });
+
+  it("reclassifies HTML as inline code when its closing backtick arrives", () => {
+    const initial = "Use `<div>Code</div>";
+    expect(splitContentSegments(initial, true, true)).toEqual([
+      { type: "text", value: "Use `" },
+      { type: "sandbox", value: "<div>Code</div>" },
+    ]);
+    expect(splitContentSegments(`${initial}\``, true, true)).toEqual([
+      { type: "text", value: `${initial}\`` },
+    ]);
+  });
+
   it.each(["~~~html\n<div>Source", "~~~html\n<div>Source</div>\n~~~"])(
     "keeps tilde-fenced HTML on the markdown path: %s",
     (raw) => {

@@ -3,7 +3,9 @@ import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
-import type { PluggableList } from "unified";
+import type { PluggableList, Plugin } from "unified";
+import type { Root } from "hast";
+import { visit } from "unist-util-visit";
 import { CustomRenderBarProps, OnSendContentParams } from "../types";
 import { sanitizeInvalidTagName } from "./utils/sanitize-invalid-tag-name";
 import { stripSvgTextLineBreaks } from "./utils/strip-svg-text-line-breaks";
@@ -56,6 +58,10 @@ import {
   type MarkdownFlowLocale,
 } from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
+import {
+  createVideoMarkdownRunPlan,
+  projectVideoMarkdownRun,
+} from "./utils/video-markdown-run";
 
 const FIXED_TYPEWRITER_CHUNK_SIZE = 2;
 
@@ -328,17 +334,32 @@ const rehypePlugins: PluggableList = [
   rehypeKatex,
 ];
 
+const stripTypingPlaceholder: Plugin<[string], Root> =
+  (placeholder) => (tree) => {
+    visit(tree, "text", (node) => {
+      node.value = node.value.replaceAll(placeholder, "");
+    });
+  };
+
 export const MarkdownRenderer: React.FC<{
   content: string;
   components: CustomComponents;
   locale?: MarkdownFlowLocale;
-}> = ({ content: markdownContent, components, locale }) => {
+  typingPlaceholder?: string;
+}> = ({ content: markdownContent, components, locale, typingPlaceholder }) => {
   const texts = getContentRenderLocaleTexts(locale);
+  const renderRehypePlugins = useMemo<PluggableList>(
+    () =>
+      typingPlaceholder
+        ? [...rehypePlugins, [stripTypingPlaceholder, typingPlaceholder]]
+        : rehypePlugins,
+    [typingPlaceholder]
+  );
   return (
     <div className="markdown-renderer">
       <ReactMarkdown
         remarkPlugins={remarkPlugins}
-        rehypePlugins={rehypePlugins}
+        rehypePlugins={renderRehypePlugins}
         remarkRehypeOptions={{
           footnoteLabel: texts.footnoteLabel,
           footnoteBackLabel: (referenceIndex, rereferenceIndex) => {
@@ -858,6 +879,33 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       sourceSegments,
     ]
   );
+  const richRenderRuns = useMemo(() => {
+    const runs: Array<{
+      indices: number[];
+      sandbox: boolean;
+      plan?: ReturnType<typeof createVideoMarkdownRunPlan>;
+    }> = [];
+    sourceSegments.forEach((segment, index) => {
+      const previous = runs.at(-1);
+      if (segment.type !== "sandbox" && previous && !previous.sandbox) {
+        previous.indices.push(index);
+      } else {
+        runs.push({ indices: [index], sandbox: segment.type === "sandbox" });
+      }
+    });
+    for (const run of runs) {
+      if (
+        !run.sandbox &&
+        run.indices.some((index) => isImmediateSegment(sourceSegments[index]))
+      ) {
+        const plan = createVideoMarkdownRunPlan(
+          run.indices.map((index) => sourceSegments[index])
+        );
+        if (plan.hasContext) run.plan = plan;
+      }
+    }
+    return runs;
+  }, [sourceSegments]);
   const renderContent = hasRichSegments
     ? mergedRenderSegments.map((segment) => segment.value).join("")
     : isTypewriterEnabled
@@ -1118,36 +1166,61 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         dir={direction}
         lang={language}
       >
-        {mergedRenderSegments.map((segment, idx) =>
-          segment.type === "sandbox" ? (
-            <IframeSandbox
-              key={`sandbox-${idx}`}
-              hideFullScreen
-              type="sandbox"
-              content={segment.value}
-              className="content-render-iframe"
-              locale={locale}
-              dir={direction}
-              lang={language}
-              loadingText={sandboxLoadingText}
-              styleLoadingText={sandboxStyleLoadingText}
-              scriptLoadingText={sandboxScriptLoadingText}
-              disableLoadingOverlay={disableSandboxLoadingOverlay}
-              fullScreenButtonText={resolvedSandboxFullscreenButtonText}
-              exitFullScreenButtonText={resolvedSandboxExitFullscreenButtonText}
-              mode={sandboxMode}
-            />
-          ) : (
-            <React.Fragment key={`md-${idx}`}>
-              {segment.type === "markdown" && segment.pending
+        {richRenderRuns.map((run) => {
+          const idx = run.indices[0];
+          const segment = mergedRenderSegments[idx];
+          if (run.sandbox)
+            return (
+              <IframeSandbox
+                key={`sandbox-${idx}`}
+                hideFullScreen
+                type="sandbox"
+                content={segment.value}
+                className="content-render-iframe"
+                locale={locale}
+                dir={direction}
+                lang={language}
+                loadingText={sandboxLoadingText}
+                styleLoadingText={sandboxStyleLoadingText}
+                scriptLoadingText={sandboxScriptLoadingText}
+                disableLoadingOverlay={disableSandboxLoadingOverlay}
+                fullScreenButtonText={resolvedSandboxFullscreenButtonText}
+                exitFullScreenButtonText={
+                  resolvedSandboxExitFullscreenButtonText
+                }
+                mode={sandboxMode}
+              />
+            );
+          if (run.plan)
+            return (
+              <MarkdownComponentRuntimeContext.Provider
+                key={`md-${idx}`}
+                value={componentRuntimeValuesRef}
+              >
+                <MarkdownRenderer
+                  locale={locale}
+                  components={components}
+                  typingPlaceholder={run.plan.placeholder}
+                  content={projectVideoMarkdownRun(
+                    run.plan,
+                    run.indices.map((index) => mergedRenderSegments[index]),
+                    run.indices.map((index) => safeRichMarkdownContent[index])
+                  )}
+                />
+              </MarkdownComponentRuntimeContext.Provider>
+            );
+          return run.indices.map((index) => (
+            <React.Fragment key={`md-${index}`}>
+              {mergedRenderSegments[index].type === "markdown" &&
+              mergedRenderSegments[index].pending
                 ? null
                 : renderMarkdownSegments(
-                    safeRichMarkdownContent[idx],
-                    `md-${idx}`
+                    safeRichMarkdownContent[index],
+                    `md-${index}`
                   )}
             </React.Fragment>
-          )
-        )}
+          ));
+        })}
         {customBar}
       </div>
     );

@@ -12,6 +12,7 @@
   rendering.
 - Reuse bounded Markdown code ranges and skip unused parsing while typing.
 - Preserve legacy quoted HTML payloads and their Markdown diagram boundaries.
+- Preserve quoted and nested Markdown context around immediate native videos.
 
 ## 0.2.30 - 2026-10-09
 

@@ -60,6 +60,7 @@ Streaming detection recognizes the backend MarkdownFlow block roots, including
 text inside Markdown code, math, comments, image alt text, link destinations/titles,
 reference definitions, or another tag's attributes stays inert. Unfinished link metadata
 also stays literal while streaming; invalid links do not hide subsequent HTML.
+Quoted and nested list code fences remain code even directly after closed HTML.
 Detection and presentation are separate: `pre`, `details`, `summary`,
 `aside`, `blockquote`, `ul`, `ol`, `dl`, and `table` keep their native Markdown
 styles and language/direction attributes while bypassing typing. Widget roots

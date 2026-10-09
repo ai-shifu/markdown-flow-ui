@@ -2,6 +2,7 @@ import { unified } from "unified";
 import remarkParse from "remark-parse";
 import { visit } from "unist-util-visit";
 import { remarkPlugins } from "./markdown-plugins";
+import { findResumedProseFence } from "./resumed-prose-fence";
 import {
   findStreamingHtmlBlockEnd,
   isHtmlRawTextTag,
@@ -177,7 +178,7 @@ const isDefinitionLabelStart = (raw: string, start: number) => {
 const collectLexicalRanges = (
   raw: string,
   literals: readonly CodeRange[],
-  htmlBlocks: ReadonlySet<number>,
+  htmlBlocks: ReadonlyMap<number, number>,
   imageStarts: ReadonlySet<number>
 ) => {
   const comments: CodeRange[] = [];
@@ -186,6 +187,7 @@ const collectLexicalRanges = (
   let position = 0;
   let literalIndex = 0;
   let htmlBodyEnd = 0;
+  let htmlNodeEnd = 0;
   let imageLabelStart = -1;
   const pendingImages = (end: number) => {
     for (const label of labels)
@@ -208,6 +210,16 @@ const collectLexicalRanges = (
         labels.pop();
       position = literal.end;
       continue;
+    }
+    if (position >= htmlBodyEnd && position < htmlNodeEnd) {
+      const fence = findResumedProseFence(raw, position);
+      if (fence) {
+        // The original HTML node can outlive its closed root. A resumed code
+        // fence has its own lexical scope, including unfinished examples.
+        labels.length = 0;
+        position = fence.end;
+        continue;
+      }
     }
     if (raw[position] === "\\") {
       position += 2;
@@ -301,6 +313,7 @@ const collectLexicalRanges = (
         // Block HTML bodies retain HTML semantics. Resume Markdown only after
         // adjacent roots end, even if their MDAST HTML node extends farther.
         htmlBodyEnd = findStreamingHtmlBlockEnd(raw, position);
+        htmlNodeEnd = htmlBlocks.get(position)!;
         labels.length = 0;
       }
       position = markup.end;
@@ -374,7 +387,7 @@ const parseCodeRanges = (raw: string): MarkdownSourceAnalysis => {
   const literal: CodeRange[] = [];
   const metadata: MetadataRange[] = [];
   const html: CodeRange[] = [];
-  const htmlBlocks = new Set<number>();
+  const htmlBlocks = new Map<number, number>();
   const definitionEnds = new Map<string, number>();
   const imageReferences = new Map<MetadataRange, string>();
 
@@ -445,7 +458,7 @@ const parseCodeRanges = (raw: string): MarkdownSourceAnalysis => {
         parent.type !== "strong" &&
         parent.type !== "delete"
       )
-        htmlBlocks.add(start);
+        htmlBlocks.set(start, end);
       return;
     }
     literal.push(range);

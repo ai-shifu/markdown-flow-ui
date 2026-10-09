@@ -169,7 +169,7 @@ export const createVideoMarkdownRunPlan = (
     fullSource += segment.value;
   }
   const received = analysis ?? getMarkdownSourceAnalysis(fullSource);
-  const markdownSource = normalizeInlineHtml(fullSource, received.inline);
+  const markdownSource = normalizeInlineHtml(fullSource, received.markdown);
   const rawEnds = normalizedRawEnds(fullSource, markdownSource);
   const parsed = rawEnds ? getMarkdownSourceAnalysis(markdownSource) : received;
   const media = segments.flatMap((segment, index) =>

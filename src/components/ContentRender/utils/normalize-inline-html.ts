@@ -1,15 +1,15 @@
-import { getInlineCodeRanges } from "./inline-code-ranges";
+import { getMarkdownCodeRanges } from "./inline-code-ranges";
 
 // Normalize inline HTML indentation to avoid Markdown treating it as code block
 export const normalizeInlineHtml = (
   markdown: string,
-  inlineCodeRanges: readonly Readonly<{
+  codeRanges: readonly Readonly<{
     start: number;
     end: number;
-  }>[] = getInlineCodeRanges(markdown)
+  }>[] = getMarkdownCodeRanges(markdown)
 ) => {
   const lines = markdown.split(/\r?\n/);
-  let inlineCodeIndex = 0;
+  let codeIndex = 0;
   let nextLineOffset = 0;
   let inFence = false;
 
@@ -27,13 +27,21 @@ export const normalizeInlineHtml = (
     const trimmedStart = line.trimStart();
     const contentOffset = lineOffset + line.length - trimmedStart.length;
     while (
-      inlineCodeIndex < inlineCodeRanges.length &&
-      inlineCodeRanges[inlineCodeIndex].end <= contentOffset
+      codeIndex < codeRanges.length &&
+      codeRanges[codeIndex].end <= contentOffset
     ) {
-      inlineCodeIndex += 1;
+      codeIndex += 1;
     }
-    const inlineCodeRange = inlineCodeRanges[inlineCodeIndex];
-    if (inlineCodeRange && inlineCodeRange.start <= contentOffset) return line;
+    const codeRange = codeRanges[codeIndex];
+    // Preserve inline and fenced block code, including container indentation.
+    // Indented HTML alone still uses the existing HTML normalization behavior.
+    const delimiter = codeRange && markdown[codeRange.start];
+    if (
+      codeRange &&
+      codeRange.start <= contentOffset &&
+      (delimiter === "`" || delimiter === "~")
+    )
+      return line;
 
     if (trimmedStart.startsWith("```")) {
       inFence = !inFence;

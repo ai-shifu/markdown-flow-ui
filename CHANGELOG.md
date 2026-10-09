@@ -28,6 +28,8 @@
   titles, without hiding real markup after invalid links.
 - Keep image alt text literal during typing and streaming, including reference
   images whose definitions arrive later, while preserving final alt values.
+- Preserve quoted and nested list code fences immediately after closed HTML
+  blocks, including unfinished fences and container exits.
 - Reveal thematic breaks and line breaks at their prose typing boundaries.
 - Scan received snapshots once without recursively parsing Markdown suffixes.
 - Preserve the complete received Markdown tree while typing around native

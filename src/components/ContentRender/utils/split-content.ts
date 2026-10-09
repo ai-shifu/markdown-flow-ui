@@ -3,6 +3,7 @@ import {
   getMarkdownSourceAnalysis,
   type MarkdownSourceAnalysis,
 } from "./inline-code-ranges";
+import { findResumedProseFence } from "./resumed-prose-fence";
 import {
   findStreamingHtmlBlockEnd,
   findStreamingHtmlElementEnd,
@@ -521,25 +522,6 @@ const containsWidgetResources = (
   return false;
 };
 
-const findResumedProseFence = (source: string, start: number) => {
-  if (start > 0 && source[start - 1] !== "\n") return;
-  const opening = /^ {0,3}(`{3,}|~{3,})([^\r\n]*)(?:\r?\n|$)/.exec(
-    source.slice(start)
-  );
-  if (!opening || (opening[1][0] === "`" && opening[2].includes("`"))) return;
-  const closing = new RegExp(
-    `^ {0,3}${opening[1][0]}{${opening[1].length},}[ \\t]*\\r?$`,
-    "gm"
-  );
-  closing.lastIndex = start + opening[0].length;
-  const end = closing.exec(source);
-  return {
-    start,
-    end: end ? end.index + end[0].length : source.length,
-    type: "markdown" as const,
-  };
-};
-
 // A Markdown HTML node can extend past our closed root until the next blank
 // line. Only that resumed prose needs a small lexical fallback for literals;
 // code/math inside the actual HTML element remains HTML.
@@ -723,6 +705,9 @@ const splitStreamingContent = (
       if (fence) {
         matches.push(fence);
         actualLiterals.push(fence);
+        // The source HTML AST can misread code-internal link/image syntax as
+        // pending metadata that extends past this fence into later prose.
+        while (literals[literalIndex]?.start < fence.end) literalIndex += 1;
         position = fence.end;
         continue;
       }

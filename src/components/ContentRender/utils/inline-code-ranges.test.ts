@@ -212,6 +212,36 @@ describe("Markdown destination and title ranges", () => {
 
 describe("Markdown code source ranges", () => {
   it.each([
+    "<!-- example",
+    '[Read](/lesson "<figure>example',
+    "![<figure>example",
+  ])("does not collect lexical state inside a resumed fence: %s", (literal) => {
+    for (const root of ["div", "aside"]) {
+      const raw = [
+        `<${root}>Card</${root}>`,
+        "> ```html",
+        `> ${literal}`,
+        "> ```",
+        '<figure>Actual</figure><iframe data-tag="video"></iframe>',
+      ].join("\n");
+      const analysis = getMarkdownSourceAnalysis(raw);
+      expect(analysis.metadata).toEqual([]);
+      expect(analysis.comments).toEqual([]);
+    }
+  });
+
+  it("retains HTML comment semantics inside an actual HTML body", () => {
+    const comment = "<!-- Actual -->";
+    const raw = `<aside>\n> \`\`\`html\n> ${comment}\n> \`\`\`\n</aside>`;
+    expect(getMarkdownSourceAnalysis(raw).comments).toEqual([
+      {
+        start: raw.indexOf(comment),
+        end: raw.indexOf(comment) + comment.length,
+      },
+    ]);
+  });
+
+  it.each([
     '$<iframe data-tag="video"></iframe>$',
     '$$\n<iframe data-tag="video"></iframe>\n$$',
   ])(

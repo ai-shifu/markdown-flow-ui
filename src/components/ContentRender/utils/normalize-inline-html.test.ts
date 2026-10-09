@@ -31,6 +31,25 @@ describe("normalizeInlineHtml inline code boundaries", () => {
   });
 
   it.each([
+    { opening: "- ", continuation: "  " },
+    { opening: "12. ", continuation: "    " },
+    { opening: "- - ", continuation: "    " },
+  ])(
+    "preserves HTML indentation in container fences: $opening",
+    (container) => {
+      for (const marker of ["```", "~~~"]) {
+        for (const newline of ["\n", "\r\n"]) {
+          const code = `${container.opening}${marker}html${newline}${container.continuation}<figure>Example</figure>${newline}${container.continuation}${marker}`;
+          const raw = `${code}${newline}${newline}    <div>Outside</div>`;
+          expect(normalizeInlineHtml(raw)).toBe(
+            `${code.replace(/\r\n/g, "\n")}\n\n<div>Outside</div>`
+          );
+        }
+      }
+    }
+  );
+
+  it.each([
     ["    <div>Outside</div>", "<div>Outside</div>"],
     [
       "Use `value\n    <style>Outside</style>",

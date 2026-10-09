@@ -2,6 +2,7 @@
 import React from "react";
 import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { revealNativeVideo } from "../../../tests/helpers/reveal-native-video";
 import ContentRender from "./ContentRender";
 
 vi.mock("mermaid", () => ({ default: {} }));
@@ -66,23 +67,7 @@ describe.each([false, true])(
           />
         );
         const { container, rerender } = render(fixture(initial));
-        if (enableTypewriter) {
-          expect(
-            container.querySelector('iframe[data-tag="video"]')
-          ).toBeNull();
-          for (
-            let tick = 0;
-            !container.querySelector('iframe[data-tag="video"]') &&
-            tick < initial.length + 10;
-            tick += 1
-          ) {
-            act(() => vi.advanceTimersByTime(30));
-          }
-        }
-        const video = container.querySelector<HTMLIFrameElement>(
-          'iframe[data-tag="video"]'
-        );
-        expect(video).not.toBeNull();
+        const video = revealNativeVideo(container, initial, enableTypewriter);
         const parent = video!.closest(selector);
         expect(parent).not.toBeNull();
         expect(container.querySelectorAll(selector)).toHaveLength(1);

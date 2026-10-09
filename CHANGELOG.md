@@ -14,6 +14,8 @@
 - Preserve legacy quoted HTML payloads and their Markdown diagram boundaries.
 - Preserve quoted and nested Markdown context around immediate native videos.
 - Preserve headings, emphasis, and links around immediate native videos.
+- Mount received videos inside GFM tables immediately while preserving table
+  structure and inert code examples.
 
 ## 0.2.30 - 2026-10-09
 

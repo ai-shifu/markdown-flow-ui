@@ -412,6 +412,29 @@ const extractTableBlock = (
   return { start: tableStart, block, end: tableStart + block.length };
 };
 
+const tableContainsStreamingVideo = (
+  raw: string,
+  table: { start: number; end: number },
+  codeRanges: readonly FenceRange[]
+) => {
+  const iframePattern = /<iframe[\s/>]/gi;
+  iframePattern.lastIndex = table.start;
+  let match: RegExpExecArray | null;
+  while (
+    (match = iframePattern.exec(raw)) !== null &&
+    match.index < table.end
+  ) {
+    if (
+      !isEscaped(raw, match.index) &&
+      !isIndexInRanges(match.index, codeRanges) &&
+      findStreamingVideoIframeMatch(raw, match.index)
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
+
 // Split incoming markdown content into markdown and sandbox HTML segments
 export const splitContentSegments = (
   raw: string,
@@ -547,7 +570,10 @@ export const splitContentSegments = (
   }
 
   const tableBlock = extractTableBlock(source, streaming ? codeRanges : []);
-  if (tableBlock) {
+  if (
+    tableBlock &&
+    !(streaming && tableContainsStreamingVideo(source, tableBlock, codeRanges))
+  ) {
     const segments: RenderSegment[] = [];
     const before = source.slice(0, tableBlock.start);
     if (keepText && hasText(before)) {

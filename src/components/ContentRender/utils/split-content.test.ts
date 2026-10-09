@@ -110,6 +110,71 @@ describe("splitContentSegments", () => {
     expect(segments.map((segment) => segment.value).join("")).toBe(raw);
   });
 
+  it.each([
+    "Lesson",
+    '`<iframe data-tag="video"></iframe>`',
+    '<iframe data-tag="audio"></iframe>',
+  ])("keeps an actual table video immediate after the cell %s", (firstCell) => {
+    const video = '<iframe data-tag="video" src="/lesson"></iframe>';
+    const raw = `Intro\n\n| Lesson | Media |\n| --- | --- |\n| ${firstCell} | ${video} |\n\nOutro`;
+    const segments = splitContentSegments(raw, true, true);
+
+    expect(segments).toContainEqual({
+      type: "markdown",
+      value: video,
+      immediate: true,
+    });
+    expect(segments.map((segment) => segment.value).join("")).toBe(raw);
+  });
+
+  it("keeps incomplete table video headers pending without losing the table source", () => {
+    const prefix = "| Lesson | Media |\n| --- | --- |\n| Lesson | ";
+    const opening = '<iframe title="a > b" data-tag="video" src="/lesson">';
+    for (let length = "<iframe ".length; length < opening.length; length += 1) {
+      const received = opening.slice(0, length);
+      const raw = `${prefix}${received}`;
+      const segments = splitContentSegments(raw, true, true);
+      expect(segments).toContainEqual({
+        type: "markdown",
+        value: received,
+        immediate: true,
+        pending: true,
+      });
+      expect(segments.map((segment) => segment.value).join("")).toBe(raw);
+    }
+
+    const raw = `${prefix}${opening}</iframe> |`;
+    expect(splitContentSegments(raw, true, true)).toContainEqual({
+      type: "markdown",
+      value: `${opening}</iframe>`,
+      immediate: true,
+    });
+    expect(
+      splitContentSegments(raw, true, true)
+        .map((segment) => segment.value)
+        .join("")
+    ).toBe(raw);
+  });
+
+  it.each([
+    '`<iframe data-tag="video"></iframe>`',
+    '``<iframe data-tag="video"></iframe>``',
+    '\\<iframe data-tag="video"></iframe>',
+  ])("keeps a table video example inert: %s", (example) => {
+    const raw = `| Example |\n| --- |\n| ${example} |`;
+    expect(splitContentSegments(raw, true, true)).toEqual([
+      { type: "markdown", value: raw },
+    ]);
+  });
+
+  it("preserves the legacy non-streaming table containing a native video", () => {
+    const raw =
+      '| Lesson | Media |\n| --- | --- |\n| Lesson | <iframe data-tag="video"></iframe> |';
+    expect(splitContentSegments(raw, true)).toEqual([
+      { type: "markdown", value: raw },
+    ]);
+  });
+
   it.each(["<div>Card</div>", '<iframe src="/generic"></iframe>'])(
     "keeps a video after %s on its native media path",
     (before) => {

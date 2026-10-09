@@ -712,4 +712,35 @@ describe("ContentRender progressive HTML with typewriter", () => {
     expect(getVisibleText(container)).toBe("");
     expect(onTypeFinished).toHaveBeenCalledTimes(2);
   });
+  it.each([
+    [true, "\n"],
+    [false, "\n"],
+    [true, "\r\n"],
+    [false, "\r\n"],
+  ])(
+    "preserves indented inline-code HTML with typing %s and newline %j",
+    (enableTypewriter, newline) => {
+      const html = "<style data-normalizer-style>body { color: red; }</style>";
+      const content = `Use \`value${newline}    ${html}${newline}\``;
+      const onTypeFinished = vi.fn();
+      const { container } = render(
+        <ContentRender
+          {...TYPEWRITER_PROPS}
+          enableTypewriter={enableTypewriter}
+          content={content}
+          onTypeFinished={onTypeFinished}
+        />
+      );
+
+      for (let tick = 0; tick < 100; tick += 1) {
+        advanceTime(30);
+        expect(
+          container.querySelector("style[data-normalizer-style]")
+        ).toBeNull();
+        expect(getSandboxes(container)).toHaveLength(0);
+      }
+      expect(container.querySelector("code")?.textContent).toContain(html);
+      expect(onTypeFinished).toHaveBeenCalledTimes(enableTypewriter ? 1 : 0);
+    }
+  );
 });

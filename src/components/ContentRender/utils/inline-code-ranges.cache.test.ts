@@ -198,4 +198,36 @@ describe("bounded Markdown code range cache", () => {
     expect(parseCalls).toHaveBeenCalledTimes(1);
     expect(parseCalls).toHaveBeenCalledWith(raw);
   });
+
+  it.each([1, 100])(
+    "shares one source parse across %s link metadata and label video groups",
+    async (count) => {
+      const { getMarkdownSourceAnalysis } = await loadRanges();
+      const { splitContentSegments } = await import("./split-content");
+      const video = '<iframe data-tag="video"></iframe>';
+      const raw = Array.from({ length: count }, (_value, index) =>
+        [
+          `[Watch ${video}](https://example.com/${index} "<figure>Example</figure>")`,
+          `![a [nested] label](url-${index} "<details>Example</details>")`,
+          `[ref-${index}]: /lesson "<!-- <canvas>Example</canvas>"`,
+          '[Unfinished](url "<figure>Pending</figure>',
+          `[unfinished-${index}]: url "<canvas>Pending</canvas>`,
+          "<figure>Actual</figure>",
+        ].join("\n\n")
+      ).join("\n\n");
+      const analysis = getMarkdownSourceAnalysis(raw);
+      const segments = splitContentSegments(raw, true, true, analysis);
+      expect(
+        segments.filter((segment) => segment.type === "sandbox")
+      ).toHaveLength(count);
+      expect(
+        segments.filter(
+          (segment) => segment.type === "markdown" && segment.immediate
+        )
+      ).toHaveLength(count);
+      expect(segments.map((segment) => segment.value).join("")).toBe(raw);
+      expect(parseCalls).toHaveBeenCalledTimes(1);
+      expect(parseCalls).toHaveBeenCalledWith(raw);
+    }
+  );
 });

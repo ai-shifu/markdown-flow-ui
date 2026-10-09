@@ -57,8 +57,10 @@ received.
 
 Streaming detection recognizes the backend MarkdownFlow block roots, including
 `figure`, `table`, `canvas`, `video`, `header`, `nav`, and `details`. HTML-looking
-text inside Markdown code, math, comments, or another tag's attributes stays
-inert. Detection and presentation are separate: `pre`, `details`, `summary`,
+text inside Markdown code, math, comments, link destinations/titles, reference
+definitions, or another tag's attributes stays inert. Unfinished link metadata
+also stays literal while streaming; invalid links do not hide subsequent HTML.
+Detection and presentation are separate: `pre`, `details`, `summary`,
 `aside`, `blockquote`, `ul`, `ol`, `dl`, and `table` keep their native Markdown
 styles and language/direction attributes while bypassing typing. Widget roots
 retain the sandbox; native presentation blocks with embedded script, style, or

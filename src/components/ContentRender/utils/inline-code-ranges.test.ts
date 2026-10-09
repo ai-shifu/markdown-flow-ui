@@ -58,6 +58,117 @@ describe("Markdown source comment ranges", () => {
   );
 });
 
+describe("Markdown destination and title ranges", () => {
+  it.each([
+    '[label](https://example.com "<figure></figure>")',
+    '![a [nested] label](https://example.com "<figure></figure>")',
+    '![escaped \\] label](https://example.com "<figure></figure>")',
+  ])("protects the tail after the visible label: %s", (raw) => {
+    const start = raw.indexOf("](") + 1;
+    const analysis = getMarkdownSourceAnalysis(raw);
+    expect(analysis.metadata).toEqual([{ start, end: raw.length }]);
+    expect(analysis.literal).toEqual(analysis.metadata);
+    expect(Reflect.set(analysis.metadata[0], "end", 0)).toBe(false);
+    expect(Reflect.set(analysis.metadata, "0", {})).toBe(false);
+  });
+
+  it.each([
+    "<https://example.com/figure>",
+    "https://example.com/figure",
+    '[ref]: https://example.com "<figure></figure>"',
+  ])("protects complete destinations or definitions: %s", (raw) => {
+    expect(getMarkdownSourceAnalysis(raw).metadata).toEqual([
+      { start: 0, end: raw.length },
+    ]);
+  });
+
+  it("preserves child code offsets and real label HTML", () => {
+    const raw = '[`code` <iframe data-tag="video"></iframe>](url "<figure>")';
+    const analysis = getMarkdownSourceAnalysis(raw);
+    expect(analysis.inline).toEqual([{ start: 1, end: 7 }]);
+    expect(analysis.literal).toEqual([
+      { start: 1, end: 7 },
+      { start: raw.indexOf("](") + 1, end: raw.length },
+    ]);
+    expect(
+      analysis.html.map((range) => raw.slice(range.start, range.end))
+    ).toEqual(['<iframe data-tag="video">', "</iframe>"]);
+  });
+
+  it("does not treat title comment examples as source comments", () => {
+    const link = '[`code`](url "<!-- <figure></figure>")';
+    const comment = "<!-- actual -->";
+    const raw = `${link}\n\n${comment}`;
+    expect(getMarkdownSourceAnalysis(raw).comments).toEqual([
+      { start: link.length + 2, end: raw.length },
+    ]);
+  });
+
+  it("sorts image-in-link metadata before the parent link tail", () => {
+    const raw = '[![alt](image "<figure>")](lesson "<canvas>")';
+    const metadata = getMarkdownSourceAnalysis(raw).metadata;
+    expect(metadata.map((range) => raw.slice(range.start, range.end))).toEqual([
+      '(image "<figure>")',
+      '(lesson "<canvas>")',
+    ]);
+    expect(metadata[0].end).toBeLessThan(metadata[1].start);
+    expect(metadata.some((range) => range.pending)).toBe(false);
+  });
+
+  it.each([
+    '[docs](url "<figure></figure>',
+    '[ref]: https://example.com "<figure></figure>',
+    '[ref]: https://example.com\n  "<figure></figure>',
+  ])("marks received, unresolved metadata as pending: %s", (raw) => {
+    const metadata = getMarkdownSourceAnalysis(raw).metadata;
+    expect(metadata).toHaveLength(1);
+    expect(metadata[0].pending).toBe(true);
+    expect(metadata[0].end).toBe(raw.length);
+    expect(metadata[0].start).toBeLessThan(raw.indexOf("<figure>"));
+    expect(Reflect.set(metadata[0], "pending", false)).toBe(false);
+  });
+
+  it("resumes metadata protection only after the actual HTML root closes", () => {
+    const raw =
+      '<aside>[docs](url "<figure>Actual</figure><!-- actual --></aside>';
+    const analysis = getMarkdownSourceAnalysis(raw);
+    expect(analysis.metadata).toEqual([]);
+    expect(analysis.comments).toEqual([
+      { start: raw.indexOf("<!--"), end: raw.indexOf("-->") + 3 },
+    ]);
+    const prose = ' [docs](url "<figure>Example</figure>")';
+    const resumed = `${raw}${prose}`;
+    const metadata = getMarkdownSourceAnalysis(resumed).metadata;
+    expect(metadata).toEqual([
+      { start: resumed.indexOf("](", raw.length) + 1, end: resumed.length },
+    ]);
+  });
+
+  it.each(["", "\n\n"])(
+    "preserves real HTML bodies across adjacent roots separated by %j",
+    (separator) => {
+      const first = "<aside>First</aside>";
+      const second =
+        '<aside>[Read](/lesson "<iframe data-tag="video"></iframe>';
+      for (const ending of ["", "</aside>"]) {
+        const raw = `${first}${separator}${second}${ending}`;
+        expect(getMarkdownSourceAnalysis(raw).metadata).toEqual([]);
+      }
+    }
+  );
+
+  it.each([
+    '[Read](/lesson broken <iframe data-tag="video"></iframe>',
+    "[Read](/lesson broken <figure>Actual</figure>",
+    '[Read](/lesson "complete title" broken <figure>Actual</figure>',
+  ])(
+    "does not guess metadata after an invalid link destination tail: %s",
+    (raw) => {
+      expect(getMarkdownSourceAnalysis(raw).metadata).toEqual([]);
+    }
+  );
+});
+
 describe("Markdown code source ranges", () => {
   it.each([
     '$<iframe data-tag="video"></iframe>$',

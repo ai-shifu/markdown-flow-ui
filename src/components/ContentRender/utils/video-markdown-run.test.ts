@@ -93,6 +93,86 @@ describe("received video Markdown tree projection", () => {
     expect(Object.isFrozen(plan.sourceTree)).toBe(true);
   });
 
+  it.each(["\n", "\n\n", "\r\n\r\n"])(
+    "keeps EOF pending title HTML literal without hiding the real video: %j",
+    (newline) => {
+      const after = `${newline}[Read](/lesson "<iframe data-tag='video'></iframe>`;
+      const segments = source("", after);
+      const plan = prepare(segments);
+      expect(nodes(plan.tree!, "iframe")).toHaveLength(1);
+      for (let length = 0; length <= after.length; length += 1) {
+        const rendered = hidden(segments);
+        rendered[2] = { type: "text", value: after.slice(0, length) };
+        const projected = projectVideoMarkdownRun(plan, rendered);
+        expect(nodes(projected, "iframe")).toHaveLength(1);
+        expect(shape(projected)).toEqual(shape(plan.tree!));
+      }
+      expect(text(projectVideoMarkdownRun(plan, segments))).toContain(
+        "<iframe data-tag='video'></iframe>"
+      );
+      expect(Object.isFrozen(plan.sourceTree)).toBe(true);
+    }
+  );
+
+  it("keeps pending title entities and UTF-16 units on the authored CRLF budget", () => {
+    const after = `\r\n\r\n[Read](/lesson "<iframe data-tag='video' title='甲&amp;😀\\*'></iframe>`;
+    const segments = source("", after);
+    const plan = prepare(segments);
+    const glyphs = [
+      { value: "甲", end: after.indexOf("甲") + 1 },
+      { value: "&", end: after.indexOf("&amp;") + 5 },
+      { value: "\ud83d", end: after.indexOf("😀") + 1 },
+      { value: "\ude00", end: after.indexOf("😀") + 2 },
+      { value: "*", end: after.indexOf("\\*") + 2 },
+    ];
+    for (let length = 0; length <= after.length; length += 1) {
+      const rendered = hidden(segments);
+      rendered[2] = { type: "text", value: after.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      expect(nodes(projected, "iframe")).toHaveLength(1);
+      expect(
+        text(projected)
+          .split("")
+          .filter((character) => "甲&😀*".includes(character))
+          .join("")
+      ).toBe(
+        glyphs
+          .filter(({ end }) => end <= length)
+          .map(({ value }) => value)
+          .join("")
+      );
+    }
+  });
+
+  it("uses Markdown escape mapping for normalized pending HTML text", () => {
+    const after = `\r\n\r\n[reference]: /lesson "\r\n<iframe data-tag='video' title='甲\\&amp;😀\\*'>`;
+    const segments = source("", after);
+    const plan = prepare(segments);
+    const entity = after.indexOf("\\&amp;");
+    const glyphs = [
+      { value: "甲", end: after.indexOf("甲") + 1 },
+      ..."&amp;".split("").map((value, index) => ({
+        value,
+        end: entity + index + 2,
+      })),
+      { value: "\ud83d", end: after.indexOf("😀") + 1 },
+      { value: "\ude00", end: after.indexOf("😀") + 2 },
+      { value: "*", end: after.indexOf("\\*") + 2 },
+    ];
+    for (let length = 0; length <= after.length; length += 1) {
+      const rendered = hidden(segments);
+      rendered[2] = { type: "text", value: after.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      const title = text(projected).split("title='")[1]?.split("'")[0] ?? "";
+      expect(title).toBe(
+        glyphs
+          .filter(({ end }) => end <= length)
+          .map(({ value }) => value)
+          .join("")
+      );
+    }
+  });
+
   it.each([
     ["a thematic break", "\n\n---\n\nLater", "hr", 5],
     ["a generated soft break", "\n\nFirst\nLater", "br", 8],

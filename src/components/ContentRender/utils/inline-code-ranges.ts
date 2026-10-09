@@ -2,7 +2,11 @@ import { unified } from "unified";
 import remarkParse from "remark-parse";
 import { visit } from "unist-util-visit";
 import { remarkPlugins } from "./markdown-plugins";
-import { isHtmlRawTextTag, readHtmlMarkup } from "./html-block-end";
+import {
+  findStreamingHtmlBlockEnd,
+  isHtmlRawTextTag,
+  readHtmlMarkup,
+} from "./html-block-end";
 
 const parser = unified().use(remarkParse).use(remarkPlugins);
 
@@ -10,6 +14,7 @@ const MAX_CACHE_ENTRIES = 16;
 const MAX_CACHED_SOURCE_CHARACTERS = 256 * 1024;
 
 type CodeRange = Readonly<{ start: number; end: number }>;
+type MetadataRange = CodeRange & Readonly<{ pending?: true }>;
 type Immutable<T> = T extends object
   ? { readonly [Key in keyof T]: Immutable<T[Key]> }
   : T;
@@ -19,6 +24,7 @@ export type MarkdownSourceAnalysis = {
   inline: readonly CodeRange[];
   markdown: readonly CodeRange[];
   literal: readonly CodeRange[];
+  metadata: readonly MetadataRange[];
   comments: readonly CodeRange[];
   fences: readonly CodeRange[];
   html: readonly CodeRange[];
@@ -36,16 +42,178 @@ const freezeTree = <T>(value: T): Immutable<T> => {
   return value as Immutable<T>;
 };
 
-const collectCommentRanges = (raw: string, literals: readonly CodeRange[]) => {
+// An unfinished link has no MDAST link node yet. Its received destination/title
+// stays inert until Markdown can resolve the construct or a blank line ends it.
+const findPendingLinkMetadataEnd = (raw: string, start: number) => {
+  let depth = 0;
+  let quote = "";
+  let angle = false;
+  let hasDestination = false;
+  let stage: "destination" | "after-angle" | "title" | "close" = "destination";
+  let newline = -1;
+  for (let position = start + 1; position < raw.length; position += 1) {
+    const character = raw[position];
+    const whitespace = /[ \t\r\n]/.test(character);
+    if (character === "\n") {
+      if (newline >= 0) return { end: newline, pending: true as const };
+      newline = position;
+    } else if (!/[ \t\r]/.test(character)) {
+      newline = -1;
+    }
+    if (quote) {
+      if (character === "\\") position += 1;
+      else if (character === quote) {
+        quote = "";
+        stage = "close";
+      }
+    } else if (stage === "destination") {
+      if (character === "\\") {
+        hasDestination = true;
+        position += 1;
+      } else if (angle) {
+        if (character === ">") {
+          angle = false;
+          stage = "after-angle";
+        } else if (character === "<" || /[\r\n]/.test(character)) return;
+      } else if (whitespace) {
+        if (depth) return;
+        if (hasDestination) stage = "title";
+      } else if (!hasDestination && character === "<") {
+        angle = true;
+        hasDestination = true;
+      } else if (character === ")" && depth === 0) return { end: position + 1 };
+      else {
+        if (character === "(") depth += 1;
+        else if (character === ")") depth -= 1;
+        hasDestination = true;
+      }
+    } else if (whitespace) {
+      if (stage === "after-angle") stage = "title";
+    } else if (character === ")") {
+      return { end: position + 1 };
+    } else if (
+      stage === "title" &&
+      (character === '"' || character === "'" || character === "(")
+    ) {
+      quote = character === "(" ? ")" : character;
+    } else {
+      // Once a destination ends, only a title opener or the link closer can
+      // follow. Other prose makes the construct invalid, so keep scanning HTML.
+      return;
+    }
+  }
+  return { end: raw.length, pending: true as const };
+};
+
+const findPendingDefinitionTitle = (
+  raw: string,
+  start: number,
+  hasDestination: boolean
+): MetadataRange | undefined => {
+  let position = start;
+  if (!hasDestination) {
+    while (raw[position] === " " || raw[position] === "\t") position += 1;
+    if (raw[position] === "<") {
+      position += 1;
+      while (position < raw.length && raw[position] !== ">") {
+        if (raw[position] === "<" || /[\r\n]/.test(raw[position])) return;
+        position += raw[position] === "\\" ? 2 : 1;
+      }
+      if (raw[position] !== ">") return;
+      position += 1;
+    } else {
+      const destinationStart = position;
+      while (position < raw.length && !/\s/.test(raw[position])) {
+        if (raw[position] === "<" || raw[position] === ">") return;
+        position += raw[position] === "\\" ? 2 : 1;
+      }
+      if (position === destinationStart) return;
+    }
+  }
+  let newlines = 0;
+  const whitespaceStart = position;
+  while (position < raw.length && /\s/.test(raw[position])) {
+    if (raw[position] === "\n" && ++newlines > 1) return;
+    position += 1;
+  }
+  const opener = raw[position];
+  if (
+    position === whitespaceStart ||
+    (opener !== '"' && opener !== "'" && opener !== "(")
+  )
+    return;
+  const titleStart = position;
+  const closer = opener === "(" ? ")" : opener;
+  let newline = -1;
+  for (position += 1; position < raw.length; position += 1) {
+    const character = raw[position];
+    if (character === "\n") {
+      if (newline >= 0)
+        return { start: titleStart, end: newline, pending: true };
+      newline = position;
+    } else if (!/[ \t\r]/.test(character)) {
+      newline = -1;
+    }
+    if (character === "\\") position += 1;
+    else if (character === closer) return;
+  }
+  return { start: titleStart, end: raw.length, pending: true };
+};
+
+const isDefinitionLabelStart = (raw: string, start: number) => {
+  let position = start - 1;
+  while (position >= 0 && raw[position] === " " && start - position <= 3)
+    position -= 1;
+  return position < 0 || raw[position] === "\n";
+};
+
+const collectLexicalRanges = (
+  raw: string,
+  literals: readonly CodeRange[],
+  htmlBlocks: ReadonlySet<number>
+) => {
   const comments: CodeRange[] = [];
+  const metadata: MetadataRange[] = [];
+  const labels: number[] = [];
   let position = 0;
   let literalIndex = 0;
+  let htmlBodyEnd = 0;
   while (position < raw.length) {
     while (literals[literalIndex]?.end <= position) literalIndex += 1;
     const literal = literals[literalIndex];
     if (literal && literal.start <= position) {
       position = literal.end;
       continue;
+    }
+    if (raw[position] === "\\") {
+      position += 2;
+      continue;
+    }
+    if (position >= htmlBodyEnd && raw[position] === "[") labels.push(position);
+    else if (position >= htmlBodyEnd && raw[position] === "]") {
+      const label = labels.pop();
+      if (label !== undefined) {
+        if (raw[position + 1] === "(" && literal?.start !== position + 1) {
+          const tail = findPendingLinkMetadataEnd(raw, position + 1);
+          if (tail) {
+            metadata.push({ start: position + 1, ...tail });
+            position = tail.end;
+            continue;
+          }
+        }
+        if (raw[position + 1] === ":" && isDefinitionLabelStart(raw, label)) {
+          const title = findPendingDefinitionTitle(raw, position + 2, false);
+          if (title) {
+            metadata.push({ ...title, start: position + 1 });
+            position = title.end;
+            continue;
+          }
+        }
+      }
+    } else if (raw[position] === "\n") {
+      let previous = position - 1;
+      while (/[ \t\r]/.test(raw[previous] ?? "")) previous -= 1;
+      if (raw[previous] === "\n") labels.length = 0;
     }
     if (raw[position] !== "<") {
       position += 1;
@@ -57,6 +225,16 @@ const collectCommentRanges = (raw: string, literals: readonly CodeRange[]) => {
       comments.push(Object.freeze({ start: position, end }));
       position = end;
     } else if (markup.kind === "tag") {
+      if (
+        !markup.closing &&
+        position >= htmlBodyEnd &&
+        htmlBlocks.has(position)
+      ) {
+        // Block HTML bodies retain HTML semantics. Resume Markdown only after
+        // adjacent roots end, even if their MDAST HTML node extends farther.
+        htmlBodyEnd = findStreamingHtmlBlockEnd(raw, position);
+        labels.length = 0;
+      }
       position = markup.end;
       if (!markup.closing && isHtmlRawTextTag(markup.name)) {
         const close = new RegExp(`</${markup.name}(?=[\\s/>])`, "gi");
@@ -71,7 +249,35 @@ const collectCommentRanges = (raw: string, literals: readonly CodeRange[]) => {
       position += 1;
     }
   }
-  return comments;
+  return { comments, metadata };
+};
+
+const mergeMetadataRanges = (ranges: MetadataRange[]) => {
+  ranges.sort((left, right) => left.start - right.start);
+  const merged: MetadataRange[] = [];
+  for (const range of ranges) {
+    const previous = merged[merged.length - 1];
+    if (previous && range.start < previous.end) {
+      merged[merged.length - 1] = Object.freeze({
+        start: previous.start,
+        end: Math.max(previous.end, range.end),
+        ...(previous.pending || range.pending
+          ? { pending: true as const }
+          : {}),
+      });
+    } else merged.push(Object.freeze(range));
+  }
+  return merged;
+};
+
+const findImageLabelEnd = (raw: string, start: number, end: number) => {
+  let depth = 1;
+  for (let position = start + 2; position < end; position += 1) {
+    if (raw[position] === "\\") position += 1;
+    else if (raw[position] === "[") depth += 1;
+    else if (raw[position] === "]" && --depth === 0) return position + 1;
+  }
+  return end;
 };
 
 const parseCodeRanges = (raw: string): MarkdownSourceAnalysis => {
@@ -79,10 +285,47 @@ const parseCodeRanges = (raw: string): MarkdownSourceAnalysis => {
   const inline: CodeRange[] = [];
   const markdown: CodeRange[] = [];
   const literal: CodeRange[] = [];
+  const metadata: MetadataRange[] = [];
   const html: CodeRange[] = [];
+  const htmlBlocks = new Set<number>();
 
   // Use the renderer's Markdown grammar, including HTML paragraph boundaries.
-  visit(tree, (node) => {
+  visit(tree, (node, _index, parent) => {
+    const start = node.position?.start.offset;
+    const end = node.position?.end.offset;
+    if (start === undefined || end === undefined) return;
+    if (
+      node.type === "definition" ||
+      node.type === "link" ||
+      node.type === "linkReference" ||
+      node.type === "image" ||
+      node.type === "imageReference"
+    ) {
+      let metadataStart = start;
+      if (node.type === "image" || node.type === "imageReference") {
+        metadataStart = findImageLabelEnd(raw, start, end);
+      } else if (node.type !== "definition" && raw[start] === "[") {
+        // Preserve label HTML, including real videos. Only destinations,
+        // titles and reference identifiers after the label are inert.
+        const labelEnd =
+          node.children[node.children.length - 1]?.position?.end.offset ??
+          start + 1;
+        metadataStart = raw.indexOf("]", labelEnd) + 1;
+        if (metadataStart <= labelEnd || metadataStart > end) return;
+      }
+      if (metadataStart < end) {
+        const title =
+          node.type === "definition" && !node.title
+            ? findPendingDefinitionTitle(raw, end, true)
+            : undefined;
+        metadata.push({
+          start: metadataStart,
+          end: title?.end ?? end,
+          ...(title ? { pending: true as const } : {}),
+        });
+      }
+      return;
+    }
     const isCode = node.type === "inlineCode" || node.type === "code";
     if (
       !isCode &&
@@ -91,12 +334,21 @@ const parseCodeRanges = (raw: string): MarkdownSourceAnalysis => {
       node.type !== "html"
     )
       return;
-    const start = node.position?.start.offset;
-    const end = node.position?.end.offset;
-    if (start === undefined || end === undefined) return;
     const range = Object.freeze({ start, end });
     if (node.type === "html") {
       html.push(range);
+      if (
+        parent &&
+        parent.type !== "paragraph" &&
+        parent.type !== "heading" &&
+        parent.type !== "tableCell" &&
+        parent.type !== "link" &&
+        parent.type !== "linkReference" &&
+        parent.type !== "emphasis" &&
+        parent.type !== "strong" &&
+        parent.type !== "delete"
+      )
+        htmlBlocks.add(start);
       return;
     }
     literal.push(range);
@@ -104,8 +356,14 @@ const parseCodeRanges = (raw: string): MarkdownSourceAnalysis => {
     if (node.type === "inlineCode") inline.push(range);
   });
 
-  const comments = collectCommentRanges(raw, literal);
-  literal.push(...comments);
+  // Parent link metadata follows its child label ranges in source order.
+  const protectedRanges = [...literal, ...metadata].sort(
+    (left, right) => left.start - right.start
+  );
+  const lexical = collectLexicalRanges(raw, protectedRanges, htmlBlocks);
+  const allMetadata = mergeMetadataRanges([...metadata, ...lexical.metadata]);
+  const comments = lexical.comments;
+  literal.push(...allMetadata, ...comments);
   literal.sort((left, right) => left.start - right.start);
   const fences: CodeRange[] = [];
   for (const node of tree.children) {
@@ -127,6 +385,7 @@ const parseCodeRanges = (raw: string): MarkdownSourceAnalysis => {
     inline: Object.freeze(inline),
     markdown: Object.freeze(markdown),
     literal: Object.freeze(literal),
+    metadata: Object.freeze(allMetadata),
     comments: Object.freeze(comments),
     fences: Object.freeze(fences),
     html: Object.freeze(html),
@@ -173,7 +432,7 @@ export const getInlineCodeRanges = (raw: string) =>
 export const getMarkdownCodeRanges = (raw: string) =>
   collectCodeRanges(raw, false);
 
-// Native HTML must remain inert inside the renderer's code and math literals.
+// Native HTML stays inert inside code, math, comments and link metadata.
 export const getMarkdownLiteralRanges = (raw: string) =>
   getMarkdownSourceAnalysis(raw).literal;
 

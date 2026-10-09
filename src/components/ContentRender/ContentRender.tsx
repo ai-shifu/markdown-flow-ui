@@ -37,6 +37,10 @@ import {
 } from "./utils/inline-code-ranges";
 import { remarkPlugins } from "./utils/markdown-plugins";
 import { normalizeInlineHtml } from "./utils/normalize-inline-html";
+import {
+  escapeTypedMarkdownMetadata,
+  type MarkdownMetadataRange,
+} from "./utils/escape-typed-metadata";
 import IframeSandbox from "./IframeSandbox";
 import {
   appendContentAwareTypewriterQueue,
@@ -572,6 +576,22 @@ const closeTypedInlineCode = (
   return visible + (visible.endsWith("`") ? " " : "") + delimiter;
 };
 
+const protectTypedMarkdownPrefix = (
+  visible: string,
+  source: string,
+  inlineCodeRanges: ReturnType<typeof getInlineCodeRanges>,
+  metadataRanges: readonly MarkdownMetadataRange[],
+  sourceOffset = 0
+) => {
+  // Both protections use raw coordinates. Append any synthetic code delimiter
+  // after escaping so encoded '<' characters cannot shift the typing budget.
+  const closed = closeTypedInlineCode(visible, source, inlineCodeRanges);
+  return (
+    escapeTypedMarkdownMetadata(visible, metadataRanges, sourceOffset) +
+    closed.slice(visible.length)
+  );
+};
+
 const splitTextByCharacterChunk = (value: string, chunkSize: number) => {
   const safeChunkSize = Math.max(1, chunkSize);
   const characters = Array.from(value);
@@ -994,6 +1014,14 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       return { ...segment, value };
     });
   }, [sourceSegments, displayContent, isTypewriterEnabled]);
+  const sourceSegmentOffsets = useMemo(() => {
+    let offset = 0;
+    return sourceSegments.map((segment) => {
+      const start = offset;
+      offset += segment.value.length;
+      return start;
+    });
+  }, [sourceSegments]);
   const sourceInlineCodeRanges = useMemo(
     () =>
       isTypewriterEnabled
@@ -1011,15 +1039,21 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     () =>
       hasRichSegments
         ? mergedRenderSegments.map((segment, index) =>
-            isTypewriterEnabled &&
-            segment.type !== "sandbox" &&
-            !isImmediateSegment(segment)
-              ? closeTypedInlineCode(
-                  segment.value,
-                  sourceSegments[index].value,
-                  sourceInlineCodeRanges[index] ?? []
-                )
-              : segment.value
+            segment.type === "sandbox" || isImmediateSegment(segment)
+              ? segment.value
+              : isTypewriterEnabled
+                ? protectTypedMarkdownPrefix(
+                    segment.value,
+                    sourceSegments[index].value,
+                    sourceInlineCodeRanges[index] ?? [],
+                    sourceAnalysis.metadata,
+                    sourceSegmentOffsets[index]
+                  )
+                : escapeTypedMarkdownMetadata(
+                    segment.value,
+                    sourceAnalysis.metadata,
+                    sourceSegmentOffsets[index]
+                  )
           )
         : [],
     [
@@ -1028,6 +1062,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       mergedRenderSegments,
       sourceInlineCodeRanges,
       sourceSegments,
+      sourceAnalysis.metadata,
+      sourceSegmentOffsets,
     ]
   );
   const richRenderRuns = useMemo(() => {
@@ -1075,12 +1111,16 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         ? ""
         : normalizeInlineHtml(
             isTypewriterEnabled
-              ? closeTypedInlineCode(
+              ? protectTypedMarkdownPrefix(
                   renderContent,
                   sourceContent,
-                  sourceInlineCodeRanges[0] ?? []
+                  sourceInlineCodeRanges[0] ?? [],
+                  sourceAnalysis.metadata
                 )
-              : renderContent
+              : escapeTypedMarkdownMetadata(
+                  renderContent,
+                  sourceAnalysis.metadata
+                )
           ),
     [
       sourceContent,
@@ -1088,6 +1128,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       isTypewriterEnabled,
       renderContent,
       sourceInlineCodeRanges,
+      sourceAnalysis.metadata,
     ]
   );
 

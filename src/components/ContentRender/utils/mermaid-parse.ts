@@ -1,7 +1,4 @@
-import {
-  getInlineCodeRanges,
-  getMarkdownCodeRanges,
-} from "./inline-code-ranges";
+import { getMarkdownSourceAnalysis } from "./inline-code-ranges";
 
 export function parseMarkdownSegments(markdown: string) {
   const segments: Array<
@@ -10,14 +7,28 @@ export function parseMarkdownSegments(markdown: string) {
     | { type: "svg"; value: string; complete: boolean }
   > = [];
 
-  const codeRanges = getMarkdownCodeRanges(markdown);
-  const inlineCodeRanges = getInlineCodeRanges(markdown);
+  const analysis = getMarkdownSourceAnalysis(markdown);
+  const codeRanges = analysis.markdown;
+  const inlineCodeRanges = analysis.inline;
+  const metadataAt = (index: number) => {
+    let low = 0;
+    let high = analysis.metadata.length;
+    while (low < high) {
+      const middle = (low + high) >>> 1;
+      if (analysis.metadata[middle].start <= index) low = middle + 1;
+      else high = middle;
+    }
+    const range = analysis.metadata[low - 1];
+    return range && index < range.end ? range : undefined;
+  };
+  const isInsideMetadata = (index: number) => Boolean(metadataAt(index));
   const isInsideCode = (index: number) =>
     codeRanges.some(({ start, end }) => index >= start && index < end);
   const isTopLevelFenceStart = (index: number) => {
     const lineStart = markdown.lastIndexOf("\n", index - 1) + 1;
     return (
       /^ {0,3}$/.test(markdown.slice(lineStart, index)) &&
+      !isInsideMetadata(index) &&
       codeRanges.some(({ start }) => start === index) &&
       !inlineCodeRanges.some(({ start, end }) => index >= start && index < end)
     );
@@ -36,6 +47,13 @@ export function parseMarkdownSegments(markdown: string) {
     const end = regex.lastIndex;
     const rawMatch = match[0];
 
+    const metadata = metadataAt(start);
+    if (metadata) {
+      // A quoted opener may make this regex match extend into real markup.
+      // Resume after the title so that later SVG/fences still get rendered.
+      regex.lastIndex = metadata.end;
+      continue;
+    }
     // Keep container fences and code examples in one Markdown source segment.
     if (
       rawMatch.startsWith("```")
@@ -110,6 +128,7 @@ export function parseMarkdownSegments(markdown: string) {
   const hasIncompleteSvg =
     !isInsideCodeBlock &&
     !isInsideCode(incompleteSvgStart) &&
+    !isInsideMetadata(incompleteSvgStart) &&
     incompleteSvgStart !== -1 &&
     (lastSvgClose === -1 || lastSvgClose < incompleteSvgStart) &&
     incompleteSvgStart >= lastIndex;

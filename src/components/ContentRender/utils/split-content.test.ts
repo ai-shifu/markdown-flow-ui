@@ -709,6 +709,168 @@ describe("streaming source scanning", () => {
   });
 
   it.each([
+    '[docs](https://example.com "<figure></figure>")',
+    '[docs](https://example.com "<details>Example</details>")',
+    "[docs](https://example.com '<iframe data-tag=\"video\"></iframe>')",
+    '[a [nested] label](https://example.com "<figure></figure>")',
+    '[docs](<figure> "<canvas></canvas>")',
+    '[docs](https://example.com "<!-- <figure></figure>")',
+    '[docs][ref]\n\n[ref]: https://example.com "<figure></figure>"',
+    '[docs][ref]\n\n[ref]: <figure> "<details>Example</details>"',
+    '[docs][ref]\n\n[ref]: https://example.com\n  "<figure></figure>"',
+    '![a [nested] label](https://example.com "<figure></figure>")',
+    '![a \\] label](https://example.com "<figure></figure>")',
+  ])("keeps Markdown destination/title HTML inert: %s", (raw) => {
+    expect(splitContentSegments(raw, true, true)).toEqual([
+      { type: "text", value: raw },
+    ]);
+  });
+
+  it.each([
+    "<https://example.com/figure>",
+    "https://example.com/figure",
+    '[docs](https://example.com "<figure></figure>")',
+    '[docs][ref]\n\n[ref]: https://example.com "<!-- <figure></figure>"',
+  ])("does not mask real HTML after link metadata: %s", (prefix) => {
+    const raw = `${prefix}\n\n<figure>Actual</figure>`;
+    expect(splitContentSegments(raw, true, true)).toEqual([
+      { type: "text", value: `${prefix}\n\n` },
+      { type: "sandbox", value: "<figure>Actual</figure>" },
+    ]);
+  });
+
+  it.each([
+    '[Watch VIDEO](https://example.com "<figure></figure>")',
+    '[Watch VIDEO][ref]\n\n[ref]: https://example.com "<figure></figure>"',
+  ])("preserves real label videos while masking metadata: %s", (template) => {
+    const video = '<iframe data-tag="video"></iframe>';
+    const raw = template.replace("VIDEO", video);
+    const segments = splitContentSegments(raw, true, true);
+    expect(segments.filter((segment) => segment.type !== "text")).toEqual([
+      { type: "markdown", value: video, immediate: true },
+    ]);
+    expect(segments.map((segment) => segment.value).join("")).toBe(raw);
+  });
+
+  it.each([
+    '[docs](https://example.com "<figure></figure>")',
+    "[docs](https://example.com '<iframe data-tag=\"video\"></iframe>')",
+    "[docs](<> \"<iframe data-tag='video'></iframe>\")",
+    "[docs](url<figure>)",
+    '[docs](https://example.com "<figure title=\\"a ) b\\"></figure>")',
+    '![a [nested] label](https://example.com "<figure></figure>")',
+  ])("keeps every received title prefix inert: %s", (raw) => {
+    for (
+      let length = raw.indexOf("](") + 2;
+      length <= raw.length;
+      length += 1
+    ) {
+      const received = raw.slice(0, length);
+      const segments = splitContentSegments(received, true, true);
+      expect(segments.some((segment) => segment.type === "sandbox")).toBe(
+        false
+      );
+      expect(
+        segments.some(
+          (segment) => segment.type === "markdown" && segment.immediate
+        )
+      ).toBe(false);
+      expect(segments.map((segment) => segment.value).join("")).toBe(received);
+    }
+  });
+
+  it("does not extend an unfinished title across a Markdown block boundary", () => {
+    const prefix = '[docs](https://example.com "unfinished\n \t\n';
+    expect(
+      splitContentSegments(`${prefix}<figure>Actual</figure>`, true, true)
+    ).toEqual([
+      { type: "text", value: prefix },
+      { type: "sandbox", value: "<figure>Actual</figure>" },
+    ]);
+  });
+
+  it.each(["/lesson broken ", '/lesson "complete title" broken '])(
+    "keeps actual HTML after an invalid link metadata tail: %s",
+    (invalid) => {
+      const prefix = `[Read](${invalid}`;
+      const video = '<iframe data-tag="video"></iframe>';
+      expect(splitContentSegments(`${prefix}${video}`, true, true)).toEqual([
+        { type: "text", value: prefix },
+        { type: "markdown", value: video, immediate: true },
+      ]);
+      const html = "<figure>Actual</figure>";
+      expect(splitContentSegments(`${prefix}${html}`, true, true)).toEqual([
+        { type: "text", value: prefix },
+        { type: "sandbox", value: html },
+      ]);
+    }
+  );
+
+  it.each([
+    '[ref]: https://example.com "<figure></figure>"',
+    '[ref]: https://example.com\n  "<figure></figure>"',
+    "[ref]: https://example.com '<iframe data-tag=\"video\"></iframe>'",
+    "[ref]: https://example.com\n  '<iframe data-tag=\"video\"></iframe>'",
+  ])("keeps every received definition title prefix inert: %s", (definition) => {
+    const prefix = "[docs][ref]\n\n";
+    for (
+      let length = definition.indexOf("<");
+      length <= definition.length;
+      length += 1
+    ) {
+      const raw = `${prefix}${definition.slice(0, length)}`;
+      expect(splitContentSegments(raw, true, true)).toEqual([
+        { type: "text", value: raw },
+      ]);
+    }
+  });
+
+  it.each([
+    '[ref]: https://example.com "unfinished',
+    '[ref]: https://example.com\n  "unfinished',
+  ])(
+    "ends pending definition titles before a new HTML paragraph: %s",
+    (definition) => {
+      const prefix = `${definition}\n \t\n`;
+      expect(
+        splitContentSegments(`${prefix}<figure>Actual</figure>`, true, true)
+      ).toEqual([
+        { type: "text", value: prefix },
+        { type: "sandbox", value: "<figure>Actual</figure>" },
+      ]);
+    }
+  );
+
+  it.each([
+    ['<aside>[docs](url "<figure>Actual</figure></aside>', "markdown"],
+    ['<aside>[docs](url "<iframe src="/generic"></iframe></aside>', "sandbox"],
+    ['<figure>[docs](url "<script>widget()</script></figure>', "sandbox"],
+  ])(
+    "keeps HTML body semantics around Markdown-looking text: %s",
+    (raw, type) => {
+      expect(splitContentSegments(raw, true, true)).toEqual([
+        {
+          type,
+          value: raw,
+          ...(type === "markdown" ? { immediate: true } : {}),
+        },
+      ]);
+    }
+  );
+
+  it("preserves actual videos inside adjacent HTML root bodies", () => {
+    const first = "<aside>First</aside>";
+    const second = '<aside>[Read](/lesson "<iframe data-tag="video"></iframe>';
+    for (const ending of ["", "</aside>"]) {
+      const raw = `${first}${second}${ending}`;
+      expect(splitContentSegments(raw, true, true)).toEqual([
+        { type: "markdown", value: first, immediate: true },
+        { type: "markdown", value: `${second}${ending}`, immediate: true },
+      ]);
+    }
+  });
+
+  it.each([
     "`<figure>Example</figure>`",
     '``<iframe data-tag="video"></iframe>``',
     '$<iframe data-tag="video"></iframe>$',

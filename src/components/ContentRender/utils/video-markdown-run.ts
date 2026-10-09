@@ -35,6 +35,7 @@ export type VideoMarkdownRunPlan = {
   immediateOffsets: readonly number[];
   sourceTree: MarkdownSourceTree;
   incompleteSvg?: Range;
+  pendingMetadata: readonly Range[];
   tree?: Root;
   visibility: WeakMap<Nodes, Visibility>;
 };
@@ -198,6 +199,9 @@ export const createVideoMarkdownRunPlan = (
         : []
     ),
     sourceTree: parsed.tree,
+    pendingMetadata: parsed.metadata.filter(
+      (range) => range.pending && range.end === markdownSource.length
+    ),
     incompleteSvg: incompleteSvgRange(
       markdownSource,
       [...parsed.literal, ...media].sort(
@@ -281,8 +285,6 @@ export const cloneVideoMarkdownSourceTree = (
   plan: VideoMarkdownRunPlan
 ): MarkdownRoot => {
   const tree = structuredClone(plan.sourceTree) as MarkdownRoot;
-  const svg = plan.incompleteSvg;
-  if (!svg) return tree;
   type MutableNode = {
     type: string;
     value?: string;
@@ -290,6 +292,68 @@ export const cloneVideoMarkdownSourceTree = (
     data?: { hName: string };
     position?: Nodes["position"];
   };
+  // An unfinished title is still parsed as ordinary prose by CommonMark.
+  // Literalize only its HTML leaves; retain raw coordinates and any preceding
+  // real HTML in the same node so immediate media keeps its stable parent.
+  if (plan.pendingMetadata.length) {
+    const lines = [0];
+    for (let index = 0; index < plan.markdownSource.length; index += 1)
+      if (plan.markdownSource[index] === "\n") lines.push(index + 1);
+    const pointAt = (offset: number) => {
+      const line = firstAtOrAfter(lines, offset + 1);
+      return { line, column: offset - lines[line - 1] + 1, offset };
+    };
+    const pendingStarts = plan.pendingMetadata.map(({ start }) => start);
+    const literalize = (parent: MutableNode) => {
+      parent.children = parent.children?.flatMap((child) => {
+        if (child.children) literalize(child);
+        const range = rangeOf(child);
+        if (child.type !== "html" || !child.value || !range) return [child];
+        let index = Math.max(
+          0,
+          firstAtOrAfter(pendingStarts, range.start + 1) - 1
+        );
+        while (plan.pendingMetadata[index]?.end <= range.start) index += 1;
+        if (!plan.pendingMetadata[index] || pendingStarts[index] >= range.end)
+          return [child];
+        const value = child.value;
+        const raw = plan.markdownSource.slice(range.start, range.end);
+        let ends: number[] | undefined;
+        if (raw !== value) {
+          let cursor = 0;
+          ends = value.split("").map((character) => {
+            cursor = raw.indexOf(character, cursor);
+            return range.start + ++cursor;
+          });
+        }
+        const valueIndex = (offset: number) =>
+          ends ? firstAtOrAfter(ends, offset + 1) : offset - range.start;
+        const parts: MutableNode[] = [];
+        let cursor = range.start;
+        const push = (end: number, literal: boolean) => {
+          if (end <= cursor) return;
+          const part = value.slice(valueIndex(cursor), valueIndex(end));
+          parts.push({
+            ...child,
+            type: literal ? "text" : "html",
+            value: literal ? decodeString(part) : part,
+            position: { start: pointAt(cursor), end: pointAt(end) },
+          });
+          cursor = end;
+        };
+        while (plan.pendingMetadata[index]?.start < range.end) {
+          const pending = plan.pendingMetadata[index++];
+          push(Math.max(cursor, pending.start), false);
+          push(Math.min(range.end, pending.end), true);
+        }
+        push(range.end, false);
+        return parts;
+      });
+    };
+    literalize(tree as unknown as MutableNode);
+  }
+  const svg = plan.incompleteSvg;
+  if (!svg) return tree;
   const before = plan.markdownSource.slice(0, svg.start);
   const point = {
     line: before.split("\n").length,
@@ -421,6 +485,15 @@ export const prepareVideoMarkdownRun = (
         : context.source?.type === "inlineCode"
           ? inlineCodeUnits(plan.fullSource, context.source)
           : sourceUnits(plan.fullSource, context.range, context.mode));
+  const pendingMetadata = plan.pendingMetadata.map(
+    (range) => rawRange(plan, range)!
+  );
+  const pendingStarts = pendingMetadata.map(({ start }) => start);
+  const isPendingMetadata = (range: Range) => {
+    const pending =
+      pendingMetadata[firstAtOrAfter(pendingStarts, range.start + 1) - 1];
+    return Boolean(pending && range.end <= pending.end);
+  };
   const htmlRanges = [...sources.values()].filter(
     ({ type }) => type === "html"
   );
@@ -495,9 +568,11 @@ export const prepareVideoMarkdownRun = (
         source,
         mode: isCode
           ? "code"
-          : htmlContains(range)
-            ? "html"
-            : (inherited?.mode ?? "markdown"),
+          : isPendingMetadata(range)
+            ? "markdown"
+            : htmlContains(range)
+              ? "html"
+              : (inherited?.mode ?? "markdown"),
         index: 0,
         rawCursor: range.start,
       };

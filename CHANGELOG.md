@@ -10,6 +10,7 @@
 - Preserve custom render bars for native videos and pending video headers.
 - Keep quoted, nested, and unfinished Markdown code examples out of HTML and SVG
   rendering.
+- Reuse bounded Markdown code ranges and skip unused parsing while typing.
 
 ## 0.2.30 - 2026-10-09
 

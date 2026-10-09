@@ -76,7 +76,7 @@ const extractFirstFenceBlock = (raw: string): FenceBlock | null => {
 
 const extractFirstStreamingFenceBlock = (
   raw: string,
-  codeRanges: FenceRange[]
+  codeRanges: readonly FenceRange[]
 ): FenceBlock | null => {
   const openingPattern = /^ {0,3}(`{3,}|~{3,})([^\r\n]*)\r?$/gm;
   let opening: RegExpExecArray | null;
@@ -165,13 +165,13 @@ const isEscaped = (raw: string, index: number) => {
   return backslashes % 2 === 1;
 };
 
-const isIndexInRanges = (index: number, ranges: FenceRange[]) =>
+const isIndexInRanges = (index: number, ranges: readonly FenceRange[]) =>
   ranges.some(({ start, end }) => index >= start && index < end);
 
 const findFirstMatchOutsideFence = (
   raw: string,
   pattern: RegExp,
-  fenceRanges: FenceRange[]
+  fenceRanges: readonly FenceRange[]
 ) => {
   const flags = pattern.flags.includes("g")
     ? pattern.flags
@@ -239,7 +239,7 @@ const splitCustomButtonsFromSandbox = (segments: RenderSegment[]) => {
 
 const findInlineSandboxMatch = (
   raw: string,
-  codeRanges?: FenceRange[]
+  codeRanges?: readonly FenceRange[]
 ): MatchResult | null => {
   let earliest: MatchResult | null = null;
 
@@ -269,7 +269,7 @@ const pickEarliestMatch = (...matches: Array<MatchResult | null>) =>
 
 const findMarkdownImageMatch = (
   raw: string,
-  fenceRanges: FenceRange[]
+  fenceRanges: readonly FenceRange[]
 ): MatchResult | null => {
   const start = findFirstMatchOutsideFence(
     raw,
@@ -286,7 +286,7 @@ const findMarkdownImageMatch = (
 
 const findMarkdownVideoIframeMatch = (
   raw: string,
-  fenceRanges: FenceRange[]
+  fenceRanges: readonly FenceRange[]
 ): MatchResult | null => {
   const start = findFirstMatchOutsideFence(
     raw,
@@ -370,7 +370,7 @@ const findStreamingVideoIframeMatch = (
 
 const extractTableBlock = (
   raw: string,
-  codeRanges: FenceRange[]
+  codeRanges: readonly FenceRange[]
 ): { start: number; block: string; end: number } | null => {
   const tablePattern = /^\s*\|.+\|\s*$/gm;
   let tableMatch: RegExpExecArray | null;

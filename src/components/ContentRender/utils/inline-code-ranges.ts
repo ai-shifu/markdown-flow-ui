@@ -5,23 +5,72 @@ import { remarkPlugins } from "./markdown-plugins";
 
 const parser = unified().use(remarkParse).use(remarkPlugins);
 
-const collectCodeRanges = (raw: string, inlineOnly: boolean) => {
-  const ranges: Array<{ start: number; end: number }> = [];
+const MAX_CACHE_ENTRIES = 16;
+const MAX_CACHED_SOURCE_CHARACTERS = 256 * 1024;
+
+type CodeRange = Readonly<{ start: number; end: number }>;
+type CodeRanges = {
+  inline: readonly CodeRange[];
+  markdown: readonly CodeRange[];
+};
+
+const EMPTY_RANGES: readonly CodeRange[] = Object.freeze([]);
+const sourceRangesCache = new Map<string, CodeRanges>();
+let cachedSourceCharacters = 0;
+
+const parseCodeRanges = (raw: string): CodeRanges => {
+  const inline: CodeRange[] = [];
+  const markdown: CodeRange[] = [];
 
   // Use the renderer's Markdown grammar, including HTML paragraph boundaries.
   visit(parser.parse(raw), (node) => {
-    if (node.type !== "inlineCode" && (inlineOnly || node.type !== "code")) {
-      return;
-    }
+    if (node.type !== "inlineCode" && node.type !== "code") return;
     const start = node.position?.start.offset;
     const end = node.position?.end.offset;
-    if (start !== undefined && end !== undefined) ranges.push({ start, end });
+    if (start === undefined || end === undefined) return;
+    const range = Object.freeze({ start, end });
+    markdown.push(range);
+    if (node.type === "inlineCode") inline.push(range);
   });
+
+  // Cached results can be shared by source splitting and render-only repairs.
+  return { inline: Object.freeze(inline), markdown: Object.freeze(markdown) };
+};
+
+const getCodeRanges = (raw: string): CodeRanges => {
+  const cached = sourceRangesCache.get(raw);
+  if (cached) {
+    sourceRangesCache.delete(raw);
+    sourceRangesCache.set(raw, cached);
+    return cached;
+  }
+
+  const ranges = parseCodeRanges(raw);
+  // Large individual messages must not displace the bounded working set.
+  if (raw.length > MAX_CACHED_SOURCE_CHARACTERS) return ranges;
+
+  while (
+    sourceRangesCache.size >= MAX_CACHE_ENTRIES ||
+    cachedSourceCharacters + raw.length > MAX_CACHED_SOURCE_CHARACTERS
+  ) {
+    const oldestSource = sourceRangesCache.keys().next().value;
+    if (oldestSource === undefined) break;
+    cachedSourceCharacters -= oldestSource.length;
+    sourceRangesCache.delete(oldestSource);
+  }
+
+  sourceRangesCache.set(raw, ranges);
+  cachedSourceCharacters += raw.length;
   return ranges;
 };
 
+const collectCodeRanges = (raw: string, inlineOnly: boolean) => {
+  const ranges = getCodeRanges(raw);
+  return inlineOnly ? ranges.inline : ranges.markdown;
+};
+
 export const getInlineCodeRanges = (raw: string) =>
-  raw.includes("`") ? collectCodeRanges(raw, true) : [];
+  raw.includes("`") ? collectCodeRanges(raw, true) : EMPTY_RANGES;
 
 export const getMarkdownCodeRanges = (raw: string) =>
   collectCodeRanges(raw, false);

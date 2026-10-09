@@ -383,9 +383,13 @@ const mergeNonSandboxSegments = (segments: RenderSegment[]) => {
   return merged;
 };
 
-const closeTypedInlineCode = (visible: string, source: string) => {
+const closeTypedInlineCode = (
+  visible: string,
+  source: string,
+  ranges: ReturnType<typeof getInlineCodeRanges>
+) => {
   if (visible.length >= source.length) return visible;
-  const range = getInlineCodeRanges(source).find(
+  const range = ranges.find(
     ({ start, end }) => start < visible.length && visible.length < end
   );
   if (!range) return visible;
@@ -804,24 +808,70 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       return { ...segment, value };
     });
   }, [sourceSegments, displayContent, isTypewriterEnabled]);
+  const sourceInlineCodeRanges = useMemo(
+    () =>
+      isTypewriterEnabled
+        ? sourceSegments.map((segment) =>
+            segment.type === "sandbox" || isImmediateSegment(segment)
+              ? []
+              : getInlineCodeRanges(segment.value)
+          )
+        : [],
+    [isTypewriterEnabled, sourceSegments]
+  );
+  const safeRichMarkdownContent = useMemo(
+    () =>
+      hasRichSegments
+        ? mergedRenderSegments.map((segment, index) =>
+            isTypewriterEnabled &&
+            segment.type !== "sandbox" &&
+            !isImmediateSegment(segment)
+              ? closeTypedInlineCode(
+                  segment.value,
+                  sourceSegments[index].value,
+                  sourceInlineCodeRanges[index] ?? []
+                )
+              : segment.value
+          )
+        : [],
+    [
+      hasRichSegments,
+      isTypewriterEnabled,
+      mergedRenderSegments,
+      sourceInlineCodeRanges,
+      sourceSegments,
+    ]
+  );
   const renderContent = hasRichSegments
     ? mergedRenderSegments.map((segment) => segment.value).join("")
     : isTypewriterEnabled
       ? displayContent
       : content;
   const normalizedContent = useMemo(
-    () => normalizeInlineHtml(renderContent),
-    [renderContent]
+    () => (customRenderBar ? normalizeInlineHtml(renderContent) : ""),
+    [customRenderBar, renderContent]
   );
 
   const safeMarkdownContent = useMemo(
     () =>
-      normalizeInlineHtml(
-        isTypewriterEnabled
-          ? closeTypedInlineCode(renderContent, content)
-          : renderContent
-      ),
-    [content, isTypewriterEnabled, renderContent]
+      hasRichSegments
+        ? ""
+        : normalizeInlineHtml(
+            isTypewriterEnabled
+              ? closeTypedInlineCode(
+                  renderContent,
+                  content,
+                  sourceInlineCodeRanges[0] ?? []
+                )
+              : renderContent
+          ),
+    [
+      content,
+      hasRichSegments,
+      isTypewriterEnabled,
+      renderContent,
+      sourceInlineCodeRanges,
+    ]
   );
 
   const interactionDefaults = useMemo(
@@ -1076,12 +1126,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               {segment.type === "markdown" && segment.pending
                 ? null
                 : renderMarkdownSegments(
-                    isTypewriterEnabled && !isImmediateSegment(segment)
-                      ? closeTypedInlineCode(
-                          segment.value,
-                          sourceSegments[idx].value
-                        )
-                      : segment.value,
+                    safeRichMarkdownContent[idx],
                     `md-${idx}`
                   )}
             </React.Fragment>

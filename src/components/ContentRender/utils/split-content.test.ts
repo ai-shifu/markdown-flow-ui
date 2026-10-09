@@ -120,6 +120,19 @@ describe("splitContentSegments", () => {
     ]);
   });
 
+  it.each(["style", "div"])(
+    "isolates a line-start %s block that interrupts a code paragraph",
+    (tag) => {
+      const html = `<${tag}>Card</${tag}>`;
+      const raw = `Use \`value\n${html}\n\``;
+      const segments = splitContentSegments(raw, true, true);
+      expect(segments.filter((segment) => segment.type === "sandbox")).toEqual([
+        { type: "sandbox", value: html },
+      ]);
+      expect(segments.map((segment) => segment.value).join("")).toBe(raw);
+    }
+  );
+
   it.each([
     ["HTML", "<div>Card</div>"],
     ["styles", "<style>body { color: red; }</style>"],

@@ -1,3 +1,4 @@
+import { getInlineCodeRanges } from "./inline-code-ranges";
 import { findStreamingHtmlBlockEnd } from "./html-block-end";
 
 export type RenderSegment =
@@ -141,51 +142,6 @@ const isEscaped = (raw: string, index: number) => {
   let backslashes = 0;
   for (let i = index - 1; i >= 0 && raw[i] === "\\"; i--) backslashes++;
   return backslashes % 2 === 1;
-};
-
-export const getInlineCodeRanges = (raw: string): FenceRange[] => {
-  const ranges: FenceRange[] = [];
-  const blankLines = /\r?\n[ \t]*\r?\n/g;
-  let paragraphStart = 0;
-
-  do {
-    const boundary = blankLines.exec(raw);
-    const paragraphEnd = boundary?.index ?? raw.length;
-    const paragraph = raw.slice(paragraphStart, paragraphEnd);
-    const delimiters = Array.from(paragraph.matchAll(/`+/g), (match) => ({
-      start: match.index,
-      length: match[0].length,
-      escaped: isEscaped(paragraph, match.index),
-    }));
-    const nextMatchingDelimiter = new Array<number>(delimiters.length).fill(-1);
-    const nextByLength = new Map<number, number>();
-
-    for (let index = delimiters.length - 1; index >= 0; index -= 1) {
-      const delimiter = delimiters[index];
-      nextMatchingDelimiter[index] = nextByLength.get(delimiter.length) ?? -1;
-      // Backslashes do not escape closing delimiters inside a code span.
-      nextByLength.set(delimiter.length, index);
-    }
-
-    for (let index = 0; index < delimiters.length; index += 1) {
-      const opening = delimiters[index];
-      if (opening.escaped) continue;
-      const closingIndex = nextMatchingDelimiter[index];
-      // Unmatched runs are literal text; later runs may still form valid spans.
-      if (closingIndex === -1) continue;
-      const closing = delimiters[closingIndex];
-      ranges.push({
-        start: paragraphStart + opening.start,
-        end: paragraphStart + closing.start + closing.length,
-      });
-      index = closingIndex;
-    }
-
-    if (!boundary) break;
-    paragraphStart = blankLines.lastIndex;
-  } while (paragraphStart < raw.length);
-
-  return ranges;
 };
 
 const isIndexInRanges = (index: number, ranges: FenceRange[]) =>

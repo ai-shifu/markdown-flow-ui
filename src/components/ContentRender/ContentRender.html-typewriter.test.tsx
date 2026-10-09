@@ -68,6 +68,28 @@ afterEach(() => {
 });
 
 describe("ContentRender progressive HTML with typewriter", () => {
+  it.each([true, false])(
+    "isolates a style block that interrupts a code paragraph with typing %s",
+    (enableTypewriter) => {
+      const html = "<style data-block-style>body { color: red; }</style>";
+      const { container } = render(
+        <ContentRender
+          {...TYPEWRITER_PROPS}
+          enableTypewriter={enableTypewriter}
+          content={`Use \`value\n${html}\n\``}
+        />
+      );
+      expect(getSandboxes(container)).toHaveLength(1);
+      expect(getSandboxes(container)[0].getAttribute("data-content")).toBe(
+        html
+      );
+      for (let tick = 0; tick < 30; tick += 1) {
+        advanceTime(30);
+        expect(container.querySelector("style[data-block-style]")).toBeNull();
+      }
+    }
+  );
+
   it("types a bare less-than sign without mounting an empty iframe", () => {
     const onTypeFinished = vi.fn();
     const { container, rerender } = render(

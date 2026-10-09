@@ -3,10 +3,6 @@ import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
-import remarkBreaks from "remark-breaks";
-import remarkFlow from "remark-flow";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
 import type { PluggableList } from "unified";
 import { CustomRenderBarProps, OnSendContentParams } from "../types";
 import { sanitizeInvalidTagName } from "./utils/sanitize-invalid-tag-name";
@@ -33,6 +29,8 @@ import {
   parseMarkdownSegments,
   mermaidBlockIsComplete,
 } from "./utils/mermaid-parse";
+import { getInlineCodeRanges } from "./utils/inline-code-ranges";
+import { remarkPlugins } from "./utils/markdown-plugins";
 import { normalizeInlineHtml } from "./utils/normalize-inline-html";
 import IframeSandbox from "./IframeSandbox";
 import {
@@ -44,7 +42,6 @@ import {
   type ContentAwareTypewriterQueue,
 } from "./utils/typewriter-pacing";
 import {
-  getInlineCodeRanges,
   splitContentSegments,
   type RenderSegment,
 } from "./utils/split-content";
@@ -321,13 +318,6 @@ const MarkdownCode = (props: React.ComponentProps<"code">) => {
   );
 };
 
-const remarkPlugins: PluggableList = [
-  remarkGfm,
-  remarkMath,
-  remarkFlow,
-  remarkBreaks,
-];
-
 const rehypePlugins: PluggableList = [
   preserveCustomVariableProperties,
   rehypeRaw,
@@ -398,20 +388,6 @@ const closeTypedInlineCode = (visible: string, source: string) => {
   if (!range) return visible;
   const delimiter = /^`+/.exec(source.slice(range.start))?.[0];
   if (!delimiter || visible.length < range.start + delimiter.length) {
-    return visible;
-  }
-  const lineStart = source.lastIndexOf("\n", range.start - 1) + 1;
-  const lineEnd = source.indexOf("\n", range.start);
-  if (
-    delimiter.length >= 3 &&
-    /^ {0,3}$/.test(source.slice(lineStart, range.start)) &&
-    !source
-      .slice(
-        range.start + delimiter.length,
-        lineEnd === -1 ? source.length : lineEnd
-      )
-      .includes("`")
-  ) {
     return visible;
   }
   const closingStart = range.end - delimiter.length;

@@ -1,9 +1,38 @@
+import { getMarkdownSourceAnalysis } from "./inline-code-ranges";
+
 export function parseMarkdownSegments(markdown: string) {
   const segments: Array<
     | { type: "text"; value: string }
     | { type: "mermaid"; value: string; complete: boolean }
     | { type: "svg"; value: string; complete: boolean }
   > = [];
+
+  const analysis = getMarkdownSourceAnalysis(markdown);
+  const codeRanges = analysis.markdown;
+  const inlineCodeRanges = analysis.inline;
+  const metadataAt = (index: number) => {
+    let low = 0;
+    let high = analysis.metadata.length;
+    while (low < high) {
+      const middle = (low + high) >>> 1;
+      if (analysis.metadata[middle].start <= index) low = middle + 1;
+      else high = middle;
+    }
+    const range = analysis.metadata[low - 1];
+    return range && index < range.end ? range : undefined;
+  };
+  const isInsideMetadata = (index: number) => Boolean(metadataAt(index));
+  const isInsideCode = (index: number) =>
+    codeRanges.some(({ start, end }) => index >= start && index < end);
+  const isTopLevelFenceStart = (index: number) => {
+    const lineStart = markdown.lastIndexOf("\n", index - 1) + 1;
+    return (
+      /^ {0,3}$/.test(markdown.slice(lineStart, index)) &&
+      !isInsideMetadata(index) &&
+      codeRanges.some(({ start }) => start === index) &&
+      !inlineCodeRanges.some(({ start, end }) => index >= start && index < end)
+    );
+  };
 
   // Match:
   // 1. Generic code blocks (including mermaid): ``` ... ```
@@ -17,6 +46,22 @@ export function parseMarkdownSegments(markdown: string) {
     const start = match.index;
     const end = regex.lastIndex;
     const rawMatch = match[0];
+
+    const metadata = metadataAt(start);
+    if (metadata) {
+      // A quoted opener may make this regex match extend into real markup.
+      // Resume after the title so that later SVG/fences still get rendered.
+      regex.lastIndex = metadata.end;
+      continue;
+    }
+    // Keep container fences and code examples in one Markdown source segment.
+    if (
+      rawMatch.startsWith("```")
+        ? !isTopLevelFenceStart(start)
+        : isInsideCode(start)
+    ) {
+      continue;
+    }
 
     // Preceding plain text
     if (start > lastIndex) {
@@ -82,6 +127,8 @@ export function parseMarkdownSegments(markdown: string) {
 
   const hasIncompleteSvg =
     !isInsideCodeBlock &&
+    !isInsideCode(incompleteSvgStart) &&
+    !isInsideMetadata(incompleteSvgStart) &&
     incompleteSvgStart !== -1 &&
     (lastSvgClose === -1 || lastSvgClose < incompleteSvgStart) &&
     incompleteSvgStart >= lastIndex;
@@ -109,6 +156,7 @@ export function parseMarkdownSegments(markdown: string) {
   const incompleteStart = markdown.lastIndexOf("```mermaid");
   if (
     incompleteStart !== -1 &&
+    isTopLevelFenceStart(incompleteStart) &&
     incompleteStart >= lastIndex &&
     // Ensure this mermaid block isn't inside another code block (unlikely but safe to check)
     // Actually, incompleteCodeBlockStart would capture this "```mermaid" as just "```"

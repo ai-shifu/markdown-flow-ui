@@ -44,6 +44,12 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.2.8
         version: 1.2.8(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.0.1(react@19.0.1))(react@19.0.1)
+      '@types/hast':
+        specifier: ^3.0.4
+        version: 3.0.4
+      '@types/mdast':
+        specifier: ^4.0.4
+        version: 4.0.4
       '@types/unist':
         specifier: ^3.0.3
         version: 3.0.3
@@ -74,6 +80,9 @@ importers:
       mermaid:
         specifier: ^11.10.1
         version: 11.12.1
+      micromark-util-decode-string:
+        specifier: ^2.0.1
+        version: 2.0.1
       rc-textarea:
         specifier: ^1.10.2
         version: 1.10.2(react-dom@19.0.1(react@19.0.1))(react@19.0.1)
@@ -104,6 +113,12 @@ importers:
       remark-math:
         specifier: ^6.0.0
         version: 6.0.0
+      remark-parse:
+        specifier: ^11.0.0
+        version: 11.0.0
+      remark-rehype:
+        specifier: ^11.1.2
+        version: 11.1.2
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.3.1

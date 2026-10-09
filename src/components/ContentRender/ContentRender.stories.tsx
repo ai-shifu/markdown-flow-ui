@@ -2890,3 +2890,297 @@ export const MultilingualContentAwareTypewriterPacing: Story = {
     </div>
   ),
 };
+
+/** HTML follows incoming chunks immediately while surrounding prose keeps typing. */
+export const ProgressiveHtmlWithTypedProse: Story = {
+  name: "Progressive HTML with Typed Prose",
+  args: {
+    enableTypewriter: true,
+    typewriterPacing: "content-aware",
+    typingSpeed: 150,
+    disableSandboxLoadingOverlay: true,
+  },
+  render: (args) => {
+    const chunks = [
+      'This introduction keeps typing while the card below updates.\n\n<div style="padding:24px;border:2px solid #2563eb;border-radius:12px"><h2>Lesson card',
+      "</h2><p>This HTML arrives without waiting for the introduction.",
+      " More of the same paragraph is visible as soon as it arrives.</p>",
+      "<p>The card can grow before its outer div is closed.</p>",
+      "</div>\n\nThe prose after the card continues with the same typewriter budget.",
+    ];
+    const [chunkCount, setChunkCount] = useState(1);
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={() =>
+            setChunkCount((count) => Math.min(count + 1, chunks.length))
+          }
+          disabled={chunkCount === chunks.length}
+        >
+          Receive next HTML chunk
+        </button>
+        <ContentRender
+          {...args}
+          content={chunks.slice(0, chunkCount).join("")}
+        />
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const iframe = canvasElement.querySelector("iframe");
+    await waitFor(() => {
+      expect(iframe?.contentDocument?.body.textContent).toContain(
+        "Lesson card"
+      );
+    });
+    const documentBeforeAppend = iframe?.contentDocument;
+    const receiveButton = canvasElement.querySelector("button");
+    expect(receiveButton).not.toBeNull();
+    await userEvent.click(receiveButton!);
+    await waitFor(() => {
+      expect(iframe?.contentDocument?.body.textContent).toContain(
+        "This HTML arrives without waiting for the introduction."
+      );
+    });
+    expect(canvasElement.querySelector("iframe")).toBe(iframe);
+    expect(iframe?.contentDocument).toBe(documentBeforeAppend);
+  },
+};
+
+export const ProgressiveFigureWithTypedProse: Story = {
+  name: "Progressive Figure with Typed Prose",
+  args: {
+    enableTypewriter: true,
+    typingSpeed: 100,
+    disableSandboxLoadingOverlay: true,
+  },
+  render: (args) => {
+    const [receivedMore, setReceivedMore] = useState(false);
+    return (
+      <div>
+        <button type="button" onClick={() => setReceivedMore(true)}>
+          Receive the rest of the figure
+        </button>
+        <ContentRender
+          {...args}
+          content={
+            "This introduction keeps typing while the figure grows.\n\n" +
+            '<figure style="padding:24px;border:2px solid #2563eb"><figcaption>Received figure' +
+            (receivedMore
+              ? " content</figcaption><p>The complete figure is visible.</p></figure>\n\nFollowing prose keeps typing."
+              : "")
+          }
+        />
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const iframe = canvasElement.querySelector("iframe");
+    await waitFor(() => {
+      expect(iframe?.contentDocument?.body.textContent).toContain(
+        "Received figure"
+      );
+    });
+    await userEvent.click(canvasElement.querySelector("button")!);
+    await waitFor(() => {
+      expect(iframe?.contentDocument?.body.textContent).toContain(
+        "The complete figure is visible."
+      );
+    });
+    expect(canvasElement.querySelector("iframe")).toBe(iframe);
+  },
+};
+
+export const StableVideoWithEarlierMarkdown: Story = {
+  name: "Stable Video with Earlier Markdown",
+  args: {
+    enableTypewriter: true,
+    typingSpeed: 5,
+    disableSandboxLoadingOverlay: true,
+  },
+  render: (args) => {
+    const [receivedMore, setReceivedMore] = useState(false);
+    const source =
+      '# Earlier heading\n\n> Earlier quote\n\n- Earlier list\n- [ ] Pending task\n- [x] Completed task\n\n# [Watch <iframe title="Lesson video" data-tag="video"></iframe> now][watch]\n\n[watch]: /watch';
+    return (
+      <div>
+        <button type="button" onClick={() => setReceivedMore(true)}>
+          Receive following HTML
+        </button>
+        <ContentRender
+          {...args}
+          content={
+            source +
+            (receivedMore
+              ? "\n\nLater prose.\n\n<details open><summary>Received card</summary><p>Following HTML is visible.</p></details>"
+              : "")
+          }
+        />
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const video = canvasElement.querySelector('iframe[data-tag="video"]');
+    expect(video).not.toBeNull();
+    const parent = video?.parentElement;
+    const videoWindow = (video as HTMLIFrameElement).contentWindow;
+    expect(parent?.tagName).toBe("A");
+    expect(parent?.getAttribute("href")).toBe("/watch");
+    expect(video?.closest("h1")).toBeVisible();
+    await userEvent.click(canvasElement.querySelector("button")!);
+    const details = canvasElement.querySelector("details");
+    expect(details?.textContent).toContain("Following HTML is visible.");
+    expect(canvasElement.querySelectorAll("iframe")).toHaveLength(1);
+    await waitFor(() => {
+      expect(canvasElement.textContent).toContain("Earlier heading");
+      expect(canvasElement.textContent).toContain("Later prose.");
+      expect(canvasElement.querySelectorAll("h1")).toHaveLength(2);
+    });
+    expect(canvasElement.querySelector('iframe[data-tag="video"]')).toBe(video);
+    expect(video?.parentElement).toBe(parent);
+    expect((video as HTMLIFrameElement).contentWindow).toBe(videoWindow);
+    expect(canvasElement.querySelector("details")).toBe(details);
+  },
+};
+
+const WIDE_SVG_PREVIEW_SOURCE =
+  '<iframe title="Wide SVG lesson video" data-tag="video"></iframe>\n\n' +
+  '<svg width="1600" height="80" viewBox="0 0 800 40"><text x="10" y="20">Standalone wide SVG</text></svg>\n\n' +
+  'Before <svg width="1600" height="80" viewBox="0 0 800 40"><text x="10" y="20">Inline wide SVG</text></svg> after.\n\nLater prose.';
+
+const StableVideoWideSvgPreview = ({
+  enableTypewriter,
+  pacing,
+}: {
+  enableTypewriter: boolean;
+  pacing: "fixed" | "content-aware";
+}) => {
+  const [phase, setPhase] = useState(0);
+  const [state, setState] = useState<ContentRenderTypewriterState>();
+  const content =
+    WIDE_SVG_PREVIEW_SOURCE +
+    (phase > 0 ? "\n\nAppended prose." : "") +
+    (phase > 1 ? "\n\n<div>Received HTML card</div>" : "");
+  return (
+    <div
+      data-wide-svg-case
+      data-complete={state?.isComplete && state.totalLength === content.length}
+      style={{ width: 400 }}
+    >
+      <p>{`${enableTypewriter ? "Typing" : "Static"}, ${pacing}`}</p>
+      <button type="button" onClick={() => setPhase((value) => value + 1)}>
+        {phase === 0 ? "Receive more prose" : "Receive following HTML"}
+      </button>
+      <ContentRender
+        content={content}
+        enableTypewriter={enableTypewriter}
+        typingSpeed={5}
+        typewriterPacing={pacing}
+        onTypewriterStateChange={setState}
+        disableSandboxLoadingOverlay
+      />
+    </div>
+  );
+};
+
+export const StableVideoWithWideSvg: Story = {
+  name: "Stable Video with Wide SVG Scrolling",
+  render: () => (
+    <div style={{ display: "grid", gap: 24 }}>
+      {(["fixed", "content-aware"] as const).flatMap((pacing) =>
+        [true, false].map((enabled) => (
+          <StableVideoWideSvgPreview
+            key={`${pacing}-${enabled}`}
+            enableTypewriter={enabled}
+            pacing={pacing}
+          />
+        ))
+      )}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const cases = Array.from(
+      canvasElement.querySelectorAll<HTMLElement>("[data-wide-svg-case]")
+    );
+    expect(cases).toHaveLength(4);
+    await waitFor(() => {
+      for (const container of cases)
+        expect(
+          container.querySelector<HTMLIFrameElement>('iframe[data-tag="video"]')
+            ?.contentDocument?.readyState
+        ).toBe("complete");
+    });
+    // Settle each initial about:blank load before counting later reloads.
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+    const captures = cases.map((container) => {
+      const video = container.querySelector<HTMLIFrameElement>(
+        'iframe[data-tag="video"]'
+      )!;
+      expect(video).not.toBeNull();
+      const parent = video.parentNode;
+      const videoWindow = video.contentWindow!;
+      const sentinelWindow = videoWindow as Window & {
+        wideSvgSentinel?: string;
+      };
+      sentinelWindow.wideSvgSentinel = "playing";
+      let loads = 0;
+      let identityChanged = false;
+      const onLoad = () => loads++;
+      video.addEventListener("load", onLoad);
+      const sameVideo = () =>
+        container.querySelector('iframe[data-tag="video"]') === video &&
+        video.parentNode === parent &&
+        video.contentWindow === videoWindow;
+      const observer = new MutationObserver(() => {
+        if (!sameVideo()) identityChanged = true;
+      });
+      observer.observe(container, { childList: true, subtree: true });
+      return {
+        container,
+        assertStable: () => {
+          expect(sameVideo()).toBe(true);
+          expect(identityChanged).toBe(false);
+          expect(sentinelWindow.wideSvgSentinel).toBe("playing");
+          expect(loads).toBe(0);
+        },
+        cleanup: () => {
+          observer.disconnect();
+          video.removeEventListener("load", onLoad);
+        },
+      };
+    });
+    try {
+      for (let phase = 0; phase < 3; phase++) {
+        await waitFor(
+          () => {
+            for (const { container, assertStable } of captures) {
+              expect(container.dataset.complete).toBe("true");
+              assertStable();
+              const scrollers = container.querySelectorAll<HTMLElement>(
+                ".content-render-svg-scroll"
+              );
+              expect(scrollers).toHaveLength(2);
+              for (const scroller of scrollers) {
+                expect(getComputedStyle(scroller).display).toBe("block");
+                expect(getComputedStyle(scroller).overflowX).toBe("auto");
+                expect(scroller.clientWidth).toBe(400);
+                expect(scroller.scrollWidth).toBeGreaterThanOrEqual(1600);
+                scroller.scrollLeft = 100;
+                expect(scroller.scrollLeft).toBe(100);
+              }
+            }
+          },
+          { timeout: 5000 }
+        );
+        if (phase < 2)
+          for (const { container } of captures)
+            await userEvent.click(container.querySelector("button")!);
+      }
+    } finally {
+      for (const capture of captures) capture.cleanup();
+    }
+  },
+};

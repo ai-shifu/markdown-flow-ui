@@ -1,0 +1,820 @@
+import { describe, expect, it, vi } from "vitest";
+import type { Element, Nodes, Root } from "hast";
+import { unified } from "unified";
+import remarkRehype from "remark-rehype";
+import rehypeRaw from "rehype-raw";
+import rehypeHighlight from "rehype-highlight";
+import rehypeKatex from "rehype-katex";
+import { remarkPlugins } from "./markdown-plugins";
+import {
+  createVideoMarkdownRunPlan,
+  cloneVideoMarkdownSourceTree,
+  getVideoMarkdownNodeState,
+  prepareVideoMarkdownRun,
+  projectVideoMarkdownRun,
+} from "./video-markdown-run";
+import { splitContentSegments, type RenderSegment } from "./split-content";
+
+const video = '<iframe data-tag="video"></iframe>';
+const source = (before: string, after: string): RenderSegment[] => [
+  { type: "text", value: before },
+  { type: "markdown", value: video, immediate: true },
+  { type: "text", value: after },
+];
+const hidden = (segments: readonly RenderSegment[]) =>
+  segments.map((segment) =>
+    segment.type === "markdown" && segment.immediate
+      ? segment
+      : { ...segment, value: "" }
+  );
+const processor = unified()
+  .use(remarkPlugins)
+  .use(remarkRehype, { allowDangerousHtml: true })
+  .use(rehypeRaw);
+const prepare = (segments: RenderSegment[]) => {
+  const plan = createVideoMarkdownRunPlan(segments);
+  const tree = processor.runSync(
+    cloneVideoMarkdownSourceTree(plan),
+    plan.markdownSource
+  ) as Root;
+  return prepareVideoMarkdownRun(plan, tree);
+};
+const nodes = (tree: Nodes, tag: string): Element[] => {
+  const result: Element[] = [];
+  const walk = (node: Nodes) => {
+    if (node.type === "element" && node.tagName === tag) result.push(node);
+    if ("children" in node) node.children.forEach(walk);
+  };
+  walk(tree);
+  return result;
+};
+const text = (tree: Nodes): string => {
+  if (tree.type === "text") return tree.value;
+  if (
+    tree.type === "element" &&
+    getVideoMarkdownNodeState(tree)?.active === false
+  )
+    return "";
+  return "children" in tree ? tree.children.map(text).join("") : "";
+};
+const shape = (tree: Nodes): unknown => [
+  tree.type,
+  tree.type === "element" ? tree.tagName : "",
+  "children" in tree ? tree.children.map(shape) : [],
+];
+
+describe("received video Markdown tree projection", () => {
+  it.each([
+    ["# Earlier heading\n\n# Watch ", " now"],
+    ["> Earlier quote\n\nSeparator\n\n> Watch ", " now"],
+    ["- Earlier list\n\nSeparator\n\n- Watch ", " now"],
+    ["Watch ", " now\n====="],
+    ["> 3. Before\n>    - ", "\n>      After"],
+    ["Watch **bold ", " now**"],
+    ["Watch *emphasized ", " now*"],
+    ["Watch ~~deleted ", " now~~"],
+    ["Watch [linked ", " now](/lesson)"],
+    ["[Watch ", "][clip]\n\n[clip]: /watch"],
+    ["| Label | Video |\n| --- | --- |\n| First | ", " |\n| Next | Last |"],
+  ])("retains the complete tree throughout typing: %j", (before, after) => {
+    const segments = source(before, after);
+    const plan = prepare(segments);
+    const completeShape = shape(plan.tree!);
+    for (const length of [0, 1, before.length]) {
+      const rendered = hidden(segments);
+      rendered[0] = { type: "text", value: before.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      expect(shape(projected)).toEqual(completeShape);
+      expect(nodes(projected, "iframe")).toHaveLength(1);
+    }
+    expect(text(projectVideoMarkdownRun(plan, segments))).toBe(
+      text(plan.tree!)
+    );
+    expect(Object.isFrozen(plan.sourceTree)).toBe(true);
+  });
+
+  it.each(["\n", "\n\n", "\r\n\r\n"])(
+    "keeps EOF pending title HTML literal without hiding the real video: %j",
+    (newline) => {
+      const after = `${newline}[Read](/lesson "<iframe data-tag='video'></iframe>`;
+      const segments = source("", after);
+      const plan = prepare(segments);
+      expect(nodes(plan.tree!, "iframe")).toHaveLength(1);
+      for (let length = 0; length <= after.length; length += 1) {
+        const rendered = hidden(segments);
+        rendered[2] = { type: "text", value: after.slice(0, length) };
+        const projected = projectVideoMarkdownRun(plan, rendered);
+        expect(nodes(projected, "iframe")).toHaveLength(1);
+        expect(shape(projected)).toEqual(shape(plan.tree!));
+      }
+      expect(text(projectVideoMarkdownRun(plan, segments))).toContain(
+        "<iframe data-tag='video'></iframe>"
+      );
+      expect(Object.isFrozen(plan.sourceTree)).toBe(true);
+    }
+  );
+
+  it("keeps pending title entities and UTF-16 units on the authored CRLF budget", () => {
+    const after = `\r\n\r\n[Read](/lesson "<iframe data-tag='video' title='甲&amp;😀\\*'></iframe>`;
+    const segments = source("", after);
+    const plan = prepare(segments);
+    const glyphs = [
+      { value: "甲", end: after.indexOf("甲") + 1 },
+      { value: "&", end: after.indexOf("&amp;") + 5 },
+      { value: "\ud83d", end: after.indexOf("😀") + 1 },
+      { value: "\ude00", end: after.indexOf("😀") + 2 },
+      { value: "*", end: after.indexOf("\\*") + 2 },
+    ];
+    for (let length = 0; length <= after.length; length += 1) {
+      const rendered = hidden(segments);
+      rendered[2] = { type: "text", value: after.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      expect(nodes(projected, "iframe")).toHaveLength(1);
+      expect(
+        text(projected)
+          .split("")
+          .filter((character) => "甲&😀*".includes(character))
+          .join("")
+      ).toBe(
+        glyphs
+          .filter(({ end }) => end <= length)
+          .map(({ value }) => value)
+          .join("")
+      );
+    }
+  });
+
+  it("uses Markdown escape mapping for normalized pending HTML text", () => {
+    const after = `\r\n\r\n[reference]: /lesson "\r\n<iframe data-tag='video' title='甲\\&amp;😀\\*'>`;
+    const segments = source("", after);
+    const plan = prepare(segments);
+    const entity = after.indexOf("\\&amp;");
+    const glyphs = [
+      { value: "甲", end: after.indexOf("甲") + 1 },
+      ..."&amp;".split("").map((value, index) => ({
+        value,
+        end: entity + index + 2,
+      })),
+      { value: "\ud83d", end: after.indexOf("😀") + 1 },
+      { value: "\ude00", end: after.indexOf("😀") + 2 },
+      { value: "*", end: after.indexOf("\\*") + 2 },
+    ];
+    for (let length = 0; length <= after.length; length += 1) {
+      const rendered = hidden(segments);
+      rendered[2] = { type: "text", value: after.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      const title = text(projected).split("title='")[1]?.split("'")[0] ?? "";
+      expect(title).toBe(
+        glyphs
+          .filter(({ end }) => end <= length)
+          .map(({ value }) => value)
+          .join("")
+      );
+    }
+  });
+
+  it.each([
+    ["a thematic break", "\n\n---\n\nLater", "hr", 5],
+    ["a generated soft break", "\n\nFirst\nLater", "br", 8],
+    ["a CRLF soft break", "\r\n\r\nFirst\r\nLater", "br", 11],
+    ["a spaces hard break", "\n\nFirst  \nLater", "br", 10],
+    ["a backslash hard break", "\n\nFirst\\\nLater", "br", 9],
+    ["an authored HTML break", "\n\nFirst<br>Later", "br", 11],
+    ["an empty HTML leaf", "\n\nFirst<wbr>Later", "wbr", 12],
+    ["an empty paired HTML leaf", "\n\nFirst<mark></mark>Later", "mark", 20],
+  ])("activates %s only at its source end", (_name, after, tag, end) => {
+    const segments = source("", after as string);
+    const plan = prepare(segments);
+    const renderAt = (length: number) => {
+      const rendered = hidden(segments);
+      rendered[2] = { type: "text", value: (after as string).slice(0, length) };
+      return projectVideoMarkdownRun(plan, rendered);
+    };
+    expect(nodes(plan.tree!, tag as string)).toHaveLength(1);
+    for (const length of [0, (end as number) - 1, end as number]) {
+      const projected = renderAt(length);
+      expect(
+        getVideoMarkdownNodeState(nodes(projected, tag as string)[0])?.active
+      ).toBe(length >= (end as number));
+      expect(
+        getVideoMarkdownNodeState(nodes(projected, "iframe")[0])?.active
+      ).not.toBe(false);
+      expect(shape(projected)).toEqual(shape(plan.tree!));
+    }
+    expect(text(renderAt((end as number) + 2)).replace(/\s/g, "")).toBe(
+      tag === "hr" ? "" : "FirstLa"
+    );
+    expect(text(projectVideoMarkdownRun(plan, segments))).toBe(
+      text(plan.tree!)
+    );
+  });
+
+  it.each([
+    ["an unchecked task", "\n\n- [ ] Later task text"],
+    ["a checked task", "\n\n- [x] Later task text"],
+    ["an uppercase checked task", "\n\n3. [X] Later task text"],
+    ["a tab-valued unchecked task", "\n\n- [\t] Later task text"],
+    ["a loose task paragraph", "\n\n- [ ] Later task text\n\n  More text"],
+    [
+      "a nested task",
+      "\n\n- Parent mentions [ ] literally\n  - [x] Later task text",
+    ],
+    ["a quoted ordered task", "\r\n\r\n> 3. [x] Later task text\r\n"],
+    ["a task after its bullet line", "\r\n\r\n> -\r\n>   [x] Later task text"],
+    ["a multiline task marker", "\r\n\r\n> - [\r\n>   ] Later task text"],
+    [
+      "a task starting with HTML",
+      '\n\n- [x] <input type="checkbox"> Later task text',
+    ],
+  ])("activates %s at its own authored closing bracket", (_name, after) => {
+    const segments = source("", after);
+    const plan = prepare(segments);
+    const inputs = nodes(plan.tree!, "input");
+    const generated = inputs.find((input) => !input.position)!;
+    expect(generated).toBeDefined();
+    const markerStart = after.lastIndexOf(
+      "[",
+      after.indexOf("Later task text")
+    );
+    const markerEnd = after.indexOf("]", markerStart) + 1;
+    for (let length = 0; length <= markerEnd + 1; length += 1) {
+      const rendered = hidden(segments);
+      rendered[2] = { type: "text", value: after.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      const checkbox = nodes(projected, "input").find(
+        (input) => !input.position
+      )!;
+      const state = getVideoMarkdownNodeState(checkbox);
+      expect(state?.range).toEqual({
+        start: video.length + markerStart,
+        end: video.length + markerEnd,
+      });
+      expect(state?.active).toBe(length >= markerEnd);
+      if (length >= markerEnd)
+        for (const paragraph of nodes(projected, "p"))
+          if (nodes(paragraph, "input").includes(checkbox))
+            expect(getVideoMarkdownNodeState(paragraph)?.active).not.toBe(
+              false
+            );
+      expect(shape(projected)).toEqual(shape(plan.tree!));
+      expect(text(projected)).not.toContain("Later task text");
+      expect(
+        getVideoMarkdownNodeState(nodes(projected, "iframe")[0])?.active
+      ).not.toBe(false);
+    }
+    expect(text(projectVideoMarkdownRun(plan, segments))).toBe(
+      text(plan.tree!)
+    );
+    expect(Object.isFrozen(plan.sourceTree)).toBe(true);
+  });
+
+  it("binds nested and sibling task inputs to their own markers, not body brackets", () => {
+    const after =
+      "\n\n- [ ] Outer [x] literal\n  - [x] Child [ ] literal\n- [X] Sibling";
+    const segments = source("", after);
+    const plan = prepare(segments);
+    const ends = [
+      after.indexOf("[ ]") + 3,
+      after.indexOf("[x] Child") + 3,
+      after.indexOf("[X]") + 3,
+    ];
+    for (let length = 0; length <= after.length; length += 1) {
+      const rendered = hidden(segments);
+      rendered[2] = { type: "text", value: after.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      expect(
+        nodes(projected, "input").map(
+          (input) => getVideoMarkdownNodeState(input)?.active
+        )
+      ).toEqual(ends.map((end) => length >= end));
+    }
+  });
+
+  it("keeps authored input source budgets independent from generated task markers", () => {
+    const after = '\n\n- [x] <input type="checkbox"> Later';
+    const segments = source("", after);
+    const plan = prepare(segments);
+    const authoredEnd = after.indexOf(">") + 1;
+    for (const length of [
+      after.indexOf("]") + 1,
+      authoredEnd - 1,
+      authoredEnd,
+    ]) {
+      const rendered = hidden(segments);
+      rendered[2] = { type: "text", value: after.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      const [generated, authored] = nodes(projected, "input");
+      expect(getVideoMarkdownNodeState(generated)?.active).toBe(true);
+      expect(getVideoMarkdownNodeState(authored)?.active).toBe(
+        length >= authoredEnd
+      );
+      expect(getVideoMarkdownNodeState(authored)?.range).toEqual({
+        start: video.length + after.indexOf("<input"),
+        end: video.length + authoredEnd,
+      });
+    }
+  });
+
+  it.each(["- [ ]", "- [x] ", "- Mention [ ] in body", "[x] Plain text"])(
+    "does not invent inputs outside the received GFM task AST: %j",
+    (body) => {
+      const plan = prepare(source("", `\n\n${body}`));
+      expect(nodes(plan.tree!, "input")).toHaveLength(0);
+    }
+  );
+
+  it.each([
+    ["fenced code", "```js\nLater code\n```", "pre", "```"],
+    ["code content", "```js\nLater code\n```", "code", "```"],
+    ["a list", "- Later item", "ul", "-"],
+    ["an item", "- Later item", "li", "-"],
+    ["an ordered list", "3. Later item", "ol", "3."],
+    ["a quote", "> Later quote", "blockquote", ">"],
+    ["a heading", "# Later heading", "h1", "#"],
+    ["a table header", "| Header |\n| --- |\n| Later |", "thead", "| Header"],
+    ["a table body", "| Header |\n| --- |\n| Later |", "tbody", "| Later"],
+    ["a nested list", "- Parent\n  - Later child", "ul", "- Parent"],
+  ])(
+    "activates %s when its own source starts, before its text completes",
+    (_name, body, tag, marker) => {
+      for (const beforeVideo of [false, true]) {
+        const before = beforeVideo ? `${body}\r\n\r\n` : "";
+        const after = beforeVideo ? "" : `\r\n\r\n${body}`;
+        const segments = source(before, after);
+        const plan = prepare(segments);
+        const index = beforeVideo ? 0 : 2;
+        const raw = segments[index].value;
+        const start = raw.indexOf(marker);
+        for (const length of [0, start, start + 1]) {
+          const rendered = hidden(segments);
+          rendered[index] = { type: "text", value: raw.slice(0, length) };
+          const projected = projectVideoMarkdownRun(plan, rendered);
+          const wrapper = nodes(projected, tag)[0];
+          expect(getVideoMarkdownNodeState(wrapper)?.active).toBe(
+            length > start
+          );
+          expect(shape(projected)).toEqual(shape(plan.tree!));
+          expect(text(projected)).not.toContain("Later");
+          expect(
+            getVideoMarkdownNodeState(nodes(projected, "iframe")[0])?.active
+          ).not.toBe(false);
+        }
+        expect(text(projectVideoMarkdownRun(plan, segments))).toBe(
+          text(plan.tree!)
+        );
+      }
+    }
+  );
+
+  it("keeps only immediate media ancestors active while preceding and nested siblings wait", () => {
+    const before = "> - Earlier item\n> - Watch ";
+    const after = "\n>   - Nested later\n> - Following item";
+    const segments = source(before, after);
+    const plan = prepare(segments);
+    const projected = projectVideoMarkdownRun(plan, hidden(segments));
+    expect(
+      nodes(projected, "li").map(
+        (node) => getVideoMarkdownNodeState(node)?.active
+      )
+    ).toEqual([false, true, false, false]);
+    expect(
+      nodes(projected, "ul").map(
+        (node) => getVideoMarkdownNodeState(node)?.active
+      )
+    ).toEqual([true, false]);
+    expect(
+      getVideoMarkdownNodeState(nodes(projected, "blockquote")[0])?.active
+    ).toBe(true);
+    expect(
+      getVideoMarkdownNodeState(nodes(projected, "iframe")[0])?.active
+    ).not.toBe(false);
+  });
+
+  it("keeps immediate media ancestors active even when they normally wait for their whole range", () => {
+    const segments = source(
+      "<custom-wrapper>Earlier ",
+      " Later</custom-wrapper>"
+    );
+    const plan = prepare(segments);
+    const projected = projectVideoMarkdownRun(plan, hidden(segments));
+    expect(
+      getVideoMarkdownNodeState(nodes(projected, "custom-wrapper")[0])?.active
+    ).toBe(true);
+    expect(text(projected)).not.toContain("Earlier");
+    expect(text(projected)).not.toContain("Later");
+  });
+
+  it("binds positionless empty generated containers to their own source row", () => {
+    const after = "\r\n\r\n| A | B |\r\n| - | - |\r\n| Later |";
+    const segments = source("", after);
+    const plan = prepare(segments);
+    const start = after.indexOf("| Later");
+    for (const length of [0, start, start + 1]) {
+      const rendered = hidden(segments);
+      rendered[2] = { type: "text", value: after.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      const cell = nodes(projected, "td")[1];
+      expect(cell.position).toBeUndefined();
+      expect(getVideoMarkdownNodeState(cell)?.active).toBe(length > start);
+    }
+  });
+
+  it("keeps all native received HTML structure active without flushing earlier prose", () => {
+    const html =
+      "<aside><ul><li>Received</li></ul><table><tr><td>Cell</td></tr></table></aside>";
+    const segments: RenderSegment[] = [
+      { type: "text", value: "Earlier prose\r\n\r\n" },
+      { type: "markdown", value: html, immediate: true },
+    ];
+    const plan = prepare(segments);
+    const projected = projectVideoMarkdownRun(plan, hidden(segments));
+    for (const tag of ["aside", "ul", "li", "table", "tbody", "tr", "td"])
+      expect(getVideoMarkdownNodeState(nodes(projected, tag)[0])?.active).toBe(
+        true
+      );
+    expect(text(projected)).toContain("Received");
+    expect(text(projected)).not.toContain("Earlier prose");
+  });
+
+  it.each([false, true])(
+    "shares received HTML leaf budgets (pending=%s)",
+    (pending) => {
+      const html =
+        '<details><summary>Title</summary><hr><br><input type="checkbox"></details>';
+      const segments: RenderSegment[] = [
+        { type: "text", value: "Before\n\n" },
+        {
+          type: "markdown",
+          value: html,
+          immediate: true,
+          ...(pending ? { pending: true as const } : {}),
+        },
+        { type: "text", value: "\n\nLater" },
+      ];
+      const plan = prepare(segments);
+      const projected = projectVideoMarkdownRun(plan, hidden(segments));
+      for (const tag of ["hr", "br", "input"])
+        expect(
+          getVideoMarkdownNodeState(nodes(projected, tag)[0])?.active
+        ).toBe(!pending);
+      expect(text(projected).replace(/\s/g, "")).toBe(pending ? "" : "Title");
+    }
+  );
+
+  it("maps successive generated breaks to their own newline inside containers", () => {
+    const before = "> - First\n>   Next\n>   Last ";
+    const segments = source(before, "");
+    const plan = prepare(segments);
+    const firstEnd = before.indexOf("\n") + 1;
+    const secondEnd = before.indexOf("\n", firstEnd) + 1;
+    for (let length = 0; length <= before.length; length += 1) {
+      const rendered = hidden(segments);
+      rendered[0] = { type: "text", value: before.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      expect(
+        nodes(projected, "br").map(
+          (node) => getVideoMarkdownNodeState(node)?.active
+        )
+      ).toEqual([length >= firstEnd, length >= secondEnd]);
+    }
+    expect(
+      text(projectVideoMarkdownRun(plan, segments)).replace(/\s/g, "")
+    ).toBe("FirstNextLast");
+  });
+
+  it.each(["\n", "\r\n"])(
+    "normalizes indented HTML while keeping raw budgets: %j",
+    (newline) => {
+      const after = `${newline}${newline}    <span>甲&amp;😀乙</span>${newline}    <custom-button-after-content>Ask</custom-button-after-content>`;
+      const segments = source("", after);
+      const plan = prepare(segments);
+      expect(nodes(plan.tree!, "code")).toHaveLength(0);
+      expect(nodes(plan.tree!, "span")).toHaveLength(1);
+      expect(nodes(plan.tree!, "custom-button-after-content")).toHaveLength(1);
+      const glyphs = [
+        { value: "甲", end: after.indexOf("甲") + 1 },
+        { value: "&", end: after.indexOf("&amp;") + 5 },
+        { value: "\ud83d", end: after.indexOf("😀") + 1 },
+        { value: "\ude00", end: after.indexOf("😀") + 2 },
+        { value: "乙", end: after.indexOf("乙") + 1 },
+      ];
+      for (let length = 0; length <= after.length; length += 1) {
+        const rendered = hidden(segments);
+        rendered[2] = { type: "text", value: after.slice(0, length) };
+        const projected = projectVideoMarkdownRun(plan, rendered);
+        const button = nodes(projected, "custom-button-after-content")[0];
+        expect(getVideoMarkdownNodeState(button)?.active).toBe(
+          length === after.length
+        );
+        const expected = glyphs
+          .filter(({ end }) => end <= length)
+          .map(({ value }) => value)
+          .join("");
+        expect(text(projected).replace(/\s/g, "")).toBe(
+          expected + (length === after.length ? "Ask" : "")
+        );
+        expect(shape(projected)).toEqual(shape(plan.tree!));
+      }
+      expect(Object.isFrozen(plan.sourceTree)).toBe(true);
+    }
+  );
+
+  it("preserves normalized multiline HTML source ranges", () => {
+    const after =
+      '\r\n\r\n    <custom-button-after-content\r\n      title="a > b">\r\n    Ask\r\n    </custom-button-after-content>';
+    const segments = source("", after);
+    const plan = prepare(segments);
+    expect(nodes(plan.tree!, "code")).toHaveLength(0);
+    const rendered = hidden(segments);
+    for (const length of [after.length - 1, after.length]) {
+      rendered[2] = { type: "text", value: after.slice(0, length) };
+      const button = nodes(
+        projectVideoMarkdownRun(plan, rendered),
+        "custom-button-after-content"
+      )[0];
+      expect(button.properties.title).toBe("a > b");
+      expect(getVideoMarkdownNodeState(button)?.active).toBe(
+        length === after.length
+      );
+    }
+  });
+
+  it("maps normalized unfinished SVG positions back to received source", () => {
+    const after =
+      '\r\n\r\n    <span>甲&amp;😀</span>\r\n\r\n    <svg width="100';
+    const segments = source("", after);
+    const sourcePlan = createVideoMarkdownRunPlan(segments);
+    const originalTree = JSON.stringify(sourcePlan.sourceTree);
+    const tree = processor.runSync(
+      cloneVideoMarkdownSourceTree(sourcePlan),
+      sourcePlan.markdownSource
+    ) as Root;
+    const plan = prepareVideoMarkdownRun(sourcePlan, tree);
+    const start = after.indexOf("<svg");
+    for (const length of [start, start + 1, after.length]) {
+      const rendered = hidden(segments);
+      rendered[2] = { type: "text", value: after.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      expect(text(projected).replace(/\s/g, "")).toBe("甲&😀");
+      const svg = nodes(projected, "svg")[0];
+      expect(getVideoMarkdownNodeState(svg)?.svgSource).toBe(
+        after.slice(start, length)
+      );
+      expect(svg.position?.start.offset).toBe(video.length + start);
+    }
+    expect(JSON.stringify(sourcePlan.sourceTree)).toBe(originalTree);
+    expect(Object.isFrozen(sourcePlan.sourceTree)).toBe(true);
+  });
+
+  it.each([
+    "\r\n\r\nUse `value\r\n    <custom-button-after-content>Code</custom-button-after-content>\r\n`",
+    "\r\n\r\n```html\r\n    <custom-button-after-content>Code</custom-button-after-content>\r\n```",
+  ])("preserves code protection through CRLF normalization: %j", (after) => {
+    const segments = source("", after);
+    const plan = prepare(segments);
+    const projected = projectVideoMarkdownRun(plan, segments);
+    expect(nodes(projected, "custom-button-after-content")).toHaveLength(0);
+    expect(nodes(projected, "code")).toHaveLength(1);
+    expect(text(projected)).toContain(
+      "<custom-button-after-content>Code</custom-button-after-content>"
+    );
+  });
+
+  it("resolves a reference link before its definition is typed", () => {
+    const segments = source("[Watch ", "][clip]\n\n[clip]: /watch");
+    const plan = prepare(segments);
+    const link = nodes(projectVideoMarkdownRun(plan, hidden(segments)), "a")[0];
+    expect(link.properties.href).toBe("/watch");
+    expect(getVideoMarkdownNodeState(link)?.active).toBe(true);
+    expect(nodes(link, "iframe")).toHaveLength(1);
+  });
+
+  it.each([
+    [
+      "甲&amp;乙\\*丙 ",
+      [
+        "",
+        "甲",
+        "甲",
+        "甲",
+        "甲",
+        "甲",
+        "甲&",
+        "甲&乙",
+        "甲&乙",
+        "甲&乙*",
+        "甲&乙*丙",
+        "甲&乙*丙 ",
+      ],
+    ],
+    [
+      "甲&#x1F600;乙 ",
+      [
+        "",
+        "甲",
+        "甲",
+        "甲",
+        "甲",
+        "甲",
+        "甲",
+        "甲",
+        "甲",
+        "甲",
+        "甲😀",
+        "甲😀乙",
+        "甲😀乙 ",
+      ],
+    ],
+  ])("maps decoded units to complete raw tokens: %j", (before, expected) => {
+    const segments = source(before, "");
+    const plan = prepare(segments);
+    for (let length = 0; length <= before.length; length += 1) {
+      const rendered = hidden(segments);
+      rendered[0] = { type: "text", value: before.slice(0, length) };
+      expect(text(projectVideoMarkdownRun(plan, rendered))).toBe(
+        expected[length]
+      );
+    }
+  });
+
+  it.each([
+    `${video}甲&amp;乙`,
+    `${video}\n甲&amp;乙`,
+    `Before <span>甲&amp;乙</span> ${video}`,
+  ])("preserves HTML entity budgets: %j", (raw) => {
+    const segments = splitContentSegments(raw, true, true);
+    const plan = prepare(segments);
+    const entityEnd = raw.indexOf("&amp;") + 5;
+    for (const end of [entityEnd - 1, entityEnd]) {
+      const rendered = segments.map((segment, index) =>
+        segment.type === "markdown" && segment.immediate
+          ? segment
+          : {
+              ...segment,
+              value: segment.value.slice(
+                0,
+                Math.max(0, end - plan.offsets[index])
+              ),
+            }
+      );
+      expect(text(projectVideoMarkdownRun(plan, rendered)).includes("&")).toBe(
+        end === entityEnd
+      );
+    }
+  });
+
+  it("does not activate untyped images, custom controls, math or SVG", () => {
+    const segments = source(
+      'Before <img src="/secret"> ![Image](/secret) <custom-button-after-content>Go</custom-button-after-content> $x^2$\n',
+      "\n<svg><text>Chart</text></svg>"
+    );
+    const plan = prepare(segments);
+    const projected = projectVideoMarkdownRun(plan, hidden(segments));
+    for (const tag of ["img", "custom-button-after-content", "svg"])
+      for (const node of nodes(projected, tag))
+        expect(getVideoMarkdownNodeState(node)?.active).toBe(false);
+    expect(text(projected).trim()).toBe("");
+    expect(nodes(projected, "iframe")).toHaveLength(1);
+  });
+
+  it("preserves code text and its raw escaping without parsing each tick", () => {
+    const segments = source(
+      "Use `a\\* &amp;`\n\n```js\nconst a = 1;\n```\n\n",
+      " after"
+    );
+    const sourcePlan = createVideoMarkdownRunPlan(segments);
+    const transform = vi.fn(
+      (tree: Root) =>
+        unified().use(rehypeHighlight).use(rehypeKatex).runSync(tree) as Root
+    );
+    const tree = processor.runSync(
+      cloneVideoMarkdownSourceTree(sourcePlan)
+    ) as Root;
+    const plan = prepareVideoMarkdownRun(sourcePlan, tree, transform);
+    for (let length = 0; length < segments[0].value.length; length += 1) {
+      const rendered = hidden(segments);
+      rendered[0] = { type: "text", value: segments[0].value.slice(0, length) };
+      expect(shape(projectVideoMarkdownRun(plan, rendered))).toEqual(
+        shape(plan.tree!)
+      );
+    }
+    expect(transform).toHaveBeenCalledTimes(1);
+    expect(text(projectVideoMarkdownRun(plan, segments))).toContain(
+      "a\\* &amp;"
+    );
+    expect(text(projectVideoMarkdownRun(plan, segments))).toContain(
+      "const a = 1;"
+    );
+  });
+
+  it("activates a flow control at its own source boundary", () => {
+    const interaction = "?[%{{role}}Developer|Designer]";
+    const before = `Select ${interaction} then `;
+    const segments = source(before, " after");
+    const plan = prepare(segments);
+    const end = before.indexOf(interaction) + interaction.length;
+    for (const length of [end - 1, end]) {
+      const rendered = hidden(segments);
+      rendered[0] = { type: "text", value: before.slice(0, length) };
+      const control = nodes(
+        projectVideoMarkdownRun(plan, rendered),
+        "custom-variable"
+      )[0];
+      expect(control).toBeDefined();
+      expect(getVideoMarkdownNodeState(control)?.active).toBe(length === end);
+    }
+  });
+
+  it("gates formatted math until its complete source token is typed", () => {
+    const before = "Formula $x^2$ then ";
+    const segments = source(before, " after");
+    const sourcePlan = createVideoMarkdownRunPlan(segments);
+    const tree = processor.runSync(
+      cloneVideoMarkdownSourceTree(sourcePlan)
+    ) as Root;
+    const plan = prepareVideoMarkdownRun(
+      sourcePlan,
+      tree,
+      (value) => unified().use(rehypeKatex).runSync(value) as Root
+    );
+    const end = before.indexOf("$", before.indexOf("$") + 1) + 1;
+    for (const length of [end - 1, end]) {
+      const rendered = hidden(segments);
+      rendered[0] = { type: "text", value: before.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      const math = nodes(projected, "span").find(
+        (node) => getVideoMarkdownNodeState(node)?.atomic
+      );
+      expect(math).toBeDefined();
+      expect(getVideoMarkdownNodeState(math!)?.active).toBe(length === end);
+    }
+  });
+
+  it("keeps raw HTML backslashes literal while decoding its entities", () => {
+    const segments = source("", "甲\\*乙&amp;丙");
+    const plan = prepare(segments);
+    const rendered = hidden(segments);
+    for (let length = 0; length <= segments[2].value.length; length += 1) {
+      rendered[2] = { type: "text", value: segments[2].value.slice(0, length) };
+      const visible = text(projectVideoMarkdownRun(plan, rendered));
+      expect(visible.includes("&")).toBe(
+        length >= segments[2].value.indexOf("&amp;") + 5
+      );
+    }
+    expect(text(projectVideoMarkdownRun(plan, segments))).toBe("甲\\*乙&丙");
+  });
+
+  it.each([
+    '<svg width="100',
+    '<svg\nwidth="100',
+    '<svg title="?[Option|Other]',
+  ])(
+    "routes an unfinished SVG header through its stable Shadow renderer: %j",
+    (svg) => {
+      const segments = source("", `\n\n${svg}`);
+      const plan = prepare(segments);
+      const projected = projectVideoMarkdownRun(plan, segments);
+      const node = nodes(projected, "svg")[0];
+      expect(node).toBeDefined();
+      expect(getVideoMarkdownNodeState(node)?.svgSource).toBe(svg);
+      expect(text(projected)).not.toContain("<svg");
+      expect(nodes(projected, "custom-variable")).toHaveLength(0);
+    }
+  );
+
+  it.each(["`<svg width=100`", "$<svg width=100$", "\\<svg width=100"])(
+    "keeps literal SVG examples inert: %j",
+    (literal) => {
+      const segments = source("", `\n\n${literal}`);
+      const plan = prepare(segments);
+      expect(plan.incompleteSvg).toBeUndefined();
+      expect(
+        nodes(projectVideoMarkdownRun(plan, segments), "svg")
+      ).toHaveLength(0);
+    }
+  );
+
+  it("preserves CJK, emoji and decoded text before an unfinished SVG header", () => {
+    const segments = source("", '\n\n甲😀&amp; before <svg width="100');
+    const plan = prepare(segments);
+    expect(text(projectVideoMarkdownRun(plan, segments)).trim()).toBe(
+      "甲😀& before"
+    );
+  });
+
+  it("keeps an SVG-looking raw-text body literal", () => {
+    const plan = createVideoMarkdownRunPlan(
+      source("", '\n\n<textarea><svg width="100</textarea>')
+    );
+    expect(plan.incompleteSvg).toBeUndefined();
+  });
+
+  it("keeps the complete source tree unchanged after projections", () => {
+    const segments = source("Before ", " after");
+    const plan = prepare(segments);
+    const original = structuredClone(plan.tree);
+    projectVideoMarkdownRun(plan, hidden(segments));
+    projectVideoMarkdownRun(plan, segments);
+    expect(plan.tree).toEqual(original);
+  });
+});

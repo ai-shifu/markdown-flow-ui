@@ -48,6 +48,34 @@ function App() {
 }
 ```
 
+With the typewriter enabled, prose follows the configured typing pace. Received
+HTML is rendered from each received snapshot immediately, including unfinished
+fragments, while surrounding prose continues typing. HTML does not consume the
+typing budget or wait for earlier prose to finish. Tag-like text such as `<div`
+remains ordinary Markdown until a tag-name boundary (whitespace, `/`, or `>`) is
+received.
+
+Streaming detection recognizes the backend MarkdownFlow block roots, including
+`figure`, `table`, `canvas`, `video`, `header`, `nav`, and `details`. HTML-looking
+text inside Markdown code, math, comments, image alt text, link destinations/titles,
+reference definitions, or another tag's attributes stays inert. Unfinished link metadata
+also stays literal while streaming; invalid links do not hide subsequent HTML.
+Quoted and nested list code fences remain code even directly after closed HTML.
+Detection and presentation are separate: `pre`, `details`, `summary`,
+`aside`, `blockquote`, `ul`, `ol`, `dl`, and `table` keep their native Markdown
+styles and language/direction attributes while bypassing typing. Widget roots
+retain the sandbox; native presentation blocks with embedded script, style, or
+other document resources also use the sandbox (native video frames are exempt).
+Detection scans absolute source offsets without reparsing every remaining
+suffix. Native videos use the complete received Markdown structure; typing only
+changes text visibility, preserving video frames across earlier headings, lists,
+quotes, reference links, and subsequent HTML updates. Stable runs apply the
+same HTML indentation and newline normalization as the ordinary renderer, with
+positions mapped back to the original source for typing and callbacks.
+Each received snapshot determines the Markdown structure. Later source that
+changes its grammar, such as adding a previously missing reference definition,
+can change that structure; typing an already received snapshot preserves it.
+
 ### Interactive Elements
 
 ```tsx

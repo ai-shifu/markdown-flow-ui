@@ -57,6 +57,7 @@ jobs:
       - name: Run Storybook browser tests
         run: >-
           npm run test:storybook --
+          src/components/ContentRender/ContentRender.stories.tsx
           src/components/Slide/Slide.stories.tsx
           src/components/MarkdownFlow/ScrollToBottomControl.stories.tsx
           src/components/MarkdownFlow/ScrollableMarkdownFlow.stories.tsx

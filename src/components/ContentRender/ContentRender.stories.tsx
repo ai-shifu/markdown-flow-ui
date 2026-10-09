@@ -3029,6 +3029,9 @@ export const StableVideoWithEarlierMarkdown: Story = {
     expect(parent?.getAttribute("href")).toBe("/watch");
     expect(canvasElement.querySelectorAll("h1")).toHaveLength(2);
     await userEvent.click(canvasElement.querySelector("button")!);
+    const details = canvasElement.querySelector("details");
+    expect(details?.textContent).toContain("Following HTML is visible.");
+    expect(canvasElement.querySelectorAll("iframe")).toHaveLength(1);
     await waitFor(() => {
       expect(canvasElement.textContent).toContain("Earlier heading");
       expect(canvasElement.textContent).toContain("Later prose.");
@@ -3036,13 +3039,6 @@ export const StableVideoWithEarlierMarkdown: Story = {
     expect(canvasElement.querySelector('iframe[data-tag="video"]')).toBe(video);
     expect(video?.parentElement).toBe(parent);
     expect((video as HTMLIFrameElement).contentWindow).toBe(videoWindow);
-    await waitFor(() => {
-      const sandbox = canvasElement.querySelector(
-        'iframe:not([data-tag="video"])'
-      );
-      expect(
-        (sandbox as HTMLIFrameElement)?.contentDocument?.body.textContent
-      ).toContain("Following HTML is visible.");
-    });
+    expect(canvasElement.querySelector("details")).toBe(details);
   },
 };

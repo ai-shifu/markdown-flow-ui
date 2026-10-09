@@ -475,6 +475,18 @@ describe("splitContentSegments", () => {
 });
 
 describe("streaming source scanning", () => {
+  const nativeRoots = new Set([
+    "pre",
+    "details",
+    "summary",
+    "aside",
+    "blockquote",
+    "ul",
+    "ol",
+    "dl",
+    "table",
+  ]);
+
   it.each([
     "header",
     "footer",
@@ -508,19 +520,165 @@ describe("streaming source scanning", () => {
       const prefix = "Intro\n";
       expect(splitContentSegments(`${prefix}${html}`, true, true)).toEqual([
         { type: "text", value: prefix },
-        { type: "sandbox", value: html },
+        nativeRoots.has(tag)
+          ? {
+              type: "markdown",
+              immediate: true,
+              ...(html === opening.slice(0, -1) ? { pending: true } : {}),
+              value: html,
+            }
+          : { type: "sandbox", value: html },
       ]);
     }
     const html = `${opening}Received</${tag}>`;
     expect(splitContentSegments(`${html} Following prose`, true, true)).toEqual(
       [
-        { type: "sandbox", value: html },
+        nativeRoots.has(tag)
+          ? { type: "markdown", immediate: true, value: html }
+          : { type: "sandbox", value: html },
         { type: "text", value: " Following prose" },
       ]
     );
     expect(splitContentSegments(`<${tag}>Received</${tag}>`, true)).toEqual([
       { type: "text", value: `<${tag}>Received</${tag}>` },
     ]);
+  });
+
+  it.each([
+    '<pre dir="rtl" lang="es"><code>Received</code></pre>',
+    '<aside class="markdown-alert markdown-alert-note"><p>Received</p></aside>',
+    "<details open><summary><h2>Heading</h2></summary><p>Received</p></details>",
+  ])("preserves native Markdown HTML presentation for %s", (html) => {
+    expect(splitContentSegments(html, true, true)).toEqual([
+      { type: "markdown", immediate: true, value: html },
+    ]);
+    const unfinished = html.slice(0, html.lastIndexOf("</"));
+    expect(splitContentSegments(unfinished, true, true)).toEqual([
+      { type: "markdown", immediate: true, value: unfinished },
+    ]);
+  });
+
+  it.each([
+    "<figure>Card</figure><style>figure { color: red; }</style>",
+    '<figure>Card</figure><script>window.card = "ready";</script>',
+    '<canvas width="100"></canvas><script>window.draw = true;</script>',
+    "<video controls></video><style>video { width: 100%; }</style>",
+  ])("keeps visual widget roots in one stable sandbox: %s", (raw) => {
+    expect(splitContentSegments(raw, true, true)).toEqual([
+      { type: "sandbox", value: raw },
+    ]);
+  });
+
+  it.each([
+    '<pre title="<script>fake</script>">Received</pre>',
+    "<aside><!-- <script>fake</script><style>fake</style> --><p>Received</p></aside>",
+    "<details><textarea><script>raw example</script></textarea></details>",
+  ])("ignores resource-looking literals inside native HTML: %s", (raw) => {
+    expect(splitContentSegments(raw, true, true)).toEqual([
+      { type: "markdown", immediate: true, value: raw },
+    ]);
+  });
+
+  it.each([
+    "<aside><p>Widget</p><style>p { color: red; }</style></aside>",
+    "<details><script>window.ready = true;</script></details>",
+    '<aside><iframe src="/widget"></iframe></aside>',
+    '<details><link rel="stylesheet" href="/widget.css"></details>',
+    '<aside><meta name="widget" content="received"></aside>',
+    "<details><template><p>Widget</p></template></details>",
+  ])("sandboxes executable resources inside a presentation root: %s", (raw) => {
+    expect(splitContentSegments(raw, true, true)).toEqual([
+      { type: "sandbox", value: raw },
+    ]);
+  });
+
+  it("keeps an actual native video inside native presentation HTML", () => {
+    const raw =
+      '<aside><iframe title="<script>example</script>" data-tag="video"></iframe><p>Received</p></aside>';
+    expect(splitContentSegments(raw, true, true)).toEqual([
+      { type: "markdown", immediate: true, value: raw },
+    ]);
+  });
+
+  it("does not migrate an existing native video for a pending sibling iframe", () => {
+    const first = '<aside><iframe data-tag="video"></iframe>';
+    for (const next of [
+      "<iframe ",
+      '<iframe title="<script>quoted example',
+      '<iframe data-tag="video">',
+      '<iframe data-tag="video"></iframe></aside>',
+    ]) {
+      const raw = `${first}${next}`;
+      expect(splitContentSegments(raw, true, true)).toEqual([
+        { type: "markdown", immediate: true, value: raw },
+      ]);
+    }
+    const generic = `${first}<iframe src="/widget">`;
+    expect(splitContentSegments(generic, true, true)).toEqual([
+      { type: "sandbox", value: generic },
+    ]);
+  });
+
+  it("keeps ordinary nested layout HTML in its native presentation root", () => {
+    const raw =
+      "<details><summary>Heading</summary><div><section><article><main>Received</main></article></section></div></details>";
+    expect(splitContentSegments(raw, true, true)).toEqual([
+      { type: "markdown", immediate: true, value: raw },
+    ]);
+  });
+
+  it.each([
+    [
+      '<pre dir="rtl">Code</pre>',
+      "<details><style>p{color:red}</style></details>",
+    ],
+    [
+      '<aside><iframe data-tag="video"></iframe></aside>',
+      "<details><script>window.widget=true;</script></details>",
+    ],
+  ])(
+    "limits a sibling's resource fallback to its own root: %s%s",
+    (first, next) => {
+      expect(splitContentSegments(first, true, true)).toEqual([
+        { type: "markdown", immediate: true, value: first },
+      ]);
+      const segments = splitContentSegments(`${first}${next}`, true, true);
+      expect(segments).toEqual([
+        { type: "markdown", immediate: true, value: first },
+        { type: "sandbox", value: next },
+      ]);
+      expect(segments.map((segment) => segment.value).join("")).toBe(
+        `${first}${next}`
+      );
+    }
+  );
+
+  it.each([
+    ["<figure>Card</figure>", '<pre title="received'],
+    ["<pre>Code</pre>", '<figure title="received'],
+    ["<figure>Card</figure>", "<pre>Code</pre>"],
+    ["<pre>Code</pre>", "<figure>Card</figure>"],
+  ])("separates native and sandbox sibling policies: %s%s", (first, next) => {
+    const segments = splitContentSegments(`${first}${next}`, true, true);
+    expect(segments).toHaveLength(2);
+    expect(segments[0]).toEqual(
+      first.startsWith("<pre")
+        ? { type: "markdown", immediate: true, value: first }
+        : { type: "sandbox", value: first }
+    );
+    expect(segments[1]).toEqual(
+      next.startsWith("<pre")
+        ? {
+            type: "markdown",
+            immediate: true,
+            ...(next.endsWith("received") ? { pending: true } : {}),
+            value: next,
+          }
+        : { type: "sandbox", value: next }
+    );
+    expect(segments.map((segment) => segment.value).join("")).toBe(
+      `${first}${next}`
+    );
   });
 
   it.each([

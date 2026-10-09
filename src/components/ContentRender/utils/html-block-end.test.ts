@@ -126,6 +126,17 @@ describe("findStreamingHtmlBlockEnd", () => {
 });
 
 describe("streaming HTML lexer contracts", () => {
+  it("can stop before a known sibling root with an unfinished header", () => {
+    const first = "<div>Card</div>";
+    expect(
+      findStreamingHtmlBlockEnd(`${first}<pre title=\"received`, 0, () => true)
+    ).toBe(first.length);
+    const ambiguous = `${first}<pr`;
+    expect(findStreamingHtmlBlockEnd(ambiguous, 0, () => true)).toBe(
+      ambiguous.length
+    );
+  });
+
   it.each([
     "<div><div>Nested</div></div>",
     '<script>const tag = "<div>";</script>',

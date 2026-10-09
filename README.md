@@ -48,7 +48,7 @@ function App() {
 }
 ```
 
-With the typewriter enabled, prose follows the configured typing pace. Sandbox
+With the typewriter enabled, prose follows the configured typing pace. Received
 HTML is rendered from each received snapshot immediately, including unfinished
 fragments, while surrounding prose continues typing. HTML does not consume the
 typing budget or wait for earlier prose to finish. Tag-like text such as `<div`
@@ -58,7 +58,12 @@ received.
 Streaming detection recognizes the backend MarkdownFlow block roots, including
 `figure`, `table`, `canvas`, `video`, `header`, `nav`, and `details`. HTML-looking
 text inside Markdown code, math, comments, or another tag's attributes stays
-inert. Detection scans absolute source offsets without reparsing every remaining
+inert. Detection and presentation are separate: `pre`, `details`, `summary`,
+`aside`, `blockquote`, `ul`, `ol`, `dl`, and `table` keep their native Markdown
+styles and language/direction attributes while bypassing typing. Widget roots
+retain the sandbox; native presentation blocks with embedded script, style, or
+other document resources also use the sandbox (native video frames are exempt).
+Detection scans absolute source offsets without reparsing every remaining
 suffix. Native videos use the complete received Markdown structure; typing only
 changes text visibility, preserving video frames across earlier headings, lists,
 quotes, reference links, and subsequent HTML updates.

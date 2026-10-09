@@ -14,9 +14,9 @@ export type RenderSegment =
   | {
       type: "markdown";
       value: string;
-      /** Render received media without spending the prose typewriter budget. */
+      /** Render received HTML without spending the prose typewriter budget. */
       immediate?: true;
-      /** An iframe header has not arrived fully, so it cannot mount yet. */
+      /** A native HTML header has not arrived fully, so it cannot mount yet. */
       pending?: true;
     }
   | { type: "sandbox"; value: string }
@@ -57,6 +57,33 @@ const STREAMING_SANDBOX_ROOTS = new Set([
   "hgroup",
   "center",
   "link",
+  "html",
+  "head",
+  "body",
+  "meta",
+  "title",
+  "base",
+  "template",
+]);
+
+// These authored HTML blocks already use the host's Markdown components and
+// styles. Reveal their received HTML immediately without moving it into an iframe.
+const NATIVE_MARKDOWN_HTML_ROOTS = new Set([
+  "pre",
+  "details",
+  "summary",
+  "aside",
+  "blockquote",
+  "ul",
+  "ol",
+  "dl",
+  "table",
+]);
+const WIDGET_RESOURCE_ROOTS = new Set([
+  "script",
+  "style",
+  "link",
+  "iframe",
   "html",
   "head",
   "body",
@@ -443,6 +470,57 @@ const isStreamingSandboxStart = (source: string, start: number) => {
     : /^<!doctype(?=[\s>])/i.test(source.slice(start));
 };
 
+const isNativeMarkdownHtmlStart = (source: string, start: number) => {
+  const name = /^<([a-z][a-z0-9:-]*)(?=[\s/>])/i.exec(source.slice(start));
+  return Boolean(name && NATIVE_MARKDOWN_HTML_ROOTS.has(name[1].toLowerCase()));
+};
+
+// Native presentation blocks containing widget resources need the
+// sandbox. Header attributes, comments and raw-text examples are not resources.
+const containsWidgetResources = (
+  source: string,
+  start: number,
+  end: number
+) => {
+  let position = start;
+  while (position < end) {
+    if (source[position] !== "<") {
+      position += 1;
+      continue;
+    }
+    const markup = readHtmlMarkup(source, position);
+    const resourceName =
+      markup.kind === "tag"
+        ? markup.closing
+          ? undefined
+          : markup.name
+        : /^<([a-z][a-z0-9:-]*)(?=[\s/>])/i
+            .exec(source.slice(position))?.[1]
+            .toLowerCase();
+    if (resourceName && WIDGET_RESOURCE_ROOTS.has(resourceName)) {
+      const video =
+        resourceName === "iframe" &&
+        findStreamingVideoIframeMatch(source, position);
+      // An unfinished iframe header cannot mount. Keep its current native
+      // container until a complete header establishes whether it is a widget.
+      if (!video) return true;
+    }
+    if (markup.kind === "incomplete" || markup.kind === "invalid") {
+      if (markup.kind === "incomplete") break;
+      position += 1;
+      continue;
+    }
+    if (markup.kind === "tag" && !markup.closing) {
+      if (isHtmlRawTextTag(markup.name)) {
+        position = findStreamingHtmlElementEnd(source, position);
+        continue;
+      }
+    }
+    position = markup.end;
+  }
+  return false;
+};
+
 const findResumedProseFence = (source: string, start: number) => {
   if (start > 0 && source[start - 1] !== "\n") return;
   const opening = /^ {0,3}(`{3,}|~{3,})([^\r\n]*)(?:\r?\n|$)/.exec(
@@ -680,18 +758,28 @@ const splitStreamingContent = (
     const markup = readHtmlMarkup(source, position);
     if (isStreamingSandboxStart(source, position)) {
       const video = findStreamingVideoIframeMatch(source, position);
+      const nativeRoot = isNativeMarkdownHtmlStart(source, position);
       const end =
         video?.end ??
-        findStreamingHtmlBlockEnd(source, position, (nextRoot) => {
-          const nextVideo = findStreamingVideoIframeMatch(source, nextRoot);
-          return Boolean(nextVideo && !nextVideo.pending);
-        });
+        (nativeRoot
+          ? findStreamingHtmlElementEnd(source, position)
+          : findStreamingHtmlBlockEnd(source, position, (nextRoot) => {
+              const nextVideo = findStreamingVideoIframeMatch(source, nextRoot);
+              return (
+                Boolean(nextVideo && !nextVideo.pending) ||
+                isNativeMarkdownHtmlStart(source, nextRoot)
+              );
+            }));
+      const nativeHtml =
+        nativeRoot && !containsWidgetResources(source, position, end);
       matches.push({
         start: position,
         end,
-        type: video ? "markdown" : "sandbox",
-        ...(video?.immediate ? { immediate: true as const } : {}),
-        ...(video?.pending ? { pending: true as const } : {}),
+        type: video || nativeHtml ? "markdown" : "sandbox",
+        ...(video?.immediate || nativeHtml ? { immediate: true as const } : {}),
+        ...(video?.pending || (nativeHtml && markup.kind === "incomplete")
+          ? { pending: true as const }
+          : {}),
       });
       position = end;
       resumedProse = true;

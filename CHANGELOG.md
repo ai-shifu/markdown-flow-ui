@@ -19,6 +19,9 @@
 - Keep iframe examples inside inline and block math inert during video detection.
 - Recognize the backend's complete HTML block-root set and keep HTML-looking
   comment and attribute contents inert during progressive rendering.
+- Preserve native code blocks, alerts, details, lists, and tables while making
+  their received HTML visible immediately; keep embedded widget resources in
+  the sandbox.
 - Scan received snapshots once without recursively parsing Markdown suffixes.
 - Preserve the complete received Markdown tree while typing around native
   videos, including preceding sibling containers, reference definitions, escaped

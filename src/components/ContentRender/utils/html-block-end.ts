@@ -137,7 +137,16 @@ const findHtmlEnd = (
     }
 
     const markup = readHtmlMarkup(raw, position);
-    if (markup.kind === "incomplete") return raw.length;
+    if (markup.kind === "incomplete") {
+      if (
+        !stack.length &&
+        hasMarkup &&
+        /^<[a-z][a-z0-9:-]*(?=[\s/>])/i.test(raw.slice(position)) &&
+        stopBeforeRoot?.(position)
+      )
+        return lastCompletedEnd;
+      return raw.length;
+    }
     if (markup.kind === "invalid") {
       if (!stack.length && hasMarkup) return lastCompletedEnd;
       position += 1;

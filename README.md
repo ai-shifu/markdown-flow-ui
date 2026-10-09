@@ -66,7 +66,9 @@ other document resources also use the sandbox (native video frames are exempt).
 Detection scans absolute source offsets without reparsing every remaining
 suffix. Native videos use the complete received Markdown structure; typing only
 changes text visibility, preserving video frames across earlier headings, lists,
-quotes, reference links, and subsequent HTML updates.
+quotes, reference links, and subsequent HTML updates. Stable runs apply the
+same HTML indentation and newline normalization as the ordinary renderer, with
+positions mapped back to the original source for typing and callbacks.
 Each received snapshot determines the Markdown structure. Later source that
 changes its grammar, such as adding a previously missing reference definition,
 can change that structure; typing an already received snapshot preserves it.

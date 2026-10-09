@@ -35,7 +35,7 @@ const prepare = (segments: RenderSegment[]) => {
   const plan = createVideoMarkdownRunPlan(segments);
   const tree = processor.runSync(
     cloneVideoMarkdownSourceTree(plan),
-    plan.fullSource
+    plan.markdownSource
   ) as Root;
   return prepareVideoMarkdownRun(plan, tree);
 };
@@ -172,6 +172,104 @@ describe("received video Markdown tree projection", () => {
     expect(
       text(projectVideoMarkdownRun(plan, segments)).replace(/\s/g, "")
     ).toBe("FirstNextLast");
+  });
+
+  it.each(["\n", "\r\n"])(
+    "normalizes indented HTML while keeping raw budgets: %j",
+    (newline) => {
+      const after = `${newline}${newline}    <span>甲&amp;😀乙</span>${newline}    <custom-button-after-content>Ask</custom-button-after-content>`;
+      const segments = source("", after);
+      const plan = prepare(segments);
+      expect(nodes(plan.tree!, "code")).toHaveLength(0);
+      expect(nodes(plan.tree!, "span")).toHaveLength(1);
+      expect(nodes(plan.tree!, "custom-button-after-content")).toHaveLength(1);
+      const glyphs = [
+        { value: "甲", end: after.indexOf("甲") + 1 },
+        { value: "&", end: after.indexOf("&amp;") + 5 },
+        { value: "\ud83d", end: after.indexOf("😀") + 1 },
+        { value: "\ude00", end: after.indexOf("😀") + 2 },
+        { value: "乙", end: after.indexOf("乙") + 1 },
+      ];
+      for (let length = 0; length <= after.length; length += 1) {
+        const rendered = hidden(segments);
+        rendered[2] = { type: "text", value: after.slice(0, length) };
+        const projected = projectVideoMarkdownRun(plan, rendered);
+        const button = nodes(projected, "custom-button-after-content")[0];
+        expect(getVideoMarkdownNodeState(button)?.active).toBe(
+          length === after.length
+        );
+        const expected = glyphs
+          .filter(({ end }) => end <= length)
+          .map(({ value }) => value)
+          .join("");
+        expect(text(projected).replace(/\s/g, "")).toBe(
+          expected + (length === after.length ? "Ask" : "")
+        );
+        expect(shape(projected)).toEqual(shape(plan.tree!));
+      }
+      expect(Object.isFrozen(plan.sourceTree)).toBe(true);
+    }
+  );
+
+  it("preserves normalized multiline HTML source ranges", () => {
+    const after =
+      '\r\n\r\n    <custom-button-after-content\r\n      title="a > b">\r\n    Ask\r\n    </custom-button-after-content>';
+    const segments = source("", after);
+    const plan = prepare(segments);
+    expect(nodes(plan.tree!, "code")).toHaveLength(0);
+    const rendered = hidden(segments);
+    for (const length of [after.length - 1, after.length]) {
+      rendered[2] = { type: "text", value: after.slice(0, length) };
+      const button = nodes(
+        projectVideoMarkdownRun(plan, rendered),
+        "custom-button-after-content"
+      )[0];
+      expect(button.properties.title).toBe("a > b");
+      expect(getVideoMarkdownNodeState(button)?.active).toBe(
+        length === after.length
+      );
+    }
+  });
+
+  it("maps normalized unfinished SVG positions back to received source", () => {
+    const after =
+      '\r\n\r\n    <span>甲&amp;😀</span>\r\n\r\n    <svg width="100';
+    const segments = source("", after);
+    const sourcePlan = createVideoMarkdownRunPlan(segments);
+    const originalTree = JSON.stringify(sourcePlan.sourceTree);
+    const tree = processor.runSync(
+      cloneVideoMarkdownSourceTree(sourcePlan),
+      sourcePlan.markdownSource
+    ) as Root;
+    const plan = prepareVideoMarkdownRun(sourcePlan, tree);
+    const start = after.indexOf("<svg");
+    for (const length of [start, start + 1, after.length]) {
+      const rendered = hidden(segments);
+      rendered[2] = { type: "text", value: after.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      expect(text(projected).replace(/\s/g, "")).toBe("甲&😀");
+      const svg = nodes(projected, "svg")[0];
+      expect(getVideoMarkdownNodeState(svg)?.svgSource).toBe(
+        after.slice(start, length)
+      );
+      expect(svg.position?.start.offset).toBe(video.length + start);
+    }
+    expect(JSON.stringify(sourcePlan.sourceTree)).toBe(originalTree);
+    expect(Object.isFrozen(sourcePlan.sourceTree)).toBe(true);
+  });
+
+  it.each([
+    "\r\n\r\nUse `value\r\n    <custom-button-after-content>Code</custom-button-after-content>\r\n`",
+    "\r\n\r\n```html\r\n    <custom-button-after-content>Code</custom-button-after-content>\r\n```",
+  ])("preserves code protection through CRLF normalization: %j", (after) => {
+    const segments = source("", after);
+    const plan = prepare(segments);
+    const projected = projectVideoMarkdownRun(plan, segments);
+    expect(nodes(projected, "custom-button-after-content")).toHaveLength(0);
+    expect(nodes(projected, "code")).toHaveLength(1);
+    expect(text(projected)).toContain(
+      "<custom-button-after-content>Code</custom-button-after-content>"
+    );
   });
 
   it("resolves a reference link before its definition is typed", () => {

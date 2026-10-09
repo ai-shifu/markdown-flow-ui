@@ -1,9 +1,14 @@
 import { getInlineCodeRanges } from "./inline-code-ranges";
 
 // Normalize inline HTML indentation to avoid Markdown treating it as code block
-export const normalizeInlineHtml = (markdown: string) => {
+export const normalizeInlineHtml = (
+  markdown: string,
+  inlineCodeRanges: readonly Readonly<{
+    start: number;
+    end: number;
+  }>[] = getInlineCodeRanges(markdown)
+) => {
   const lines = markdown.split(/\r?\n/);
-  const inlineCodeRanges = getInlineCodeRanges(markdown);
   let inlineCodeIndex = 0;
   let nextLineOffset = 0;
   let inFence = false;

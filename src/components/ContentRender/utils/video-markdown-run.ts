@@ -7,6 +7,7 @@ import {
   type MarkdownSourceTree,
 } from "./inline-code-ranges";
 import type { RenderSegment } from "./split-content";
+import { normalizeInlineHtml } from "./normalize-inline-html";
 import {
   readHtmlMarkup,
   isHtmlRawTextTag,
@@ -26,6 +27,9 @@ type Visibility = {
 };
 export type VideoMarkdownRunPlan = {
   fullSource: string;
+  markdownSource: string;
+  /** Raw end offset for each normalized UTF-16 unit, only when source changed. */
+  rawEnds?: readonly number[];
   segments: readonly RenderSegment[];
   offsets: readonly number[];
   immediateOffsets: readonly number[];
@@ -96,7 +100,63 @@ const incompleteSvgRange = (raw: string, excluded: readonly Range[]) => {
   }
 };
 
-/** A run is parsed once per received snapshot; ticks never parse Markdown. */
+// Inline HTML normalization only removes indentation and CRLF's CR. A monotonic
+// subsequence map retains the authored end offset of every remaining code unit.
+const normalizedRawEnds = (raw: string, normalized: string) => {
+  if (raw === normalized) return;
+  const ends: number[] = [];
+  let cursor = 0;
+  for (let index = 0; index < normalized.length; index += 1) {
+    cursor = raw.indexOf(normalized[index], cursor);
+    if (cursor === -1)
+      throw new Error("HTML normalization changed source characters");
+    ends.push(++cursor);
+  }
+  return ends;
+};
+const rawOffset = (plan: VideoMarkdownRunPlan, offset: number, end = false) => {
+  if (!plan.rawEnds) return offset;
+  if (end) return offset === 0 ? 0 : plan.rawEnds[offset - 1];
+  return offset === plan.markdownSource.length
+    ? plan.fullSource.length
+    : plan.rawEnds[offset] - 1;
+};
+const rawRange = (plan: VideoMarkdownRunPlan, range?: Range) =>
+  range && {
+    start: rawOffset(plan, range.start),
+    end: rawOffset(plan, range.end, true),
+  };
+
+/** Transforms and raw HTML parsing use normalized coordinates until this step. */
+const restoreRawPositions = (plan: VideoMarkdownRunPlan, tree: Root) => {
+  if (!plan.rawEnds) return;
+  const lines = [0];
+  const newline = /\r\n|\r|\n/g;
+  let match: RegExpExecArray | null;
+  while ((match = newline.exec(plan.fullSource)))
+    lines.push(match.index + match[0].length);
+  const point = (
+    value: NonNullable<Nodes["position"]>["start"],
+    end: boolean
+  ) => {
+    if (value?.offset === undefined) return value;
+    const offset = rawOffset(plan, value.offset, end);
+    const line = firstAtOrAfter(lines, offset + 1);
+    return { line, column: offset - lines[line - 1] + 1, offset };
+  };
+  const walk = (node: Nodes) => {
+    const position = node === tree ? plan.sourceTree.position : node.position;
+    if (position)
+      node.position = {
+        start: point(position.start, false),
+        end: point(position.end, true),
+      };
+    if ("children" in node) node.children.forEach(walk);
+  };
+  walk(tree);
+};
+
+/** Runs parse only when source snapshots change; ticks never parse Markdown. */
 export const createVideoMarkdownRunPlan = (
   segments: readonly RenderSegment[],
   analysis?: MarkdownSourceAnalysis
@@ -107,14 +167,29 @@ export const createVideoMarkdownRunPlan = (
     offsets.push(fullSource.length);
     fullSource += segment.value;
   }
-  const parsed = analysis ?? getMarkdownSourceAnalysis(fullSource);
+  const received = analysis ?? getMarkdownSourceAnalysis(fullSource);
+  const markdownSource = normalizeInlineHtml(fullSource, received.inline);
+  const rawEnds = normalizedRawEnds(fullSource, markdownSource);
+  const parsed = rawEnds ? getMarkdownSourceAnalysis(markdownSource) : received;
   const media = segments.flatMap((segment, index) =>
     segment.type === "markdown" && segment.immediate
-      ? [{ start: offsets[index], end: offsets[index] + segment.value.length }]
+      ? [
+          {
+            start: rawEnds
+              ? firstAtOrAfter(rawEnds, offsets[index] + 1)
+              : offsets[index],
+            end: rawEnds
+              ? firstAtOrAfter(rawEnds, offsets[index] + segment.value.length) +
+                1
+              : offsets[index] + segment.value.length,
+          },
+        ]
       : []
   );
   return {
     fullSource,
+    markdownSource,
+    rawEnds,
     segments,
     offsets,
     immediateOffsets: segments.flatMap((segment, index) =>
@@ -124,7 +199,7 @@ export const createVideoMarkdownRunPlan = (
     ),
     sourceTree: parsed.tree,
     incompleteSvg: incompleteSvgRange(
-      fullSource,
+      markdownSource,
       [...parsed.literal, ...media].sort(
         (left, right) => left.start - right.start
       )
@@ -215,7 +290,7 @@ export const cloneVideoMarkdownSourceTree = (
     data?: { hName: string };
     position?: Nodes["position"];
   };
-  const before = plan.fullSource.slice(0, svg.start);
+  const before = plan.markdownSource.slice(0, svg.start);
   const point = {
     line: before.split("\n").length,
     column: svg.start - before.lastIndexOf("\n"),
@@ -237,7 +312,7 @@ export const cloneVideoMarkdownSourceTree = (
         clip(child);
         return [child];
       }
-      const units = sourceUnits(plan.fullSource, range);
+      const units = sourceUnits(plan.markdownSource, range);
       let cursor = 0;
       let length = 0;
       for (const character of (child.value ?? "").split("")) {
@@ -274,11 +349,12 @@ export const prepareVideoMarkdownRun = (
     ...sourcePlan,
     visibility: new WeakMap(),
   };
+  restoreRawPositions(plan, tree);
   const sources = new Map<string, SourceValue>();
   const collect = (
     node: MarkdownRoot["children"][number] | MarkdownSourceTree
   ) => {
-    const range = rangeOf(node);
+    const range = rawRange(plan, rangeOf(node));
     if (range && "value" in node && typeof node.value === "string")
       sources.set(`${range.start}:${range.end}`, {
         ...range,

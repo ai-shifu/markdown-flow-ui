@@ -420,7 +420,7 @@ const StableVideoMarkdownRenderer: React.FC<{
     const formattingProcessor = unified().use(formattingRehypePlugins);
     const tree = sourceProcessor.runSync(
       cloneVideoMarkdownSourceTree(plan),
-      plan.fullSource
+      plan.markdownSource
     ) as Root;
     return prepareVideoMarkdownRun(
       plan,

@@ -10,7 +10,6 @@ type MarkdownNode = {
   position?: { start: { offset?: number }; end: { offset?: number } };
 };
 type Container = Range & { type: string };
-
 export type VideoMarkdownRunPlan = {
   fullSource: string;
   structuralRanges: readonly Range[];
@@ -19,15 +18,20 @@ export type VideoMarkdownRunPlan = {
   segments: readonly RenderSegment[];
   offsets: readonly number[];
 };
-
 const parser = unified().use(remarkParse).use(remarkPlugins);
 const containerTypes = new Set(["blockquote", "list", "listItem"]);
+const structuralTypes = new Set([
+  "list",
+  "listItem",
+  "table",
+  "tableRow",
+  "tableCell",
+]);
 const rangeOf = (node: MarkdownNode): Range | undefined => {
   const start = node.position?.start.offset;
   const end = node.position?.end.offset;
   return start === undefined || end === undefined ? undefined : { start, end };
 };
-
 const unusedPlaceholder = (source: string) => {
   for (let code = 0xe000; code <= 0x10ffff; code += 1) {
     if (code >= 0xf900 && code < 0xf0000) code = 0xf0000;
@@ -36,7 +40,6 @@ const unusedPlaceholder = (source: string) => {
   }
   throw new Error("No unused video projection placeholder is available");
 };
-
 export const createVideoMarkdownRunPlan = (
   segments: readonly RenderSegment[]
 ): VideoMarkdownRunPlan => {
@@ -54,6 +57,7 @@ export const createVideoMarkdownRunPlan = (
     fullSource += segment.value;
   }
   const containers = new Map<MarkdownNode, Container>();
+  const structuralRanges: Range[] = [];
   let hasContext = false;
   const containsMedia = (range: Range) =>
     media.some(({ start }) => start >= range.start && start < range.end);
@@ -61,21 +65,48 @@ export const createVideoMarkdownRunPlan = (
     const range = rangeOf(node);
     if (range) containers.set(node, { ...range, type: node.type });
   };
+  const preserveGaps = (node: MarkdownNode) => {
+    const range = rangeOf(node);
+    if (!range || !node.children?.length) return;
+    let cursor = range.start;
+    for (const child of node.children) {
+      const childRange = rangeOf(child);
+      if (!childRange) continue;
+      if (cursor < childRange.start)
+        structuralRanges.push({ start: cursor, end: childRange.start });
+      cursor = childRange.end;
+    }
+    if (cursor < range.end)
+      structuralRanges.push({ start: cursor, end: range.end });
+  };
+  const preserveDescendants = (node: MarkdownNode) => {
+    if (structuralTypes.has(node.type)) {
+      preserveGaps(node);
+      if (containerTypes.has(node.type)) addContainer(node);
+    }
+    node.children?.forEach(preserveDescendants);
+  };
   const walk = (node: MarkdownNode) => {
     const range = rangeOf(node);
     if (range && containsMedia(range)) {
-      if (containerTypes.has(node.type)) {
+      if (node.children?.length && node.type !== "root") {
         hasContext = true;
+        // Raw gaps retain ancestor syntax without exposing untyped child content.
+        const lineStart = fullSource.lastIndexOf("\n", range.start - 1) + 1;
+        if (/^[ \t]*$/.test(fullSource.slice(lineStart, range.start)))
+          structuralRanges.push({ start: lineStart, end: range.start });
+        preserveGaps(node);
+      }
+      if (containerTypes.has(node.type)) {
         addContainer(node);
-        // Earlier empty items keep a video's list-item identity stable.
-        if (node.type === "list") node.children?.forEach(addContainer);
-      } else if (node.type === "paragraph") hasContext = true;
+      }
+      if (node.type === "list" || node.type === "table")
+        preserveDescendants(node);
     }
     node.children?.forEach(walk);
   };
   walk(parser.parse(fullSource));
 
-  const structuralRanges: Range[] = [];
   const records = [...containers.values()];
   let lineStart = 0;
   while (lineStart < fullSource.length) {

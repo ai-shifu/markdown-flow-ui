@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import { visit } from "unist-util-visit";
+import { remarkPlugins } from "./markdown-plugins";
 import {
   createVideoMarkdownRunPlan,
   projectVideoMarkdownRun,
@@ -19,7 +20,56 @@ const hidden = (segments: RenderSegment[]) =>
     segment.type === "text" ? { ...segment, value: "" } : segment
   );
 
+const mediaContext = (markdown: string) => {
+  const position = markdown.indexOf(video);
+  const context: string[] = [];
+  visit(
+    unified().use(remarkParse).use(remarkPlugins).parse(markdown),
+    (node) => {
+      if (
+        "children" in node &&
+        node.type !== "root" &&
+        (node.position?.start.offset ?? Infinity) <= position &&
+        (node.position?.end.offset ?? -1) > position
+      )
+        context.push(
+          node.type === "heading" ? `heading-${node.depth}` : node.type
+        );
+    }
+  );
+  return context;
+};
+
 describe("video Markdown run projection", () => {
+  it.each([
+    ["# Watch ", " now"],
+    ["  ### Watch ", " now ###"],
+    ["Watch ", " now\n====="],
+    ["Watch ", " now\n-----"],
+    ["> ## Watch ", " now"],
+    ["Watch **bold ", " now**"],
+    ["Watch *emphasized ", " now*"],
+    ["Watch ~~deleted ", " now~~"],
+    ["Watch [linked ", " now](/lesson)"],
+    ["| Label | Video |\n| --- | --- |\n| First | ", " |\n| Next | Last |"],
+    ["| First | ", " |\n| --- | --- |\n| <img src='/secret'> | Last |"],
+  ])(
+    "keeps actual Markdown ancestors throughout typing: %j",
+    (before, after) => {
+      const segments = source(before, after);
+      const plan = createVideoMarkdownRunPlan(segments);
+      expect(plan.hasContext).toBe(true);
+      for (const length of [0, 1, before.length]) {
+        const rendered = hidden(segments);
+        rendered[0] = { type: "text", value: before.slice(0, length) };
+        const projected = projectVideoMarkdownRun(plan, rendered);
+        expect(mediaContext(projected)).toEqual(mediaContext(plan.fullSource));
+        expect(projected).toContain(video);
+      }
+      expect(projectVideoMarkdownRun(plan, segments)).toBe(plan.fullSource);
+    }
+  );
+
   it.each([
     ["> Before\n> ", "\n> After"],
     ["- Before\n- ", "\n- After"],

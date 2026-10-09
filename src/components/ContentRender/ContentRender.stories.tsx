@@ -2890,3 +2890,60 @@ export const MultilingualContentAwareTypewriterPacing: Story = {
     </div>
   ),
 };
+
+/** HTML follows incoming chunks immediately while surrounding prose keeps typing. */
+export const ProgressiveHtmlWithTypedProse: Story = {
+  name: "Progressive HTML with Typed Prose",
+  args: {
+    enableTypewriter: true,
+    typewriterPacing: "content-aware",
+    typingSpeed: 150,
+    disableSandboxLoadingOverlay: true,
+  },
+  render: (args) => {
+    const chunks = [
+      'This introduction keeps typing while the card below updates.\n\n<div style="padding:24px;border:2px solid #2563eb;border-radius:12px"><h2>Lesson card',
+      "</h2><p>This HTML arrives without waiting for the introduction.",
+      " More of the same paragraph is visible as soon as it arrives.</p>",
+      "<p>The card can grow before its outer div is closed.</p>",
+      "</div>\n\nThe prose after the card continues with the same typewriter budget.",
+    ];
+    const [chunkCount, setChunkCount] = useState(1);
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={() =>
+            setChunkCount((count) => Math.min(count + 1, chunks.length))
+          }
+          disabled={chunkCount === chunks.length}
+        >
+          Receive next HTML chunk
+        </button>
+        <ContentRender
+          {...args}
+          content={chunks.slice(0, chunkCount).join("")}
+        />
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const iframe = canvasElement.querySelector("iframe");
+    await waitFor(() => {
+      expect(iframe?.contentDocument?.body.textContent).toContain(
+        "Lesson card"
+      );
+    });
+    const documentBeforeAppend = iframe?.contentDocument;
+    const receiveButton = canvasElement.querySelector("button");
+    expect(receiveButton).not.toBeNull();
+    await userEvent.click(receiveButton!);
+    await waitFor(() => {
+      expect(iframe?.contentDocument?.body.textContent).toContain(
+        "This HTML arrives without waiting for the introduction."
+      );
+    });
+    expect(canvasElement.querySelector("iframe")).toBe(iframe);
+    expect(iframe?.contentDocument).toBe(documentBeforeAppend);
+  },
+};

@@ -73,4 +73,79 @@ describe("splitContentSegments", () => {
     expect(segments[1].value).toContain("data-tag='video'");
     expect(segments[2].type).toBe("text");
   });
+
+  it.each([
+    "An unfinished `value.\n\n<div>Card</div>",
+    "An unfinished `value.\n \t\n<div>Card</div>\n\nAnother ` paragraph.",
+    "An unfinished `value.\r\n\r\n<div>Card</div>",
+  ])("does not let inline code cross a blank paragraph: %s", (raw) => {
+    const segments = splitContentSegments(raw, true, true);
+
+    expect(segments.some((segment) => segment.type === "sandbox")).toBe(true);
+    expect(
+      segments
+        .filter((segment) => segment.type === "sandbox")
+        .map((segment) => segment.value)
+        .join("")
+    ).toContain("<div>Card</div>");
+    expect(segments.map((segment) => segment.value).join("")).toBe(raw);
+  });
+
+  it("protects a multiline inline code span in its current paragraph", () => {
+    const raw = "Use `<div>\nLiteral</div>` before continuing.";
+
+    expect(splitContentSegments(raw, true, true)).toEqual([
+      { type: "text", value: raw },
+    ]);
+  });
+
+  it.each(["~~~html\n<div>Source", "~~~html\n<div>Source</div>\n~~~"])(
+    "keeps tilde-fenced HTML on the markdown path: %s",
+    (raw) => {
+      expect(splitContentSegments(raw, true, true)).toEqual([
+        { type: "markdown", value: raw },
+      ]);
+    }
+  );
+
+  it("recognizes a longer closing tilde fence before a real HTML block", () => {
+    const code = "  ~~~html\n<div>Source</div>\n  ~~~~";
+    const raw = `${code}\n<div>Card</div>`;
+    const segments = splitContentSegments(raw, true, true);
+
+    expect(segments[0]).toEqual({ type: "markdown", value: code });
+    expect(segments.filter((segment) => segment.type === "sandbox")).toEqual([
+      { type: "sandbox", value: "<div>Card</div>" },
+    ]);
+    expect(segments.map((segment) => segment.value).join("")).toBe(raw);
+  });
+
+  it("does not close a four-backtick fence with a three-backtick line", () => {
+    const raw = "````html\n```\n<div>Source</div>";
+
+    expect(splitContentSegments(raw, true, true)).toEqual([
+      { type: "markdown", value: raw },
+    ]);
+  });
+
+  it.each([
+    '<style>.card::before { content: "```html"; }</style>\n<div>Card</div>',
+    '<script>const source = "```html\\n<div>Example</div>\\n```";</script>\n<div>Card</div>',
+    "<script>const source = `\n```html\n<div>Example</div>\n```\n`;</script>\n<div>Card</div>",
+  ])("keeps fence markers inside received HTML in its sandbox: %s", (raw) => {
+    const segments = splitContentSegments(raw, true, true);
+
+    expect(segments).toEqual([{ type: "sandbox", value: raw }]);
+  });
+
+  it("preserves an earlier HTML block before a later real code fence", () => {
+    const raw =
+      "Intro\n<div>Card</div>\nAfter\n~~~html\n<div>Source</div>\n~~~";
+    const segments = splitContentSegments(raw, true, true);
+
+    expect(segments.filter((segment) => segment.type === "sandbox")).toEqual([
+      { type: "sandbox", value: "<div>Card</div>" },
+    ]);
+    expect(segments.map((segment) => segment.value).join("")).toBe(raw);
+  });
 });

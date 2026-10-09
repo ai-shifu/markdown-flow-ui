@@ -48,6 +48,11 @@ function App() {
 }
 ```
 
+With the typewriter enabled, prose follows the configured typing pace. Sandbox
+HTML is rendered from each received snapshot immediately, including unfinished
+fragments, while surrounding prose continues typing. HTML does not consume the
+typing budget or wait for earlier prose to finish.
+
 ### Interactive Elements
 
 ```tsx

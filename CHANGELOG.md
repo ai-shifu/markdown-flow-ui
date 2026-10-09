@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Render received sandbox HTML progressively without applying the prose
+  typewriter delay, while preserving typing order and stable iframe instances.
+
 ## 0.2.24 - 2026-09-04
 
 ### Added

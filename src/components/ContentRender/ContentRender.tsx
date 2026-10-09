@@ -58,8 +58,6 @@ import {
 } from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 
-const SANDBOX_TAG_HINT_PATTERN =
-  /<(script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)\b/i;
 const FIXED_TYPEWRITER_CHUNK_SIZE = 2;
 
 export type ContentRenderTypewriterPacing = "fixed" | "content-aware";
@@ -89,6 +87,7 @@ export interface ContentRenderProps {
   onClickCustomButtonAfterContent?: () => void;
   onSend?: (content: OnSendContentParams) => void;
   typingSpeed?: number;
+  /** Types prose only; received sandbox HTML renders immediately and progressively. */
   enableTypewriter?: boolean;
   /** Controls how much text is revealed per tick. Defaults to the legacy fixed pacing. */
   typewriterPacing?: ContentRenderTypewriterPacing;
@@ -130,6 +129,7 @@ export interface ContentRenderTypewriterState {
   isTypewriterEnabled: boolean;
   isTyping: boolean;
   isComplete: boolean;
+  /** Received source units already displayed, including unpaced HTML. */
   renderedLength: number;
   totalLength: number;
 }
@@ -477,11 +477,25 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     !contentType || contentType === "text";
   const isTypewriterEnabled =
     Boolean(enableTypewriter) && shouldApplyTypewriterByContentType;
+  // Parse the received source, never a typewriter-truncated HTML string.
+  const sourceSegments = useMemo(
+    () => mergeNonSandboxSegments(splitContentSegments(content, true, true)),
+    [content]
+  );
+  const hasSandbox = sourceSegments.some(
+    (segment) => segment.type === "sandbox"
+  );
+  const typewriterContent = hasSandbox
+    ? sourceSegments
+        .filter((segment) => segment.type !== "sandbox")
+        .map((segment) => segment.value)
+        .join("")
+    : content;
   const typewriterTickMs = Math.max(0, typingSpeed);
   const fixedTypewriterContentVersion =
-    typewriterPacing === "fixed" ? content : undefined;
+    typewriterPacing === "fixed" ? typewriterContent : undefined;
   const [displayContent, setDisplayContent] = useState(() =>
-    isTypewriterEnabled ? "" : content
+    isTypewriterEnabled ? "" : typewriterContent
   );
   const displayContentRef = useRef(displayContent);
   const pendingContentRef = useRef("");
@@ -493,7 +507,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   const contentAwareBudgetRef = useRef(0);
   const previousTypewriterEnabledRef = useRef(isTypewriterEnabled);
   const previousTypewriterPacingRef = useRef(typewriterPacing);
-  const previousSourceContentRef = useRef(content);
+  const previousSourceContentRef = useRef(typewriterContent);
+  const previousReceivedContentRef = useRef(content);
   const hasReportedTypeFinishedRef = useRef(false);
   const [typewriterWakeVersion, setTypewriterWakeVersion] = useState(0);
 
@@ -502,13 +517,16 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     const previousTypewriterPacing = previousTypewriterPacingRef.current;
     const previousSourceContent = previousSourceContentRef.current;
     const wasPending = Boolean(pendingContentRef.current);
+    const receivedContentChanged =
+      previousReceivedContentRef.current !== content;
+    previousReceivedContentRef.current = content;
 
     previousTypewriterEnabledRef.current = isTypewriterEnabled;
     previousTypewriterPacingRef.current = typewriterPacing;
-    previousSourceContentRef.current = content;
+    previousSourceContentRef.current = typewriterContent;
 
     if (
-      content !== previousSourceContent ||
+      receivedContentChanged ||
       isTypewriterEnabled !== wasTypewriterEnabled
     ) {
       hasReportedTypeFinishedRef.current = false;
@@ -531,7 +549,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
     if (!isTypewriterEnabled) {
       clearPendingContent();
-      updateDisplayContent(content);
+      updateDisplayContent(typewriterContent);
       return;
     }
 
@@ -544,20 +562,20 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       ? ""
       : displayContentRef.current;
 
-    if (!content.startsWith(visibleContent)) {
+    if (!typewriterContent.startsWith(visibleContent)) {
       clearPendingContent();
-      updateDisplayContent(content);
+      updateDisplayContent(typewriterContent);
       if (typewriterPacing === "content-aware") {
         contentAwareQueueRef.current = {
           tokens: [],
           head: 0,
-          trailingGrapheme: getTrailingTypewriterGrapheme(content),
+          trailingGrapheme: getTrailingTypewriterGrapheme(typewriterContent),
         };
       }
       return;
     }
 
-    let nextPendingContent = content.slice(visibleContent.length);
+    let nextPendingContent = typewriterContent.slice(visibleContent.length);
     if (!nextPendingContent) {
       pendingContentRef.current = "";
       contentAwareBudgetRef.current = 0;
@@ -579,13 +597,13 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       const canAppendToCachedQueue =
         wasTypewriterEnabled &&
         previousTypewriterPacing === "content-aware" &&
-        content.startsWith(previousSourceContent) &&
+        typewriterContent.startsWith(previousSourceContent) &&
         pendingContentRef.current === previousPendingContent;
 
       if (canAppendToCachedQueue) {
         const appended = appendContentAwareTypewriterQueue(
           contentAwareQueueRef.current,
-          content.slice(previousSourceContent.length)
+          typewriterContent.slice(previousSourceContent.length)
         );
         contentAwareQueueRef.current = appended.queue;
 
@@ -629,7 +647,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     if (!wasPending && nextPendingContent) {
       setTypewriterWakeVersion((version) => version + 1);
     }
-  }, [content, isTypewriterEnabled, typewriterPacing]);
+  }, [content, typewriterContent, isTypewriterEnabled, typewriterPacing]);
 
   useEffect(() => {
     if (!isTypewriterEnabled) {
@@ -639,14 +657,20 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     if (
       hasReportedTypeFinishedRef.current ||
       pendingContentRef.current ||
-      displayContent !== content
+      displayContent !== typewriterContent
     ) {
       return;
     }
 
     hasReportedTypeFinishedRef.current = true;
     onTypeFinished?.();
-  }, [content, displayContent, isTypewriterEnabled, onTypeFinished]);
+  }, [
+    content,
+    typewriterContent,
+    displayContent,
+    isTypewriterEnabled,
+    onTypeFinished,
+  ]);
 
   useEffect(() => {
     if (!isTypewriterEnabled || !pendingContentRef.current) {
@@ -717,19 +741,38 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   const typewriterState = useMemo<ContentRenderTypewriterState>(
     () => ({
       isTypewriterEnabled,
-      isTyping: isTypewriterEnabled && displayContent !== content,
-      isComplete: displayContent === content,
-      renderedLength: displayContent.length,
+      isTyping: isTypewriterEnabled && displayContent !== typewriterContent,
+      isComplete: displayContent === typewriterContent,
+      renderedLength:
+        content.length -
+        Math.max(0, typewriterContent.length - displayContent.length),
       totalLength: content.length,
     }),
-    [content, displayContent, isTypewriterEnabled]
+    [content, typewriterContent, displayContent, isTypewriterEnabled]
   );
 
   useEffect(() => {
     onTypewriterStateChange?.(typewriterState);
   }, [onTypewriterStateChange, typewriterState]);
 
-  const renderContent = isTypewriterEnabled ? displayContent : content;
+  const mergedRenderSegments = useMemo(() => {
+    let textOffset = 0;
+    return sourceSegments.map((segment) => {
+      if (segment.type === "sandbox" || !isTypewriterEnabled) return segment;
+      const value = displayContent.slice(
+        textOffset,
+        textOffset + segment.value.length
+      );
+      textOffset += segment.value.length;
+      // Keep empty prose slots so an existing sandbox never changes its key.
+      return { ...segment, value };
+    });
+  }, [sourceSegments, displayContent, isTypewriterEnabled]);
+  const renderContent = hasSandbox
+    ? mergedRenderSegments.map((segment) => segment.value).join("")
+    : isTypewriterEnabled
+      ? displayContent
+      : content;
   const normalizedContent = useMemo(
     () => normalizeInlineHtml(renderContent),
     [renderContent]
@@ -898,25 +941,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       ),
     }),
     []
-  );
-
-  const hasPotentialSandboxTags = useMemo(
-    () => SANDBOX_TAG_HINT_PATTERN.test(renderContent),
-    [renderContent]
-  );
-
-  const renderSegments = useMemo(
-    () =>
-      hasPotentialSandboxTags ? splitContentSegments(renderContent, true) : [],
-    [renderContent, hasPotentialSandboxTags]
-  );
-
-  const hasSandbox = renderSegments.some(
-    (segment) => segment.type === "sandbox"
-  );
-  const mergedRenderSegments = useMemo(
-    () => mergeNonSandboxSegments(renderSegments),
-    [renderSegments]
   );
 
   const segments = useMemo(

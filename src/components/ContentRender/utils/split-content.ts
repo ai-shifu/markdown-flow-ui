@@ -1,10 +1,12 @@
+import { findStreamingHtmlBlockEnd } from "./html-block-end";
+
 export type RenderSegment =
   | { type: "markdown"; value: string }
   | { type: "sandbox"; value: string }
   | { type: "text"; value: string };
 
 const SANDBOX_START_PATTERN =
-  /<(script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)[\s>]/i;
+  /<(?:!doctype\b|(?:script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)[\s>])/i;
 
 const INLINE_SANDBOX_PATTERNS: RegExp[] = [
   /<svg[\s\S]*?<\/svg>/i,
@@ -54,6 +56,33 @@ const extractFirstFenceBlock = (raw: string): FenceBlock | null => {
     block: raw.slice(start, closing + 3),
     complete: true,
   };
+};
+
+const extractFirstStreamingFenceBlock = (raw: string): FenceBlock | null => {
+  const openingPattern = /^ {0,3}(`{3,}|~{3,})([^\r\n]*)\r?$/gm;
+  let opening: RegExpExecArray | null;
+
+  while ((opening = openingPattern.exec(raw)) !== null) {
+    const marker = opening[1][0];
+    // Backticks are not allowed in the info string of a backtick fence.
+    if (marker === "`" && opening[2].includes("`")) continue;
+
+    const start = opening.index;
+    const closingPattern = new RegExp(
+      `^ {0,3}${marker}{${opening[1].length},}[ \\t]*\\r?$`,
+      "gm"
+    );
+    closingPattern.lastIndex = start + opening[0].length;
+    const closing = closingPattern.exec(raw);
+    if (!closing) {
+      return { start, block: raw.slice(start), complete: false };
+    }
+
+    const end = closing.index + closing[0].length;
+    return { start, end, block: raw.slice(start, end), complete: true };
+  }
+
+  return null;
 };
 
 const normalizeBeforeFenceText = (before: string) => {
@@ -108,6 +137,54 @@ const getFenceRanges = (raw: string): FenceRange[] => {
   return ranges;
 };
 
+const isEscaped = (raw: string, index: number) => {
+  let backslashes = 0;
+  for (let i = index - 1; i >= 0 && raw[i] === "\\"; i--) backslashes++;
+  return backslashes % 2 === 1;
+};
+
+const getInlineCodeRanges = (raw: string, streaming: boolean): FenceRange[] => {
+  const ranges: FenceRange[] = [];
+  const blankLines = /\r?\n[ \t]*\r?\n/g;
+  let paragraphStart = 0;
+
+  do {
+    const boundary = blankLines.exec(raw);
+    const paragraphEnd = boundary?.index ?? raw.length;
+    const paragraph = raw.slice(paragraphStart, paragraphEnd);
+    const delimiters = /`+/g;
+    let match: RegExpExecArray | null;
+
+    while ((match = delimiters.exec(paragraph)) !== null) {
+      if (isEscaped(paragraph, match.index)) continue;
+      const start = paragraphStart + match.index;
+      const delimiter = match[0];
+      let closing: RegExpExecArray | null;
+      while ((closing = delimiters.exec(paragraph)) !== null) {
+        if (closing[0] === delimiter) {
+          ranges.push({
+            start,
+            end: paragraphStart + closing.index + delimiter.length,
+          });
+          break;
+        }
+      }
+      if (!closing) {
+        // An unfinished span can only continue in the current paragraph.
+        if (streaming && paragraphEnd === raw.length) {
+          ranges.push({ start, end: paragraphEnd });
+        }
+        break;
+      }
+    }
+
+    if (!boundary) break;
+    paragraphStart = blankLines.lastIndex;
+  } while (paragraphStart < raw.length);
+
+  return ranges;
+};
+
 const isIndexInRanges = (index: number, ranges: FenceRange[]) =>
   ranges.some(({ start, end }) => index >= start && index < end);
 
@@ -123,7 +200,10 @@ const findFirstMatchOutsideFence = (
   let match: RegExpExecArray | null;
 
   while ((match = matcher.exec(raw)) !== null) {
-    if (!isIndexInRanges(match.index, fenceRanges)) {
+    if (
+      !isEscaped(raw, match.index) &&
+      !isIndexInRanges(match.index, fenceRanges)
+    ) {
       return match.index;
     }
   }
@@ -263,15 +343,54 @@ const extractTableBlock = (
 // Split incoming markdown content into markdown and sandbox HTML segments
 export const splitContentSegments = (
   raw: string,
-  keepText = false
+  keepText = false,
+  streaming = false
 ): RenderSegment[] => {
-  const source = normalizeQuotedMermaidContent(raw, keepText);
+  const source = streaming ? raw : normalizeQuotedMermaidContent(raw, keepText);
   const finalizeSegments = (segments: RenderSegment[]) =>
     splitCustomButtonsFromSandbox(segments);
+  const hasText = (value: string) =>
+    streaming ? value.length > 0 : Boolean(value.trim());
 
-  const fenceBlock = extractFirstFenceBlock(source);
-  if (fenceBlock) {
+  const fenceBlock = streaming
+    ? extractFirstStreamingFenceBlock(source)
+    : extractFirstFenceBlock(source);
+  const fenceRanges = [
+    ...(streaming
+      ? fenceBlock
+        ? [
+            {
+              start: fenceBlock.start,
+              end: fenceBlock.complete ? fenceBlock.end : source.length,
+            },
+          ]
+        : []
+      : getFenceRanges(source)),
+    ...getInlineCodeRanges(source, streaming),
+  ];
+  // A fence-looking line inside an HTML block belongs to that HTML block.
+  let sandboxStartIndex = findFirstMatchOutsideFence(
+    source,
+    SANDBOX_START_PATTERN,
+    fenceRanges
+  );
+  if (
+    fenceBlock &&
+    (!streaming ||
+      sandboxStartIndex === -1 ||
+      fenceBlock.start < sandboxStartIndex)
+  ) {
     if (!fenceBlock.complete) {
+      if (keepText && streaming && fenceBlock.start > 0) {
+        return finalizeSegments([
+          ...splitContentSegments(
+            source.slice(0, fenceBlock.start),
+            true,
+            streaming
+          ),
+          { type: "markdown", value: source.slice(fenceBlock.start) },
+        ]);
+      }
       if (keepText) {
         return finalizeSegments([{ type: "markdown", value: source }]);
       }
@@ -284,28 +403,56 @@ export const splitContentSegments = (
 
     const segments: RenderSegment[] = [];
     const before = source.slice(0, fenceBlock.start);
-    const normalizedBefore = normalizeBeforeFenceText(before);
-    if (normalizedBefore.trim()) {
-      segments.push({ type: "text", value: normalizedBefore });
+    const normalizedBefore = streaming
+      ? before
+      : normalizeBeforeFenceText(before);
+    if (hasText(normalizedBefore)) {
+      if (streaming)
+        segments.push(
+          ...splitContentSegments(normalizedBefore, true, streaming)
+        );
+      else segments.push({ type: "text", value: normalizedBefore });
     }
 
     segments.push({ type: "markdown", value: fenceBlock.block });
 
     const after = source.slice(fenceBlock.end);
-    if (after.trim()) {
-      segments.push(...splitContentSegments(after, true));
+    if (hasText(after)) {
+      segments.push(...splitContentSegments(after, true, streaming));
     }
 
     return finalizeSegments(segments);
   }
 
-  const fenceRanges = getFenceRanges(source);
-  // Avoid treating fenced code blocks as sandbox content.
-  const sandboxStartIndex = findFirstMatchOutsideFence(
-    source,
-    SANDBOX_START_PATTERN,
-    fenceRanges
-  );
+  if (streaming && sandboxStartIndex === -1) {
+    const partialTag = /<(!?[a-z]*)$/i.exec(source);
+    const sandboxTags = [
+      "!doctype",
+      "script",
+      "style",
+      "link",
+      "iframe",
+      "html",
+      "head",
+      "body",
+      "meta",
+      "title",
+      "base",
+      "template",
+      "div",
+      "section",
+      "article",
+      "main",
+    ];
+    if (
+      partialTag &&
+      !isEscaped(source, partialTag.index) &&
+      !isIndexInRanges(partialTag.index, fenceRanges) &&
+      sandboxTags.some((tag) => tag.startsWith(partialTag[1].toLowerCase()))
+    ) {
+      sandboxStartIndex = partialTag.index;
+    }
+  }
   const svgOpenIndex = findFirstMatchOutsideFence(
     source,
     /<svg\b/i,
@@ -329,19 +476,21 @@ export const splitContentSegments = (
     const closeIdx = source.indexOf("</svg>", svgOpenIndex);
     const svgBlock =
       closeIdx === -1
-        ? `${source.slice(svgOpenIndex)}</svg>`
+        ? streaming
+          ? source.slice(svgOpenIndex)
+          : `${source.slice(svgOpenIndex)}</svg>`
         : source.slice(svgOpenIndex, closeIdx + "</svg>".length);
     const after =
       closeIdx === -1 ? "" : source.slice(closeIdx + "</svg>".length);
 
     if (keepText) {
       const segments: RenderSegment[] = [];
-      if (before.trim()) {
+      if (hasText(before)) {
         segments.push({ type: "text", value: before });
       }
       segments.push({ type: "markdown", value: svgBlock });
-      if (after.trim()) {
-        segments.push(...splitContentSegments(after, true));
+      if (hasText(after)) {
+        segments.push(...splitContentSegments(after, true, streaming));
       }
       return finalizeSegments(segments);
     }
@@ -355,17 +504,17 @@ export const splitContentSegments = (
   if (tableBlock) {
     const segments: RenderSegment[] = [];
     const before = source.slice(0, tableBlock.start);
-    if (keepText && before.trim()) {
-      segments.push(...splitContentSegments(before, true));
+    if (keepText && hasText(before)) {
+      segments.push(...splitContentSegments(before, true, streaming));
     }
     segments.push({ type: "markdown", value: tableBlock.block });
     const after = source.slice(tableBlock.end);
     const hasProgress = after.length < source.length;
-    if (after.trim() && hasProgress) {
+    if (hasText(after) && hasProgress) {
       segments.push(
         ...(keepText
-          ? splitContentSegments(after, true)
-          : splitContentSegments(after))
+          ? splitContentSegments(after, true, streaming)
+          : splitContentSegments(after, false, streaming))
       );
     }
     return finalizeSegments(segments);
@@ -384,7 +533,7 @@ export const splitContentSegments = (
   );
 
   if (sandboxStartIndex === -1 && !inlineCandidate) {
-    if (keepText && source.trim()) {
+    if (keepText && hasText(source)) {
       return finalizeSegments([{ type: "text", value: source }]);
     }
     return [];
@@ -399,18 +548,22 @@ export const splitContentSegments = (
     : sandboxStartIndex;
   const blockEnd = shouldUseInline
     ? inlineCandidate!.end
-    : findHtmlBlockEnd(source, startIndex);
+    : streaming
+      ? findStreamingHtmlBlockEnd(source, startIndex)
+      : findHtmlBlockEnd(source, startIndex);
 
   const segments: RenderSegment[] = [];
   const before = source.slice(0, startIndex);
   const matchedBlock = source.slice(startIndex, blockEnd);
   const isVideoIframeMatch =
     shouldUseInline && isMarkdownVideoIframe(matchedBlock);
-  const normalizedBefore = isVideoIframeMatch ? before.trimEnd() : before;
+  const normalizedBefore =
+    isVideoIframeMatch && !streaming ? before.trimEnd() : before;
   const after = source.slice(blockEnd);
-  const normalizedAfter = isVideoIframeMatch ? after.trimStart() : after;
+  const normalizedAfter =
+    isVideoIframeMatch && !streaming ? after.trimStart() : after;
 
-  if (keepText && normalizedBefore.trim()) {
+  if (keepText && hasText(normalizedBefore)) {
     segments.push({ type: "text", value: normalizedBefore });
   }
 
@@ -419,8 +572,10 @@ export const splitContentSegments = (
     value: matchedBlock,
   });
 
-  if (normalizedAfter.trim()) {
-    segments.push(...splitContentSegments(normalizedAfter, keepText));
+  if (hasText(normalizedAfter)) {
+    segments.push(
+      ...splitContentSegments(normalizedAfter, keepText, streaming)
+    );
   }
 
   return finalizeSegments(segments);

@@ -90,6 +90,92 @@ describe("ContentRender progressive HTML with typewriter", () => {
     }
   );
 
+  it("counts pending media as processed source without blocking prose completion", () => {
+    const content = '<iframe title="unfinished';
+    const onTypeFinished = vi.fn();
+    const onTypewriterStateChange = vi.fn();
+    const { container } = render(
+      <ContentRender
+        {...TYPEWRITER_PROPS}
+        content={content}
+        onTypeFinished={onTypeFinished}
+        onTypewriterStateChange={onTypewriterStateChange}
+      />
+    );
+
+    expect(container.querySelector("iframe")).toBeNull();
+    expect(onTypeFinished).toHaveBeenCalledTimes(1);
+    expect(onTypewriterStateChange).toHaveBeenLastCalledWith({
+      isTypewriterEnabled: true,
+      isTyping: false,
+      isComplete: true,
+      renderedLength: content.length,
+      totalLength: content.length,
+    });
+  });
+
+  it.each([true, false])(
+    "preserves a native video browsing context across streamed chunks (typewriter=%s)",
+    (enableTypewriter) => {
+      const prefix = '甲乙丙丁\n<iframe title="a >';
+      const opening =
+        '<iframe title="a > b" allowfullscreen="" allow="autoplay; encrypted-media" data-tag=\'video\'>';
+      const { container, rerender } = render(
+        <ContentRender
+          {...TYPEWRITER_PROPS}
+          enableTypewriter={enableTypewriter}
+          content={prefix}
+        />
+      );
+
+      expect(container.querySelector("iframe")).toBeNull();
+      expect(getSandboxes(container)).toHaveLength(0);
+      advanceTime(30);
+      expect(getVisibleText(container)).toBe(
+        enableTypewriter ? "甲乙" : "甲乙丙丁"
+      );
+
+      rerender(
+        <ContentRender
+          {...TYPEWRITER_PROPS}
+          enableTypewriter={enableTypewriter}
+          content={`甲乙丙丁\n${opening}`}
+        />
+      );
+      const video = container.querySelector<HTMLIFrameElement>(
+        'iframe[data-tag="video"]'
+      );
+      expect(video).not.toBeNull();
+      expect(video?.hasAttribute("allowfullscreen")).toBe(true);
+      const videoWindow = video!.contentWindow as Window & {
+        retainedState?: string;
+      };
+      videoWindow.retainedState = "playing";
+
+      rerender(
+        <ContentRender
+          {...TYPEWRITER_PROPS}
+          enableTypewriter={enableTypewriter}
+          content={`甲乙丙丁\n${opening}</iframe><div>Card</div>\n戊己`}
+        />
+      );
+      expect(container.querySelector('iframe[data-tag="video"]')).toBe(video);
+      expect(video!.contentWindow).toBe(videoWindow);
+      expect(videoWindow.retainedState).toBe("playing");
+      expect(getSandboxes(container)).toHaveLength(1);
+      expect(getVisibleText(container)).toBe(
+        enableTypewriter ? "甲乙" : "甲乙丙丁戊己"
+      );
+
+      advanceTime(30);
+      advanceTime(30);
+      expect(getVisibleText(container)).toBe("甲乙丙丁戊己");
+      expect(container.querySelector('iframe[data-tag="video"]')).toBe(video);
+      expect(video!.contentWindow).toBe(videoWindow);
+      expect(videoWindow.retainedState).toBe("playing");
+    }
+  );
+
   it("types a bare less-than sign without mounting an empty iframe", () => {
     const onTypeFinished = vi.fn();
     const { container, rerender } = render(

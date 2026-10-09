@@ -99,7 +99,8 @@ const readMarkup = (raw: string, start: number): Markup => {
  */
 export const findStreamingHtmlBlockEnd = (
   raw: string,
-  startIndex: number
+  startIndex: number,
+  stopBeforeRoot?: (startIndex: number) => boolean
 ): number => {
   const stack: string[] = [];
   let position = startIndex;
@@ -137,6 +138,17 @@ export const findStreamingHtmlBlockEnd = (
       if (!stack.length && hasMarkup) return lastCompletedEnd;
       position += 1;
       continue;
+    }
+
+    if (
+      !stack.length &&
+      hasMarkup &&
+      markup.kind === "tag" &&
+      !markup.closing &&
+      markup.name === "iframe" &&
+      stopBeforeRoot?.(position)
+    ) {
+      return lastCompletedEnd;
     }
 
     hasMarkup = true;

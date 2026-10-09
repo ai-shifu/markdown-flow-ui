@@ -355,18 +355,21 @@ export const MarkdownRenderer: React.FC<{
   );
 };
 
+const isImmediateSegment = (segment: RenderSegment) =>
+  segment.type === "markdown" && segment.immediate === true;
+
 const mergeNonSandboxSegments = (segments: RenderSegment[]) => {
   if (segments.length <= 1) return segments;
   const merged: RenderSegment[] = [];
 
   segments.forEach((segment) => {
-    if (segment.type === "sandbox") {
+    if (segment.type === "sandbox" || isImmediateSegment(segment)) {
       merged.push(segment);
       return;
     }
 
     const last = merged[merged.length - 1];
-    if (last && last.type !== "sandbox") {
+    if (last && last.type !== "sandbox" && !isImmediateSegment(last)) {
       merged[merged.length - 1] = {
         type: "markdown",
         value: `${last.value}${segment.value}`,
@@ -491,12 +494,15 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     () => mergeNonSandboxSegments(splitContentSegments(content, true, true)),
     [content]
   );
-  const hasSandbox = sourceSegments.some(
-    (segment) => segment.type === "sandbox"
+  const hasRichSegments = sourceSegments.some(
+    (segment) => segment.type === "sandbox" || isImmediateSegment(segment)
   );
-  const typewriterContent = hasSandbox
+  const typewriterContent = hasRichSegments
     ? sourceSegments
-        .filter((segment) => segment.type !== "sandbox")
+        .filter(
+          (segment) =>
+            segment.type !== "sandbox" && !isImmediateSegment(segment)
+        )
         .map((segment) => segment.value)
         .join("")
     : content;
@@ -767,7 +773,13 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   const mergedRenderSegments = useMemo(() => {
     let textOffset = 0;
     return sourceSegments.map((segment) => {
-      if (segment.type === "sandbox" || !isTypewriterEnabled) return segment;
+      if (
+        segment.type === "sandbox" ||
+        isImmediateSegment(segment) ||
+        !isTypewriterEnabled
+      ) {
+        return segment;
+      }
       const value = displayContent.slice(
         textOffset,
         textOffset + segment.value.length
@@ -777,7 +789,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       return { ...segment, value };
     });
   }, [sourceSegments, displayContent, isTypewriterEnabled]);
-  const renderContent = hasSandbox
+  const renderContent = hasRichSegments
     ? mergedRenderSegments.map((segment) => segment.value).join("")
     : isTypewriterEnabled
       ? displayContent
@@ -1008,7 +1020,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     });
   };
 
-  if (hasSandbox) {
+  if (hasRichSegments) {
     return (
       <div
         className="content-render markdown-body"
@@ -1036,15 +1048,17 @@ const ContentRender: React.FC<ContentRenderProps> = ({
             />
           ) : (
             <React.Fragment key={`md-${idx}`}>
-              {renderMarkdownSegments(
-                isTypewriterEnabled
-                  ? closeTypedInlineCode(
-                      segment.value,
-                      sourceSegments[idx].value
-                    )
-                  : segment.value,
-                `md-${idx}`
-              )}
+              {segment.type === "markdown" && segment.pending
+                ? null
+                : renderMarkdownSegments(
+                    isTypewriterEnabled && !isImmediateSegment(segment)
+                      ? closeTypedInlineCode(
+                          segment.value,
+                          sourceSegments[idx].value
+                        )
+                      : segment.value,
+                    `md-${idx}`
+                  )}
             </React.Fragment>
           )
         )}

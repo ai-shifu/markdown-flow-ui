@@ -2,7 +2,14 @@ import { getInlineCodeRanges } from "./inline-code-ranges";
 import { findStreamingHtmlBlockEnd } from "./html-block-end";
 
 export type RenderSegment =
-  | { type: "markdown"; value: string }
+  | {
+      type: "markdown";
+      value: string;
+      /** Render received media without spending the prose typewriter budget. */
+      immediate?: true;
+      /** An iframe header has not arrived fully, so it cannot mount yet. */
+      pending?: true;
+    }
   | { type: "sandbox"; value: string }
   | { type: "text"; value: string };
 
@@ -23,7 +30,12 @@ const closingBoundary = /<\/[a-z][^>]*>\s*\n(?=[^\s<])/gi;
 const CUSTOM_BUTTON_PATTERN =
   /<custom-button-after-content\b[\s\S]*?<\/custom-button-after-content>/gi;
 
-type MatchResult = { start: number; end: number };
+type MatchResult = {
+  start: number;
+  end: number;
+  immediate?: true;
+  pending?: true;
+};
 type FenceRange = { start: number; end: number };
 type FenceBlock =
   | { start: number; end: number; block: string; complete: true }
@@ -277,6 +289,70 @@ const findMarkdownVideoIframeMatch = (
 const isMarkdownVideoIframe = (value: string) =>
   MARKDOWN_VIDEO_IFRAME_PATTERN.test(value.trim());
 
+const findStreamingVideoIframeMatch = (
+  raw: string,
+  start: number
+): MatchResult | null => {
+  if (start === -1) return null;
+  const prefix = raw.slice(start);
+  const nameMatch = /^<([a-z]+)/i.exec(prefix);
+  if (!nameMatch) return null;
+  const name = nameMatch[1].toLowerCase();
+  const pending = (): MatchResult => ({
+    start,
+    end: raw.length,
+    immediate: true,
+    pending: true,
+  });
+  if (nameMatch[0].length === prefix.length && "iframe".startsWith(name)) {
+    return pending();
+  }
+  if (name !== "iframe" || !/[\s/>]/.test(prefix[nameMatch[0].length] ?? "")) {
+    return null;
+  }
+
+  // A quoted '>' belongs to an attribute, not the end of the opening header.
+  const attributesStart = start + nameMatch[0].length;
+  let quote = "";
+  let openingEnd = -1;
+  for (let index = attributesStart; index < raw.length; index += 1) {
+    const character = raw[index];
+    if (quote) {
+      if (character === quote) quote = "";
+    } else if (character === '"' || character === "'") {
+      quote = character;
+    } else if (character === ">") {
+      openingEnd = index + 1;
+      break;
+    }
+  }
+  if (openingEnd === -1) return pending();
+
+  // Tokenize whole attributes so marker-looking text in another value is inert.
+  const attributes = raw.slice(attributesStart, openingEnd - 1);
+  const attributePattern =
+    /([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]*)))?/g;
+  let attribute: RegExpExecArray | null;
+  let isVideo = false;
+  while ((attribute = attributePattern.exec(attributes)) !== null) {
+    if (attribute[1].toLowerCase() === "data-tag") {
+      isVideo =
+        (attribute[2] ?? attribute[3] ?? attribute[4] ?? "").toLowerCase() ===
+        "video";
+      break;
+    }
+  }
+  if (!isVideo) return null;
+
+  // A video is one raw-text element, not an HTML run containing later siblings.
+  const closing = /<\/iframe\s*>/i.exec(raw.slice(openingEnd));
+  return {
+    start,
+    end: closing ? openingEnd + closing.index + closing[0].length : raw.length,
+    immediate: true,
+  };
+};
+
 const extractTableBlock = (
   raw: string
 ): { start: number; block: string; end: number } | null => {
@@ -481,10 +557,9 @@ export const splitContentSegments = (
 
   const inlineMatch = findInlineSandboxMatch(source);
   const markdownImageMatch = findMarkdownImageMatch(source, fenceRanges);
-  const markdownVideoIframeMatch = findMarkdownVideoIframeMatch(
-    source,
-    fenceRanges
-  );
+  const markdownVideoIframeMatch = streaming
+    ? findStreamingVideoIframeMatch(source, sandboxStartIndex)
+    : findMarkdownVideoIframeMatch(source, fenceRanges);
   const inlineCandidate = pickEarliestMatch(
     inlineMatch,
     markdownImageMatch,
@@ -508,7 +583,10 @@ export const splitContentSegments = (
   const blockEnd = shouldUseInline
     ? inlineCandidate!.end
     : streaming
-      ? findStreamingHtmlBlockEnd(source, startIndex)
+      ? findStreamingHtmlBlockEnd(source, startIndex, (index) => {
+          const media = findStreamingVideoIframeMatch(source, index);
+          return Boolean(media && !media.pending);
+        })
       : findHtmlBlockEnd(source, startIndex);
 
   const segments: RenderSegment[] = [];
@@ -529,6 +607,12 @@ export const splitContentSegments = (
   segments.push({
     type: shouldUseInline ? "markdown" : "sandbox",
     value: matchedBlock,
+    ...(shouldUseInline && inlineCandidate?.immediate
+      ? { immediate: true as const }
+      : {}),
+    ...(shouldUseInline && inlineCandidate?.pending
+      ? { pending: true as const }
+      : {}),
   });
 
   if (hasText(normalizedAfter)) {

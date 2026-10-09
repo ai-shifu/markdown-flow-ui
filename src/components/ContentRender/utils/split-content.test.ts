@@ -74,6 +74,66 @@ describe("splitContentSegments", () => {
     expect(segments[2].type).toBe("text");
   });
 
+  it.each([
+    '<iframe title="a > b" data-tag="video" allowfullscreen="">',
+    "<iframe title='a > b' allow='autoplay' data-tag='video'>",
+  ])(
+    "keeps an unfinished video header pending until its quoted attributes finish: %s",
+    (opening) => {
+      for (let length = 2; length < opening.length; length += 1) {
+        const received = opening.slice(0, length);
+        expect(splitContentSegments(received, true, true)).toEqual([
+          { type: "markdown", value: received, immediate: true, pending: true },
+        ]);
+      }
+      expect(splitContentSegments(opening, true, true)).toEqual([
+        { type: "markdown", value: opening, immediate: true },
+      ]);
+    }
+  );
+
+  it("keeps streamed video separate from following HTML and prose", () => {
+    const video = '<iframe data-tag="video" allowfullscreen=""></iframe>';
+    const raw = `Intro\n${video}<div>Card</div>\nOutro`;
+    const segments = splitContentSegments(raw, true, true);
+
+    expect(segments).toEqual([
+      { type: "text", value: "Intro\n" },
+      { type: "markdown", value: video, immediate: true },
+      { type: "sandbox", value: "<div>Card</div>" },
+      { type: "text", value: "\nOutro" },
+    ]);
+    expect(segments.map((segment) => segment.value).join("")).toBe(raw);
+  });
+
+  it.each(["<div>Card</div>", '<iframe src="/generic"></iframe>'])(
+    "keeps a video after %s on its native media path",
+    (before) => {
+      const video = '<iframe data-tag="video"></iframe>';
+      const raw = `${before}\n${video}<style>.card { color: red; }</style>`;
+      const segments = splitContentSegments(raw, true, true);
+      expect(segments).toContainEqual({
+        type: "markdown",
+        value: video,
+        immediate: true,
+      });
+      expect(segments.filter((segment) => segment.type === "sandbox")).toEqual([
+        { type: "sandbox", value: before },
+        { type: "sandbox", value: "<style>.card { color: red; }</style>" },
+      ]);
+      expect(segments.map((segment) => segment.value).join("")).toBe(raw);
+    }
+  );
+
+  it.each([
+    '<iframe title="data-tag=\'video\'" src="/generic">',
+    '<iframe data-tag="audio" src="/generic">',
+  ])("keeps generic iframe headers on the sandbox path: %s", (opening) => {
+    expect(splitContentSegments(opening, true, true)).toEqual([
+      { type: "sandbox", value: opening },
+    ]);
+  });
+
   it.each(["div", "script", "style"])(
     "keeps self-closing %s roots on the sandbox path as they arrive",
     (tag) => {

@@ -200,6 +200,30 @@ describe("bounded Markdown code range cache", () => {
   });
 
   it.each([1, 100])(
+    "shares one parse across %s resolved and pending image alt groups",
+    async (count) => {
+      const { getMarkdownSourceAnalysis } = await loadRanges();
+      const { splitContentSegments } = await import("./split-content");
+      const raw = Array.from({ length: count }, (_value, index) =>
+        [
+          `![<figure>Alt ${index}</figure>][image-${index}]`,
+          `[image-${index}]: /image`,
+          "![<svg><text>Pending</text></svg>",
+          "<figure>Actual</figure>",
+        ].join("\n\n")
+      ).join("\n\n");
+      const analysis = getMarkdownSourceAnalysis(raw);
+      const segments = splitContentSegments(raw, true, true, analysis);
+      expect(
+        segments.filter((segment) => segment.type === "sandbox")
+      ).toHaveLength(count);
+      expect(segments.map((segment) => segment.value).join("")).toBe(raw);
+      expect(parseCalls).toHaveBeenCalledTimes(1);
+      expect(parseCalls).toHaveBeenCalledWith(raw);
+    }
+  );
+
+  it.each([1, 100])(
     "shares one source parse across %s link metadata and label video groups",
     async (count) => {
       const { getMarkdownSourceAnalysis } = await loadRanges();

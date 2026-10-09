@@ -59,11 +59,8 @@ describe("Markdown source comment ranges", () => {
 });
 
 describe("Markdown destination and title ranges", () => {
-  it.each([
-    '[label](https://example.com "<figure></figure>")',
-    '![a [nested] label](https://example.com "<figure></figure>")',
-    '![escaped \\] label](https://example.com "<figure></figure>")',
-  ])("protects the tail after the visible label: %s", (raw) => {
+  it("protects the tail after a visible link label", () => {
+    const raw = '[label](https://example.com "<figure></figure>")';
     const start = raw.indexOf("](") + 1;
     const analysis = getMarkdownSourceAnalysis(raw);
     expect(analysis.metadata).toEqual([{ start, end: raw.length }]);
@@ -71,6 +68,22 @@ describe("Markdown destination and title ranges", () => {
     expect(Reflect.set(analysis.metadata[0], "end", 0)).toBe(false);
     expect(Reflect.set(analysis.metadata, "0", {})).toBe(false);
   });
+
+  it.each([
+    '![a [nested] label](https://example.com "<figure></figure>")',
+    '![escaped \\] label](https://example.com "<figure></figure>")',
+  ])(
+    "protects image alt and metadata without changing their offsets: %s",
+    (raw) => {
+      const analysis = getMarkdownSourceAnalysis(raw);
+      expect(analysis.metadata).toEqual([
+        { start: 2, end: raw.length, imageAltEnd: raw.indexOf("](") },
+      ]);
+      expect(analysis.literal).toEqual(analysis.metadata);
+      expect(Reflect.set(analysis.metadata[0], "end", 0)).toBe(false);
+      expect(Reflect.set(analysis.metadata, "0", {})).toBe(false);
+    }
+  );
 
   it.each([
     "<https://example.com/figure>",
@@ -108,12 +121,40 @@ describe("Markdown destination and title ranges", () => {
     const raw = '[![alt](image "<figure>")](lesson "<canvas>")';
     const metadata = getMarkdownSourceAnalysis(raw).metadata;
     expect(metadata.map((range) => raw.slice(range.start, range.end))).toEqual([
-      '(image "<figure>")',
+      'alt](image "<figure>")',
       '(lesson "<canvas>")',
     ]);
     expect(metadata[0].end).toBeLessThan(metadata[1].start);
     expect(metadata.some((range) => range.pending)).toBe(false);
   });
+
+  it.each([false, true])(
+    "tracks reference resolution without extending the image literal when definition comes first: %s",
+    (definitionFirst) => {
+      const image = "![<figure>Example</figure>][image]";
+      const definition = "[image]: /image";
+      const raw = definitionFirst
+        ? `${definition}\n\n${image}`
+        : `${image}\n\n${definition}`;
+      const start = raw.indexOf(image);
+      const analysis = getMarkdownSourceAnalysis(raw);
+      expect(raw).toContain("\n\n");
+      const paragraph = analysis.tree.children.find(
+        (node) => node.type === "paragraph"
+      );
+      expect(
+        paragraph?.type === "paragraph" && paragraph.children[0].type
+      ).toBe("imageReference");
+      const range = analysis.metadata.find((entry) => entry.imageAltEnd);
+      expect(range).toEqual({
+        start: start + 2,
+        end: start + image.length,
+        imageAltEnd: start + image.indexOf("][image]"),
+        imageResolveEnd: raw.length,
+      });
+      expect(raw.slice(range!.start, range!.end)).toBe(image.slice(2));
+    }
+  );
 
   it.each([
     '[docs](url "<figure></figure>',

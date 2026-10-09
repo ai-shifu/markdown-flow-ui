@@ -72,4 +72,45 @@ describe("typed Markdown metadata render protection", () => {
       `${source} Later`
     );
   });
+
+  it("protects reference alt until its definition is visible", () => {
+    const image = "![<figure>Example</figure>][image]";
+    const raw = `${image}\n\n[image]: /image`;
+    const metadata = {
+      start: 2,
+      end: image.length,
+      imageAltEnd: image.indexOf("][image]"),
+      imageResolveEnd: raw.length,
+    };
+    for (let length = image.length; length < raw.length; length += 1) {
+      const visible = raw.slice(0, length);
+      expect(escapeTypedMarkdownMetadata(visible, [metadata])).toBe(
+        visible.replace(/</g, "&lt;")
+      );
+    }
+    expect(escapeTypedMarkdownMetadata(raw, [metadata])).toBe(raw);
+  });
+
+  it("preserves escaped less-than signs and entities in protected alt text", () => {
+    const raw = "![\\<figure> &lt;svg> <iframe>";
+    expect(
+      escapeTypedMarkdownMetadata(raw, [
+        { start: 2, end: raw.length, imageAltEnd: raw.length, pending: true },
+      ])
+    ).toBe("![\\<figure> &lt;svg> &lt;iframe>");
+  });
+
+  it("protects image alt and an unfinished title separately", () => {
+    const raw = '![<figure>Alt</figure>](/image "<svg>Title</svg>")';
+    const metadata = {
+      start: 2,
+      end: raw.length,
+      imageAltEnd: raw.indexOf("]("),
+    };
+    const visible = raw.slice(0, -1);
+    expect(escapeTypedMarkdownMetadata(visible, [metadata])).toBe(
+      visible.replace(/</g, "&lt;")
+    );
+    expect(escapeTypedMarkdownMetadata(raw, [metadata])).toBe(raw);
+  });
 });

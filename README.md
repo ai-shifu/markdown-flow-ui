@@ -57,8 +57,8 @@ received.
 
 Streaming detection recognizes the backend MarkdownFlow block roots, including
 `figure`, `table`, `canvas`, `video`, `header`, `nav`, and `details`. HTML-looking
-text inside Markdown code, math, comments, link destinations/titles, reference
-definitions, or another tag's attributes stays inert. Unfinished link metadata
+text inside Markdown code, math, comments, image alt text, link destinations/titles,
+reference definitions, or another tag's attributes stays inert. Unfinished link metadata
 also stays literal while streaming; invalid links do not hide subsequent HTML.
 Detection and presentation are separate: `pre`, `details`, `summary`,
 `aside`, `blockquote`, `ul`, `ol`, `dl`, and `table` keep their native Markdown

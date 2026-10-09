@@ -26,6 +26,8 @@
   Markdown runs.
 - Keep HTML and SVG examples in link metadata literal, including unfinished
   titles, without hiding real markup after invalid links.
+- Keep image alt text literal during typing and streaming, including reference
+  images whose definitions arrive later, while preserving final alt values.
 - Reveal thematic breaks and line breaks at their prose typing boundaries.
 - Scan received snapshots once without recursively parsing Markdown suffixes.
 - Preserve the complete received Markdown tree while typing around native

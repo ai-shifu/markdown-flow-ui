@@ -14,7 +14,14 @@ const MAX_CACHE_ENTRIES = 16;
 const MAX_CACHED_SOURCE_CHARACTERS = 256 * 1024;
 
 type CodeRange = Readonly<{ start: number; end: number }>;
-type MetadataRange = CodeRange & Readonly<{ pending?: true }>;
+type MetadataRange = CodeRange &
+  Readonly<{
+    pending?: true;
+    // Alt text is always literal. Resolution may depend on a later definition,
+    // but its classification mask must stop at the image's own source end.
+    imageAltEnd?: number;
+    imageResolveEnd?: number;
+  }>;
 type Immutable<T> = T extends object
   ? { readonly [Key in keyof T]: Immutable<T[Key]> }
   : T;
@@ -170,18 +177,35 @@ const isDefinitionLabelStart = (raw: string, start: number) => {
 const collectLexicalRanges = (
   raw: string,
   literals: readonly CodeRange[],
-  htmlBlocks: ReadonlySet<number>
+  htmlBlocks: ReadonlySet<number>,
+  imageStarts: ReadonlySet<number>
 ) => {
   const comments: CodeRange[] = [];
   const metadata: MetadataRange[] = [];
-  const labels: number[] = [];
+  const labels: Array<{ start: number; image: boolean }> = [];
   let position = 0;
   let literalIndex = 0;
   let htmlBodyEnd = 0;
+  let imageLabelStart = -1;
+  const pendingImages = (end: number) => {
+    for (const label of labels)
+      if (label.image)
+        metadata.push({
+          start: label.start + 1,
+          end,
+          imageAltEnd: end,
+          pending: true,
+        });
+  };
   while (position < raw.length) {
     while (literals[literalIndex]?.end <= position) literalIndex += 1;
     const literal = literals[literalIndex];
     if (literal && literal.start <= position) {
+      if (
+        imageStarts.has(literal.start) &&
+        labels[labels.length - 1]?.start === literal.start - 1
+      )
+        labels.pop();
       position = literal.end;
       continue;
     }
@@ -189,11 +213,49 @@ const collectLexicalRanges = (
       position += 2;
       continue;
     }
-    if (position >= htmlBodyEnd && raw[position] === "[") labels.push(position);
+    if (raw[position] === "!" && raw[position + 1] === "[")
+      imageLabelStart = position + 1;
+    if (position >= htmlBodyEnd && raw[position] === "[")
+      labels.push({ start: position, image: position === imageLabelStart });
     else if (position >= htmlBodyEnd && raw[position] === "]") {
       const label = labels.pop();
       if (label !== undefined) {
-        if (raw[position + 1] === "(" && literal?.start !== position + 1) {
+        if (label.image) {
+          let tail: { end: number; pending?: true } | undefined;
+          if (raw[position + 1] === "(")
+            tail = findPendingLinkMetadataEnd(raw, position + 1);
+          else if (position + 1 === raw.length)
+            tail = { end: raw.length, pending: true };
+          else if (raw[position + 1] === "[") {
+            let end = position + 2;
+            while (
+              end < raw.length &&
+              raw[end] !== "]" &&
+              raw[end] !== "[" &&
+              raw[end] !== "\n"
+            )
+              end += raw[end] === "\\" ? 2 : 1;
+            if (end === raw.length || raw[end] === "]")
+              tail = {
+                end: raw[end] === "]" ? end + 1 : raw.length,
+                pending: true,
+              };
+          }
+          if (tail) {
+            metadata.push({
+              start: label.start + 1,
+              imageAltEnd: position,
+              ...tail,
+            });
+            position = tail.end;
+            continue;
+          }
+        }
+        if (
+          !label.image &&
+          raw[position + 1] === "(" &&
+          literal?.start !== position + 1
+        ) {
           const tail = findPendingLinkMetadataEnd(raw, position + 1);
           if (tail) {
             metadata.push({ start: position + 1, ...tail });
@@ -201,7 +263,10 @@ const collectLexicalRanges = (
             continue;
           }
         }
-        if (raw[position + 1] === ":" && isDefinitionLabelStart(raw, label)) {
+        if (
+          raw[position + 1] === ":" &&
+          isDefinitionLabelStart(raw, label.start)
+        ) {
           const title = findPendingDefinitionTitle(raw, position + 2, false);
           if (title) {
             metadata.push({ ...title, start: position + 1 });
@@ -213,7 +278,10 @@ const collectLexicalRanges = (
     } else if (raw[position] === "\n") {
       let previous = position - 1;
       while (/[ \t\r]/.test(raw[previous] ?? "")) previous -= 1;
-      if (raw[previous] === "\n") labels.length = 0;
+      if (raw[previous] === "\n") {
+        pendingImages(previous);
+        labels.length = 0;
+      }
     }
     if (raw[position] !== "<") {
       position += 1;
@@ -249,6 +317,7 @@ const collectLexicalRanges = (
       position += 1;
     }
   }
+  pendingImages(raw.length);
   return { comments, metadata };
 };
 
@@ -263,6 +332,24 @@ const mergeMetadataRanges = (ranges: MetadataRange[]) => {
         end: Math.max(previous.end, range.end),
         ...(previous.pending || range.pending
           ? { pending: true as const }
+          : {}),
+        ...(previous.imageAltEnd !== undefined ||
+        range.imageAltEnd !== undefined
+          ? {
+              imageAltEnd: Math.max(
+                previous.imageAltEnd ?? 0,
+                range.imageAltEnd ?? 0
+              ),
+            }
+          : {}),
+        ...(previous.imageResolveEnd !== undefined ||
+        range.imageResolveEnd !== undefined
+          ? {
+              imageResolveEnd: Math.max(
+                previous.imageResolveEnd ?? 0,
+                range.imageResolveEnd ?? 0
+              ),
+            }
           : {}),
       });
     } else merged.push(Object.freeze(range));
@@ -288,12 +375,16 @@ const parseCodeRanges = (raw: string): MarkdownSourceAnalysis => {
   const metadata: MetadataRange[] = [];
   const html: CodeRange[] = [];
   const htmlBlocks = new Set<number>();
+  const definitionEnds = new Map<string, number>();
+  const imageReferences = new Map<MetadataRange, string>();
 
   // Use the renderer's Markdown grammar, including HTML paragraph boundaries.
   visit(tree, (node, _index, parent) => {
     const start = node.position?.start.offset;
     const end = node.position?.end.offset;
     if (start === undefined || end === undefined) return;
+    if (node.type === "definition" && !definitionEnds.has(node.identifier))
+      definitionEnds.set(node.identifier, end);
     if (
       node.type === "definition" ||
       node.type === "link" ||
@@ -302,8 +393,10 @@ const parseCodeRanges = (raw: string): MarkdownSourceAnalysis => {
       node.type === "imageReference"
     ) {
       let metadataStart = start;
+      let imageAltEnd: number | undefined;
       if (node.type === "image" || node.type === "imageReference") {
-        metadataStart = findImageLabelEnd(raw, start, end);
+        metadataStart = start + 2;
+        imageAltEnd = findImageLabelEnd(raw, start, end) - 1;
       } else if (node.type !== "definition" && raw[start] === "[") {
         // Preserve label HTML, including real videos. Only destinations,
         // titles and reference identifiers after the label are inert.
@@ -318,11 +411,15 @@ const parseCodeRanges = (raw: string): MarkdownSourceAnalysis => {
           node.type === "definition" && !node.title
             ? findPendingDefinitionTitle(raw, end, true)
             : undefined;
-        metadata.push({
+        const range: MetadataRange = {
           start: metadataStart,
           end: title?.end ?? end,
           ...(title ? { pending: true as const } : {}),
-        });
+          ...(imageAltEnd === undefined ? {} : { imageAltEnd }),
+        };
+        metadata.push(range);
+        if (node.type === "imageReference")
+          imageReferences.set(range, node.identifier);
       }
       return;
     }
@@ -357,11 +454,35 @@ const parseCodeRanges = (raw: string): MarkdownSourceAnalysis => {
   });
 
   // Parent link metadata follows its child label ranges in source order.
-  const protectedRanges = [...literal, ...metadata].sort(
+  const resolvedMetadata = metadata.map((range) => {
+    const reference = imageReferences.get(range);
+    return reference === undefined
+      ? range
+      : {
+          ...range,
+          imageResolveEnd: Math.max(
+            range.end,
+            definitionEnds.get(reference) ?? range.end
+          ),
+        };
+  });
+  const protectedRanges = [...literal, ...resolvedMetadata].sort(
     (left, right) => left.start - right.start
   );
-  const lexical = collectLexicalRanges(raw, protectedRanges, htmlBlocks);
-  const allMetadata = mergeMetadataRanges([...metadata, ...lexical.metadata]);
+  const lexical = collectLexicalRanges(
+    raw,
+    protectedRanges,
+    htmlBlocks,
+    new Set(
+      resolvedMetadata
+        .filter((range) => range.imageAltEnd !== undefined)
+        .map((range) => range.start)
+    )
+  );
+  const allMetadata = mergeMetadataRanges([
+    ...resolvedMetadata,
+    ...lexical.metadata,
+  ]);
   const comments = lexical.comments;
   literal.push(...allMetadata, ...comments);
   literal.sort((left, right) => left.start - right.start);
@@ -432,7 +553,7 @@ export const getInlineCodeRanges = (raw: string) =>
 export const getMarkdownCodeRanges = (raw: string) =>
   collectCodeRanges(raw, false);
 
-// Native HTML stays inert inside code, math, comments and link metadata.
+// Native HTML stays inert inside code, math, comments, image alt and metadata.
 export const getMarkdownLiteralRanges = (raw: string) =>
   getMarkdownSourceAnalysis(raw).literal;
 

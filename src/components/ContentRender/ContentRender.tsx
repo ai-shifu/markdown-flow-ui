@@ -3,9 +3,9 @@ import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
-import type { PluggableList, Plugin } from "unified";
-import type { Root } from "hast";
-import { visit } from "unist-util-visit";
+import { unified, type PluggableList, type Plugin } from "unified";
+import remarkRehype from "remark-rehype";
+import type { Element, Root } from "hast";
 import { CustomRenderBarProps, OnSendContentParams } from "../types";
 import { sanitizeInvalidTagName } from "./utils/sanitize-invalid-tag-name";
 import { stripSvgTextLineBreaks } from "./utils/strip-svg-text-line-breaks";
@@ -31,7 +31,10 @@ import {
   parseMarkdownSegments,
   mermaidBlockIsComplete,
 } from "./utils/mermaid-parse";
-import { getInlineCodeRanges } from "./utils/inline-code-ranges";
+import {
+  getInlineCodeRanges,
+  getMarkdownSourceAnalysis,
+} from "./utils/inline-code-ranges";
 import { remarkPlugins } from "./utils/markdown-plugins";
 import { normalizeInlineHtml } from "./utils/normalize-inline-html";
 import IframeSandbox from "./IframeSandbox";
@@ -60,7 +63,11 @@ import {
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 import {
   createVideoMarkdownRunPlan,
+  cloneVideoMarkdownSourceTree,
   projectVideoMarkdownRun,
+  prepareVideoMarkdownRun,
+  getVideoMarkdownNodeState,
+  type VideoMarkdownRunPlan,
 } from "./utils/video-markdown-run";
 
 const FIXED_TYPEWRITER_CHUNK_SIZE = 2;
@@ -140,8 +147,12 @@ export interface ContentRenderTypewriterState {
 }
 
 // Render svg string via Shadow DOM to avoid markdown wrapping
-const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
-  const hostRef = useRef<HTMLDivElement>(null);
+const SvgBlockInShadow: React.FC<{ svg: string; inline?: boolean }> = ({
+  svg,
+  inline = false,
+}) => {
+  const hostRef = useRef<HTMLElement | null>(null);
+  const Wrapper = inline ? "span" : "div";
 
   useEffect(() => {
     const host = hostRef.current;
@@ -250,9 +261,14 @@ const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
   }, [svg]);
 
   return (
-    <div className="content-render-svg-scroll">
-      <div className="content-render-svg" ref={hostRef} />
-    </div>
+    <Wrapper className="content-render-svg-scroll">
+      <Wrapper
+        className="content-render-svg"
+        ref={(node) => {
+          hostRef.current = node;
+        }}
+      />
+    </Wrapper>
   );
 };
 
@@ -286,13 +302,16 @@ const MarkdownComponentRuntimeContext =
     null
   );
 
-const MarkdownCode = (props: React.ComponentProps<"code">) => {
+const MarkdownCode = (
+  props: React.ComponentProps<"code"> & { receivedTree?: boolean }
+) => {
+  const { receivedTree, ...codeProps } = props;
   const runtimeValuesRef = React.useContext(MarkdownComponentRuntimeContext);
   const isInCodeBlock = React.useContext(CodeBlockContext);
   if (!runtimeValuesRef) {
     throw new Error("Markdown code renderer requires ContentRender context.");
   }
-  const { className, children, ...rest } = props as {
+  const { className, children, ...rest } = codeProps as {
     className?: string;
     children?: React.ReactNode;
     dir?: string;
@@ -301,10 +320,13 @@ const MarkdownCode = (props: React.ComponentProps<"code">) => {
   const language = match?.[1];
   if (language === "mermaid") {
     const chartContent = children?.toString().replace(/\n$/, "") || "";
-    const frozen = mermaidBlockIsComplete(
+    const complete = mermaidBlockIsComplete(
       runtimeValuesRef.current.renderContent,
       chartContent
     );
+    // The received-tree path replaces standalone Mermaid segments, whose
+    // unfinished charts freeze until the closing fence reaches the prose budget.
+    const frozen = receivedTree ? !complete : complete;
     return (
       <MermaidChart
         chart={chartContent}
@@ -325,41 +347,32 @@ const MarkdownCode = (props: React.ComponentProps<"code">) => {
   );
 };
 
-const rehypePlugins: PluggableList = [
+const sourceRehypePlugins: PluggableList = [
   preserveCustomVariableProperties,
   rehypeRaw,
   sanitizeInvalidTagName,
   restoreCustomVariableProperties,
+];
+const formattingRehypePlugins: PluggableList = [
   [rehypeHighlight, { languages: highlightLanguages, subset: subsetLanguages }],
   rehypeKatex,
 ];
-
-const stripTypingPlaceholder: Plugin<[string], Root> =
-  (placeholder) => (tree) => {
-    visit(tree, "text", (node) => {
-      node.value = node.value.replaceAll(placeholder, "");
-    });
-  };
+const rehypePlugins: PluggableList = [
+  ...sourceRehypePlugins,
+  ...formattingRehypePlugins,
+];
 
 export const MarkdownRenderer: React.FC<{
   content: string;
   components: CustomComponents;
   locale?: MarkdownFlowLocale;
-  typingPlaceholder?: string;
-}> = ({ content: markdownContent, components, locale, typingPlaceholder }) => {
+}> = ({ content: markdownContent, components, locale }) => {
   const texts = getContentRenderLocaleTexts(locale);
-  const renderRehypePlugins = useMemo<PluggableList>(
-    () =>
-      typingPlaceholder
-        ? [...rehypePlugins, [stripTypingPlaceholder, typingPlaceholder]]
-        : rehypePlugins,
-    [typingPlaceholder]
-  );
   return (
     <div className="markdown-renderer">
       <ReactMarkdown
         remarkPlugins={remarkPlugins}
-        rehypePlugins={renderRehypePlugins}
+        rehypePlugins={rehypePlugins}
         remarkRehypeOptions={{
           footnoteLabel: texts.footnoteLabel,
           footnoteBackLabel: (referenceIndex, rereferenceIndex) => {
@@ -372,6 +385,138 @@ export const MarkdownRenderer: React.FC<{
         components={components}
       >
         {markdownContent}
+      </ReactMarkdown>
+    </div>
+  );
+};
+
+// ReactMarkdown still owns URL handling and JSX conversion. Its parser is
+// bypassed because the received source was already parsed and transformed.
+const usePreparedTree: Plugin = function () {
+  this.parser = () => ({ type: "root", children: [] });
+};
+
+const StableVideoMarkdownRenderer: React.FC<{
+  plan: VideoMarkdownRunPlan;
+  renderedSegments: readonly RenderSegment[];
+  components: CustomComponents;
+  locale?: MarkdownFlowLocale;
+}> = ({ plan, renderedSegments, components, locale }) => {
+  const prepared = useMemo(() => {
+    const texts = getContentRenderLocaleTexts(locale);
+    const sourceProcessor = unified()
+      .use(remarkPlugins)
+      .use(remarkRehype, {
+        allowDangerousHtml: true,
+        footnoteLabel: texts.footnoteLabel,
+        footnoteBackLabel: (referenceIndex, rereferenceIndex) =>
+          texts.footnoteBackLabel.replace(
+            "{reference}",
+            String(referenceIndex + 1) +
+              (rereferenceIndex > 1 ? `-${rereferenceIndex}` : "")
+          ),
+      })
+      .use(sourceRehypePlugins);
+    const formattingProcessor = unified().use(formattingRehypePlugins);
+    const tree = sourceProcessor.runSync(
+      cloneVideoMarkdownSourceTree(plan),
+      plan.fullSource
+    ) as Root;
+    return prepareVideoMarkdownRun(
+      plan,
+      tree,
+      (value) => formattingProcessor.runSync(value, plan.fullSource) as Root
+    );
+  }, [plan, locale]);
+  const projected = useMemo(
+    () => projectVideoMarkdownRun(prepared, renderedSegments),
+    [prepared, renderedSegments]
+  );
+  const originalComponents = useRef(components);
+  originalComponents.current = components;
+  const wrappers = useRef(
+    new Map<
+      string,
+      React.ComponentType<{
+        node: Element;
+        children?: React.ReactNode;
+      }>
+    >()
+  );
+  const stableComponents = useMemo(() => {
+    const tags = new Set<string>();
+    const collect = (node: Root | Root["children"][number]) => {
+      if (node.type === "element") tags.add(node.tagName);
+      if ("children" in node) node.children.forEach(collect);
+    };
+    collect(prepared.tree!);
+    const result: Record<
+      string,
+      React.ComponentType<{
+        node: Element;
+        children?: React.ReactNode;
+      }>
+    > = {};
+    for (const tag of tags) {
+      if (!wrappers.current.has(tag)) {
+        const Component = ({
+          node,
+          children,
+          ...props
+        }: {
+          node: Element;
+          children?: React.ReactNode;
+        }) => {
+          const state = getVideoMarkdownNodeState(node);
+          if (state?.svg) {
+            return state.svgSource ? (
+              <SvgBlockInShadow svg={state.svgSource} inline />
+            ) : null;
+          }
+          if (state?.atomic) {
+            return state.active ? <>{children}</> : null;
+          }
+          if (state?.active === false && tag !== "a") return null;
+          const current = originalComponents.current as Record<
+            string,
+            React.ElementType
+          >;
+          const Original = current[tag];
+          const visibleProps =
+            state?.active === false
+              ? { ...props, href: undefined, tabIndex: -1 }
+              : props;
+          return Original
+            ? React.createElement(
+                Original,
+                {
+                  ...visibleProps,
+                  node,
+                  ...(Original === MarkdownCode ? { receivedTree: true } : {}),
+                },
+                children
+              )
+            : React.createElement(tag, visibleProps, children);
+        };
+        Component.displayName = `StableMarkdown(${tag})`;
+        wrappers.current.set(tag, Component);
+      }
+      result[tag] = wrappers.current.get(tag)!;
+    }
+    return result as CustomComponents;
+  }, [prepared]);
+  const preparedPlugins = useMemo<PluggableList>(
+    () => [() => () => projected],
+    [projected]
+  );
+  return (
+    <div className="markdown-renderer">
+      <ReactMarkdown
+        remarkPlugins={[usePreparedTree]}
+        rehypePlugins={preparedPlugins}
+        components={stableComponents}
+      >
+        {""}
       </ReactMarkdown>
     </div>
   );
@@ -519,10 +664,14 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     () => normalizeWrappedSandboxContent(content),
     [content]
   );
+  const sourceAnalysis = useMemo(
+    () => getMarkdownSourceAnalysis(sourceContent),
+    [sourceContent]
+  );
   // Parse the received source, never a typewriter-truncated HTML string.
   const sourceSegments = useMemo(() => {
     const segments = mergeNonSandboxSegments(
-      splitContentSegments(sourceContent, true, true)
+      splitContentSegments(sourceContent, true, true, sourceAnalysis)
     );
     if (
       sourceContent !== content &&
@@ -534,7 +683,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       return [{ type: "text" as const, value: "" }, ...segments];
     }
     return segments;
-  }, [content, sourceContent]);
+  }, [content, sourceContent, sourceAnalysis]);
   const hasRichSegments = sourceSegments.some(
     (segment) => segment.type === "sandbox" || isImmediateSegment(segment)
   );
@@ -851,10 +1000,12 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         ? sourceSegments.map((segment) =>
             segment.type === "sandbox" || isImmediateSegment(segment)
               ? []
-              : getInlineCodeRanges(segment.value)
+              : segment.value === sourceContent
+                ? sourceAnalysis.inline
+                : getInlineCodeRanges(segment.value)
           )
         : [],
-    [isTypewriterEnabled, sourceSegments]
+    [isTypewriterEnabled, sourceSegments, sourceContent, sourceAnalysis]
   );
   const safeRichMarkdownContent = useMemo(
     () =>
@@ -898,14 +1049,16 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         !run.sandbox &&
         run.indices.some((index) => isImmediateSegment(sourceSegments[index]))
       ) {
-        const plan = createVideoMarkdownRunPlan(
-          run.indices.map((index) => sourceSegments[index])
+        const segments = run.indices.map((index) => sourceSegments[index]);
+        const fullSource = segments.map((segment) => segment.value).join("");
+        run.plan = createVideoMarkdownRunPlan(
+          segments,
+          fullSource === sourceContent ? sourceAnalysis : undefined
         );
-        if (plan.hasContext) run.plan = plan;
       }
     }
     return runs;
-  }, [sourceSegments]);
+  }, [sourceSegments, sourceContent, sourceAnalysis]);
   const renderContent = hasRichSegments
     ? mergedRenderSegments.map((segment) => segment.value).join("")
     : isTypewriterEnabled
@@ -1197,14 +1350,12 @@ const ContentRender: React.FC<ContentRenderProps> = ({
                 key={`md-${idx}`}
                 value={componentRuntimeValuesRef}
               >
-                <MarkdownRenderer
+                <StableVideoMarkdownRenderer
                   locale={locale}
                   components={components}
-                  typingPlaceholder={run.plan.placeholder}
-                  content={projectVideoMarkdownRun(
-                    run.plan,
-                    run.indices.map((index) => mergedRenderSegments[index]),
-                    run.indices.map((index) => safeRichMarkdownContent[index])
+                  plan={run.plan}
+                  renderedSegments={run.indices.map(
+                    (index) => mergedRenderSegments[index]
                   )}
                 />
               </MarkdownComponentRuntimeContext.Provider>

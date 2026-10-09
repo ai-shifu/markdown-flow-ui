@@ -17,6 +17,12 @@
 - Mount received videos inside GFM tables immediately while preserving table
   structure and inert code examples.
 - Keep iframe examples inside inline and block math inert during video detection.
+- Recognize the backend's complete HTML block-root set and keep HTML-looking
+  comment and attribute contents inert during progressive rendering.
+- Scan received snapshots once without recursively parsing Markdown suffixes.
+- Preserve the complete received Markdown tree while typing around native
+  videos, including preceding sibling containers, reference definitions, escaped
+  characters, and entities.
 
 ## 0.2.30 - 2026-10-09
 

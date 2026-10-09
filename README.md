@@ -55,6 +55,17 @@ typing budget or wait for earlier prose to finish. Tag-like text such as `<div`
 remains ordinary Markdown until a tag-name boundary (whitespace, `/`, or `>`) is
 received.
 
+Streaming detection recognizes the backend MarkdownFlow block roots, including
+`figure`, `table`, `canvas`, `video`, `header`, `nav`, and `details`. HTML-looking
+text inside Markdown code, math, comments, or another tag's attributes stays
+inert. Detection scans absolute source offsets without reparsing every remaining
+suffix. Native videos use the complete received Markdown structure; typing only
+changes text visibility, preserving video frames across earlier headings, lists,
+quotes, reference links, and subsequent HTML updates.
+Each received snapshot determines the Markdown structure. Later source that
+changes its grammar, such as adding a previously missing reference definition,
+can change that structure; typing an already received snapshot preserves it.
+
 ### Interactive Elements
 
 ```tsx

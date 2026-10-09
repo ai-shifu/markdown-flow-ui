@@ -1,13 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import type { Element, Nodes, Root } from "hast";
 import { unified } from "unified";
-import remarkParse from "remark-parse";
-import { visit } from "unist-util-visit";
+import remarkRehype from "remark-rehype";
+import rehypeRaw from "rehype-raw";
+import rehypeHighlight from "rehype-highlight";
+import rehypeKatex from "rehype-katex";
 import { remarkPlugins } from "./markdown-plugins";
 import {
   createVideoMarkdownRunPlan,
+  cloneVideoMarkdownSourceTree,
+  getVideoMarkdownNodeState,
+  prepareVideoMarkdownRun,
   projectVideoMarkdownRun,
 } from "./video-markdown-run";
-import type { RenderSegment } from "./split-content";
+import { splitContentSegments, type RenderSegment } from "./split-content";
 
 const video = '<iframe data-tag="video"></iframe>';
 const source = (before: string, after: string): RenderSegment[] => [
@@ -15,154 +21,313 @@ const source = (before: string, after: string): RenderSegment[] => [
   { type: "markdown", value: video, immediate: true },
   { type: "text", value: after },
 ];
-const hidden = (segments: RenderSegment[]) =>
+const hidden = (segments: readonly RenderSegment[]) =>
   segments.map((segment) =>
-    segment.type === "text" ? { ...segment, value: "" } : segment
+    segment.type === "markdown" && segment.immediate
+      ? segment
+      : { ...segment, value: "" }
   );
-
-const mediaContext = (markdown: string) => {
-  const position = markdown.indexOf(video);
-  const context: string[] = [];
-  visit(
-    unified().use(remarkParse).use(remarkPlugins).parse(markdown),
-    (node) => {
-      if (
-        "children" in node &&
-        node.type !== "root" &&
-        (node.position?.start.offset ?? Infinity) <= position &&
-        (node.position?.end.offset ?? -1) > position
-      )
-        context.push(
-          node.type === "heading" ? `heading-${node.depth}` : node.type
-        );
-    }
-  );
-  return context;
+const processor = unified()
+  .use(remarkPlugins)
+  .use(remarkRehype, { allowDangerousHtml: true })
+  .use(rehypeRaw);
+const prepare = (segments: RenderSegment[]) => {
+  const plan = createVideoMarkdownRunPlan(segments);
+  const tree = processor.runSync(
+    cloneVideoMarkdownSourceTree(plan),
+    plan.fullSource
+  ) as Root;
+  return prepareVideoMarkdownRun(plan, tree);
 };
+const nodes = (tree: Nodes, tag: string): Element[] => {
+  const result: Element[] = [];
+  const walk = (node: Nodes) => {
+    if (node.type === "element" && node.tagName === tag) result.push(node);
+    if ("children" in node) node.children.forEach(walk);
+  };
+  walk(tree);
+  return result;
+};
+const text = (tree: Nodes): string => {
+  if (tree.type === "text") return tree.value;
+  if (
+    tree.type === "element" &&
+    getVideoMarkdownNodeState(tree)?.active === false
+  )
+    return "";
+  return "children" in tree ? tree.children.map(text).join("") : "";
+};
+const shape = (tree: Nodes): unknown => [
+  tree.type,
+  tree.type === "element" ? tree.tagName : "",
+  "children" in tree ? tree.children.map(shape) : [],
+];
 
-describe("video Markdown run projection", () => {
+describe("received video Markdown tree projection", () => {
   it.each([
-    ["# Watch ", " now"],
-    ["  ### Watch ", " now ###"],
+    ["# Earlier heading\n\n# Watch ", " now"],
+    ["> Earlier quote\n\nSeparator\n\n> Watch ", " now"],
+    ["- Earlier list\n\nSeparator\n\n- Watch ", " now"],
     ["Watch ", " now\n====="],
-    ["Watch ", " now\n-----"],
-    ["> ## Watch ", " now"],
+    ["> 3. Before\n>    - ", "\n>      After"],
     ["Watch **bold ", " now**"],
     ["Watch *emphasized ", " now*"],
     ["Watch ~~deleted ", " now~~"],
     ["Watch [linked ", " now](/lesson)"],
+    ["[Watch ", "][clip]\n\n[clip]: /watch"],
     ["| Label | Video |\n| --- | --- |\n| First | ", " |\n| Next | Last |"],
-    ["| First | ", " |\n| --- | --- |\n| <img src='/secret'> | Last |"],
-  ])(
-    "keeps actual Markdown ancestors throughout typing: %j",
-    (before, after) => {
-      const segments = source(before, after);
-      const plan = createVideoMarkdownRunPlan(segments);
-      expect(plan.hasContext).toBe(true);
-      for (const length of [0, 1, before.length]) {
-        const rendered = hidden(segments);
-        rendered[0] = { type: "text", value: before.slice(0, length) };
-        const projected = projectVideoMarkdownRun(plan, rendered);
-        expect(mediaContext(projected)).toEqual(mediaContext(plan.fullSource));
-        expect(projected).toContain(video);
-      }
-      expect(projectVideoMarkdownRun(plan, segments)).toBe(plan.fullSource);
+  ])("retains the complete tree throughout typing: %j", (before, after) => {
+    const segments = source(before, after);
+    const plan = prepare(segments);
+    const completeShape = shape(plan.tree!);
+    for (const length of [0, 1, before.length]) {
+      const rendered = hidden(segments);
+      rendered[0] = { type: "text", value: before.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      expect(shape(projected)).toEqual(completeShape);
+      expect(nodes(projected, "iframe")).toHaveLength(1);
     }
-  );
+    expect(text(projectVideoMarkdownRun(plan, segments))).toBe(
+      text(plan.tree!)
+    );
+    expect(Object.isFrozen(plan.sourceTree)).toBe(true);
+  });
+
+  it("resolves a reference link before its definition is typed", () => {
+    const segments = source("[Watch ", "][clip]\n\n[clip]: /watch");
+    const plan = prepare(segments);
+    const link = nodes(projectVideoMarkdownRun(plan, hidden(segments)), "a")[0];
+    expect(link.properties.href).toBe("/watch");
+    expect(getVideoMarkdownNodeState(link)?.active).toBe(true);
+    expect(nodes(link, "iframe")).toHaveLength(1);
+  });
 
   it.each([
-    ["> Before\n> ", "\n> After"],
-    ["- Before\n- ", "\n- After"],
-    ["> 3. Before\n>    - ", "\n>      After"],
-    ["Before ", " After"],
-  ])(
-    "preserves real media context before prose appears: %j",
-    (before, after) => {
-      const segments = source(before, after);
-      const plan = createVideoMarkdownRunPlan(segments);
-      const projected = projectVideoMarkdownRun(plan, hidden(segments));
-      expect(plan.hasContext).toBe(true);
-      expect(projected).toContain(video);
-      expect(projected).not.toContain("Before");
-      expect(projected).not.toContain("After");
-      expect(projected.length).toBe(plan.fullSource.length);
-      expect(projectVideoMarkdownRun(plan, segments)).toBe(plan.fullSource);
-      expect(projectVideoMarkdownRun(plan, segments)).not.toContain(
-        plan.placeholder
+    [
+      "甲&amp;乙\\*丙 ",
+      [
+        "",
+        "甲",
+        "甲",
+        "甲",
+        "甲",
+        "甲",
+        "甲&",
+        "甲&乙",
+        "甲&乙",
+        "甲&乙*",
+        "甲&乙*丙",
+        "甲&乙*丙 ",
+      ],
+    ],
+    [
+      "甲&#x1F600;乙 ",
+      [
+        "",
+        "甲",
+        "甲",
+        "甲",
+        "甲",
+        "甲",
+        "甲",
+        "甲",
+        "甲",
+        "甲",
+        "甲😀",
+        "甲😀乙",
+        "甲😀乙 ",
+      ],
+    ],
+  ])("maps decoded units to complete raw tokens: %j", (before, expected) => {
+    const segments = source(before, "");
+    const plan = prepare(segments);
+    for (let length = 0; length <= before.length; length += 1) {
+      const rendered = hidden(segments);
+      rendered[0] = { type: "text", value: before.slice(0, length) };
+      expect(text(projectVideoMarkdownRun(plan, rendered))).toBe(
+        expected[length]
       );
+    }
+  });
+
+  it.each([
+    `${video}甲&amp;乙`,
+    `${video}\n甲&amp;乙`,
+    `Before <span>甲&amp;乙</span> ${video}`,
+  ])("preserves HTML entity budgets: %j", (raw) => {
+    const segments = splitContentSegments(raw, true, true);
+    const plan = prepare(segments);
+    const entityEnd = raw.indexOf("&amp;") + 5;
+    for (const end of [entityEnd - 1, entityEnd]) {
+      const rendered = segments.map((segment, index) =>
+        segment.type === "markdown" && segment.immediate
+          ? segment
+          : {
+              ...segment,
+              value: segment.value.slice(
+                0,
+                Math.max(0, end - plan.offsets[index])
+              ),
+            }
+      );
+      expect(text(projectVideoMarkdownRun(plan, rendered)).includes("&")).toBe(
+        end === entityEnd
+      );
+    }
+  });
+
+  it("does not activate untyped images, custom controls, math or SVG", () => {
+    const segments = source(
+      'Before <img src="/secret"> ![Image](/secret) <custom-button-after-content>Go</custom-button-after-content> $x^2$\n',
+      "\n<svg><text>Chart</text></svg>"
+    );
+    const plan = prepare(segments);
+    const projected = projectVideoMarkdownRun(plan, hidden(segments));
+    for (const tag of ["img", "custom-button-after-content", "svg"])
+      for (const node of nodes(projected, tag))
+        expect(getVideoMarkdownNodeState(node)?.active).toBe(false);
+    expect(text(projected).trim()).toBe("");
+    expect(nodes(projected, "iframe")).toHaveLength(1);
+  });
+
+  it("preserves code text and its raw escaping without parsing each tick", () => {
+    const segments = source(
+      "Use `a\\* &amp;`\n\n```js\nconst a = 1;\n```\n\n",
+      " after"
+    );
+    const sourcePlan = createVideoMarkdownRunPlan(segments);
+    const transform = vi.fn(
+      (tree: Root) =>
+        unified().use(rehypeHighlight).use(rehypeKatex).runSync(tree) as Root
+    );
+    const tree = processor.runSync(
+      cloneVideoMarkdownSourceTree(sourcePlan)
+    ) as Root;
+    const plan = prepareVideoMarkdownRun(sourcePlan, tree, transform);
+    for (let length = 0; length < segments[0].value.length; length += 1) {
+      const rendered = hidden(segments);
+      rendered[0] = { type: "text", value: segments[0].value.slice(0, length) };
+      expect(shape(projectVideoMarkdownRun(plan, rendered))).toEqual(
+        shape(plan.tree!)
+      );
+    }
+    expect(transform).toHaveBeenCalledTimes(1);
+    expect(text(projectVideoMarkdownRun(plan, segments))).toContain(
+      "a\\* &amp;"
+    );
+    expect(text(projectVideoMarkdownRun(plan, segments))).toContain(
+      "const a = 1;"
+    );
+  });
+
+  it("activates a flow control at its own source boundary", () => {
+    const interaction = "?[%{{role}}Developer|Designer]";
+    const before = `Select ${interaction} then `;
+    const segments = source(before, " after");
+    const plan = prepare(segments);
+    const end = before.indexOf(interaction) + interaction.length;
+    for (const length of [end - 1, end]) {
+      const rendered = hidden(segments);
+      rendered[0] = { type: "text", value: before.slice(0, length) };
+      const control = nodes(
+        projectVideoMarkdownRun(plan, rendered),
+        "custom-variable"
+      )[0];
+      expect(control).toBeDefined();
+      expect(getVideoMarkdownNodeState(control)?.active).toBe(length === end);
+    }
+  });
+
+  it("gates formatted math until its complete source token is typed", () => {
+    const before = "Formula $x^2$ then ";
+    const segments = source(before, " after");
+    const sourcePlan = createVideoMarkdownRunPlan(segments);
+    const tree = processor.runSync(
+      cloneVideoMarkdownSourceTree(sourcePlan)
+    ) as Root;
+    const plan = prepareVideoMarkdownRun(
+      sourcePlan,
+      tree,
+      (value) => unified().use(rehypeKatex).runSync(value) as Root
+    );
+    const end = before.indexOf("$", before.indexOf("$") + 1) + 1;
+    for (const length of [end - 1, end]) {
+      const rendered = hidden(segments);
+      rendered[0] = { type: "text", value: before.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      const math = nodes(projected, "span").find(
+        (node) => getVideoMarkdownNodeState(node)?.atomic
+      );
+      expect(math).toBeDefined();
+      expect(getVideoMarkdownNodeState(math!)?.active).toBe(length === end);
+    }
+  });
+
+  it("keeps raw HTML backslashes literal while decoding its entities", () => {
+    const segments = source("", "甲\\*乙&amp;丙");
+    const plan = prepare(segments);
+    const rendered = hidden(segments);
+    for (let length = 0; length <= segments[2].value.length; length += 1) {
+      rendered[2] = { type: "text", value: segments[2].value.slice(0, length) };
+      const visible = text(projectVideoMarkdownRun(plan, rendered));
+      expect(visible.includes("&")).toBe(
+        length >= segments[2].value.indexOf("&amp;") + 5
+      );
+    }
+    expect(text(projectVideoMarkdownRun(plan, segments))).toBe("甲\\*乙&丙");
+  });
+
+  it.each([
+    '<svg width="100',
+    '<svg\nwidth="100',
+    '<svg title="?[Option|Other]',
+  ])(
+    "routes an unfinished SVG header through its stable Shadow renderer: %j",
+    (svg) => {
+      const segments = source("", `\n\n${svg}`);
+      const plan = prepare(segments);
+      const projected = projectVideoMarkdownRun(plan, segments);
+      const node = nodes(projected, "svg")[0];
+      expect(node).toBeDefined();
+      expect(getVideoMarkdownNodeState(node)?.svgSource).toBe(svg);
+      expect(text(projected)).not.toContain("<svg");
+      expect(nodes(projected, "custom-variable")).toHaveLength(0);
     }
   );
 
-  it("keeps earlier list-item skeletons and inline paragraphs", () => {
-    const segments = source("- Before\n- Inline ", " after");
-    const plan = createVideoMarkdownRunPlan(segments);
-    const tree = unified()
-      .use(remarkParse)
-      .parse(projectVideoMarkdownRun(plan, hidden(segments)));
-    let items = 0;
-    let paragraphs = 0;
-    visit(tree, "listItem", () => {
-      items += 1;
-    });
-    visit(tree, "paragraph", () => {
-      paragraphs += 1;
-    });
-    expect(items).toBe(2);
-    expect(paragraphs).toBe(2);
-  });
+  it.each(["`<svg width=100`", "$<svg width=100$", "\\<svg width=100"])(
+    "keeps literal SVG examples inert: %j",
+    (literal) => {
+      const segments = source("", `\n\n${literal}`);
+      const plan = prepare(segments);
+      expect(plan.incompleteSvg).toBeUndefined();
+      expect(
+        nodes(projectVideoMarkdownRun(plan, segments), "svg")
+      ).toHaveLength(0);
+    }
+  );
 
-  it("does not activate untyped HTML, images, tags, or fake quote markers", () => {
-    const segments = source(
-      'Before <img src="/secret"> ![Image](/secret) <custom-button-after-content>Go</custom-button-after-content>\n',
-      "\n> Ordinary quote text"
-    );
-    const plan = createVideoMarkdownRunPlan(segments);
-    const projected = projectVideoMarkdownRun(plan, hidden(segments));
-    expect(projected).not.toContain("<img");
-    expect(projected).not.toContain("![");
-    expect(projected).not.toContain("<custom-");
-    expect(projected).not.toContain("> Ordinary");
-    expect(projected.replace(video, "")).not.toContain(">");
-  });
-
-  it("keeps raw prefix timing while accepting render-only inline-code repair", () => {
-    const segments = source("Use `code` ", " after");
-    const plan = createVideoMarkdownRunPlan(segments);
-    const rendered = hidden(segments);
-    rendered[0] = { type: "text", value: "Use `co" };
-    const projected = projectVideoMarkdownRun(plan, rendered, [
-      "Use `co`",
-      video,
-      "",
-    ]);
-    expect(
-      projected.startsWith(`Use \`co\`${plan.placeholder.repeat(4)}${video}`)
-    ).toBe(true);
-  });
-
-  it("omits pending media without exposing the incomplete header", () => {
-    const segments: RenderSegment[] = [
-      { type: "text", value: "> Before\n> " },
-      {
-        type: "markdown",
-        value: '<iframe title="unfinished',
-        immediate: true,
-        pending: true,
-      },
-    ];
-    const plan = createVideoMarkdownRunPlan(segments);
-    expect(projectVideoMarkdownRun(plan, hidden(segments))).not.toContain(
-      "<iframe"
+  it("preserves CJK, emoji and decoded text before an unfinished SVG header", () => {
+    const segments = source("", '\n\n甲😀&amp; before <svg width="100');
+    const plan = prepare(segments);
+    expect(text(projectVideoMarkdownRun(plan, segments)).trim()).toBe(
+      "甲😀& before"
     );
   });
 
-  it("chooses a placeholder absent from the source and skips plain root video context", () => {
-    const plan = createVideoMarkdownRunPlan(source("\ue000\n", ""));
-    expect(plan.placeholder).toBe("\ue001");
-    expect(
-      createVideoMarkdownRunPlan([
-        { type: "markdown", value: video, immediate: true },
-      ]).hasContext
-    ).toBe(false);
+  it("keeps an SVG-looking raw-text body literal", () => {
+    const plan = createVideoMarkdownRunPlan(
+      source("", '\n\n<textarea><svg width="100</textarea>')
+    );
+    expect(plan.incompleteSvg).toBeUndefined();
+  });
+
+  it("keeps the complete source tree unchanged after projections", () => {
+    const segments = source("Before ", " after");
+    const plan = prepare(segments);
+    const original = structuredClone(plan.tree);
+    projectVideoMarkdownRun(plan, hidden(segments));
+    projectVideoMarkdownRun(plan, segments);
+    expect(plan.tree).toEqual(original);
   });
 });

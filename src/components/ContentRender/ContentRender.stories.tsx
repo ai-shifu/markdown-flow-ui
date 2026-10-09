@@ -2947,3 +2947,102 @@ export const ProgressiveHtmlWithTypedProse: Story = {
     expect(iframe?.contentDocument).toBe(documentBeforeAppend);
   },
 };
+
+export const ProgressiveFigureWithTypedProse: Story = {
+  name: "Progressive Figure with Typed Prose",
+  args: {
+    enableTypewriter: true,
+    typingSpeed: 100,
+    disableSandboxLoadingOverlay: true,
+  },
+  render: (args) => {
+    const [receivedMore, setReceivedMore] = useState(false);
+    return (
+      <div>
+        <button type="button" onClick={() => setReceivedMore(true)}>
+          Receive the rest of the figure
+        </button>
+        <ContentRender
+          {...args}
+          content={
+            "This introduction keeps typing while the figure grows.\n\n" +
+            '<figure style="padding:24px;border:2px solid #2563eb"><figcaption>Received figure' +
+            (receivedMore
+              ? " content</figcaption><p>The complete figure is visible.</p></figure>\n\nFollowing prose keeps typing."
+              : "")
+          }
+        />
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const iframe = canvasElement.querySelector("iframe");
+    await waitFor(() => {
+      expect(iframe?.contentDocument?.body.textContent).toContain(
+        "Received figure"
+      );
+    });
+    await userEvent.click(canvasElement.querySelector("button")!);
+    await waitFor(() => {
+      expect(iframe?.contentDocument?.body.textContent).toContain(
+        "The complete figure is visible."
+      );
+    });
+    expect(canvasElement.querySelector("iframe")).toBe(iframe);
+  },
+};
+
+export const StableVideoWithEarlierMarkdown: Story = {
+  name: "Stable Video with Earlier Markdown",
+  args: {
+    enableTypewriter: true,
+    typingSpeed: 5,
+    disableSandboxLoadingOverlay: true,
+  },
+  render: (args) => {
+    const [receivedMore, setReceivedMore] = useState(false);
+    const source =
+      '# Earlier heading\n\n> Earlier quote\n\n- Earlier list\n\n# [Watch <iframe title="Lesson video" data-tag="video"></iframe> now][watch]\n\n[watch]: /watch';
+    return (
+      <div>
+        <button type="button" onClick={() => setReceivedMore(true)}>
+          Receive following HTML
+        </button>
+        <ContentRender
+          {...args}
+          content={
+            source +
+            (receivedMore
+              ? "\n\nLater prose.\n\n<details open><summary>Received card</summary><p>Following HTML is visible.</p></details>"
+              : "")
+          }
+        />
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const video = canvasElement.querySelector('iframe[data-tag="video"]');
+    expect(video).not.toBeNull();
+    const parent = video?.parentElement;
+    const videoWindow = (video as HTMLIFrameElement).contentWindow;
+    expect(parent?.tagName).toBe("A");
+    expect(parent?.getAttribute("href")).toBe("/watch");
+    expect(canvasElement.querySelectorAll("h1")).toHaveLength(2);
+    await userEvent.click(canvasElement.querySelector("button")!);
+    await waitFor(() => {
+      expect(canvasElement.textContent).toContain("Earlier heading");
+      expect(canvasElement.textContent).toContain("Later prose.");
+    });
+    expect(canvasElement.querySelector('iframe[data-tag="video"]')).toBe(video);
+    expect(video?.parentElement).toBe(parent);
+    expect((video as HTMLIFrameElement).contentWindow).toBe(videoWindow);
+    await waitFor(() => {
+      const sandbox = canvasElement.querySelector(
+        'iframe:not([data-tag="video"])'
+      );
+      expect(
+        (sandbox as HTMLIFrameElement)?.contentDocument?.body.textContent
+      ).toContain("Following HTML is visible.");
+    });
+  },
+};

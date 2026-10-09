@@ -1,198 +1,520 @@
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import { remarkPlugins } from "./markdown-plugins";
+import type { Element, Nodes, Root } from "hast";
+import type { Root as MarkdownRoot } from "mdast";
+import { decodeString } from "micromark-util-decode-string";
+import {
+  getMarkdownSourceAnalysis,
+  type MarkdownSourceAnalysis,
+  type MarkdownSourceTree,
+} from "./inline-code-ranges";
 import type { RenderSegment } from "./split-content";
+import {
+  readHtmlMarkup,
+  isHtmlRawTextTag,
+  findStreamingHtmlElementEnd,
+} from "./html-block-end";
 
 type Range = { start: number; end: number };
-type MarkdownNode = {
-  type: string;
-  children?: MarkdownNode[];
-  position?: { start: { offset?: number }; end: { offset?: number } };
+type SourceValue = Range & { value: string; type: string };
+type Visibility = {
+  ends?: number[];
+  range?: Range;
+  atomic?: boolean;
+  svg?: boolean;
+  active?: boolean;
+  immediate?: boolean;
+  svgSource?: string;
 };
-type Container = Range & { type: string };
 export type VideoMarkdownRunPlan = {
   fullSource: string;
-  structuralRanges: readonly Range[];
-  placeholder: string;
-  hasContext: boolean;
   segments: readonly RenderSegment[];
   offsets: readonly number[];
+  immediateOffsets: readonly number[];
+  sourceTree: MarkdownSourceTree;
+  incompleteSvg?: Range;
+  tree?: Root;
+  visibility: WeakMap<Nodes, Visibility>;
 };
-const parser = unified().use(remarkParse).use(remarkPlugins);
-const containerTypes = new Set(["blockquote", "list", "listItem"]);
-const structuralTypes = new Set([
-  "list",
-  "listItem",
-  "table",
-  "tableRow",
-  "tableCell",
-]);
-const rangeOf = (node: MarkdownNode): Range | undefined => {
-  const start = node.position?.start.offset;
-  const end = node.position?.end.offset;
+declare module "hast" {
+  interface ElementData {
+    contentRenderVisibility?: Visibility;
+  }
+}
+const stateKey = "contentRenderVisibility";
+const firstAtOrAfter = (values: readonly number[], target: number) => {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    if (values[middle] < target) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+};
+const segmentAt = (plan: VideoMarkdownRunPlan, position: number) =>
+  Math.max(0, firstAtOrAfter(plan.offsets, position + 1) - 1);
+const rangeOf = (node: { position?: Nodes["position"] }): Range | undefined => {
+  const start = node.position?.start?.offset;
+  const end = node.position?.end?.offset;
   return start === undefined || end === undefined ? undefined : { start, end };
 };
-const unusedPlaceholder = (source: string) => {
-  for (let code = 0xe000; code <= 0x10ffff; code += 1) {
-    if (code >= 0xf900 && code < 0xf0000) code = 0xf0000;
-    const character = String.fromCodePoint(code);
-    if (!source.includes(character)) return character;
+export const getVideoMarkdownNodeState = (
+  node: Element
+): Visibility | undefined => node.data?.[stateKey] as Visibility | undefined;
+
+const incompleteSvgRange = (raw: string, excluded: readonly Range[]) => {
+  let position = 0;
+  let rangeIndex = 0;
+  while (position < raw.length) {
+    const start = raw.indexOf("<", position);
+    if (start === -1) break;
+    while (excluded[rangeIndex]?.end <= start) rangeIndex += 1;
+    if (excluded[rangeIndex]?.start <= start) {
+      position = excluded[rangeIndex].end;
+      continue;
+    }
+    let backslashes = 0;
+    for (let index = start - 1; index >= 0 && raw[index] === "\\"; index -= 1)
+      backslashes += 1;
+    if (backslashes % 2) {
+      position = start + 1;
+      continue;
+    }
+    const markup = readHtmlMarkup(raw, start);
+    if (markup.kind === "incomplete")
+      return /^<svg(?=[\s/>]|$)/i.test(raw.slice(start))
+        ? { start, end: raw.length }
+        : undefined;
+    position =
+      markup.kind === "tag" &&
+      !markup.closing &&
+      !markup.selfClosing &&
+      isHtmlRawTextTag(markup.name)
+        ? findStreamingHtmlElementEnd(raw, start)
+        : markup.kind === "invalid"
+          ? start + 1
+          : markup.end;
   }
-  throw new Error("No unused video projection placeholder is available");
 };
+
+/** A run is parsed once per received snapshot; ticks never parse Markdown. */
 export const createVideoMarkdownRunPlan = (
-  segments: readonly RenderSegment[]
+  segments: readonly RenderSegment[],
+  analysis?: MarkdownSourceAnalysis
 ): VideoMarkdownRunPlan => {
   const offsets: number[] = [];
-  const media: Range[] = [];
   let fullSource = "";
   for (const segment of segments) {
     offsets.push(fullSource.length);
-    if (segment.type === "markdown" && segment.immediate) {
-      media.push({
-        start: fullSource.length,
-        end: fullSource.length + segment.value.length,
-      });
-    }
     fullSource += segment.value;
   }
-  const containers = new Map<MarkdownNode, Container>();
-  const structuralRanges: Range[] = [];
-  let hasContext = false;
-  const containsMedia = (range: Range) =>
-    media.some(({ start }) => start >= range.start && start < range.end);
-  const addContainer = (node: MarkdownNode) => {
-    const range = rangeOf(node);
-    if (range) containers.set(node, { ...range, type: node.type });
-  };
-  const preserveGaps = (node: MarkdownNode) => {
-    const range = rangeOf(node);
-    if (!range || !node.children?.length) return;
-    let cursor = range.start;
-    for (const child of node.children) {
-      const childRange = rangeOf(child);
-      if (!childRange) continue;
-      if (cursor < childRange.start)
-        structuralRanges.push({ start: cursor, end: childRange.start });
-      cursor = childRange.end;
-    }
-    if (cursor < range.end)
-      structuralRanges.push({ start: cursor, end: range.end });
-  };
-  const preserveDescendants = (node: MarkdownNode) => {
-    if (structuralTypes.has(node.type)) {
-      preserveGaps(node);
-      if (containerTypes.has(node.type)) addContainer(node);
-    }
-    node.children?.forEach(preserveDescendants);
-  };
-  const walk = (node: MarkdownNode) => {
-    const range = rangeOf(node);
-    if (range && containsMedia(range)) {
-      if (node.children?.length && node.type !== "root") {
-        hasContext = true;
-        // Raw gaps retain ancestor syntax without exposing untyped child content.
-        const lineStart = fullSource.lastIndexOf("\n", range.start - 1) + 1;
-        if (/^[ \t]*$/.test(fullSource.slice(lineStart, range.start)))
-          structuralRanges.push({ start: lineStart, end: range.start });
-        preserveGaps(node);
-      }
-      if (containerTypes.has(node.type)) {
-        addContainer(node);
-      }
-      if (node.type === "list" || node.type === "table")
-        preserveDescendants(node);
-    }
-    node.children?.forEach(walk);
-  };
-  walk(parser.parse(fullSource));
-
-  const records = [...containers.values()];
-  let lineStart = 0;
-  while (lineStart < fullSource.length) {
-    const newline = fullSource.indexOf("\n", lineStart);
-    const lineEnd = newline === -1 ? fullSource.length : newline;
-    const active = records.filter(
-      ({ start, end }) => start < lineEnd && end > lineStart
-    );
-    let remainingQuotes = active.filter(
-      ({ type }) => type === "blockquote"
-    ).length;
-    let cursor = lineStart;
-    while (active.length && cursor < lineEnd) {
-      const whitespace = /^[ \t]+/.exec(fullSource.slice(cursor, lineEnd));
-      if (whitespace) {
-        structuralRanges.push({
-          start: cursor,
-          end: cursor + whitespace[0].length,
-        });
-        cursor += whitespace[0].length;
-      }
-      if (remainingQuotes && fullSource[cursor] === ">") {
-        structuralRanges.push({ start: cursor, end: cursor + 1 });
-        cursor += 1;
-        remainingQuotes -= 1;
-      } else if (
-        active.some(
-          ({ type, start }) => type === "listItem" && start === cursor
-        )
-      ) {
-        const marker = /^(?:[-+*]|\d+[.)])(?:[ \t]+|$)/.exec(
-          fullSource.slice(cursor, lineEnd)
-        );
-        if (!marker) break;
-        structuralRanges.push({
-          start: cursor,
-          end: cursor + marker[0].length,
-        });
-        cursor += marker[0].length;
-      } else break;
-    }
-    lineStart = lineEnd + 1;
-  }
-  structuralRanges.sort((left, right) => left.start - right.start);
+  const parsed = analysis ?? getMarkdownSourceAnalysis(fullSource);
+  const media = segments.flatMap((segment, index) =>
+    segment.type === "markdown" && segment.immediate
+      ? [{ start: offsets[index], end: offsets[index] + segment.value.length }]
+      : []
+  );
   return {
     fullSource,
-    structuralRanges,
-    placeholder: unusedPlaceholder(fullSource),
-    hasContext,
     segments,
     offsets,
+    immediateOffsets: segments.flatMap((segment, index) =>
+      segment.type === "markdown" && segment.immediate && !segment.pending
+        ? [offsets[index]]
+        : []
+    ),
+    sourceTree: parsed.tree,
+    incompleteSvg: incompleteSvgRange(
+      fullSource,
+      [...parsed.literal, ...media].sort(
+        (left, right) => left.start - right.start
+      )
+    ),
+    visibility: new WeakMap(),
   };
 };
 
+// Decode each source token once and retain the raw end offset of every output
+// unit. An entity/escape becomes visible only after its entire token was typed.
+type TextMode = "markdown" | "html" | "code";
+const sourceUnits = (
+  raw: string,
+  range: Range,
+  mode: TextMode = "markdown"
+) => {
+  const units: { character: string; end: number }[] = [];
+  const tokens =
+    /\\[!-/:-@[-`{-~]|&(?:#(?:\d{1,7}|x[\da-f]{1,6})|[\da-z]{1,31});|\r\n|\r|[\s\S]/gi;
+  const source = raw.slice(range.start, range.end);
+  let token: RegExpExecArray | null;
+  while ((token = tokens.exec(source))) {
+    const value = token[0];
+    const literal =
+      mode === "code" || (mode === "html" && value.startsWith("\\"));
+    const decoded = (literal ? value : decodeString(value)).replace(
+      /\r\n|\r/g,
+      "\n"
+    );
+    for (let index = 0; index < decoded.length; index += 1)
+      units.push({
+        character: decoded[index],
+        end:
+          range.start +
+          token.index +
+          (decoded === value ? index + 1 : value.length),
+      });
+  }
+  return units;
+};
+const inlineCodeUnits = (raw: string, source: SourceValue) => {
+  const opening = /^`+/.exec(raw.slice(source.start, source.end))?.[0] ?? "";
+  const units = sourceUnits(
+    raw,
+    { start: source.start + opening.length, end: source.end - opening.length },
+    "code"
+  ).map((unit) => ({
+    ...unit,
+    character: unit.character === "\n" ? " " : unit.character,
+  }));
+  if (
+    units.length > source.value.length &&
+    units[0]?.character === " " &&
+    units.at(-1)?.character === " "
+  )
+    return units.slice(1, -1);
+  return units;
+};
+const blockCodeUnits = (raw: string, source: SourceValue) => {
+  const block = raw.slice(source.start, source.end);
+  const fenced = /^(?:`{3,}|~{3,})/.test(block);
+  let cursor = source.start + (fenced ? block.indexOf("\n") + 1 : 0);
+  const units: { character: string; end: number }[] = [];
+  for (const line of source.value.split("\n")) {
+    const newline = raw.indexOf("\n", cursor);
+    const end = newline === -1 ? source.end : Math.min(newline, source.end);
+    const lineEnd = raw[end - 1] === "\r" ? end - 1 : end;
+    const start = Math.max(cursor, lineEnd - line.length);
+    for (let index = 0; index < line.length; index += 1)
+      units.push({ character: line[index], end: start + index + 1 });
+    units.push({ character: "\n", end: Math.min(source.end, end + 1) });
+    cursor = end + 1;
+  }
+  return units;
+};
+
+/** Preserve the existing SVG renderer's unfinished-header contract. */
+export const cloneVideoMarkdownSourceTree = (
+  plan: VideoMarkdownRunPlan
+): MarkdownRoot => {
+  const tree = structuredClone(plan.sourceTree) as MarkdownRoot;
+  const svg = plan.incompleteSvg;
+  if (!svg) return tree;
+  type MutableNode = {
+    type: string;
+    value?: string;
+    children?: MutableNode[];
+    data?: { hName: string };
+    position?: Nodes["position"];
+  };
+  const before = plan.fullSource.slice(0, svg.start);
+  const point = {
+    line: before.split("\n").length,
+    column: svg.start - before.lastIndexOf("\n"),
+    offset: svg.start,
+  };
+  const marker: MutableNode = {
+    type: "element",
+    data: { hName: "svg" },
+    children: [],
+    position: { start: point, end: tree.position!.end },
+  };
+  let inserted = false;
+  const clip = (parent: MutableNode) => {
+    parent.children = parent.children?.flatMap((child) => {
+      const range = rangeOf(child);
+      if (!range || range.end <= svg.start) return [child];
+      if (range.start > svg.start || inserted) return [];
+      if (child.children) {
+        clip(child);
+        return [child];
+      }
+      const units = sourceUnits(plan.fullSource, range);
+      let cursor = 0;
+      let length = 0;
+      for (const character of (child.value ?? "").split("")) {
+        while (units[cursor] && units[cursor].character !== character)
+          cursor += 1;
+        if (!units[cursor] || units[cursor].end > svg.start) break;
+        cursor += 1;
+        length += 1;
+      }
+      const prefix: MutableNode[] = length
+        ? [
+            {
+              ...child,
+              value: child.value!.slice(0, length),
+              position: { start: child.position!.start, end: point },
+            },
+          ]
+        : [];
+      inserted = true;
+      return [...prefix, marker];
+    });
+  };
+  clip(tree as unknown as MutableNode);
+  return tree;
+};
+
+/** Annotate the complete HTML tree before formatting plugins replace leaves. */
+export const prepareVideoMarkdownRun = (
+  sourcePlan: VideoMarkdownRunPlan,
+  tree: Root,
+  format: (tree: Root) => Root = (value) => value
+): VideoMarkdownRunPlan => {
+  const plan: VideoMarkdownRunPlan = {
+    ...sourcePlan,
+    visibility: new WeakMap(),
+  };
+  const sources = new Map<string, SourceValue>();
+  const collect = (
+    node: MarkdownRoot["children"][number] | MarkdownSourceTree
+  ) => {
+    const range = rangeOf(node);
+    if (range && "value" in node && typeof node.value === "string")
+      sources.set(`${range.start}:${range.end}`, {
+        ...range,
+        value: node.value,
+        type: node.type,
+      });
+    if ("children" in node)
+      for (const child of node.children)
+        collect(child as MarkdownRoot["children"][number]);
+  };
+  collect(plan.sourceTree);
+
+  const math = (node: Element) => {
+    const classes = node.properties.className;
+    return (
+      Array.isArray(classes) &&
+      classes.some(
+        (value) =>
+          value === "language-math" ||
+          value === "math-inline" ||
+          value === "math-display"
+      )
+    );
+  };
+  const wrapMath = (parent: Root | Element, inherited?: Range) => {
+    parent.children = parent.children.map((child) => {
+      if (child.type !== "element") return child;
+      const range = rangeOf(child) ?? inherited;
+      const isMath =
+        math(child) ||
+        (child.tagName === "pre" &&
+          child.children.some((node) => node.type === "element" && math(node)));
+      if (isMath && range) {
+        const wrapper: Element = {
+          type: "element",
+          tagName: "span",
+          properties: {},
+          children: [child],
+          position: child.position,
+        };
+        plan.visibility.set(wrapper, { range, atomic: true });
+        return wrapper;
+      }
+      wrapMath(child, range);
+      return child;
+    }) as typeof parent.children;
+  };
+  wrapMath(tree);
+  plan.tree = format(tree);
+
+  type Cursor = {
+    range: Range;
+    mode: TextMode;
+    source?: SourceValue;
+    units?: ReturnType<typeof sourceUnits>;
+    index: number;
+    rawCursor: number;
+  };
+  const htmlRanges = [...sources.values()].filter(
+    ({ type }) => type === "html"
+  );
+  // remark-flow replaces its tokenizer nodes with positionless elements.
+  // Recover each replacement from the actual parsed span in its parent range.
+  const flows = [...sources.values()].filter(
+    ({ type }) => type === "flowInteraction"
+  );
+  const flowStarts = flows.map(({ start }) => start);
+  const htmlContains = (range: Range) => {
+    let low = 0;
+    let high = htmlRanges.length;
+    while (low < high) {
+      const middle = (low + high) >>> 1;
+      if (htmlRanges[middle].start <= range.start) low = middle + 1;
+      else high = middle;
+    }
+    const html = htmlRanges[low - 1];
+    return Boolean(html && html.end >= range.end);
+  };
+  const walk = (node: Nodes, inherited?: Cursor) => {
+    let range = rangeOf(node);
+    if (
+      !range &&
+      node.type === "element" &&
+      node.tagName === "custom-variable" &&
+      inherited
+    ) {
+      const cursor = Math.max(
+        inherited.rawCursor,
+        inherited.units?.[inherited.index - 1]?.end ?? 0
+      );
+      const flow = flows[firstAtOrAfter(flowStarts, cursor)];
+      if (flow && flow.end <= inherited.range.end) range = flow;
+    }
+    const source = range && sources.get(`${range.start}:${range.end}`);
+    let context = inherited;
+    const isCode = source?.type === "code" || source?.type === "inlineCode";
+    if (
+      range &&
+      (!inherited ||
+        range.start !== inherited.range.start ||
+        range.end !== inherited.range.end)
+    ) {
+      context = {
+        range,
+        source,
+        mode: isCode
+          ? "code"
+          : htmlContains(range)
+            ? "html"
+            : (inherited?.mode ?? "markdown"),
+        index: 0,
+        rawCursor: range.start,
+      };
+    }
+    if (node.type === "text" && context) {
+      // Generated block-separator whitespace is not authored prose. Avoid
+      // allocating the entire root's text map just to display these separators.
+      if (!node.position && !node.value.trim() && context.mode !== "code")
+        return;
+      context.units ??=
+        context.source?.type === "code"
+          ? blockCodeUnits(plan.fullSource, context.source)
+          : context.source?.type === "inlineCode"
+            ? inlineCodeUnits(plan.fullSource, context.source)
+            : sourceUnits(plan.fullSource, context.range, context.mode);
+      while (context.units[context.index]?.end <= context.rawCursor)
+        context.index += 1;
+      const ends: number[] = [];
+      for (const character of node.value.split("")) {
+        while (
+          context.index < context.units.length &&
+          context.units[context.index].character !== character
+        )
+          context.index += 1;
+        ends.push(context.units[context.index]?.end ?? context.range.end);
+        context.index += 1;
+      }
+      plan.visibility.set(node, { ends });
+    } else if (node.type === "element") {
+      const state = plan.visibility.get(node);
+      if (state?.atomic) return;
+      const effectiveRange = range ?? context?.range;
+      if (
+        effectiveRange &&
+        (node.tagName === "img" ||
+          node.tagName === "input" ||
+          node.tagName === "a" ||
+          node.tagName.startsWith("custom-") ||
+          node.tagName === "svg")
+      )
+        plan.visibility.set(node, {
+          range: effectiveRange,
+          svg: node.tagName === "svg",
+          immediate:
+            node.tagName === "a" &&
+            plan.immediateOffsets[
+              firstAtOrAfter(plan.immediateOffsets, effectiveRange.start)
+            ] < effectiveRange.end,
+        });
+    }
+    if ("children" in node)
+      for (const child of node.children) walk(child, context);
+    if (inherited && context !== inherited && range)
+      inherited.rawCursor = Math.max(inherited.rawCursor, range.end);
+  };
+  walk(plan.tree);
+  return plan;
+};
+
+/** Project text and activation state without changing the complete tree shape. */
 export const projectVideoMarkdownRun = (
   plan: VideoMarkdownRunPlan,
-  renderedSegments: readonly RenderSegment[],
-  safeRenderedValues?: readonly string[]
-): string => {
-  let output = "";
-  let rangeIndex = 0;
-  plan.segments.forEach((segment, index) => {
-    const rendered = renderedSegments[index];
-    if (segment.type === "markdown" && segment.immediate) {
-      if (
-        !segment.pending &&
-        !(rendered?.type === "markdown" && rendered.pending)
-      )
-        output += segment.value;
-      return;
+  renderedSegments: readonly RenderSegment[]
+): Root => {
+  if (!plan.tree) throw new Error("Video Markdown run has not been prepared");
+  const visibleEnds = plan.segments.map(
+    (segment, index) =>
+      plan.offsets[index] +
+      (segment.type === "markdown" && segment.immediate
+        ? segment.pending
+          ? 0
+          : segment.value.length
+        : Math.min(
+            renderedSegments[index]?.value.length ?? 0,
+            segment.value.length
+          ))
+  );
+  const visible = (end: number) => end <= visibleEnds[segmentAt(plan, end - 1)];
+  const copy = (node: Nodes, atomic = false): Nodes => {
+    const state = plan.visibility.get(node);
+    if (node.type === "text") {
+      let length = node.value.length;
+      if (!atomic && state?.ends) {
+        length = 0;
+        while (length < state.ends.length && visible(state.ends[length]))
+          length += 1;
+      }
+      return { ...node, value: node.value.slice(0, length) };
     }
-    const visible = Math.min(rendered?.value.length ?? 0, segment.value.length);
-    output += safeRenderedValues?.[index] ?? rendered?.value ?? "";
-    for (let local = visible; local < segment.value.length; local += 1) {
-      const position = plan.offsets[index] + local;
-      while (plan.structuralRanges[rangeIndex]?.end <= position)
-        rangeIndex += 1;
-      const range = plan.structuralRanges[rangeIndex];
-      const character = segment.value[local];
-      output +=
-        character === "\n" ||
-        character === "\r" ||
-        (range && range.start <= position)
-          ? character
-          : plan.placeholder;
+    if ("children" in node) {
+      const children = node.children.map((child) =>
+        copy(child, atomic || Boolean(state?.atomic))
+      );
+      if (node.type === "element") {
+        const projected: Element = {
+          ...node,
+          properties: { ...node.properties },
+          children: children as Element["children"],
+        };
+        if (state?.range) {
+          const active = Boolean(state.immediate) || visible(state.range.end);
+          const svgEnd = state.svg
+            ? visibleEnds[segmentAt(plan, state.range.start)]
+            : state.range.start;
+          projected.data = {
+            ...node.data,
+            [stateKey]: {
+              ...state,
+              active,
+              svgSource: state.svg
+                ? plan.fullSource.slice(
+                    state.range.start,
+                    Math.min(
+                      state.range.end,
+                      Math.max(state.range.start, svgEnd)
+                    )
+                  )
+                : undefined,
+            },
+          };
+        }
+        return projected;
+      }
+      return { ...node, children } as Root;
     }
-  });
-  return output;
+    return { ...node };
+  };
+  return copy(plan.tree) as Root;
 };

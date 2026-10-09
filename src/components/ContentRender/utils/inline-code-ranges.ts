@@ -2,6 +2,7 @@ import { unified } from "unified";
 import remarkParse from "remark-parse";
 import { visit } from "unist-util-visit";
 import { remarkPlugins } from "./markdown-plugins";
+import { isHtmlRawTextTag, readHtmlMarkup } from "./html-block-end";
 
 const parser = unified().use(remarkParse).use(remarkPlugins);
 
@@ -9,43 +10,132 @@ const MAX_CACHE_ENTRIES = 16;
 const MAX_CACHED_SOURCE_CHARACTERS = 256 * 1024;
 
 type CodeRange = Readonly<{ start: number; end: number }>;
-type CodeRanges = {
+type Immutable<T> = T extends object
+  ? { readonly [Key in keyof T]: Immutable<T[Key]> }
+  : T;
+export type MarkdownSourceTree = Immutable<ReturnType<typeof parser.parse>>;
+export type MarkdownSourceAnalysis = {
+  tree: MarkdownSourceTree;
   inline: readonly CodeRange[];
   markdown: readonly CodeRange[];
   literal: readonly CodeRange[];
+  comments: readonly CodeRange[];
+  fences: readonly CodeRange[];
+  html: readonly CodeRange[];
 };
 
 const EMPTY_RANGES: readonly CodeRange[] = Object.freeze([]);
-const sourceRangesCache = new Map<string, CodeRanges>();
+const sourceRangesCache = new Map<string, MarkdownSourceAnalysis>();
 let cachedSourceCharacters = 0;
 
-const parseCodeRanges = (raw: string): CodeRanges => {
+const freezeTree = <T>(value: T): Immutable<T> => {
+  if (value && typeof value === "object") {
+    for (const child of Object.values(value)) freezeTree(child);
+    Object.freeze(value);
+  }
+  return value as Immutable<T>;
+};
+
+const collectCommentRanges = (raw: string, literals: readonly CodeRange[]) => {
+  const comments: CodeRange[] = [];
+  let position = 0;
+  let literalIndex = 0;
+  while (position < raw.length) {
+    while (literals[literalIndex]?.end <= position) literalIndex += 1;
+    const literal = literals[literalIndex];
+    if (literal && literal.start <= position) {
+      position = literal.end;
+      continue;
+    }
+    if (raw[position] !== "<") {
+      position += 1;
+      continue;
+    }
+    const markup = readHtmlMarkup(raw, position);
+    if (raw.startsWith("<!--", position)) {
+      const end = markup.kind === "comment" ? markup.end : raw.length;
+      comments.push(Object.freeze({ start: position, end }));
+      position = end;
+    } else if (markup.kind === "tag") {
+      position = markup.end;
+      if (!markup.closing && isHtmlRawTextTag(markup.name)) {
+        const close = new RegExp(`</${markup.name}(?=[\\s/>])`, "gi");
+        close.lastIndex = position;
+        position = close.exec(raw)?.index ?? raw.length;
+      }
+    } else if (markup.kind === "declaration") {
+      position = markup.end;
+    } else if (markup.kind === "incomplete") {
+      break;
+    } else {
+      position += 1;
+    }
+  }
+  return comments;
+};
+
+const parseCodeRanges = (raw: string): MarkdownSourceAnalysis => {
+  const tree = parser.parse(raw);
   const inline: CodeRange[] = [];
   const markdown: CodeRange[] = [];
   const literal: CodeRange[] = [];
+  const html: CodeRange[] = [];
 
   // Use the renderer's Markdown grammar, including HTML paragraph boundaries.
-  visit(parser.parse(raw), (node) => {
+  visit(tree, (node) => {
     const isCode = node.type === "inlineCode" || node.type === "code";
-    if (!isCode && node.type !== "inlineMath" && node.type !== "math") return;
+    if (
+      !isCode &&
+      node.type !== "inlineMath" &&
+      node.type !== "math" &&
+      node.type !== "html"
+    )
+      return;
     const start = node.position?.start.offset;
     const end = node.position?.end.offset;
     if (start === undefined || end === undefined) return;
     const range = Object.freeze({ start, end });
+    if (node.type === "html") {
+      html.push(range);
+      return;
+    }
     literal.push(range);
     if (isCode) markdown.push(range);
     if (node.type === "inlineCode") inline.push(range);
   });
 
-  // Cached results can be shared by source splitting and render-only repairs.
-  return {
+  const comments = collectCommentRanges(raw, literal);
+  literal.push(...comments);
+  literal.sort((left, right) => left.start - right.start);
+  const fences: CodeRange[] = [];
+  for (const node of tree.children) {
+    const start = node.position?.start.offset;
+    const end = node.position?.end.offset;
+    if (node.type !== "code" || start === undefined || end === undefined)
+      continue;
+    const lineStart = raw.lastIndexOf("\n", start - 1) + 1;
+    if (
+      /^[ \t]{0,3}$/.test(raw.slice(lineStart, start)) &&
+      /^(?:`{3,}|~{3,})/.test(raw.slice(start))
+    )
+      fences.push(Object.freeze({ start: lineStart, end }));
+  }
+
+  // Cached trees are immutable: renderers clone before running transforms.
+  return Object.freeze({
+    tree: freezeTree(tree),
     inline: Object.freeze(inline),
     markdown: Object.freeze(markdown),
     literal: Object.freeze(literal),
-  };
+    comments: Object.freeze(comments),
+    fences: Object.freeze(fences),
+    html: Object.freeze(html),
+  });
 };
 
-const getCodeRanges = (raw: string): CodeRanges => {
+export const getMarkdownSourceAnalysis = (
+  raw: string
+): MarkdownSourceAnalysis => {
   const cached = sourceRangesCache.get(raw);
   if (cached) {
     sourceRangesCache.delete(raw);
@@ -73,7 +163,7 @@ const getCodeRanges = (raw: string): CodeRanges => {
 };
 
 const collectCodeRanges = (raw: string, inlineOnly: boolean) => {
-  const ranges = getCodeRanges(raw);
+  const ranges = getMarkdownSourceAnalysis(raw);
   return inlineOnly ? ranges.inline : ranges.markdown;
 };
 
@@ -85,4 +175,7 @@ export const getMarkdownCodeRanges = (raw: string) =>
 
 // Native HTML must remain inert inside the renderer's code and math literals.
 export const getMarkdownLiteralRanges = (raw: string) =>
-  getCodeRanges(raw).literal;
+  getMarkdownSourceAnalysis(raw).literal;
+
+export const getMarkdownSourceTree = (raw: string) =>
+  getMarkdownSourceAnalysis(raw).tree;

@@ -1,8 +1,14 @@
 import {
   getInlineCodeRanges,
-  getMarkdownLiteralRanges,
+  getMarkdownSourceAnalysis,
+  type MarkdownSourceAnalysis,
 } from "./inline-code-ranges";
-import { findStreamingHtmlBlockEnd } from "./html-block-end";
+import {
+  findStreamingHtmlBlockEnd,
+  findStreamingHtmlElementEnd,
+  isHtmlRawTextTag,
+  readHtmlMarkup,
+} from "./html-block-end";
 
 export type RenderSegment =
   | {
@@ -19,6 +25,47 @@ export type RenderSegment =
 const SANDBOX_START_PATTERN =
   /<(?:!doctype(?=[\s>])|(?:script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)[\s/>])/i;
 
+// Keep streaming block roots aligned with markdown-flow 0.3.4 while retaining
+// document roots supported by the existing UI. Inline formatting stays Markdown.
+const STREAMING_SANDBOX_ROOTS = new Set([
+  "div",
+  "style",
+  "script",
+  "iframe",
+  "section",
+  "article",
+  "header",
+  "footer",
+  "nav",
+  "main",
+  "aside",
+  "figure",
+  "details",
+  "summary",
+  "form",
+  "table",
+  "canvas",
+  "video",
+  "audio",
+  "pre",
+  "blockquote",
+  "ul",
+  "ol",
+  "dl",
+  "fieldset",
+  "address",
+  "hgroup",
+  "center",
+  "link",
+  "html",
+  "head",
+  "body",
+  "meta",
+  "title",
+  "base",
+  "template",
+]);
+
 const INLINE_SANDBOX_PATTERNS: RegExp[] = [
   /<svg[\s\S]*?<\/svg>/i,
   /<img\b[^>]*?>/i,
@@ -26,6 +73,10 @@ const INLINE_SANDBOX_PATTERNS: RegExp[] = [
   /```[a-zA-Z0-9]+[\s\S]*?```/i,
 ];
 const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*]\([^\s)\n]+(?:\s+"[^"]*")?\)/i;
+const STREAMING_MARKDOWN_IMAGE_PATTERN = new RegExp(
+  MARKDOWN_IMAGE_PATTERN.source,
+  "iy"
+);
 const MARKDOWN_VIDEO_IFRAME_PATTERN =
   /<iframe\b[^>]*\bdata-tag\s*=\s*(["'])video\1[^>]*>[\s\S]*?<\/iframe>/i;
 
@@ -72,39 +123,6 @@ const extractFirstFenceBlock = (raw: string): FenceBlock | null => {
     block: raw.slice(start, closing + 3),
     complete: true,
   };
-};
-
-const extractFirstStreamingFenceBlock = (
-  raw: string,
-  codeRanges: readonly FenceRange[]
-): FenceBlock | null => {
-  const openingPattern = /^ {0,3}(`{3,}|~{3,})([^\r\n]*)\r?$/gm;
-  let opening: RegExpExecArray | null;
-
-  while ((opening = openingPattern.exec(raw)) !== null) {
-    const markerStart = opening.index + opening[0].indexOf(opening[1]);
-    // Container fences stay intact, including a list's indented closing line.
-    if (!codeRanges.some(({ start }) => start === markerStart)) continue;
-    const marker = opening[1][0];
-    // Backticks are not allowed in the info string of a backtick fence.
-    if (marker === "`" && opening[2].includes("`")) continue;
-
-    const start = opening.index;
-    const closingPattern = new RegExp(
-      `^ {0,3}${marker}{${opening[1].length},}[ \\t]*\\r?$`,
-      "gm"
-    );
-    closingPattern.lastIndex = start + opening[0].length;
-    const closing = closingPattern.exec(raw);
-    if (!closing) {
-      return { start, block: raw.slice(start), complete: false };
-    }
-
-    const end = closing.index + closing[0].length;
-    return { start, end, block: raw.slice(start, end), complete: true };
-  }
-
-  return null;
 };
 
 const normalizeBeforeFenceText = (before: string) => {
@@ -412,113 +430,376 @@ const extractTableBlock = (
   return { start: tableStart, block, end: tableStart + block.length };
 };
 
-const tableContainsStreamingVideo = (
-  raw: string,
-  table: { start: number; end: number },
-  codeRanges: readonly FenceRange[]
-) => {
-  const iframePattern = /<iframe[\s/>]/gi;
-  iframePattern.lastIndex = table.start;
-  let match: RegExpExecArray | null;
-  while (
-    (match = iframePattern.exec(raw)) !== null &&
-    match.index < table.end
-  ) {
-    if (
-      !isEscaped(raw, match.index) &&
-      !isIndexInRanges(match.index, codeRanges) &&
-      findStreamingVideoIframeMatch(raw, match.index)
-    ) {
-      return true;
-    }
-  }
-  return false;
+type StreamingMatch = FenceRange & {
+  type: "markdown" | "sandbox";
+  immediate?: true;
+  pending?: true;
 };
 
-// Split incoming markdown content into markdown and sandbox HTML segments
+const isStreamingSandboxStart = (source: string, start: number) => {
+  const name = /^<([a-z][a-z0-9:-]*)(?=[\s/>])/i.exec(source.slice(start));
+  return name
+    ? STREAMING_SANDBOX_ROOTS.has(name[1].toLowerCase())
+    : /^<!doctype(?=[\s>])/i.test(source.slice(start));
+};
+
+const findResumedProseFence = (source: string, start: number) => {
+  if (start > 0 && source[start - 1] !== "\n") return;
+  const opening = /^ {0,3}(`{3,}|~{3,})([^\r\n]*)(?:\r?\n|$)/.exec(
+    source.slice(start)
+  );
+  if (!opening || (opening[1][0] === "`" && opening[2].includes("`"))) return;
+  const closing = new RegExp(
+    `^ {0,3}${opening[1][0]}{${opening[1].length},}[ \\t]*\\r?$`,
+    "gm"
+  );
+  closing.lastIndex = start + opening[0].length;
+  const end = closing.exec(source);
+  return {
+    start,
+    end: end ? end.index + end[0].length : source.length,
+    type: "markdown" as const,
+  };
+};
+
+// A Markdown HTML node can extend past our closed root until the next blank
+// line. Only that resumed prose needs a small lexical fallback for literals;
+// code/math inside the actual HTML element remains HTML.
+const resumedProseLiteralIndex = (source: string) => {
+  const nextClosing = new Map<number, number>();
+  const delimiters = [...source.matchAll(/`+|\$+/g)];
+  const nextByMarker = new Map<string, number>();
+  for (let index = delimiters.length - 1; index >= 0; index -= 1) {
+    const match = delimiters[index];
+    const marker = match[0];
+    const next = nextByMarker.get(marker);
+    if (next !== undefined) nextClosing.set(match.index, next + marker.length);
+    if (marker[0] === "`" || !isEscaped(source, match.index))
+      nextByMarker.set(marker, match.index);
+  }
+  const boundaries: number[] = [];
+  let offset = 0;
+  for (const line of source.split("\n")) {
+    const contentStart = offset + (line.match(/^[ \t]*/)?.[0].length ?? 0);
+    if (!line.trim() || isStreamingSandboxStart(source, contentStart))
+      boundaries.push(offset);
+    offset += line.length + 1;
+  }
+  return { nextClosing, boundaries };
+};
+
+const findResumedProseLiteralEnd = (
+  source: string,
+  start: number,
+  index: ReturnType<typeof resumedProseLiteralIndex>
+) => {
+  const marker = source[start];
+  if ((marker !== "`" && marker !== "$") || isEscaped(source, start)) return;
+  let width = 1;
+  while (source[start + width] === marker) width += 1;
+  const markerEnd = start + width;
+  const end =
+    marker === "$" && width > 2 ? undefined : index.nextClosing.get(start);
+  if (end === undefined) return { markerEnd };
+  if (marker === "$" && width === 2) return { markerEnd, end };
+  let low = 0;
+  let high = index.boundaries.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    if (index.boundaries[middle] <= start) low = middle + 1;
+    else high = middle;
+  }
+  return end <= (index.boundaries[low] ?? source.length)
+    ? { markerEnd, end }
+    : { markerEnd };
+};
+
+const appendStreamingSandbox = (
+  source: string,
+  match: StreamingMatch,
+  segments: RenderSegment[]
+) => {
+  let start = match.start;
+  let position = start;
+  while (position < match.end) {
+    if (source[position] !== "<") {
+      position += 1;
+      continue;
+    }
+    const markup = readHtmlMarkup(source, position);
+    if (markup.kind === "incomplete") break;
+    if (markup.kind === "invalid") {
+      position += 1;
+      continue;
+    }
+    if (markup.kind === "tag" && !markup.closing) {
+      if (markup.name === "custom-button-after-content") {
+        const end = Math.min(
+          findStreamingHtmlElementEnd(source, position),
+          match.end
+        );
+        if (
+          /<\/custom-button-after-content\s*>$/i.test(
+            source.slice(position, end)
+          )
+        ) {
+          if (position > start)
+            segments.push({
+              type: "sandbox",
+              value: source.slice(start, position),
+            });
+          segments.push({
+            type: "markdown",
+            value: source.slice(position, end),
+          });
+          start = end;
+          position = end;
+          continue;
+        }
+      }
+      if (isHtmlRawTextTag(markup.name)) {
+        position = findStreamingHtmlElementEnd(source, position);
+        continue;
+      }
+    }
+    position = markup.end;
+  }
+  if (start < match.end)
+    segments.push({ type: "sandbox", value: source.slice(start, match.end) });
+};
+
+const streamingTableRanges = (
+  source: string,
+  literals: readonly FenceRange[],
+  matches: readonly StreamingMatch[]
+) => {
+  const tables: StreamingMatch[] = [];
+  const lines = source.split("\n");
+  let offset = 0;
+  let literalIndex = 0;
+  let matchIndex = 0;
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const start = offset + (line.match(/^[ \t]*/)?.[0].length ?? 0);
+    while (literals[literalIndex]?.end <= start) literalIndex += 1;
+    const literal = literals[literalIndex];
+    if (
+      /^[ \t]*\|.+\|[ \t]*\r?$/.test(line) &&
+      !(literal && literal.start <= start)
+    ) {
+      let end = offset + line.length;
+      while (
+        index + 1 < lines.length &&
+        lines[index + 1].trim().startsWith("|")
+      ) {
+        offset += lines[index].length + 1;
+        index += 1;
+        end = offset + lines[index].length;
+      }
+      while (matches[matchIndex]?.end <= start) matchIndex += 1;
+      if (!(matches[matchIndex]?.start < end))
+        tables.push({ start, end, type: "markdown" });
+    }
+    offset += lines[index].length + 1;
+  }
+  return tables;
+};
+
+const splitStreamingContent = (
+  source: string,
+  keepText: boolean,
+  analysis: MarkdownSourceAnalysis
+): RenderSegment[] => {
+  const matches: StreamingMatch[] = [];
+  const comments = new Set(analysis.comments);
+  // Comments are scanned lexically below. This also handles Markdown prose
+  // resumed inside a source HTML node, where fenced examples can contain '<!--'.
+  const literals = analysis.literal.filter((range) => !comments.has(range));
+  const actualLiterals: FenceRange[] = [];
+  let literalIndex = 0;
+  let fenceIndex = 0;
+  let htmlIndex = 0;
+  let position = 0;
+  let resumedProse = false;
+  let resumedLiterals: ReturnType<typeof resumedProseLiteralIndex> | undefined;
+  while (position < source.length) {
+    while (analysis.fences[fenceIndex]?.end <= position) fenceIndex += 1;
+    const sourceFence = analysis.fences[fenceIndex];
+    if (sourceFence?.start === position) {
+      matches.push({ ...sourceFence, type: "markdown" });
+      actualLiterals.push(sourceFence);
+      position = sourceFence.end;
+      continue;
+    }
+    while (literals[literalIndex]?.end <= position) literalIndex += 1;
+    const literal = literals[literalIndex];
+    if (literal && literal.start <= position) {
+      actualLiterals.push(literal);
+      position = literal.end;
+      continue;
+    }
+    while (analysis.html[htmlIndex]?.end <= position) htmlIndex += 1;
+    const html = analysis.html[htmlIndex];
+    if (resumedProse && html && html.start <= position) {
+      const fence = findResumedProseFence(source, position);
+      if (fence) {
+        matches.push(fence);
+        actualLiterals.push(fence);
+        position = fence.end;
+        continue;
+      }
+      if (source[position] === "`" || source[position] === "$")
+        resumedLiterals ??= resumedProseLiteralIndex(source);
+      const proseLiteral =
+        resumedLiterals &&
+        findResumedProseLiteralEnd(source, position, resumedLiterals);
+      if (proseLiteral) {
+        if (proseLiteral.end !== undefined)
+          actualLiterals.push({ start: position, end: proseLiteral.end });
+        position = proseLiteral.end ?? proseLiteral.markerEnd;
+        continue;
+      }
+    }
+    if (source[position] === "!" && !isEscaped(source, position)) {
+      STREAMING_MARKDOWN_IMAGE_PATTERN.lastIndex = position;
+      const image = STREAMING_MARKDOWN_IMAGE_PATTERN.exec(source);
+      if (image) {
+        matches.push({
+          start: position,
+          end: position + image[0].length,
+          type: "markdown",
+        });
+        position += image[0].length;
+        continue;
+      }
+    }
+    if (source[position] !== "<" || isEscaped(source, position)) {
+      position += 1;
+      continue;
+    }
+    const markup = readHtmlMarkup(source, position);
+    if (isStreamingSandboxStart(source, position)) {
+      const video = findStreamingVideoIframeMatch(source, position);
+      const end =
+        video?.end ??
+        findStreamingHtmlBlockEnd(source, position, (nextRoot) => {
+          const nextVideo = findStreamingVideoIframeMatch(source, nextRoot);
+          return Boolean(nextVideo && !nextVideo.pending);
+        });
+      matches.push({
+        start: position,
+        end,
+        type: video ? "markdown" : "sandbox",
+        ...(video?.immediate ? { immediate: true as const } : {}),
+        ...(video?.pending ? { pending: true as const } : {}),
+      });
+      position = end;
+      resumedProse = true;
+      continue;
+    }
+    if (markup.kind === "tag") {
+      if (!markup.closing && (markup.name === "svg" || markup.name === "img")) {
+        const end =
+          markup.name === "img"
+            ? markup.end
+            : findStreamingHtmlElementEnd(source, position);
+        matches.push({ start: position, end, type: "markdown" });
+        position = end;
+      } else if (!markup.closing && isHtmlRawTextTag(markup.name)) {
+        const end = findStreamingHtmlElementEnd(source, position);
+        actualLiterals.push({ start: position, end });
+        position = end;
+      } else {
+        position = markup.end;
+      }
+    } else if (markup.kind === "comment" || markup.kind === "declaration") {
+      if (markup.kind === "comment")
+        actualLiterals.push({ start: position, end: markup.end });
+      position = markup.end;
+    } else if (markup.kind === "incomplete") {
+      // The rest belongs to this unfinished token, including quoted attributes.
+      if (/^<svg(?=[\s/>])/i.test(source.slice(position)))
+        matches.push({ start: position, end: source.length, type: "markdown" });
+      position = source.length;
+    } else {
+      position += 1;
+    }
+  }
+  const tables = streamingTableRanges(source, actualLiterals, matches);
+  const orderedMatches: StreamingMatch[] = [];
+  let tableIndex = 0;
+  for (const match of matches) {
+    while (tables[tableIndex]?.start < match.start)
+      orderedMatches.push(tables[tableIndex++]);
+    orderedMatches.push(match);
+  }
+  orderedMatches.push(...tables.slice(tableIndex));
+
+  const segments: RenderSegment[] = [];
+  let cursor = 0;
+  for (const match of orderedMatches) {
+    if (match.start < cursor) continue;
+    if (keepText && match.start > cursor)
+      segments.push({ type: "text", value: source.slice(cursor, match.start) });
+    if (match.type === "sandbox")
+      appendStreamingSandbox(source, match, segments);
+    else
+      segments.push({
+        type: "markdown",
+        value: source.slice(match.start, match.end),
+        ...(match.immediate ? { immediate: true as const } : {}),
+        ...(match.pending ? { pending: true as const } : {}),
+      });
+    cursor = match.end;
+  }
+  if (keepText && cursor < source.length)
+    segments.push({ type: "text", value: source.slice(cursor) });
+  return segments;
+};
+
+// Split incoming markdown content into markdown and sandbox HTML segments.
+// Streaming always scans the received source in absolute coordinates. The legacy
+// projection below keeps the public non-streaming splitter's existing behavior.
 export const splitContentSegments = (
   raw: string,
   keepText = false,
-  streaming = false
+  streaming = false,
+  sourceAnalysis?: MarkdownSourceAnalysis
 ): RenderSegment[] => {
-  const source = streaming ? raw : normalizeQuotedMermaidContent(raw, keepText);
+  if (streaming)
+    return splitStreamingContent(
+      raw,
+      keepText,
+      sourceAnalysis ?? getMarkdownSourceAnalysis(raw)
+    );
+  const source = normalizeQuotedMermaidContent(raw, keepText);
   const finalizeSegments = (segments: RenderSegment[]) =>
     splitCustomButtonsFromSandbox(segments);
-  const hasText = (value: string) =>
-    streaming ? value.length > 0 : Boolean(value.trim());
-
-  const codeRanges = streaming
-    ? getMarkdownLiteralRanges(source)
-    : getInlineCodeRanges(source);
-  const fenceBlock = streaming
-    ? extractFirstStreamingFenceBlock(source, codeRanges)
-    : extractFirstFenceBlock(source);
-  const fenceRanges = [
-    ...(streaming
-      ? fenceBlock
-        ? [
-            {
-              start: fenceBlock.start,
-              end: fenceBlock.complete ? fenceBlock.end : source.length,
-            },
-          ]
-        : []
-      : getFenceRanges(source)),
-    ...codeRanges,
-  ];
-  // A fence-looking line inside an HTML block belongs to that HTML block.
+  const hasText = (value: string) => Boolean(value.trim());
+  const codeRanges = getInlineCodeRanges(source);
+  const fenceBlock = extractFirstFenceBlock(source);
+  const fenceRanges = [...getFenceRanges(source), ...codeRanges];
   const sandboxStartIndex = findFirstMatchOutsideFence(
     source,
     SANDBOX_START_PATTERN,
     fenceRanges
   );
-  if (
-    fenceBlock &&
-    (!streaming ||
-      sandboxStartIndex === -1 ||
-      fenceBlock.start < sandboxStartIndex)
-  ) {
-    if (!fenceBlock.complete) {
-      if (keepText && streaming && fenceBlock.start > 0) {
-        return finalizeSegments([
-          ...splitContentSegments(
-            source.slice(0, fenceBlock.start),
-            true,
-            streaming
-          ),
-          { type: "markdown", value: source.slice(fenceBlock.start) },
-        ]);
-      }
-      if (keepText) {
-        return finalizeSegments([{ type: "markdown", value: source }]);
-      }
-      return finalizeSegments([{ type: "markdown", value: fenceBlock.block }]);
-    }
 
-    if (!keepText) {
-      return finalizeSegments([{ type: "markdown", value: fenceBlock.block }]);
+  if (fenceBlock) {
+    if (!fenceBlock.complete) {
+      return finalizeSegments([
+        { type: "markdown", value: keepText ? source : fenceBlock.block },
+      ]);
     }
+    if (!keepText)
+      return finalizeSegments([{ type: "markdown", value: fenceBlock.block }]);
 
     const segments: RenderSegment[] = [];
-    const before = source.slice(0, fenceBlock.start);
-    const normalizedBefore = streaming
-      ? before
-      : normalizeBeforeFenceText(before);
-    if (hasText(normalizedBefore)) {
-      if (streaming)
-        segments.push(
-          ...splitContentSegments(normalizedBefore, true, streaming)
-        );
-      else segments.push({ type: "text", value: normalizedBefore });
-    }
-
+    const before = normalizeBeforeFenceText(source.slice(0, fenceBlock.start));
+    if (hasText(before)) segments.push({ type: "text", value: before });
     segments.push({ type: "markdown", value: fenceBlock.block });
-
     const after = source.slice(fenceBlock.end);
-    if (hasText(after)) {
-      segments.push(...splitContentSegments(after, true, streaming));
-    }
-
+    if (hasText(after)) segments.push(...splitContentSegments(after, true));
     return finalizeSegments(segments);
   }
 
@@ -545,121 +826,66 @@ export const splitContentSegments = (
     const closeIdx = source.indexOf("</svg>", svgOpenIndex);
     const svgBlock =
       closeIdx === -1
-        ? streaming
-          ? source.slice(svgOpenIndex)
-          : `${source.slice(svgOpenIndex)}</svg>`
+        ? `${source.slice(svgOpenIndex)}</svg>`
         : source.slice(svgOpenIndex, closeIdx + "</svg>".length);
     const after =
       closeIdx === -1 ? "" : source.slice(closeIdx + "</svg>".length);
-
     if (keepText) {
       const segments: RenderSegment[] = [];
-      if (hasText(before)) {
-        segments.push({ type: "text", value: before });
-      }
+      if (hasText(before)) segments.push({ type: "text", value: before });
       segments.push({ type: "markdown", value: svgBlock });
-      if (hasText(after)) {
-        segments.push(...splitContentSegments(after, true, streaming));
-      }
+      if (hasText(after)) segments.push(...splitContentSegments(after, true));
       return finalizeSegments(segments);
     }
-
-    if (closeIdx === -1) {
+    if (closeIdx === -1)
       return finalizeSegments([{ type: "markdown", value: svgBlock }]);
-    }
   }
 
-  const tableBlock = extractTableBlock(source, streaming ? codeRanges : []);
-  if (
-    tableBlock &&
-    !(streaming && tableContainsStreamingVideo(source, tableBlock, codeRanges))
-  ) {
+  const tableBlock = extractTableBlock(source, []);
+  if (tableBlock) {
     const segments: RenderSegment[] = [];
     const before = source.slice(0, tableBlock.start);
-    if (keepText && hasText(before)) {
-      segments.push(...splitContentSegments(before, true, streaming));
-    }
+    if (keepText && hasText(before))
+      segments.push(...splitContentSegments(before, true));
     segments.push({ type: "markdown", value: tableBlock.block });
     const after = source.slice(tableBlock.end);
-    const hasProgress = after.length < source.length;
-    if (hasText(after) && hasProgress) {
-      segments.push(
-        ...(keepText
-          ? splitContentSegments(after, true, streaming)
-          : splitContentSegments(after, false, streaming))
-      );
-    }
+    if (hasText(after) && after.length < source.length)
+      segments.push(...splitContentSegments(after, keepText));
     return finalizeSegments(segments);
   }
 
-  const inlineMatch = findInlineSandboxMatch(
-    source,
-    streaming ? codeRanges : undefined
-  );
-  const markdownImageMatch = findMarkdownImageMatch(source, fenceRanges);
-  const markdownVideoIframeMatch = streaming
-    ? findStreamingVideoIframeMatch(source, sandboxStartIndex)
-    : findMarkdownVideoIframeMatch(source, fenceRanges);
   const inlineCandidate = pickEarliestMatch(
-    inlineMatch,
-    markdownImageMatch,
-    markdownVideoIframeMatch
+    findInlineSandboxMatch(source),
+    findMarkdownImageMatch(source, fenceRanges),
+    findMarkdownVideoIframeMatch(source, fenceRanges)
   );
-
-  if (sandboxStartIndex === -1 && !inlineCandidate) {
-    if (keepText && hasText(source)) {
-      return finalizeSegments([{ type: "text", value: source }]);
-    }
-    return [];
-  }
+  if (sandboxStartIndex === -1 && !inlineCandidate)
+    return keepText && hasText(source) ? [{ type: "text", value: source }] : [];
 
   const shouldUseInline =
     !!inlineCandidate &&
     (sandboxStartIndex === -1 || inlineCandidate.start <= sandboxStartIndex);
-
   const startIndex = shouldUseInline
     ? inlineCandidate!.start
     : sandboxStartIndex;
   const blockEnd = shouldUseInline
     ? inlineCandidate!.end
-    : streaming
-      ? findStreamingHtmlBlockEnd(source, startIndex, (index) => {
-          const media = findStreamingVideoIframeMatch(source, index);
-          return Boolean(media && !media.pending);
-        })
-      : findHtmlBlockEnd(source, startIndex);
-
-  const segments: RenderSegment[] = [];
-  const before = source.slice(0, startIndex);
+    : findHtmlBlockEnd(source, startIndex);
   const matchedBlock = source.slice(startIndex, blockEnd);
-  const isVideoIframeMatch =
-    shouldUseInline && isMarkdownVideoIframe(matchedBlock);
-  const normalizedBefore =
-    isVideoIframeMatch && !streaming ? before.trimEnd() : before;
-  const after = source.slice(blockEnd);
-  const normalizedAfter =
-    isVideoIframeMatch && !streaming ? after.trimStart() : after;
-
-  if (keepText && hasText(normalizedBefore)) {
-    segments.push({ type: "text", value: normalizedBefore });
-  }
-
+  const isVideo = shouldUseInline && isMarkdownVideoIframe(matchedBlock);
+  const before = isVideo
+    ? source.slice(0, startIndex).trimEnd()
+    : source.slice(0, startIndex);
+  const after = isVideo
+    ? source.slice(blockEnd).trimStart()
+    : source.slice(blockEnd);
+  const segments: RenderSegment[] = [];
+  if (keepText && hasText(before))
+    segments.push({ type: "text", value: before });
   segments.push({
     type: shouldUseInline ? "markdown" : "sandbox",
     value: matchedBlock,
-    ...(shouldUseInline && inlineCandidate?.immediate
-      ? { immediate: true as const }
-      : {}),
-    ...(shouldUseInline && inlineCandidate?.pending
-      ? { pending: true as const }
-      : {}),
   });
-
-  if (hasText(normalizedAfter)) {
-    segments.push(
-      ...splitContentSegments(normalizedAfter, keepText, streaming)
-    );
-  }
-
+  if (hasText(after)) segments.push(...splitContentSegments(after, keepText));
   return finalizeSegments(segments);
 };

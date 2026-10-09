@@ -3,6 +3,7 @@ import {
   getInlineCodeRanges,
   getMarkdownCodeRanges,
   getMarkdownLiteralRanges,
+  getMarkdownSourceAnalysis,
 } from "./inline-code-ranges";
 
 describe("inline code paragraph boundaries", () => {
@@ -27,6 +28,34 @@ describe("inline code paragraph boundaries", () => {
     expect(code.endsWith("`")).toBe(true);
     expect(code).toContain("<");
   });
+});
+
+describe("Markdown source comment ranges", () => {
+  it.each(["<!-- <figure>example</figure> -->", "<!-- unfinished <figure>"])(
+    "protects received comments with absolute source offsets: %s",
+    (comment) => {
+      const prefix = "Intro\n\n";
+      const source = `${prefix}${comment}`;
+      const analysis = getMarkdownSourceAnalysis(source);
+      expect(analysis.comments).toEqual([
+        { start: prefix.length, end: source.length },
+      ]);
+      expect(analysis.literal).toEqual(analysis.comments);
+      expect(analysis.markdown).toEqual([]);
+    }
+  );
+
+  it.each([
+    "`<!-- code comment -->`",
+    '<span title="<!-- quoted comment -->">Text</span>',
+    '<script>const text = "<!-- raw comment -->";</script>',
+    "<textarea><!-- raw comment --></textarea>",
+  ])(
+    "excludes comment-like text inside literals and HTML tokens: %s",
+    (source) => {
+      expect(getMarkdownSourceAnalysis(source).comments).toEqual([]);
+    }
+  );
 });
 
 describe("Markdown code source ranges", () => {

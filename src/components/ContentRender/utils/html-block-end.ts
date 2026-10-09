@@ -26,6 +26,8 @@ const RAW_TEXT_TAGS = new Set([
   "noframes",
 ]);
 
+export const isHtmlRawTextTag = (name: string) => RAW_TEXT_TAGS.has(name);
+
 type Markup =
   | { kind: "incomplete" }
   | { kind: "invalid" }
@@ -53,7 +55,7 @@ const findTagEnd = (raw: string, start: number) => {
   return -1;
 };
 
-const readMarkup = (raw: string, start: number): Markup => {
+export const readHtmlMarkup = (raw: string, start: number): Markup => {
   if (raw.startsWith("<!--", start)) {
     const close = raw.indexOf("-->", start + 4);
     return close === -1
@@ -97,10 +99,11 @@ const readMarkup = (raw: string, start: number): Markup => {
  * Nested text remains inside its root, and adjacent HTML siblings share the run.
  * Once all roots close, ordinary prose starts a new markdown segment.
  */
-export const findStreamingHtmlBlockEnd = (
+const findHtmlEnd = (
   raw: string,
   startIndex: number,
-  stopBeforeRoot?: (startIndex: number) => boolean
+  stopBeforeRoot: ((startIndex: number) => boolean) | undefined,
+  includeSiblings: boolean
 ): number => {
   const stack: string[] = [];
   let position = startIndex;
@@ -119,6 +122,7 @@ export const findStreamingHtmlBlockEnd = (
     }
 
     if (!stack.length && hasMarkup) {
+      if (!includeSiblings) return lastCompletedEnd;
       while (/\s/.test(raw[position] ?? "") && position < raw.length) {
         position += 1;
       }
@@ -132,7 +136,7 @@ export const findStreamingHtmlBlockEnd = (
       position = nextMarkup;
     }
 
-    const markup = readMarkup(raw, position);
+    const markup = readHtmlMarkup(raw, position);
     if (markup.kind === "incomplete") return raw.length;
     if (markup.kind === "invalid") {
       if (!stack.length && hasMarkup) return lastCompletedEnd;
@@ -145,7 +149,6 @@ export const findStreamingHtmlBlockEnd = (
       hasMarkup &&
       markup.kind === "tag" &&
       !markup.closing &&
-      markup.name === "iframe" &&
       stopBeforeRoot?.(position)
     ) {
       return lastCompletedEnd;
@@ -167,3 +170,13 @@ export const findStreamingHtmlBlockEnd = (
 
   return raw.length;
 };
+
+export const findStreamingHtmlBlockEnd = (
+  raw: string,
+  startIndex: number,
+  stopBeforeRoot?: (startIndex: number) => boolean
+) => findHtmlEnd(raw, startIndex, stopBeforeRoot, true);
+
+/** Return one received element, retaining its incomplete tail without siblings. */
+export const findStreamingHtmlElementEnd = (raw: string, startIndex: number) =>
+  findHtmlEnd(raw, startIndex, undefined, false);

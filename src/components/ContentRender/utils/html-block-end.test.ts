@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { findStreamingHtmlBlockEnd } from "./html-block-end";
+import {
+  findStreamingHtmlBlockEnd,
+  findStreamingHtmlElementEnd,
+  readHtmlMarkup,
+} from "./html-block-end";
 
 describe("findStreamingHtmlBlockEnd", () => {
   it.each([
@@ -118,5 +122,35 @@ describe("findStreamingHtmlBlockEnd", () => {
     ]),
   ])("keeps the received end for %s", (_name, source) => {
     expect(findStreamingHtmlBlockEnd(source, 0)).toBe(source.length);
+  });
+});
+
+describe("streaming HTML lexer contracts", () => {
+  it.each([
+    "<div><div>Nested</div></div>",
+    '<script>const tag = "<div>";</script>',
+    '<img title="a > b" />',
+  ])("returns only one completed element: %s", (element) => {
+    const intro = "Intro ";
+    const source = `${intro}${element} \n<section>Sibling</section>`;
+    expect(findStreamingHtmlElementEnd(source, intro.length)).toBe(
+      intro.length + element.length
+    );
+  });
+
+  it("retains an incomplete element through the received end", () => {
+    const source = '<div title="a > b"><p>Received';
+    expect(findStreamingHtmlElementEnd(source, 0)).toBe(source.length);
+  });
+
+  it("does not interpret quoted tag text as markup", () => {
+    const header = "<span title=\"<figure> > text\" data-other='<div>'>";
+    expect(readHtmlMarkup(`${header}Content`, 0)).toEqual({
+      kind: "tag",
+      name: "span",
+      end: header.length,
+      closing: false,
+      selfClosing: false,
+    });
   });
 });

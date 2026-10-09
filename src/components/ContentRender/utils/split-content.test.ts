@@ -473,3 +473,149 @@ describe("splitContentSegments", () => {
     expect(segments.map((segment) => segment.value).join("")).toBe(raw);
   });
 });
+
+describe("streaming source scanning", () => {
+  it.each([
+    "header",
+    "footer",
+    "nav",
+    "aside",
+    "figure",
+    "details",
+    "summary",
+    "form",
+    "table",
+    "canvas",
+    "video",
+    "audio",
+    "pre",
+    "blockquote",
+    "ul",
+    "ol",
+    "dl",
+    "fieldset",
+    "address",
+    "hgroup",
+    "center",
+  ])("renders the backend's %s block root progressively", (tag) => {
+    const opening = `<${tag} title="a > b">`;
+    for (const html of [
+      opening.slice(0, -1),
+      opening,
+      `${opening}Received`,
+      `${opening}Received</${tag}>`,
+    ]) {
+      const prefix = "Intro\n";
+      expect(splitContentSegments(`${prefix}${html}`, true, true)).toEqual([
+        { type: "text", value: prefix },
+        { type: "sandbox", value: html },
+      ]);
+    }
+    const html = `${opening}Received</${tag}>`;
+    expect(splitContentSegments(`${html} Following prose`, true, true)).toEqual(
+      [
+        { type: "sandbox", value: html },
+        { type: "text", value: " Following prose" },
+      ]
+    );
+    expect(splitContentSegments(`<${tag}>Received</${tag}>`, true)).toEqual([
+      { type: "text", value: `<${tag}>Received</${tag}>` },
+    ]);
+  });
+
+  it.each([
+    '<!-- <div>Example</div><iframe data-tag="video"></iframe> -->',
+    "<!-- <figure>Example</figure>",
+    "<span title=\"<div>Example</div><iframe data-tag='video'></iframe>\">Text</span>",
+    '<span title="<figure>Example</figure>',
+    '<textarea><div>Example</div><iframe data-tag="video"></iframe></textarea>',
+    "`<figure>Example</figure>`",
+    "$<figure>Example</figure>$",
+    "\\<figure>Example</figure>",
+  ])("does not activate fake HTML roots in %s", (literal) => {
+    expect(splitContentSegments(`Intro ${literal} After`, true, true)).toEqual([
+      { type: "text", value: `Intro ${literal} After` },
+    ]);
+  });
+
+  it("keeps comments and quoted attributes inert before later actual HTML", () => {
+    const prefix =
+      '<!-- <div>Comment</div> -->\n<span title="<!-- <figure>Attribute</figure>">Inline</span>\n';
+    const html = '<figure title="a > b">Actual</figure>';
+    const raw = `${prefix}${html} After`;
+    expect(splitContentSegments(raw, true, true)).toEqual([
+      { type: "text", value: prefix },
+      { type: "sandbox", value: html },
+      { type: "text", value: " After" },
+    ]);
+  });
+
+  it.each([
+    "`<figure>Example</figure>`",
+    '``<iframe data-tag="video"></iframe>``',
+    '$<iframe data-tag="video"></iframe>$',
+    '$$\n<iframe data-tag="video"></iframe>\n$$',
+  ])(
+    "protects resumed Markdown prose without reparsing its suffix: %s",
+    (literal) => {
+      const first = "<div>First</div>";
+      const last = "<figure>Last</figure>";
+      const prose = ` Use ${literal} after. `;
+      const raw = `${first}${prose}${last}`;
+      expect(splitContentSegments(raw, true, true)).toEqual([
+        { type: "sandbox", value: first },
+        { type: "text", value: prose },
+        { type: "sandbox", value: last },
+      ]);
+    }
+  );
+
+  it.each(["```", "~~~"])(
+    "keeps a resumed %s fence and its comments literal",
+    (marker) => {
+      const first = "<div>First</div>";
+      const code = `${marker}html\n<!-- <figure>Example</figure>\n${marker}`;
+      const last = "<figure>Last</figure>";
+      const raw = `${first}\nAfter\n${code}\n${last}`;
+      expect(splitContentSegments(raw, true, true)).toEqual([
+        { type: "sandbox", value: first },
+        { type: "text", value: "\nAfter\n" },
+        { type: "markdown", value: code },
+        { type: "text", value: "\n" },
+        { type: "sandbox", value: last },
+      ]);
+    }
+  );
+
+  it("does not extract custom buttons from comments, attributes, or raw script text", () => {
+    const button =
+      "<custom-button-after-content>Example</custom-button-after-content>";
+    const raw = `<div title="${button}"><!-- ${button} --></div><script>const example = '${button}';</script>`;
+    expect(splitContentSegments(raw, true, true)).toEqual([
+      { type: "sandbox", value: raw },
+    ]);
+  });
+
+  it("preserves source whitespace when extracting an actual custom button", () => {
+    const before = "<div>Card</div>\n ";
+    const button =
+      "<custom-button-after-content>Ask</custom-button-after-content>";
+    const raw = `${before}${button}\n\t`;
+    const segments = splitContentSegments(raw, true, true);
+    expect(segments).toContainEqual({ type: "markdown", value: button });
+    expect(segments.map((segment) => segment.value).join("")).toBe(raw);
+  });
+
+  it("preserves all received snapshots across comments, roots, and native videos", () => {
+    const raw =
+      'Intro <!-- <div>Example</div> -->\n<figure title="a > b"><div>Card</div></figure> After\n<iframe title="a > b" data-tag="video"></iframe> End';
+    for (let length = 0; length <= raw.length; length += 1) {
+      const received = raw.slice(0, length);
+      expect(
+        splitContentSegments(received, true, true)
+          .map((segment) => segment.value)
+          .join("")
+      ).toBe(received);
+    }
+  });
+});

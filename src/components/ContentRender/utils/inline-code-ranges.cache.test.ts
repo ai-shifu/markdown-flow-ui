@@ -33,6 +33,7 @@ describe("bounded Markdown code range cache", () => {
       getInlineCodeRanges,
       getMarkdownCodeRanges,
       getMarkdownLiteralRanges,
+      getMarkdownSourceTree,
     } = await loadRanges();
     const raw = "Use `value`.\n\n~~~html\n<div>Code</div>\n~~~";
     const inline = getInlineCodeRanges(raw);
@@ -44,6 +45,7 @@ describe("bounded Markdown code range cache", () => {
       { start: raw.indexOf("~~~"), end: raw.length },
     ]);
     expect(getMarkdownLiteralRanges(raw)).toEqual(markdown);
+    expect(getMarkdownSourceTree(raw).type).toBe("root");
     expect(parseCalls).toHaveBeenCalledTimes(1);
   });
 
@@ -139,5 +141,61 @@ describe("bounded Markdown code range cache", () => {
     expect(Reflect.set(ranges, "0", { start: 99, end: 100 })).toBe(false);
     expect(getMarkdownCodeRanges("`value`")).toEqual([{ start: 0, end: 7 }]);
     expect(parseCalls).toHaveBeenCalledTimes(1);
+  });
+
+  it("shares a deeply frozen source tree and lets renderers transform a clone", async () => {
+    const { getMarkdownSourceTree, getMarkdownSourceAnalysis } =
+      await loadRanges();
+    const raw = "# Title\n\nUse `value`.";
+    const tree = getMarkdownSourceTree(raw);
+    expect(getMarkdownSourceAnalysis(raw).tree).toBe(tree);
+    expect(Reflect.set(tree.children[0], "type", "changed")).toBe(false);
+    expect(Reflect.set(tree.children[0].position!.start, "offset", 99)).toBe(
+      false
+    );
+    expect(Reflect.set(tree.children, "0", {})).toBe(false);
+    const clone = structuredClone(tree);
+    expect(Reflect.set(clone.children[0], "type", "changed")).toBe(true);
+    expect(tree.children[0].type).toBe("heading");
+    expect(parseCalls).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([1, 100])(
+    "parses one full source with %s mixed HTML/code/math/table groups",
+    async (count) => {
+      const { splitContentSegments } = await import("./split-content");
+      const raw = Array.from({ length: count }, (_value, index) =>
+        [
+          `<figure>Card ${index}</figure>`,
+          `Use \`<div>Code ${index}</div>\` and $<iframe data-tag="video"></iframe>$.`,
+          `| Name | Value |\n| --- | --- |\n| Lesson ${index} | <iframe data-tag="video"></iframe> |`,
+          "~~~html\n<div>Fenced example</div>\n~~~",
+          "<!-- <canvas>Comment example</canvas> -->",
+        ].join("\n\n")
+      ).join("\n\n");
+      const segments = splitContentSegments(raw, true, true);
+      expect(
+        segments.filter((segment) => segment.type === "sandbox")
+      ).toHaveLength(count);
+      expect(
+        segments.filter(
+          (segment) => segment.type === "markdown" && segment.immediate
+        )
+      ).toHaveLength(count);
+      expect(segments.map((segment) => segment.value).join("")).toBe(raw);
+      expect(parseCalls).toHaveBeenCalledTimes(1);
+      expect(parseCalls).toHaveBeenCalledWith(raw);
+    }
+  );
+
+  it("reuses supplied analysis for an oversized source without parsing suffixes", async () => {
+    const { getMarkdownSourceAnalysis } = await loadRanges();
+    const { splitContentSegments } = await import("./split-content");
+    const raw = `${"Text ".repeat(53 * 1024)}\n\n<div>Card</div>\n\nUse \`<figure>Example</figure>\`\n\n<iframe data-tag="video"></iframe>`;
+    const analysis = getMarkdownSourceAnalysis(raw);
+    const segments = splitContentSegments(raw, true, true, analysis);
+    expect(segments.map((segment) => segment.value).join("")).toBe(raw);
+    expect(parseCalls).toHaveBeenCalledTimes(1);
+    expect(parseCalls).toHaveBeenCalledWith(raw);
   });
 });

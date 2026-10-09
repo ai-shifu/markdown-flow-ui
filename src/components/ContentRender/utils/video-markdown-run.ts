@@ -415,10 +415,36 @@ export const prepareVideoMarkdownRun = (
   };
   restoreRawPositions(plan, tree);
   const sources = new Map<string, SourceValue>();
+  const taskMarkers = new Map<string, Range>();
   const collect = (
     node: MarkdownRoot["children"][number] | MarkdownSourceTree
   ) => {
     const range = rawRange(plan, rangeOf(node));
+    if (
+      range &&
+      node.type === "listItem" &&
+      typeof node.checked === "boolean"
+    ) {
+      // GFM has already validated this marker and removed it from its paragraph.
+      // Its value can contain a tab or line ending with container prefixes, so
+      // locate its brackets only inside this confirmed item's leading source.
+      const normalized = rangeOf(node)!;
+      const start = plan.markdownSource.indexOf("[", normalized.start);
+      const end = plan.markdownSource.indexOf("]", start + 1) + 1;
+      if (start >= normalized.start && end > start && end <= normalized.end) {
+        const marker = rawRange(plan, { start, end })!;
+        taskMarkers.set(`${range.start}:${range.end}`, marker);
+        const paragraph = node.children[0];
+        const paragraphRange = paragraph && rawRange(plan, rangeOf(paragraph));
+        // Tight items place the generated input in the li; loose items place it
+        // in the first p. Exact ranges keep nested items on their own markers.
+        if (paragraph?.type === "paragraph" && paragraphRange)
+          taskMarkers.set(
+            `${paragraphRange.start}:${paragraphRange.end}`,
+            marker
+          );
+      }
+    }
     if (range && "value" in node && typeof node.value === "string")
       sources.set(`${range.start}:${range.end}`, {
         ...range,
@@ -529,6 +555,17 @@ export const prepareVideoMarkdownRun = (
       const flow = flows[firstAtOrAfter(flowStarts, cursor)];
       if (flow && flow.end <= inherited.range.end) range = flow;
     }
+    if (
+      !range &&
+      node.type === "element" &&
+      node.tagName === "input" &&
+      node.properties.type === "checkbox" &&
+      node.properties.disabled === true &&
+      inherited
+    )
+      range = taskMarkers.get(
+        `${inherited.range.start}:${inherited.range.end}`
+      );
     // remark-breaks creates positionless breaks. Recover the authored newline
     // from the same source cursor used by the adjacent text, including CRLF.
     if (

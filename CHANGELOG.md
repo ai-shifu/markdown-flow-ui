@@ -30,7 +30,8 @@
   images whose definitions arrive later, while preserving final alt values.
 - Preserve quoted and nested list code fences immediately after closed HTML
   blocks, including unfinished fences and container exits.
-- Reveal thematic breaks and line breaks at their prose typing boundaries.
+- Reveal thematic breaks, line breaks, and task checkboxes at their own prose
+  source boundaries.
 - Scan received snapshots once without recursively parsing Markdown suffixes.
 - Preserve the complete received Markdown tree while typing around native
   videos, including preceding sibling containers, reference definitions, escaped

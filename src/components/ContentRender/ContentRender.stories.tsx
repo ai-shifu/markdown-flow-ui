@@ -3002,7 +3002,7 @@ export const StableVideoWithEarlierMarkdown: Story = {
   render: (args) => {
     const [receivedMore, setReceivedMore] = useState(false);
     const source =
-      '# Earlier heading\n\n> Earlier quote\n\n- Earlier list\n\n# [Watch <iframe title="Lesson video" data-tag="video"></iframe> now][watch]\n\n[watch]: /watch';
+      '# Earlier heading\n\n> Earlier quote\n\n- Earlier list\n- [ ] Pending task\n- [x] Completed task\n\n# [Watch <iframe title="Lesson video" data-tag="video"></iframe> now][watch]\n\n[watch]: /watch';
     return (
       <div>
         <button type="button" onClick={() => setReceivedMore(true)}>

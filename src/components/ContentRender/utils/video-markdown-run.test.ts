@@ -209,10 +209,119 @@ describe("received video Markdown tree projection", () => {
     );
   });
 
+  it.each([
+    ["an unchecked task", "\n\n- [ ] Later task text"],
+    ["a checked task", "\n\n- [x] Later task text"],
+    ["an uppercase checked task", "\n\n3. [X] Later task text"],
+    ["a tab-valued unchecked task", "\n\n- [\t] Later task text"],
+    ["a loose task paragraph", "\n\n- [ ] Later task text\n\n  More text"],
+    [
+      "a nested task",
+      "\n\n- Parent mentions [ ] literally\n  - [x] Later task text",
+    ],
+    ["a quoted ordered task", "\r\n\r\n> 3. [x] Later task text\r\n"],
+    ["a task after its bullet line", "\r\n\r\n> -\r\n>   [x] Later task text"],
+    ["a multiline task marker", "\r\n\r\n> - [\r\n>   ] Later task text"],
+    [
+      "a task starting with HTML",
+      '\n\n- [x] <input type="checkbox"> Later task text',
+    ],
+  ])("activates %s at its own authored closing bracket", (_name, after) => {
+    const segments = source("", after);
+    const plan = prepare(segments);
+    const inputs = nodes(plan.tree!, "input");
+    const generated = inputs.find((input) => !input.position)!;
+    expect(generated).toBeDefined();
+    const markerStart = after.lastIndexOf(
+      "[",
+      after.indexOf("Later task text")
+    );
+    const markerEnd = after.indexOf("]", markerStart) + 1;
+    for (let length = 0; length <= markerEnd + 1; length += 1) {
+      const rendered = hidden(segments);
+      rendered[2] = { type: "text", value: after.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      const checkbox = nodes(projected, "input").find(
+        (input) => !input.position
+      )!;
+      const state = getVideoMarkdownNodeState(checkbox);
+      expect(state?.range).toEqual({
+        start: video.length + markerStart,
+        end: video.length + markerEnd,
+      });
+      expect(state?.active).toBe(length >= markerEnd);
+      expect(shape(projected)).toEqual(shape(plan.tree!));
+      expect(text(projected)).not.toContain("Later task text");
+      expect(
+        getVideoMarkdownNodeState(nodes(projected, "iframe")[0])?.active
+      ).not.toBe(false);
+    }
+    expect(text(projectVideoMarkdownRun(plan, segments))).toBe(
+      text(plan.tree!)
+    );
+    expect(Object.isFrozen(plan.sourceTree)).toBe(true);
+  });
+
+  it("binds nested and sibling task inputs to their own markers, not body brackets", () => {
+    const after =
+      "\n\n- [ ] Outer [x] literal\n  - [x] Child [ ] literal\n- [X] Sibling";
+    const segments = source("", after);
+    const plan = prepare(segments);
+    const ends = [
+      after.indexOf("[ ]") + 3,
+      after.indexOf("[x] Child") + 3,
+      after.indexOf("[X]") + 3,
+    ];
+    for (let length = 0; length <= after.length; length += 1) {
+      const rendered = hidden(segments);
+      rendered[2] = { type: "text", value: after.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      expect(
+        nodes(projected, "input").map(
+          (input) => getVideoMarkdownNodeState(input)?.active
+        )
+      ).toEqual(ends.map((end) => length >= end));
+    }
+  });
+
+  it("keeps authored input source budgets independent from generated task markers", () => {
+    const after = '\n\n- [x] <input type="checkbox"> Later';
+    const segments = source("", after);
+    const plan = prepare(segments);
+    const authoredEnd = after.indexOf(">") + 1;
+    for (const length of [
+      after.indexOf("]") + 1,
+      authoredEnd - 1,
+      authoredEnd,
+    ]) {
+      const rendered = hidden(segments);
+      rendered[2] = { type: "text", value: after.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      const [generated, authored] = nodes(projected, "input");
+      expect(getVideoMarkdownNodeState(generated)?.active).toBe(true);
+      expect(getVideoMarkdownNodeState(authored)?.active).toBe(
+        length >= authoredEnd
+      );
+      expect(getVideoMarkdownNodeState(authored)?.range).toEqual({
+        start: video.length + after.indexOf("<input"),
+        end: video.length + authoredEnd,
+      });
+    }
+  });
+
+  it.each(["- [ ]", "- [x] ", "- Mention [ ] in body", "[x] Plain text"])(
+    "does not invent inputs outside the received GFM task AST: %j",
+    (body) => {
+      const plan = prepare(source("", `\n\n${body}`));
+      expect(nodes(plan.tree!, "input")).toHaveLength(0);
+    }
+  );
+
   it.each([false, true])(
     "shares received HTML leaf budgets (pending=%s)",
     (pending) => {
-      const html = "<details><summary>Title</summary><hr><br></details>";
+      const html =
+        '<details><summary>Title</summary><hr><br><input type="checkbox"></details>';
       const segments: RenderSegment[] = [
         { type: "text", value: "Before\n\n" },
         {
@@ -225,7 +334,7 @@ describe("received video Markdown tree projection", () => {
       ];
       const plan = prepare(segments);
       const projected = projectVideoMarkdownRun(plan, hidden(segments));
-      for (const tag of ["hr", "br"])
+      for (const tag of ["hr", "br", "input"])
         expect(
           getVideoMarkdownNodeState(nodes(projected, tag)[0])?.active
         ).toBe(!pending);

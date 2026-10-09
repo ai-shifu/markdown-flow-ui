@@ -1,9 +1,27 @@
+import {
+  getInlineCodeRanges,
+  getMarkdownCodeRanges,
+} from "./inline-code-ranges";
+
 export function parseMarkdownSegments(markdown: string) {
   const segments: Array<
     | { type: "text"; value: string }
     | { type: "mermaid"; value: string; complete: boolean }
     | { type: "svg"; value: string; complete: boolean }
   > = [];
+
+  const codeRanges = getMarkdownCodeRanges(markdown);
+  const inlineCodeRanges = getInlineCodeRanges(markdown);
+  const isInsideCode = (index: number) =>
+    codeRanges.some(({ start, end }) => index >= start && index < end);
+  const isTopLevelFenceStart = (index: number) => {
+    const lineStart = markdown.lastIndexOf("\n", index - 1) + 1;
+    return (
+      /^ {0,3}$/.test(markdown.slice(lineStart, index)) &&
+      codeRanges.some(({ start }) => start === index) &&
+      !inlineCodeRanges.some(({ start, end }) => index >= start && index < end)
+    );
+  };
 
   // Match:
   // 1. Generic code blocks (including mermaid): ``` ... ```
@@ -17,6 +35,15 @@ export function parseMarkdownSegments(markdown: string) {
     const start = match.index;
     const end = regex.lastIndex;
     const rawMatch = match[0];
+
+    // Keep container fences and code examples in one Markdown source segment.
+    if (
+      rawMatch.startsWith("```")
+        ? !isTopLevelFenceStart(start)
+        : isInsideCode(start)
+    ) {
+      continue;
+    }
 
     // Preceding plain text
     if (start > lastIndex) {
@@ -82,6 +109,7 @@ export function parseMarkdownSegments(markdown: string) {
 
   const hasIncompleteSvg =
     !isInsideCodeBlock &&
+    !isInsideCode(incompleteSvgStart) &&
     incompleteSvgStart !== -1 &&
     (lastSvgClose === -1 || lastSvgClose < incompleteSvgStart) &&
     incompleteSvgStart >= lastIndex;
@@ -109,6 +137,7 @@ export function parseMarkdownSegments(markdown: string) {
   const incompleteStart = markdown.lastIndexOf("```mermaid");
   if (
     incompleteStart !== -1 &&
+    isTopLevelFenceStart(incompleteStart) &&
     incompleteStart >= lastIndex &&
     // Ensure this mermaid block isn't inside another code block (unlikely but safe to check)
     // Actually, incompleteCodeBlockStart would capture this "```mermaid" as just "```"

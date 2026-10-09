@@ -113,6 +113,9 @@ importers:
       remark-math:
         specifier: ^6.0.0
         version: 6.0.0
+      remark-parse:
+        specifier: ^11.0.0
+        version: 11.0.0
       remark-rehype:
         specifier: ^11.1.2
         version: 11.1.2

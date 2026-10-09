@@ -1,19 +1,18 @@
 name: Publish (manual)
 
-# Manually-triggered npm publish. Lets collaborators publish markdown-flow-ui
-# from any branch with an explicit version number, without a local `npm publish`
-# (which requires interactive 2FA/OTP). The npm Automation token in the
-# NPM_TOKEN secret authenticates non-interactively.
+# Manually-triggered npm publish through npm Trusted Publishing (OIDC).
+# Formal releases publish the confirmed main commit with its existing version.
+# Dev releases publish from feature branches and commit the dev version bump.
 #
 # How to run:
 #   Actions -> Publish (manual) -> Run workflow
-#     - "Use workflow from": pick the branch to publish from (NOT main)
+#     - "Use workflow from": main for release; a feature branch for dev
 #     - version:      base version, e.g. 0.1.128 (no -dev suffix)
 #     - release_type: dev (-> 0.1.128-dev.N on the `dev` dist-tag) or
 #                     release (-> 0.1.128 on `latest`)
 #     - confirmed_commit_sha: full confirmed commit SHA (required for release)
 #
-# Refuses to run on the default branch (main).
+# Formal release versions must already be merged into main before dispatch.
 
 on:
   workflow_dispatch:
@@ -23,7 +22,7 @@ on:
         required: true
         type: string
       release_type:
-        description: "Package type"
+        description: "Package type (release from main; dev from a feature branch)"
         required: true
         type: choice
         default: dev
@@ -39,16 +38,29 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # allow pushing the version-bump commit back to the branch
+      contents: write # allow pushing dev version bumps back to feature branches
       id-token: write # OIDC: authenticate to npm via Trusted Publishing
 
     steps:
-      # Strategy A: never publish from the protected default branch.
-      - name: Guard against publishing from main
-        if: github.ref_name == 'main'
+      - name: Validate publishing branch
+        env:
+          RELEASE_TYPE: ${{ inputs.release_type }}
+          SOURCE_REF: ${{ github.ref }}
         run: |
-          echo "::error::Do not publish from 'main'. Run this workflow from a feature branch, then open a PR to merge the version bump back into main."
-          exit 1
+          if [[ "${SOURCE_REF}" != refs/heads/* ]]; then
+            echo "::error::Publish from a branch, not a tag."
+            exit 1
+          fi
+
+          if [ "${RELEASE_TYPE}" = "release" ] && [ "${SOURCE_REF}" != "refs/heads/main" ]; then
+            echo "::error::Formal releases must publish from main. Merge the release version through a PR first, then select main."
+            exit 1
+          fi
+
+          if [ "${RELEASE_TYPE}" = "dev" ] && [ "${SOURCE_REF}" = "refs/heads/main" ]; then
+            echo "::error::Dev releases must publish from a feature branch."
+            exit 1
+          fi
 
       - name: Verify confirmed formal release commit
         if: inputs.release_type == 'release'
@@ -114,7 +126,10 @@ jobs:
             fail(`Enter a clean base version like 0.1.128 (no -dev/-rc suffix), got '${raw}'.`);
           }
 
-          const name = JSON.parse(fs.readFileSync("package.json", "utf8")).name;
+          const { name, version } = JSON.parse(fs.readFileSync("package.json", "utf8"));
+          if (releaseType === "release" && version !== raw) {
+            fail(`Formal release version ${raw} must match package.json version ${version} on main. Merge the version change through a PR before publishing.`);
+          }
 
           // 2. Fetch existing versions from npm.
           let versions = [];
@@ -165,7 +180,8 @@ jobs:
           console.log(`Resolved: ${name}@${final} (tag: ${distTag})`);
           NODE
 
-      - name: Set package version
+      - name: Set dev package version
+        if: inputs.release_type == 'dev'
         env:
           FINAL_VERSION: ${{ steps.resolve.outputs.final_version }}
         run: npm version "$FINAL_VERSION" --no-git-tag-version --allow-same-version
@@ -181,7 +197,8 @@ jobs:
           DIST_TAG: ${{ steps.resolve.outputs.dist_tag }}
         run: npm publish --tag "$DIST_TAG"
 
-      - name: Commit and push version bump
+      - name: Commit and push dev version bump
+        if: inputs.release_type == 'dev'
         env:
           FINAL_VERSION: ${{ steps.resolve.outputs.final_version }}
           BRANCH_NAME: ${{ github.ref_name }}

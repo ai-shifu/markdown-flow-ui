@@ -534,18 +534,20 @@ GitHub Action (`.github/workflows/publish-manual.yml`), so no local
 `npm publish` (and no interactive 2FA/OTP) is needed. The old push-on-`main`
 `publish.yml` is disabled (kept as `publish.yml.bk`).
 
-#### Critical rule: formal releases require explicit human confirmation
+#### Critical rule: formal releases must publish from `main` with human confirmation
 
 Coding agents may initiate and publish `dev` versions only by dispatching the
-**Publish (manual)** GitHub Action with `release_type=dev`. Coding agents may
-also dispatch the workflow with `release_type=release`, but only after a human
-explicitly confirms the exact version, source branch, and full commit SHA for
-the formal release. That confirmation authorizes only those release inputs;
+**Publish (manual)** GitHub Action from a feature branch with `release_type=dev`.
+Formal releases (`release_type=release`) **must publish from `main`**, and only
+after a human explicitly confirms the exact version, source branch `main`, and
+full commit SHA. That confirmation authorizes only those release inputs;
 changing any input requires new confirmation. Before dispatch, agents must
-verify that the source branch still points to the confirmed commit and pass the
-SHA through `confirmed_commit_sha` so the workflow can enforce the same check.
-Without confirmation, agents may only prepare and validate the release branch
-and present the workflow inputs. Agents must never run `npm publish` directly
+verify that `main` still points to the confirmed commit and pass the SHA through
+`confirmed_commit_sha` so the workflow can enforce the same check. The requested
+version must already match `package.json` on that commit; prepare any version
+change on a task branch and merge it into `main` through a PR before confirmation.
+Without confirmation, agents may only prepare and validate the release inputs
+and present them for confirmation. Agents must never run `npm publish` directly
 for any release type themselves.
 
 **Prerequisite — npm Trusted Publishing (OIDC)**: the workflow authenticates to
@@ -568,15 +570,28 @@ The `dev` dist-tag keeps test builds off `latest`, so normal installs are
 unaffected. The Action validates the version (greater than the latest published,
 not already taken) and auto-increments the `-dev.N` counter.
 
-**Workflow (strategy A — never publish from `main`)**:
+**Formal release workflow (publish from `main`)**:
 
-1. Branch from main and push it: `git checkout -b release/0.1.128 && git push -u origin release/0.1.128`.
-2. **Actions → Publish (manual) → Run workflow** → pick your branch →
-   `version=0.1.128`, `release_type=dev` or `release`, and for a formal release
-   set `confirmed_commit_sha` to the full human-confirmed commit SHA.
-3. The Action validates → bumps `package.json` → `npm run build` →
-   `npm publish` → commits `chore: release <version>` back to the branch.
-4. Open a PR from the branch to `main`.
+1. Prepare the clean release version (e.g. `0.1.128`) in `package.json` and
+   `package-lock.json` on a task branch, then merge it into `main` through a PR.
+2. Obtain explicit human confirmation of the exact version, source branch
+   `main`, and full commit SHA currently on `main`.
+3. **Actions → Publish (manual) → Run workflow** → select `main` →
+   `version=0.1.128`, `release_type=release`, and set `confirmed_commit_sha`
+   to the full human-confirmed commit SHA.
+4. The Action validates the branch, confirmed SHA, and existing package version →
+   `npm run build` → publishes to `latest`. It does not change the version or push
+   a version-bump commit to `main`.
+
+**Dev release workflow (publish from a feature branch)**:
+
+1. Create and push a feature branch from `main`.
+2. **Actions → Publish (manual) → Run workflow** → select the feature branch →
+   enter a clean base `version` and set `release_type=dev`.
+3. The Action validates → sets the next `X.Y.Z-dev.N` version → `npm run build` →
+   publishes to the `dev` dist-tag → commits the version bump to the feature branch.
+4. Before opening a PR to `main`, restore a clean release version in
+   `package.json` and `package-lock.json`.
 
 #### Critical rule: PRs to `main` must carry a RELEASE version
 

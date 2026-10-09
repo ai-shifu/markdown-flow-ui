@@ -425,7 +425,7 @@ export const splitContentSegments = (
   }
 
   if (streaming && sandboxStartIndex === -1) {
-    const partialTag = /<(!?[a-z]*)$/i.exec(source);
+    const partialTag = /<(!?[a-z]+)$/i.exec(source);
     const sandboxTags = [
       "!doctype",
       "script",

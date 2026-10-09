@@ -86,6 +86,15 @@ describe("splitContentSegments", () => {
     }
   );
 
+  it.each(["<", "The value is <", "Compare 1 < 2", "<!"])(
+    "keeps an ordinary less-than sign in prose: %s",
+    (raw) => {
+      expect(splitContentSegments(raw, true, true)).toEqual([
+        { type: "text", value: raw },
+      ]);
+    }
+  );
+
   it.each([
     "An unfinished `value.\n\n<div>Card</div>",
     "An unfinished `value.\n \t\n<div>Card</div>\n\nAnother ` paragraph.",

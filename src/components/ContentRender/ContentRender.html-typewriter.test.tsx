@@ -68,6 +68,35 @@ afterEach(() => {
 });
 
 describe("ContentRender progressive HTML with typewriter", () => {
+  it("types a bare less-than sign without mounting an empty iframe", () => {
+    const onTypeFinished = vi.fn();
+    const { container, rerender } = render(
+      <ContentRender
+        {...TYPEWRITER_PROPS}
+        content="甲乙 <"
+        onTypeFinished={onTypeFinished}
+      />
+    );
+    expect(getSandboxes(container)).toHaveLength(0);
+    expect(onTypeFinished).not.toHaveBeenCalled();
+    advanceTime(30);
+    expect(getVisibleText(container)).toBe("甲乙");
+
+    rerender(
+      <ContentRender
+        {...TYPEWRITER_PROPS}
+        content="甲乙 < 2"
+        onTypeFinished={onTypeFinished}
+      />
+    );
+    expect(getVisibleText(container)).toBe("甲乙");
+    expect(getSandboxes(container)).toHaveLength(0);
+    for (let tick = 0; tick < 10; tick += 1) advanceTime(30);
+    expect(getVisibleText(container)).toBe("甲乙<2");
+    expect(onTypeFinished).toHaveBeenCalledTimes(1);
+    expect(sandboxLifecycle.mounts).toEqual([]);
+  });
+
   it.each(["div", "script", "style"])(
     "keeps a self-closing %s root mounted through its closing slash",
     (tag) => {

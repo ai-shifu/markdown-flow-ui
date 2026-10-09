@@ -250,6 +250,12 @@ describe("received video Markdown tree projection", () => {
         end: video.length + markerEnd,
       });
       expect(state?.active).toBe(length >= markerEnd);
+      if (length >= markerEnd)
+        for (const paragraph of nodes(projected, "p"))
+          if (nodes(paragraph, "input").includes(checkbox))
+            expect(getVideoMarkdownNodeState(paragraph)?.active).not.toBe(
+              false
+            );
       expect(shape(projected)).toEqual(shape(plan.tree!));
       expect(text(projected)).not.toContain("Later task text");
       expect(
@@ -316,6 +322,119 @@ describe("received video Markdown tree projection", () => {
       expect(nodes(plan.tree!, "input")).toHaveLength(0);
     }
   );
+
+  it.each([
+    ["fenced code", "```js\nLater code\n```", "pre", "```"],
+    ["code content", "```js\nLater code\n```", "code", "```"],
+    ["a list", "- Later item", "ul", "-"],
+    ["an item", "- Later item", "li", "-"],
+    ["an ordered list", "3. Later item", "ol", "3."],
+    ["a quote", "> Later quote", "blockquote", ">"],
+    ["a heading", "# Later heading", "h1", "#"],
+    ["a table header", "| Header |\n| --- |\n| Later |", "thead", "| Header"],
+    ["a table body", "| Header |\n| --- |\n| Later |", "tbody", "| Later"],
+    ["a nested list", "- Parent\n  - Later child", "ul", "- Parent"],
+  ])(
+    "activates %s when its own source starts, before its text completes",
+    (_name, body, tag, marker) => {
+      for (const beforeVideo of [false, true]) {
+        const before = beforeVideo ? `${body}\r\n\r\n` : "";
+        const after = beforeVideo ? "" : `\r\n\r\n${body}`;
+        const segments = source(before, after);
+        const plan = prepare(segments);
+        const index = beforeVideo ? 0 : 2;
+        const raw = segments[index].value;
+        const start = raw.indexOf(marker);
+        for (const length of [0, start, start + 1]) {
+          const rendered = hidden(segments);
+          rendered[index] = { type: "text", value: raw.slice(0, length) };
+          const projected = projectVideoMarkdownRun(plan, rendered);
+          const wrapper = nodes(projected, tag)[0];
+          expect(getVideoMarkdownNodeState(wrapper)?.active).toBe(
+            length > start
+          );
+          expect(shape(projected)).toEqual(shape(plan.tree!));
+          expect(text(projected)).not.toContain("Later");
+          expect(
+            getVideoMarkdownNodeState(nodes(projected, "iframe")[0])?.active
+          ).not.toBe(false);
+        }
+        expect(text(projectVideoMarkdownRun(plan, segments))).toBe(
+          text(plan.tree!)
+        );
+      }
+    }
+  );
+
+  it("keeps only immediate media ancestors active while preceding and nested siblings wait", () => {
+    const before = "> - Earlier item\n> - Watch ";
+    const after = "\n>   - Nested later\n> - Following item";
+    const segments = source(before, after);
+    const plan = prepare(segments);
+    const projected = projectVideoMarkdownRun(plan, hidden(segments));
+    expect(
+      nodes(projected, "li").map(
+        (node) => getVideoMarkdownNodeState(node)?.active
+      )
+    ).toEqual([false, true, false, false]);
+    expect(
+      nodes(projected, "ul").map(
+        (node) => getVideoMarkdownNodeState(node)?.active
+      )
+    ).toEqual([true, false]);
+    expect(
+      getVideoMarkdownNodeState(nodes(projected, "blockquote")[0])?.active
+    ).toBe(true);
+    expect(
+      getVideoMarkdownNodeState(nodes(projected, "iframe")[0])?.active
+    ).not.toBe(false);
+  });
+
+  it("keeps immediate media ancestors active even when they normally wait for their whole range", () => {
+    const segments = source(
+      "<custom-wrapper>Earlier ",
+      " Later</custom-wrapper>"
+    );
+    const plan = prepare(segments);
+    const projected = projectVideoMarkdownRun(plan, hidden(segments));
+    expect(
+      getVideoMarkdownNodeState(nodes(projected, "custom-wrapper")[0])?.active
+    ).toBe(true);
+    expect(text(projected)).not.toContain("Earlier");
+    expect(text(projected)).not.toContain("Later");
+  });
+
+  it("binds positionless empty generated containers to their own source row", () => {
+    const after = "\r\n\r\n| A | B |\r\n| - | - |\r\n| Later |";
+    const segments = source("", after);
+    const plan = prepare(segments);
+    const start = after.indexOf("| Later");
+    for (const length of [0, start, start + 1]) {
+      const rendered = hidden(segments);
+      rendered[2] = { type: "text", value: after.slice(0, length) };
+      const projected = projectVideoMarkdownRun(plan, rendered);
+      const cell = nodes(projected, "td")[1];
+      expect(cell.position).toBeUndefined();
+      expect(getVideoMarkdownNodeState(cell)?.active).toBe(length > start);
+    }
+  });
+
+  it("keeps all native received HTML structure active without flushing earlier prose", () => {
+    const html =
+      "<aside><ul><li>Received</li></ul><table><tr><td>Cell</td></tr></table></aside>";
+    const segments: RenderSegment[] = [
+      { type: "text", value: "Earlier prose\r\n\r\n" },
+      { type: "markdown", value: html, immediate: true },
+    ];
+    const plan = prepare(segments);
+    const projected = projectVideoMarkdownRun(plan, hidden(segments));
+    for (const tag of ["aside", "ul", "li", "table", "tbody", "tr", "td"])
+      expect(getVideoMarkdownNodeState(nodes(projected, tag)[0])?.active).toBe(
+        true
+      );
+    expect(text(projected)).toContain("Received");
+    expect(text(projected)).not.toContain("Earlier prose");
+  });
 
   it.each([false, true])(
     "shares received HTML leaf budgets (pending=%s)",

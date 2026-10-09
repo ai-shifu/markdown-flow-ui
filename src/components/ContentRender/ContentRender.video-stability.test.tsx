@@ -78,7 +78,9 @@ describe.each(["fixed", "content-aware"] as const)(
           expect(video).not.toBeNull();
           const parent = video!.closest(selector);
           expect(parent).not.toBeNull();
-          expect(container.querySelectorAll(selector)).toHaveLength(count);
+          expect(container.querySelectorAll(selector)).toHaveLength(
+            enableTypewriter ? 1 : count
+          );
           if (enableTypewriter) {
             expect(
               container.querySelector(".content-render")?.textContent?.trim()
@@ -94,6 +96,8 @@ describe.each(["fixed", "content-aware"] as const)(
             retainedState?: string;
           };
           videoWindow.retainedState = "playing";
+          let htmlLength = 0;
+          let earlierStructure: Element | undefined;
 
           const expectStable = () => {
             expect(container.querySelector('iframe[data-tag="video"]')).toBe(
@@ -103,7 +107,17 @@ describe.each(["fixed", "content-aware"] as const)(
               container.querySelectorAll('iframe[data-tag="video"]')
             ).toHaveLength(1);
             expect(video!.closest(selector)).toBe(parent);
-            expect(container.querySelectorAll(selector)).toHaveLength(count);
+            const proseBudget =
+              onState.mock.lastCall![0].renderedLength -
+              videoSource.length -
+              htmlLength;
+            const expectedCount =
+              !enableTypewriter || proseBudget > 0 ? count : 1;
+            const current = Array.from(container.querySelectorAll(selector));
+            expect(current).toHaveLength(expectedCount);
+            const earlier = current.find((node) => node !== parent);
+            if (earlierStructure) expect(earlier).toBe(earlierStructure);
+            else if (earlier) earlierStructure = earlier;
             expect(video!.contentWindow).toBe(videoWindow);
             expect(videoWindow.retainedState).toBe("playing");
             if (selector === "a") {
@@ -124,6 +138,7 @@ describe.each(["fixed", "content-aware"] as const)(
 
           const html = "<div data-video-following>Card</div>";
           const finalContent = `${withProse}\n\n${html}`;
+          htmlLength = html.length;
           rerender(fixture(finalContent));
           const sandboxes = container.querySelectorAll(
             '[data-testid="iframe-sandbox"]'
@@ -148,6 +163,7 @@ describe.each(["fixed", "content-aware"] as const)(
             })
           );
           expect(parent!.textContent?.replace(/\s/g, "")).toBe(completedText);
+          expect(container.querySelectorAll(selector)).toHaveLength(count);
         }
       );
     });

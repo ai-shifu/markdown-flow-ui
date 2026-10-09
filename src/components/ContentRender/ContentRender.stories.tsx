@@ -3027,7 +3027,7 @@ export const StableVideoWithEarlierMarkdown: Story = {
     const videoWindow = (video as HTMLIFrameElement).contentWindow;
     expect(parent?.tagName).toBe("A");
     expect(parent?.getAttribute("href")).toBe("/watch");
-    expect(canvasElement.querySelectorAll("h1")).toHaveLength(2);
+    expect(video?.closest("h1")).toBeVisible();
     await userEvent.click(canvasElement.querySelector("button")!);
     const details = canvasElement.querySelector("details");
     expect(details?.textContent).toContain("Following HTML is visible.");
@@ -3035,6 +3035,7 @@ export const StableVideoWithEarlierMarkdown: Story = {
     await waitFor(() => {
       expect(canvasElement.textContent).toContain("Earlier heading");
       expect(canvasElement.textContent).toContain("Later prose.");
+      expect(canvasElement.querySelectorAll("h1")).toHaveLength(2);
     });
     expect(canvasElement.querySelector('iframe[data-tag="video"]')).toBe(video);
     expect(video?.parentElement).toBe(parent);

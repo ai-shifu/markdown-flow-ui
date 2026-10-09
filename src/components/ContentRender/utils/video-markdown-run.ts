@@ -20,6 +20,7 @@ type Visibility = {
   ends?: number[];
   range?: Range;
   atomic?: boolean;
+  structural?: boolean;
   svg?: boolean;
   active?: boolean;
   immediate?: boolean;
@@ -416,10 +417,13 @@ export const prepareVideoMarkdownRun = (
   restoreRawPositions(plan, tree);
   const sources = new Map<string, SourceValue>();
   const taskMarkers = new Map<string, Range>();
+  const containerRanges = new Set<string>();
   const collect = (
     node: MarkdownRoot["children"][number] | MarkdownSourceTree
   ) => {
     const range = rawRange(plan, rangeOf(node));
+    if (range && node.type !== "root" && "children" in node)
+      containerRanges.add(`${range.start}:${range.end}`);
     if (
       range &&
       node.type === "listItem" &&
@@ -494,6 +498,37 @@ export const prepareVideoMarkdownRun = (
   };
   wrapMath(tree);
   plan.tree = format(tree);
+
+  // Generated structural parents (for example a table body) belong to their
+  // positioned descendants, rather than the enclosing block's earlier start.
+  const generatedRanges = new WeakMap<Nodes, Range>();
+  const bindRanges = (node: Nodes): Range | undefined => {
+    const authored = rangeOf(node);
+    let children: Range | undefined;
+    if ("children" in node)
+      for (const child of node.children) {
+        const range = bindRanges(child);
+        if (range)
+          children = children
+            ? {
+                start: Math.min(children.start, range.start),
+                end: Math.max(children.end, range.end),
+              }
+            : range;
+      }
+    if (!authored && children) generatedRanges.set(node, children);
+    return authored ?? children;
+  };
+  bindRanges(plan.tree);
+
+  const containsImmediate = (range: Range) => {
+    const next = firstAtOrAfter(plan.immediateOffsets, range.start);
+    if (plan.immediateOffsets[next] < range.end) return true;
+    const previous = plan.immediateOffsets[next - 1];
+    if (previous === undefined) return false;
+    const index = segmentAt(plan, previous);
+    return range.start < previous + plan.segments[index].value.length;
+  };
 
   type Cursor = {
     range: Range;
@@ -591,6 +626,7 @@ export const prepareVideoMarkdownRun = (
         };
       }
     }
+    range ??= generatedRanges.get(node);
     const source = range && sources.get(`${range.start}:${range.end}`);
     let context = inherited;
     const isCode = source?.type === "code" || source?.type === "inlineCode";
@@ -648,26 +684,30 @@ export const prepareVideoMarkdownRun = (
       const state = plan.visibility.get(node);
       if (state?.atomic) return;
       const effectiveRange = range ?? context?.range;
-      if (
-        effectiveRange &&
-        (node.children.length === 0 ||
+      if (effectiveRange) {
+        const waitsForEnd =
           node.tagName === "input" ||
           node.tagName === "a" ||
           node.tagName.startsWith("custom-") ||
-          node.tagName === "svg")
-      ) {
+          node.tagName === "svg";
+        const structural =
+          !waitsForEnd &&
+          (node.children.length > 0 ||
+            (!node.position &&
+              containerRanges.has(
+                `${effectiveRange.start}:${effectiveRange.end}`
+              )));
         const index = segmentAt(plan, effectiveRange.start);
         const segment = plan.segments[index];
         plan.visibility.set(node, {
           range: effectiveRange,
+          structural,
           svg: node.tagName === "svg",
           immediate:
-            // Link ancestors containing immediate HTML keep their stable host
-            // element. Leaves inside a received HTML span share its budget.
-            (node.tagName === "a" &&
-              plan.immediateOffsets[
-                firstAtOrAfter(plan.immediateOffsets, effectiveRange.start)
-              ] < effectiveRange.end) ||
+            // Ancestors of immediate HTML keep their stable host elements.
+            // Leaves inside a received HTML span share its budget.
+            ((structural || node.children.length > 0) &&
+              containsImmediate(effectiveRange)) ||
             (segment.type === "markdown" &&
               segment.immediate &&
               !segment.pending &&
@@ -677,8 +717,18 @@ export const prepareVideoMarkdownRun = (
       if (node.tagName === "br" && range && inherited && !htmlContains(range))
         inherited.breakEnd = range.end;
     }
-    if ("children" in node)
+    if ("children" in node) {
       for (const child of node.children) walk(child, context);
+      const state = plan.visibility.get(node);
+      // A generated token may precede its author's remaining source position:
+      // GFM removes a task marker from the loose item's paragraph range.
+      if (state?.structural && state.range)
+        for (const child of node.children) {
+          const childRange = plan.visibility.get(child)?.range;
+          if (childRange && childRange.start < state.range.start)
+            state.range = { ...state.range, start: childRange.start };
+        }
+    }
     if (inherited && context !== inherited && range)
       inherited.rawCursor = Math.max(inherited.rawCursor, range.end);
   };
@@ -727,7 +777,9 @@ export const projectVideoMarkdownRun = (
           children: children as Element["children"],
         };
         if (state?.range) {
-          const active = Boolean(state.immediate) || visible(state.range.end);
+          const active =
+            Boolean(state.immediate) ||
+            visible(state.structural ? state.range.start + 1 : state.range.end);
           const svgEnd = state.svg
             ? visibleEnds[segmentAt(plan, state.range.start)]
             : state.range.start;

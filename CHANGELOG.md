@@ -32,6 +32,8 @@
   blocks, including unfinished fences and container exits.
 - Reveal thematic breaks, line breaks, and task checkboxes at their own prose
   source boundaries.
+- Reveal ordinary Markdown containers when typing reaches their source start,
+  while keeping received HTML and video ancestors immediately visible.
 - Scan received snapshots once without recursively parsing Markdown suffixes.
 - Preserve the complete received Markdown tree while typing around native
   videos, including preceding sibling containers, reference definitions, escaped

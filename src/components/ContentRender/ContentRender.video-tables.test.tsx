@@ -43,12 +43,18 @@ describe("ContentRender native video in GFM tables", () => {
       const table = video!.closest("table");
       expect(cell).not.toBeNull();
       expect(table).not.toBeNull();
-      const structure = Array.from(
+      const seenStructure = new Set(
         table!.querySelectorAll("thead, tbody, tr, th, td")
       );
-      expect(table!.querySelectorAll("tr")).toHaveLength(2);
-      expect(table!.querySelectorAll("th")).toHaveLength(2);
-      expect(table!.querySelectorAll("td")).toHaveLength(2);
+      expect(table!.querySelectorAll("tr")).toHaveLength(
+        enableTypewriter ? 1 : 2
+      );
+      expect(table!.querySelectorAll("th")).toHaveLength(
+        enableTypewriter ? 0 : 2
+      );
+      expect(table!.querySelectorAll("td")).toHaveLength(
+        enableTypewriter ? 1 : 2
+      );
       if (enableTypewriter) {
         for (const textCell of table!.querySelectorAll("th, td")) {
           expect(textCell.textContent?.trim()).toBe("");
@@ -58,6 +64,7 @@ describe("ContentRender native video in GFM tables", () => {
         retainedState?: string;
       };
       videoWindow.retainedState = "playing";
+      let htmlLength = 0;
 
       const expectStable = () => {
         expect(container.querySelector('iframe[data-tag="video"]')).toBe(video);
@@ -67,8 +74,26 @@ describe("ContentRender native video in GFM tables", () => {
         const current = Array.from(
           table!.querySelectorAll("thead, tbody, tr, th, td")
         );
-        expect(current).toHaveLength(structure.length);
-        current.forEach((node, index) => expect(node).toBe(structure[index]));
+        const proseBudget =
+          onState.mock.lastCall![0].renderedLength -
+          videoSource.length -
+          htmlLength;
+        expect(table!.querySelectorAll("tr")).toHaveLength(
+          !enableTypewriter || proseBudget > 0 ? 2 : 1
+        );
+        expect(table!.querySelectorAll("th")).toHaveLength(
+          [0, tableSource.indexOf("| Demo")].filter(
+            (start) => !enableTypewriter || proseBudget > start
+          ).length
+        );
+        expect(table!.querySelectorAll("td")).toHaveLength(
+          !enableTypewriter || proseBudget > tableSource.indexOf("| Before")
+            ? 2
+            : 1
+        );
+        for (const node of seenStructure)
+          expect(table!.contains(node)).toBe(true);
+        for (const node of current) seenStructure.add(node);
         expect(video!.contentWindow).toBe(videoWindow);
         expect(videoWindow.retainedState).toBe("playing");
       };
@@ -98,6 +123,7 @@ describe("ContentRender native video in GFM tables", () => {
 
       const html = "<div data-video-following>Card</div>";
       const content = `${withAfter}\n\n${html}`;
+      htmlLength = html.length;
       rerender(fixture(content));
       const sandboxes = container.querySelectorAll(
         '[data-testid="iframe-sandbox"]'

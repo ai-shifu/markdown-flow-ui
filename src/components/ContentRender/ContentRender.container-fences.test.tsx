@@ -78,7 +78,9 @@ describe("container code fences after received HTML", () => {
         ).toBeNull();
         expect(
           container.querySelectorAll('[data-testid="iframe-sandbox"]')
-        ).toHaveLength(sandbox ? 1 : 0);
+        ).toHaveLength(
+          sandbox && (!enabled || progress >= videoSource.length + 1) ? 1 : 0
+        );
         expect(container.querySelectorAll("iframe")).toHaveLength(1);
         expect(container.querySelector("iframe")).toBe(video);
         expect(video.parentNode).toBe(parent);

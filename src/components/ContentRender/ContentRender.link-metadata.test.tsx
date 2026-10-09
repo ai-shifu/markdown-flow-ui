@@ -48,23 +48,29 @@ describe.each([true, false])(
         const source = `[${label}](/lesson "${title}")`;
         const onState = vi.fn();
         const { container, rerender } = render(fixture(source, onState));
-        const video = container.querySelector<HTMLIFrameElement>("iframe");
-        const parent = video?.parentNode;
-        const videoWindow = video?.contentWindow as
-          | (Window & { retainedState?: string })
-          | undefined;
-        if (hasVideo) {
-          expect(video).not.toBeNull();
-          expect(video!.closest("a")).not.toBeNull();
-          videoWindow!.retainedState = "playing";
-        }
+        let video: HTMLIFrameElement | null = null;
+        let parent: ParentNode | null = null;
+        let videoWindow: (Window & { retainedState?: string }) | null = null;
         const expectStable = () => {
           const progress = onState.mock.lastCall?.[0].renderedLength ?? 0;
           const diagnostic = `processed=${progress}, source prefix=${JSON.stringify(source.slice(0, progress))}`;
           expectNoSandbox(container);
+          const currentVideo =
+            container.querySelector<HTMLIFrameElement>("iframe");
+          if (hasVideo && currentVideo && !video) {
+            video = currentVideo;
+            parent = video.parentNode;
+            videoWindow = video.contentWindow as Window & {
+              retainedState?: string;
+            };
+            videoWindow.retainedState = "playing";
+          }
           expect(container.querySelectorAll("iframe"), diagnostic).toHaveLength(
-            hasVideo ? 1 : 0
+            video ? 1 : 0
           );
+          if (hasVideo && !currentVideo) {
+            expect(progress).toBeLessThan(source.indexOf(videoSource));
+          }
           expect(
             container.querySelector("figure, details"),
             diagnostic
@@ -73,7 +79,7 @@ describe.each([true, false])(
             container.querySelector("svg, .content-render-svg"),
             diagnostic
           ).toBeNull();
-          if (hasVideo) {
+          if (video) {
             expect(container.querySelector("iframe")).toBe(video);
             expect(video!.parentNode).toBe(parent);
             expect(video!.contentWindow).toBe(videoWindow);
@@ -85,11 +91,7 @@ describe.each([true, false])(
         expectStable();
         expect(onState).toHaveBeenLastCalledWith(
           expect.objectContaining({
-            renderedLength: enableTypewriter
-              ? hasVideo
-                ? videoSource.length
-                : 0
-              : source.length,
+            renderedLength: enableTypewriter ? 0 : source.length,
             totalLength: source.length,
           })
         );
@@ -106,6 +108,7 @@ describe.each([true, false])(
           tick();
           expectStable();
         }
+        if (hasVideo) expect(video).not.toBeNull();
         const link = container.querySelector("a");
         expect(link?.getAttribute("href")).toBe("/lesson");
         expect(link?.getAttribute("title")).toBe(title);

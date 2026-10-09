@@ -2,6 +2,7 @@
 import React from "react";
 import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { revealNativeVideo } from "../../../tests/helpers/reveal-native-video";
 import ContentRender from "./ContentRender";
 
 vi.mock("mermaid", () => ({ default: {} }));
@@ -69,7 +70,7 @@ describe.each([false, true])(
   "ContentRender native video context (typewriter=%s)",
   (enableTypewriter) => {
     it.each(contexts)(
-      "keeps immediate video and surrounding prose in one $name",
+      "reveals video after preceding prose and keeps one $name",
       ({
         selector,
         initial,
@@ -88,14 +89,11 @@ describe.each([false, true])(
           />
         );
         const { container, rerender } = render(fixture(initial));
-        const video = container.querySelector<HTMLIFrameElement>(
-          'iframe[data-tag="video"]'
-        );
-        expect(video).not.toBeNull();
+        const video = revealNativeVideo(container, initial, enableTypewriter);
         const context = video!.closest(selector);
         expect(context).not.toBeNull();
         expect(container.querySelectorAll(selector)).toHaveLength(1);
-        if (enableTypewriter) expect(context!.textContent?.trim()).toBe("");
+        expect(context!.textContent?.trim()).toBe("Before");
         const quote = video!.closest("blockquote");
         const orderedList = video!.closest("ol");
         if (orderedStart !== null) {
@@ -165,10 +163,11 @@ describe.each([false, true])(
         );
         const initialContent = `${initial}${following}`;
         const { container, rerender } = render(fixture(initialContent));
-        const video = container.querySelector<HTMLIFrameElement>(
-          'iframe[data-tag="video"]'
+        const video = revealNativeVideo(
+          container,
+          initialContent,
+          enableTypewriter
         );
-        expect(video).not.toBeNull();
         const context = video!.closest(selector);
         expect(context).not.toBeNull();
         const quote = video!.closest("blockquote");
@@ -184,8 +183,9 @@ describe.each([false, true])(
         const sandboxes = container.querySelectorAll(
           '[data-testid="iframe-sandbox"]'
         );
-        expect(sandboxes).toHaveLength(1);
-        expect(sandboxes[0].getAttribute("data-content")).toBe(html);
+        expect(sandboxes).toHaveLength(enableTypewriter ? 0 : 1);
+        if (!enableTypewriter)
+          expect(sandboxes[0].getAttribute("data-content")).toBe(html);
 
         const expectStableContext = () => {
           expect(container.querySelector('iframe[data-tag="video"]')).toBe(
@@ -218,6 +218,11 @@ describe.each([false, true])(
           expect.objectContaining({ isComplete: true })
         );
         expect(context!.textContent?.replace(/\s/g, "")).toBe("BeforeAfter");
+        expect(
+          container
+            .querySelector('[data-testid="iframe-sandbox"]')
+            ?.getAttribute("data-content")
+        ).toBe(html);
       }
     );
   }

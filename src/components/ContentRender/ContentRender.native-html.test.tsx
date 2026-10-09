@@ -65,12 +65,49 @@ describe.each([true, false])(
         initialText: "First",
       },
     ])(
-      "shows unfinished $name immediately while pacing only surrounding prose",
+      "reveals unfinished $name after preceding prose and then updates it without pacing",
       ({ selector, opening, closing, initialText }) => {
         const onState = vi.fn();
         const { container, rerender } = render(
           fixture(before + opening, onState)
         );
+        if (enableTypewriter)
+          expect(container.querySelector(selector)).toBeNull();
+        expect(proseText(container)).toBe(enableTypewriter ? "" : "甲乙丙丁");
+        expect(onState).toHaveBeenLastCalledWith(
+          expect.objectContaining({
+            renderedLength: enableTypewriter
+              ? 0
+              : before.length + opening.length,
+          })
+        );
+
+        tick();
+        expect(proseText(container)).toBe(
+          enableTypewriter ? "甲乙" : "甲乙丙丁"
+        );
+        if (enableTypewriter) {
+          expect(container.querySelector(selector)).toBeNull();
+          expect(onState).toHaveBeenLastCalledWith(
+            expect.objectContaining({ renderedLength: 2 })
+          );
+        }
+
+        const progressive = `${opening}<span class="native-addition"> second</span>`;
+        rerender(fixture(before + progressive, onState));
+        if (enableTypewriter) {
+          expect(container.querySelector(selector)).toBeNull();
+          expect(onState).toHaveBeenLastCalledWith(
+            expect.objectContaining({ renderedLength: 2 })
+          );
+        }
+        for (
+          let index = 0;
+          !onState.mock.lastCall?.[0].isComplete && index < 20;
+          index += 1
+        )
+          tick();
+
         const native = container.querySelector(selector);
         expect(native).not.toBeNull();
         const summary = native!.querySelector("summary");
@@ -93,35 +130,27 @@ describe.each([true, false])(
           }
         };
         expectStable();
-        expect(compact(native!.textContent)).toBe(initialText);
-        expect(proseText(container)).toBe(enableTypewriter ? "" : "甲乙丙丁");
-
-        tick();
-        expectStable();
-        expect(proseText(container)).toBe(
-          enableTypewriter ? "甲乙" : "甲乙丙丁"
-        );
+        expect(compact(native!.textContent)).toBe(`${initialText}second`);
+        expect(proseText(container)).toBe("甲乙丙丁");
         expect(onState).toHaveBeenLastCalledWith(
           expect.objectContaining({
-            renderedLength:
-              opening.length + (enableTypewriter ? 2 : before.length),
+            isComplete: true,
+            renderedLength: before.length + progressive.length,
           })
         );
 
-        const progressive = `${opening}<span class="native-addition"> second</span>`;
-        rerender(fixture(before + progressive, onState));
+        const received = `${progressive}<span class="native-addition"> third</span>`;
+        rerender(fixture(before + received, onState));
         expectStable();
-        expect(compact(native!.textContent)).toBe(`${initialText}second`);
-        expect(proseText(container)).toBe(
-          enableTypewriter ? "甲乙" : "甲乙丙丁"
-        );
+        expect(compact(native!.textContent)).toBe(`${initialText}secondthird`);
+        expect(proseText(container)).toBe("甲乙丙丁");
 
-        const finalContent = before + progressive + closing + after;
+        const finalContent = before + received + closing + after;
         rerender(fixture(finalContent, onState));
         expectStable();
-        expect(compact(native!.textContent)).toBe(`${initialText}second`);
+        expect(compact(native!.textContent)).toBe(`${initialText}secondthird`);
         expect(proseText(container)).toBe(
-          enableTypewriter ? "甲乙" : "甲乙丙丁戊己"
+          enableTypewriter ? "甲乙丙丁" : "甲乙丙丁戊己"
         );
         for (
           let index = 0;
@@ -155,6 +184,16 @@ describe.each([true, false])(
 
       const opening = `${pending} quoted" lang="fr" dir="rtl"><summary>Title</summary>First`;
       rerender(fixture(before + opening));
+      if (enableTypewriter) {
+        expect(container.querySelector("details")).toBeNull();
+        expect(proseText(container)).toBe("甲乙");
+        for (
+          let index = 0;
+          !container.querySelector("details") && index < 20;
+          index += 1
+        )
+          tick();
+      }
       const details = container.querySelector("details");
       expect(details).not.toBeNull();
       expectNative(container);
@@ -162,7 +201,7 @@ describe.each([true, false])(
       expect(details!.getAttribute("class")).toBe("native-card > quoted");
       expect(details!.getAttribute("lang")).toBe("fr");
       expect(details!.getAttribute("dir")).toBe("rtl");
-      expect(proseText(container)).toBe(enableTypewriter ? "甲乙" : "甲乙丙丁");
+      expect(proseText(container)).toBe("甲乙丙丁");
 
       rerender(fixture(before + opening + " second</details>" + after));
       expect(container.querySelector("details")).toBe(details);
@@ -177,6 +216,19 @@ describe.each([true, false])(
       const { container, rerender } = render(
         fixture(before + opening, onState)
       );
+      if (enableTypewriter) {
+        expect(container.querySelector("pre")).toBeNull();
+        expect(container.querySelector(".copy-button")).toBeNull();
+        tick();
+        expect(container.querySelector("pre")).toBeNull();
+        expect(proseText(container)).toBe("甲乙");
+        for (
+          let index = 0;
+          !onState.mock.lastCall?.[0].isComplete && index < 20;
+          index += 1
+        )
+          tick();
+      }
       const pre = container.querySelector("pre");
       const code = pre?.querySelector("code");
       const codeBlock = pre?.closest(".code-block-container");
@@ -196,17 +248,17 @@ describe.each([true, false])(
       };
       expectStable();
       expect(code!.textContent).toBe("first <tag>");
-      expect(proseText(container)).toBe(enableTypewriter ? "" : "甲乙丙丁");
+      expect(proseText(container)).toBe("甲乙丙丁");
       tick();
       expectStable();
-      expect(proseText(container)).toBe(enableTypewriter ? "甲乙" : "甲乙丙丁");
+      expect(proseText(container)).toBe("甲乙丙丁");
 
       const finalContent = before + opening + " second</code></pre>" + after;
       rerender(fixture(finalContent, onState));
       expectStable();
       expect(code!.textContent).toBe("first <tag> second");
       expect(proseText(container)).toBe(
-        enableTypewriter ? "甲乙" : "甲乙丙丁戊己"
+        enableTypewriter ? "甲乙丙丁" : "甲乙丙丁戊己"
       );
       for (
         let index = 0;
@@ -257,6 +309,88 @@ describe.each([true, false])(
       expectStable();
       tick();
       expectStable();
+    });
+
+    it("mounts a native video after its preceding prose and keeps it stable while later prose types", () => {
+      const opening = '<aside><iframe data-tag="video"></iframe>Received';
+      const nativeSource = `${opening}</aside>`;
+      const following = "\n\n戊己庚辛壬癸";
+      const onState = vi.fn();
+      const { container, rerender } = render(
+        fixture(before + nativeSource + following, onState)
+      );
+      if (enableTypewriter) {
+        expect(container.querySelector("aside, iframe")).toBeNull();
+        expect(onState).toHaveBeenLastCalledWith(
+          expect.objectContaining({ renderedLength: 0 })
+        );
+        tick();
+        expect(proseText(container)).toBe("甲乙");
+        expect(container.querySelector("aside, iframe")).toBeNull();
+        expect(onState).toHaveBeenLastCalledWith(
+          expect.objectContaining({ renderedLength: 2 })
+        );
+      }
+
+      const progressive = `${opening} more</aside>`;
+      rerender(fixture(before + progressive + following, onState));
+      if (enableTypewriter) {
+        expect(container.querySelector("aside, iframe")).toBeNull();
+        expect(onState).toHaveBeenLastCalledWith(
+          expect.objectContaining({ renderedLength: 2 })
+        );
+      }
+      for (
+        let index = 0;
+        !container.querySelector("iframe") && index < 20;
+        index += 1
+      )
+        tick();
+
+      const aside = container.querySelector("aside");
+      const video = aside?.querySelector<HTMLIFrameElement>("iframe");
+      expect(aside).not.toBeNull();
+      expect(video).not.toBeNull();
+      expect(compact(aside!.textContent)).toBe("Receivedmore");
+      expect(proseText(container).startsWith("甲乙丙丁")).toBe(true);
+      if (enableTypewriter)
+        expect(onState).toHaveBeenLastCalledWith(
+          expect.objectContaining({ isComplete: false })
+        );
+      const videoWindow = video!.contentWindow as Window & {
+        retainedState?: string;
+      };
+      videoWindow.retainedState = "playing";
+
+      const updated = `${opening} more again</aside>`;
+      const finalContent = before + updated + following;
+      rerender(fixture(finalContent, onState));
+      expect(compact(aside!.textContent)).toBe("Receivedmoreagain");
+      const expectStable = () => {
+        expect(container.querySelector("aside")).toBe(aside);
+        expect(aside!.querySelector("iframe")).toBe(video);
+        expect(video!.contentWindow).toBe(videoWindow);
+        expect(videoWindow.retainedState).toBe("playing");
+        expect(
+          container.querySelector('[data-testid="iframe-sandbox"]')
+        ).toBeNull();
+      };
+      expectStable();
+      for (
+        let index = 0;
+        !onState.mock.lastCall?.[0].isComplete && index < 20;
+        index += 1
+      ) {
+        tick();
+        expectStable();
+      }
+      expect(proseText(container)).toBe("甲乙丙丁戊己庚辛壬癸");
+      expect(onState).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          isComplete: true,
+          renderedLength: finalContent.length,
+        })
+      );
     });
 
     it("retains a native video while a second iframe header is pending in the same root", () => {

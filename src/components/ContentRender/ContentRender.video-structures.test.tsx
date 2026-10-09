@@ -2,6 +2,7 @@
 import React from "react";
 import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { revealNativeVideo } from "../../../tests/helpers/reveal-native-video";
 import ContentRender from "./ContentRender";
 
 vi.mock("mermaid", () => ({ default: {} }));
@@ -54,7 +55,7 @@ describe.each([false, true])(
   "ContentRender native video structures (typewriter=%s)",
   (enableTypewriter) => {
     it.each(structures)(
-      "preserves the immediate video's $name through typing and later HTML",
+      "preserves the revealed video's $name through typing and later HTML",
       ({ selector, initial, following, completedText }) => {
         const onState = vi.fn();
         const fixture = (content: string) => (
@@ -66,14 +67,11 @@ describe.each([false, true])(
           />
         );
         const { container, rerender } = render(fixture(initial));
-        const video = container.querySelector<HTMLIFrameElement>(
-          'iframe[data-tag="video"]'
-        );
-        expect(video).not.toBeNull();
+        const video = revealNativeVideo(container, initial, enableTypewriter);
         const parent = video!.closest(selector);
         expect(parent).not.toBeNull();
         expect(container.querySelectorAll(selector)).toHaveLength(1);
-        if (enableTypewriter) expect(parent!.textContent?.trim()).toBe("");
+        if (enableTypewriter) expect(parent!.textContent?.trim()).toBe("Watch");
         if (selector === "a")
           expect(parent!.getAttribute("href")).toBe("/watch");
         const videoWindow = video!.contentWindow as Window & {
@@ -119,10 +117,16 @@ describe.each([false, true])(
         const sandboxes = container.querySelectorAll(
           '[data-testid="iframe-sandbox"]'
         );
-        expect(sandboxes).toHaveLength(1);
-        expect(sandboxes[0].getAttribute("data-content")).toBe(html);
+        expect(sandboxes).toHaveLength(enableTypewriter ? 0 : 1);
+        if (!enableTypewriter)
+          expect(sandboxes[0].getAttribute("data-content")).toBe(html);
         expectStable();
         finishTyping(content);
+        expect(
+          container
+            .querySelector('[data-testid="iframe-sandbox"]')
+            ?.getAttribute("data-content")
+        ).toBe(html);
         expect(parent!.textContent?.replace(/\s/g, "")).toBe(completedText);
       }
     );

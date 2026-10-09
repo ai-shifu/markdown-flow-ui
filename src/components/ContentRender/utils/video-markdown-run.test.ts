@@ -65,6 +65,35 @@ const shape = (tree: Nodes): unknown => [
 
 describe("received video Markdown tree projection", () => {
   it.each([
+    ["Watch ", " now"],
+    ["> Watch ", " now"],
+    ["- Watch ", " now"],
+    ["[Watch ", " now](/lesson)"],
+    ["<details><summary>Full received title</summary>", "</details>"],
+  ])(
+    "keeps hidden HTML and its ancestors inactive until released: %j",
+    (before, after) => {
+      const segments = source(before, after);
+      const plan = prepare(segments);
+      const rendered = segments.map((segment) => ({ ...segment, value: "" }));
+      const hiddenTree = projectVideoMarkdownRun(plan, rendered);
+      expect(shape(hiddenTree)).toEqual(shape(plan.tree!));
+      expect(
+        getVideoMarkdownNodeState(nodes(hiddenTree, "iframe")[0])?.active
+      ).toBe(false);
+      expect(text(hiddenTree)).toBe("");
+
+      rendered[0] = segments[0];
+      rendered[1] = segments[1];
+      const released = projectVideoMarkdownRun(plan, rendered);
+      expect(
+        getVideoMarkdownNodeState(nodes(released, "iframe")[0])?.active
+      ).toBe(true);
+      expect(shape(released)).toEqual(shape(plan.tree!));
+    }
+  );
+
+  it.each([
     ["# Earlier heading\n\n# Watch ", " now"],
     ["> Earlier quote\n\nSeparator\n\n> Watch ", " now"],
     ["- Earlier list\n\nSeparator\n\n- Watch ", " now"],

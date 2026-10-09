@@ -79,14 +79,14 @@ describe("ContentRender progressive HTML with typewriter", () => {
           content={`Use \`value\n${html}\n\``}
         />
       );
-      expect(getSandboxes(container)).toHaveLength(1);
-      expect(getSandboxes(container)[0].getAttribute("data-content")).toBe(
-        html
-      );
+      expect(getSandboxes(container)).toHaveLength(enableTypewriter ? 0 : 1);
       for (let tick = 0; tick < 30; tick += 1) {
         advanceTime(30);
         expect(container.querySelector("style[data-block-style]")).toBeNull();
       }
+      expect(getSandboxes(container)[0].getAttribute("data-content")).toBe(
+        html
+      );
     }
   );
 
@@ -142,6 +142,10 @@ describe("ContentRender progressive HTML with typewriter", () => {
           content={`甲乙丙丁\n${opening}`}
         />
       );
+      if (enableTypewriter) {
+        expect(container.querySelector('iframe[data-tag="video"]')).toBeNull();
+        advanceTime(30);
+      }
       const video = container.querySelector<HTMLIFrameElement>(
         'iframe[data-tag="video"]'
       );
@@ -164,7 +168,7 @@ describe("ContentRender progressive HTML with typewriter", () => {
       expect(videoWindow.retainedState).toBe("playing");
       expect(getSandboxes(container)).toHaveLength(1);
       expect(getVisibleText(container)).toBe(
-        enableTypewriter ? "甲乙" : "甲乙丙丁戊己"
+        enableTypewriter ? "甲乙丙丁" : "甲乙丙丁戊己"
       );
 
       advanceTime(30);
@@ -211,6 +215,8 @@ describe("ContentRender progressive HTML with typewriter", () => {
       const { container, rerender } = render(
         <ContentRender {...TYPEWRITER_PROPS} content={`甲乙\n<${tag}/`} />
       );
+      expect(getSandboxes(container)).toHaveLength(0);
+      advanceTime(30);
       const sandbox = getSandboxes(container)[0];
       expect(sandbox).toBeDefined();
 
@@ -220,7 +226,7 @@ describe("ContentRender progressive HTML with typewriter", () => {
         );
         expect(getSandboxes(container)).toEqual([sandbox]);
         expect(sandbox.getAttribute("data-content")).toBe(html);
-        expect(getVisibleText(container)).toBe("");
+        expect(getVisibleText(container)).toBe("甲乙");
       }
       advanceTime(30);
       expect(getVisibleText(container)).toBe("甲乙");
@@ -228,22 +234,38 @@ describe("ContentRender progressive HTML with typewriter", () => {
     }
   );
 
-  it("passes unfinished HTML to the sandbox before the preceding text is typed", () => {
-    const html = '<div class="card"><p>Already received';
-    const onTypeFinished = vi.fn();
-    const { container } = render(
-      <ContentRender
-        {...TYPEWRITER_PROPS}
-        content={`甲乙丙丁\n${html}`}
-        onTypeFinished={onTypeFinished}
-      />
-    );
+  it.each(["fixed", "content-aware"] as const)(
+    "waits for preceding prose before revealing unfinished HTML with %s pacing",
+    (typewriterPacing) => {
+      const html = '<div class="card"><p>Already received';
+      const onTypeFinished = vi.fn();
+      const onTypewriterStateChange = vi.fn();
+      const { container } = render(
+        <ContentRender
+          {...TYPEWRITER_PROPS}
+          typewriterPacing={typewriterPacing}
+          content={`甲乙丙丁\n${html}`}
+          onTypeFinished={onTypeFinished}
+          onTypewriterStateChange={onTypewriterStateChange}
+        />
+      );
 
-    expect(getVisibleText(container)).toBe("");
-    expect(getSandboxes(container)).toHaveLength(1);
-    expect(getSandboxes(container)[0].getAttribute("data-content")).toBe(html);
-    expect(onTypeFinished).not.toHaveBeenCalled();
-  });
+      expect(getVisibleText(container)).toBe("");
+      expect(getSandboxes(container)).toHaveLength(0);
+      expect(onTypewriterStateChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ renderedLength: 0 })
+      );
+      expect(onTypeFinished).not.toHaveBeenCalled();
+      advanceTime(30);
+      expect(getSandboxes(container)).toHaveLength(0);
+      for (let tick = 0; tick < 10; tick += 1) advanceTime(30);
+      expect(getVisibleText(container)).toBe("甲乙丙丁");
+      expect(getSandboxes(container)[0].getAttribute("data-content")).toBe(
+        html
+      );
+      expect(onTypeFinished).toHaveBeenCalledTimes(1);
+    }
+  );
 
   it("updates received HTML without advancing or restarting the text timer", () => {
     const initialHtml = '<div class="card"><p>First';
@@ -263,14 +285,14 @@ describe("ContentRender progressive HTML with typewriter", () => {
       />
     );
 
-    expect(getSandboxes(container)).toHaveLength(1);
-    expect(getSandboxes(container)[0].getAttribute("data-content")).toBe(
-      appendedHtml
-    );
+    expect(getSandboxes(container)).toHaveLength(0);
     expect(getVisibleText(container)).toBe("");
 
     advanceTime(10);
     expect(getVisibleText(container)).toBe("甲乙");
+    expect(getSandboxes(container)).toHaveLength(0);
+    advanceTime(30);
+    expect(getVisibleText(container)).toBe("甲乙丙丁");
     expect(getSandboxes(container)[0].getAttribute("data-content")).toBe(
       appendedHtml
     );
@@ -286,11 +308,12 @@ describe("ContentRender progressive HTML with typewriter", () => {
       />
     );
 
-    expect(getSandboxes(container)).toHaveLength(1);
+    expect(getSandboxes(container)).toHaveLength(0);
     expect(getVisibleText(container)).toBe("");
 
     advanceTime(30);
     expect(getVisibleText(container)).toBe("甲乙");
+    expect(getSandboxes(container)).toHaveLength(1);
     expect(onTypeFinished).not.toHaveBeenCalled();
 
     advanceTime(30);
@@ -306,12 +329,13 @@ describe("ContentRender progressive HTML with typewriter", () => {
         content={`甲乙丙丁\n${initialHtml}`}
       />
     );
-    const sandbox = getSandboxes(container)[0];
-    expect(sandbox).toBeDefined();
-
+    expect(getSandboxes(container)).toHaveLength(0);
     advanceTime(30);
     expect(getVisibleText(container)).toBe("甲乙");
-    expect(getSandboxes(container)[0]).toBe(sandbox);
+    expect(getSandboxes(container)).toHaveLength(0);
+    advanceTime(30);
+    const sandbox = getSandboxes(container)[0];
+    expect(sandbox).toBeDefined();
 
     rerender(
       <ContentRender
@@ -320,10 +344,8 @@ describe("ContentRender progressive HTML with typewriter", () => {
       />
     );
     expect(getSandboxes(container)[0]).toBe(sandbox);
-    expect(getVisibleText(container)).toBe("甲乙");
-
-    advanceTime(30);
     expect(getVisibleText(container)).toBe("甲乙丙丁");
+
     advanceTime(30);
     expect(getVisibleText(container)).toBe("甲乙丙丁戊己");
     expect(getSandboxes(container)[0]).toBe(sandbox);
@@ -332,19 +354,25 @@ describe("ContentRender progressive HTML with typewriter", () => {
   });
 
   it("preserves both sandbox instances when a later HTML block finishes", () => {
-    const initial = '甲\n<div id="first">One</div>\n乙\n<div id="second">Two';
+    const initial =
+      '甲乙\n<div id="first">One</div>\n丙丁\n<div id="second">Two';
     const { container, rerender } = render(
       <ContentRender {...TYPEWRITER_PROPS} content={initial} />
     );
-    const sandboxes = getSandboxes(container);
-    expect(sandboxes).toHaveLength(2);
-
+    expect(getSandboxes(container)).toHaveLength(0);
     advanceTime(30);
     expect(getVisibleText(container)).toBe("甲乙");
+    expect(getSandboxes(container)).toHaveLength(1);
+    const first = getSandboxes(container)[0];
+    advanceTime(30);
+    expect(getVisibleText(container)).toBe("甲乙丙丁");
+    const sandboxes = getSandboxes(container);
+    expect(sandboxes).toHaveLength(2);
+    expect(sandboxes[0]).toBe(first);
     rerender(
       <ContentRender
         {...TYPEWRITER_PROPS}
-        content={`${initial} and three</div>\n丙丁`}
+        content={`${initial} and three</div>\n戊己`}
       />
     );
 
@@ -352,9 +380,9 @@ describe("ContentRender progressive HTML with typewriter", () => {
     expect(sandboxes[1].getAttribute("data-content")).toContain(
       "Two and three</div>"
     );
-    expect(getVisibleText(container)).toBe("甲乙");
-    advanceTime(30);
     expect(getVisibleText(container)).toBe("甲乙丙丁");
+    advanceTime(30);
+    expect(getVisibleText(container)).toBe("甲乙丙丁戊己");
     expect(sandboxLifecycle.mounts).toEqual([1, 2]);
     expect(sandboxLifecycle.unmounts).toEqual([]);
   });
@@ -370,7 +398,7 @@ describe("ContentRender progressive HTML with typewriter", () => {
       />
     );
 
-    expect(getSandboxes(container)).toHaveLength(1);
+    expect(getSandboxes(container)).toHaveLength(0);
     expect(onTypeFinished).not.toHaveBeenCalled();
     advanceTime(30);
     expect(getVisibleText(container)).toBe("甲乙");
@@ -570,6 +598,10 @@ describe("ContentRender progressive HTML with typewriter", () => {
           onTypeFinished={onTypeFinished}
         />
       );
+      expect(getSandboxes(container)).toHaveLength(enableTypewriter ? 0 : 1);
+      if (enableTypewriter) {
+        for (let tick = 0; tick < 30; tick += 1) advanceTime(30);
+      }
       const sandbox = getSandboxes(container)[0];
       expect(sandbox).toBeDefined();
       expect(sandbox.getAttribute("data-content")).toBe(html);
@@ -589,11 +621,16 @@ describe("ContentRender progressive HTML with typewriter", () => {
           content={content}
         />
       );
-      expect(getSandboxes(container)).toEqual([sandbox]);
+      if (!enableTypewriter) {
+        expect(getSandboxes(container)).toHaveLength(0);
+        for (let tick = 0; tick < 30; tick += 1) advanceTime(30);
+      } else {
+        expect(getSandboxes(container)).toEqual([sandbox]);
+      }
       expect(container.querySelector("style[data-inline-style]")).toBeNull();
       expect(container.querySelector("[data-inline-card]")).toBeNull();
-      expect(sandboxLifecycle.mounts).toEqual([1]);
-      expect(sandboxLifecycle.unmounts).toEqual([]);
+      expect(sandboxLifecycle.mounts).toEqual(enableTypewriter ? [1] : [1, 2]);
+      expect(sandboxLifecycle.unmounts).toEqual(enableTypewriter ? [] : [1]);
     }
   );
 
@@ -603,9 +640,9 @@ describe("ContentRender progressive HTML with typewriter", () => {
     const { container, rerender } = render(
       <ContentRender {...TYPEWRITER_PROPS} content={initial} />
     );
-    expect(getSandboxes(container)).toHaveLength(1);
-    expect(getSandboxes(container)[0].getAttribute("data-content")).toBe(html);
+    expect(getSandboxes(container)).toHaveLength(0);
     for (let tick = 0; tick < 20; tick += 1) advanceTime(30);
+    expect(getSandboxes(container)[0].getAttribute("data-content")).toBe(html);
     expect(getVisibleText(container)).toBe("Use`");
 
     rerender(<ContentRender {...TYPEWRITER_PROPS} content={`${initial}\``} />);
@@ -647,9 +684,10 @@ describe("ContentRender progressive HTML with typewriter", () => {
     const { container, rerender } = render(
       <ContentRender {...TYPEWRITER_PROPS} content={initial} />
     );
+    expect(getSandboxes(container)).toHaveLength(0);
+    advanceTime(30);
     const sandbox = getSandboxes(container)[0];
     expect(sandbox).toBeDefined();
-    advanceTime(30);
     expect(getVisibleText(container)).toBe("甲乙");
 
     const withOpenFence = `${initial}\n\`\`\`html\n<div>Source`;
@@ -681,10 +719,11 @@ describe("ContentRender progressive HTML with typewriter", () => {
     const { container } = render(
       <ContentRender {...TYPEWRITER_PROPS} content={`甲${html}乙丙`} />
     );
-    expect(getSandboxes(container)[0].getAttribute("data-content")).toBe(html);
+    expect(getSandboxes(container)).toHaveLength(0);
     expect(getVisibleText(container)).toBe("");
     advanceTime(30);
     expect(getVisibleText(container)).toBe("甲乙");
+    expect(getSandboxes(container)[0].getAttribute("data-content")).toBe(html);
     advanceTime(30);
     expect(getVisibleText(container)).toBe("甲乙丙");
   });
@@ -694,6 +733,8 @@ describe("ContentRender progressive HTML with typewriter", () => {
     const { container, rerender } = render(
       <ContentRender {...TYPEWRITER_PROPS} content={content} />
     );
+    expect(getSandboxes(container)).toHaveLength(0);
+    advanceTime(30);
     const sandbox = getSandboxes(container)[0];
     rerender(
       <ContentRender

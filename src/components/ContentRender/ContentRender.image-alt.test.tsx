@@ -216,6 +216,22 @@ describe.each([true, false])(
             ? `${pending}\n \t\n${html}`
             : `![${html}]broken`;
         rerender(fixture(source, onState));
+        if (enableTypewriter && boundary === "blank line") {
+          expect(
+            container.querySelector('[data-testid="iframe-sandbox"]')
+          ).toBeNull();
+        }
+        for (
+          let tick = 0;
+          !container.querySelector('[data-testid="iframe-sandbox"]') &&
+          tick < source.length;
+          tick += 1
+        ) {
+          act(() => vi.advanceTimersByTime(30));
+          expect(
+            container.querySelector("figure, iframe, svg, .content-render-svg")
+          ).toBeNull();
+        }
         const sandbox = container.querySelector(
           '[data-testid="iframe-sandbox"]'
         );

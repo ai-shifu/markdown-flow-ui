@@ -23,7 +23,7 @@ afterEach(() => {
 
 describe("ContentRender native video in GFM tables", () => {
   it.each([false, true])(
-    "keeps an immediate video and table structure stable (typewriter=%s)",
+    "keeps video and table structure stable after preceding cells type (typewriter=%s)",
     (enableTypewriter) => {
       const onState = vi.fn();
       const fixture = (content: string) => (
@@ -35,6 +35,17 @@ describe("ContentRender native video in GFM tables", () => {
         />
       );
       const { container, rerender } = render(fixture(tableSource));
+      if (enableTypewriter) {
+        expect(container.querySelector('iframe[data-tag="video"]')).toBeNull();
+        for (
+          let tick = 0;
+          !container.querySelector('iframe[data-tag="video"]') &&
+          tick < tableSource.length + 10;
+          tick += 1
+        ) {
+          act(() => vi.advanceTimersByTime(30));
+        }
+      }
       const video = container.querySelector<HTMLIFrameElement>(
         'iframe[data-tag="video"]'
       );
@@ -46,20 +57,10 @@ describe("ContentRender native video in GFM tables", () => {
       const seenStructure = new Set(
         table!.querySelectorAll("thead, tbody, tr, th, td")
       );
-      expect(table!.querySelectorAll("tr")).toHaveLength(
-        enableTypewriter ? 1 : 2
-      );
-      expect(table!.querySelectorAll("th")).toHaveLength(
-        enableTypewriter ? 0 : 2
-      );
-      expect(table!.querySelectorAll("td")).toHaveLength(
-        enableTypewriter ? 1 : 2
-      );
-      if (enableTypewriter) {
-        for (const textCell of table!.querySelectorAll("th, td")) {
-          expect(textCell.textContent?.trim()).toBe("");
-        }
-      }
+      expect(table!.querySelectorAll("tr")).toHaveLength(2);
+      expect(table!.querySelectorAll("th")).toHaveLength(2);
+      expect(table!.querySelectorAll("td")).toHaveLength(2);
+      expect(table!.querySelector("th")?.textContent?.trim()).toBe("Name");
       const videoWindow = video!.contentWindow as Window & {
         retainedState?: string;
       };
@@ -77,7 +78,9 @@ describe("ContentRender native video in GFM tables", () => {
         const proseBudget =
           onState.mock.lastCall![0].renderedLength -
           videoSource.length -
-          htmlLength;
+          (container.querySelector('[data-testid="iframe-sandbox"]')
+            ? htmlLength
+            : 0);
         expect(table!.querySelectorAll("tr")).toHaveLength(
           !enableTypewriter || proseBudget > 0 ? 2 : 1
         );
@@ -128,10 +131,16 @@ describe("ContentRender native video in GFM tables", () => {
       const sandboxes = container.querySelectorAll(
         '[data-testid="iframe-sandbox"]'
       );
-      expect(sandboxes).toHaveLength(1);
-      expect(sandboxes[0].getAttribute("data-content")).toBe(html);
+      expect(sandboxes).toHaveLength(enableTypewriter ? 0 : 1);
+      if (!enableTypewriter)
+        expect(sandboxes[0].getAttribute("data-content")).toBe(html);
       expectStable();
       finishTyping(content);
+      expect(
+        container
+          .querySelector('[data-testid="iframe-sandbox"]')
+          ?.getAttribute("data-content")
+      ).toBe(html);
       expect(cell!.textContent?.trim()).toBe("After");
     }
   );

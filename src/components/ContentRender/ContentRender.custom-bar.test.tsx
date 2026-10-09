@@ -48,6 +48,7 @@ describe("ContentRender custom bar with progressive video", () => {
       const prose = "甲乙丙丁\n";
       const pendingHeader = '<iframe title="a >';
       const openingHeader = "<iframe title=\"a > b\" data-tag='video'>";
+      const onState = vi.fn();
       const fixture = (content: string) => (
         <ContentRender
           content={content}
@@ -56,6 +57,7 @@ describe("ContentRender custom bar with progressive video", () => {
           typingSpeed={30}
           customRenderBar={CustomBar}
           onSend={onSend}
+          onTypewriterStateChange={onState}
         />
       );
       const initialContent = `${prose}${pendingHeader}`;
@@ -79,7 +81,7 @@ describe("ContentRender custom bar with progressive video", () => {
 
       const bar = expectBar(
         initialContent,
-        `${enableTypewriter ? "" : prose}${pendingHeader}`
+        enableTypewriter ? "" : initialContent
       );
       expect(container.querySelector("iframe")).toBeNull();
       expect(
@@ -88,14 +90,39 @@ describe("ContentRender custom bar with progressive video", () => {
 
       advanceTime(30);
       const typedProse = enableTypewriter ? "甲乙" : prose;
-      expect(expectBar(initialContent, `${typedProse}${pendingHeader}`)).toBe(
-        bar
-      );
+      expect(
+        expectBar(
+          initialContent,
+          enableTypewriter ? typedProse : initialContent
+        )
+      ).toBe(bar);
 
       const openingContent = `${prose}${openingHeader}`;
       rerender(fixture(openingContent));
-      expect(expectBar(openingContent, `${typedProse}${openingHeader}`)).toBe(
-        bar
+      expect(
+        expectBar(
+          openingContent,
+          enableTypewriter ? typedProse : openingContent
+        )
+      ).toBe(bar);
+      if (enableTypewriter) {
+        expect(container.querySelector('iframe[data-tag="video"]')).toBeNull();
+        expect(onState).toHaveBeenLastCalledWith(
+          expect.objectContaining({ renderedLength: 2 })
+        );
+      }
+      for (
+        let tick = 0;
+        !onState.mock.lastCall?.[0].isComplete && tick < 20;
+        tick += 1
+      )
+        advanceTime(30);
+      expect(expectBar(openingContent, openingContent)).toBe(bar);
+      expect(onState).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          isComplete: true,
+          renderedLength: openingContent.length,
+        })
       );
       const video = container.querySelector<HTMLIFrameElement>(
         'iframe[data-tag="video"]'
@@ -109,7 +136,7 @@ describe("ContentRender custom bar with progressive video", () => {
       const closedVideo = `${openingHeader}</iframe>`;
       const closedContent = `${prose}${closedVideo}`;
       rerender(fixture(closedContent));
-      expect(expectBar(closedContent, `${typedProse}${closedVideo}`)).toBe(bar);
+      expect(expectBar(closedContent, closedContent)).toBe(bar);
       expect(container.querySelector('iframe[data-tag="video"]')).toBe(video);
       expect(video!.contentWindow).toBe(videoWindow);
       expect(videoWindow.retainedState).toBe("playing");
@@ -118,10 +145,7 @@ describe("ContentRender custom bar with progressive video", () => {
       const finalContent = `${closedContent}${followingProse}`;
       rerender(fixture(finalContent));
       expect(
-        expectBar(
-          finalContent,
-          enableTypewriter ? `${typedProse}${closedVideo}` : finalContent
-        )
+        expectBar(finalContent, enableTypewriter ? closedContent : finalContent)
       ).toBe(bar);
       expect(container.querySelector('iframe[data-tag="video"]')).toBe(video);
       expect(video!.contentWindow).toBe(videoWindow);

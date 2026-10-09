@@ -49,9 +49,9 @@ function App() {
 ```
 
 With the typewriter enabled, prose follows the configured typing pace. Received
-HTML is rendered from each received snapshot immediately, including unfinished
-fragments, while surrounding prose continues typing. HTML does not consume the
-typing budget or wait for earlier prose to finish. Tag-like text such as `<div`
+HTML waits until the preceding prose has finished typing, then renders each
+received snapshot immediately, including unfinished fragments. HTML does not consume
+the typing budget. Tag-like text such as `<div`
 remains ordinary Markdown until a tag-name boundary (whitespace, `/`, or `>`) is
 received.
 

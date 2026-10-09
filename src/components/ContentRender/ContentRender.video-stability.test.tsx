@@ -72,23 +72,36 @@ describe.each(["fixed", "content-aware"] as const)(
             />
           );
           const { container, rerender } = render(fixture(content));
+          if (enableTypewriter) {
+            expect(
+              container.querySelector('iframe[data-tag="video"]')
+            ).toBeNull();
+            expect(
+              container.querySelector(".content-render")?.textContent?.trim()
+            ).toBe("");
+            expect(onState).toHaveBeenLastCalledWith(
+              expect.objectContaining({
+                isTyping: true,
+                isComplete: false,
+                renderedLength: 0,
+              })
+            );
+            for (
+              let iteration = 0;
+              !container.querySelector('iframe[data-tag="video"]') &&
+              iteration < content.length + 10;
+              iteration += 1
+            ) {
+              act(() => vi.advanceTimersByTime(30));
+            }
+          }
           const video = container.querySelector<HTMLIFrameElement>(
             'iframe[data-tag="video"]'
           );
           expect(video).not.toBeNull();
           const parent = video!.closest(selector);
           expect(parent).not.toBeNull();
-          expect(container.querySelectorAll(selector)).toHaveLength(
-            enableTypewriter ? 1 : count
-          );
-          if (enableTypewriter) {
-            expect(
-              container.querySelector(".content-render")?.textContent?.trim()
-            ).toBe("");
-            expect(onState).toHaveBeenLastCalledWith(
-              expect.objectContaining({ isTyping: true, isComplete: false })
-            );
-          }
+          expect(container.querySelectorAll(selector)).toHaveLength(count);
           if (selector === "a") {
             expect(parent!.getAttribute("href")).toBe("/watch");
           }
@@ -110,7 +123,9 @@ describe.each(["fixed", "content-aware"] as const)(
             const proseBudget =
               onState.mock.lastCall![0].renderedLength -
               videoSource.length -
-              htmlLength;
+              (container.querySelector('[data-testid="iframe-sandbox"]')
+                ? htmlLength
+                : 0);
             const expectedCount =
               !enableTypewriter || proseBudget > 0 ? count : 1;
             const current = Array.from(container.querySelectorAll(selector));
@@ -143,8 +158,9 @@ describe.each(["fixed", "content-aware"] as const)(
           const sandboxes = container.querySelectorAll(
             '[data-testid="iframe-sandbox"]'
           );
-          expect(sandboxes).toHaveLength(1);
-          expect(sandboxes[0].getAttribute("data-content")).toBe(html);
+          expect(sandboxes).toHaveLength(enableTypewriter ? 0 : 1);
+          if (!enableTypewriter)
+            expect(sandboxes[0].getAttribute("data-content")).toBe(html);
           expectStable();
           for (
             let iteration = 0;
@@ -162,6 +178,11 @@ describe.each(["fixed", "content-aware"] as const)(
               totalLength: finalContent.length,
             })
           );
+          expect(
+            container
+              .querySelector('[data-testid="iframe-sandbox"]')
+              ?.getAttribute("data-content")
+          ).toBe(html);
           expect(parent!.textContent?.replace(/\s/g, "")).toBe(completedText);
           expect(container.querySelectorAll(selector)).toHaveLength(count);
         }
@@ -191,9 +212,12 @@ describe.each(["fixed", "content-aware"] as const)(
         );
         const expectLiteralText = () => {
           const proseUnits =
-            onState.mock.lastCall![0].renderedLength - videoSource.length;
+            onState.mock.lastCall![0].renderedLength -
+            (container.querySelector('iframe[data-tag="video"]')
+              ? videoSource.length
+              : 0);
           expect(
-            container.querySelector("p")?.textContent?.replace(/\s/g, "")
+            container.querySelector("p")?.textContent?.replace(/\s/g, "") ?? ""
           ).toBe(`${before}${after}`.slice(0, proseUnits).replace(/\s/g, ""));
         };
         expectLiteralText();
@@ -225,16 +249,9 @@ describe.each(["fixed", "content-aware"] as const)(
             onTypewriterStateChange={onState}
           />
         );
-        const video = container.querySelector<HTMLIFrameElement>(
-          'iframe[data-tag="video"]'
-        );
-        expect(video).not.toBeNull();
-        const parent = video!.closest("p");
-        expect(parent).not.toBeNull();
-        const videoWindow = video!.contentWindow as Window & {
-          retainedState?: string;
-        };
-        videoWindow.retainedState = "playing";
+        let video: HTMLIFrameElement | null = null;
+        let parent: Element | null = null;
+        let videoWindow: (Window & { retainedState?: string }) | null = null;
         // Source units include the complete entity and backslash escape.
         const visibleBoundaries = [
           { end: 1, text: "甲" },
@@ -246,18 +263,39 @@ describe.each(["fixed", "content-aware"] as const)(
         ];
         const expectPacedText = () => {
           const proseUnits =
-            onState.mock.lastCall![0].renderedLength - videoSource.length;
+            onState.mock.lastCall![0].renderedLength -
+            (container.querySelector('iframe[data-tag="video"]')
+              ? videoSource.length
+              : 0);
           const expected = visibleBoundaries
             .filter(({ end }) => end <= proseUnits)
             .map(({ text }) => text)
             .join("");
-          expect(parent!.textContent?.replace(/\s/g, "")).toBe(expected);
-          expect(container.querySelector('iframe[data-tag="video"]')).toBe(
-            video
+          expect(
+            container.querySelector("p")?.textContent?.replace(/\s/g, "") ?? ""
+          ).toBe(expected);
+          const currentVideo = container.querySelector<HTMLIFrameElement>(
+            'iframe[data-tag="video"]'
           );
-          expect(video!.closest("p")).toBe(parent);
-          expect(video!.contentWindow).toBe(videoWindow);
-          expect(videoWindow.retainedState).toBe("playing");
+          if (!video && currentVideo) {
+            video = currentVideo;
+            parent = video.closest("p");
+            expect(parent).not.toBeNull();
+            videoWindow = video.contentWindow as Window & {
+              retainedState?: string;
+            };
+            videoWindow.retainedState = "playing";
+          }
+          if (video) {
+            expect(currentVideo).toBe(video);
+            expect(video.closest("p")).toBe(parent);
+            expect(video.contentWindow).toBe(videoWindow);
+            expect(videoWindow!.retainedState).toBe("playing");
+          } else {
+            expect(onState.mock.lastCall![0].renderedLength).toBeLessThan(
+              content.indexOf(videoSource)
+            );
+          }
         };
         expectPacedText();
         for (

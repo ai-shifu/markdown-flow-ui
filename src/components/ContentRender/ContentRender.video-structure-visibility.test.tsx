@@ -218,7 +218,9 @@ describe.each(variants)(
           const budget =
             onState.mock.lastCall![0].renderedLength -
             video.length -
-            htmlLength;
+            (container.querySelector('[data-testid="sandbox"]')
+              ? htmlLength
+              : 0);
           assertStructures(
             container,
             structures,
@@ -255,8 +257,8 @@ describe.each(variants)(
         htmlLength = sandbox.length;
         rerender(fixture(content));
         expect(
-          container.querySelector('[data-testid="sandbox"]')
-        ).not.toBeNull();
+          Boolean(container.querySelector('[data-testid="sandbox"]'))
+        ).toBe(!enabled);
         check();
         for (
           let tick = 0;
@@ -279,7 +281,7 @@ describe.each(variants)(
     );
 
     it.each(mediaBlocks)(
-      "retains immediate video ancestors with $name",
+      "retains video ancestors after preceding prose with $name",
       ({ body, structures, ancestor, ...example }) => {
         const onState = vi.fn();
         const fixture = (content: string) => (
@@ -292,6 +294,16 @@ describe.each(variants)(
           />
         );
         const { container, rerender } = render(fixture(body));
+        if (enabled && !container.querySelector("iframe")) {
+          expect(container.querySelector("iframe")).toBeNull();
+          for (
+            let tick = 0;
+            !container.querySelector("iframe") && tick < body.length * 2;
+            tick += 1
+          ) {
+            act(() => vi.advanceTimersByTime(30));
+          }
+        }
         const frame = container.querySelector<HTMLIFrameElement>("iframe")!;
         expect(frame).not.toBeNull();
         const parent = frame.parentNode;
@@ -322,7 +334,9 @@ describe.each(variants)(
           const budget =
             onState.mock.lastCall![0].renderedLength -
             immediateLength -
-            htmlLength;
+            (container.querySelector('[data-testid="sandbox"]')
+              ? htmlLength
+              : 0);
           assertStructures(
             container,
             structures,

@@ -745,16 +745,25 @@ export const projectVideoMarkdownRun = (
   const visibleEnds = plan.segments.map(
     (segment, index) =>
       plan.offsets[index] +
-      (segment.type === "markdown" && segment.immediate
-        ? segment.pending
-          ? 0
-          : segment.value.length
+      (segment.type === "markdown" && segment.pending
+        ? 0
         : Math.min(
             renderedSegments[index]?.value.length ?? 0,
             segment.value.length
           ))
   );
   const visible = (end: number) => end <= visibleEnds[segmentAt(plan, end - 1)];
+  const containsVisibleImmediate = (range: Range) => {
+    const next = firstAtOrAfter(plan.immediateOffsets, range.start);
+    const offset = plan.immediateOffsets[next];
+    if (offset < range.end && visibleEnds[segmentAt(plan, offset)] > offset)
+      return true;
+    const previous = plan.immediateOffsets[next - 1];
+    return (
+      previous !== undefined &&
+      range.start < visibleEnds[segmentAt(plan, previous)]
+    );
+  };
   const copy = (node: Nodes, atomic = false): Nodes => {
     const state = plan.visibility.get(node);
     if (node.type === "text") {
@@ -778,7 +787,8 @@ export const projectVideoMarkdownRun = (
         };
         if (state?.range) {
           const active =
-            Boolean(state.immediate) ||
+            (Boolean(state.immediate) &&
+              containsVisibleImmediate(state.range)) ||
             visible(state.structural ? state.range.start + 1 : state.range.end);
           const svgEnd = state.svg
             ? visibleEnds[segmentAt(plan, state.range.start)]

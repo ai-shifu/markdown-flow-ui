@@ -2891,19 +2891,19 @@ export const MultilingualContentAwareTypewriterPacing: Story = {
   ),
 };
 
-/** HTML follows incoming chunks immediately while surrounding prose keeps typing. */
+/** HTML waits for preceding prose, then follows incoming chunks without typing. */
 export const ProgressiveHtmlWithTypedProse: Story = {
   name: "Progressive HTML with Typed Prose",
   args: {
     enableTypewriter: true,
     typewriterPacing: "content-aware",
-    typingSpeed: 150,
+    typingSpeed: 75,
     disableSandboxLoadingOverlay: true,
   },
   render: (args) => {
     const chunks = [
-      'This introduction keeps typing while the card below updates.\n\n<div style="padding:24px;border:2px solid #2563eb;border-radius:12px"><h2>Lesson card',
-      "</h2><p>This HTML arrives without waiting for the introduction.",
+      'This introduction finishes typing before the card below appears.\n\n<div style="padding:24px;border:2px solid #2563eb;border-radius:12px"><h2>Lesson card',
+      "</h2><p>All received HTML appears after the introduction finishes.",
       " More of the same paragraph is visible as soon as it arrives.</p>",
       "<p>The card can grow before its outer div is closed.</p>",
       "</div>\n\nThe prose after the card continues with the same typewriter budget.",
@@ -2928,23 +2928,50 @@ export const ProgressiveHtmlWithTypedProse: Story = {
     );
   },
   play: async ({ canvasElement }) => {
-    const iframe = canvasElement.querySelector("iframe");
+    expect(canvasElement.querySelector("iframe")).toBeNull();
     await waitFor(() => {
-      expect(iframe?.contentDocument?.body.textContent).toContain(
-        "Lesson card"
-      );
+      expect(canvasElement.textContent).toContain("This introduction");
     });
-    const documentBeforeAppend = iframe?.contentDocument;
+    expect(canvasElement.textContent).not.toContain(
+      "This introduction finishes typing before the card below appears."
+    );
     const receiveButton = canvasElement.querySelector("button");
     expect(receiveButton).not.toBeNull();
     await userEvent.click(receiveButton!);
+    expect(canvasElement.querySelector("iframe")).toBeNull();
+    await waitFor(
+      () => {
+        expect(canvasElement.textContent).toContain(
+          "This introduction finishes typing before the card below appears."
+        );
+      },
+      { timeout: 5000 }
+    );
+    const iframe = await waitFor(() => {
+      const element = canvasElement.querySelector("iframe");
+      expect(element?.contentDocument?.body.textContent).toContain(
+        "All received HTML appears after the introduction finishes."
+      );
+      return element!;
+    });
+    expect(iframe.contentDocument?.body.textContent).toContain("Lesson card");
+    const documentBeforeAppend = iframe.contentDocument;
+    await userEvent.click(receiveButton!);
     await waitFor(() => {
       expect(iframe?.contentDocument?.body.textContent).toContain(
-        "This HTML arrives without waiting for the introduction."
+        "More of the same paragraph is visible as soon as it arrives."
       );
     });
     expect(canvasElement.querySelector("iframe")).toBe(iframe);
-    expect(iframe?.contentDocument).toBe(documentBeforeAppend);
+    expect(iframe.contentDocument).toBe(documentBeforeAppend);
+    await userEvent.click(receiveButton!);
+    await waitFor(() => {
+      expect(iframe?.contentDocument?.body.textContent).toContain(
+        "The card can grow before its outer div is closed."
+      );
+    });
+    expect(canvasElement.querySelector("iframe")).toBe(iframe);
+    expect(iframe.contentDocument).toBe(documentBeforeAppend);
   },
 };
 
@@ -2952,7 +2979,7 @@ export const ProgressiveFigureWithTypedProse: Story = {
   name: "Progressive Figure with Typed Prose",
   args: {
     enableTypewriter: true,
-    typingSpeed: 100,
+    typingSpeed: 30,
     disableSandboxLoadingOverlay: true,
   },
   render: (args) => {
@@ -2965,7 +2992,7 @@ export const ProgressiveFigureWithTypedProse: Story = {
         <ContentRender
           {...args}
           content={
-            "This introduction keeps typing while the figure grows.\n\n" +
+            "This introduction finishes typing before the figure appears.\n\n" +
             '<figure style="padding:24px;border:2px solid #2563eb"><figcaption>Received figure' +
             (receivedMore
               ? " content</figcaption><p>The complete figure is visible.</p></figure>\n\nFollowing prose keeps typing."
@@ -2976,12 +3003,23 @@ export const ProgressiveFigureWithTypedProse: Story = {
     );
   },
   play: async ({ canvasElement }) => {
-    const iframe = canvasElement.querySelector("iframe");
-    await waitFor(() => {
-      expect(iframe?.contentDocument?.body.textContent).toContain(
+    expect(canvasElement.querySelector("iframe")).toBeNull();
+    await waitFor(
+      () => {
+        expect(canvasElement.textContent).toContain(
+          "This introduction finishes typing before the figure appears."
+        );
+      },
+      { timeout: 5000 }
+    );
+    const iframe = await waitFor(() => {
+      const element = canvasElement.querySelector("iframe");
+      expect(element?.contentDocument?.body.textContent).toContain(
         "Received figure"
       );
+      return element!;
     });
+    const documentBeforeAppend = iframe.contentDocument;
     await userEvent.click(canvasElement.querySelector("button")!);
     await waitFor(() => {
       expect(iframe?.contentDocument?.body.textContent).toContain(
@@ -2989,6 +3027,61 @@ export const ProgressiveFigureWithTypedProse: Story = {
       );
     });
     expect(canvasElement.querySelector("iframe")).toBe(iframe);
+    expect(iframe.contentDocument).toBe(documentBeforeAppend);
+  },
+};
+
+export const OrderedHtmlBlocksWithTypedProse: Story = {
+  name: "Ordered HTML Blocks with Typed Prose",
+  args: {
+    enableTypewriter: true,
+    typingSpeed: 25,
+    disableSandboxLoadingOverlay: true,
+    content:
+      "The first introduction finishes before its HTML card appears.\n\n" +
+      "<div><p>The entire first HTML card appears together.</p></div>\n\n" +
+      "This longer explanation between the two cards keeps typing while the first card stays visible. The second card waits for this entire explanation.\n\n" +
+      "<figure><figcaption>The entire second HTML card appears together.</figcaption></figure>\n\n" +
+      "The final prose keeps typing after both cards are visible.",
+  },
+  play: async ({ canvasElement }) => {
+    expect(canvasElement.querySelector("iframe")).toBeNull();
+    const firstIframe = await waitFor(
+      () => {
+        const element = canvasElement.querySelector("iframe");
+        expect(element?.contentDocument?.body.textContent).toContain(
+          "The entire first HTML card appears together."
+        );
+        return element!;
+      },
+      { timeout: 5000 }
+    );
+    const firstDocument = firstIframe.contentDocument;
+    expect(canvasElement.textContent).toContain(
+      "The first introduction finishes before its HTML card appears."
+    );
+    expect(canvasElement.querySelectorAll("iframe")).toHaveLength(1);
+    expect(canvasElement.textContent).not.toContain(
+      "The second card waits for this entire explanation."
+    );
+    await waitFor(
+      () => {
+        const iframes = canvasElement.querySelectorAll("iframe");
+        expect(iframes).toHaveLength(2);
+        expect(iframes[1].contentDocument?.body.textContent).toContain(
+          "The entire second HTML card appears together."
+        );
+      },
+      { timeout: 5000 }
+    );
+    expect(canvasElement.textContent).toContain(
+      "The second card waits for this entire explanation."
+    );
+    expect(canvasElement.querySelector("iframe")).toBe(firstIframe);
+    expect(firstIframe.contentDocument).toBe(firstDocument);
+    expect(canvasElement.textContent).not.toContain(
+      "The final prose keeps typing after both cards are visible."
+    );
   },
 };
 
@@ -2996,7 +3089,7 @@ export const StableVideoWithEarlierMarkdown: Story = {
   name: "Stable Video with Earlier Markdown",
   args: {
     enableTypewriter: true,
-    typingSpeed: 5,
+    typingSpeed: 15,
     disableSandboxLoadingOverlay: true,
   },
   render: (args) => {
@@ -3013,7 +3106,7 @@ export const StableVideoWithEarlierMarkdown: Story = {
           content={
             source +
             (receivedMore
-              ? "\n\nLater prose.\n\n<details open><summary>Received card</summary><p>Following HTML is visible.</p></details>"
+              ? "\n\nLater prose finishes typing before the following HTML becomes visible.\n\n<details open><summary>Received card</summary><p>Following HTML is visible.</p></details>"
               : "")
           }
         />
@@ -3021,20 +3114,38 @@ export const StableVideoWithEarlierMarkdown: Story = {
     );
   },
   play: async ({ canvasElement }) => {
-    const video = canvasElement.querySelector('iframe[data-tag="video"]');
-    expect(video).not.toBeNull();
+    expect(canvasElement.querySelector('iframe[data-tag="video"]')).toBeNull();
+    const video = await waitFor(
+      () => {
+        const element = canvasElement.querySelector<HTMLIFrameElement>(
+          'iframe[data-tag="video"]'
+        );
+        expect(element).not.toBeNull();
+        return element!;
+      },
+      { timeout: 5000 }
+    );
     const parent = video?.parentElement;
     const videoWindow = (video as HTMLIFrameElement).contentWindow;
     expect(parent?.tagName).toBe("A");
     expect(parent?.getAttribute("href")).toBe("/watch");
     expect(video?.closest("h1")).toBeVisible();
     await userEvent.click(canvasElement.querySelector("button")!);
-    const details = canvasElement.querySelector("details");
-    expect(details?.textContent).toContain("Following HTML is visible.");
+    expect(canvasElement.querySelector("details")).toBeNull();
+    const details = await waitFor(
+      () => {
+        const element = canvasElement.querySelector("details");
+        expect(element?.textContent).toContain("Following HTML is visible.");
+        return element!;
+      },
+      { timeout: 5000 }
+    );
     expect(canvasElement.querySelectorAll("iframe")).toHaveLength(1);
     await waitFor(() => {
       expect(canvasElement.textContent).toContain("Earlier heading");
-      expect(canvasElement.textContent).toContain("Later prose.");
+      expect(canvasElement.textContent).toContain(
+        "Later prose finishes typing before the following HTML becomes visible."
+      );
       expect(canvasElement.querySelectorAll("h1")).toHaveLength(2);
     });
     expect(canvasElement.querySelector('iframe[data-tag="video"]')).toBe(video);

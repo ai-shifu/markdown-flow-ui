@@ -103,7 +103,7 @@ export interface ContentRenderProps {
   onClickCustomButtonAfterContent?: () => void;
   onSend?: (content: OnSendContentParams) => void;
   typingSpeed?: number;
-  /** Types prose only; received sandbox HTML renders immediately and progressively. */
+  /** Types prose only; following HTML renders progressively once preceding prose is displayed. */
   enableTypewriter?: boolean;
   /** Controls how much text is revealed per tick. Defaults to the legacy fixed pacing. */
   typewriterPacing?: ContentRenderTypewriterPacing;
@@ -978,32 +978,16 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     typewriterWakeVersion,
   ]);
 
-  const typewriterState = useMemo<ContentRenderTypewriterState>(
-    () => ({
-      isTypewriterEnabled,
-      isTyping: isTypewriterEnabled && displayContent !== typewriterContent,
-      isComplete: displayContent === typewriterContent,
-      renderedLength:
-        content.length -
-        Math.max(0, typewriterContent.length - displayContent.length),
-      totalLength: content.length,
-    }),
-    [content, typewriterContent, displayContent, isTypewriterEnabled]
-  );
-
-  useEffect(() => {
-    onTypewriterStateChange?.(typewriterState);
-  }, [onTypewriterStateChange, typewriterState]);
-
   const mergedRenderSegments = useMemo(() => {
     let textOffset = 0;
     return sourceSegments.map((segment) => {
-      if (
-        segment.type === "sandbox" ||
-        isImmediateSegment(segment) ||
-        !isTypewriterEnabled
-      ) {
-        return segment;
+      if (!isTypewriterEnabled) return segment;
+      if (segment.type === "sandbox" || isImmediateSegment(segment)) {
+        // HTML skips the prose budget only after earlier prose has caught up.
+        // Retain its source slot so later updates keep the same render key.
+        return displayContent.length >= textOffset
+          ? segment
+          : { ...segment, value: "" };
       }
       const value = displayContent.slice(
         textOffset,
@@ -1014,6 +998,35 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       return { ...segment, value };
     });
   }, [sourceSegments, displayContent, isTypewriterEnabled]);
+  const typewriterState = useMemo<ContentRenderTypewriterState>(
+    () => ({
+      isTypewriterEnabled,
+      isTyping: isTypewriterEnabled && displayContent !== typewriterContent,
+      isComplete: displayContent === typewriterContent,
+      renderedLength:
+        content.length -
+        sourceSegments.reduce(
+          (remaining, segment, index) =>
+            remaining +
+            segment.value.length -
+            mergedRenderSegments[index].value.length,
+          0
+        ),
+      totalLength: content.length,
+    }),
+    [
+      content,
+      typewriterContent,
+      displayContent,
+      isTypewriterEnabled,
+      sourceSegments,
+      mergedRenderSegments,
+    ]
+  );
+
+  useEffect(() => {
+    onTypewriterStateChange?.(typewriterState);
+  }, [onTypewriterStateChange, typewriterState]);
   const sourceSegmentOffsets = useMemo(() => {
     let offset = 0;
     return sourceSegments.map((segment) => {
@@ -1364,7 +1377,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
           const idx = run.indices[0];
           const segment = mergedRenderSegments[idx];
           if (run.sandbox)
-            return (
+            return segment.value ? (
               <IframeSandbox
                 key={`sandbox-${idx}`}
                 hideFullScreen
@@ -1384,7 +1397,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
                 }
                 mode={sandboxMode}
               />
-            );
+            ) : null;
           if (run.plan)
             return (
               <MarkdownComponentRuntimeContext.Provider

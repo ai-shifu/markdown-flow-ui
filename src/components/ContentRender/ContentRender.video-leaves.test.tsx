@@ -129,10 +129,8 @@ describe.each(["fixed", "content-aware"] as const)(
         rerender(fixture(appended));
         stable();
         expect(
-          container
-            .querySelector('[data-testid="iframe-sandbox"]')
-            ?.getAttribute("data-content")
-        ).toBe("<div data-appended>Card</div>");
+          container.querySelector('[data-testid="iframe-sandbox"]')
+        ).toBeNull();
         for (
           let iteration = 0;
           !onState.mock.lastCall![0].isComplete &&
@@ -143,6 +141,11 @@ describe.each(["fixed", "content-aware"] as const)(
           stable();
         }
         expect(onState.mock.lastCall![0].isComplete).toBe(true);
+        expect(
+          container
+            .querySelector('[data-testid="iframe-sandbox"]')
+            ?.getAttribute("data-content")
+        ).toBe("<div data-appended>Card</div>");
         rerender(fixture(content, false));
         expect(container.querySelectorAll(tag)).toHaveLength(1);
         stable();

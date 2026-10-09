@@ -94,6 +94,12 @@ describe.each([false, true])(
         />
       );
       const { container, rerender } = render(fixture(`"${chunks[0]}`));
+      if (enableTypewriter) {
+        expect(
+          container.querySelector('[data-testid="iframe-sandbox"]')
+        ).toBeNull();
+        act(() => vi.advanceTimersByTime(30));
+      }
       const sandbox = container.querySelector('[data-testid="iframe-sandbox"]');
       expect(sandbox?.getAttribute("data-content")).toBe(chunks[0]);
 

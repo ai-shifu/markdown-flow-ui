@@ -307,6 +307,66 @@ describe("splitContentSegments", () => {
     }
   );
 
+  it.each([0, 1, 2, 3])(
+    "preserves top-level fences with %s leading spaces",
+    (spaces) => {
+      const indent = " ".repeat(spaces);
+      for (const marker of ["```", "~~~"]) {
+        const opening = `${indent}${marker}html\n<div>example</div>`;
+        for (const raw of [opening, `${opening}\n${indent}${marker}`]) {
+          expect(splitContentSegments(raw, true, true)).toEqual([
+            { type: "markdown", value: raw },
+          ]);
+        }
+      }
+    }
+  );
+
+  it.each(["```", "~~~"])(
+    "protects complete and unfinished quoted %s fences using Markdown grammar",
+    (marker) => {
+      const opening = `Intro\n\n> ${marker}html\n> <div>example</div>`;
+      for (const raw of [opening, `${opening}\n> ${marker}`]) {
+        expect(splitContentSegments(raw, true, true)).toEqual([
+          { type: "text", value: raw },
+        ]);
+      }
+    }
+  );
+
+  it.each(["```", "~~~"])(
+    "keeps a quoted %s code block intact before real HTML and video",
+    (marker) => {
+      const code = `> ${marker}html\n> <div>example</div>\n> ${marker}`;
+      const html = "<style>.card { color: red; }</style>";
+      const video = '<iframe data-tag="video"></iframe>';
+      const raw = `${code}\n\n${html}\n${video}`;
+      const segments = splitContentSegments(raw, true, true);
+
+      expect(segments).toEqual([
+        { type: "text", value: `${code}\n\n` },
+        { type: "sandbox", value: html },
+        { type: "text", value: "\n" },
+        { type: "markdown", value: video, immediate: true },
+      ]);
+      expect(segments.map((segment) => segment.value).join("")).toBe(raw);
+    }
+  );
+
+  it.each([
+    "> ```html\n> <svg></svg><img src='/code'>\n> ```",
+    "> ~~~html\n> ![Code](/code.png)\n> <iframe data-tag='video'></iframe>\n> ~~~",
+    "- ```html\n  <div>example</div>\n  ```",
+    "- ~~~html\n  <div>example</div>\n  ~~~",
+    "    <div>example</div>",
+    "\t<style>body { color: red; }</style>",
+    "    | <div>example</div> |\n    | --- |",
+  ])("keeps AST code blocks out of HTML and media segmentation: %s", (raw) => {
+    expect(splitContentSegments(raw, true, true)).toEqual([
+      { type: "text", value: raw },
+    ]);
+  });
+
   it("recognizes a longer closing tilde fence before a real HTML block", () => {
     const code = "  ~~~html\n<div>Source</div>\n  ~~~~";
     const raw = `${code}\n<div>Card</div>`;

@@ -1,4 +1,7 @@
-import { getInlineCodeRanges } from "./inline-code-ranges";
+import {
+  getInlineCodeRanges,
+  getMarkdownCodeRanges,
+} from "./inline-code-ranges";
 import { findStreamingHtmlBlockEnd } from "./html-block-end";
 
 export type RenderSegment =
@@ -71,11 +74,17 @@ const extractFirstFenceBlock = (raw: string): FenceBlock | null => {
   };
 };
 
-const extractFirstStreamingFenceBlock = (raw: string): FenceBlock | null => {
+const extractFirstStreamingFenceBlock = (
+  raw: string,
+  codeRanges: FenceRange[]
+): FenceBlock | null => {
   const openingPattern = /^ {0,3}(`{3,}|~{3,})([^\r\n]*)\r?$/gm;
   let opening: RegExpExecArray | null;
 
   while ((opening = openingPattern.exec(raw)) !== null) {
+    const markerStart = opening.index + opening[0].indexOf(opening[1]);
+    // Container fences stay intact, including a list's indented closing line.
+    if (!codeRanges.some(({ start }) => start === markerStart)) continue;
     const marker = opening[1][0];
     // Backticks are not allowed in the info string of a backtick fence.
     if (marker === "`" && opening[2].includes("`")) continue;
@@ -228,14 +237,20 @@ const splitCustomButtonsFromSandbox = (segments: RenderSegment[]) => {
   return output;
 };
 
-const findInlineSandboxMatch = (raw: string): MatchResult | null => {
+const findInlineSandboxMatch = (
+  raw: string,
+  codeRanges?: FenceRange[]
+): MatchResult | null => {
   let earliest: MatchResult | null = null;
 
   INLINE_SANDBOX_PATTERNS.forEach((pattern) => {
-    const match = pattern.exec(raw);
-    if (!match || typeof match.index !== "number") return;
-    const start = match.index;
-    const end = match.index + match[0].length;
+    const start = codeRanges
+      ? findFirstMatchOutsideFence(raw, pattern, codeRanges)
+      : (pattern.exec(raw)?.index ?? -1);
+    if (start === -1) return;
+    const match = pattern.exec(raw.slice(start));
+    if (!match) return;
+    const end = start + match[0].length;
 
     if (!earliest || start < earliest.start) {
       earliest = { start, end };
@@ -354,13 +369,20 @@ const findStreamingVideoIframeMatch = (
 };
 
 const extractTableBlock = (
-  raw: string
+  raw: string,
+  codeRanges: FenceRange[]
 ): { start: number; block: string; end: number } | null => {
-  const tableMatch = raw.match(/^\s*\|.+\|\s*$/m);
-  if (!tableMatch || typeof tableMatch.index !== "number") return null;
-
-  const leadingSpaces = tableMatch[0].match(/^\s*/)?.[0].length ?? 0;
-  const tableStart = tableMatch.index + leadingSpaces;
+  const tablePattern = /^\s*\|.+\|\s*$/gm;
+  let tableMatch: RegExpExecArray | null;
+  let tableStart = -1;
+  while ((tableMatch = tablePattern.exec(raw)) !== null) {
+    const leadingSpaces = tableMatch[0].match(/^\s*/)?.[0].length ?? 0;
+    const start = tableMatch.index + leadingSpaces;
+    if (isIndexInRanges(start, codeRanges)) continue;
+    tableStart = start;
+    break;
+  }
+  if (tableStart === -1) return null;
 
   const lines = raw.slice(tableStart).split("\n");
   const tableLines: string[] = [];
@@ -387,8 +409,11 @@ export const splitContentSegments = (
   const hasText = (value: string) =>
     streaming ? value.length > 0 : Boolean(value.trim());
 
+  const codeRanges = streaming
+    ? getMarkdownCodeRanges(source)
+    : getInlineCodeRanges(source);
   const fenceBlock = streaming
-    ? extractFirstStreamingFenceBlock(source)
+    ? extractFirstStreamingFenceBlock(source, codeRanges)
     : extractFirstFenceBlock(source);
   const fenceRanges = [
     ...(streaming
@@ -401,7 +426,7 @@ export const splitContentSegments = (
           ]
         : []
       : getFenceRanges(source)),
-    ...getInlineCodeRanges(source),
+    ...codeRanges,
   ];
   // A fence-looking line inside an HTML block belongs to that HTML block.
   const sandboxStartIndex = findFirstMatchOutsideFence(
@@ -506,7 +531,7 @@ export const splitContentSegments = (
     }
   }
 
-  const tableBlock = extractTableBlock(source);
+  const tableBlock = extractTableBlock(source, streaming ? codeRanges : []);
   if (tableBlock) {
     const segments: RenderSegment[] = [];
     const before = source.slice(0, tableBlock.start);
@@ -526,7 +551,10 @@ export const splitContentSegments = (
     return finalizeSegments(segments);
   }
 
-  const inlineMatch = findInlineSandboxMatch(source);
+  const inlineMatch = findInlineSandboxMatch(
+    source,
+    streaming ? codeRanges : undefined
+  );
   const markdownImageMatch = findMarkdownImageMatch(source, fenceRanges);
   const markdownVideoIframeMatch = streaming
     ? findStreamingVideoIframeMatch(source, sandboxStartIndex)

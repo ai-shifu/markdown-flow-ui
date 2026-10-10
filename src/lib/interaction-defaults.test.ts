@@ -9,6 +9,53 @@ const MULTI_SELECT_WITH_PLACEHOLDER_CONTENT =
   "?[%{{intro_teaching_problem}}不知道怎么提问，AI 回答经常太泛||担心 AI 不懂我的学生、课程或业务场景||...其他顾虑]";
 
 describe("getInteractionDefaultValues", () => {
+  it.each([
+    ["?[%{{answer}}Ready//ready|Not yet//later|...Explain]", "ready"],
+    ["?[Ready//ready|Not yet//later|...Explain]", "ready"],
+    ["?[Ready//ready|Not yet//later|...Explain]", "Ready"],
+  ])("restores only the selected button for %s", (content, rawValue) => {
+    expect(getInteractionDefaultValues(content, rawValue)).toEqual({
+      buttonText: "ready",
+    });
+  });
+
+  it("preserves custom input without a variable declaration", () => {
+    expect(
+      getInteractionDefaultValues(
+        "?[Ready//ready|...Explain]",
+        "My explanation"
+      )
+    ).toEqual({ inputText: "My explanation" });
+  });
+
+  it("separates variable-free multi-select values from trailing custom input", () => {
+    expect(
+      getInteractionDefaultValues(
+        "?[Ready, with a sample//ready||Written//written||...Explain]",
+        "ready, written, My explanation"
+      )
+    ).toEqual({
+      selectedValues: ["ready", "written"],
+      inputText: "My explanation",
+    });
+  });
+
+  it("restores variable-free options containing escaped closing brackets", () => {
+    expect(
+      getInteractionDefaultValues(
+        String.raw`?[Array[0\]//array|...Explain]`,
+        "array"
+      )
+    ).toEqual({ buttonText: "array" });
+  });
+
+  it("retains the plain-content fallback", () => {
+    expect(getInteractionDefaultValues("A plain paragraph", "answer")).toEqual({
+      buttonText: "answer",
+      inputText: "answer",
+    });
+  });
+
   it("restores multi-select options when option labels contain commas", () => {
     const result = getInteractionDefaultValues(
       MULTI_SELECT_WITH_PLACEHOLDER_CONTENT,

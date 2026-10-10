@@ -40,9 +40,9 @@ interface StructuredInteractionPayload {
 const interactionParser = createInteractionParser();
 const INTERACTION_TAG_PATTERN = /<custom-variable\b/i;
 // Same definition of where an interaction ends as the parser uses, so an option carrying a
-// `\]` is read whole instead of being cut at its first bracket.
+// `\]` is read whole instead of being cut at its first bracket. A variable assignment is optional.
 const INTERACTION_SHORTCODE_PATTERN = new RegExp(
-  `\\?\\[%\\{\\{([^}]+)\\}\\}(${INTERACTION_CONTENT_SOURCE})\\]`
+  `\\?\\[(?:%\\{\\{([^}]+)\\}\\})?(${INTERACTION_CONTENT_SOURCE})\\]`
 );
 const JSON_LIKE_VALUE_PATTERN = /^[\[{]/;
 const INTERACTION_VALUE_SEPARATOR_PATTERN = /^[\s,，\n]+/;

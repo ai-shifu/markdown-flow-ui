@@ -47,6 +47,46 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const MixedInteractionReplayPreview = () => {
+  const [userInput, setUserInput] = useState("");
+
+  return (
+    <ContentRender
+      content="?[Ready, I can paste an answer//ready|Not yet//later|...Explain in your own words]"
+      userInput={userInput}
+      onSend={(response) =>
+        setUserInput(response.inputText || response.buttonText || "")
+      }
+    />
+  );
+};
+
+export const MixedChoiceInputReplay: Story = {
+  render: () => <MixedInteractionReplayPreview />,
+  play: async ({ canvasElement }) => {
+    const button = await waitFor(() => {
+      const element = Array.from(canvasElement.querySelectorAll("button")).find(
+        (item) => item.textContent === "Ready, I can paste an answer"
+      );
+      expect(element).toBeDefined();
+      return element as HTMLButtonElement;
+    });
+    await userEvent.click(button);
+    await waitFor(() => {
+      expect(button.classList.contains("select")).toBe(true);
+      expect(canvasElement.querySelector("textarea")?.value).toBe("");
+    });
+    const textarea = canvasElement.querySelector("textarea")!;
+    await userEvent.type(textarea, "Here is my own explanation");
+    await userEvent.click(textarea.parentElement!.querySelector("button")!);
+    await waitFor(() => {
+      expect(canvasElement.querySelector("textarea")?.value).toBe(
+        "Here is my own explanation"
+      );
+    });
+  },
+};
+
 const CONTENT_RENDER_INPUT_CHURN_CONTENT =
   "?[%{{content_render_input_churn}}...Type your answer]";
 

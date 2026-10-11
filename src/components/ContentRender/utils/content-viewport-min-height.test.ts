@@ -31,6 +31,28 @@ describe("content viewport minimum height", () => {
   });
 
   it.each([
+    "Title<section style='min-height:100vh'>Diagram</section>",
+    "<section style='min-height:100vh'>Diagram</section>Following prose",
+  ])("preserves a content branch beside rendered text", (html) => {
+    const container = document.createElement("div");
+    container.innerHTML = `<div>${html}</div>`;
+    normalizeContentViewportMinHeight(container);
+    expect(container.querySelector("section")!.style.minHeight).toBe("100vh");
+  });
+
+  it("preserves top-level text siblings while allowing whitespace-only wrappers", () => {
+    const container = document.createElement("div");
+    container.innerHTML =
+      'Title<section style="min-height:100vh">Diagram</section>';
+    normalizeContentViewportMinHeight(container);
+    expect(container.querySelector("section")!.style.minHeight).toBe("100vh");
+    container.innerHTML =
+      '<div>  \n<section style="min-height:100vh">Diagram</section>  </div>';
+    normalizeContentViewportMinHeight(container);
+    expect(container.querySelector("section")!.style.minHeight).toBe("0px");
+  });
+
+  it.each([
     "height:100vh",
     "min-height:240px",
     "min-height:50vh",

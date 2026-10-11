@@ -1,5 +1,10 @@
 /** Let full-viewport minimum-height shells fit the surrounding lesson flow. */
 export const normalizeContentViewportMinHeight = (container: HTMLElement) => {
+  const hasRenderedText = (element: Element) =>
+    Array.from(element.childNodes).some(
+      (node) => node.nodeType === 3 && Boolean(node.textContent?.trim())
+    );
+  if (hasRenderedText(container)) return;
   const contentChildren = (element: Element) =>
     Array.from(element.children).filter(
       (child) => !["STYLE", "SCRIPT", "LINK"].includes(child.tagName)
@@ -19,6 +24,8 @@ export const normalizeContentViewportMinHeight = (container: HTMLElement) => {
           style.getPropertyPriority("min-height")
         );
       }
+      // Text plus an element is content, not a single-child wrapper.
+      if (hasRenderedText(element)) break;
       const children = contentChildren(element);
       element = children.length === 1 ? children[0] : undefined;
     }

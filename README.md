@@ -66,6 +66,13 @@ Detection and presentation are separate: `pre`, `details`, `summary`,
 styles and language/direction attributes while bypassing typing. Widget roots
 retain the sandbox; native presentation blocks with embedded script, style, or
 other document resources also use the sandbox (native video frames are exempt).
+In content mode, sandbox blocks reserve their measured content height instead
+of a minimum 16:9 slide. The iframe retains a separate layout viewport of at
+least 16:9 so authored `vh` and `vmin` sizes stay stable; unused viewport space
+is clipped by the top-aligned content container. Content growth, collapse,
+image loads and width changes trigger remeasurement. Authored margins, explicit
+heights and viewport-filling layouts are preserved rather than trimmed.
+Blackboard sizing and sandbox permissions are unchanged.
 Detection scans absolute source offsets without reparsing every remaining
 suffix. Native videos use the complete received Markdown structure; typing only
 changes text visibility, preserving video frames across earlier headings, lists,

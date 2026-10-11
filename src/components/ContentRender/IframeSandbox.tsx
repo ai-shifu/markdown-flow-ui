@@ -182,7 +182,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   const rootRef = useRef<Root | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
   const [height, setHeight] = useState(480);
-  const [contentHeight, setContentHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState<number | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const isMeasuringContentRef = useRef(false);
   const pendingHeightUpdateRef = useRef(false);
@@ -494,12 +494,12 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
         isMeasuringContentRef.current = true;
 
         // Content mode height measurement strategy:
-        // Temporarily set iframe height to the 16:9 minimum so that:
+        // Temporarily set iframe height to the 16:9 layout viewport so that:
         // 1. vmin units are stable: vmin = min(cw, minH)/100 = minH/100,
         //    consistent with the final rendered 16:9 iframe.
         // 2. Viewport-filling content (e.g. inline style="height:100vh")
-        //    fills the 16:9 space → scrollHeight = minH, which is then
-        //    correctly bounded by the 16:9 minimum in contentModeStyle.
+        //    retains its 16:9 viewport. Naturally sized content reserves only
+        //    its measured body height in the host page.
         //    (Previously using cw caused such content to report 1:1 height,
         //    overriding the 16:9 minimum.)
         const iframe = iframeRef.current;
@@ -527,13 +527,20 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
           // element's full scroll height based on its position in the iframe.
           const iframeWin = doc.defaultView;
           if (iframeWin) {
-            // Returns the max natural bottom of inner elements that clip
-            // content via overflow:auto/scroll (i.e. internal scrollbars).
+            // Include fixed-position widgets, which do not contribute to body
+            // scrollHeight, as well as content behind internal scrollbars.
             const getInnerScrollableHeight = (root: Element): number => {
               let maxH = 0;
               const walk = (el: Element) => {
+                const style = iframeWin.getComputedStyle(el);
+                if (style.position === "fixed") {
+                  maxH = Math.max(
+                    maxH,
+                    Math.ceil(el.getBoundingClientRect().bottom)
+                  );
+                }
                 if (el !== root && el.scrollHeight > el.clientHeight + 1) {
-                  const oy = iframeWin.getComputedStyle(el).overflowY;
+                  const oy = style.overflowY;
                   if (oy === "auto" || oy === "scroll") {
                     const rect = el.getBoundingClientRect();
                     if (rect.top >= 0) {
@@ -579,7 +586,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
           iframe.style.height = prevH;
 
           setContentHeight((prev) => {
-            const next = Math.min(maxH, Math.max(200, Math.ceil(measuredH)));
+            const next = Math.min(maxH, Math.max(1, Math.ceil(measuredH)));
             return prev === next ? prev : next;
           });
         }
@@ -824,14 +831,19 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     return () => ro.disconnect();
   }, []);
 
-  // Content mode: min 16:9 aspect ratio, grow to fit content (no scrollbar)
+  // Keep a stable layout viewport for authored vh/vmin sizing, while the host
+  // reserves only the measured content height. The iframe is top-aligned inside
+  // the clipped host so a short card does not leave a slide-sized blank area.
   const contentModeStyle = useMemo<React.CSSProperties | undefined>(() => {
     if (isBlackboardMode || containerWidth === 0 || isFullscreen)
       return undefined;
     const minH = Math.round((containerWidth * 9) / 16);
-    const h = Math.max(minH, contentHeight);
-    return { height: h };
+    return { height: contentHeight ?? minH };
   }, [isBlackboardMode, containerWidth, contentHeight, isFullscreen]);
+
+  const contentIframeHeight = contentModeStyle
+    ? Math.max(Math.round((containerWidth * 9) / 16), contentHeight ?? 0)
+    : undefined;
 
   const toggleFullscreen = () => {
     const target = containerRef.current || iframeRef.current;
@@ -907,7 +919,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     isBlackboardMode
       ? "h-full overflow-auto flex flex-col"
       : contentModeStyle
-        ? "overflow-hidden flex items-center justify-center"
+        ? "overflow-hidden"
         : "aspect-[16/9] overflow-hidden flex items-center justify-center",
   ]
     .filter(Boolean)
@@ -963,7 +975,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
             .filter(Boolean)
             .join(" ")}
           style={{
-            height: sandboxViewportHeight ?? "100%",
+            height: sandboxViewportHeight ?? contentIframeHeight ?? "100%",
             minHeight: sandboxViewportHeight,
             margin: "auto",
           }}

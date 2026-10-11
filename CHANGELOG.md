@@ -10,6 +10,7 @@
   fixed-position controls, while following content growth, collapse and image
   loads without rebuilding the iframe.
 - Keep authored spacing, blackboard sizing and sandbox permissions unchanged.
+- Reserve the visible fullscreen control's measured height on very short blocks.
 
 ## 0.2.32 - 2026-10-10
 

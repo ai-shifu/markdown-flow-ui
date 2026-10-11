@@ -145,6 +145,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   const resolvedExitFullScreenButtonText =
     exitFullScreenButtonText || localeTexts.sandboxExitFullscreenButtonText;
   const containerRef = useRef<HTMLDivElement>(null);
+  const fullscreenButtonRef = useRef<HTMLButtonElement>(null);
   const sandboxLanguage = useDetachedLanguage(containerRef, language);
   const { resolvedDirection } = useResolvedDirection(containerRef, direction);
   const markdownContainerRef = useRef<HTMLDivElement>(null);
@@ -184,6 +185,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   const [height, setHeight] = useState(480);
   const [contentHeight, setContentHeight] = useState<number | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [fullscreenControlHeight, setFullscreenControlHeight] = useState(0);
   const isMeasuringContentRef = useRef(false);
   const pendingHeightUpdateRef = useRef(false);
   const lastSandboxInteractionTimeRef = useRef(0);
@@ -815,21 +817,32 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       document.removeEventListener("fullscreenchange", onFullscreenChange);
   }, []);
 
-  // Track container width for computing min-height in content mode
+  // Track the layout viewport width and enough host space for its own control.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    const button = fullscreenButtonRef.current;
+    const updateControlHeight = () => {
+      setFullscreenControlHeight(
+        button ? Math.ceil(button.offsetTop + button.offsetHeight) : 0
+      );
+    };
     if (typeof ResizeObserver === "undefined") {
       setContainerWidth(el.clientWidth);
+      updateControlHeight();
       return;
     }
     const ro = new ResizeObserver((entries) => {
-      setContainerWidth(entries[0]?.contentRect.width ?? el.clientWidth);
+      const hostEntry = entries.find((entry) => entry.target === el);
+      if (hostEntry) setContainerWidth(hostEntry.contentRect.width);
+      updateControlHeight();
     });
     ro.observe(el);
+    if (button) ro.observe(button);
     setContainerWidth(el.clientWidth);
+    updateControlHeight();
     return () => ro.disconnect();
-  }, []);
+  }, [hideFullScreen]);
 
   // Keep a stable layout viewport for authored vh/vmin sizing, while the host
   // reserves only the measured content height. The iframe is top-aligned inside
@@ -838,8 +851,14 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     if (isBlackboardMode || containerWidth === 0 || isFullscreen)
       return undefined;
     const minH = Math.round((containerWidth * 9) / 16);
-    return { height: contentHeight ?? minH };
-  }, [isBlackboardMode, containerWidth, contentHeight, isFullscreen]);
+    return { height: Math.max(contentHeight ?? minH, fullscreenControlHeight) };
+  }, [
+    isBlackboardMode,
+    containerWidth,
+    contentHeight,
+    isFullscreen,
+    fullscreenControlHeight,
+  ]);
 
   const contentIframeHeight = contentModeStyle
     ? Math.max(Math.round((containerWidth * 9) / 16), contentHeight ?? 0)
@@ -943,6 +962,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     >
       {!hideFullScreen && (
         <button
+          ref={fullscreenButtonRef}
           type="button"
           dir={fullscreenControlDirection}
           onClick={toggleFullscreen}

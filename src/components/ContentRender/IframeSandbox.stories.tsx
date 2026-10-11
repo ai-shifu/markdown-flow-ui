@@ -52,6 +52,45 @@ export const CompactCard: Story = {
   },
 };
 
+export const ShortContentFullscreenControl: Story = {
+  args: { content: '<div style="height:1px"></div>', hideFullScreen: false },
+  render: function Render(args) {
+    const [hideFullScreen, setHideFullScreen] = useState(false);
+    return (
+      <div style={{ width: 1000 }}>
+        <button onClick={() => setHideFullScreen((hidden) => !hidden)}>
+          Toggle fullscreen control
+        </button>
+        <IframeSandbox {...args} hideFullScreen={hideFullScreen} />
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const expectControlFits = async () => {
+      await waitFor(() => {
+        const host = canvasElement.querySelector<HTMLElement>(
+          ".content-render-iframe-sandbox"
+        )!;
+        const control = host.querySelector("button")!;
+        expect(control).not.toBeNull();
+        const hostBounds = host.getBoundingClientRect();
+        expect(hostBounds.height).toBeGreaterThan(1);
+        expect(hostBounds.bottom).toBeGreaterThanOrEqual(
+          control.getBoundingClientRect().bottom
+        );
+      });
+    };
+    await expectControlFits();
+    const iframe = canvasElement.querySelector("iframe")!;
+    const toggle = canvasElement.querySelector("button")!;
+    await userEvent.click(toggle);
+    await expectHeight(canvasElement, 1);
+    await userEvent.click(toggle);
+    await expectControlFits();
+    expect(canvasElement.querySelector("iframe")).toBe(iframe);
+  },
+};
+
 export const GrowingAndShrinkingContent: Story = {
   args: { content: card(240) },
   render: function Render(args) {

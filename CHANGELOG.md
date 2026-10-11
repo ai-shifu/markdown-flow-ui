@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.34 - 2026-10-11
+
+### Fixed
+
+- Fit ordinary sandbox blocks to their content instead of reserving a minimum
+  16:9 slide, removing excess blank space below compact lesson cards.
+- Preserve a separate iframe layout viewport for viewport-relative sizes and
+  fixed-position controls, while following content growth, collapse and image
+  loads without rebuilding the iframe.
+- Keep authored spacing, blackboard sizing and sandbox permissions unchanged.
+- Reserve the visible fullscreen control's measured height on very short blocks.
+
 ## 0.2.32 - 2026-10-10
 
 ### Fixed

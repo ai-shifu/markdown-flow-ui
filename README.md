@@ -72,8 +72,11 @@ least 16:9 so authored `vh` and `vmin` sizes stay stable; unused viewport space
 is clipped by the top-aligned content container. Content growth, collapse,
 image loads and width changes trigger remeasurement. When shown, the fullscreen
 control reserves its actual height so it remains accessible on very short blocks.
-Authored margins, explicit heights and viewport-filling layouts are preserved
-rather than trimmed.
+Full-screen minimum heights (`min-height:100vh`, `100dvh`, `100svh`, or `100lvh`)
+on inline-styled content shells and their single-child wrapper chains are relaxed
+so compact cards do not reserve a blank screen. Authored margins, padding, pixel
+minimums, explicit heights (including `height:100vh`) and viewport-relative fonts
+remain intact. Nested layout branches are not rewritten.
 Blackboard sizing and sandbox permissions are unchanged.
 Detection scans absolute source offsets without reparsing every remaining
 suffix. Native videos use the complete received Markdown structure; typing only

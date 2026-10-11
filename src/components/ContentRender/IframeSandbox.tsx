@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { createRoot, Root } from "react-dom/client";
 import SandboxApp from "./SandboxApp";
+import { normalizeContentViewportMinHeight } from "./utils/content-viewport-min-height";
 import ContentRender from "./ContentRender";
 import {
   EMPTY_ROOT_HEIGHT_META,
@@ -494,6 +495,10 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
           return;
         }
         isMeasuringContentRef.current = true;
+        const contentContainer =
+          doc.body.querySelector<HTMLElement>(".sandbox-container");
+        if (contentContainer)
+          normalizeContentViewportMinHeight(contentContainer);
 
         // Content mode height measurement strategy:
         // Temporarily set iframe height to the 16:9 layout viewport so that:

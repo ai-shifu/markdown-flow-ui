@@ -327,3 +327,104 @@ export const AuthoredSpacingAndStyles: Story = {
     );
   },
 };
+
+// Matches the generated lesson layout: a full-screen minimum around a compact
+// title and wrapping cards, with viewport-relative typography and outer padding.
+export const ViewportMinimumLessonCards: Story = {
+  args: {
+    content: `<div data-shell style="width:100%;min-height:100vh;overflow-x:hidden;overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding:1em;font-size:clamp(12px,calc(100vw/48),3vh)">
+      <div data-cards style="width:100%;max-width:62em;display:flex;flex-direction:column;gap:1.2em">
+        <div style="text-align:center;font-size:2.5em;font-weight:700;color:#0F63EE">Your choices</div>
+        <div style="display:flex;gap:1.2em;flex-wrap:wrap;justify-content:center">
+          ${["AI is a tool", "Every AI product needs learning", "Building AI products takes experts"].map((text) => `<div style="flex:1 1 16em;min-width:14em;background:#0F63EE;border-radius:1em;padding:1.5em;color:white"><div style="font-size:1.5em;font-weight:600">${text}</div><div style="margin-top:.8em">Agreed</div></div>`).join("")}
+        </div>
+      </div>
+    </div>`,
+  },
+  render: function Render(args) {
+    const [width, setWidth] = useState(1000);
+    return (
+      <div>
+        <button onClick={() => setWidth(360)}>Narrow lesson</button>
+        <button onClick={() => setWidth(1000)}>Wide lesson</button>
+        <div style={{ width }}>
+          <IframeSandbox {...args} />
+          <p data-following>Following lesson text</p>
+        </div>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const iframe = canvasElement.querySelector("iframe")!;
+    const expectFits = async () => {
+      await waitFor(
+        () => {
+          const doc = iframe.contentDocument!;
+          const shell = doc.querySelector<HTMLElement>("[data-shell]")!;
+          const cards = doc.querySelector<HTMLElement>("[data-cards]")!;
+          expect(cards).not.toBeNull();
+          const padding = Number.parseFloat(
+            doc.defaultView!.getComputedStyle(shell).paddingBottom
+          );
+          const contentBottom = cards.getBoundingClientRect().bottom + padding;
+          const host = iframe.parentElement!.getBoundingClientRect();
+          expect(host.height).toBeCloseTo(Math.ceil(contentBottom), 0);
+          expect(
+            canvasElement
+              .querySelector("[data-following]")!
+              .getBoundingClientRect().top - host.bottom
+          ).toBeLessThan(40);
+        },
+        { timeout: 5000 }
+      );
+    };
+    await expectFits();
+    await userEvent.click(
+      Array.from(canvasElement.querySelectorAll("button")).find(
+        (b) => b.textContent === "Narrow lesson"
+      )!
+    );
+    await expectFits();
+    await userEvent.click(
+      Array.from(canvasElement.querySelectorAll("button")).find(
+        (b) => b.textContent === "Wide lesson"
+      )!
+    );
+    await expectFits();
+    const doc = iframe.contentDocument!;
+    const shell = doc.querySelector<HTMLElement>("[data-shell]")!;
+    const cards = doc.querySelector<HTMLElement>("[data-cards]")!;
+    // Scripts can reapply a full-screen minimum after the initial render.
+    shell.style.setProperty("min-height", "100dvh", "important");
+    cards.style.height = "700px";
+    await expectFits();
+    cards.style.height = "auto";
+    await expectFits();
+    expect(shell.style.minHeight).toBe("0px");
+  },
+};
+
+export const BlackboardPreservesViewportMinimum: Story = {
+  args: {
+    mode: "blackboard",
+    content:
+      '<div data-shell style="min-height:100vh;padding:1em"><div style="height:80px">A slide keeps its full-screen minimum.</div></div>',
+  },
+  render: (args) => (
+    <div style={{ width: 1000, height: 600 }}>
+      <IframeSandbox {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    await waitFor(() => {
+      const iframe = canvasElement.querySelector("iframe")!;
+      const shell =
+        iframe.contentDocument!.querySelector<HTMLElement>("[data-shell]")!;
+      expect(shell).not.toBeNull();
+      expect(shell.style.minHeight).toBe("100vh");
+      expect(shell.getBoundingClientRect().height).toBeGreaterThanOrEqual(
+        iframe.getBoundingClientRect().height
+      );
+    });
+  },
+};

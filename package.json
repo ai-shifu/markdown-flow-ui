@@ -187,7 +187,7 @@
       ]
     }
   },
-  "version": "0.2.35",
+  "version": "0.2.35-dev.2",
   "type": "module",
   "exports": {
     ".": {

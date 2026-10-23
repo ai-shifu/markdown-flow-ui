@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.0 - 2026-10-23
+
+### Added
+
+- Use complete questions and other Unicode text as memory keys, preserving
+  internal spaces, punctuation, emoji, and single braces after boundary trimming.
+
+### Fixed
+
+- Share variable rules across rendering, editing, validation, suggestions, and
+  answer replay while preserving existing compact markers.
+- Keep markup and interaction delimiters inside variable names opaque, and keep
+  incomplete code or HTML examples from hiding later real controls.
+- Preserve literal code boundaries across blank paragraphs and fences, and use
+  padded markers when inserting names that end with a single closing brace.
+
 ## 0.2.34 - 2026-10-11
 
 ### Fixed

@@ -9,8 +9,13 @@ import { getVideoEmbedUrl } from "./utils/video";
 import {
   createVariableExpressionRegex,
   extractVariableNames,
+  findVariableMarkers,
+  findDocumentVariableMarkers,
+  formatVariableReference,
+  formatVariableAssignment,
   isValidVariableName,
   normalizeVariableName,
+  trimVariablePadding,
 } from "remark-flow";
 
 const FIXED_OUTPUT_MARKER = "===";
@@ -36,7 +41,7 @@ const parseContentInfo = (
       };
     case SelectedOption.Variable:
       return {
-        variableName: dataset.title,
+        variableName: normalizeVariableName(dataset.title ?? "") ?? undefined,
       };
     default:
       return {
@@ -205,7 +210,12 @@ export {
   getVideoContentToInsert,
   isValidVariableName,
   normalizeVariableName,
+  trimVariablePadding,
   extractVariableNames,
+  findVariableMarkers,
+  findDocumentVariableMarkers,
+  formatVariableReference,
+  formatVariableAssignment,
   createVariableExpressionRegexp,
   wrapWithFixedOutput,
   unwrapFixedOutput,

@@ -100,8 +100,7 @@ describe("options that escape the grammar's delimiters", () => {
   // it with a backslash. These go through remark-flow's parser, which is where an interaction is
   // normally read: they pin that this library actually resolves the escapes rather than showing
   // a learner the backslashes or losing half an option. (The shortcode regex in this file is the
-  // fallback for when that parser throws; it understands the same escapes, and nothing reachable
-  // from here exercises it.)
+  // gate only detects candidates; parser failures retain plain replay behavior.)
   const ESCAPED_BRACKET_CONTENT =
     "?[%{{pattern}}^[a-z\\]+$||array[0\\]||...something else]";
 
@@ -138,3 +137,74 @@ describe("question memory keys", () => {
     }
   );
 });
+
+import contract from "../../tests/fixtures/variable-name-contract.json";
+
+it.each(contract.interactions)(
+  "restores defaults for opaque key $name",
+  ({ source, values }) => {
+    expect(
+      getInteractionDefaultValues(source, values[values.length - 1])
+    ).toEqual({ buttonText: values[values.length - 1] });
+  }
+);
+
+it.each(contract.boundary_cases.filter((example) => example.interaction_count))(
+  "restores exact boundary option values for $source",
+  (example) => {
+    const value = example.values![0];
+    expect(getInteractionDefaultValues(example.source, value)).toEqual({
+      buttonText: value,
+    });
+  }
+);
+
+it("restores a BOM-prefixed multi-select option without treating BOM as a separator", () => {
+  const content = "?[%{{ key }} \ufeffA || B]";
+  expect(getInteractionDefaultValues(content, "\ufeffA, B")).toEqual({
+    selectedValues: ["\ufeffA", "B"],
+    inputText: undefined,
+  });
+  expect(
+    getInteractionDefaultValues(
+      content,
+      JSON.stringify({ selectedValues: ["\ufeffA"] })
+    )
+  ).toEqual({
+    selectedValues: ["\ufeffA"],
+    buttonText: undefined,
+    inputText: undefined,
+  });
+});
+
+it.each(
+  contract.boundary_cases.filter((example) => !example.interaction_count)
+)("keeps non-interaction replay plain for $source", (example) => {
+  expect(getInteractionDefaultValues(example.source, "Go")).toEqual({
+    buttonText: "Go",
+    inputText: "Go",
+  });
+});
+
+it.each(contract.document_context_cases)(
+  "restores actual interaction defaults after $id",
+  ({ source, values }) => {
+    const value = values[values.length - 1];
+    expect(getInteractionDefaultValues(source, value)).toEqual({
+      buttonText: value,
+    });
+  }
+);
+
+import documentBoundaries from "../../tests/fixtures/document-boundary-cases.json";
+
+it.each(documentBoundaries)(
+  "does not invent replay controls across $id",
+  ({ source, interaction_count }) => {
+    expect(getInteractionDefaultValues(source, "B")).toEqual(
+      interaction_count
+        ? { buttonText: "B" }
+        : { buttonText: "B", inputText: "B" }
+    );
+  }
+);

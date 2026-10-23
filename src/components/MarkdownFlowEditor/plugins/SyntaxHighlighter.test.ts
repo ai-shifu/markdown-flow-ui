@@ -163,3 +163,105 @@ it("does not decorate punctuation inside a key as option operators", () => {
   ]);
   expect(rangeTextsByClass(content, "syntax-keyword")).toEqual(["?", "|"]);
 });
+
+it.each([
+  "first  name",
+  "Which [path] | level//hint...?",
+  "a{b",
+  "a}",
+  "{{inner",
+  "<!-- key --> === value",
+])("treats the entire opaque key %s as one highlighted token", (name) => {
+  const marker = `{{ ${name} }}`;
+  const source = `?[%${marker} A | B]`;
+  expect(rangeTextsByClass(source, "syntax-variable")).toEqual([marker]);
+  expect(rangeTextsByClass(source, "syntax-keyword")).toEqual(["?", "|"]);
+  expect(rangeTextsByClass(source, "syntax-percent-valid")).toEqual(["%"]);
+  expect(rangeTextsByClass(source, "syntax-comment")).toEqual([]);
+  expect(rangeTextsByClass(source, "syntax-fixed")).toEqual([]);
+});
+
+it("does not recognize an inner opening brace as a separate variable", () => {
+  const source = "{{ invalid\u0000{{inner }} after";
+  expect(rangeTextsByClass(source, "syntax-variable")).toEqual([]);
+});
+
+it("does not highlight a question nested in a standalone opaque variable", () => {
+  const source = "{{ key ?[A|B] }}";
+  expect(rangeTextsByClass(source, "syntax-variable")).toEqual([source]);
+  expect(rangeTextsByClass(source, "syntax-keyword")).toEqual([]);
+});
+
+it("highlights an assignment after Python whitespace padding without skipping BOM", () => {
+  const source = "?[ \t%{{ x]y }} A | B]";
+  expect(rangeTextsByClass(source, "syntax-percent-valid")).toEqual(["%"]);
+  expect(
+    rangeTextsByClass("?[\ufeff%{{ x]y }} A | B]", "syntax-percent-valid")
+  ).toEqual([]);
+});
+
+it.each([
+  "{{ unterminated ?[Go]",
+  "?[%{{unterminated ?[Go]",
+  "?[A {{unterminated ?[Go]",
+])("leaves nested syntax literal inside an unfinished marker: %s", (source) => {
+  expect(rangeTextsByClass(source, "syntax-keyword")).toEqual([]);
+});
+
+import contract from "../../../../tests/fixtures/variable-name-contract.json";
+import { readVariableMarker } from "remark-flow";
+
+it.each(contract.document_context_cases)(
+  "highlights names without crossing document context $id",
+  ({ source, names }) => {
+    expect(
+      rangeTextsByClass(source, "syntax-variable").map(
+        (marker) => readVariableMarker(marker)?.name
+      )
+    ).toEqual(names);
+    expect(
+      rangeTextsByClass(source, "syntax-keyword").filter(
+        (token) => token === "?"
+      )
+    ).toHaveLength(1);
+  }
+);
+
+import documentBoundaries from "../../../../tests/fixtures/document-boundary-cases.json";
+
+it.each(documentBoundaries)(
+  "does not invent a control across $id",
+  ({ source, names, interaction_count }) => {
+    expect(
+      rangeTextsByClass(source, "syntax-variable").map(
+        (marker) => readVariableMarker(marker)?.name
+      )
+    ).toEqual(names);
+    expect(
+      rangeTextsByClass(source, "syntax-keyword").filter(
+        (token) => token === "?"
+      )
+    ).toHaveLength(interaction_count);
+  }
+);
+
+it.each(["\n", "\r\n", "\r"])(
+  "highlights the real control after an unfinished interaction with %j line endings",
+  (eol) => {
+    const source = [
+      "?[ unfinished",
+      "~~~",
+      "{{ x",
+      "~~~",
+      "?[%{{ real }} A|B]",
+    ].join(eol);
+    const questions = collectSyntaxHighlightRanges(source).filter(
+      (range) =>
+        range.className === "syntax-keyword" &&
+        source.slice(range.from, range.to) === "?"
+    );
+    expect(questions.map((range) => range.from)).toEqual([
+      source.lastIndexOf("?["),
+    ]);
+  }
+);

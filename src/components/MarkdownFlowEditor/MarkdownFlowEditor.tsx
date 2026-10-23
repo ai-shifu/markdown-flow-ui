@@ -35,7 +35,9 @@ import {
   getImageContentToInsert,
   getVideoContentToInsert,
   extractVariableNames,
-  createVariableExpressionRegexp,
+  findDocumentVariableMarkers,
+  formatVariableReference,
+  normalizeVariableName,
 } from "./utils";
 import ImgPlaceholder from "./plugins/ImgPlaceholder";
 import VideoPlaceholder from "./plugins/VideoPlaceholder";
@@ -111,26 +113,21 @@ const isCursorInsideVariableExpression = (
   if (!content || cursorPosition < 0) {
     return false;
   }
-  const regexp = createVariableExpressionRegexp();
-  let match: RegExpExecArray | null;
-
-  while ((match = regexp.exec(content)) !== null) {
-    const matchStart = match.index ?? 0;
-    const matchEnd = matchStart + match[0].length;
-    const innerStart = matchStart + 2;
-    const innerEnd = matchEnd - 2;
-    if (cursorPosition >= innerStart && cursorPosition <= innerEnd) {
+  for (const marker of findDocumentVariableMarkers(content)) {
+    if (
+      marker.name !== null &&
+      cursorPosition >= marker.start + 2 &&
+      cursorPosition <= marker.end - 2
+    ) {
       return true;
-    }
-    if (regexp.lastIndex === match.index) {
-      regexp.lastIndex++;
     }
   }
 
   return false;
 };
 
-const buildVariableTemplate = (variableName = "") => `{{${variableName}}}`;
+const buildVariableTemplate = (variableName = "") =>
+  variableName ? formatVariableReference(variableName) : "{{  }}";
 
 const Editor: React.FC<EditorProps> = ({
   content = "",
@@ -226,37 +223,33 @@ const Editor: React.FC<EditorProps> = ({
           }),
         })
       : t("placeholderCodeEdit", { defaultValue: t("placeholder") });
-  // Normalize variables to avoid duplicating system variables in the custom list
+  // Only boundary whitespace is normalized; key identity remains case-sensitive.
   const normalizedSystemVariables = useMemo(() => {
     const seen = new Set<string>();
-    return (initialSystemVariables ?? EMPTY_VARIABLES).filter((variable) => {
-      const normalized =
-        typeof variable?.name === "string" ? variable.name.toLowerCase() : "";
-      if (!normalized || seen.has(normalized)) {
-        return false;
-      }
-      seen.add(normalized);
-      return true;
+    return (initialSystemVariables ?? EMPTY_VARIABLES).flatMap((variable) => {
+      const name =
+        typeof variable?.name === "string"
+          ? normalizeVariableName(variable.name)
+          : null;
+      if (name === null || seen.has(name)) return [];
+      seen.add(name);
+      return [{ ...variable, name }];
     });
   }, [initialSystemVariables]);
 
   const normalizedCustomVariables = useMemo(() => {
     const systemNameSet = new Set(
-      normalizedSystemVariables.map((variable) => variable.name.toLowerCase())
+      normalizedSystemVariables.map((variable) => variable.name)
     );
     const seen = new Set<string>();
-    return (initialVariables ?? EMPTY_VARIABLES).filter((variable) => {
-      const normalized =
-        typeof variable?.name === "string" ? variable.name.toLowerCase() : "";
-      if (
-        !normalized ||
-        systemNameSet.has(normalized) ||
-        seen.has(normalized)
-      ) {
-        return false;
-      }
-      seen.add(normalized);
-      return true;
+    return (initialVariables ?? EMPTY_VARIABLES).flatMap((variable) => {
+      const name =
+        typeof variable?.name === "string"
+          ? normalizeVariableName(variable.name)
+          : null;
+      if (name === null || systemNameSet.has(name) || seen.has(name)) return [];
+      seen.add(name);
+      return [{ ...variable, name }];
     });
   }, [initialVariables, normalizedSystemVariables]);
 
@@ -356,18 +349,16 @@ const Editor: React.FC<EditorProps> = ({
       }
 
       const systemNameSet = new Set(
-        systemVariables.map((variable) => variable.name.toLowerCase())
+        systemVariables.map((variable) => variable.name)
       );
 
       setVariables((prev) => {
-        const existingNames = new Set(
-          prev.map((variable) => variable.name.toLowerCase())
-        );
+        const existingNames = new Set(prev.map((variable) => variable.name));
         const addedNames = new Set<string>();
         const newVariables: Variable[] = [];
 
         names.forEach((rawName) => {
-          const normalized = rawName.toLowerCase();
+          const normalized = rawName;
           if (
             !rawName ||
             systemNameSet.has(normalized) ||
@@ -574,9 +565,9 @@ const Editor: React.FC<EditorProps> = ({
       const { state, dispatch } = view;
       const selection = range ?? state.selection.main;
       const template = buildVariableTemplate(variableName);
-      const cursorOffset = placeCursorAtEnd
-        ? template.length
-        : 2 + variableName.length; // 2 braces before variable content
+      if (!template) return;
+      const name = normalizeVariableName(variableName) ?? "";
+      const cursorOffset = placeCursorAtEnd ? template.length : 3 + name.length; // Opening braces and one padding space
 
       dispatch({
         changes: {
@@ -673,7 +664,7 @@ const Editor: React.FC<EditorProps> = ({
     const selection = state.selection.main;
     const optionLabel1 = toolbarLabels.singleChoiceOption1;
     const optionLabel2 = toolbarLabels.singleChoiceOption2;
-    const template = `?[%{{}} ${optionLabel1} | ${optionLabel2}]`;
+    const template = `?[%{{  }} ${optionLabel1} | ${optionLabel2}]`;
     dispatch({
       changes: {
         from: selection.from,
@@ -681,7 +672,7 @@ const Editor: React.FC<EditorProps> = ({
         insert: template,
       },
       selection: {
-        anchor: selection.from + 5,
+        anchor: selection.from + 6,
       },
     });
     view.focus();
@@ -700,7 +691,7 @@ const Editor: React.FC<EditorProps> = ({
     const selection = state.selection.main;
     const optionLabel1 = toolbarLabels.singleChoiceOption1;
     const optionLabel2 = toolbarLabels.singleChoiceOption2;
-    const template = `?[%{{}} ${optionLabel1} || ${optionLabel2}]`;
+    const template = `?[%{{  }} ${optionLabel1} || ${optionLabel2}]`;
     dispatch({
       changes: {
         from: selection.from,
@@ -708,7 +699,7 @@ const Editor: React.FC<EditorProps> = ({
         insert: template,
       },
       selection: {
-        anchor: selection.from + 5,
+        anchor: selection.from + 6,
       },
     });
     view.focus();
@@ -726,7 +717,7 @@ const Editor: React.FC<EditorProps> = ({
     const { state, dispatch } = view;
     const selection = state.selection.main;
     const placeholder = toolbarLabels.inputPlaceholder ?? "请输入";
-    const template = `?[%{{}}...${placeholder}]`;
+    const template = `?[%{{  }}...${placeholder}]`;
     dispatch({
       changes: {
         from: selection.from,
@@ -734,7 +725,7 @@ const Editor: React.FC<EditorProps> = ({
         insert: template,
       },
       selection: {
-        anchor: selection.from + 5,
+        anchor: selection.from + 6,
       },
     });
     view.focus();
@@ -1200,9 +1191,9 @@ const Editor: React.FC<EditorProps> = ({
                 onSelect={handleSelectVariable}
                 onAddVariable={(variable) => {
                   setVariables((prev) => {
-                    const normalized = variable.name.toLowerCase();
+                    const normalized = variable.name;
                     const exists = prev.some(
-                      (item) => item.name.toLowerCase() === normalized
+                      (item) => item.name === normalized
                     );
                     if (exists) {
                       return prev;

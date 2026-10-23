@@ -1,9 +1,10 @@
 import {
   createInteractionParser,
-  createVariableExpressionRegex,
-  normalizeVariableName,
+  trimVariablePadding,
   INTERACTION_CONTENT_SOURCE,
 } from "remark-flow";
+import type { Node } from "unist";
+import { getMarkdownSourceAnalysis } from "../components/ContentRender/utils/inline-code-ranges";
 
 export interface InteractionParseResult {
   buttonTexts?: string[];
@@ -44,68 +45,27 @@ const INTERACTION_TAG_PATTERN = /<custom-variable\b/i;
 // Same definition of where an interaction ends as the parser uses, so an option carrying a
 // `\]` is read whole instead of being cut at its first bracket. A variable assignment is optional.
 const INTERACTION_SHORTCODE_PATTERN = new RegExp(
-  `\\?\\[(?:%${createVariableExpressionRegex().source})?(${INTERACTION_CONTENT_SOURCE})\\]`
+  `\\?\\[(${INTERACTION_CONTENT_SOURCE})\\](?!\\()`
 );
 const JSON_LIKE_VALUE_PATTERN = /^[\[{]/;
-const INTERACTION_VALUE_SEPARATOR_PATTERN = /^[\s,，\n]+/;
 
 interface InteractionOptionCandidate {
   token: string;
   value: string;
 }
 
-const parseInteractionShortcode = (
-  content?: string | null
-): InteractionParseResult | null => {
-  if (!content) {
-    return null;
-  }
-
-  const matched = content.match(INTERACTION_SHORTCODE_PATTERN);
-  const variableName = matched?.[1]
-    ? (normalizeVariableName(matched[1]) ?? undefined)
-    : undefined;
-  const interactionBody = matched?.[2]?.trim();
-
-  if (!interactionBody) {
-    return null;
-  }
-
-  const isMultiSelect = interactionBody.includes("||");
-  const separator = isMultiSelect ? "||" : "|";
-  const rawOptions = interactionBody
-    .split(separator)
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  if (!rawOptions.length) {
-    return null;
-  }
-
-  const buttonTexts: string[] = [];
-  const buttonValues: string[] = [];
-  let placeholder: string | undefined;
-
-  rawOptions.forEach((option) => {
-    if (option.startsWith("...")) {
-      const normalizedPlaceholder = option.replace(/^\.\.\./, "").trim();
-      if (normalizedPlaceholder) {
-        placeholder = normalizedPlaceholder;
-      }
-      return;
+const findInteractionSource = (
+  node: Node & { value?: unknown; children?: readonly Node[] }
+): string | null => {
+  if (node.type === "flowInteraction" && "value" in node)
+    return typeof node.value === "string" ? node.value : null;
+  if (node.children) {
+    for (const child of node.children) {
+      const source = findInteractionSource(child);
+      if (source !== null) return source;
     }
-
-    buttonTexts.push(option);
-    buttonValues.push(option);
-  });
-
-  return {
-    variableName,
-    buttonTexts: buttonTexts.length ? buttonTexts : undefined,
-    buttonValues: buttonValues.length ? buttonValues : undefined,
-    placeholder,
-    isMultiSelect,
-  };
+  }
+  return null;
 };
 
 const parseInteractionBlock = (
@@ -116,14 +76,23 @@ const parseInteractionBlock = (
   }
 
   try {
+    // Read a grammar-owned interaction, so a syntax example cannot supply its key
+    // or swallow a later real control. Keep the existing serialized-tag path.
+    const source =
+      findInteractionSource(getMarkdownSourceAnalysis(content).tree) ??
+      (INTERACTION_TAG_PATTERN.test(content) ? content : null);
+    if (source === null) return null;
+    // The compatibility formatter turns invalid source into a text-input placeholder.
+    // Defaults must retain plain replay behavior instead of inventing an interaction.
+    if (interactionParser.parse(source).error) return null;
     return interactionParser.parseToRemarkFormat(
-      content
+      source
     ) as InteractionParseResult;
   } catch (error) {
     console.warn("Failed to parse interaction block", error);
   }
 
-  return parseInteractionShortcode(content);
+  return null;
 };
 
 const normalizeButtonValue = (
@@ -134,7 +103,7 @@ const normalizeButtonValue = (
     return null;
   }
 
-  const cleaned = token.trim();
+  const cleaned = trimVariablePadding(token);
   const buttonValues = info.buttonValues || [];
   const buttonTexts = info.buttonTexts || [];
   const valueIndex = buttonValues.indexOf(cleaned);
@@ -161,12 +130,21 @@ const normalizeButtonValue = (
 const splitPresetValues = (raw: string) => {
   return raw
     .split(/[,，\n]/)
-    .map((item) => item.trim())
+    .map((item) => trimVariablePadding(item))
     .filter(Boolean);
 };
 
-const trimLeadingInteractionSeparators = (raw: string) =>
-  raw.replace(INTERACTION_VALUE_SEPARATOR_PATTERN, "");
+const trimLeadingInteractionSeparators = (raw: string) => {
+  let index = 0;
+  while (
+    index < raw.length &&
+    (raw[index] === "," ||
+      raw[index] === "，" ||
+      trimVariablePadding(raw[index]) === "")
+  )
+    index += 1;
+  return raw.slice(index);
+};
 
 const buildInteractionOptionCandidates = (
   info: InteractionParseResult
@@ -177,8 +155,8 @@ const buildInteractionOptionCandidates = (
   const seenCandidates = new Set<string>();
 
   buttonValues.forEach((buttonValue, index) => {
-    const normalizedValue = `${buttonValue ?? ""}`.trim();
-    const normalizedText = `${buttonTexts[index] ?? ""}`.trim();
+    const normalizedValue = trimVariablePadding(`${buttonValue ?? ""}`);
+    const normalizedText = trimVariablePadding(`${buttonTexts[index] ?? ""}`);
 
     [normalizedValue, normalizedText].forEach((token) => {
       if (!token) {
@@ -216,7 +194,12 @@ const matchInteractionOptionPrefix = (
     }
 
     const trailingChar = normalizedRaw[candidate.token.length];
-    if (trailingChar && !/[\s,，\n]/.test(trailingChar)) {
+    if (
+      trailingChar &&
+      trailingChar !== "," &&
+      trailingChar !== "，" &&
+      trimVariablePadding(trailingChar) !== ""
+    ) {
       continue;
     }
 
@@ -266,7 +249,7 @@ const resolveMultiSelectInteractionDefaults = (
   info: InteractionParseResult
 ): InteractionDefaultValues => {
   const selectedValues: string[] = [];
-  let remainingRaw = raw.trim();
+  let remainingRaw = trimVariablePadding(raw);
 
   // Prefer option-aware prefix matching before delimiter splitting so
   // option labels that contain commas can still round-trip correctly.
@@ -319,10 +302,10 @@ const normalizeStructuredInteractionDefaults = (
 
   const selectedValues = Array.isArray(payload.selectedValues)
     ? payload.selectedValues
-        .map((item) => `${item ?? ""}`.trim())
+        .map((item) => trimVariablePadding(`${item ?? ""}`))
         .filter(Boolean)
     : undefined;
-  const buttonText = `${payload.buttonText ?? ""}`.trim();
+  const buttonText = trimVariablePadding(`${payload.buttonText ?? ""}`);
   const inputText =
     typeof payload.inputText === "string" ? payload.inputText : undefined;
 
@@ -342,7 +325,7 @@ const parseStructuredInteractionDefaults = (rawValue?: string | null) => {
     return null;
   }
 
-  if (!JSON_LIKE_VALUE_PATTERN.test(rawValue.trim())) {
+  if (!JSON_LIKE_VALUE_PATTERN.test(trimVariablePadding(rawValue))) {
     return null;
   }
 
@@ -381,7 +364,10 @@ export const getInteractionDefaultValues = (
   rawValue?: string | null,
   options?: InteractionDefaultValueOptions
 ): InteractionDefaultValues => {
-  const normalized = rawValue?.toString().trim();
+  const normalized =
+    rawValue === null || rawValue === undefined
+      ? undefined
+      : trimVariablePadding(rawValue.toString());
 
   if (!normalized) {
     return {};
@@ -468,7 +454,7 @@ export const getInteractionDefaultSelectedValues = (
   return rawValue
     ? rawValue
         .split(",")
-        .map((value) => value.trim())
+        .map((value) => trimVariablePadding(value))
         .filter(Boolean)
     : undefined;
 };

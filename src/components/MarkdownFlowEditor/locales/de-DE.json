@@ -49,7 +49,7 @@
   "variableEmpty": "Noch keine Variablen vorhanden",
   "variableNamePlaceholder": "Variablenname",
   "variableAlreadyExists": "Variable ist bereits vorhanden",
-  "variableNameInvalid": "Verwende einen nicht leeren Namen ohne Leerzeichen oder geschweifte Klammern",
+  "variableNameInvalid": "Verwende einen nicht leeren Namen ohne Steuerzeichen, Zeilenumbrüche oder }}",
   "variableSectionSystem": "Systemvariablen",
   "variableSectionCustom": "Benutzerdefinierte Variablen",
   "variableAddNew": "Variable hinzufügen",

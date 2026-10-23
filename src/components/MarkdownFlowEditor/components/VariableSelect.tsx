@@ -70,9 +70,8 @@ const VariableSelect = ({
       return;
     }
 
-    const lowerName = inputValue.toLowerCase();
     const isDuplicate = [...variables, ...systemVariables].some(
-      (v) => v.name.toLowerCase() === lowerName
+      (v) => normalizeVariableName(v.name) === inputValue
     );
 
     if (isDuplicate) {
@@ -242,7 +241,7 @@ const VariableSelect = ({
                   ? t("variableAlreadyExists", "Variable already exists")
                   : t(
                       "variableNameInvalid",
-                      "Use a non-empty name without spaces or braces"
+                      "Use a non-empty name without control characters, line breaks, or }}"
                     )}
               </p>
             )}

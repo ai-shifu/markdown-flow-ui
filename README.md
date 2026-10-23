@@ -90,17 +90,17 @@ can change that structure; typing an already received snapshot preserves it.
 
 ### Interactive Elements
 
-This variable-name policy matches AI-Shifu's existing MarkdownFlow 2.0
-implementation. It is a compatibility extension to the public MarkdownFlow
-specification, which currently restricts names to letters, digits, and underscores
-without surrounding whitespace.
+Variable names are opaque Unicode text. Both ends are trimmed using the same
+Unicode whitespace set as Python; internal spaces, punctuation, emoji, and single
+braces are preserved. The trimmed name must be non-empty and contain no control
+characters, line separators, or literal `}}`. The first literal `}}` closes the
+marker. Quotes and backslashes remain part of the name.
 
-Variable names follow that backend rule: they are non-empty and contain no
-whitespace or braces. Question marks can remain in the name, so `?[%{{你的性别是？}} 男 | 女 | 秘密]` submits the unchanged key
-`你的性别是？`. Whitespace around the name inside `{{ }}` is trimmed. The name
-is a memory key; write the question text separately when it should be displayed.
-Existing identifier names such as `user_name` continue to work. Interaction
-delimiters retain their existing grammar.
+Use padded markers such as `{{ Which [path] | level//hint...? }}` or
+`%{{ name} }}`. Assignment markers remain atomic inside an interaction, so
+`?[%{{ Which [path] | level//hint...? }} Yes | No]` stores the answer under that
+exact name. Write the question text separately when it should be displayed.
+Existing names and compact markers such as `{{user_name}}` continue to work.
 
 ```tsx
 import { MarkdownFlow } from "markdown-flow-ui";

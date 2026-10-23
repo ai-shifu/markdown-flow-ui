@@ -10,6 +10,22 @@ vi.mock("react-i18next", () => ({
 
 afterEach(cleanup);
 
+const enterNewVariable = (
+  name: string,
+  variables: React.ComponentProps<typeof VariableSelect>["variables"] = []
+) => {
+  const handlers = { onAddVariable: vi.fn(), onSelect: vi.fn() };
+  render(<VariableSelect variables={variables} {...handlers} />);
+  fireEvent.click(screen.getByRole("button", { name: "Add new variable" }));
+  fireEvent.change(screen.getByPlaceholderText("Variable name"), {
+    target: { value: name },
+  });
+  fireEvent.keyDown(screen.getByPlaceholderText("Variable name"), {
+    key: "Enter",
+  });
+  return handlers;
+};
+
 it.each([
   "你的性别是？",
   "Which-option?",
@@ -24,15 +40,7 @@ it.each([
 ])(
   "adds a backend-compatible name %s and trims its outer whitespace",
   (name) => {
-    const onAddVariable = vi.fn();
-    const onSelect = vi.fn();
-    render(
-      <VariableSelect onAddVariable={onAddVariable} onSelect={onSelect} />
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Add new variable" }));
-    const input = screen.getByPlaceholderText("Variable name");
-    fireEvent.change(input, { target: { value: ` ${name} ` } });
-    fireEvent.keyDown(input, { key: "Enter" });
+    const { onAddVariable, onSelect } = enterNewVariable(` ${name} `);
     expect(onAddVariable).toHaveBeenCalledWith({ name });
     expect(onSelect).toHaveBeenCalledWith({ name });
   }
@@ -41,12 +49,7 @@ it.each([
 it.each([" ", "a}}b", "a\u0085b", "a\u2028b", "a\u0000b"])(
   "rejects the invalid name %j",
   (name) => {
-    const onAddVariable = vi.fn();
-    render(<VariableSelect onAddVariable={onAddVariable} />);
-    fireEvent.click(screen.getByRole("button", { name: "Add new variable" }));
-    const input = screen.getByPlaceholderText("Variable name");
-    fireEvent.change(input, { target: { value: name } });
-    fireEvent.keyDown(input, { key: "Enter" });
+    const { onAddVariable } = enterNewVariable(name);
     expect(onAddVariable).not.toHaveBeenCalled();
     expect(
       screen.getByText(
@@ -57,48 +60,20 @@ it.each([" ", "a}}b", "a\u0085b", "a\u2028b", "a\u0000b"])(
 );
 
 it("detects a duplicate after trimming the new name", () => {
-  const onAddVariable = vi.fn();
-  render(
-    <VariableSelect
-      variables={[{ name: "你的性别是？" }]}
-      onAddVariable={onAddVariable}
-    />
-  );
-  fireEvent.click(screen.getByRole("button", { name: "Add new variable" }));
-  const input = screen.getByPlaceholderText("Variable name");
-  fireEvent.change(input, { target: { value: " 你的性别是？ " } });
-  fireEvent.keyDown(input, { key: "Enter" });
+  const { onAddVariable } = enterNewVariable(" 你的性别是？ ", [
+    { name: "你的性别是？" },
+  ]);
   expect(onAddVariable).not.toHaveBeenCalled();
   expect(screen.getByText("Variable already exists")).toBeTruthy();
 });
 
 it("preserves case-sensitive key identity while creating variables", () => {
-  const onAddVariable = vi.fn();
-  render(
-    <VariableSelect
-      variables={[{ name: "Name" }]}
-      onAddVariable={onAddVariable}
-    />
-  );
-  fireEvent.click(screen.getByRole("button", { name: "Add new variable" }));
-  const input = screen.getByPlaceholderText("Variable name");
-  fireEvent.change(input, { target: { value: " name " } });
-  fireEvent.keyDown(input, { key: "Enter" });
+  const { onAddVariable } = enterNewVariable(" name ", [{ name: "Name" }]);
   expect(onAddVariable).toHaveBeenCalledWith({ name: "name" });
 });
 
 it("compares existing names after applying the same boundary trim", () => {
-  const onAddVariable = vi.fn();
-  render(
-    <VariableSelect
-      variables={[{ name: " name " }]}
-      onAddVariable={onAddVariable}
-    />
-  );
-  fireEvent.click(screen.getByRole("button", { name: "Add new variable" }));
-  const input = screen.getByPlaceholderText("Variable name");
-  fireEvent.change(input, { target: { value: "name" } });
-  fireEvent.keyDown(input, { key: "Enter" });
+  const { onAddVariable } = enterNewVariable("name", [{ name: " name " }]);
   expect(onAddVariable).not.toHaveBeenCalled();
   expect(screen.getByText("Variable already exists")).toBeTruthy();
 });

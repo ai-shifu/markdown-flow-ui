@@ -265,6 +265,35 @@ test("the built renderer keeps subsequent Markdown after an unfinished interacti
   }
 });
 
+const verifyTwoChoiceInteraction = ({
+  source,
+  name,
+  forbiddenElements,
+  expectedValue = "B",
+}) => {
+  let sent;
+  const { container } = render(
+    React.createElement(ContentRender, {
+      content: source,
+      onSend: (params) => {
+        sent = params;
+      },
+    })
+  );
+  try {
+    const buttons = [...container.querySelectorAll("button")];
+    assert.deepEqual(
+      buttons.map((button) => button.textContent),
+      ["A", "B"]
+    );
+    assert.equal(container.querySelector(forbiddenElements), null);
+    fireEvent.click(buttons[1]);
+    assert.deepEqual(sent, { variableName: name, buttonText: expectedValue });
+  } finally {
+    cleanup();
+  }
+};
+
 for (const [source, name] of [
   ["{{\n```key\n}} ?[A|B]", ""],
   ["?[%{{\n```key\n}} A|B]", "```key"],
@@ -272,27 +301,11 @@ for (const [source, name] of [
   ["?[%{{\n~~~key\n}} A|B]", "~~~key"],
 ]) {
   test(`the built renderer ignores fence syntax inside ${JSON.stringify(source)}`, () => {
-    let sent;
-    const { container } = render(
-      React.createElement(ContentRender, {
-        content: source,
-        onSend: (params) => {
-          sent = params;
-        },
-      })
-    );
-    try {
-      const buttons = [...container.querySelectorAll("button")];
-      assert.deepEqual(
-        buttons.map((button) => button.textContent),
-        ["A", "B"]
-      );
-      assert.equal(container.querySelector("pre, code, blockquote"), null);
-      fireEvent.click(buttons[1]);
-      assert.deepEqual(sent, { variableName: name, buttonText: "B" });
-    } finally {
-      cleanup();
-    }
+    verifyTwoChoiceInteraction({
+      source,
+      name,
+      forbiddenElements: "pre, code, blockquote",
+    });
   });
 }
 
@@ -354,27 +367,12 @@ for (const prefix of [
 ]) {
   test(`the built renderer protects markup in a real key after ${JSON.stringify(prefix)}`, () => {
     const name = '<svg><path data-name="`"></path></svg>';
-    let sent;
-    const { container } = render(
-      React.createElement(ContentRender, {
-        content: `${prefix}?[%{{ ${name} }} A//a|B//b]`,
-        onSend: (params) => {
-          sent = params;
-        },
-      })
-    );
-    try {
-      const buttons = [...container.querySelectorAll("button")];
-      assert.deepEqual(
-        buttons.map((button) => button.textContent),
-        ["A", "B"]
-      );
-      assert.equal(container.querySelector("svg, iframe"), null);
-      fireEvent.click(buttons[1]);
-      assert.deepEqual(sent, { variableName: name, buttonText: "b" });
-    } finally {
-      cleanup();
-    }
+    verifyTwoChoiceInteraction({
+      source: `${prefix}?[%{{ ${name} }} A//a|B//b]`,
+      name,
+      forbiddenElements: "svg, iframe",
+      expectedValue: "b",
+    });
   });
 }
 

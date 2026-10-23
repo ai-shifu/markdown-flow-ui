@@ -11,7 +11,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![Storybook](https://img.shields.io/badge/Storybook-Enabled-ff69b4.svg)](https://storybook.js.org/)
 
-English | [简体中文](README_ZH-CN.md)
+English | [Simplified Chinese](README_ZH-CN.md)
 
 </div>
 
@@ -107,7 +107,7 @@ import { MarkdownFlow } from "markdown-flow-ui";
 
 function InteractiveExample() {
   const content = `
-Choose your language: ?[%{{lang}} English | 中文 | Español]
+Choose your language: ?[%{{lang}} English | French | Spanish]
 
 Your name: ?[%{{name}} Enter your name...]
 

@@ -2261,7 +2261,7 @@ export const VariablePickerDirection: Story = {
       await userEvent.click(within(picker).getByText("system"));
       await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
       expect(canvas.getByTestId("picker-content")).toHaveTextContent(
-        "{{system}}"
+        "{{ system }}"
       );
       const reopened = await openPicker();
       await userEvent.click(
@@ -2275,7 +2275,7 @@ export const VariablePickerDirection: Story = {
       await userEvent.type(input, `added_${locale.slice(0, 2)}{Enter}`);
       await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
       expect(canvas.getByTestId("picker-content")).toHaveTextContent(
-        `{{added_${locale.slice(0, 2)}}}`
+        `{{ added_${locale.slice(0, 2)} }}`
       );
     }
   },

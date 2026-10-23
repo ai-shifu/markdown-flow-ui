@@ -49,7 +49,7 @@
   "variableEmpty": "لا توجد متغيرات بعد",
   "variableNamePlaceholder": "اسم المتغير",
   "variableAlreadyExists": "المتغير موجود بالفعل",
-  "variableNameInvalid": "استخدم الأحرف أو الأرقام أو الشرطة السفلية فقط، من دون مسافات",
+  "variableNameInvalid": "استخدم اسمًا غير فارغ بلا مسافات أو أقواس معقوفة",
   "variableSectionSystem": "متغيرات النظام",
   "variableSectionCustom": "متغيرات مخصصة",
   "variableAddNew": "إضافة متغير",

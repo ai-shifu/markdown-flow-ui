@@ -49,7 +49,7 @@
   "variableEmpty": "ยังไม่มีตัวแปร",
   "variableNamePlaceholder": "ชื่อตัวแปร",
   "variableAlreadyExists": "มีตัวแปรนี้อยู่แล้ว",
-  "variableNameInvalid": "ใช้ได้เฉพาะตัวอักษร ตัวเลข หรือขีดล่าง และห้ามมีช่องว่าง",
+  "variableNameInvalid": "ใช้ชื่อที่ไม่ว่างและไม่มีช่องว่างหรือวงเล็บปีกกา",
   "variableSectionSystem": "ตัวแปรระบบ",
   "variableSectionCustom": "ตัวแปรที่กำหนดเอง",
   "variableAddNew": "เพิ่มตัวแปร",

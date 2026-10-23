@@ -1404,6 +1404,15 @@ export const ChineseMultiSelectDemo: Story = {
   },
 };
 
+export const QuestionMemoryKey: Story = {
+  args: {
+    content: `你的性别是？
+
+?[%{{你的性别是？}} 男//male | 女//female | 秘密//secret]`,
+    onSend: (params) => console.log("Question answer received:", params),
+  },
+};
+
 export const NonAssignmentInteractionDemo: Story = {
   name: "Non-Assignment Interaction Demo",
   args: {

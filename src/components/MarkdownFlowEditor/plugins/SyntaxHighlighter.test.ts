@@ -140,3 +140,26 @@ describe("escaped delimiters inside an interaction", () => {
     expect(rangeTextsByClass(docText, "syntax-bracket")).toEqual([]);
   });
 });
+
+it.each([
+  "你的性别是？",
+  "Which-option?",
+  "user_name",
+  "年齢🙂?",
+  "\ufeffkey\ufeff",
+])("highlights %s consistently inside and outside an interaction", (name) => {
+  const content = `{{ ${name} }} ?[%{{${name}}} Yes | No]`;
+  expect(rangeTextsByClass(content, "syntax-variable")).toEqual([
+    `{{ ${name} }}`,
+    `{{${name}}}`,
+  ]);
+  expect(rangeTextsByClass(content, "syntax-percent-valid")).toEqual(["%"]);
+});
+
+it("does not decorate punctuation inside a key as option operators", () => {
+  const content = "?[%{{a|b...c?}} Yes | No]";
+  expect(rangeTextsByClass(content, "syntax-variable")).toEqual([
+    "{{a|b...c?}}",
+  ]);
+  expect(rangeTextsByClass(content, "syntax-keyword")).toEqual(["?", "|"]);
+});

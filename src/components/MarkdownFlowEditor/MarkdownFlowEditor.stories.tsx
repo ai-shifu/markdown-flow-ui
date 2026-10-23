@@ -558,3 +558,17 @@ export const MarkdownFlowEditorWithToolbarRight: Story = {
     locale: "zh-CN",
   },
 };
+
+export const QuestionMemoryKeys: Story = {
+  args: {
+    editMode: EditMode.QuickEdit,
+    content: `你的性别是？
+?[%{{你的性别是？}} 男 | 女 | 秘密]
+
+Which-option?
+?[%{{Which-option?}} A | B]
+
+{{你的性别是？}} / {{user_name}}`,
+    variables: [{ name: "你的性别是？" }, { name: "user_name" }],
+  },
+};

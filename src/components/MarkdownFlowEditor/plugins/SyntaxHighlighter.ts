@@ -8,7 +8,7 @@ import {
 import { RangeSetBuilder } from "@codemirror/state";
 import { INTERACTION_CONTENT_SOURCE, isEscape } from "remark-flow";
 
-import { createVariableExpressionRegexp } from "../utils";
+import { normalizeVariableName } from "../utils";
 
 const broadVariableRegex = /\{\{.*?\}\}/g;
 const commentRegex = /<!--[\s\S]*?-->/g;
@@ -198,12 +198,7 @@ export function collectSyntaxHighlightRanges(
   };
 
   const classifyVariable = (raw: string) => {
-    const inner = raw.slice(2, -2).trim();
-    if (!inner) return { className: "syntax-variable-invalid", valid: false };
-    const strict = createVariableExpressionRegexp();
-    const strictMatch = strict.exec(raw);
-    const valid =
-      !!strictMatch && strictMatch.index === 0 && strictMatch[0] === raw;
+    const valid = normalizeVariableName(raw.slice(2, -2)) !== null;
     return {
       className: valid ? "syntax-variable" : "syntax-variable-invalid",
       valid,
@@ -234,11 +229,11 @@ export function collectSyntaxHighlightRanges(
 
     if (content.startsWith("%")) {
       // Input / Select
-      const contentVariableRegex = /\{\{.*?\}\}/g;
+      const contentVariableRegex = new RegExp(broadVariableRegex.source, "g");
       const firstVariableMatch = contentVariableRegex.exec(content);
       contentVariableRegex.lastIndex = 0;
       let percentClass = "syntax-percent-invalid";
-      if (firstVariableMatch) {
+      if (firstVariableMatch?.index === 1) {
         const classification = classifyVariable(firstVariableMatch[0]);
         const varFrom = contentStart + firstVariableMatch.index;
         const varTo = varFrom + firstVariableMatch[0].length;
@@ -255,11 +250,27 @@ export function collectSyntaxHighlightRanges(
         [];
       const appliedTokenRanges: { from: number; to: number }[] = [];
 
+      // Keep a variable name atomic even when it contains option punctuation.
+      for (const variableMatch of content.matchAll(broadVariableRegex)) {
+        variableRanges.push({
+          from: contentStart + variableMatch.index,
+          to: contentStart + variableMatch.index + variableMatch[0].length,
+          className: classifyVariable(variableMatch[0]).className,
+        });
+      }
+
       // Inner operators | || ... -- skipping any an option escaped, the way the parser does.
       // Painted as separators, they told the author the grammar had split an option that it
       // had in fact left whole.
       let scanIndex = 0;
       while (scanIndex < content.length) {
+        const variable = variableRanges.find(
+          (range) => contentStart + scanIndex === range.from
+        );
+        if (variable) {
+          scanIndex = variable.to - contentStart;
+          continue;
+        }
         if (isEscape(content, scanIndex)) {
           scanIndex += 2;
           continue;
@@ -280,19 +291,6 @@ export function collectSyntaxHighlightRanges(
           to: contentStart + scanIndex + operator.length,
         });
         scanIndex += operator.length;
-      }
-
-      // Variables inside control block content
-      let innerVariableMatch;
-      const innerVariableRegex = /\{\{.*?\}\}/g;
-      while ((innerVariableMatch = innerVariableRegex.exec(content)) !== null) {
-        const rawVariable = innerVariableMatch[0];
-        const classification = classifyVariable(rawVariable);
-        variableRanges.push({
-          from: contentStart + innerVariableMatch.index,
-          to: contentStart + innerVariableMatch.index + rawVariable.length,
-          className: classification.className,
-        });
       }
 
       const allTokens = [
@@ -346,7 +344,7 @@ export function collectSyntaxHighlightRanges(
       const appliedVariableRanges: { from: number; to: number }[] = [];
 
       let innerVariableMatch;
-      const innerVariableRegex = /\{\{.*?\}\}/g;
+      const innerVariableRegex = new RegExp(broadVariableRegex.source, "g");
       while ((innerVariableMatch = innerVariableRegex.exec(content)) !== null) {
         const rawVariable = innerVariableMatch[0];
         const classification = classifyVariable(rawVariable);

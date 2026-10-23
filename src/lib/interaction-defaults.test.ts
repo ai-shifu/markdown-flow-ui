@@ -124,3 +124,17 @@ describe("options that escape the grammar's delimiters", () => {
     expect(result.buttonText).toBe("https://b.com/y");
   });
 });
+
+describe("question memory keys", () => {
+  it.each(["你的性别是？", "Which-option?", "user_name"])(
+    "restores option values for %s",
+    (name) => {
+      expect(
+        getInteractionDefaultValues(
+          `?[%{{ ${name} }} 男//male | 女//female]`,
+          "female"
+        )
+      ).toEqual({ buttonText: "female" });
+    }
+  );
+});

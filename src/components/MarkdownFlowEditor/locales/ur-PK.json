@@ -49,7 +49,7 @@
   "variableEmpty": "ابھی کوئی متغیر موجود نہیں",
   "variableNamePlaceholder": "متغیر کا نام",
   "variableAlreadyExists": "یہ متغیر پہلے سے موجود ہے",
-  "variableNameInvalid": "بغیر خالی جگہ کے حروف، اعداد یا انڈر اسکور استعمال کریں",
+  "variableNameInvalid": "ایسا نام استعمال کریں جو خالی نہ ہو اور اس میں خالی جگہیں یا کرلی بریکٹس نہ ہوں",
   "variableSectionSystem": "نظام کے متغیرات",
   "variableSectionCustom": "حسب ضرورت متغیرات",
   "variableAddNew": "متغیر شامل کریں",

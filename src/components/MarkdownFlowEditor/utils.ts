@@ -6,31 +6,16 @@ import { EditorView } from "@codemirror/view";
 import { SelectedOption } from "./types";
 import { getVideoEmbedUrl } from "./utils/video";
 
-const VARIABLE_NAME_SOURCE = "[\\p{L}\\p{N}_]+";
-const VARIABLE_NAME_REGEXP = new RegExp(`^${VARIABLE_NAME_SOURCE}$`, "u");
-const VARIABLE_EXPRESSION_PATTERN = `\\{\\{(${VARIABLE_NAME_SOURCE})\\}\\}`;
+import {
+  createVariableExpressionRegex,
+  extractVariableNames,
+  isValidVariableName,
+  normalizeVariableName,
+} from "remark-flow";
+
 const FIXED_OUTPUT_MARKER = "===";
-
 const createVariableExpressionRegexp = () =>
-  new RegExp(VARIABLE_EXPRESSION_PATTERN, "gu");
-
-const isValidVariableName = (name: string) =>
-  typeof name === "string" && VARIABLE_NAME_REGEXP.test(name);
-
-const extractVariableNames = (content: string) => {
-  if (!content) {
-    return [];
-  }
-  const matches: string[] = [];
-  const regexp = createVariableExpressionRegexp();
-  let match: RegExpExecArray | null;
-
-  while ((match = regexp.exec(content)) !== null) {
-    matches.push(match[1]);
-  }
-
-  return matches;
-};
+  createVariableExpressionRegex("gu");
 
 const parseContentInfo = (
   type: SelectedOption,
@@ -219,6 +204,7 @@ export {
   getImageContentToInsert,
   getVideoContentToInsert,
   isValidVariableName,
+  normalizeVariableName,
   extractVariableNames,
   createVariableExpressionRegexp,
   wrapWithFixedOutput,

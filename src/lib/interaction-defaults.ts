@@ -1,5 +1,7 @@
 import {
   createInteractionParser,
+  createVariableExpressionRegex,
+  normalizeVariableName,
   INTERACTION_CONTENT_SOURCE,
 } from "remark-flow";
 
@@ -42,7 +44,7 @@ const INTERACTION_TAG_PATTERN = /<custom-variable\b/i;
 // Same definition of where an interaction ends as the parser uses, so an option carrying a
 // `\]` is read whole instead of being cut at its first bracket. A variable assignment is optional.
 const INTERACTION_SHORTCODE_PATTERN = new RegExp(
-  `\\?\\[(?:%\\{\\{([^}]+)\\}\\})?(${INTERACTION_CONTENT_SOURCE})\\]`
+  `\\?\\[(?:%${createVariableExpressionRegex().source})?(${INTERACTION_CONTENT_SOURCE})\\]`
 );
 const JSON_LIKE_VALUE_PATTERN = /^[\[{]/;
 const INTERACTION_VALUE_SEPARATOR_PATTERN = /^[\s,，\n]+/;
@@ -60,7 +62,9 @@ const parseInteractionShortcode = (
   }
 
   const matched = content.match(INTERACTION_SHORTCODE_PATTERN);
-  const variableName = matched?.[1]?.trim();
+  const variableName = matched?.[1]
+    ? (normalizeVariableName(matched[1]) ?? undefined)
+    : undefined;
   const interactionBody = matched?.[2]?.trim();
 
   if (!interactionBody) {

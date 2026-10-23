@@ -49,7 +49,7 @@
   "variableEmpty": "Wala pang baryabol",
   "variableNamePlaceholder": "Pangalan ng baryabol",
   "variableAlreadyExists": "Mayroon nang baryabol na ito",
-  "variableNameInvalid": "Gumamit ng mga titik, numero, o salungguhit na walang espasyo",
+  "variableNameInvalid": "Gumamit ng pangalang hindi blangko, walang espasyo o brace",
   "variableSectionSystem": "Mga baryabol ng sistema",
   "variableSectionCustom": "Mga sariling baryabol",
   "variableAddNew": "Magdagdag ng baryabol",

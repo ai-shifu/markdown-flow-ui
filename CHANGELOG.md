@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0 - 2026-10-23
+## 0.3.0 - 2026-10-24
 
 ### Added
 
@@ -9,6 +9,8 @@
 
 ### Fixed
 
+- Use the stable remark-flow 1.4.1 parser so link titles containing variable-like
+  examples preserve following headings and answer controls with newer parsers.
 - Share variable rules across rendering, editing, validation, suggestions, and
   answer replay while preserving existing compact markers.
 - Keep markup and interaction delimiters inside variable names opaque, and keep

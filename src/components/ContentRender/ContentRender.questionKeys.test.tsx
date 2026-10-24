@@ -80,6 +80,28 @@ it("keeps the authored question text unchanged", () => {
   expect(screen.getByText("你的性别是？")).toBeTruthy();
 });
 
+it.each([
+  '[Read](/lesson "{{")',
+  '[First](/first "{{") [Second](/second "{{")',
+  '[broken](url invalid) [Read](/lesson "{{")',
+])("keeps headings and answer controls after a link title: %s", (prefix) => {
+  const onSend = vi.fn();
+  const { container } = render(
+    <ContentRender
+      content={`${prefix}\n\n# Heading\n\n?[%{{ Complete question? }} A|B]`}
+      onSend={onSend}
+    />
+  );
+  expect(container.querySelector('a[title="{{"]')).not.toBeNull();
+  expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Heading");
+  expect(screen.getAllByRole("button")).toHaveLength(2);
+  fireEvent.click(screen.getByRole("button", { name: "B" }));
+  expect(onSend).toHaveBeenCalledWith({
+    variableName: "Complete question?",
+    buttonText: "B",
+  });
+});
+
 it("submits multi-select values under a question key", () => {
   const onSend = vi.fn();
   render(

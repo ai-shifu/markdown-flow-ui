@@ -65,6 +65,40 @@ const contract = JSON.parse(
     "utf8"
   )
 );
+
+for (const prefix of [
+  '[Read](/lesson "{{")',
+  '[First](/first "{{") [Second](/second "{{")',
+  '[broken](url invalid) [Read](/lesson "{{")',
+]) {
+  test(`the built renderer keeps headings and controls after ${JSON.stringify(prefix)}`, () => {
+    let sent;
+    const { container } = render(
+      React.createElement(ContentRender, {
+        content: `${prefix}\n\n# Heading\n\n?[%{{ Complete question? }} A|B]`,
+        onSend: (params) => {
+          sent = params;
+        },
+      })
+    );
+    try {
+      assert.ok(container.querySelector('a[title="{{"]'));
+      assert.equal(container.querySelector("h1")?.textContent, "Heading");
+      const buttons = [...container.querySelectorAll("button")];
+      assert.deepEqual(
+        buttons.map((button) => button.textContent),
+        ["A", "B"]
+      );
+      fireEvent.click(buttons[1]);
+      assert.deepEqual(sent, {
+        variableName: "Complete question?",
+        buttonText: "B",
+      });
+    } finally {
+      cleanup();
+    }
+  });
+}
 for (const { source, name, buttons: labels, values } of contract.interactions) {
   test(`the built renderer keeps the opaque key ${JSON.stringify(name)}`, () => {
     let sent;

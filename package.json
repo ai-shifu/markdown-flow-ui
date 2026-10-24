@@ -41,7 +41,7 @@
     "rehype-katex": "^7.0.1",
     "rehype-raw": "^7.0.0",
     "remark-breaks": "^4.0.0",
-    "remark-flow": "1.4.0-dev.1",
+    "remark-flow": "1.4.1",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "remark-parse": "^11.0.0",

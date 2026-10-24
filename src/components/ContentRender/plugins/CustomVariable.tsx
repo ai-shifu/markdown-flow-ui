@@ -1,4 +1,5 @@
 import React from "react";
+import { normalizeVariableName } from "remark-flow";
 import type { Components } from "react-markdown";
 import { OnSendContentParams } from "../../types";
 import { Button } from "../../ui/button";
@@ -281,7 +282,7 @@ const CustomButtonInputVariable = ({
     baseButtonTexts.length === 0 &&
     !node.properties?.placeholder;
   const fallbackButtonLabel =
-    node.properties?.variableName?.trim() ||
+    normalizeVariableName(node.properties?.variableName || "") ||
     defaultButtonText ||
     resolvedConfirmButtonText;
 

@@ -49,7 +49,7 @@
   "variableEmpty": "Chưa có biến nào",
   "variableNamePlaceholder": "Tên biến",
   "variableAlreadyExists": "Biến đã tồn tại",
-  "variableNameInvalid": "Dùng chữ cái, chữ số hoặc dấu gạch dưới, không có khoảng trắng",
+  "variableNameInvalid": "Dùng tên không rỗng, không có ký tự điều khiển, xuống dòng hoặc }}",
   "variableSectionSystem": "Biến hệ thống",
   "variableSectionCustom": "Biến tùy chỉnh",
   "variableAddNew": "Thêm biến",

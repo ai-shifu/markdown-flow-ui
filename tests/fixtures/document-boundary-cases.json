@@ -1,0 +1,3272 @@
+[
+  {
+    "id": "1-tick-blank",
+    "source": "Show `{{\n\n` then ?[%{{ q }} A|B]",
+    "names": ["` then ?[%{{ q"],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "1-tick-blank-space",
+    "source": "Show `{{\n \t\n` then ?[%{{ q }} A|B]",
+    "names": ["` then ?[%{{ q"],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "1-tick-blank-crlf",
+    "source": "Show `{{\r\n\r\n` then ?[%{{ q }} A|B]",
+    "names": ["` then ?[%{{ q"],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "1-tick-backtick-fence",
+    "source": "Show `{{\n```text\nexample\n```\n` then ?[%{{ q }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "1-tick-tilde-fence",
+    "source": "Show `{{\n~~~\nexample\n~~~\n` then ?[%{{ q }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "2-tick-blank",
+    "source": "Show ``{{\n\n`` then ?[%{{ q }} A|B]",
+    "names": ["`` then ?[%{{ q"],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "2-tick-blank-space",
+    "source": "Show ``{{\n \t\n`` then ?[%{{ q }} A|B]",
+    "names": ["`` then ?[%{{ q"],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "2-tick-blank-crlf",
+    "source": "Show ``{{\r\n\r\n`` then ?[%{{ q }} A|B]",
+    "names": ["`` then ?[%{{ q"],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "2-tick-backtick-fence",
+    "source": "Show ``{{\n```text\nexample\n```\n`` then ?[%{{ q }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "2-tick-tilde-fence",
+    "source": "Show ``{{\n~~~\nexample\n~~~\n`` then ?[%{{ q }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "ordinary-multiline-code-span",
+    "source": "Show `{{\nword` then ?[%{{ q }} A|B]",
+    "names": ["q"],
+    "placeholders": ["q"],
+    "interaction_count": 1,
+    "name": "q",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "escaped-first-tick-2",
+    "source": "Show \\``{{` then ?[%{{ q }} A|B]",
+    "names": ["q"],
+    "placeholders": ["q"],
+    "interaction_count": 1,
+    "name": "q",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "escaped-first-tick-3",
+    "source": "Show \\```{{`` then ?[%{{ q }} A|B]",
+    "names": ["q"],
+    "placeholders": ["q"],
+    "interaction_count": 1,
+    "name": "q",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "escaped-first-tick-4",
+    "source": "Show \\````{{``` then ?[%{{ q }} A|B]",
+    "names": ["q"],
+    "placeholders": ["q"],
+    "interaction_count": 1,
+    "name": "q",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "local-block-0",
+    "source": "    {{ unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "local-block-1",
+    "source": "\t{{ unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "local-block-2",
+    "source": "<script>\n{{ unfinished\n</script>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "local-block-3",
+    "source": "<style>\n{{ unfinished\n</style>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "local-block-4",
+    "source": "<pre>\n{{ unfinished\n</pre>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "local-block-5",
+    "source": "<textarea>\n{{ unfinished\n</textarea>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "fence-info-```",
+    "source": "```{{language}}\nx\n```\n\n?[%{{ real }} A|B]",
+    "names": ["language", "real"],
+    "placeholders": ["language", "real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "fence-info-~~~",
+    "source": "~~~{{language}}\nx\n~~~\n\n?[%{{ real }} A|B]",
+    "names": ["language", "real"],
+    "placeholders": ["language", "real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "complete-inline-literal-0",
+    "source": "$x {{ unfinished$\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "complete-inline-literal-1",
+    "source": "$$x {{ unfinished$$\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "complete-inline-literal-2",
+    "source": "[label](url \"{{\")\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "complete-inline-literal-3",
+    "source": "[label](url '{{')\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "complete-inline-literal-4",
+    "source": "[label](url ({{))\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "complete-inline-literal-5",
+    "source": "[label](url(path) \"{{\")\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "complete-inline-literal-6",
+    "source": "[label](<url(path)> \"{{\")\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "complete-inline-literal-7",
+    "source": "[outer ![inner](u)](u \"{{\")\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "complete-inline-literal-8",
+    "source": "![outer [inner](u)](u \"{{\")\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "escaped-first-dollar-2",
+    "source": "Show \\$$x {{ unfinished$\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "escaped-first-dollar-3",
+    "source": "Show \\$$$x {{ unfinished$$\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "escaped-first-dollar-4",
+    "source": "Show \\$$$$x {{ unfinished$$$\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "inactive-resource-0",
+    "source": "[outer [inner](u)](u \"{{\")\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "inactive-resource-1",
+    "source": "[label]( \"{{ words\")\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "atx-outgoing-`",
+    "source": "# Heading `{{\nq` then ?[%{{ real }} A|B]",
+    "names": ["q` then ?[%{{ real"],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "atx-incoming-`",
+    "source": "Show `{{\n# Heading q` then ?[%{{ real }} A|B]",
+    "names": ["# Heading q` then ?[%{{ real"],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "atx-same-line-`",
+    "source": "# Heading `{{` then ?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "atx-outgoing-$",
+    "source": "# Heading ${{\nq$ then ?[%{{ real }} A|B]",
+    "names": ["q$ then ?[%{{ real"],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "atx-incoming-$",
+    "source": "Show ${{\n# Heading q$ then ?[%{{ real }} A|B]",
+    "names": ["# Heading q$ then ?[%{{ real"],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "atx-same-line-$",
+    "source": "# Heading ${{$ then ?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "raw-closing-line-script",
+    "source": "<script>\ncode\n</script> {{ unfinished\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "raw-closing-line-style",
+    "source": "<style>\ncode\n</style> {{ unfinished\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "raw-closing-line-pre",
+    "source": "<pre>\ncode\n</pre> {{ unfinished\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "raw-closing-line-textarea",
+    "source": "<textarea>\ncode\n</textarea> {{ unfinished\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-lf-0",
+    "source": "- ~~~\n  {{ unfinished\n  ~~~\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-lf-1",
+    "source": "> ~~~\n> {{ unfinished\n> ~~~\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-lf-2",
+    "source": "> - ~~~\n>   {{ unfinished\n>   ~~~\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-lf-3",
+    "source": "- > ~~~\n  > {{ unfinished\n  > ~~~\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-lf-4",
+    "source": "1. ```\n   {{ unfinished\n   ```\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-lf-5",
+    "source": "~~~\n{{ unfinished\n~~~\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-lf-6",
+    "source": "<div>\n{{ unfinished\n</div>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-lf-7",
+    "source": "<custom-tag>\n{{ unfinished\n</custom-tag>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-crlf-0",
+    "source": "- ~~~\r\n  {{ unfinished\r\n  ~~~\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-crlf-1",
+    "source": "> ~~~\r\n> {{ unfinished\r\n> ~~~\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-crlf-2",
+    "source": "> - ~~~\r\n>   {{ unfinished\r\n>   ~~~\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-crlf-3",
+    "source": "- > ~~~\r\n  > {{ unfinished\r\n  > ~~~\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-crlf-4",
+    "source": "1. ```\r\n   {{ unfinished\r\n   ```\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-crlf-5",
+    "source": "~~~\r\n{{ unfinished\r\n~~~\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-crlf-6",
+    "source": "<div>\r\n{{ unfinished\r\n</div>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-crlf-7",
+    "source": "<custom-tag>\r\n{{ unfinished\r\n</custom-tag>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-cr-0",
+    "source": "- ~~~\r  {{ unfinished\r  ~~~\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-cr-1",
+    "source": "> ~~~\r> {{ unfinished\r> ~~~\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-cr-2",
+    "source": "> - ~~~\r>   {{ unfinished\r>   ~~~\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-cr-3",
+    "source": "- > ~~~\r  > {{ unfinished\r  > ~~~\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-cr-4",
+    "source": "1. ```\r   {{ unfinished\r   ```\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-cr-5",
+    "source": "~~~\r{{ unfinished\r~~~\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-cr-6",
+    "source": "<div>\r{{ unfinished\r</div>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "review-block-cr-7",
+    "source": "<custom-tag>\r{{ unfinished\r</custom-tag>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-interrupt-0-break-0",
+    "source": "Text `{{ unfinished\n> ` end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-interrupt-0-break-1",
+    "source": "Text `{{ unfinished\n- ` end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-interrupt-0-break-2",
+    "source": "Text `{{ unfinished\n1. ` end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-interrupt-0-break-3",
+    "source": "Text `{{ unfinished\n---\n` end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-interrupt-0-break-4",
+    "source": "Text `{{ unfinished\n<div>\n` end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-interrupt-0-same-line-0",
+    "source": "> `{{` end ?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-interrupt-0-same-line-1",
+    "source": "- `{{` end ?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-interrupt-0-same-line-2",
+    "source": "1. `{{` end ?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-interrupt-0-continued-0",
+    "source": "> `{{\n> word` end ?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-interrupt-0-continued-1",
+    "source": "- `{{\n  word` end ?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-interrupt-0-continued-2",
+    "source": "1. `{{\n   word` end ?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-interrupt-0-continued-3",
+    "source": "> `{{\nword` end ?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-interrupt-1-break-0",
+    "source": "Text ${{ unfinished\n> $ end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-interrupt-1-break-1",
+    "source": "Text ${{ unfinished\n- $ end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-interrupt-1-break-2",
+    "source": "Text ${{ unfinished\n1. $ end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-interrupt-1-break-3",
+    "source": "Text ${{ unfinished\n---\n$ end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-interrupt-1-break-4",
+    "source": "Text ${{ unfinished\n<div>\n$ end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-interrupt-1-same-line-0",
+    "source": "> ${{$ end ?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-interrupt-1-same-line-1",
+    "source": "- ${{$ end ?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-interrupt-1-same-line-2",
+    "source": "1. ${{$ end ?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-interrupt-1-continued-0",
+    "source": "> ${{\n> word$ end ?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-interrupt-1-continued-1",
+    "source": "- ${{\n  word$ end ?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-interrupt-1-continued-2",
+    "source": "1. ${{\n   word$ end ?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-interrupt-1-continued-3",
+    "source": "> ${{\nword$ end ?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "setext-review-0-0",
+    "source": "Text `{{ unfinished\n=\n` end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "setext-review-0-1",
+    "source": "Text `{{ unfinished\n===\n` end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "setext-review-0-2",
+    "source": "Text `{{ unfinished\n-\n` end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "setext-review-0-3",
+    "source": "Text `{{ unfinished\n--\n` end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "setext-review-0-4",
+    "source": "Text `{{ unfinished\n== ordinary text\n` end\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "setext-review-1-0",
+    "source": "Text ${{ unfinished\n=\n$ end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "setext-review-1-1",
+    "source": "Text ${{ unfinished\n===\n$ end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "setext-review-1-2",
+    "source": "Text ${{ unfinished\n-\n$ end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "setext-review-1-3",
+    "source": "Text ${{ unfinished\n--\n$ end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "setext-review-1-4",
+    "source": "Text ${{ unfinished\n== ordinary text\n$ end\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "html-token-closing-0",
+    "source": "<!--\n{{ unfinished\n--> {{ still literal\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "html-token-closing-1",
+    "source": "<?x\n{{ unfinished\n?> {{ still literal\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "html-token-closing-2",
+    "source": "<![CDATA[\n{{ unfinished\n]]> {{ still literal\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "html-token-closing-3",
+    "source": "<!DOCTYPE\n{{ unfinished\n> {{ still literal\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-lf-0",
+    "source": "> Text `{{ unfinished\n> # Heading ` end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-final-lf-1",
+    "source": "- Text ${{ unfinished\n  # Heading $ end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-final-lf-2",
+    "source": "2. Text `{{ unfinished\n    # Heading ` end\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-final-lf-3",
+    "source": "> <div>\n> {{ unfinished\n> </div>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-lf-4",
+    "source": "> - <script>\n>   {{ unfinished\n>   </script>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-lf-5",
+    "source": "<script>\n</script>\n    {{ unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-lf-6",
+    "source": "?[ unfinished\n~~~\n{{ x\n~~~\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-lf-7",
+    "source": "> [foo]: /url \"{{ unfinished\"\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-lf-8",
+    "source": "> [foo]: /url\n>   \"{{ unfinished\"\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-lf-9",
+    "source": "> [foo]:\n> /url \"{{ unfinished\"\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-lf-10",
+    "source": "> [foo]: /url\n\"{{ unfinished\"\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-lf-11",
+    "source": "> [foo]:\n/url \"{{ unfinished\"\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-lf-12",
+    "source": "> Intro\n> [foo]: /url \"{{ unfinished\"\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-final-lf-13",
+    "source": "Text `{{ unfinished\n2. # heading\n` end\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-lf-14",
+    "source": "> Text `{{ unfinished\n> continuation ` end\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-crlf-0",
+    "source": "> Text `{{ unfinished\r\n> # Heading ` end\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-final-crlf-1",
+    "source": "- Text ${{ unfinished\r\n  # Heading $ end\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-final-crlf-2",
+    "source": "2. Text `{{ unfinished\r\n    # Heading ` end\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-final-crlf-3",
+    "source": "> <div>\r\n> {{ unfinished\r\n> </div>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-crlf-4",
+    "source": "> - <script>\r\n>   {{ unfinished\r\n>   </script>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-crlf-5",
+    "source": "<script>\r\n</script>\r\n    {{ unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-crlf-6",
+    "source": "?[ unfinished\r\n~~~\r\n{{ x\r\n~~~\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-crlf-7",
+    "source": "> [foo]: /url \"{{ unfinished\"\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-crlf-8",
+    "source": "> [foo]: /url\r\n>   \"{{ unfinished\"\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-crlf-9",
+    "source": "> [foo]:\r\n> /url \"{{ unfinished\"\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-crlf-10",
+    "source": "> [foo]: /url\r\n\"{{ unfinished\"\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-crlf-11",
+    "source": "> [foo]:\r\n/url \"{{ unfinished\"\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-crlf-12",
+    "source": "> Intro\r\n> [foo]: /url \"{{ unfinished\"\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-final-crlf-13",
+    "source": "Text `{{ unfinished\r\n2. # heading\r\n` end\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-crlf-14",
+    "source": "> Text `{{ unfinished\r\n> continuation ` end\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-cr-0",
+    "source": "> Text `{{ unfinished\r> # Heading ` end\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-final-cr-1",
+    "source": "- Text ${{ unfinished\r  # Heading $ end\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-final-cr-2",
+    "source": "2. Text `{{ unfinished\r    # Heading ` end\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-final-cr-3",
+    "source": "> <div>\r> {{ unfinished\r> </div>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-cr-4",
+    "source": "> - <script>\r>   {{ unfinished\r>   </script>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-cr-5",
+    "source": "<script>\r</script>\r    {{ unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-cr-6",
+    "source": "?[ unfinished\r~~~\r{{ x\r~~~\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-cr-7",
+    "source": "> [foo]: /url \"{{ unfinished\"\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-cr-8",
+    "source": "> [foo]: /url\r>   \"{{ unfinished\"\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-cr-9",
+    "source": "> [foo]:\r> /url \"{{ unfinished\"\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-cr-10",
+    "source": "> [foo]: /url\r\"{{ unfinished\"\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-cr-11",
+    "source": "> [foo]:\r/url \"{{ unfinished\"\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-cr-12",
+    "source": "> Intro\r> [foo]: /url \"{{ unfinished\"\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-final-cr-13",
+    "source": "Text `{{ unfinished\r2. # heading\r` end\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-final-cr-14",
+    "source": "> Text `{{ unfinished\r> continuation ` end\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-lf-0",
+    "source": ">     {{ unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-lf-1",
+    "source": "> >     {{ unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-lf-2",
+    "source": ">\t  {{ unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-lf-3",
+    "source": "> \t  {{ unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-lf-4",
+    "source": "-     {{ unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-lf-5",
+    "source": "- Intro\n\n      {{ unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-lf-6",
+    "source": "2. Intro\n\n       {{ unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-lf-7",
+    "source": ">     {{ unfinished\n>\n>     still code\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-lf-8",
+    "source": "- Intro\n\n    ```\n  {{ unfinished\n    ```\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-lf-9",
+    "source": "2. Intro\n\n    ~~~\n   {{ unfinished\n    ~~~\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-lf-10",
+    "source": "> \t{{ unfinished\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-code-final-lf-11",
+    "source": "> Intro\n>     {{ unfinished\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-code-final-lf-12",
+    "source": "Paragraph\n    {{ unfinished\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-code-final-lf-13",
+    "source": ">     ```\n> {{ unfinished\n>     ```\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-code-final-crlf-0",
+    "source": ">     {{ unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-crlf-1",
+    "source": "> >     {{ unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-crlf-2",
+    "source": ">\t  {{ unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-crlf-3",
+    "source": "> \t  {{ unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-crlf-4",
+    "source": "-     {{ unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-crlf-5",
+    "source": "- Intro\r\n\r\n      {{ unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-crlf-6",
+    "source": "2. Intro\r\n\r\n       {{ unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-crlf-7",
+    "source": ">     {{ unfinished\r\n>\r\n>     still code\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-crlf-8",
+    "source": "- Intro\r\n\r\n    ```\r\n  {{ unfinished\r\n    ```\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-crlf-9",
+    "source": "2. Intro\r\n\r\n    ~~~\r\n   {{ unfinished\r\n    ~~~\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-crlf-10",
+    "source": "> \t{{ unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-code-final-crlf-11",
+    "source": "> Intro\r\n>     {{ unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-code-final-crlf-12",
+    "source": "Paragraph\r\n    {{ unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-code-final-crlf-13",
+    "source": ">     ```\r\n> {{ unfinished\r\n>     ```\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-code-final-cr-0",
+    "source": ">     {{ unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-cr-1",
+    "source": "> >     {{ unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-cr-2",
+    "source": ">\t  {{ unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-cr-3",
+    "source": "> \t  {{ unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-cr-4",
+    "source": "-     {{ unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-cr-5",
+    "source": "- Intro\r\r      {{ unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-cr-6",
+    "source": "2. Intro\r\r       {{ unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-cr-7",
+    "source": ">     {{ unfinished\r>\r>     still code\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-cr-8",
+    "source": "- Intro\r\r    ```\r  {{ unfinished\r    ```\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-cr-9",
+    "source": "2. Intro\r\r    ~~~\r   {{ unfinished\r    ~~~\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-code-final-cr-10",
+    "source": "> \t{{ unfinished\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-code-final-cr-11",
+    "source": "> Intro\r>     {{ unfinished\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-code-final-cr-12",
+    "source": "Paragraph\r    {{ unfinished\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-code-final-cr-13",
+    "source": ">     ```\r> {{ unfinished\r>     ```\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-tab-review-lf-list",
+    "source": "- Intro\n\n\t  {{ unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-tab-review-lf-quote-list",
+    "source": "> - Intro\n>\n> \t  {{ unfinished\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-tab-review-crlf-list",
+    "source": "- Intro\r\n\r\n\t  {{ unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-tab-review-crlf-quote-list",
+    "source": "> - Intro\r\n>\r\n> \t  {{ unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-tab-review-cr-list",
+    "source": "- Intro\r\r\t  {{ unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-tab-review-cr-quote-list",
+    "source": "> - Intro\r>\r> \t  {{ unfinished\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "container-tab-fence-lf-quote-tilde",
+    "source": "> \t~~~\n> {{ unfinished\n> \t~~~\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-tab-fence-lf-quote-backtick",
+    "source": "> \t```\n> {{ unfinished\n> \t```\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-tab-fence-lf-list-tilde",
+    "source": "- Intro\n\n\t~~~\n  {{ unfinished\n\t~~~\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-tab-fence-crlf-quote-tilde",
+    "source": "> \t~~~\r\n> {{ unfinished\r\n> \t~~~\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-tab-fence-crlf-quote-backtick",
+    "source": "> \t```\r\n> {{ unfinished\r\n> \t```\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-tab-fence-crlf-list-tilde",
+    "source": "- Intro\r\n\r\n\t~~~\r\n  {{ unfinished\r\n\t~~~\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-tab-fence-cr-quote-tilde",
+    "source": "> \t~~~\r> {{ unfinished\r> \t~~~\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-tab-fence-cr-quote-backtick",
+    "source": "> \t```\r> {{ unfinished\r> \t```\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "container-tab-fence-cr-list-tilde",
+    "source": "- Intro\r\r\t~~~\r  {{ unfinished\r\t~~~\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-type6-incomplete",
+    "source": "<div\n{{ unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-raw-script-tag",
+    "source": "<script\n\n{{ unfinished\n</script>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-raw-script-attribute",
+    "source": "<script title=\"unfinished\n\n{{ unfinished\n</script>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-raw-style-tag",
+    "source": "<style\n\n{{ unfinished\n</style>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-raw-style-attribute",
+    "source": "<style title=\"unfinished\n\n{{ unfinished\n</style>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-raw-pre-tag",
+    "source": "<pre\n\n{{ unfinished\n</pre>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-raw-pre-attribute",
+    "source": "<pre title=\"unfinished\n\n{{ unfinished\n</pre>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-raw-textarea-tag",
+    "source": "<textarea\n\n{{ unfinished\n</textarea>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-raw-textarea-attribute",
+    "source": "<textarea title=\"unfinished\n\n{{ unfinished\n</textarea>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-quote-comment",
+    "source": "> <!--\n> {{ unfinished\n> {{ still unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-quote-pi",
+    "source": "> <?x\n> {{ unfinished\n> {{ still unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-quote-cdata",
+    "source": "> <![CDATA[\n> {{ unfinished\n> {{ still unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-quote-declaration",
+    "source": "> <!DOCTYPE\n> {{ unfinished\n> {{ still unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-list-comment",
+    "source": "- <!--\n  {{ unfinished\n  {{ still unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-list-pi",
+    "source": "- <?x\n  {{ unfinished\n  {{ still unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-list-cdata",
+    "source": "- <![CDATA[\n  {{ unfinished\n  {{ still unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-list-declaration",
+    "source": "- <!DOCTYPE\n  {{ unfinished\n  {{ still unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-quote-list-comment",
+    "source": "> - <!--\n>   {{ unfinished\n>   {{ still unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-quote-list-pi",
+    "source": "> - <?x\n>   {{ unfinished\n>   {{ still unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-quote-list-cdata",
+    "source": "> - <![CDATA[\n>   {{ unfinished\n>   {{ still unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-lf-quote-list-declaration",
+    "source": "> - <!DOCTYPE\n>   {{ unfinished\n>   {{ still unfinished\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-type6-incomplete",
+    "source": "<div\r\n{{ unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-raw-script-tag",
+    "source": "<script\r\n\r\n{{ unfinished\r\n</script>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-raw-script-attribute",
+    "source": "<script title=\"unfinished\r\n\r\n{{ unfinished\r\n</script>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-raw-style-tag",
+    "source": "<style\r\n\r\n{{ unfinished\r\n</style>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-raw-style-attribute",
+    "source": "<style title=\"unfinished\r\n\r\n{{ unfinished\r\n</style>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-raw-pre-tag",
+    "source": "<pre\r\n\r\n{{ unfinished\r\n</pre>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-raw-pre-attribute",
+    "source": "<pre title=\"unfinished\r\n\r\n{{ unfinished\r\n</pre>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-raw-textarea-tag",
+    "source": "<textarea\r\n\r\n{{ unfinished\r\n</textarea>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-raw-textarea-attribute",
+    "source": "<textarea title=\"unfinished\r\n\r\n{{ unfinished\r\n</textarea>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-quote-comment",
+    "source": "> <!--\r\n> {{ unfinished\r\n> {{ still unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-quote-pi",
+    "source": "> <?x\r\n> {{ unfinished\r\n> {{ still unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-quote-cdata",
+    "source": "> <![CDATA[\r\n> {{ unfinished\r\n> {{ still unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-quote-declaration",
+    "source": "> <!DOCTYPE\r\n> {{ unfinished\r\n> {{ still unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-list-comment",
+    "source": "- <!--\r\n  {{ unfinished\r\n  {{ still unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-list-pi",
+    "source": "- <?x\r\n  {{ unfinished\r\n  {{ still unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-list-cdata",
+    "source": "- <![CDATA[\r\n  {{ unfinished\r\n  {{ still unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-list-declaration",
+    "source": "- <!DOCTYPE\r\n  {{ unfinished\r\n  {{ still unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-quote-list-comment",
+    "source": "> - <!--\r\n>   {{ unfinished\r\n>   {{ still unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-quote-list-pi",
+    "source": "> - <?x\r\n>   {{ unfinished\r\n>   {{ still unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-quote-list-cdata",
+    "source": "> - <![CDATA[\r\n>   {{ unfinished\r\n>   {{ still unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-crlf-quote-list-declaration",
+    "source": "> - <!DOCTYPE\r\n>   {{ unfinished\r\n>   {{ still unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-type6-incomplete",
+    "source": "<div\r{{ unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-raw-script-tag",
+    "source": "<script\r\r{{ unfinished\r</script>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-raw-script-attribute",
+    "source": "<script title=\"unfinished\r\r{{ unfinished\r</script>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-raw-style-tag",
+    "source": "<style\r\r{{ unfinished\r</style>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-raw-style-attribute",
+    "source": "<style title=\"unfinished\r\r{{ unfinished\r</style>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-raw-pre-tag",
+    "source": "<pre\r\r{{ unfinished\r</pre>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-raw-pre-attribute",
+    "source": "<pre title=\"unfinished\r\r{{ unfinished\r</pre>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-raw-textarea-tag",
+    "source": "<textarea\r\r{{ unfinished\r</textarea>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-raw-textarea-attribute",
+    "source": "<textarea title=\"unfinished\r\r{{ unfinished\r</textarea>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-quote-comment",
+    "source": "> <!--\r> {{ unfinished\r> {{ still unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-quote-pi",
+    "source": "> <?x\r> {{ unfinished\r> {{ still unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-quote-cdata",
+    "source": "> <![CDATA[\r> {{ unfinished\r> {{ still unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-quote-declaration",
+    "source": "> <!DOCTYPE\r> {{ unfinished\r> {{ still unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-list-comment",
+    "source": "- <!--\r  {{ unfinished\r  {{ still unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-list-pi",
+    "source": "- <?x\r  {{ unfinished\r  {{ still unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-list-cdata",
+    "source": "- <![CDATA[\r  {{ unfinished\r  {{ still unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-list-declaration",
+    "source": "- <!DOCTYPE\r  {{ unfinished\r  {{ still unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-quote-list-comment",
+    "source": "> - <!--\r>   {{ unfinished\r>   {{ still unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-quote-list-pi",
+    "source": "> - <?x\r>   {{ unfinished\r>   {{ still unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-quote-list-cdata",
+    "source": "> - <![CDATA[\r>   {{ unfinished\r>   {{ still unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-html-admission-cr-quote-list-declaration",
+    "source": "> - <!DOCTYPE\r>   {{ unfinished\r>   {{ still unfinished\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-lf-uri",
+    "source": "<https://{{unfinished>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-lf-mailto",
+    "source": "<mailto:{{unfinished>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-lf-minimum-scheme",
+    "source": "<aa:{{unfinished>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-lf-maximum-scheme",
+    "source": "<aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:{{unfinished>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-lf-email",
+    "source": "<{{unfinished@example.com>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-lf-single-label-email",
+    "source": "<{{unfinished@localhost>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-lf-maximum-domain-label",
+    "source": "<{{unfinished@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-lf-complete-uri-name",
+    "source": "<https://{{inside}}>\n\n?[%{{ real }} A|B]",
+    "names": ["inside", "real"],
+    "placeholders": ["inside", "real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-lf-complete-email-name",
+    "source": "<{{inside}}@example.com>\n\n?[%{{ real }} A|B]",
+    "names": ["inside", "real"],
+    "placeholders": ["inside", "real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-lf-opaque-uri-name",
+    "source": "<https://{{q|a]b//...}}>\n\n?[%{{ real }} A|B]",
+    "names": ["q|a]b//...", "real"],
+    "placeholders": ["q|a]b//...", "real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-lf-uri-inline-delimiters",
+    "source": "<https://`$**{{unfinished`$**>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-lf-uri-interaction-example",
+    "source": "<https://?[A|B]/{{unfinished>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-lf-uri-nul",
+    "source": "<https://{{unfinished\u0000>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-lf-invalid-key-nul",
+    "source": "<https://{{a\u0000}}>\n\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-lf-valid-key-replacement",
+    "source": "<https://{{a�}}>\n\n?[%{{ real }} A|B]",
+    "names": ["a�", "real"],
+    "placeholders": ["a�", "real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-lf-short-scheme",
+    "source": "<a:{{unfinished>\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-lf-long-scheme",
+    "source": "<aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:{{unfinished>\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-lf-digit-scheme",
+    "source": "<1a:{{unfinished>\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-lf-uri-space",
+    "source": "<https://{{ unfinished>\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-lf-uri-delete",
+    "source": "<https://{{unfinished>\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-lf-uri-open-angle",
+    "source": "<https://{{unfinished<oops>\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-lf-missing-angle",
+    "source": "<https://{{unfinished\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-lf-escaped-angle",
+    "source": "\\<https://{{unfinished>\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-lf-domain-leading-dash",
+    "source": "<{{unfinished@-example.com>\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-lf-domain-trailing-dash",
+    "source": "<{{unfinished@example-.com>\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-lf-domain-empty-label",
+    "source": "<{{unfinished@example..com>\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-lf-domain-underscore",
+    "source": "<{{unfinished@ex_ample.com>\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-lf-domain-long-label",
+    "source": "<{{unfinished@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa>\n\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-crlf-uri",
+    "source": "<https://{{unfinished>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-crlf-mailto",
+    "source": "<mailto:{{unfinished>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-crlf-minimum-scheme",
+    "source": "<aa:{{unfinished>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-crlf-maximum-scheme",
+    "source": "<aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:{{unfinished>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-crlf-email",
+    "source": "<{{unfinished@example.com>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-crlf-single-label-email",
+    "source": "<{{unfinished@localhost>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-crlf-maximum-domain-label",
+    "source": "<{{unfinished@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-crlf-complete-uri-name",
+    "source": "<https://{{inside}}>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["inside", "real"],
+    "placeholders": ["inside", "real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-crlf-complete-email-name",
+    "source": "<{{inside}}@example.com>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["inside", "real"],
+    "placeholders": ["inside", "real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-crlf-opaque-uri-name",
+    "source": "<https://{{q|a]b//...}}>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["q|a]b//...", "real"],
+    "placeholders": ["q|a]b//...", "real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-crlf-uri-inline-delimiters",
+    "source": "<https://`$**{{unfinished`$**>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-crlf-uri-interaction-example",
+    "source": "<https://?[A|B]/{{unfinished>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-crlf-uri-nul",
+    "source": "<https://{{unfinished\u0000>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-crlf-invalid-key-nul",
+    "source": "<https://{{a\u0000}}>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-crlf-valid-key-replacement",
+    "source": "<https://{{a�}}>\r\n\r\n?[%{{ real }} A|B]",
+    "names": ["a�", "real"],
+    "placeholders": ["a�", "real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-crlf-short-scheme",
+    "source": "<a:{{unfinished>\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-crlf-long-scheme",
+    "source": "<aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:{{unfinished>\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-crlf-digit-scheme",
+    "source": "<1a:{{unfinished>\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-crlf-uri-space",
+    "source": "<https://{{ unfinished>\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-crlf-uri-delete",
+    "source": "<https://{{unfinished>\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-crlf-uri-open-angle",
+    "source": "<https://{{unfinished<oops>\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-crlf-missing-angle",
+    "source": "<https://{{unfinished\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-crlf-escaped-angle",
+    "source": "\\<https://{{unfinished>\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-crlf-domain-leading-dash",
+    "source": "<{{unfinished@-example.com>\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-crlf-domain-trailing-dash",
+    "source": "<{{unfinished@example-.com>\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-crlf-domain-empty-label",
+    "source": "<{{unfinished@example..com>\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-crlf-domain-underscore",
+    "source": "<{{unfinished@ex_ample.com>\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-crlf-domain-long-label",
+    "source": "<{{unfinished@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa>\r\n\r\n?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-cr-uri",
+    "source": "<https://{{unfinished>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-cr-mailto",
+    "source": "<mailto:{{unfinished>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-cr-minimum-scheme",
+    "source": "<aa:{{unfinished>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-cr-maximum-scheme",
+    "source": "<aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:{{unfinished>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-cr-email",
+    "source": "<{{unfinished@example.com>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-cr-single-label-email",
+    "source": "<{{unfinished@localhost>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-cr-maximum-domain-label",
+    "source": "<{{unfinished@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-cr-complete-uri-name",
+    "source": "<https://{{inside}}>\r\r?[%{{ real }} A|B]",
+    "names": ["inside", "real"],
+    "placeholders": ["inside", "real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-cr-complete-email-name",
+    "source": "<{{inside}}@example.com>\r\r?[%{{ real }} A|B]",
+    "names": ["inside", "real"],
+    "placeholders": ["inside", "real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-cr-opaque-uri-name",
+    "source": "<https://{{q|a]b//...}}>\r\r?[%{{ real }} A|B]",
+    "names": ["q|a]b//...", "real"],
+    "placeholders": ["q|a]b//...", "real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-cr-uri-inline-delimiters",
+    "source": "<https://`$**{{unfinished`$**>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-cr-uri-interaction-example",
+    "source": "<https://?[A|B]/{{unfinished>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-cr-uri-nul",
+    "source": "<https://{{unfinished\u0000>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-cr-invalid-key-nul",
+    "source": "<https://{{a\u0000}}>\r\r?[%{{ real }} A|B]",
+    "names": ["real"],
+    "placeholders": ["real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-cr-valid-key-replacement",
+    "source": "<https://{{a�}}>\r\r?[%{{ real }} A|B]",
+    "names": ["a�", "real"],
+    "placeholders": ["a�", "real"],
+    "interaction_count": 1,
+    "name": "real",
+    "buttons": ["A", "B"],
+    "values": ["A", "B"]
+  },
+  {
+    "id": "native-autolink-cr-short-scheme",
+    "source": "<a:{{unfinished>\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-cr-long-scheme",
+    "source": "<aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:{{unfinished>\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-cr-digit-scheme",
+    "source": "<1a:{{unfinished>\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-cr-uri-space",
+    "source": "<https://{{ unfinished>\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-cr-uri-delete",
+    "source": "<https://{{unfinished>\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-cr-uri-open-angle",
+    "source": "<https://{{unfinished<oops>\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-cr-missing-angle",
+    "source": "<https://{{unfinished\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-cr-escaped-angle",
+    "source": "\\<https://{{unfinished>\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-cr-domain-leading-dash",
+    "source": "<{{unfinished@-example.com>\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-cr-domain-trailing-dash",
+    "source": "<{{unfinished@example-.com>\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-cr-domain-empty-label",
+    "source": "<{{unfinished@example..com>\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-cr-domain-underscore",
+    "source": "<{{unfinished@ex_ample.com>\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  },
+  {
+    "id": "native-autolink-cr-domain-long-label",
+    "source": "<{{unfinished@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa>\r\r?[%{{ real }} A|B]",
+    "names": [],
+    "placeholders": [],
+    "interaction_count": 0
+  }
+]

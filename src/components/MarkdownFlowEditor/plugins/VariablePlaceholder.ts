@@ -4,31 +4,10 @@ import {
   DecorationSet,
   ViewPlugin,
   ViewUpdate,
-  MatchDecorator,
 } from "@codemirror/view";
 import { SelectedOption } from "../types";
 import PlaceholderWidget from "./PlaceholderWidget";
-import { createVariableExpressionRegexp } from "../utils";
-
-const variableContextRegexp = createVariableExpressionRegexp();
-
-const selectionInsideAnyVariable = (view: EditorView) => {
-  const docText = view.state.doc.toString();
-  if (!docText) return false;
-  const regexp = createVariableExpressionRegexp();
-  let match: RegExpExecArray | null;
-  while ((match = regexp.exec(docText)) !== null) {
-    const from = match.index ?? 0;
-    const to = from + match[0].length;
-    if (selectionInsideVariableExpression(view, from, to)) {
-      return true;
-    }
-    if (regexp.lastIndex === match.index) {
-      regexp.lastIndex++;
-    }
-  }
-  return false;
-};
+import { findDocumentVariableMarkers } from "../utils";
 
 const selectionInsideVariableExpression = (
   view: EditorView,
@@ -48,53 +27,68 @@ const selectionInsideVariableExpression = (
   });
 };
 
-const variableUrlMatcher = new MatchDecorator({
-  regexp: variableContextRegexp,
-  decoration: (match, view, from) => {
-    const rawMatch = match?.[0];
-    if (!rawMatch) {
-      return null;
-    }
-    const to = from + rawMatch.length;
-    if (selectionInsideVariableExpression(view, from, to)) {
-      return null;
-    }
-    return Decoration.replace({
-      widget: new PlaceholderWidget(
-        rawMatch,
-        {
-          tag: "variable",
-          title: match?.[1],
-        },
-        "tag-variable",
-        SelectedOption.Variable,
-        view
-      ),
-    });
-  },
-});
+const buildPlaceholders = (
+  view: EditorView,
+  markers: ReturnType<typeof findDocumentVariableMarkers>
+): DecorationSet => {
+  const text = view.state.doc.toString();
+  return Decoration.set(
+    markers.flatMap((marker) => {
+      const rawMarker = text.slice(marker.start, marker.end);
+      if (
+        marker.name === null ||
+        // CodeMirror inline widgets cannot replace line breaks in marker padding.
+        rawMarker.includes("\n") ||
+        selectionInsideVariableExpression(view, marker.start, marker.end)
+      ) {
+        return [];
+      }
+      return [
+        Decoration.replace({
+          widget: new PlaceholderWidget(
+            rawMarker,
+            { tag: "variable", title: marker.name },
+            "tag-variable",
+            SelectedOption.Variable,
+            view
+          ),
+        }).range(marker.start, marker.end),
+      ];
+    })
+  );
+};
+
+const selectedMarkers = (
+  view: EditorView,
+  markers: ReturnType<typeof findDocumentVariableMarkers>
+) =>
+  markers
+    .filter((marker) =>
+      selectionInsideVariableExpression(view, marker.start, marker.end)
+    )
+    .map((marker) => marker.start)
+    .join(",");
 
 const VariablePlaceholder = ViewPlugin.fromClass(
   class {
     placeholders: DecorationSet;
-    selectionInsideVariable: boolean;
+    markers: ReturnType<typeof findDocumentVariableMarkers>;
+    selectionSignature: string;
     constructor(view: EditorView) {
-      this.selectionInsideVariable = selectionInsideAnyVariable(view);
-      this.placeholders = variableUrlMatcher.createDeco(view);
+      this.markers = findDocumentVariableMarkers(view.state.doc.toString());
+      this.selectionSignature = selectedMarkers(view, this.markers);
+      this.placeholders = buildPlaceholders(view, this.markers);
     }
     update(update: ViewUpdate) {
-      if (update.selectionSet || update.docChanged) {
-        const insideNow = selectionInsideAnyVariable(update.view);
-        if (insideNow !== this.selectionInsideVariable) {
-          this.selectionInsideVariable = insideNow;
-          this.placeholders = variableUrlMatcher.createDeco(update.view);
-          return;
+      if (update.docChanged)
+        this.markers = findDocumentVariableMarkers(update.state.doc.toString());
+      if (update.docChanged || update.selectionSet) {
+        const signature = selectedMarkers(update.view, this.markers);
+        if (update.docChanged || signature !== this.selectionSignature) {
+          this.selectionSignature = signature;
+          this.placeholders = buildPlaceholders(update.view, this.markers);
         }
       }
-      this.placeholders = variableUrlMatcher.updateDeco(
-        update,
-        this.placeholders
-      );
     }
   },
   {

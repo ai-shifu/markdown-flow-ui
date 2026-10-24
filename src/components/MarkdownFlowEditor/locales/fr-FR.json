@@ -49,7 +49,7 @@
   "variableEmpty": "Aucune variable pour le moment",
   "variableNamePlaceholder": "Nom de la variable",
   "variableAlreadyExists": "La variable existe déjà",
-  "variableNameInvalid": "Utilisez des lettres, des chiffres ou des underscores sans espaces",
+  "variableNameInvalid": "Utilisez un nom non vide, sans caractères de contrôle, sauts de ligne ni }}",
   "variableSectionSystem": "Variables système",
   "variableSectionCustom": "Variables personnalisées",
   "variableAddNew": "Ajouter une variable",

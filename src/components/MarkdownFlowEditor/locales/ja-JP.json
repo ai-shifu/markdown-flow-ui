@@ -49,7 +49,7 @@
   "variableEmpty": "変数はまだありません",
   "variableNamePlaceholder": "変数名",
   "variableAlreadyExists": "変数は既に存在します",
-  "variableNameInvalid": "スペースを含めず、文字、数字、アンダースコアを使用してください",
+  "variableNameInvalid": "空でない名前を使用し、制御文字、改行、}} を含めないでください",
   "variableSectionSystem": "システム変数",
   "variableSectionCustom": "カスタム変数",
   "variableAddNew": "変数を追加",

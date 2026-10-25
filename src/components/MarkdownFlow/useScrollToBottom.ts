@@ -16,10 +16,7 @@ export type ScrollTarget = HTMLElement | Document | Window;
 export type ScrollTargetRef = RefObject<ScrollTarget | null>;
 export type ScrollTargetResolver = () => ScrollTarget | null;
 export type ScrollTargetInput =
-  | ScrollTarget
-  | ScrollTargetRef
-  | ScrollTargetResolver
-  | null;
+  ScrollTarget | ScrollTargetRef | ScrollTargetResolver | null;
 
 export interface ScrollMetrics {
   scrollTop: number;
@@ -65,8 +62,7 @@ export interface UseScrollToBottomReturn {
   refresh: () => void;
 }
 
-export interface LegacyUseScrollToBottomOptions
-  extends UseScrollToBottomOptions {
+export interface LegacyUseScrollToBottomOptions extends UseScrollToBottomOptions {
   /** Retained for source compatibility; scrolling now follows browser frames and observers. */
   scrollDelay?: number;
 }

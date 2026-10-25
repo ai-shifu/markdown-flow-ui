@@ -7,11 +7,10 @@ export type ScrollToBottomPlacement = "bottom-center" | "bottom-right";
 export type ScrollToBottomPosition = "absolute" | "fixed";
 
 /** Presentation and native button props for a localized scroll-to-bottom control. */
-export interface ScrollToBottomButtonProps
-  extends Omit<
-    React.ButtonHTMLAttributes<HTMLButtonElement>,
-    "aria-label" | "children"
-  > {
+export interface ScrollToBottomButtonProps extends Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  "aria-label" | "children"
+> {
   /** Whether the control is visible and keyboard-focusable. */
   visible: boolean;
   /** Localized accessible name for the icon-only button. */

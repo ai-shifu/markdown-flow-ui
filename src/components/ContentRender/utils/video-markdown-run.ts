@@ -546,8 +546,8 @@ export const prepareVideoMarkdownRun = (
         : context.source?.type === "inlineCode"
           ? inlineCodeUnits(plan.fullSource, context.source)
           : sourceUnits(plan.fullSource, context.range, context.mode));
-  const pendingMetadata = plan.pendingMetadata.map(
-    (range) => rawRange(plan, range)!
+  const pendingMetadata = plan.pendingMetadata.map((range) =>
+    rawRange(plan, range)!
   );
   const pendingStarts = pendingMetadata.map(({ start }) => start);
   const isPendingMetadata = (range: Range) => {

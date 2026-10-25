@@ -9,7 +9,7 @@ interface ResolveNextSlideIndexParams {
 const isResolvedInteractionElement = (element?: Element) =>
   Boolean(
     element?.type === "interaction" &&
-      (element.readonly || element.user_input?.trim())
+    (element.readonly || element.user_input?.trim())
   );
 
 const hasStableMarkerPrefix = (

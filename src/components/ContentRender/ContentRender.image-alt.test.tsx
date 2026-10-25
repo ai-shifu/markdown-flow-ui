@@ -18,8 +18,7 @@ const guard = (container: HTMLElement, hasVideo = false) => {
   const video = container.querySelector<HTMLIFrameElement>("iframe");
   const parent = video?.parentNode;
   const videoWindow = video?.contentWindow as
-    | (Window & { retainedState?: string })
-    | undefined;
+    (Window & { retainedState?: string }) | undefined;
   if (hasVideo) {
     expect(video).not.toBeNull();
     videoWindow!.retainedState = "playing";

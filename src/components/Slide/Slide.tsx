@@ -148,8 +148,7 @@ const areInteractionOverlayDragOffsetsEqual = (
 export type { SlideBufferingReason } from "./slideI18n";
 
 export type SlideBufferingTextConfig =
-  | string
-  | Partial<Record<SlideBufferingReason, string>>;
+  string | Partial<Record<SlideBufferingReason, string>>;
 
 const resolveBufferingTextByReason = (
   bufferingText: SlideBufferingTextConfig,
@@ -217,11 +216,10 @@ interface InteractionOverlayCardProps {
   readonly?: boolean;
 }
 
-export interface SlideInteractionTexts
-  extends Pick<
-    ContentRenderProps,
-    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
-  > {
+export interface SlideInteractionTexts extends Pick<
+  ContentRenderProps,
+  "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+> {
   title?: string;
   /** Accessible label for the interaction panel drag handle. */
   dragHandleAriaLabel?: string;

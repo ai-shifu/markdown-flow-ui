@@ -11,19 +11,15 @@ import {
 } from "@codemirror/language";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import CustomDialog from "./components/CustomDialog";
-import CustomPopover from "./components/CustomPopover";
 import EditorToolbar from "./components/EditorToolbar";
-import VariableSearchDropdown from "./components/VariableSearchDropdown";
 import EditorContext from "./editor-context";
 import ImageInject from "./components/ImageInject";
 import VideoInject from "./components/VideoInject";
-import VariableSelect from "./components/VariableSelect";
 import {
   SelectedOption,
   IEditorContext,
   Variable,
   SelectContentInfo,
-  PopoverPosition,
   EditorAction,
   EditorApi,
 } from "./types";
@@ -34,15 +30,10 @@ import {
   parseContentInfo,
   getImageContentToInsert,
   getVideoContentToInsert,
-  extractVariableNames,
-  findDocumentVariableMarkers,
-  formatVariableReference,
-  normalizeVariableName,
 } from "./utils";
 import ImgPlaceholder from "./plugins/ImgPlaceholder";
 import VideoPlaceholder from "./plugins/VideoPlaceholder";
 import { mediaPlaceholderLabels } from "./plugins/mediaPlaceholderLabels";
-import VariablePlaceholder from "./plugins/VariablePlaceholder";
 import SyntaxHighlighter from "./plugins/SyntaxHighlighter";
 // import createFixedTextPlaceholder from "./plugins/FixedTextPlaceholder";
 // import DividerPlaceholder from "./plugins/DividerPlaceholder";
@@ -90,7 +81,9 @@ export enum EditMode {
 type EditorProps = {
   content?: string;
   editMode?: EditMode;
+  /** @deprecated Variable picking is no longer supported. Retained for compatibility. */
   variables?: Variable[];
+  /** @deprecated Variable picking is no longer supported. Retained for compatibility. */
   systemVariables?: Variable[];
   onChange?: (value: string) => void;
   onBlur?: () => void;
@@ -103,37 +96,9 @@ type EditorProps = {
   onReady?: (api: EditorApi) => void;
 };
 
-const EMPTY_VARIABLES: Variable[] = [];
-
-// Detect whether cursor is still inside a {{variable}} expression
-const isCursorInsideVariableExpression = (
-  content: string,
-  cursorPosition: number
-) => {
-  if (!content || cursorPosition < 0) {
-    return false;
-  }
-  for (const marker of findDocumentVariableMarkers(content)) {
-    if (
-      marker.name !== null &&
-      cursorPosition >= marker.start + 2 &&
-      cursorPosition <= marker.end - 2
-    ) {
-      return true;
-    }
-  }
-
-  return false;
-};
-
-const buildVariableTemplate = (variableName = "") =>
-  variableName ? formatVariableReference(variableName) : "{{  }}";
-
 const Editor: React.FC<EditorProps> = ({
   content = "",
   editMode = EditMode.CodeEdit,
-  variables: initialVariables,
-  systemVariables: initialSystemVariables,
   onChange,
   onBlur,
   locale,
@@ -165,15 +130,6 @@ const Editor: React.FC<EditorProps> = ({
       video: t("toolbarInsertVideo", {
         defaultValue: "Insert video",
       }),
-      variable: t("slashVariable", {
-        defaultValue: "Variable",
-      }),
-      addVariable: t("toolbarInsertNewVariable", {
-        defaultValue: "Insert new variable",
-      }),
-      search: t("toolbarInsertExistingVariable", {
-        defaultValue: "Insert existing variable",
-      }),
       confirmOutput: t("toolbarConfirmOutput", {
         defaultValue: "Confirm output",
       }),
@@ -204,17 +160,6 @@ const Editor: React.FC<EditorProps> = ({
     }),
     [t]
   );
-  const variableSearchLabels = useMemo(
-    () => ({
-      searchPlaceholder: t("variableSearchPlaceholder", {
-        defaultValue: "Search variable",
-      }),
-      systemLabel: t("variableSectionSystem", "System Variables"),
-      customLabel: t("variableSectionCustom", "Custom Variables"),
-      emptyLabel: t("variableNotFound", "No variables found"),
-    }),
-    [t]
-  );
   const placeholderText =
     editMode === EditMode.QuickEdit
       ? t("placeholderQuickEdit", {
@@ -223,98 +168,24 @@ const Editor: React.FC<EditorProps> = ({
           }),
         })
       : t("placeholderCodeEdit", { defaultValue: t("placeholder") });
-  // Only boundary whitespace is normalized; key identity remains case-sensitive.
-  const normalizedSystemVariables = useMemo(() => {
-    const seen = new Set<string>();
-    return (initialSystemVariables ?? EMPTY_VARIABLES).flatMap((variable) => {
-      const name =
-        typeof variable?.name === "string"
-          ? normalizeVariableName(variable.name)
-          : null;
-      if (name === null || seen.has(name)) return [];
-      seen.add(name);
-      return [{ ...variable, name }];
-    });
-  }, [initialSystemVariables]);
-
-  const normalizedCustomVariables = useMemo(() => {
-    const systemNameSet = new Set(
-      normalizedSystemVariables.map((variable) => variable.name)
-    );
-    const seen = new Set<string>();
-    return (initialVariables ?? EMPTY_VARIABLES).flatMap((variable) => {
-      const name =
-        typeof variable?.name === "string"
-          ? normalizeVariableName(variable.name)
-          : null;
-      if (name === null || systemNameSet.has(name) || seen.has(name)) return [];
-      seen.add(name);
-      return [{ ...variable, name }];
-    });
-  }, [initialVariables, normalizedSystemVariables]);
-
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [popoverOpen, setPopoverOpen] = useState(false);
   const editorRootRef = useRef<HTMLDivElement>(null);
   const portalLanguage = useDetachedLanguage(editorRootRef, language);
   const { resolvedDirection: portalDirection } = useResolvedDirection(
     editorRootRef,
     direction
   );
-  const [popoverPosition, setPopoverPosition] =
-    useState<PopoverPosition | null>(null);
-  const [variables, setVariables] = useState<Variable[]>(
-    normalizedCustomVariables
-  );
-  const [systemVariables, setSystemVariables] = useState<Variable[]>(
-    normalizedSystemVariables
-  );
-
-  useEffect(() => {
-    setVariables(normalizedCustomVariables);
-  }, [normalizedCustomVariables]);
-
-  useEffect(() => {
-    setSystemVariables(normalizedSystemVariables);
-  }, [normalizedSystemVariables]);
-
   const [selectedOption, setSelectedOption] = useState<SelectedOption>(
     SelectedOption.Empty
   );
   const [selectContentInfo, setSelectContentInfo] =
     useState<SelectContentInfo | null>();
   const editorViewRef = useRef<EditorView | null>(null);
-  const pendingVariableContentRef = useRef<string | null>(null);
-  const variableSearchAnchorRef = useRef<HTMLButtonElement | null>(null);
-  const [variableSearchOpen, setVariableSearchOpen] = useState(false);
-  const closeVariableSearch = useCallback(() => {
-    setVariableSearchOpen(false);
-    variableSearchAnchorRef.current = null;
-  }, []);
-  const handleVariableSearchToggle = useCallback(
-    (button: HTMLButtonElement) => {
-      if (disabled) {
-        return;
-      }
-      if (variableSearchOpen && variableSearchAnchorRef.current === button) {
-        closeVariableSearch();
-        return;
-      }
-      variableSearchAnchorRef.current = button;
-      setVariableSearchOpen(true);
-    },
-    [closeVariableSearch, disabled, variableSearchOpen]
-  );
-
   const editorContextValue: IEditorContext = {
     selectedOption,
     setSelectedOption,
     dialogOpen,
     setDialogOpen,
-    popoverOpen,
-    setPopoverOpen,
-    popoverPosition,
-    setPopoverPosition,
   };
 
   useEffect(() => {
@@ -322,68 +193,9 @@ const Editor: React.FC<EditorProps> = ({
       return;
     }
     setDialogOpen(false);
-    setPopoverOpen(false);
     setSelectedOption(SelectedOption.Empty);
     setSelectContentInfo(null);
-    setPopoverPosition(null);
-    closeVariableSearch();
-  }, [
-    closeVariableSearch,
-    disabled,
-    setDialogOpen,
-    setPopoverOpen,
-    setPopoverPosition,
-    setSelectedOption,
-    setSelectContentInfo,
-  ]);
-
-  const addVariablesFromContent = useCallback(
-    (text: string) => {
-      if (editMode !== EditMode.QuickEdit || !text) {
-        return;
-      }
-
-      const names = extractVariableNames(text);
-      if (!names.length) {
-        return;
-      }
-
-      const systemNameSet = new Set(
-        systemVariables.map((variable) => variable.name)
-      );
-
-      setVariables((prev) => {
-        const existingNames = new Set(prev.map((variable) => variable.name));
-        const addedNames = new Set<string>();
-        const newVariables: Variable[] = [];
-
-        names.forEach((rawName) => {
-          const normalized = rawName;
-          if (
-            !rawName ||
-            systemNameSet.has(normalized) ||
-            existingNames.has(normalized) ||
-            addedNames.has(normalized)
-          ) {
-            return;
-          }
-          newVariables.push({ name: rawName });
-          addedNames.add(normalized);
-        });
-
-        if (!newVariables.length) {
-          return prev;
-        }
-
-        return [...newVariables, ...prev];
-      });
-    },
-    [editMode, systemVariables]
-  );
-
-  useEffect(() => {
-    addVariablesFromContent(content);
-  }, [content, addVariablesFromContent]);
+  }, [disabled, setDialogOpen, setSelectedOption, setSelectContentInfo]);
 
   // const insertFixedText = useCallback(() => {
   //   if (!editorViewRef.current) return;
@@ -433,14 +245,11 @@ const Editor: React.FC<EditorProps> = ({
       if (disabled) {
         return;
       }
-      closeVariableSearch();
       // if (option === SelectedOption.FixedText) {
       //   insertFixedText();
       //   setSelectedOption(SelectedOption.Empty);
       //   setDialogOpen(false);
-      //   setPopoverOpen(false);
       //   setSelectContentInfo(null);
-      //   setPopoverPosition(null);
       //   return;
       // }
 
@@ -448,32 +257,15 @@ const Editor: React.FC<EditorProps> = ({
       //   insertDivider();
       //   setSelectedOption(SelectedOption.Empty);
       //   setDialogOpen(false);
-      //   setPopoverOpen(false);
       //   setSelectContentInfo(null);
-      //   setPopoverPosition(null);
       //   return;
       // }
 
       setSelectedOption(option);
 
-      if (option === SelectedOption.Variable) {
-        if (editorViewRef.current) {
-          const { state } = editorViewRef.current;
-          const pos = state.selection.main.from;
-          const coords = editorViewRef.current.coordsAtPos(pos);
-          if (coords) {
-            setPopoverPosition({
-              x: coords.left,
-              y: coords.bottom,
-            });
-          }
-        }
-        setPopoverOpen(true);
-      } else {
-        setDialogOpen(true);
-      }
+      setDialogOpen(true);
     },
-    [closeVariableSearch, disabled]
+    [disabled]
   );
 
   const insertText = useCallback(
@@ -551,46 +343,6 @@ const Editor: React.FC<EditorProps> = ({
       changes: { from, to, insert: "" },
     });
   }, [selectContentInfo, editorViewRef, disabled]);
-
-  const insertVariableContent = useCallback(
-    (
-      variableName: string,
-      range?: { from: number; to: number },
-      placeCursorAtEnd = false
-    ) => {
-      if (disabled || !editorViewRef.current) {
-        return;
-      }
-      const view = editorViewRef.current;
-      const { state, dispatch } = view;
-      const selection = range ?? state.selection.main;
-      const template = buildVariableTemplate(variableName);
-      if (!template) return;
-      const name = normalizeVariableName(variableName) ?? "";
-      const cursorOffset = placeCursorAtEnd ? template.length : 3 + name.length; // Opening braces and one padding space
-
-      dispatch({
-        changes: {
-          from: selection.from,
-          to: selection.to,
-          insert: template,
-        },
-        selection: {
-          anchor: selection.from + cursorOffset,
-        },
-      });
-      view.focus();
-    },
-    [disabled]
-  );
-
-  const insertVariableTemplate = useCallback(() => {
-    if (disabled) {
-      return;
-    }
-    closeVariableSearch();
-    insertVariableContent("");
-  }, [closeVariableSearch, disabled, insertVariableContent]);
 
   const insertConfirmOutputMarker = useCallback(() => {
     if (disabled || !editorViewRef.current) {
@@ -789,22 +541,6 @@ const Editor: React.FC<EditorProps> = ({
     [deleteSelectedContent, disabled, insertText, selectContentInfo]
   );
 
-  const handleSelectVariable = useCallback(
-    (variable: Variable) => {
-      if (disabled) {
-        return;
-      }
-      const selectionRange =
-        selectContentInfo?.type === SelectedOption.Variable
-          ? { from: selectContentInfo.from, to: selectContentInfo.to }
-          : undefined;
-      insertVariableContent(variable.name, selectionRange, true);
-      setPopoverOpen(false);
-      closeVariableSearch();
-    },
-    [disabled, insertVariableContent, selectContentInfo, closeVariableSearch]
-  );
-
   const slashCommandsExtension = useCallback(() => {
     return autocompletion({
       override: [
@@ -813,7 +549,6 @@ const Editor: React.FC<EditorProps> = ({
           // fixedText: currentStrings.slashFixedText,
           image: currentStrings.slashImage,
           video: currentStrings.slashVideo,
-          variable: currentStrings.slashVariable,
         }),
       ],
     });
@@ -822,7 +557,6 @@ const Editor: React.FC<EditorProps> = ({
     // currentStrings.slashFixedText,
     currentStrings.slashImage,
     currentStrings.slashVideo,
-    currentStrings.slashVariable,
     onSelectedOption,
   ]);
 
@@ -841,28 +575,9 @@ const Editor: React.FC<EditorProps> = ({
   //   ]
   // );
 
-  const handleEditorUpdate = useCallback(
-    (update: ViewUpdate) => {
-      editorViewRef.current = update.view;
-      if (
-        editMode === EditMode.QuickEdit &&
-        pendingVariableContentRef.current &&
-        update.selectionSet
-      ) {
-        const cursorPosition = update.state.selection.main.head;
-        const docText = update.state.doc.toString();
-        const stillInside = isCursorInsideVariableExpression(
-          docText,
-          cursorPosition
-        );
-        if (!stillInside) {
-          addVariablesFromContent(docText);
-          pendingVariableContentRef.current = null;
-        }
-      }
-    },
-    [addVariablesFromContent, editMode]
-  );
+  const handleEditorUpdate = useCallback((update: ViewUpdate) => {
+    editorViewRef.current = update.view;
+  }, []);
 
   const handleTagClick = useCallback(
     (event: any) => {
@@ -870,7 +585,7 @@ const Editor: React.FC<EditorProps> = ({
       if (disabled) {
         return;
       }
-      const { type, from, to, dataset, target } = event.detail;
+      const { type, from, to, dataset } = event.detail;
       const value = parseContentInfo(type, dataset);
       setSelectContentInfo({
         type,
@@ -880,22 +595,7 @@ const Editor: React.FC<EditorProps> = ({
       });
       setSelectedOption(type);
 
-      if (type === SelectedOption.Variable) {
-        if (target) {
-          const rect = target.getBoundingClientRect();
-          const anchorDirection =
-            target.ownerDocument.defaultView?.getComputedStyle(
-              editorRootRef.current ?? target
-            ).direction;
-          setPopoverPosition({
-            x: anchorDirection === "rtl" ? rect.right : rect.left,
-            y: rect.bottom,
-          });
-        }
-        setPopoverOpen(true);
-      } else {
-        setDialogOpen(true);
-      }
+      setDialogOpen(true);
     },
     [disabled]
   );
@@ -906,13 +606,6 @@ const Editor: React.FC<EditorProps> = ({
       setSelectContentInfo(null);
     }
   }, [dialogOpen]);
-
-  useEffect(() => {
-    if (!popoverOpen && selectedOption === SelectedOption.Variable) {
-      setSelectedOption(SelectedOption.Empty);
-      setSelectContentInfo(null);
-    }
-  }, [popoverOpen, selectedOption]);
 
   useEffect(() => {
     const handleWrap = (e: any) => {
@@ -953,8 +646,7 @@ const Editor: React.FC<EditorProps> = ({
       extensions.push(
         mediaPlaceholderLabelsExtension,
         ImgPlaceholder,
-        VideoPlaceholder,
-        VariablePlaceholder
+        VideoPlaceholder
         // fixedTextPlaceholderExtension,
         // DividerPlaceholder,
       );
@@ -980,24 +672,11 @@ const Editor: React.FC<EditorProps> = ({
       if (disabled) {
         return;
       }
-      const cursorPosition =
-        editorViewRef.current?.state.selection.main.head ?? -1;
-      const skipAddition = isCursorInsideVariableExpression(
-        value,
-        cursorPosition
-      );
-      if (skipAddition) {
-        pendingVariableContentRef.current = value;
-      } else {
-        pendingVariableContentRef.current = null;
-        addVariablesFromContent(value);
-      }
       onChange?.(value);
     },
-    [addVariablesFromContent, onChange, disabled]
+    [onChange, disabled]
   );
 
-  const isVariableSearchOpen = !disabled && variableSearchOpen;
   const editorApi = useMemo(
     () => ({
       insertTextAtCursor: insertText,
@@ -1108,26 +787,13 @@ const Editor: React.FC<EditorProps> = ({
         tooltipDirection={portalDirection}
         tooltipLanguage={portalLanguage}
         onSelect={onSelectedOption}
-        onInsertVariablePlaceholder={insertVariableTemplate}
-        onVariableSearchToggle={handleVariableSearchToggle}
-        onVariableSearchClose={closeVariableSearch}
         onInsertConfirmOutput={insertConfirmOutputMarker}
         onInsertLink={insertLinkTemplate}
         onInsertButton={insertButtonTemplate}
         onInsertSingleChoice={insertSingleChoiceTemplate}
         onInsertMultiChoice={insertMultiChoiceTemplate}
         onInsertInputField={insertInputFieldTemplate}
-        variableSearchActive={isVariableSearchOpen}
         rightSlot={toolbarRightSlot}
-      />
-      <VariableSearchDropdown
-        open={isVariableSearchOpen}
-        anchorElement={variableSearchAnchorRef.current}
-        onClose={closeVariableSearch}
-        onSelect={handleSelectVariable}
-        variables={variables}
-        systemVariables={systemVariables}
-        labels={variableSearchLabels}
       />
       <div className="markdown-flow-editor-body relative overflow-auto">
         <EditorContext.Provider value={editorContextValue}>
@@ -1161,9 +827,7 @@ const Editor: React.FC<EditorProps> = ({
                     ? t("dialogTitleImage")
                     : selectedOption === SelectedOption.Video
                       ? t("dialogTitleVideo")
-                      : selectedOption === SelectedOption.Variable
-                        ? t("dialogTitleVariable")
-                        : t("dialogTitle"),
+                      : t("dialogTitle"),
               }}
             >
               {selectedOption === SelectedOption.Image && (
@@ -1180,29 +844,6 @@ const Editor: React.FC<EditorProps> = ({
                 />
               )}
             </CustomDialog>
-          )}
-
-          {!disabled && (
-            <CustomPopover dir={portalDirection} lang={portalLanguage}>
-              <VariableSelect
-                variables={variables}
-                systemVariables={systemVariables}
-                selectedName={selectContentInfo?.value?.variableName}
-                onSelect={handleSelectVariable}
-                onAddVariable={(variable) => {
-                  setVariables((prev) => {
-                    const normalized = variable.name;
-                    const exists = prev.some(
-                      (item) => item.name === normalized
-                    );
-                    if (exists) {
-                      return prev;
-                    }
-                    return [variable, ...prev];
-                  });
-                }}
-              />
-            </CustomPopover>
           )}
         </EditorContext.Provider>
       </div>

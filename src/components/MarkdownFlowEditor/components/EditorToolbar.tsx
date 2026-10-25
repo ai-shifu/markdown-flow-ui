@@ -1,6 +1,5 @@
 import { memo, useCallback } from "react";
 import {
-  Braces,
   FileType,
   Image as ImageIcon,
   TextCursorInput,
@@ -10,7 +9,6 @@ import {
   CircleCheck,
 } from "lucide-react";
 import { SelectedOption } from "../types";
-import SearchBracesIcon from "./icons/SearchBracesIcon";
 import ButtonIcon from "./icons/ButtonIcon";
 import {
   Tooltip,
@@ -27,11 +25,8 @@ type ToolbarLabels = {
   insertSingleChoice: string | undefined;
   insertMultiChoice: string | undefined;
   insertInput: string | undefined;
-  variable: string;
   image: string;
   video: string;
-  addVariable: string;
-  search: string;
 };
 
 interface EditorToolbarProps {
@@ -40,16 +35,12 @@ interface EditorToolbarProps {
   tooltipDirection?: MarkdownFlowDirection;
   tooltipLanguage?: string;
   onSelect: (selectedOption: SelectedOption) => void;
-  onInsertVariablePlaceholder?: () => void;
-  onVariableSearchToggle?: (button: HTMLButtonElement) => void;
-  onVariableSearchClose?: () => void;
   onInsertConfirmOutput?: () => void;
   onInsertLink?: () => void;
   onInsertButton?: () => void;
   onInsertSingleChoice?: () => void;
   onInsertMultiChoice?: () => void;
   onInsertInputField?: () => void;
-  variableSearchActive?: boolean;
   rightSlot?: React.ReactNode;
 }
 
@@ -64,36 +55,14 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   tooltipDirection,
   tooltipLanguage,
   onSelect,
-  onInsertVariablePlaceholder,
-  onVariableSearchToggle,
-  onVariableSearchClose,
   onInsertConfirmOutput,
   // onInsertLink,
   onInsertButton,
   onInsertSingleChoice,
   onInsertMultiChoice,
   onInsertInputField,
-  variableSearchActive = false,
   rightSlot,
 }) => {
-  const handleAddVariable = useCallback(() => {
-    if (disabled) {
-      return;
-    }
-    onVariableSearchClose?.();
-    onInsertVariablePlaceholder?.();
-  }, [disabled, onInsertVariablePlaceholder, onVariableSearchClose]);
-
-  const handleSearchToggle = useCallback(
-    (event: React.MouseEvent<HTMLButtonElement>) => {
-      if (disabled) {
-        return;
-      }
-      onVariableSearchToggle?.(event.currentTarget);
-    },
-    [disabled, onVariableSearchToggle]
-  );
-
   const handleConfirmOutput = useCallback(() => {
     if (disabled) {
       return;
@@ -146,39 +115,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     <TooltipProvider delayDuration={150}>
       <div className="markdown-flow-editor-toolbar" aria-disabled={disabled}>
         <div className="markdown-flow-editor-toolbar-left">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={handleAddVariable}
-              >
-                <Braces strokeWidth={1.75} size={ICON_SIZE} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent {...tooltipContentProps}>
-              {labels.addVariable ?? ""}
-            </TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={handleSearchToggle}
-                data-active={
-                  !disabled && variableSearchActive ? "true" : undefined
-                }
-                aria-label={labels.search}
-                title={labels.search}
-              >
-                <SearchBracesIcon strokeWidth={1.75} size={ICON_SIZE} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent {...tooltipContentProps}>
-              {labels.search ?? ""}
-            </TooltipContent>
-          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <button

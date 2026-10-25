@@ -5,7 +5,6 @@ enum SelectedOption {
   Divider = "divider",
   Video = "video",
   Image = "Image",
-  Variable = "variable",
   Empty = "",
 }
 
@@ -15,7 +14,6 @@ interface SelectContentInfo {
     resourceTitle?: string;
     resourceUrl?: string;
     scalePercent?: number;
-    variableName?: string;
   };
   from: number;
   to: number;

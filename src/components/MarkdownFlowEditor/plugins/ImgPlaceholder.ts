@@ -7,7 +7,7 @@ import {
   MatchDecorator,
 } from "@codemirror/view";
 import { SelectedOption } from "../types";
-import { unwrapFixedOutput } from "../utils";
+import { findDocumentVariableMarkers, unwrapFixedOutput } from "../utils";
 import PlaceholderWidget from "./PlaceholderWidget";
 import { mediaPlaceholderLabels } from "./mediaPlaceholderLabels";
 
@@ -66,43 +66,58 @@ const getImageMatchInfo = (match: RegExpMatchArray) => {
   };
 };
 
-const imageUrlMatcher = new MatchDecorator({
-  regexp: agiImgContextRegexp,
-  decoration: (match, view) => {
-    const info = getImageMatchInfo(match);
-    return Decoration.replace({
-      widget: new PlaceholderWidget(
-        info.text || view.state.facet(mediaPlaceholderLabels).image,
-        {
-          tag: "image",
-          url: info.url,
-          title: info.title,
-          scalePercent: info.scalePercent,
-          fixedOutput: info.fixedOutput,
-        },
-        "tag-image",
-        SelectedOption.Image,
-        view
-      ),
-    });
-  },
-});
+const createImageUrlMatcher = (view: EditorView) => {
+  const variables = findDocumentVariableMarkers(
+    view.state.doc.toString()
+  ).filter((marker) => marker.name !== null);
+  return new MatchDecorator({
+    regexp: agiImgContextRegexp,
+    decoration: (match, view, from) => {
+      const to = from + match[0].length;
+      if (variables.some((marker) => from < marker.end && to > marker.start)) {
+        return null;
+      }
+      const info = getImageMatchInfo(match);
+      return Decoration.replace({
+        widget: new PlaceholderWidget(
+          info.text || view.state.facet(mediaPlaceholderLabels).image,
+          {
+            tag: "image",
+            url: info.url,
+            title: info.title,
+            scalePercent: info.scalePercent,
+            fixedOutput: info.fixedOutput,
+          },
+          "tag-image",
+          SelectedOption.Image,
+          view
+        ),
+      });
+    },
+  });
+};
 
 const ImgPlaceholder = ViewPlugin.fromClass(
   class {
     placeholders: DecorationSet;
+    matcher: MatchDecorator;
     constructor(view: EditorView) {
-      this.placeholders = imageUrlMatcher.createDeco(view);
+      this.matcher = createImageUrlMatcher(view);
+      this.placeholders = this.matcher.createDeco(view);
     }
     update(update: ViewUpdate) {
+      if (update.docChanged) {
+        this.matcher = createImageUrlMatcher(update.view);
+      }
       if (
+        update.docChanged ||
         update.startState.facet(mediaPlaceholderLabels) !==
-        update.state.facet(mediaPlaceholderLabels)
+          update.state.facet(mediaPlaceholderLabels)
       ) {
-        this.placeholders = imageUrlMatcher.createDeco(update.view);
+        this.placeholders = this.matcher.createDeco(update.view);
         return;
       }
-      this.placeholders = imageUrlMatcher.updateDeco(update, this.placeholders);
+      this.placeholders = this.matcher.updateDeco(update, this.placeholders);
     }
   },
   {

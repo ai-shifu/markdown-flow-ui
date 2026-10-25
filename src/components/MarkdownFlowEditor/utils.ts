@@ -39,10 +39,6 @@ const parseContentInfo = (
         resourceUrl: dataset.url,
         resourceTitle: dataset.title,
       };
-    case SelectedOption.Variable:
-      return {
-        variableName: normalizeVariableName(dataset.title ?? "") ?? undefined,
-      };
     default:
       return {
         resourceUrl: dataset.url ?? "",

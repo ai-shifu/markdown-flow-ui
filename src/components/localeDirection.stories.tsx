@@ -2168,13 +2168,13 @@ export const VariablesWithoutPicker: Story = {
       await userEvent.click(
         canvasElement.querySelector<HTMLElement>(".cm-content")!
       );
-      await userEvent.click(
-        canvasElement.querySelector<HTMLElement>(
-          ".tag-variable .tag-placeholder-content"
-        )!
-      );
       await waitFor(() => {
         expect(page.queryByRole("dialog")).toBeNull();
+        expect(canvasElement.querySelector(".tag-variable")).toBeNull();
+        const lines = canvasElement.querySelectorAll(".cm-content .cm-line");
+        expect(Array.from(lines, (line) => line.textContent).join("\n")).toBe(
+          variableSourceWithoutPicker
+        );
         expect(canvas.getByTestId("variable-source").textContent).toBe(
           variableSourceWithoutPicker
         );

@@ -34,7 +34,6 @@ import {
 import ImgPlaceholder from "./plugins/ImgPlaceholder";
 import VideoPlaceholder from "./plugins/VideoPlaceholder";
 import { mediaPlaceholderLabels } from "./plugins/mediaPlaceholderLabels";
-import VariablePlaceholder from "./plugins/VariablePlaceholder";
 import SyntaxHighlighter from "./plugins/SyntaxHighlighter";
 // import createFixedTextPlaceholder from "./plugins/FixedTextPlaceholder";
 // import DividerPlaceholder from "./plugins/DividerPlaceholder";
@@ -587,9 +586,6 @@ const Editor: React.FC<EditorProps> = ({
         return;
       }
       const { type, from, to, dataset } = event.detail;
-      if (type === SelectedOption.Variable) {
-        return;
-      }
       const value = parseContentInfo(type, dataset);
       setSelectContentInfo({
         type,
@@ -650,8 +646,7 @@ const Editor: React.FC<EditorProps> = ({
       extensions.push(
         mediaPlaceholderLabelsExtension,
         ImgPlaceholder,
-        VideoPlaceholder,
-        VariablePlaceholder
+        VideoPlaceholder
         // fixedTextPlaceholderExtension,
         // DividerPlaceholder,
       );

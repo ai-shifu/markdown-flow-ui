@@ -571,7 +571,15 @@ Which-option?
   },
 };
 
+const ControlledEditor = (
+  args: React.ComponentProps<typeof MarkdownFlowEditor>
+) => {
+  const [value, setValue] = useState(args.content ?? "");
+  return <MarkdownFlowEditor {...args} content={value} onChange={setValue} />;
+};
+
 export const ToolbarWithoutVariableActions: Story = {
+  render: (args) => <ControlledEditor {...args} />,
   args: { locale: "en-US", editMode: EditMode.QuickEdit },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -592,6 +600,9 @@ export const ToolbarWithoutVariableActions: Story = {
       texts.toolbarInsertImage,
       texts.toolbarInsertVideo,
     ]);
+    await userEvent.click(
+      canvasElement.querySelector<HTMLElement>(".cm-content")!
+    );
     await userEvent.click(
       canvas.getByRole("button", { name: texts.toolbarInsertSingleChoice })
     );

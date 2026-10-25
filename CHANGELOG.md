@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.3 - 2026-10-26
+
+### Fixed
+
+- Keep remark-flow helpers bound in published ESM and CommonJS editor bundles,
+  so consumers can load the editor and update Markdown content reliably.
+- Use KaTeX 0.18.2 consistently for mathematical markup and styles, including
+  the patched handling of inherited trust settings.
+
+### Changed
+
+- Require the patched Next.js 15.5.28 peer version and pin Sharp 0.35.5 for
+  development installs with both npm and pnpm.
+- Update Vite, Storybook and Vitest to patched versions, and keep browser gesture
+  tests consistent with native pointer and orientation event timing.
+- Remove the unused Rollup CommonJS and Terser plugins and the daisyUI development
+  dependency while keeping the bundled blackboard styles unchanged.
+
 ## 0.3.2 - 2026-10-25
 
 ### Changed

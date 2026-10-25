@@ -1,8 +1,10 @@
 import React, { useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { EditorView } from "@codemirror/view";
 import { Sparkles } from "lucide-react";
 
-// import { fn } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from "storybook/test";
+import { getEditorLocaleMessages } from "./editorI18n";
 
 import MarkdownFlowEditor from "./MarkdownFlowEditor";
 import { EditMode } from "./MarkdownFlowEditor";
@@ -17,7 +19,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The editor does not bind search shortcuts. Ctrl+F (Cmd+F on macOS) uses the browser's page search instead of opening an editor search panel.",
+          "The editor does not bind search shortcuts. Ctrl+F (Cmd+F on macOS) uses the browser's page search instead of opening an editor search panel. Variable references and assignment markers remain editable source text in both editing modes, including QuickEdit.",
       },
     },
   },
@@ -343,7 +345,7 @@ export const MarkdownFlowEditorFrenchLocale: Story = {
   args: {
     content: `## Bonjour
 
-Tapez '/' pour insérer une image, une vidéo ou une variable.
+Tapez '/' pour insérer une image ou une vidéo.
 
 Variable système: {{sys_user_language}}
 `,
@@ -357,7 +359,7 @@ export const MarkdownFlowEditorSpanishLocale: Story = {
   args: {
     content: `## Hola
 
-Escribe '/' para insertar una imagen, un vídeo o una variable.
+Escribe '/' para insertar una imagen o un vídeo.
 
 Variable del sistema: {{sys_user_language}}
 `,
@@ -371,7 +373,7 @@ export const MarkdownFlowEditorArabicLocale: Story = {
   args: {
     content: `## مرحبًا
 
-اكتب '/' لإدراج صورة أو فيديو أو متغير.
+اكتب '/' لإدراج صورة أو فيديو.
 
 متغير النظام: {{sys_user_language}}
 `,
@@ -385,7 +387,7 @@ export const MarkdownFlowEditorThaiLocale: Story = {
   args: {
     content: `## สวัสดี
 
-พิมพ์ '/' เพื่อแทรกรูปภาพ วิดีโอ หรือตัวแปร
+พิมพ์ '/' เพื่อแทรกรูปภาพหรือวิดีโอ
 
 ตัวแปรระบบ: {{sys_user_language}}
 `,
@@ -398,7 +400,7 @@ export const MarkdownFlowEditorThaiLocale: Story = {
 export const MarkdownFlowEditorGermanLocale: Story = {
   args: {
     content:
-      "## Hallo\n\nGib '/' ein, um ein Bild, Video oder eine Variable einzufügen.\n\nSystemvariable: {{sys_user_language}}\n",
+      "## Hallo\n\nGib '/' ein, um ein Bild oder Video einzufügen.\n\nSystemvariable: {{sys_user_language}}\n",
     editMode: EditMode.QuickEdit,
     locale: "de-DE",
     variables: [{ name: "sys_user_language" }, { name: "plan" }],
@@ -408,7 +410,7 @@ export const MarkdownFlowEditorGermanLocale: Story = {
 export const MarkdownFlowEditorJapaneseLocale: Story = {
   args: {
     content:
-      "## こんにちは\n\n「/」を入力して画像、動画、変数を挿入します。\n\nシステム変数: {{sys_user_language}}\n",
+      "## こんにちは\n\n「/」を入力して画像や動画を挿入します。\n\nシステム変数: {{sys_user_language}}\n",
     editMode: EditMode.QuickEdit,
     locale: "ja-JP",
     variables: [{ name: "sys_user_language" }, { name: "plan" }],
@@ -418,7 +420,7 @@ export const MarkdownFlowEditorJapaneseLocale: Story = {
 export const MarkdownFlowEditorUrduLocale: Story = {
   args: {
     content:
-      "## خوش آمدید\n\nتصویر، ویڈیو یا متغیر شامل کرنے کے لیے '/' ٹائپ کریں۔\n\nنظام کا متغیر: {{sys_user_language}}\n",
+      "## خوش آمدید\n\nتصویر یا ویڈیو شامل کرنے کے لیے '/' ٹائپ کریں۔\n\nنظام کا متغیر: {{sys_user_language}}\n",
     editMode: EditMode.QuickEdit,
     locale: "ur-PK",
     variables: [{ name: "sys_user_language" }, { name: "plan" }],
@@ -428,7 +430,7 @@ export const MarkdownFlowEditorUrduLocale: Story = {
 export const MarkdownFlowEditorFilipinoLocale: Story = {
   args: {
     content:
-      "## Kumusta\n\nI-type ang '/' para maglagay ng larawan, bidyo, o baryabol.\n\nBaryabol ng sistema: {{sys_user_language}}\n",
+      "## Kumusta\n\nI-type ang '/' para maglagay ng larawan o bidyo.\n\nBaryabol ng sistema: {{sys_user_language}}\n",
     editMode: EditMode.QuickEdit,
     locale: "fil-PH",
     variables: [{ name: "sys_user_language" }, { name: "plan" }],
@@ -438,7 +440,7 @@ export const MarkdownFlowEditorFilipinoLocale: Story = {
 export const MarkdownFlowEditorVietnameseLocale: Story = {
   args: {
     content:
-      "## Xin chào\n\nNhập '/' để chèn hình ảnh, video hoặc biến.\n\nBiến hệ thống: {{sys_user_language}}\n",
+      "## Xin chào\n\nNhập '/' để chèn hình ảnh hoặc video.\n\nBiến hệ thống: {{sys_user_language}}\n",
     editMode: EditMode.QuickEdit,
     locale: "vi-VN",
     variables: [{ name: "sys_user_language" }, { name: "plan" }],
@@ -567,5 +569,162 @@ Which-option?
       { name: "Which [path] | level//hint...?" },
       { name: "name}" },
     ],
+  },
+};
+
+const ControlledEditor = (
+  args: React.ComponentProps<typeof MarkdownFlowEditor>
+) => {
+  const [value, setValue] = useState(args.content ?? "");
+  return <MarkdownFlowEditor {...args} content={value} onChange={setValue} />;
+};
+
+export const ToolbarWithoutVariableActions: Story = {
+  render: (args) => <ControlledEditor {...args} />,
+  args: { locale: "en-US", editMode: EditMode.QuickEdit },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const texts = getEditorLocaleMessages("en-US");
+    const toolbar = canvasElement.querySelector(
+      ".markdown-flow-editor-toolbar-left"
+    )!;
+    expect(
+      within(toolbar)
+        .getAllByRole("button")
+        .map((button) => button.getAttribute("aria-label"))
+    ).toEqual([
+      texts.toolbarInsertSingleChoice,
+      texts.toolbarInsertMultiChoice,
+      texts.toolbarInsertInput,
+      texts.toolbarInsertButton,
+      texts.toolbarConfirmOutput,
+      texts.toolbarInsertImage,
+      texts.toolbarInsertVideo,
+    ]);
+    await userEvent.click(
+      canvasElement.querySelector<HTMLElement>(".cm-content")!
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: texts.toolbarInsertSingleChoice })
+    );
+    await waitFor(() =>
+      expect(canvasElement.querySelector(".cm-content")?.textContent).toBe(
+        "?[%{{  }} Option 1 | Option 2]"
+      )
+    );
+    expect(
+      canvasElement.querySelector(".markdown-flow-editor-variable-search")
+    ).toBeNull();
+  },
+};
+
+export const SlashMenuWithoutVariables: Story = {
+  render: (args) => <ControlledEditor {...args} />,
+  args: { locale: "en-US", editMode: EditMode.QuickEdit },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    const texts = getEditorLocaleMessages("en-US");
+    const editor = canvasElement.querySelector<HTMLElement>(".cm-content")!;
+    await userEvent.click(editor);
+    await userEvent.type(editor, "/");
+    await waitFor(() =>
+      expect(
+        canvas.getAllByRole("option").map((option) => option.textContent)
+      ).toEqual([texts.slashImage, texts.slashVideo])
+    );
+    await userEvent.click(
+      canvas.getByRole("option", { name: texts.slashImage })
+    );
+    await page.findByRole("dialog", { name: texts.dialogTitleImage });
+  },
+};
+
+export const EditableVariableSyntax: Story = {
+  render: (args) => <ControlledEditor {...args} />,
+  args: {
+    locale: "en-US",
+    editMode: EditMode.QuickEdit,
+    content: "Before {{ learner }} / ?[%{{完整问题}} A | B] after",
+  },
+  play: async ({ canvasElement, args }) => {
+    const getView = () => {
+      const editor = canvasElement.querySelector<HTMLElement>(".cm-content");
+      expect(editor).not.toBeNull();
+      const view = EditorView.findFromDOM(editor!);
+      expect(view).not.toBeNull();
+      return view!;
+    };
+    await waitFor(() =>
+      expect(getView().state.doc.toString()).toBe(args.content)
+    );
+    getView().dispatch({ selection: { anchor: 0 } });
+    await waitFor(() => {
+      expect(canvasElement.querySelector(".cm-content")?.textContent).toBe(
+        args.content
+      );
+      expect(canvasElement.querySelector(".tag-variable")).toBeNull();
+    });
+
+    const referenceView = getView();
+    referenceView.dispatch({
+      selection: {
+        anchor: referenceView.state.doc.toString().indexOf("learner") + 3,
+      },
+    });
+    referenceView.focus();
+    await userEvent.keyboard("X");
+    await waitFor(() =>
+      expect(getView().state.doc.toString()).toBe(
+        "Before {{ leaXrner }} / ?[%{{完整问题}} A | B] after"
+      )
+    );
+
+    const assignmentView = getView();
+    assignmentView.dispatch({
+      selection: {
+        anchor: assignmentView.state.doc.toString().indexOf("完整问题") + 2,
+      },
+    });
+    assignmentView.focus();
+    await userEvent.keyboard("X");
+    const editedSource =
+      "Before {{ leaXrner }} / ?[%{{完整X问题}} A | B] after";
+    await waitFor(() =>
+      expect(getView().state.doc.toString()).toBe(editedSource)
+    );
+
+    const finalView = getView();
+    finalView.dispatch({ selection: { anchor: finalView.state.doc.length } });
+    await waitFor(() => {
+      expect(getView().state.doc.toString()).toBe(editedSource);
+      expect(canvasElement.querySelector(".cm-content")?.textContent).toBe(
+        editedSource
+      );
+      expect(canvasElement.querySelector(".tag-variable")).toBeNull();
+    });
+  },
+};
+
+export const MediaLikeVariableNames: Story = {
+  render: (args) => <ControlledEditor {...args} />,
+  args: {
+    editMode: EditMode.QuickEdit,
+    content: [
+      "Before {{ ![avatar](https://example.com/a.png) }} after",
+      '{{ <img src="https://example.com/b.png"> }}',
+      '{{ <iframe data-tag="video" src="https://example.com/movie"></iframe> }}',
+    ].join("\n"),
+  },
+  play: async ({ canvasElement, args }) => {
+    await waitFor(() => {
+      const lines = canvasElement.querySelectorAll(".cm-content .cm-line");
+      expect(Array.from(lines, (line) => line.textContent).join("\n")).toBe(
+        args.content
+      );
+      expect(
+        canvasElement.querySelector(".tag-variable, .tag-image, .tag-video")
+      ).toBeNull();
+    });
   },
 };

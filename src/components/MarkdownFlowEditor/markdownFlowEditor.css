@@ -22,8 +22,7 @@
   color: #800080;
 }
 .tag-image,
-.tag-video,
-.tag-variable {
+.tag-video {
   &:hover {
     background: #d9d9d9;
     border-radius: 2px;
@@ -129,14 +128,6 @@
 
 .tag-icon {
   margin-left: 10px;
-}
-
-.tag-variable {
-  color: #0e46fb;
-  cursor: pointer;
-  &:hover {
-    color: hsl(226, 97%, 40%);
-  }
 }
 
 /* Syntax Highlighting */
@@ -313,89 +304,6 @@
 .toolbar-right-icon {
   display: inline-flex;
   align-items: center;
-}
-
-.markdown-flow-editor-variable-search {
-  width: 260px;
-  max-width: calc(100vw - 16px);
-  box-sizing: border-box;
-  border-radius: 8px;
-  border: 1px solid var(--base-border, #e5e5e5);
-  background: #fff;
-  box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  padding: 10px;
-  z-index: 50;
-}
-
-.variable-search-icon {
-  position: absolute;
-  inset-inline-start: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
-  color: var(--base-muted-foreground, #737373);
-}
-
-.variable-search-input {
-  padding-inline-start: 32px;
-  height: 36px;
-  border-radius: 8px;
-}
-
-.variable-search-list {
-  max-height: 320px;
-  overflow-y: auto;
-  margin-top: 8px;
-}
-
-.variable-search-section + .variable-search-section {
-  margin-top: 12px;
-}
-
-.variable-search-section-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--base-muted-foreground, #737373);
-  margin: 4px 0;
-}
-
-.variable-search-item {
-  width: 100%;
-  text-align: start;
-  border: none;
-  background: transparent;
-  border-radius: 6px;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  cursor: pointer;
-}
-
-.variable-search-item:not(:disabled):hover,
-.variable-search-item-active {
-  background: rgba(14, 70, 251, 0.08);
-}
-
-.variable-search-item-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111;
-}
-
-.variable-search-item-label {
-  font-size: 12px;
-  color: var(--base-muted-foreground, #737373);
-}
-
-.variable-search-empty {
-  font-size: 13px;
-  color: var(--base-muted-foreground, #737373);
-  text-align: center;
-  padding: 24px 8px 8px;
 }
 
 .markdown-flow-editor[data-disabled="true"] {

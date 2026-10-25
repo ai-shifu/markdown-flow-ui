@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.2 - 2026-10-25
+
+### Changed
+
+- Simplify the editor by removing variable toolbar actions, the variable slash
+  command, and the variable selection and creation panel.
+- Show variable references and assignment markers as editable source in QuickEdit
+  instead of interactive labels. Keep the existing variable-list props accepted
+  for compatibility.
+- Refresh dialog, popover, and slot dependencies alongside the development
+  toolchain.
+
+### Fixed
+
+- Keep image- and video-like text inside variable names editable while preserving
+  ordinary media placeholders and their settings.
+- Refresh media placeholders when edits to variable delimiters on another line
+  change whether the media belongs to a variable name.
+
 ## 0.3.1 - 2026-10-25
 
 ### Fixed

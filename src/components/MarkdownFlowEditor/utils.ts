@@ -39,10 +39,6 @@ const parseContentInfo = (
         resourceUrl: dataset.url,
         resourceTitle: dataset.title,
       };
-    case SelectedOption.Variable:
-      return {
-        variableName: normalizeVariableName(dataset.title ?? "") ?? undefined,
-      };
     default:
       return {
         resourceUrl: dataset.url ?? "",
@@ -58,7 +54,6 @@ function createSlashCommands(
     fixedText?: string;
     image?: string;
     video?: string;
-    variable?: string;
   }
 ) {
   return (context: CompletionContext): CompletionResult | null => {
@@ -94,12 +89,6 @@ function createSlashCommands(
         //     handleSelect(view, _, from, to, SelectedOption.FixedText);
         //   },
         // },
-        {
-          label: labels?.variable ?? "Variable",
-          apply: (view, _, from, to) => {
-            handleSelect(view, _, from, to, SelectedOption.Variable);
-          },
-        },
         {
           label: labels?.image ?? "Image",
           apply: (view, _, from, to) => {

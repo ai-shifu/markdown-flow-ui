@@ -1,15 +1,9 @@
-import {
-  EditorView,
-  Decoration,
-  DecorationSet,
-  ViewPlugin,
-  ViewUpdate,
-  MatchDecorator,
-} from "@codemirror/view";
+import { EditorView, Decoration, MatchDecorator } from "@codemirror/view";
 import { SelectedOption } from "../types";
 import { findDocumentVariableMarkers, unwrapFixedOutput } from "../utils";
 import PlaceholderWidget from "./PlaceholderWidget";
 import { mediaPlaceholderLabels } from "./mediaPlaceholderLabels";
+import { createMediaPlaceholderPlugin } from "./createMediaPlaceholderPlugin";
 
 const biliVideoContextRegexp =
   /===\s*<iframe\s[^>]*data-tag="video"[^>]*><\/iframe>\s*===|<iframe\s[^>]*data-tag="video"[^>]*><\/iframe>/gi;
@@ -82,36 +76,6 @@ const createBiliUrlMatcher = (view: EditorView) => {
   });
 };
 
-const VideoPlaceholder = ViewPlugin.fromClass(
-  class {
-    placeholders: DecorationSet;
-    matcher: MatchDecorator;
-    constructor(view: EditorView) {
-      this.matcher = createBiliUrlMatcher(view);
-      this.placeholders = this.matcher.createDeco(view);
-    }
-    update(update: ViewUpdate) {
-      if (update.docChanged) {
-        this.matcher = createBiliUrlMatcher(update.view);
-      }
-      if (
-        update.docChanged ||
-        update.startState.facet(mediaPlaceholderLabels) !==
-          update.state.facet(mediaPlaceholderLabels)
-      ) {
-        this.placeholders = this.matcher.createDeco(update.view);
-        return;
-      }
-      this.placeholders = this.matcher.updateDeco(update, this.placeholders);
-    }
-  },
-  {
-    decorations: (instance) => instance.placeholders,
-    provide: (plugin) =>
-      EditorView.atomicRanges.of((view) => {
-        return view.plugin(plugin)?.placeholders || Decoration.none;
-      }),
-  }
-);
+const VideoPlaceholder = createMediaPlaceholderPlugin(createBiliUrlMatcher);
 
 export default VideoPlaceholder;

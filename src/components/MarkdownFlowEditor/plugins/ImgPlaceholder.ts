@@ -1,15 +1,9 @@
-import {
-  EditorView,
-  Decoration,
-  DecorationSet,
-  ViewPlugin,
-  ViewUpdate,
-  MatchDecorator,
-} from "@codemirror/view";
+import { EditorView, Decoration, MatchDecorator } from "@codemirror/view";
 import { SelectedOption } from "../types";
 import { findDocumentVariableMarkers, unwrapFixedOutput } from "../utils";
 import PlaceholderWidget from "./PlaceholderWidget";
 import { mediaPlaceholderLabels } from "./mediaPlaceholderLabels";
+import { createMediaPlaceholderPlugin } from "./createMediaPlaceholderPlugin";
 
 const imageMarkupRegexp = /!\[([^\]]*)\]\(([^)]+)\)|<img\b[^>]*>/i;
 const agiImgContextRegexp =
@@ -97,36 +91,6 @@ const createImageUrlMatcher = (view: EditorView) => {
   });
 };
 
-const ImgPlaceholder = ViewPlugin.fromClass(
-  class {
-    placeholders: DecorationSet;
-    matcher: MatchDecorator;
-    constructor(view: EditorView) {
-      this.matcher = createImageUrlMatcher(view);
-      this.placeholders = this.matcher.createDeco(view);
-    }
-    update(update: ViewUpdate) {
-      if (update.docChanged) {
-        this.matcher = createImageUrlMatcher(update.view);
-      }
-      if (
-        update.docChanged ||
-        update.startState.facet(mediaPlaceholderLabels) !==
-          update.state.facet(mediaPlaceholderLabels)
-      ) {
-        this.placeholders = this.matcher.createDeco(update.view);
-        return;
-      }
-      this.placeholders = this.matcher.updateDeco(update, this.placeholders);
-    }
-  },
-  {
-    decorations: (instance) => instance.placeholders,
-    provide: (plugin) =>
-      EditorView.atomicRanges.of((view) => {
-        return view.plugin(plugin)?.placeholders || Decoration.none;
-      }),
-  }
-);
+const ImgPlaceholder = createMediaPlaceholderPlugin(createImageUrlMatcher);
 
 export default ImgPlaceholder;

@@ -23,12 +23,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "20"
+          node-version-file: ".nvmrc"
           cache: "npm"
 
       - name: Install dependencies
@@ -36,3 +36,30 @@ jobs:
 
       - name: Prettier format check
         run: npm run format:check
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Install the package build tool
+        run: |
+          corepack enable pnpm
+          corepack install
+
+      - name: Build and verify package assets
+        run: npm run test:package
+
+      - name: Verify public type exports
+        run: npm run typecheck:exports
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Storybook browser tests
+        run: >-
+          npm run test:storybook --
+          src/components/ContentRender/ContentRender.stories.tsx
+          src/components/ContentRender/IframeSandbox.stories.tsx
+          src/components/Slide/Slide.stories.tsx
+          src/components/MarkdownFlow/ScrollToBottomControl.stories.tsx
+          src/components/MarkdownFlow/ScrollableMarkdownFlow.stories.tsx
+          src/components/localeDirection.stories.tsx

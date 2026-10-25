@@ -13,7 +13,7 @@ import {
   CaptionsOff,
   EllipsisVertical,
   FastForward,
-  FilePenLine,
+  LoaderCircle,
   Maximize,
   Rewind,
   ScanLine,
@@ -22,9 +22,16 @@ import {
   Volume2,
 } from "lucide-react";
 
+import {
+  getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
+import { useDetachedLanguage } from "../../lib/useDetachedLanguage";
+import { useResolvedDirection } from "../../lib/useResolvedDirection";
 import { cn } from "../../lib/utils";
 import MobilePlayerSettingsSheet from "./MobilePlayerSettingsSheet";
-import { DEFAULT_SLIDE_PLAYER_TEXTS } from "./constants";
+import { getSlidePlayerTexts, type SlidePlayerLocaleTexts } from "./slideI18n";
 import type { SlideAudioItem } from "./useSlide";
 import type {
   ElementSubtitleCue,
@@ -71,42 +78,38 @@ const audioPreloadElementCache = new Map<string, HTMLAudioElement>();
 /**
  * Labels and accessibility text used by the slide player controls.
  *
- * Missing fields fall back to `DEFAULT_SLIDE_PLAYER_TEXTS`; pass a `texts`
- * object when a consumer needs localized control labels or tooltip text.
+ * Missing fields fall back to the selected `locale`; pass a `texts` object when
+ * a consumer needs custom control labels or tooltip text.
  *
  * @example
  * ```tsx
- * <Player texts={{ playLabel: "播放", nextLabel: "下一页" }} />
+ * <Player locale="zh-CN" texts={{ playLabel: "播放", nextLabel: "下一页" }} />
  * ```
  */
-export interface SlidePlayerTexts {
-  closeSettingsLabel?: string;
-  enterFullscreenLabel?: string;
-  exitFullscreenLabel?: string;
-  moreOptionsAriaLabel?: string;
-  nextLabel?: string;
-  /** Accessible label/title for the next-subtitle jump control. */
-  nextSubtitleLabel?: string;
-  notesLabel?: string;
-  pauseAutoplayLabel?: string;
-  pauseLabel?: string;
-  playAutoplayLabel?: string;
-  playLabel?: string;
-  previousLabel?: string;
-  /** Accessible label/title for the previous-subtitle jump control. */
-  previousSubtitleLabel?: string;
-  screenModeLabel?: string;
-  settingsTitle?: string;
-  subtitleLabel?: string;
-  subtitleToggleAriaLabel?: string;
-  volumeAriaLabel?: string;
-  screenLabel?: string;
-  nonFullscreenLabel?: string;
-  fullscreenLabel?: string;
-  fullscreenHintText?: string;
-}
+export type SlidePlayerTexts = Partial<SlidePlayerLocaleTexts>;
 
 export type SlidePlayerLoadingReason = "loadingAudio" | "waitingForMoreAudio";
+
+export interface SlidePlayerPlaybackRestoreRequest {
+  id: number | string;
+  timeMs: number;
+}
+
+export interface SlidePlayerPlaybackCheckpoint {
+  /** Identifies the logical audio item that produced this checkpoint. */
+  audioKey: string;
+  isComplete: boolean;
+  timeMs: number;
+}
+
+export interface SlidePlayerProgress {
+  ariaLabel: string;
+  currentIndex: number;
+  generatingLabel?: string;
+  isGenerating?: boolean;
+  onNavigate?: (index: number, context: SlidePlayerNavigationContext) => void;
+  totalSteps: number;
+}
 
 export interface SlidePlayerNavigationContext {
   shouldContinuePlayback: boolean;
@@ -116,8 +119,7 @@ export interface SlidePlayerNavigationContext {
 
 export type SlidePlayerSubtitleJumpTarget = SubtitleCueJumpTarget;
 
-export interface SlidePlayerSubtitleSeekRequest
-  extends SlidePlayerSubtitleJumpTarget {
+export interface SlidePlayerSubtitleSeekRequest extends SlidePlayerSubtitleJumpTarget {
   id: number | string;
 }
 
@@ -199,6 +201,12 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   onPlaybackPreferenceChange?: (playing: boolean) => void;
   onPlaybackStarted?: () => void;
   onPlaybackTimeChange?: (timeMs: number) => void;
+  /** Emits durable checkpoint candidates at lifecycle boundaries, never per frame. */
+  onPlaybackCheckpoint?: (checkpoint: SlidePlayerPlaybackCheckpoint) => void;
+  /** Restores the current logical audio item and resumes normal autoplay. */
+  playbackRestoreRequest?: SlidePlayerPlaybackRestoreRequest | null;
+  /** Called after a restore request has been applied to the active audio item. */
+  onPlaybackRestoreComplete?: (requestId: number | string) => void;
   onSubtitleToggle?: () => void;
   onPrev?: (context: SlidePlayerNavigationContext) => void;
   onNext?: (context: SlidePlayerNavigationContext) => void;
@@ -221,13 +229,22 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   onMobileViewModeChange?: (viewMode: MobileViewMode) => void;
   onEnded?: (audioIndex: number) => void;
   onAutoAdvanceToggle?: (enabled: boolean) => void;
+  /** @deprecated Manual interaction toggling is no longer exposed by the player. */
   onInteractionToggle?: () => void;
+  /** @deprecated Manual interaction toggling is no longer exposed by the player. */
   hasInteraction?: boolean;
   isInteractionOpen?: boolean;
   isSubtitleEnabled?: boolean;
   prevDisabled?: boolean;
   nextDisabled?: boolean;
+  /** Shows or hides the visual controls without disabling audio, callbacks, or keyboard shortcuts. */
   showControls?: boolean;
+  /** Fired when the pointer enters the controls container to pause auto-hide. */
+  onControlsPointerEnter?: React.PointerEventHandler<HTMLDivElement>;
+  /** Fired when the pointer leaves the controls container to resume auto-hide. */
+  onControlsPointerLeave?: React.PointerEventHandler<HTMLDivElement>;
+  /** Interactive navigation timeline for the generated slide sequence. */
+  slideProgress?: SlidePlayerProgress | null;
   /**
    * Enables document-level keyboard shortcuts for existing player actions.
    *
@@ -244,6 +261,8 @@ export type PlayerProps = Omit<React.ComponentProps<"div">, "onEnded"> & {
   subtitleSeekRequest?: SlidePlayerSubtitleSeekRequest | null;
   customActions?: SlidePlayerCustomActions;
   customActionContext?: SlidePlayerCustomActionContext;
+  /** Locale used for built-in control labels when `texts` does not provide them. */
+  locale?: MarkdownFlowLocale;
   texts?: SlidePlayerTexts;
 };
 
@@ -283,14 +302,13 @@ const PLAYER_SHORTCUT_LABELS = {
   fullscreen: "F",
   next: "→",
   nextSubtitle: "Shift+→",
-  notes: "N",
-  playback: "Space",
   previous: "←",
   previousSubtitle: "Shift+←",
   subtitle: "C",
 } as const;
 
 const SUBTITLE_JUMP_AVAILABILITY_UPDATE_INTERVAL_MS = 250;
+const PLAYBACK_RESTORE_WAIT_TIMEOUT_MS = 15_000;
 
 const getShortcutTitle = (label: string | undefined, shortcut: string) =>
   label ? `${label} (${shortcut})` : shortcut;
@@ -307,6 +325,9 @@ const Player = ({
   onPlaybackPreferenceChange,
   onPlaybackStarted,
   onPlaybackTimeChange,
+  onPlaybackCheckpoint,
+  playbackRestoreRequest = null,
+  onPlaybackRestoreComplete,
   onSubtitleToggle,
   onPrev,
   onNext,
@@ -319,25 +340,37 @@ const Player = ({
   onMobileViewModeChange,
   onEnded,
   onAutoAdvanceToggle,
-  onInteractionToggle,
-  hasInteraction = false,
+  onInteractionToggle: _deprecatedOnInteractionToggle,
+  hasInteraction: _deprecatedHasInteraction,
   isInteractionOpen = false,
   isSubtitleEnabled = true,
   prevDisabled = false,
   nextDisabled = false,
   showControls = true,
+  onControlsPointerEnter,
+  onControlsPointerLeave,
+  slideProgress = null,
   enableKeyboardShortcuts = true,
   subtitleSeekRequest = null,
   customActions,
   customActionContext,
+  locale,
   texts,
   onFocusCapture,
   onPointerDown,
   ...props
 }: PlayerProps) => {
+  const direction = props.dir ?? getMarkdownFlowDirection(locale);
+  const language = props.lang ?? getMarkdownFlowLanguage(locale);
   const localKeyboardShortcutOwnerId = useId();
   const keyboardShortcutContext = useContext(PlayerKeyboardShortcutContext);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const slideProgressRef = useRef<HTMLDivElement | null>(null);
+  const currentSlideProgressMarkerRef = useRef<HTMLButtonElement | null>(null);
+  const { resolvedDirection: shortcutDirection, readDirection } =
+    useResolvedDirection(audioRef, direction);
+  const isRtlNavigation = shortcutDirection === "rtl";
+  const portalLanguage = useDetachedLanguage(audioRef, language);
   const previousInteractionOpenRef = useRef(isInteractionOpen);
   const audioSrcRef = useRef<string | null>(null);
   const currentAudioKeyRef = useRef<string | null>(null);
@@ -368,6 +401,12 @@ const Player = ({
   const lastSubtitleJumpTargetRef =
     useRef<SlidePlayerSubtitleJumpTarget | null>(null);
   const lastSubtitleSeekRequestIdRef = useRef<number | string | null>(null);
+  const lastPlaybackRestoreRequestIdRef = useRef<number | string | null>(null);
+  const lastPlaybackCheckpointAtRef = useRef(0);
+  const hasCompletedCurrentAudioRef = useRef(false);
+  const isResettingAudioRef = useRef(false);
+  const onPlaybackCheckpointRef = useRef(onPlaybackCheckpoint);
+  const getCurrentPlaybackTimeMsRef = useRef<() => number>(() => 0);
   const subtitleCueTracksCacheRef = useRef<SubtitleCueTracksCache | null>(null);
   const playbackAccessModeRef = useRef<
     "unknown" | "auto" | "manual" | "blocked"
@@ -403,7 +442,7 @@ const Player = ({
     () => toPlayerCustomActionList(customActions, customActionContext),
     [customActionContext, customActions]
   );
-  const mobileVisibleActionCount = customActionList.length + 7;
+  const mobileVisibleActionCount = customActionList.length + 6;
   const controlsStyle = useMemo(
     () =>
       ({
@@ -413,10 +452,10 @@ const Player = ({
   );
   const playerTexts = useMemo(
     () => ({
-      ...DEFAULT_SLIDE_PLAYER_TEXTS,
+      ...getSlidePlayerTexts(locale),
       ...texts,
     }),
-    [texts]
+    [locale, texts]
   );
   const currentAudioKey = useMemo(() => {
     if (!currentAudio) {
@@ -457,8 +496,10 @@ const Player = ({
   );
   const previousShortcutMetadata = getShortcutMetadata(
     playerTexts.previousLabel,
-    PLAYER_SHORTCUT_LABELS.previous,
-    "ArrowLeft"
+    isRtlNavigation
+      ? PLAYER_SHORTCUT_LABELS.next
+      : PLAYER_SHORTCUT_LABELS.previous,
+    isRtlNavigation ? "ArrowRight" : "ArrowLeft"
   );
   const previousSubtitleShortcutMetadata = getShortcutMetadata(
     playerTexts.previousSubtitleLabel,
@@ -467,13 +508,15 @@ const Player = ({
   );
   const playbackShortcutMetadata = getShortcutMetadata(
     toggleAriaLabel,
-    PLAYER_SHORTCUT_LABELS.playback,
+    playerTexts.playbackShortcutLabel,
     "Space"
   );
   const nextShortcutMetadata = getShortcutMetadata(
     playerTexts.nextLabel,
-    PLAYER_SHORTCUT_LABELS.next,
-    "ArrowRight"
+    isRtlNavigation
+      ? PLAYER_SHORTCUT_LABELS.previous
+      : PLAYER_SHORTCUT_LABELS.next,
+    isRtlNavigation ? "ArrowLeft" : "ArrowRight"
   );
   const nextSubtitleShortcutMetadata = getShortcutMetadata(
     playerTexts.nextSubtitleLabel,
@@ -484,11 +527,6 @@ const Player = ({
     fullscreenAriaLabel,
     PLAYER_SHORTCUT_LABELS.fullscreen,
     "f"
-  );
-  const notesShortcutMetadata = getShortcutMetadata(
-    playerTexts.notesLabel,
-    PLAYER_SHORTCUT_LABELS.notes,
-    "n"
   );
   const activateKeyboardShortcutOwner = useCallback(() => {
     if (!shouldEnableKeyboardShortcuts) {
@@ -592,6 +630,26 @@ const Player = ({
       }),
     };
   }, [useAutoAdvanceToggle]);
+
+  useEffect(() => {
+    const progress = slideProgressRef.current;
+    const currentMarker = currentSlideProgressMarkerRef.current;
+    if (
+      !progress ||
+      !currentMarker ||
+      typeof progress.scrollTo !== "function"
+    ) {
+      return;
+    }
+
+    progress.scrollTo({
+      behavior: "smooth",
+      left:
+        currentMarker.offsetLeft -
+        progress.clientWidth / 2 +
+        currentMarker.clientWidth / 2,
+    });
+  }, [slideProgress?.currentIndex]);
 
   const isAutoplayBlockedError = useCallback((error: unknown) => {
     if (!(error instanceof DOMException)) {
@@ -785,6 +843,14 @@ const Player = ({
     return Math.max(audioElement.currentTime, 0) * 1000;
   }, [getSegmentStartTimeMs]);
 
+  useEffect(() => {
+    onPlaybackCheckpointRef.current = onPlaybackCheckpoint;
+  }, [onPlaybackCheckpoint]);
+
+  useEffect(() => {
+    getCurrentPlaybackTimeMsRef.current = getCurrentPlaybackTimeMs;
+  }, [getCurrentPlaybackTimeMs]);
+
   const publishPlaybackTime = useCallback(
     (timeMs: number) => {
       const nextPlaybackTimeMs = Math.max(timeMs, 0);
@@ -813,6 +879,49 @@ const Player = ({
   const syncPlaybackTime = useCallback(() => {
     publishPlaybackTime(getCurrentPlaybackTimeMs());
   }, [getCurrentPlaybackTimeMs, publishPlaybackTime]);
+
+  const emitPlaybackCheckpoint = useCallback(
+    (force = false, isComplete = false) => {
+      const audioKey = currentAudioKeyRef.current;
+
+      if (!onPlaybackCheckpoint || !audioKey) {
+        return;
+      }
+
+      const now = Date.now();
+      if (!force && now - lastPlaybackCheckpointAtRef.current < 5_000) {
+        return;
+      }
+
+      lastPlaybackCheckpointAtRef.current = now;
+      hasCompletedCurrentAudioRef.current = isComplete;
+      onPlaybackCheckpoint({
+        audioKey,
+        isComplete,
+        timeMs: getCurrentPlaybackTimeMs(),
+      });
+    },
+    [getCurrentPlaybackTimeMs, onPlaybackCheckpoint]
+  );
+
+  useEffect(
+    () => () => {
+      if (hasCompletedCurrentAudioRef.current) {
+        return;
+      }
+
+      onPlaybackCheckpointRef.current?.({
+        audioKey: currentAudioKeyRef.current ?? "none",
+        isComplete: false,
+        timeMs: getCurrentPlaybackTimeMsRef.current(),
+      });
+    },
+    []
+  );
+
+  useEffect(() => {
+    hasCompletedCurrentAudioRef.current = false;
+  }, [currentAudioIndex]);
 
   const stopPlaybackTimeLoop = useCallback(() => {
     if (
@@ -996,6 +1105,38 @@ const Player = ({
     ]
   );
 
+  const seekUrlPlayback = useCallback(
+    (audioUrl: string, timeMs: number) => {
+      const audioElement = audioRef.current;
+
+      if (!audioElement) {
+        return false;
+      }
+
+      const targetTimeSeconds = Math.max(Number(timeMs), 0) / 1000;
+      if (audioSrcRef.current !== audioUrl) {
+        audioElement.pause();
+        audioElement.removeAttribute("src");
+        audioElement.load();
+        audioSrcRef.current = audioUrl;
+        activeSourceTypeRef.current = "url";
+        preferredSourceTypeRef.current = "url";
+        audioElement.src = audioUrl;
+        audioElement.load();
+      }
+
+      pendingSeekTimeRef.current = targetTimeSeconds;
+      publishPlaybackTime(targetTimeSeconds * 1000);
+      if (audioElement.readyState > 0) {
+        audioElement.currentTime = targetTimeSeconds;
+        pendingSeekTimeRef.current = null;
+      }
+
+      return true;
+    },
+    [publishPlaybackTime]
+  );
+
   const seekToPlaybackTimeMs = useCallback(
     (timeMs: number) => {
       const audioElement = audioRef.current;
@@ -1047,29 +1188,7 @@ const Player = ({
         );
       }
 
-      if (currentAudioUrl) {
-        const targetTimeSeconds = targetTimeMs / 1000;
-        const hasNewSrc = audioSrcRef.current !== currentAudioUrl;
-
-        if (hasNewSrc) {
-          audioElement.pause();
-          audioElement.removeAttribute("src");
-          audioElement.load();
-          audioSrcRef.current = currentAudioUrl;
-          activeSourceTypeRef.current = "url";
-          preferredSourceTypeRef.current = "url";
-          audioElement.src = currentAudioUrl;
-          audioElement.load();
-        }
-
-        pendingSeekTimeRef.current = targetTimeSeconds;
-        publishPlaybackTime(targetTimeMs);
-
-        if (audioElement.readyState > 0) {
-          audioElement.currentTime = targetTimeSeconds;
-          pendingSeekTimeRef.current = null;
-        }
-
+      if (currentAudioUrl && seekUrlPlayback(currentAudioUrl, targetTimeMs)) {
         if (!shouldResumePlayback) {
           pendingAutoPlayRef.current = false;
           audioElement.pause();
@@ -1086,12 +1205,61 @@ const Player = ({
       currentAudio,
       currentAudioUrl,
       isPlaybackPaused,
-      publishPlaybackTime,
+      seekUrlPlayback,
       startSegmentPlayback,
       stopPlaybackTimeLoop,
       tryPlayCurrentAudio,
       updateLoading,
       updatePlaybackPreference,
+    ]
+  );
+
+  const restorePlaybackTimeMs = useCallback(
+    (timeMs: number) => {
+      const audioElement = audioRef.current;
+
+      if (!audioElement || !currentAudio) {
+        return false;
+      }
+
+      const targetTimeMs = Math.max(Number(timeMs), 0);
+      const segmentSeekTarget = isPlaybackTimeCoveredBySegments(
+        currentAudioSegmentsRef.current,
+        targetTimeMs
+      )
+        ? resolveSegmentSeekTarget(
+            currentAudioSegmentsRef.current,
+            targetTimeMs
+          )
+        : null;
+
+      pendingAutoPlayRef.current = true;
+      updateLoading(false);
+
+      if (
+        segmentSeekTarget &&
+        (activeSourceTypeRef.current === "segment" || !currentAudioUrl)
+      ) {
+        return startSegmentPlayback(segmentSeekTarget.segmentIndex, "restore", {
+          seekTimeSeconds: segmentSeekTarget.segmentTimeSeconds,
+          shouldResume: true,
+        });
+      }
+
+      if (!currentAudioUrl || !seekUrlPlayback(currentAudioUrl, targetTimeMs)) {
+        return false;
+      }
+
+      tryPlayCurrentAudio("restore");
+      return true;
+    },
+    [
+      currentAudio,
+      currentAudioUrl,
+      seekUrlPlayback,
+      startSegmentPlayback,
+      tryPlayCurrentAudio,
+      updateLoading,
     ]
   );
 
@@ -1230,6 +1398,10 @@ const Player = ({
       return;
     }
 
+    // The DOM pause event is delivered after React has rendered the new audio
+    // item. Save the outgoing item before changing its identity, then suppress
+    // that synthetic pause so it cannot be attributed to the new item.
+    emitPlaybackCheckpoint(true);
     currentAudioKeyRef.current = currentAudioKey;
     currentSegmentIndexRef.current = 0;
     waitingSegmentIndexRef.current = null;
@@ -1251,15 +1423,18 @@ const Player = ({
       return;
     }
 
+    isResettingAudioRef.current = true;
     audioElement.pause();
     audioElement.removeAttribute("src");
     audioElement.load();
+    isResettingAudioRef.current = false;
     setIsPlaying(false);
   }, [
     currentAudioIndex,
     currentAudioKey,
     currentAudioSegments.length,
     currentAudioUrl,
+    emitPlaybackCheckpoint,
     publishPlaybackTime,
     stopPlaybackTimeLoop,
     updateLoading,
@@ -1275,10 +1450,10 @@ const Player = ({
     if (isPlaybackPaused) {
       wasPlayingBeforeExternalPauseRef.current = Boolean(
         currentAudioRef.current &&
-          !isPausedByUserRef.current &&
-          (!audioElement.paused ||
-            pendingAutoPlayRef.current ||
-            waitingSegmentIndexRef.current !== null)
+        !isPausedByUserRef.current &&
+        (!audioElement.paused ||
+          pendingAutoPlayRef.current ||
+          waitingSegmentIndexRef.current !== null)
       );
 
       pendingAutoPlayRef.current = false;
@@ -1347,6 +1522,16 @@ const Player = ({
       return;
     }
 
+    // A restore can target a segment that has not arrived yet. Do not start the
+    // first available segment while the restore effect waits for the requested
+    // offset to become seekable.
+    if (
+      playbackRestoreRequest &&
+      playbackRestoreRequest.id !== lastPlaybackRestoreRequestIdRef.current
+    ) {
+      return;
+    }
+
     if (isPlaybackPaused) {
       pendingAutoPlayRef.current = false;
       updateLoading(false);
@@ -1379,21 +1564,7 @@ const Player = ({
           waitingSegmentIndexRef.current !== null
             ? getWaitingSegmentSeekTime()
             : 0;
-
-        audioElement.pause();
-        audioElement.removeAttribute("src");
-        audioElement.load();
-        audioSrcRef.current = currentAudioUrl;
-        activeSourceTypeRef.current = "url";
-        audioElement.src = currentAudioUrl;
-        audioElement.load();
-        pendingSeekTimeRef.current = nextSeekTime;
-        publishPlaybackTime(nextSeekTime * 1000);
-
-        if (audioElement.readyState > 0) {
-          audioElement.currentTime = nextSeekTime;
-          pendingSeekTimeRef.current = null;
-        }
+        seekUrlPlayback(currentAudioUrl, nextSeekTime * 1000);
       }
 
       pendingAutoPlayRef.current = shouldAutoResume;
@@ -1482,9 +1653,10 @@ const Player = ({
     currentAudioUrl,
     defaultPlaying,
     isPlaybackPaused,
+    playbackRestoreRequest,
     canStartPlaybackAutomatically,
-    publishPlaybackTime,
     resetAudio,
+    seekUrlPlayback,
     startSegmentPlayback,
     tryPlayCurrentAudio,
     getWaitingSegmentSeekTime,
@@ -1521,6 +1693,66 @@ const Player = ({
     subtitleSeekRequest,
   ]);
 
+  useEffect(() => {
+    if (
+      !playbackRestoreRequest ||
+      playbackRestoreRequest.id === lastPlaybackRestoreRequestIdRef.current ||
+      currentAudioIndex < 0
+    ) {
+      return;
+    }
+
+    if (restorePlaybackTimeMs(playbackRestoreRequest.timeMs)) {
+      lastPlaybackRestoreRequestIdRef.current = playbackRestoreRequest.id;
+      onPlaybackRestoreComplete?.(playbackRestoreRequest.id);
+      return;
+    }
+
+    // A completed item can no longer produce the requested offset. Release
+    // the restore guard so normal playback is not suppressed indefinitely.
+    if (!currentAudio?.isAudioStreaming) {
+      lastPlaybackRestoreRequestIdRef.current = playbackRestoreRequest.id;
+      onPlaybackRestoreComplete?.(playbackRestoreRequest.id);
+    }
+  }, [
+    currentAudio?.isAudioStreaming,
+    currentAudioIndex,
+    onPlaybackRestoreComplete,
+    playbackRestoreRequest,
+    restorePlaybackTimeMs,
+  ]);
+
+  useEffect(() => {
+    if (
+      !playbackRestoreRequest ||
+      playbackRestoreRequest.id === lastPlaybackRestoreRequestIdRef.current ||
+      currentAudioIndex < 0 ||
+      !currentAudio?.isAudioStreaming
+    ) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (
+        playbackRestoreRequest.id === lastPlaybackRestoreRequestIdRef.current
+      ) {
+        return;
+      }
+
+      lastPlaybackRestoreRequestIdRef.current = playbackRestoreRequest.id;
+      onPlaybackRestoreComplete?.(playbackRestoreRequest.id);
+    }, PLAYBACK_RESTORE_WAIT_TIMEOUT_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    currentAudio?.isAudioStreaming,
+    currentAudioIndex,
+    onPlaybackRestoreComplete,
+    playbackRestoreRequest,
+  ]);
+
   useEffect(() => resetAudio, [resetAudio]);
 
   useEffect(() => stopPlaybackTimeLoop, [stopPlaybackTimeLoop]);
@@ -1539,14 +1771,19 @@ const Player = ({
   ]);
 
   const handleAudioPause = useCallback(() => {
-    if (isWaitingForSegmentRef.current || isSwitchingSegmentRef.current) {
+    if (
+      isResettingAudioRef.current ||
+      isWaitingForSegmentRef.current ||
+      isSwitchingSegmentRef.current
+    ) {
       return;
     }
 
     stopPlaybackTimeLoop();
     syncPlaybackTime();
+    emitPlaybackCheckpoint(true);
     setIsPlaying(false);
-  }, [currentAudioIndex, stopPlaybackTimeLoop, syncPlaybackTime]);
+  }, [emitPlaybackCheckpoint, stopPlaybackTimeLoop, syncPlaybackTime]);
 
   const handleAudioCanPlay = useCallback(() => {
     const audioElement = audioRef.current;
@@ -1590,7 +1827,8 @@ const Player = ({
 
   const handleAudioTimeUpdate = useCallback(() => {
     syncPlaybackTime();
-  }, [syncPlaybackTime]);
+    emitPlaybackCheckpoint();
+  }, [emitPlaybackCheckpoint, syncPlaybackTime]);
 
   const handleAudioLoadStart = useCallback(() => {
     if (isWaitingForSegmentRef.current) {
@@ -1614,9 +1852,26 @@ const Player = ({
   }, [syncPlaybackTime]);
 
   const handleAudioEnded = useCallback(() => {
+    const activeAudio = currentAudioRef.current;
     const shouldFinishAsUrl =
       activeSourceTypeRef.current === "url" ||
       currentAudioSegmentsRef.current.length === 0;
+    const hasNextSegment = Boolean(
+      currentAudioSegmentsRef.current[currentSegmentIndexRef.current + 1]
+    );
+    const isFinalSegment = currentAudioSegmentsRef.current.some(
+      (segment) => segment.is_final
+    );
+    const isStreamingAudio = Boolean(activeAudio?.isAudioStreaming);
+
+    // A segment ending is not necessarily the end of the logical audio item.
+    // Clearing its checkpoint here would lose the resume point while the next
+    // segment is loading or while a stream is still being generated.
+    emitPlaybackCheckpoint(
+      true,
+      shouldFinishAsUrl ||
+        (!isStreamingAudio && !hasNextSegment && isFinalSegment)
+    );
 
     stopPlaybackTimeLoop();
     isSwitchingSegmentRef.current = false;
@@ -1627,7 +1882,12 @@ const Player = ({
     }
 
     handleSegmentEnded();
-  }, [finishAudioItem, handleSegmentEnded, stopPlaybackTimeLoop]);
+  }, [
+    emitPlaybackCheckpoint,
+    finishAudioItem,
+    handleSegmentEnded,
+    stopPlaybackTimeLoop,
+  ]);
 
   const handleAudioError = useCallback(() => {
     stopPlaybackTimeLoop();
@@ -1741,17 +2001,6 @@ const Player = ({
         onFullscreen();
         return true;
       },
-      interaction: () => {
-        if (!onInteractionToggle) {
-          return false;
-        }
-
-        if (hasInteraction) {
-          onInteractionToggle();
-        }
-
-        return true;
-      },
       next: () => {
         if (!onNext) {
           return false;
@@ -1807,11 +2056,9 @@ const Player = ({
     }),
     [
       getNavigationContext,
-      hasInteraction,
       jumpToSubtitleCue,
       nextDisabled,
       onFullscreen,
-      onInteractionToggle,
       onNext,
       onPrev,
       onSubtitleToggle,
@@ -1837,7 +2084,7 @@ const Player = ({
         return;
       }
 
-      const action = getPlayerKeyboardShortcutAction(event);
+      const action = getPlayerKeyboardShortcutAction(event, readDirection());
 
       if (!action || shouldIgnorePlayerKeyboardShortcutEvent(event, action)) {
         return;
@@ -1860,7 +2107,7 @@ const Player = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [keyboardShortcutOwnerId, shouldEnableKeyboardShortcuts]);
+  }, [keyboardShortcutOwnerId, readDirection, shouldEnableKeyboardShortcuts]);
 
   useEffect(() => {
     onPlaybackTimeChange?.(playbackTimeMsRef.current);
@@ -1869,8 +2116,16 @@ const Player = ({
   return (
     <div
       {...props}
+      dir={direction}
+      lang={language}
       data-slide-player-shortcut-owner={keyboardShortcutOwnerId}
-      className={cn("slide-player", className)}
+      className={cn(
+        "slide-player",
+        slideProgress &&
+          (slideProgress.totalSteps > 1 || slideProgress.isGenerating) &&
+          "slide-player--with-slide-progress",
+        className
+      )}
       onFocusCapture={handleRootFocusCapture}
       onPointerDown={handleRootPointerDown}
     >
@@ -1895,6 +2150,8 @@ const Player = ({
         <>
           <MobilePlayerSettingsSheet
             container={settingsPortalContainer}
+            dir={direction ?? shortcutDirection}
+            lang={portalLanguage}
             labels={{
               closeSettings: playerTexts.closeSettingsLabel,
               fullscreen: playerTexts.fullscreenLabel,
@@ -1914,7 +2171,12 @@ const Player = ({
             viewMode={mobileViewMode}
           />
 
-          <div className="slide-player__controls" style={controlsStyle}>
+          <div
+            className="slide-player__controls"
+            onPointerEnter={onControlsPointerEnter}
+            onPointerLeave={onControlsPointerLeave}
+            style={controlsStyle}
+          >
             <div className="slide-player__group">
               <button
                 aria-expanded={isMobileMoreOpen}
@@ -2056,33 +2318,78 @@ const Player = ({
               ) : null}
             </div>
 
-            <div className="slide-player__separator" />
+            {customActionList.length > 0 ? (
+              <>
+                <div className="slide-player__separator" />
 
-            <div className="slide-player__group">
-              {customActionList.map((customAction, customActionIndex) => (
-                <React.Fragment key={`custom-action-${customActionIndex}`}>
-                  {customAction}
-                </React.Fragment>
-              ))}
-              <button
-                aria-label={playerTexts.notesLabel}
-                aria-keyshortcuts={notesShortcutMetadata.ariaKeyShortcuts}
-                className={cn(
-                  "slide-player__action slide-player__action--notes",
-                  isInteractionOpen && "slide-player__action--active"
-                )}
-                disabled={!hasInteraction}
-                onClick={onInteractionToggle}
-                title={notesShortcutMetadata.title}
-                type="button"
-              >
-                <FilePenLine
-                  className="slide-player__icon"
-                  strokeWidth={2.25}
-                />
-              </button>
-            </div>
+                <div className="slide-player__group slide-player__group--custom-actions">
+                  {customActionList.map((customAction, customActionIndex) => (
+                    <React.Fragment key={`custom-action-${customActionIndex}`}>
+                      {customAction}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </>
+            ) : null}
           </div>
+          {slideProgress &&
+          (slideProgress.totalSteps > 1 || slideProgress.isGenerating) ? (
+            <div
+              aria-label={slideProgress.ariaLabel}
+              className="slide-player__slide-progress"
+              role="navigation"
+            >
+              <div
+                className="slide-player__slide-progress-viewport"
+                ref={slideProgressRef}
+              >
+                <div className="slide-player__slide-progress-track">
+                  {Array.from(
+                    { length: slideProgress.totalSteps },
+                    (_, index) => (
+                      <button
+                        aria-current={
+                          index === slideProgress.currentIndex
+                            ? "step"
+                            : undefined
+                        }
+                        aria-label={`${slideProgress.ariaLabel} ${index + 1}`}
+                        className="slide-player__slide-progress-segment"
+                        data-state={
+                          index < slideProgress.currentIndex
+                            ? "completed"
+                            : index === slideProgress.currentIndex
+                              ? "current"
+                              : "upcoming"
+                        }
+                        key={index}
+                        onClick={() =>
+                          slideProgress.onNavigate?.(
+                            index,
+                            getNavigationContext()
+                          )
+                        }
+                        ref={
+                          index === slideProgress.currentIndex
+                            ? currentSlideProgressMarkerRef
+                            : undefined
+                        }
+                        type="button"
+                      />
+                    )
+                  )}
+                </div>
+              </div>
+              <span
+                aria-hidden={!slideProgress.isGenerating}
+                className="slide-player__slide-progress-generating"
+                data-visible={slideProgress.isGenerating ? "true" : "false"}
+              >
+                <LoaderCircle aria-hidden="true" />
+                {slideProgress.generatingLabel}
+              </span>
+            </div>
+          ) : null}
         </>
       ) : null}
     </div>

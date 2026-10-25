@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
+import type { TextAreaProps, TextAreaRef } from "rc-textarea";
 
 import { cn } from "../../../lib/utils";
 import { Button } from "./button";
@@ -75,7 +76,7 @@ function InputGroupAddon({
 }
 
 const inputGroupButtonVariants = cva(
-  "text-sm shadow-none flex gap-2 items-center",
+  "text-sm shadow-none flex shrink-0 gap-2 items-center",
   {
     variants: {
       size: {
@@ -131,7 +132,7 @@ function InputGroupInput({
     <Input
       data-slot="input-group-control"
       className={cn(
-        "rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent",
+        "min-w-0 flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent",
         className
       )}
       {...props}
@@ -139,22 +140,23 @@ function InputGroupInput({
   );
 }
 
-const InputGroupTextarea = React.forwardRef<
-  HTMLTextAreaElement,
-  React.ComponentProps<"textarea">
->(({ className, ...props }, ref) => {
-  return (
-    <Textarea
-      ref={ref}
-      data-slot="input-group-control"
-      className={cn(
-        "resize-none rounded-none border-0 bg-transparent py-1.5 shadow-none dark:bg-transparent",
-        className
-      )}
-      {...props}
-    />
-  );
-});
+const InputGroupTextarea: React.ForwardRefExoticComponent<
+  React.PropsWithoutRef<TextAreaProps> & React.RefAttributes<TextAreaRef>
+> = React.forwardRef<TextAreaRef, TextAreaProps>(
+  ({ className, ...props }, ref) => {
+    return (
+      <Textarea
+        ref={ref}
+        data-slot="input-group-control"
+        className={cn(
+          "min-w-0 max-w-none flex-1 resize-none rounded-none border-0 bg-transparent py-1.5 shadow-none dark:bg-transparent",
+          className
+        )}
+        {...props}
+      />
+    );
+  }
+);
 InputGroupTextarea.displayName = "InputGroupTextarea";
 
 export {

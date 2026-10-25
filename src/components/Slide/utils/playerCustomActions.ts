@@ -23,6 +23,22 @@ const resolvePlayerCustomActions = (
 ) =>
   typeof customActions === "function" ? customActions(context) : customActions;
 
+const toRenderablePlayerCustomActionList = (
+  customActions: React.ReactNode
+): React.ReactNode[] =>
+  React.Children.toArray(customActions).flatMap((customAction) => {
+    if (
+      React.isValidElement(customAction) &&
+      customAction.type === React.Fragment
+    ) {
+      return toRenderablePlayerCustomActionList(
+        (customAction.props as { children?: React.ReactNode }).children
+      );
+    }
+
+    return customAction;
+  });
+
 type ResolvePlayerCustomActionElementParams = {
   currentAudioIndex: number;
   currentAudioSequenceIndexes: number[];
@@ -57,7 +73,10 @@ export const resolvePlayerCustomActionElement = ({
 export const toPlayerCustomActionList = (
   customActions?: SlidePlayerCustomActions,
   context?: SlidePlayerCustomActionContext
-) => React.Children.toArray(resolvePlayerCustomActions(customActions, context));
+) =>
+  toRenderablePlayerCustomActionList(
+    resolvePlayerCustomActions(customActions, context)
+  );
 
 export const getPlayerCustomActionCount = (
   customActions?: SlidePlayerCustomActions,

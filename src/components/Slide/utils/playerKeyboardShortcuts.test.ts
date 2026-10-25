@@ -33,7 +33,6 @@ describe("playerKeyboardShortcuts", () => {
     ).toBe("nextSubtitle");
     expect(getPlayerKeyboardShortcutAction({ key: "f" })).toBe("fullscreen");
     expect(getPlayerKeyboardShortcutAction({ key: "C" })).toBe("subtitle");
-    expect(getPlayerKeyboardShortcutAction({ key: "n" })).toBe("interaction");
   });
 
   it("does not map unsupported media keys", () => {
@@ -41,6 +40,36 @@ describe("playerKeyboardShortcuts", () => {
     expect(getPlayerKeyboardShortcutAction({ key: "j" })).toBeNull();
     expect(getPlayerKeyboardShortcutAction({ key: "l" })).toBeNull();
     expect(getPlayerKeyboardShortcutAction({ key: "m" })).toBeNull();
+    expect(getPlayerKeyboardShortcutAction({ key: "n" })).toBeNull();
+  });
+
+  it("mirrors only page shortcuts in RTL", () => {
+    expect(getPlayerKeyboardShortcutAction({ key: "ArrowLeft" }, "rtl")).toBe(
+      "next"
+    );
+    expect(getPlayerKeyboardShortcutAction({ key: "ArrowRight" }, "rtl")).toBe(
+      "previous"
+    );
+    expect(
+      getPlayerKeyboardShortcutAction(
+        { key: "ArrowLeft", shiftKey: true },
+        "rtl"
+      )
+    ).toBe("previousSubtitle");
+    expect(
+      getPlayerKeyboardShortcutAction(
+        { key: "ArrowRight", shiftKey: true },
+        "rtl"
+      )
+    ).toBe("nextSubtitle");
+    for (const modifier of ["altKey", "ctrlKey", "metaKey"]) {
+      expect(
+        getPlayerKeyboardShortcutAction(
+          { key: "ArrowLeft", [modifier]: true },
+          "rtl"
+        )
+      ).toBeNull();
+    }
   });
 
   it("ignores non-subtitle shortcuts with modifier keys", () => {

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { expect, userEvent, waitFor } from "storybook/test";
+import { MARKDOWN_FLOW_LOCALES } from "../../lib/locale";
 
 import runStreamFixtureText from "../../../测试数据.json?raw";
 import ContentRender, {
@@ -13,6 +15,13 @@ import {
   type RunStreamFixtureEvent,
 } from "../Slide/utils/listenModeElementList";
 import { parseRunStreamFixture } from "../Slide/utils/runStreamFixture";
+import {
+  TYPEWRITER_PACING_FIXTURE_LENGTHS,
+  TYPEWRITER_PACING_FIXTURES,
+  TYPEWRITER_PACING_LANGUAGES,
+  type TypewriterPacingFixtureLength,
+  type TypewriterPacingLanguageCode,
+} from "./typewriterPacing.fixtures";
 
 const meta = {
   title: "MarkdownFlow/ContentRender",
@@ -22,6 +31,11 @@ const meta = {
   },
   tags: ["autodocs"],
   argTypes: {
+    locale: {
+      control: "select",
+      options: [...MARKDOWN_FLOW_LOCALES],
+      description: "Locale for built-in renderer and interaction UI text",
+    },
     content: {
       control: "text",
       description: "Markdown content to render",
@@ -32,6 +46,139 @@ const meta = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const MermaidYamlLimits: Story = {
+  args: {
+    content: [
+      "```mermaid\n---\ntitle: Safe frontmatter\n---\nflowchart TD; A[Start] --> B[Finish]\n```",
+      `\`\`\`mermaid\n---\ntitle: ${"[".repeat(110)}0${"]".repeat(110)}\n---\nflowchart TD; A-->B\n\`\`\``,
+    ].join("\n\n"),
+  },
+  play: async ({ canvasElement }) => {
+    await waitFor(
+      () => {
+        expect(
+          canvasElement.querySelector(".content-render-mermaid svg")
+        ).toBeTruthy();
+        expect(
+          canvasElement.querySelector("[data-mermaid-error]")
+        ).toHaveAttribute(
+          "data-mermaid-error",
+          expect.stringContaining("maxdepth")
+        );
+      },
+      { timeout: 10000 }
+    );
+  },
+};
+
+const MixedInteractionReplayPreview = () => {
+  const [userInput, setUserInput] = useState("");
+
+  return (
+    <ContentRender
+      content="?[Ready, I can paste an answer//ready|Not yet//later|...Explain in your own words]"
+      userInput={userInput}
+      onSend={(response) =>
+        setUserInput(response.inputText || response.buttonText || "")
+      }
+    />
+  );
+};
+
+export const MixedChoiceInputReplay: Story = {
+  render: () => <MixedInteractionReplayPreview />,
+  play: async ({ canvasElement }) => {
+    const button = await waitFor(() => {
+      const element = Array.from(canvasElement.querySelectorAll("button")).find(
+        (item) => item.textContent === "Ready, I can paste an answer"
+      );
+      expect(element).toBeDefined();
+      return element as HTMLButtonElement;
+    });
+    await userEvent.click(button);
+    await waitFor(() => {
+      expect(button.classList.contains("select")).toBe(true);
+      expect(canvasElement.querySelector("textarea")?.value).toBe("");
+    });
+    const textarea = canvasElement.querySelector("textarea")!;
+    await userEvent.type(textarea, "Here is my own explanation");
+    await userEvent.click(textarea.parentElement!.querySelector("button")!);
+    await waitFor(() => {
+      expect(canvasElement.querySelector("textarea")?.value).toBe(
+        "Here is my own explanation"
+      );
+    });
+  },
+};
+
+const CONTENT_RENDER_INPUT_CHURN_CONTENT =
+  "?[%{{content_render_input_churn}}...Type your answer]";
+
+const ContentRenderInputPropChurnPreview = () => {
+  const [renderCount, setRenderCount] = useState(0);
+
+  return (
+    <div>
+      <button
+        type="button"
+        data-testid="rerender-content-render"
+        onClick={() => setRenderCount((count) => count + 1)}
+      >
+        Rerender
+      </button>
+      <ContentRender
+        content={CONTENT_RENDER_INPUT_CHURN_CONTENT}
+        defaultSelectedValues={["Existing choice"]}
+        beforeSend={() => true}
+        onSend={() => undefined}
+        sandboxLoadingText={`Render ${renderCount}`}
+      />
+    </div>
+  );
+};
+
+export const InputKeepsFocusDuringPropChurn: Story = {
+  args: {},
+  parameters: {
+    layout: "centered",
+  },
+  render: () => <ContentRenderInputPropChurnPreview />,
+  play: async ({ canvasElement }) => {
+    const textarea = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        "textarea"
+      ) as HTMLTextAreaElement | null;
+
+      expect(element).not.toBeNull();
+      return element as HTMLTextAreaElement;
+    });
+    const typedValue = "Input survives prop churn";
+    const rerenderButton = canvasElement.querySelector(
+      '[data-testid="rerender-content-render"]'
+    ) as HTMLButtonElement | null;
+
+    expect(rerenderButton).not.toBeNull();
+
+    await userEvent.click(textarea);
+    await userEvent.type(textarea, typedValue);
+
+    expect(document.activeElement).toBe(textarea);
+    expect(textarea.value).toBe(typedValue);
+
+    rerenderButton?.click();
+
+    await waitFor(() => {
+      const currentTextarea = canvasElement.querySelector(
+        "textarea"
+      ) as HTMLTextAreaElement | null;
+
+      expect(currentTextarea).toBe(textarea);
+      expect(document.activeElement).toBe(textarea);
+      expect(currentTextarea?.value).toBe(typedValue);
+    });
+  },
+};
 
 // ==============================================================================
 // Markdown Test Content Constants
@@ -361,7 +508,6 @@ This greatly enhances content expressiveness and interactivity!
 
 `;
 
-const TYPEWRITER_STREAM_TICK_MS = 40;
 const TYPEWRITER_SOURCE_PUSH_INTERVAL_MS = 180;
 const TYPEWRITER_STREAM_MAX_BLOCK_WIDTH = 1000;
 const TYPEWRITER_STREAM_ASK_LABEL = "追问";
@@ -714,7 +860,6 @@ const TypewriterStreamPreview = ({
                 <ContentRender
                   content={currentContent}
                   enableTypewriter={isTypewriterElement}
-                  typingSpeed={TYPEWRITER_STREAM_TICK_MS}
                   onTypewriterStateChange={(state) =>
                     updateElementTypewriterState(elementBid, state)
                   }
@@ -1069,6 +1214,273 @@ pie title 编程语言使用统计
   },
 };
 
+const MERMAID_LAYOUT_FLOW_CONTENT = `\`\`\`mermaid
+flowchart TD
+    A[开始] --> B[显示用户界面]
+    B --> C[结束]
+\`\`\``;
+
+const MERMAID_LAYOUT_XY_CONTENT = `\`\`\`mermaid
+xychart
+    x-axis 1 --> 3
+    line [1, 2, 3]
+\`\`\``;
+
+const MERMAID_LAYOUT_WIDE_XY_CONTENT = `\`\`\`mermaid
+---
+config:
+    xyChart:
+        width: 900
+---
+xychart
+    x-axis 1 --> 3
+    line [1, 2, 3]
+\`\`\``;
+
+const MERMAID_LAYOUT_OUTLIER_XY_CONTENT = `\`\`\`mermaid
+xychart
+    x-axis 1 --> 3
+    y-axis 0 --> 10
+    line [1, 100, 3]
+\`\`\``;
+
+const MermaidLayoutMeasurementPreview = ({
+  content,
+  allowNarrowContainer = false,
+  wideChartContent,
+  outlierChartContent,
+}: {
+  content: string;
+  allowNarrowContainer?: boolean;
+  wideChartContent?: string;
+  outlierChartContent?: string;
+}) => {
+  const [renderCount, setRenderCount] = useState(0);
+  const [narrow, setNarrow] = useState(false);
+  const [chartContent, setChartContent] = useState(content);
+
+  return (
+    <div
+      style={{
+        width: narrow ? 320 : 700,
+        maxWidth: "calc(100vw - 32px)",
+      }}
+    >
+      <button
+        type="button"
+        data-testid="mount-mermaid-layout-chart"
+        onClick={() => setRenderCount((count) => count + 1)}
+      >
+        Render diagram
+      </button>
+      {allowNarrowContainer && (
+        <button
+          type="button"
+          data-testid="narrow-mermaid-layout-container"
+          onClick={() => setNarrow(true)}
+        >
+          Use narrow container
+        </button>
+      )}
+      {wideChartContent && (
+        <button
+          type="button"
+          data-testid="wide-mermaid-layout-chart"
+          onClick={() => {
+            setChartContent(wideChartContent);
+            setRenderCount((count) => count + 1);
+          }}
+        >
+          Render 900px chart
+        </button>
+      )}
+      {outlierChartContent && (
+        <button
+          type="button"
+          data-testid="outlier-mermaid-layout-chart"
+          onClick={() => {
+            setChartContent(outlierChartContent);
+            setRenderCount((count) => count + 1);
+          }}
+        >
+          Render chart with an outlier
+        </button>
+      )}
+      <div data-testid="mermaid-layout-chart">
+        {renderCount > 0 && (
+          <ContentRender
+            key={renderCount}
+            content={chartContent}
+            enableTypewriter={false}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const waitForMermaidLayoutSvg = (canvasElement: HTMLElement) =>
+  waitFor(
+    () => {
+      const svg = canvasElement.querySelector<SVGSVGElement>(
+        '[data-testid="mermaid-layout-chart"] .content-render-mermaid-inner > svg'
+      );
+      expect(svg).not.toBeNull();
+      return svg!;
+    },
+    { timeout: 15000 }
+  );
+
+export const MermaidZoomMeasurementRegression: Story = {
+  name: "Mermaid Labels After Zoom Reset",
+  render: () => (
+    <MermaidLayoutMeasurementPreview content={MERMAID_LAYOUT_FLOW_CONTENT} />
+  ),
+  play: async ({ canvasElement }) => {
+    const body = canvasElement.ownerDocument.body;
+    const originalStyle = body.getAttribute("style");
+    const restoreBody = () => {
+      if (originalStyle === null) body.removeAttribute("style");
+      else body.setAttribute("style", originalStyle);
+    };
+
+    try {
+      // Match the Storybook toolbar's 64% zoom before mounting the chart.
+      Object.assign(body.style, {
+        width: "156.25%",
+        height: "156.25%",
+        transform: "scale(0.64)",
+        transformOrigin: "left top",
+      });
+      await userEvent.click(
+        canvasElement.querySelector<HTMLButtonElement>(
+          '[data-testid="mount-mermaid-layout-chart"]'
+        )!
+      );
+      const svg = await waitForMermaidLayoutSvg(canvasElement);
+      restoreBody();
+
+      // Resetting zoom must keep the existing SVG's label boxes large enough.
+      await waitFor(() => {
+        const labels = Array.from(
+          svg.querySelectorAll<HTMLElement>("foreignObject .nodeLabel")
+        );
+        expect(labels.length).toBe(3);
+        for (const label of labels) {
+          const box = label.closest("foreignObject")!.getBoundingClientRect();
+          const text = label.getBoundingClientRect();
+          expect(box.width + 1).toBeGreaterThanOrEqual(text.width);
+          expect(box.height + 1).toBeGreaterThanOrEqual(text.height);
+        }
+      });
+    } finally {
+      restoreBody();
+    }
+  },
+};
+
+const expectMermaidXYTicksInsideSvg = (svg: SVGSVGElement) => {
+  const bounds = svg.getBoundingClientRect();
+  const labels = Array.from(svg.querySelectorAll("text")).filter((text) =>
+    text.textContent?.trim()
+  );
+  expect(labels.length).toBeGreaterThan(5);
+  for (const label of labels) {
+    const rect = label.getBoundingClientRect();
+    expect(rect.left).toBeGreaterThanOrEqual(bounds.left - 1);
+    expect(rect.top).toBeGreaterThanOrEqual(bounds.top - 1);
+    expect(rect.right).toBeLessThanOrEqual(bounds.right + 1);
+    expect(rect.bottom).toBeLessThanOrEqual(bounds.bottom + 1);
+  }
+};
+
+export const MermaidCenteredXYMeasurementRegression: Story = {
+  name: "Mermaid XY Ticks in Centered and Narrow Layouts",
+  render: () => (
+    <MermaidLayoutMeasurementPreview
+      content={MERMAID_LAYOUT_XY_CONTENT}
+      wideChartContent={MERMAID_LAYOUT_WIDE_XY_CONTENT}
+      outlierChartContent={MERMAID_LAYOUT_OUTLIER_XY_CONTENT}
+      allowNarrowContainer
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const body = canvasElement.ownerDocument.body;
+    const originalStyle = body.getAttribute("style");
+    const mount = canvasElement.querySelector<HTMLButtonElement>(
+      '[data-testid="mount-mermaid-layout-chart"]'
+    )!;
+
+    try {
+      Object.assign(body.style, {
+        display: "flex",
+        alignItems: "center",
+        minHeight: "100vh",
+      });
+      await userEvent.click(mount);
+      expectMermaidXYTicksInsideSvg(
+        await waitForMermaidLayoutSvg(canvasElement)
+      );
+
+      // Preserve ordinary document layout as well as centered Storybook pages.
+      body.style.display = "block";
+      await userEvent.click(mount);
+      expectMermaidXYTicksInsideSvg(
+        await waitForMermaidLayoutSvg(canvasElement)
+      );
+
+      Object.assign(body.style, {
+        width: "156.25%",
+        height: "156.25%",
+        transform: "scale(0.64)",
+        transformOrigin: "left top",
+      });
+      await userEvent.click(mount);
+      const zoomedSvg = await waitForMermaidLayoutSvg(canvasElement);
+      if (originalStyle === null) body.removeAttribute("style");
+      else body.setAttribute("style", originalStyle);
+      body.style.display = "block";
+      expectMermaidXYTicksInsideSvg(zoomedSvg);
+
+      await userEvent.click(
+        canvasElement.querySelector<HTMLButtonElement>(
+          '[data-testid="wide-mermaid-layout-chart"]'
+        )!
+      );
+      const wideSvg = await waitForMermaidLayoutSvg(canvasElement);
+      expect(wideSvg.viewBox.baseVal.width).toBe(900);
+      expectMermaidXYTicksInsideSvg(wideSvg);
+
+      await userEvent.click(
+        canvasElement.querySelector<HTMLButtonElement>(
+          '[data-testid="narrow-mermaid-layout-container"]'
+        )!
+      );
+      await userEvent.click(mount);
+      const narrowSvg = await waitForMermaidLayoutSvg(canvasElement);
+      expect(narrowSvg.getBoundingClientRect().width).toBeLessThanOrEqual(320);
+      expectMermaidXYTicksInsideSvg(narrowSvg);
+
+      await userEvent.click(
+        canvasElement.querySelector<HTMLButtonElement>(
+          '[data-testid="outlier-mermaid-layout-chart"]'
+        )!
+      );
+      const outlierSvg = await waitForMermaidLayoutSvg(canvasElement);
+      expect(outlierSvg.viewBox.baseVal.height).toBeGreaterThanOrEqual(500);
+      expect(outlierSvg.viewBox.baseVal.height).toBeLessThanOrEqual(510);
+      expectMermaidXYTicksInsideSvg(outlierSvg);
+      const outlierPath =
+        outlierSvg.querySelector<SVGPathElement>(".plot path");
+      expect(outlierPath).not.toBeNull();
+      expect(outlierPath!.getBBox().y).toBeLessThan(0);
+    } finally {
+      if (originalStyle === null) body.removeAttribute("style");
+      else body.setAttribute("style", originalStyle);
+    }
+  },
+};
+
 export const CustomButtonAfterContentDemo: Story = {
   name: "Custom Button After Content",
   args: {
@@ -1280,6 +1692,57 @@ export const ChineseMultiSelectDemo: Story = {
       }
 
       alert(message);
+    },
+  },
+};
+
+export const QuestionMemoryKey: Story = {
+  args: {
+    content: `你的性别是？
+
+?[%{{ 你的性别是？ }} 男//male | 女//female | 秘密//secret]
+
+Which path and level?
+?[%{{ Which [path] | level//hint...? }} A//a | B//b]`,
+    onSend: (params) => console.log("Question answer received:", params),
+  },
+};
+
+export const NonAssignmentInteractionDemo: Story = {
+  name: "Non-Assignment Interaction Demo",
+  args: {
+    content: `# Non-Assignment Interactions (no variable)
+
+Interactions without \`%{{variable}}\` collect an answer that is not stored in
+any variable — the host feeds it back into the conversation context instead.
+\`variableName\` arrives as an empty string in the onSend params.
+
+## Single Select
+?[Continue | Skip | Go Back]
+
+## Custom Button Values
+?[Save//save-action | Cancel//cancel-action]
+
+## Multi-Select
+?[JavaScript||TypeScript||Python||Go]
+
+## Text Input
+?[...Anything you want to add?]
+
+## Buttons + Text Input
+?[Option A | Option B | ...Other, please specify]
+
+## Multi-Select + Text Input
+?[React||Vue||Angular||...Other frameworks]`,
+    confirmButtonText: "Submit",
+    onSend: (params) => {
+      console.log("Non-assignment interaction received:", params);
+      alert(
+        `variableName: ${JSON.stringify(params.variableName)}\n` +
+          `buttonText: ${params.buttonText ?? ""}\n` +
+          `selectedValues: ${(params.selectedValues ?? []).join(", ")}\n` +
+          `inputText: ${params.inputText ?? ""}`
+      );
     },
   },
 };
@@ -2437,6 +2900,41 @@ export const HTMLDemoIframeOnly: Story = {
   },
 };
 
+export const SandboxCJKFontFallback: Story = {
+  args: {},
+  parameters: {
+    layout: "fullscreen",
+  },
+  render: () => (
+    <div style={{ width: "100%", padding: "24px" }}>
+      <div style={{ height: "320px" }}>
+        <IframeSandbox
+          hideFullScreen
+          type="sandbox"
+          mode="blackboard"
+          content={`
+            <div class="h-full bg-slate-50 p-8 text-slate-900">
+              <h1 data-cjk-font-case="inherited" class="text-3xl font-bold">中文默认字体回退</h1>
+              <p data-cjk-font-case="font-sans" class="mt-4 font-sans text-xl">Tailwind font-sans 中文内容</p>
+              <svg class="mt-6" width="420" height="80" viewBox="0 0 420 80" role="img" aria-label="CJK font fallback diagram">
+                <text data-cjk-font-case="svg" x="8" y="48" font-size="28">图表中的中文标签</text>
+              </svg>
+            </div>
+          `}
+        />
+      </div>
+      <div data-cjk-font-case="mermaid" style={{ marginTop: "24px" }}>
+        <ContentRender
+          content={`\`\`\`mermaid
+flowchart LR
+  A[中文图表] --> B[PDF 标签]
+\`\`\``}
+        />
+      </div>
+    </div>
+  ),
+};
+
 export const ReadingModeAppendedAskBlocks: Story = {
   name: "Reading Mode Appended Ask Blocks",
   args: {},
@@ -2503,7 +3001,7 @@ export const TypewriterStreamingChineseText: Story = {
     docs: {
       description: {
         story:
-          "Replays real ai-shifu learning-page element streaming, including follow-up actions and mixed text/html block rendering.",
+          "Replays real ai-shifu learning-page element streaming with the ContentRender default typewriter pacing, including follow-up actions and mixed text/html block rendering.",
       },
     },
   },
@@ -2512,4 +3010,632 @@ export const TypewriterStreamingChineseText: Story = {
       <TypewriterStreamPreview events={TYPEWRITER_STREAM_EVENTS} />
     </div>
   ),
+};
+
+const CONTENT_AWARE_TYPEWRITER_TICK_MS = 30;
+
+type TypewriterCompletionTimeMap = Partial<
+  Record<TypewriterPacingLanguageCode, number>
+>;
+
+const formatTypewriterDifference = (
+  completionTimeMs: number,
+  chineseCompletionTimeMs?: number
+) => {
+  if (!chineseCompletionTimeMs) {
+    return "Waiting for Chinese baseline";
+  }
+
+  const differencePercent =
+    ((completionTimeMs - chineseCompletionTimeMs) / chineseCompletionTimeMs) *
+    100;
+  const prefix = differencePercent > 0 ? "+" : "";
+
+  return `${prefix}${differencePercent.toFixed(1)}% vs Chinese`;
+};
+
+const MultilingualTypewriterPacingPreview = () => {
+  const [fixtureLength, setFixtureLength] =
+    useState<TypewriterPacingFixtureLength>("medium");
+  const [run, setRun] = useState(() => ({
+    id: 0,
+    startedAt: Date.now(),
+  }));
+  const [completionTimeMap, setCompletionTimeMap] =
+    useState<TypewriterCompletionTimeMap>({});
+  const activeRunIdRef = useRef(run.id);
+  const chineseCompletionTimeMs = completionTimeMap.zh;
+  const completedLanguageCount = Object.keys(completionTimeMap).length;
+
+  const startRun = (nextFixtureLength: TypewriterPacingFixtureLength) => {
+    const nextRunId = activeRunIdRef.current + 1;
+    activeRunIdRef.current = nextRunId;
+    setFixtureLength(nextFixtureLength);
+    setCompletionTimeMap({});
+    setRun({
+      id: nextRunId,
+      startedAt: Date.now(),
+    });
+  };
+
+  const recordCompletion = (
+    languageCode: TypewriterPacingLanguageCode,
+    completedRunId: number
+  ) => {
+    if (activeRunIdRef.current !== completedRunId) {
+      return;
+    }
+
+    const completionTimeMs = Math.max(0, Date.now() - run.startedAt);
+    setCompletionTimeMap((currentMap) => {
+      if (currentMap[languageCode] !== undefined) {
+        return currentMap;
+      }
+
+      return {
+        ...currentMap,
+        [languageCode]: completionTimeMs,
+      };
+    });
+  };
+
+  return (
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+      <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="mb-3 flex flex-wrap gap-2">
+              <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold tracking-[0.16em] text-white">
+                CONTENT-AWARE PACING
+              </span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                {CONTENT_AWARE_TYPEWRITER_TICK_MS} ms / tick
+              </span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                2 information units / tick
+              </span>
+            </div>
+            <h2 className="text-2xl font-semibold text-slate-950 md:text-3xl">
+              Five languages, one perceived pace
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600 md:text-base">
+              Equivalent Chinese, English, French, Arabic, and Thai text starts
+              at the same time. Each result is compared with the Chinese
+              completion time for the current run.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {TYPEWRITER_PACING_FIXTURE_LENGTHS.map((length) => (
+              <button
+                key={length}
+                type="button"
+                onClick={() => startRun(length)}
+                className={`rounded-full px-4 py-2 text-sm font-semibold capitalize transition-colors ${
+                  fixtureLength === length
+                    ? "bg-sky-700 text-white"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                {length}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => startRun(fixtureLength)}
+              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              Restart
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 flex items-center gap-3 text-sm text-slate-500">
+          <span
+            className={`inline-flex h-2.5 w-2.5 rounded-full ${
+              completedLanguageCount === TYPEWRITER_PACING_LANGUAGES.length
+                ? "bg-emerald-500"
+                : "animate-pulse bg-amber-500"
+            }`}
+          />
+          <span>
+            {completedLanguageCount === TYPEWRITER_PACING_LANGUAGES.length
+              ? "All languages complete"
+              : `${completedLanguageCount}/${TYPEWRITER_PACING_LANGUAGES.length} languages complete`}
+          </span>
+        </div>
+      </div>
+
+      <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-5">
+        {TYPEWRITER_PACING_LANGUAGES.map((language) => {
+          const completionTimeMs = completionTimeMap[language.code];
+          const isComplete = completionTimeMs !== undefined;
+
+          return (
+            <section
+              key={language.code}
+              lang={language.lang}
+              dir={language.dir}
+              className="flex min-h-[340px] flex-col rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-lg font-semibold text-slate-950">
+                    {language.label}
+                  </div>
+                  <div className="mt-1 font-mono text-xs uppercase tracking-[0.14em] text-slate-500">
+                    {language.locale}
+                  </div>
+                </div>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                    isComplete
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-amber-100 text-amber-700"
+                  }`}
+                >
+                  {isComplete ? "complete" : "typing"}
+                </span>
+              </div>
+
+              <div className="mt-5 flex-1 text-base leading-7 text-slate-800">
+                <ContentRender
+                  key={`${run.id}-${fixtureLength}-${language.code}`}
+                  content={
+                    TYPEWRITER_PACING_FIXTURES[fixtureLength][language.code]
+                  }
+                  enableTypewriter
+                  typewriterPacing="content-aware"
+                  typingSpeed={CONTENT_AWARE_TYPEWRITER_TICK_MS}
+                  locale={language.locale}
+                  lang={language.lang}
+                  dir={language.dir}
+                  onTypeFinished={() => recordCompletion(language.code, run.id)}
+                />
+              </div>
+
+              <div className="mt-5 border-t border-slate-100 pt-4">
+                <div className="font-mono text-lg font-semibold tabular-nums text-slate-950">
+                  {isComplete ? `${completionTimeMs} ms` : "Measuring…"}
+                </div>
+                <div className="mt-1 text-xs text-slate-500">
+                  {isComplete
+                    ? language.code === "zh"
+                      ? "Chinese baseline"
+                      : formatTypewriterDifference(
+                          completionTimeMs,
+                          chineseCompletionTimeMs
+                        )
+                    : "Starts with every other language"}
+                </div>
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export const MultilingualContentAwareTypewriterPacing: Story = {
+  args: {},
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "Starts equivalent zh/en/fr/ar/th fixtures together at 30 ms per tick and reports actual completion time relative to Chinese.",
+      },
+    },
+  },
+  render: () => (
+    <div className="min-h-[100dvh] bg-[linear-gradient(180deg,_rgb(248_250_252)_0%,_rgb(239_246_255)_100%)] px-5 py-8 md:px-8 md:py-10">
+      <MultilingualTypewriterPacingPreview />
+    </div>
+  ),
+};
+
+/** HTML waits for preceding prose, then follows incoming chunks without typing. */
+export const ProgressiveHtmlWithTypedProse: Story = {
+  name: "Progressive HTML with Typed Prose",
+  args: {
+    enableTypewriter: true,
+    typewriterPacing: "content-aware",
+    typingSpeed: 75,
+    disableSandboxLoadingOverlay: true,
+  },
+  render: (args) => {
+    const chunks = [
+      'This introduction finishes typing before the card below appears.\n\n<div style="padding:24px;border:2px solid #2563eb;border-radius:12px"><h2>Lesson card',
+      "</h2><p>All received HTML appears after the introduction finishes.",
+      " More of the same paragraph is visible as soon as it arrives.</p>",
+      "<p>The card can grow before its outer div is closed.</p>",
+      "</div>\n\nThe prose after the card continues with the same typewriter budget.",
+    ];
+    const [chunkCount, setChunkCount] = useState(1);
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={() =>
+            setChunkCount((count) => Math.min(count + 1, chunks.length))
+          }
+          disabled={chunkCount === chunks.length}
+        >
+          Receive next HTML chunk
+        </button>
+        <ContentRender
+          {...args}
+          content={chunks.slice(0, chunkCount).join("")}
+        />
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    expect(canvasElement.querySelector("iframe")).toBeNull();
+    await waitFor(() => {
+      expect(canvasElement.textContent).toContain("This introduction");
+    });
+    expect(canvasElement.textContent).not.toContain(
+      "This introduction finishes typing before the card below appears."
+    );
+    const receiveButton = canvasElement.querySelector("button");
+    expect(receiveButton).not.toBeNull();
+    await userEvent.click(receiveButton!);
+    expect(canvasElement.querySelector("iframe")).toBeNull();
+    await waitFor(
+      () => {
+        expect(canvasElement.textContent).toContain(
+          "This introduction finishes typing before the card below appears."
+        );
+      },
+      { timeout: 5000 }
+    );
+    const iframe = await waitFor(() => {
+      const element = canvasElement.querySelector("iframe");
+      expect(element?.contentDocument?.body.textContent).toContain(
+        "All received HTML appears after the introduction finishes."
+      );
+      return element!;
+    });
+    expect(iframe.contentDocument?.body.textContent).toContain("Lesson card");
+    const documentBeforeAppend = iframe.contentDocument;
+    await userEvent.click(receiveButton!);
+    await waitFor(() => {
+      expect(iframe?.contentDocument?.body.textContent).toContain(
+        "More of the same paragraph is visible as soon as it arrives."
+      );
+    });
+    expect(canvasElement.querySelector("iframe")).toBe(iframe);
+    expect(iframe.contentDocument).toBe(documentBeforeAppend);
+    await userEvent.click(receiveButton!);
+    await waitFor(() => {
+      expect(iframe?.contentDocument?.body.textContent).toContain(
+        "The card can grow before its outer div is closed."
+      );
+    });
+    expect(canvasElement.querySelector("iframe")).toBe(iframe);
+    expect(iframe.contentDocument).toBe(documentBeforeAppend);
+  },
+};
+
+export const ProgressiveFigureWithTypedProse: Story = {
+  name: "Progressive Figure with Typed Prose",
+  args: {
+    enableTypewriter: true,
+    typingSpeed: 30,
+    disableSandboxLoadingOverlay: true,
+  },
+  render: (args) => {
+    const [receivedMore, setReceivedMore] = useState(false);
+    return (
+      <div>
+        <button type="button" onClick={() => setReceivedMore(true)}>
+          Receive the rest of the figure
+        </button>
+        <ContentRender
+          {...args}
+          content={
+            "This introduction finishes typing before the figure appears.\n\n" +
+            '<figure style="padding:24px;border:2px solid #2563eb"><figcaption>Received figure' +
+            (receivedMore
+              ? " content</figcaption><p>The complete figure is visible.</p></figure>\n\nFollowing prose keeps typing."
+              : "")
+          }
+        />
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    expect(canvasElement.querySelector("iframe")).toBeNull();
+    await waitFor(
+      () => {
+        expect(canvasElement.textContent).toContain(
+          "This introduction finishes typing before the figure appears."
+        );
+      },
+      { timeout: 5000 }
+    );
+    const iframe = await waitFor(() => {
+      const element = canvasElement.querySelector("iframe");
+      expect(element?.contentDocument?.body.textContent).toContain(
+        "Received figure"
+      );
+      return element!;
+    });
+    const documentBeforeAppend = iframe.contentDocument;
+    await userEvent.click(canvasElement.querySelector("button")!);
+    await waitFor(() => {
+      expect(iframe?.contentDocument?.body.textContent).toContain(
+        "The complete figure is visible."
+      );
+    });
+    expect(canvasElement.querySelector("iframe")).toBe(iframe);
+    expect(iframe.contentDocument).toBe(documentBeforeAppend);
+  },
+};
+
+export const OrderedHtmlBlocksWithTypedProse: Story = {
+  name: "Ordered HTML Blocks with Typed Prose",
+  args: {
+    enableTypewriter: true,
+    typingSpeed: 25,
+    disableSandboxLoadingOverlay: true,
+    content:
+      "The first introduction finishes before its HTML card appears.\n\n" +
+      "<div><p>The entire first HTML card appears together.</p></div>\n\n" +
+      "This longer explanation between the two cards keeps typing while the first card stays visible. The second card waits for this entire explanation.\n\n" +
+      "<figure><figcaption>The entire second HTML card appears together.</figcaption></figure>\n\n" +
+      "The final prose keeps typing after both cards are visible.",
+  },
+  play: async ({ canvasElement }) => {
+    expect(canvasElement.querySelector("iframe")).toBeNull();
+    const firstIframe = await waitFor(
+      () => {
+        const element = canvasElement.querySelector("iframe");
+        expect(element?.contentDocument?.body.textContent).toContain(
+          "The entire first HTML card appears together."
+        );
+        return element!;
+      },
+      { timeout: 5000 }
+    );
+    const firstDocument = firstIframe.contentDocument;
+    expect(canvasElement.textContent).toContain(
+      "The first introduction finishes before its HTML card appears."
+    );
+    expect(canvasElement.querySelectorAll("iframe")).toHaveLength(1);
+    expect(canvasElement.textContent).not.toContain(
+      "The second card waits for this entire explanation."
+    );
+    await waitFor(
+      () => {
+        const iframes = canvasElement.querySelectorAll("iframe");
+        expect(iframes).toHaveLength(2);
+        expect(iframes[1].contentDocument?.body.textContent).toContain(
+          "The entire second HTML card appears together."
+        );
+      },
+      { timeout: 5000 }
+    );
+    expect(canvasElement.textContent).toContain(
+      "The second card waits for this entire explanation."
+    );
+    expect(canvasElement.querySelector("iframe")).toBe(firstIframe);
+    expect(firstIframe.contentDocument).toBe(firstDocument);
+    expect(canvasElement.textContent).not.toContain(
+      "The final prose keeps typing after both cards are visible."
+    );
+  },
+};
+
+export const StableVideoWithEarlierMarkdown: Story = {
+  name: "Stable Video with Earlier Markdown",
+  args: {
+    enableTypewriter: true,
+    typingSpeed: 15,
+    disableSandboxLoadingOverlay: true,
+  },
+  render: (args) => {
+    const [receivedMore, setReceivedMore] = useState(false);
+    const source =
+      '# Earlier heading\n\n> Earlier quote\n\n- Earlier list\n- [ ] Pending task\n- [x] Completed task\n\n# [Watch <iframe title="Lesson video" data-tag="video"></iframe> now][watch]\n\n[watch]: /watch';
+    return (
+      <div>
+        <button type="button" onClick={() => setReceivedMore(true)}>
+          Receive following HTML
+        </button>
+        <ContentRender
+          {...args}
+          content={
+            source +
+            (receivedMore
+              ? "\n\nLater prose finishes typing before the following HTML becomes visible.\n\n<details open><summary>Received card</summary><p>Following HTML is visible.</p></details>"
+              : "")
+          }
+        />
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    expect(canvasElement.querySelector('iframe[data-tag="video"]')).toBeNull();
+    const video = await waitFor(
+      () => {
+        const element = canvasElement.querySelector<HTMLIFrameElement>(
+          'iframe[data-tag="video"]'
+        );
+        expect(element).not.toBeNull();
+        return element!;
+      },
+      { timeout: 5000 }
+    );
+    const parent = video?.parentElement;
+    const videoWindow = (video as HTMLIFrameElement).contentWindow;
+    expect(parent?.tagName).toBe("A");
+    expect(parent?.getAttribute("href")).toBe("/watch");
+    expect(video?.closest("h1")).toBeVisible();
+    await userEvent.click(canvasElement.querySelector("button")!);
+    expect(canvasElement.querySelector("details")).toBeNull();
+    const details = await waitFor(
+      () => {
+        const element = canvasElement.querySelector("details");
+        expect(element?.textContent).toContain("Following HTML is visible.");
+        return element!;
+      },
+      { timeout: 5000 }
+    );
+    expect(canvasElement.querySelectorAll("iframe")).toHaveLength(1);
+    await waitFor(() => {
+      expect(canvasElement.textContent).toContain("Earlier heading");
+      expect(canvasElement.textContent).toContain(
+        "Later prose finishes typing before the following HTML becomes visible."
+      );
+      expect(canvasElement.querySelectorAll("h1")).toHaveLength(2);
+    });
+    expect(canvasElement.querySelector('iframe[data-tag="video"]')).toBe(video);
+    expect(video?.parentElement).toBe(parent);
+    expect((video as HTMLIFrameElement).contentWindow).toBe(videoWindow);
+    expect(canvasElement.querySelector("details")).toBe(details);
+  },
+};
+
+const WIDE_SVG_PREVIEW_SOURCE =
+  '<iframe title="Wide SVG lesson video" data-tag="video"></iframe>\n\n' +
+  '<svg width="1600" height="80" viewBox="0 0 800 40"><text x="10" y="20">Standalone wide SVG</text></svg>\n\n' +
+  'Before <svg width="1600" height="80" viewBox="0 0 800 40"><text x="10" y="20">Inline wide SVG</text></svg> after.\n\nLater prose.';
+
+const StableVideoWideSvgPreview = ({
+  enableTypewriter,
+  pacing,
+}: {
+  enableTypewriter: boolean;
+  pacing: "fixed" | "content-aware";
+}) => {
+  const [phase, setPhase] = useState(0);
+  const [state, setState] = useState<ContentRenderTypewriterState>();
+  const content =
+    WIDE_SVG_PREVIEW_SOURCE +
+    (phase > 0 ? "\n\nAppended prose." : "") +
+    (phase > 1 ? "\n\n<div>Received HTML card</div>" : "");
+  return (
+    <div
+      data-wide-svg-case
+      data-complete={state?.isComplete && state.totalLength === content.length}
+      style={{ width: 400 }}
+    >
+      <p>{`${enableTypewriter ? "Typing" : "Static"}, ${pacing}`}</p>
+      <button type="button" onClick={() => setPhase((value) => value + 1)}>
+        {phase === 0 ? "Receive more prose" : "Receive following HTML"}
+      </button>
+      <ContentRender
+        content={content}
+        enableTypewriter={enableTypewriter}
+        typingSpeed={5}
+        typewriterPacing={pacing}
+        onTypewriterStateChange={setState}
+        disableSandboxLoadingOverlay
+      />
+    </div>
+  );
+};
+
+export const StableVideoWithWideSvg: Story = {
+  name: "Stable Video with Wide SVG Scrolling",
+  render: () => (
+    <div style={{ display: "grid", gap: 24 }}>
+      {(["fixed", "content-aware"] as const).flatMap((pacing) =>
+        [true, false].map((enabled) => (
+          <StableVideoWideSvgPreview
+            key={`${pacing}-${enabled}`}
+            enableTypewriter={enabled}
+            pacing={pacing}
+          />
+        ))
+      )}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const cases = Array.from(
+      canvasElement.querySelectorAll<HTMLElement>("[data-wide-svg-case]")
+    );
+    expect(cases).toHaveLength(4);
+    await waitFor(() => {
+      for (const container of cases)
+        expect(
+          container.querySelector<HTMLIFrameElement>('iframe[data-tag="video"]')
+            ?.contentDocument?.readyState
+        ).toBe("complete");
+    });
+    // Settle each initial about:blank load before counting later reloads.
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+    const captures = cases.map((container) => {
+      const video = container.querySelector<HTMLIFrameElement>(
+        'iframe[data-tag="video"]'
+      )!;
+      expect(video).not.toBeNull();
+      const parent = video.parentNode;
+      const videoWindow = video.contentWindow!;
+      const sentinelWindow = videoWindow as Window & {
+        wideSvgSentinel?: string;
+      };
+      sentinelWindow.wideSvgSentinel = "playing";
+      let loads = 0;
+      let identityChanged = false;
+      const onLoad = () => loads++;
+      video.addEventListener("load", onLoad);
+      const sameVideo = () =>
+        container.querySelector('iframe[data-tag="video"]') === video &&
+        video.parentNode === parent &&
+        video.contentWindow === videoWindow;
+      const observer = new MutationObserver(() => {
+        if (!sameVideo()) identityChanged = true;
+      });
+      observer.observe(container, { childList: true, subtree: true });
+      return {
+        container,
+        assertStable: () => {
+          expect(sameVideo()).toBe(true);
+          expect(identityChanged).toBe(false);
+          expect(sentinelWindow.wideSvgSentinel).toBe("playing");
+          expect(loads).toBe(0);
+        },
+        cleanup: () => {
+          observer.disconnect();
+          video.removeEventListener("load", onLoad);
+        },
+      };
+    });
+    try {
+      for (let phase = 0; phase < 3; phase++) {
+        await waitFor(
+          () => {
+            for (const { container, assertStable } of captures) {
+              expect(container.dataset.complete).toBe("true");
+              assertStable();
+              const scrollers = container.querySelectorAll<HTMLElement>(
+                ".content-render-svg-scroll"
+              );
+              expect(scrollers).toHaveLength(2);
+              for (const scroller of scrollers) {
+                expect(getComputedStyle(scroller).display).toBe("block");
+                expect(getComputedStyle(scroller).overflowX).toBe("auto");
+                expect(scroller.clientWidth).toBe(400);
+                expect(scroller.scrollWidth).toBeGreaterThanOrEqual(1600);
+                scroller.scrollLeft = 100;
+                expect(scroller.scrollLeft).toBe(100);
+              }
+            }
+          },
+          { timeout: 5000 }
+        );
+        if (phase < 2)
+          for (const { container } of captures)
+            await userEvent.click(container.querySelector("button")!);
+      }
+    } finally {
+      for (const capture of captures) capture.cleanup();
+    }
+  },
 };

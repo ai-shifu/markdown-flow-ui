@@ -8,14 +8,35 @@ import {
   InputGroupButton,
   InputGroupTextarea,
 } from "../ui/inputGroup/input-group";
+import {
+  getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
+import { getContentRenderLocaleTexts } from "./contentRenderI18n";
+
+type MarkdownFlowInputSendShortcut = "enter" | "none";
 
 interface MarkdownFlowInputProps {
+  /** Overrides locale-derived input direction. */
+  dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   disabled?: boolean;
+  locale?: MarkdownFlowLocale;
+  /** Overrides the locale-derived language. */
+  lang?: string;
   placeholder?: string;
+  sendButtonLabel?: string;
   value?: string;
   title?: string;
   onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onSend?: () => void;
+  /**
+   * Keyboard policy for sending a multi-line input. `enter` sends on Enter
+   * while Shift+Enter keeps its native newline behavior. `none` leaves Enter
+   * untouched, which lets mobile consumers reserve the keyboard return key
+   * for newlines.
+   */
+  sendShortcut?: MarkdownFlowInputSendShortcut;
   className?: string;
   textareaClassName?: string;
 }
@@ -25,17 +46,25 @@ const resolveAssetSrc = (asset: string | { src: string }) =>
 
 const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   disabled,
+  locale,
+  lang,
+  dir,
   placeholder,
+  sendButtonLabel,
   value,
   title,
   onChange,
   onSend,
+  sendShortcut = "enter",
   className,
   textareaClassName,
 }) => {
+  const localeTexts = getContentRenderLocaleTexts(locale);
+  const resolvedSendButtonLabel =
+    sendButtonLabel || localeTexts.sendButtonLabel;
   const isSendDisabled = disabled || !value?.trim();
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (!onSend) {
+    if (sendShortcut !== "enter" || !onSend) {
       return;
     }
     if (e.nativeEvent.isComposing || e.keyCode === 229) {
@@ -51,6 +80,8 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
 
   return (
     <InputGroup
+      dir={dir ?? getMarkdownFlowDirection(locale)}
+      lang={lang ?? getMarkdownFlowLanguage(locale)}
       data-disabled={disabled}
       className={`input-container h-auto items-end bg-white border-[#e5e5e5] shadow-[0_1px_2px_rgba(0,0,0,0.05)] ${className || ""}`}
     >
@@ -60,7 +91,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
         value={value}
         onChange={onChange}
         onKeyDown={handleKeyDown}
-        className={`text-[16px] leading-5 font-normal text-[#0A0A0A] placeholder:text-[rgba(99,114,128,1)] bg-transparent border-0 shadow-none pl-3 pr-0 py-1.5 min-h-[32px] ${textareaClassName || ""}`}
+        className={`text-[16px] leading-5 font-normal text-[#0A0A0A] placeholder:text-[rgba(99,114,128,1)] bg-transparent border-0 shadow-none ps-3 pe-0 py-1.5 min-h-[32px] ${textareaClassName || ""}`}
         title={title}
       />
       <InputGroupButton
@@ -69,7 +100,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
         size="icon-sm"
         onClick={onSend}
         disabled={isSendDisabled}
-        aria-label="send"
+        aria-label={resolvedSendButtonLabel}
         style={{
           margin: "0px 7px 4px 7px",
           cursor: isSendDisabled ? "not-allowed" : "pointer",
@@ -80,7 +111,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
           src={resolveAssetSrc(
             isSendDisabled ? sendIconDisable : sendIconEnable
           )}
-          alt="send"
+          alt={resolvedSendButtonLabel}
           className="size-6"
         />
       </InputGroupButton>
@@ -88,5 +119,5 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   );
 };
 
-export type { MarkdownFlowInputProps };
+export type { MarkdownFlowInputProps, MarkdownFlowInputSendShortcut };
 export default MarkdownFlowInput;

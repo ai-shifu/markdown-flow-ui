@@ -6,11 +6,36 @@ import {
   ViewUpdate,
 } from "@codemirror/view";
 import { RangeSetBuilder } from "@codemirror/state";
-import { createVariableExpressionRegexp } from "../utils";
+import { getMarkdownSourceAnalysis } from "../../ContentRender/utils/inline-code-ranges";
+import { INTERACTION_CONTENT_SOURCE, isEscape } from "remark-flow";
 
-const broadVariableRegex = /\{\{.*?\}\}/g;
+import {
+  findVariableMarkers,
+  findDocumentVariableMarkers,
+  trimVariablePadding,
+} from "../utils";
+
 const commentRegex = /<!--[\s\S]*?-->/g;
-const controlBlockRegex = /\?\[(.*?)\]/g;
+
+// An unfinished marker still owns its tail, so nested syntax stays literal while typing.
+const interactionVariableRanges = (text: string) => {
+  const markers = findVariableMarkers(text);
+  const pending = text.indexOf("{{", markers.at(-1)?.end ?? 0);
+  return pending === -1
+    ? markers
+    : [...markers, { start: pending, end: text.length, name: null }];
+};
+// The grammar's own definition of where an interaction ends, so a `\]` an option escaped does
+// not cut the highlight short, and the same `(?!\()` the parser uses, so `?[text](url)` stays a
+// markdown link. Taken from remark-flow rather than written again here: the editor and the
+// parser have to agree about what they are looking at.
+const controlBlockRegex = new RegExp(
+  `\\?\\[(${INTERACTION_CONTENT_SOURCE})\\](?!\\()`,
+  "g"
+);
+
+const documentControlRanges = (text: string) =>
+  getMarkdownSourceAnalysis(text).interactions;
 
 export interface SyntaxHighlightRange {
   from: number;
@@ -19,7 +44,8 @@ export interface SyntaxHighlightRange {
 }
 
 function collectMultilineFixedOutputRanges(
-  docText: string
+  docText: string,
+  isInsideVariable: (position: number) => boolean
 ): SyntaxHighlightRange[] {
   const ranges: SyntaxHighlightRange[] = [];
   let pendingStart: number | null = null;
@@ -30,7 +56,7 @@ function collectMultilineFixedOutputRanges(
     const lineEnd = newlineIndex === -1 ? docText.length : newlineIndex;
     const lineText = docText.slice(lineStart, lineEnd);
 
-    if (lineText.trim() === "!===") {
+    if (lineText.trim() === "!===" && !isInsideVariable(lineStart)) {
       if (pendingStart === null) {
         pendingStart = lineStart;
       } else {
@@ -55,7 +81,8 @@ function collectMultilineFixedOutputRanges(
 
 function collectSingleLineFixedOutputRanges(
   docText: string,
-  commentRanges: SyntaxHighlightRange[]
+  commentRanges: SyntaxHighlightRange[],
+  isInsideVariable: (position: number) => boolean
 ): SyntaxHighlightRange[] {
   const ranges: SyntaxHighlightRange[] = [];
   let commentIndex = 0;
@@ -88,7 +115,11 @@ function collectSingleLineFixedOutputRanges(
 
       const markerIndex = lineStart + markerOffset;
       const isNegated = markerIndex > 0 && docText[markerIndex - 1] === "!";
-      if (!isNegated && !isInsideComment(markerIndex)) {
+      if (
+        !isNegated &&
+        !isInsideComment(markerIndex) &&
+        !isInsideVariable(markerIndex)
+      ) {
         markerPositions.push(markerIndex);
       }
 
@@ -113,12 +144,16 @@ function collectSingleLineFixedOutputRanges(
   return ranges;
 }
 
-function collectCommentRanges(docText: string): SyntaxHighlightRange[] {
+function collectCommentRanges(
+  docText: string,
+  isInsideVariable: (position: number) => boolean
+): SyntaxHighlightRange[] {
   const ranges: SyntaxHighlightRange[] = [];
   let match;
 
   commentRegex.lastIndex = 0;
   while ((match = commentRegex.exec(docText)) !== null) {
+    if (isInsideVariable(match.index)) continue;
     ranges.push({
       from: match.index,
       to: match.index + match[0].length,
@@ -138,10 +173,19 @@ function collectCommentRanges(docText: string): SyntaxHighlightRange[] {
 export function collectOuterBlockRanges(
   docText: string
 ): SyntaxHighlightRange[] {
-  const commentRanges = collectCommentRanges(docText);
+  const variables = findDocumentVariableMarkers(docText);
+  const isInsideVariable = (position: number) =>
+    variables.some(
+      (marker) => position >= marker.start && position < marker.end
+    );
+  const commentRanges = collectCommentRanges(docText, isInsideVariable);
   const blockRanges = [
-    ...collectMultilineFixedOutputRanges(docText),
-    ...collectSingleLineFixedOutputRanges(docText, commentRanges),
+    ...collectMultilineFixedOutputRanges(docText, isInsideVariable),
+    ...collectSingleLineFixedOutputRanges(
+      docText,
+      commentRanges,
+      isInsideVariable
+    ),
     ...commentRanges,
   ].sort((a, b) => {
     if (a.from !== b.from) return a.from - b.from;
@@ -172,6 +216,7 @@ export function collectSyntaxHighlightRanges(
   isCursorInside: (from: number, to: number) => boolean = () => false
 ): SyntaxHighlightRange[] {
   const matches: SyntaxHighlightRange[] = [];
+  const documentVariables = findDocumentVariableMarkers(docText);
   const occupied: { from: number; to: number }[] = [];
 
   controlBlockRegex.lastIndex = 0;
@@ -188,33 +233,33 @@ export function collectSyntaxHighlightRanges(
     return true;
   };
 
-  const classifyVariable = (raw: string) => {
-    const inner = raw.slice(2, -2).trim();
-    if (!inner) return { className: "syntax-variable-invalid", valid: false };
-    const strict = createVariableExpressionRegexp();
-    const strictMatch = strict.exec(raw);
-    const valid =
-      !!strictMatch && strictMatch.index === 0 && strictMatch[0] === raw;
-    return {
-      className: valid ? "syntax-variable" : "syntax-variable-invalid",
-      valid,
-    };
-  };
-
-  let match;
-
   // 1. Outer block ranges win over any syntax inside them.
   for (const range of collectOuterBlockRanges(docText)) {
     addMatch(range.from, range.to, range.className);
   }
 
   // 2. Control Blocks
-  while ((match = controlBlockRegex.exec(docText)) !== null) {
+  for (const control of documentControlRanges(docText)) {
+    // Native Markdown owns document boundaries. The shared token grammar still
+    // supplies the exact source offsets used for individual editor decorations.
+    controlBlockRegex.lastIndex = control.start;
+    const match = controlBlockRegex.exec(docText);
+    if (
+      !match ||
+      match.index !== control.start ||
+      match.index + match[0].length !== control.end
+    )
+      continue;
     const fullStart = match.index;
     const fullEnd = match.index + match[0].length;
     const content = match[1];
     const contentStart = fullStart + 2; // after ?[
-    if (isOverlapping(fullStart, fullEnd)) {
+    if (
+      isOverlapping(fullStart, fullEnd) ||
+      documentVariables.some(
+        (marker) => marker.start <= fullStart && fullStart < marker.end
+      )
+    ) {
       continue;
     }
 
@@ -223,50 +268,78 @@ export function collectSyntaxHighlightRanges(
     addMatch(fullStart + 1, fullStart + 2, "syntax-bracket"); // [
     addMatch(fullEnd - 1, fullEnd, "syntax-bracket"); // ]
 
-    if (content.startsWith("%")) {
+    const variables = interactionVariableRanges(content);
+    const firstVariable = variables[0];
+    const percentIndex = firstVariable ? firstVariable.start - 1 : -1;
+    const hasLeadingAssignment =
+      percentIndex >= 0 &&
+      content[percentIndex] === "%" &&
+      trimVariablePadding(content.slice(0, percentIndex)) === "";
+    if (content.startsWith("%") || hasLeadingAssignment) {
       // Input / Select
-      const contentVariableRegex = /\{\{.*?\}\}/g;
-      const firstVariableMatch = contentVariableRegex.exec(content);
-      contentVariableRegex.lastIndex = 0;
       let percentClass = "syntax-percent-invalid";
-      if (firstVariableMatch) {
-        const classification = classifyVariable(firstVariableMatch[0]);
-        const varFrom = contentStart + firstVariableMatch.index;
-        const varTo = varFrom + firstVariableMatch[0].length;
+      if (firstVariable && hasLeadingAssignment) {
+        const varFrom = contentStart + firstVariable.start;
+        const varTo = contentStart + firstVariable.end;
         const cursorInsideVar = isCursorInside(varFrom, varTo);
         percentClass =
-          classification.valid && !cursorInsideVar
+          firstVariable.name !== null && !cursorInsideVar
             ? "syntax-percent-valid"
             : "syntax-percent-invalid";
       }
-      addMatch(contentStart, contentStart + 1, percentClass); // %
+      const percentStart =
+        contentStart + (hasLeadingAssignment ? percentIndex : 0);
+      addMatch(percentStart, percentStart + 1, percentClass); // %
 
       const operatorRanges: { from: number; to: number }[] = [];
       const variableRanges: { from: number; to: number; className: string }[] =
         [];
       const appliedTokenRanges: { from: number; to: number }[] = [];
 
-      // Inner operators | || ...
-      const innerRegex = /(\|\||\||\.\.\.)/g;
-      let innerMatch;
-      while ((innerMatch = innerRegex.exec(content)) !== null) {
-        operatorRanges.push({
-          from: contentStart + innerMatch.index,
-          to: contentStart + innerMatch.index + innerMatch[0].length,
+      // Keep a variable name atomic even when it contains option punctuation.
+      for (const variable of variables) {
+        variableRanges.push({
+          from: contentStart + variable.start,
+          to: contentStart + variable.end,
+          className:
+            variable.name === null
+              ? "syntax-variable-invalid"
+              : "syntax-variable",
         });
       }
 
-      // Variables inside control block content
-      let innerVariableMatch;
-      const innerVariableRegex = /\{\{.*?\}\}/g;
-      while ((innerVariableMatch = innerVariableRegex.exec(content)) !== null) {
-        const rawVariable = innerVariableMatch[0];
-        const classification = classifyVariable(rawVariable);
-        variableRanges.push({
-          from: contentStart + innerVariableMatch.index,
-          to: contentStart + innerVariableMatch.index + rawVariable.length,
-          className: classification.className,
+      // Inner operators | || ... -- skipping any an option escaped, the way the parser does.
+      // Painted as separators, they told the author the grammar had split an option that it
+      // had in fact left whole.
+      let scanIndex = 0;
+      while (scanIndex < content.length) {
+        const variable = variableRanges.find(
+          (range) => contentStart + scanIndex === range.from
+        );
+        if (variable) {
+          scanIndex = variable.to - contentStart;
+          continue;
+        }
+        if (isEscape(content, scanIndex)) {
+          scanIndex += 2;
+          continue;
+        }
+        const operator = content.startsWith("||", scanIndex)
+          ? "||"
+          : content[scanIndex] === "|"
+            ? "|"
+            : content.startsWith("...", scanIndex)
+              ? "..."
+              : null;
+        if (!operator) {
+          scanIndex += 1;
+          continue;
+        }
+        operatorRanges.push({
+          from: contentStart + scanIndex,
+          to: contentStart + scanIndex + operator.length,
         });
+        scanIndex += operator.length;
       }
 
       const allTokens = [
@@ -296,7 +369,7 @@ export function collectSyntaxHighlightRanges(
       }
 
       // Content (Dark Blue) for remaining text segments
-      const stringStart = contentStart + 1;
+      const stringStart = percentStart + 1;
       const stringEnd = fullEnd - 1;
       let cursor = stringStart;
       const sortedApplied = appliedTokenRanges.sort((a, b) => {
@@ -319,15 +392,14 @@ export function collectSyntaxHighlightRanges(
         [];
       const appliedVariableRanges: { from: number; to: number }[] = [];
 
-      let innerVariableMatch;
-      const innerVariableRegex = /\{\{.*?\}\}/g;
-      while ((innerVariableMatch = innerVariableRegex.exec(content)) !== null) {
-        const rawVariable = innerVariableMatch[0];
-        const classification = classifyVariable(rawVariable);
+      for (const variable of interactionVariableRanges(content)) {
         variableRanges.push({
-          from: contentStart + innerVariableMatch.index,
-          to: contentStart + innerVariableMatch.index + rawVariable.length,
-          className: classification.className,
+          from: contentStart + variable.start,
+          to: contentStart + variable.end,
+          className:
+            variable.name === null
+              ? "syntax-variable-invalid"
+              : "syntax-variable",
         });
       }
 
@@ -365,19 +437,12 @@ export function collectSyntaxHighlightRanges(
   }
 
   // 3. Variables (only if not already decorated; invalid ones stay default outside control blocks)
-  broadVariableRegex.lastIndex = 0;
-  while ((match = broadVariableRegex.exec(docText)) !== null) {
-    const text = match[0];
-    const classification = classifyVariable(text);
+  for (const variable of documentVariables) {
     if (
-      classification.valid &&
-      !isCursorInside(match.index, match.index + match[0].length)
+      variable.name !== null &&
+      !isCursorInside(variable.start, variable.end)
     ) {
-      addMatch(
-        match.index,
-        match.index + match[0].length,
-        classification.className
-      );
+      addMatch(variable.start, variable.end, "syntax-variable");
     }
   }
 

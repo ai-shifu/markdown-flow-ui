@@ -67,4 +67,37 @@ describe("resolveNextSlideIndexAfterMarkerAppend", () => {
       })
     ).toBe(0);
   });
+
+  it("clamps to the last surviving slide when history reselection truncates later markers", () => {
+    const firstMarker = createMarkerElement({
+      sequence_number: 1,
+      content: "<div>first</div>",
+    });
+    const reselectionMarkerBefore = createMarkerElement({
+      type: "interaction",
+      sequence_number: 2,
+      content: "?[%{{region}}A|B]",
+      user_input: "A",
+    });
+    const reselectionMarkerAfter = {
+      ...reselectionMarkerBefore,
+      readonly: true,
+    };
+    const laterMarker = createMarkerElement({
+      sequence_number: 3,
+      content: "<div>later</div>",
+    });
+
+    expect(
+      resolveNextSlideIndexAfterMarkerAppend({
+        previousIndex: 2,
+        previousSlideElementList: [
+          firstMarker,
+          reselectionMarkerBefore,
+          laterMarker,
+        ],
+        nextSlideElementList: [firstMarker, reselectionMarkerAfter],
+      })
+    ).toBe(1);
+  });
 });

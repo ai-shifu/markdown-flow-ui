@@ -6,31 +6,21 @@ import { EditorView } from "@codemirror/view";
 import { SelectedOption } from "./types";
 import { getVideoEmbedUrl } from "./utils/video";
 
-const VARIABLE_NAME_SOURCE = "[\\p{L}\\p{N}_]+";
-const VARIABLE_NAME_REGEXP = new RegExp(`^${VARIABLE_NAME_SOURCE}$`, "u");
-const VARIABLE_EXPRESSION_PATTERN = `\\{\\{(${VARIABLE_NAME_SOURCE})\\}\\}`;
+import {
+  createVariableExpressionRegex,
+  extractVariableNames,
+  findVariableMarkers,
+  findDocumentVariableMarkers,
+  formatVariableReference,
+  formatVariableAssignment,
+  isValidVariableName,
+  normalizeVariableName,
+  trimVariablePadding,
+} from "remark-flow";
+
 const FIXED_OUTPUT_MARKER = "===";
-
 const createVariableExpressionRegexp = () =>
-  new RegExp(VARIABLE_EXPRESSION_PATTERN, "gu");
-
-const isValidVariableName = (name: string) =>
-  typeof name === "string" && VARIABLE_NAME_REGEXP.test(name);
-
-const extractVariableNames = (content: string) => {
-  if (!content) {
-    return [];
-  }
-  const matches: string[] = [];
-  const regexp = createVariableExpressionRegexp();
-  let match: RegExpExecArray | null;
-
-  while ((match = regexp.exec(content)) !== null) {
-    matches.push(match[1]);
-  }
-
-  return matches;
-};
+  createVariableExpressionRegex("gu");
 
 const parseContentInfo = (
   type: SelectedOption,
@@ -49,10 +39,6 @@ const parseContentInfo = (
         resourceUrl: dataset.url,
         resourceTitle: dataset.title,
       };
-    case SelectedOption.Variable:
-      return {
-        variableName: dataset.title,
-      };
     default:
       return {
         resourceUrl: dataset.url ?? "",
@@ -68,7 +54,6 @@ function createSlashCommands(
     fixedText?: string;
     image?: string;
     video?: string;
-    variable?: string;
   }
 ) {
   return (context: CompletionContext): CompletionResult | null => {
@@ -104,12 +89,6 @@ function createSlashCommands(
         //     handleSelect(view, _, from, to, SelectedOption.FixedText);
         //   },
         // },
-        {
-          label: labels?.variable ?? "Variable",
-          apply: (view, _, from, to) => {
-            handleSelect(view, _, from, to, SelectedOption.Variable);
-          },
-        },
         {
           label: labels?.image ?? "Image",
           apply: (view, _, from, to) => {
@@ -219,7 +198,13 @@ export {
   getImageContentToInsert,
   getVideoContentToInsert,
   isValidVariableName,
+  normalizeVariableName,
+  trimVariablePadding,
   extractVariableNames,
+  findVariableMarkers,
+  findDocumentVariableMarkers,
+  formatVariableReference,
+  formatVariableAssignment,
   createVariableExpressionRegexp,
   wrapWithFixedOutput,
   unwrapFixedOutput,

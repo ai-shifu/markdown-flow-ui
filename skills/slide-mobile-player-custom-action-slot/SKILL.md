@@ -24,7 +24,7 @@ description: 当调整 `markdown-flow-ui` 的 `Slide` 移动端播放器控制�
 9. 若设置浮层使用 `DialogPortal`，横屏模式下应把 portal 容器挂到已旋转的视口节点，而不是默认挂到 `body`，否则浮层方向会与舞台不一致。
 10. 若移动端横屏模式需要补充顶部信息栏，且它应与 player 保持同一方向，就把 header 渲染到已旋转的视口里，并为内容区预留头部高度；不要挂到未旋转的外层容器上。
 11. 若横屏 header 的按钮承担“返回”语义，默认应先把屏幕模式切回竖屏，再执行业务层 `onBack`；header 本身不要内置头像或标题默认结构，内容区只保留自定义渲染槽位。
-12. 若移动端横屏模式需要重排 player，优先仅补充语义 class 并用 CSS 完成布局：more 固定左侧、notes 固定右侧、中间三键居中，避免改动已有播放状态机和按钮事件流。
+12. 若移动端横屏模式需要重排 player，优先仅补充语义 class 并用 CSS 完成布局：more 固定左侧、自定义 action（如有）放在尾部、内建播放控制保持既有顺序，避免改动已有播放状态机和按钮事件流。
 13. 若横屏 player 使用深色渐变底，所有控制 icon 颜色应统一为白色；若播放按钮使用自绘 SVG，还需要显式覆盖其内部 `path` 的 fill，避免残留黑色底盘。
 14. 若横屏底栏中间三键需要强调主操作，优先把中间按钮组间距设为 `24px`，并只给播放按钮增加白色描边，不要给左右前进/后退按钮也套上边框。
 15. 若横屏模式同时展示 header 和底部 player，主内容区应预留统一安全边距，优先使用 `padding: 12px 24px`，并把 header 高度合并到顶部内边距里一起计算。
@@ -52,9 +52,10 @@ description: 当调整 `markdown-flow-ui` 的 `Slide` 移动端播放器控制�
 36. 若移动端 `Slide` 进入 fullscreen 后需要统一修改顶部 header 与底部 player 的视觉风格，优先把前景色与渐变背景抽成同一组 fullscreen chrome CSS 变量，由 header、player controls 与返回 icon 共同复用；不要分别写死两套颜色，避免后续一侧漏改。
 37. 若 fullscreen header 提供自定义 React slot，修改 header 前景色时不要只改按钮和容器本身；还要给 slot 包一层语义 class，并让其内部文本节点统一继承 header 的前景色，否则业务层自带的 `text-foreground` / `text-white` 等 class 会把新主题色覆盖掉。
 38. 若移动端 fullscreen 同时显示顶部 header 与底部 player，内容区上下留白要对称计算：顶部至少等于 `header height + gap`，底部至少等于 `player height + gap`；不要只给顶部加 padding，否则内容会被底部 player 遮挡。
+39. `playerCustomActions` 的计数与尾部分组只应包含实际可渲染节点；空 Fragment 或仅含空值的嵌套 Fragment 必须归一化为空列表，不渲染 separator 或空 group，也不增加移动端控制列数。
 
 ## 约束
 
 - 不要删除已有 `console.log` 或调试输出。
 - 不要影响桌面端 `Slide` 播放器按钮顺序。
-- 优先做最小改动，避免顺手改动 notes 浮层、音频播放或业务层 custom action 行为。
+- 优先做最小改动；只有明确的互斥需求才调整 interaction 浮层、音频播放或业务层 custom action 行为。

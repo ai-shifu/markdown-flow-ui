@@ -11,7 +11,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![Storybook](https://img.shields.io/badge/Storybook-Enabled-ff69b4.svg)](https://storybook.js.org/)
 
-English | [简体中文](README_ZH-CN.md)
+English | [Simplified Chinese](README_ZH-CN.md)
 
 </div>
 
@@ -48,14 +48,66 @@ function App() {
 }
 ```
 
+With the typewriter enabled, prose follows the configured typing pace. Received
+HTML waits until the preceding prose has finished typing, then renders each
+received snapshot immediately, including unfinished fragments. HTML does not consume
+the typing budget. Tag-like text such as `<div`
+remains ordinary Markdown until a tag-name boundary (whitespace, `/`, or `>`) is
+received.
+
+Streaming detection recognizes the backend MarkdownFlow block roots, including
+`figure`, `table`, `canvas`, `video`, `header`, `nav`, and `details`. HTML-looking
+text inside Markdown code, math, comments, image alt text, link destinations/titles,
+reference definitions, or another tag's attributes stays inert. Unfinished link metadata
+also stays literal while streaming; invalid links do not hide subsequent HTML.
+Quoted and nested list code fences remain code even directly after closed HTML.
+Detection and presentation are separate: `pre`, `details`, `summary`,
+`aside`, `blockquote`, `ul`, `ol`, `dl`, and `table` keep their native Markdown
+styles and language/direction attributes while bypassing typing. Widget roots
+retain the sandbox; native presentation blocks with embedded script, style, or
+other document resources also use the sandbox (native video frames are exempt).
+In content mode, sandbox blocks reserve their measured content height instead
+of a minimum 16:9 slide. The iframe retains a separate layout viewport of at
+least 16:9 so authored `vh` and `vmin` sizes stay stable; unused viewport space
+is clipped by the top-aligned content container. Content growth, collapse,
+image loads and width changes trigger remeasurement. When shown, the fullscreen
+control reserves its actual height so it remains accessible on very short blocks.
+Full-screen minimum heights (`min-height:100vh`, `100dvh`, `100svh`, or `100lvh`)
+on inline-styled content shells and their single-child wrapper chains are relaxed
+so compact cards do not reserve a blank screen. Authored margins, padding, pixel
+minimums, explicit heights (including `height:100vh`) and viewport-relative fonts
+remain intact. Nested layout branches are not rewritten.
+Blackboard sizing and sandbox permissions are unchanged.
+Detection scans absolute source offsets without reparsing every remaining
+suffix. Native videos use the complete received Markdown structure; typing only
+changes text visibility, preserving video frames across earlier headings, lists,
+quotes, reference links, and subsequent HTML updates. Stable runs apply the
+same HTML indentation and newline normalization as the ordinary renderer, with
+positions mapped back to the original source for typing and callbacks.
+Each received snapshot determines the Markdown structure. Later source that
+changes its grammar, such as adding a previously missing reference definition,
+can change that structure; typing an already received snapshot preserves it.
+
 ### Interactive Elements
+
+Variable names are opaque Unicode text. Both ends are trimmed using the same
+Unicode whitespace set as Python; internal spaces, punctuation, emoji, and single
+braces are preserved. The trimmed name must be non-empty and contain no control
+characters, line separators, or literal `}}`. The first literal `}}` closes the
+marker. Quotes and backslashes remain part of the name.
+
+Use padded markers such as `{{ Which [path] | level//hint...? }}` or
+`%{{ name} }}`. Assignment markers remain atomic inside an interaction, so
+`?[%{{ Which [path] | level//hint...? }} Yes | No]` stores the answer under that
+exact name. Write the question text separately when it should be displayed.
+Existing names and compact markers such as `{{user_name}}` continue to work.
 
 ```tsx
 import { MarkdownFlow } from "markdown-flow-ui";
 
 function InteractiveExample() {
   const content = `
-Choose your language: ?[%{{lang}} English | 中文 | Español]
+Choose your language: ?[%{{lang}} English | French | Spanish]
 
 Your name: ?[%{{name}} Enter your name...]
 
@@ -106,6 +158,13 @@ const CustomBar: CustomRenderBarProps = ({ displayContent, onSend }) => {
 
 <MarkdownFlow customRenderBar={CustomBar} initialContentList={messages} />;
 ```
+
+## Development verification
+
+Run `npm test` for unit tests and `npm run test:package` for distribution checks.
+The package check rebuilds the library before testing both exported stylesheets,
+scroll-control visibility and accessibility rules, and bundled math fonts.
+CI runs both commands alongside the Storybook browser tests.
 
 ## 🌐 MarkdownFlow Ecosystem
 

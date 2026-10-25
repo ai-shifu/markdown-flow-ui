@@ -27,6 +27,9 @@ export {
 export type {
   SlideInteractionTexts,
   SlideFullscreenHeader,
+  SlidePlayerControlsVisibility,
+  SlidePlaybackCheckpoint,
+  SlidePlaybackRestoreRequest,
   SlideProps,
 } from "./Slide";
 export type {
@@ -45,8 +48,12 @@ export type {
 } from "./types";
 export type {
   PlayerProps,
+  SlidePlayerPlaybackCheckpoint,
   SlidePlayerNavigationContext,
+  SlidePlayerPlaybackRestoreRequest,
+  SlidePlayerProgress,
   SlidePlayerTexts,
 } from "./Player";
+export type { MarkdownFlowLocale } from "../../lib/locale";
 export type { UseSlideResult } from "./useSlide";
 export type { MobileViewMode } from "./utils/mobileScreenMode";

@@ -1,11 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
+import { expect, userEvent, waitFor, within } from "storybook/test";
+import { MARKDOWN_FLOW_LOCALES } from "../../lib/locale";
 
 import historyFixtureText from "../../../测试历史数据.json?raw";
 import runStreamFixtureText from "../../../测试数据.json?raw";
 import runStreamFixtureText2 from "../../../测试数据2.json?raw";
 import ContentRender from "../ContentRender";
+import { resolvePresentationBaseFontSize } from "../ContentRender/utils/presentation-scaling";
 import type { OnSendContentParams } from "../types";
 import type { SlidePlayerCustomActionContext } from "./types";
 import { getVisibleSubtitleText } from "./utils/subtitleCue";
@@ -19,6 +22,7 @@ import {
 import { parseRunStreamFixture } from "./utils/runStreamFixture";
 
 import Slide from "./Slide";
+import { getSlideLocaleTexts } from "./slideI18n";
 import type { Element, ElementSubtitleCue } from "./Slide";
 
 const meta = {
@@ -35,6 +39,11 @@ const meta = {
   },
   tags: ["autodocs"],
   argTypes: {
+    locale: {
+      control: "select",
+      options: [...MARKDOWN_FLOW_LOCALES],
+      description: "Locale for built-in player and interaction UI text",
+    },
     elementList: {
       description: "Slide element data list",
       table: {
@@ -66,23 +75,40 @@ const meta = {
       description:
         "Fullscreen-only mobile header with a built-in back button and optional custom content slot",
     },
+    playerEnabled: {
+      control: "boolean",
+      description:
+        "Enable the player runtime, including audio playback and keyboard shortcuts",
+    },
+    playerControlsVisibility: {
+      control: "select",
+      options: ["auto", "visible", "hidden"],
+      description:
+        "Control whether player controls auto-hide, stay visible, or stay hidden while runtime behavior remains active",
+    },
     playerAutoHideDelay: {
       control: { type: "number", min: 0, step: 500 },
-      description: "Auto-hide delay for player controls in milliseconds",
+      description:
+        "Auto-hide delay for player controls in milliseconds after the pointer leaves the control bar",
+    },
+    enableMarkdownScaling: {
+      control: "boolean",
+      description:
+        "Fit Markdown-only slides to the available presentation viewport",
     },
     markerAutoAdvanceDelay: {
       control: { type: "number", min: 0, step: 500 },
       description:
         "Auto-advance delay for silent marker-only steps in milliseconds",
     },
-    playerAlwaysVisible: {
+    showSlideProgress: {
       control: "boolean",
-      description: "Keep the player controls visible without auto hiding",
+      description: "Show navigation for generated slide positions",
     },
     playerCustomActions: {
       control: false,
       description:
-        "Custom player action nodes rendered before the default notes action",
+        "Custom player action nodes rendered after built-in controls",
       table: {
         type: {
           summary:
@@ -98,25 +124,9 @@ const meta = {
   },
   args: {
     elementList: [],
-    interactionTexts: {
-      title: "Submit the content below to continue.",
-      confirmButtonText: "Submit",
-      copyButtonText: "Copy",
-      copiedButtonText: "Copied",
-    },
-    playerTexts: {
-      settingsTitle: "Settings",
-      screenLabel: "Screen",
-      nonFullscreenLabel: "Non-fullscreen",
-      fullscreenLabel: "Fullscreen",
-      fullscreenHintText: "Rotate your screen for the best experience.",
-      nextSubtitleLabel: "Next sentence",
-      previousSubtitleLabel: "Previous sentence",
-    },
     fullscreenHeader: undefined,
     playerAutoHideDelay: 3000,
     markerAutoAdvanceDelay: 2000,
-    playerAlwaysVisible: false,
   },
 } satisfies Meta<typeof Slide>;
 
@@ -267,6 +277,122 @@ const SLOT_CONTENT = (
 );
 
 const VIDEO_CONTENT = `<iframe data-tag="video" data-title="哔哩哔哩视频" data-url="https://www.bilibili.com/video/BV1ry4y1y7KZ/" class="w-full aspect-video rounded-lg border-0" src="https://player.bilibili.com/player.html?bvid=BV1ry4y1y7KZ&autoplay=0" allowfullscreen="" allow="autoplay; encrypted-media"></iframe>`;
+
+const PRESENTATION_MARKDOWN_CONTENT = [
+  "# Markdown Presentation Scaling",
+  "",
+  "Markdown now uses the same viewport-driven typography as HTML slides. A logical page is measured as one composition, so every block grows and compresses together.",
+  "",
+  "## What stays readable",
+  "",
+  "- Headings and body copy scale from the available width and height.",
+  "- Tables, formulas, diagrams, and code participate in the same fit calculation.",
+  "- Dense pages compress to remain visible and keep scrolling as a final fallback.",
+  "",
+  "| Content | Fullscreen behavior |",
+  "| --- | --- |",
+  "| Text and headings | Scale together |",
+  "| Tables and code | Preserve overflow safety |",
+  "| Mermaid and images | Refit after asynchronous layout |",
+  "",
+  "```typescript",
+  "const fontSize = fitPresentationFontSize({ viewport, measure });",
+  'renderMarkdown({ fontSize, overflowFallback: "scroll" });',
+  "```",
+  "",
+  "The fitting formula starts from $\\min(\\max(12, w / 48), 0.03h)$ and never reduces text below 8px.",
+  "",
+  "```mermaid",
+  "flowchart LR",
+  "  A[Viewport] --> B[Base font size]",
+  "  B --> C{Content fits?}",
+  "  C -->|Yes| D[Present]",
+  "  C -->|No| E[Compress]",
+  "  E --> C",
+  "```",
+].join("\n");
+
+const FULL_VIEWPORT_CODE_ONLY_CONTENT = [
+  "```typescript",
+  "type Viewport = Readonly<{",
+  "  width: number;",
+  "  height: number;",
+  "}>;",
+  "",
+  "type ContentSize = Readonly<{",
+  "  width: number;",
+  "  height: number;",
+  "}>;",
+  "",
+  "const MIN_FONT_SIZE = 8;",
+  "const MAX_FONT_SIZE = 64;",
+  "const FIT_EPSILON = 0.25;",
+  "",
+  "const fits = (content: ContentSize, viewport: Viewport) =>",
+  "  content.width <= viewport.width &&",
+  "  content.height <= viewport.height;",
+  "",
+  "export function fitMarkdownFontSize(",
+  "  viewport: Viewport,",
+  "  measure: (fontSize: number) => ContentSize",
+  ") {",
+  "  let low = MIN_FONT_SIZE;",
+  "  let high = MAX_FONT_SIZE;",
+  "",
+  "  while (high - low > FIT_EPSILON) {",
+  "    const middle = (low + high) / 2;",
+  "    if (fits(measure(middle), viewport)) {",
+  "      low = middle;",
+  "    } else {",
+  "      high = middle;",
+  "    }",
+  "  }",
+  "",
+  "  return Number(low.toFixed(2));",
+  "}",
+  "",
+  "const fittedFontSize = fitMarkdownFontSize(",
+  "  { width: 1280, height: 720 },",
+  "  (fontSize) => ({",
+  "    width: fontSize * 34,",
+  "    height: fontSize * 18,",
+  "  })",
+  ");",
+  "",
+  "console.log({ fittedFontSize });",
+  "```",
+].join("\n");
+
+const FULL_VIEWPORT_HEADING_ONLY_CONTENT = "# Markdown 全屏标题";
+
+const FULL_VIEWPORT_MERMAID_ONLY_CONTENT = [
+  "```mermaid",
+  "flowchart LR",
+  "  A[Markdown source] --> B[Parse AST]",
+  "  B --> C{Block type}",
+  "  C -->|Heading| D[Typography]",
+  "  C -->|Code| E[Syntax highlight]",
+  "  C -->|Math| F[KaTeX]",
+  "  C -->|Diagram| G[Mermaid]",
+  "  D --> H[Measure content]",
+  "  E --> H",
+  "  F --> H",
+  "  G --> H",
+  "  H --> I{Fits viewport?}",
+  "  I -->|No| J[Reduce font size]",
+  "  J --> H",
+  "  I -->|Yes| K[Present slide]",
+  "```",
+].join("\n");
+
+const FULL_VIEWPORT_MATH_ONLY_CONTENT = String.raw`$$
+\begin{aligned}
+e^{i\pi}+1 &= 0 \\
+\frac{d}{dx}\left(x^n\right) &= nx^{n-1} \\
+\int_{-\infty}^{\infty} e^{-x^2}\,dx &= \sqrt{\pi} \\
+\sum_{k=1}^{n} k &= \frac{n(n+1)}{2}
+\end{aligned}
+$$`;
 
 const STREAMING_IFRAME_CONTENT = `<div class="w-full h-screen flex flex-col p-[4vmin] bg-white">
   <div class="flex-1 flex flex-col items-center justify-[safe_center] gap-[4vmin]">
@@ -622,9 +748,9 @@ const resolveSubmittedUserInput = (content: OnSendContentParams) =>
 const isSameStoryElement = (currentElement: Element, targetElement?: Element) =>
   Boolean(
     targetElement &&
-      currentElement.type === targetElement.type &&
-      currentElement.sequence_number === targetElement.sequence_number &&
-      currentElement.content === targetElement.content
+    currentElement.type === targetElement.type &&
+    currentElement.sequence_number === targetElement.sequence_number &&
+    currentElement.content === targetElement.content
   );
 
 const applyInteractionSubmission = (
@@ -686,9 +812,7 @@ const getLatestInteractionVariableName = (elementList: Element[]) => {
 
 const getRunStreamVariableName = (event: RunStreamFixtureEvent) => {
   const eventContent = event.content as
-    | { variable_name?: string; variableName?: string }
-    | null
-    | undefined;
+    { variable_name?: string; variableName?: string } | null | undefined;
 
   if (typeof eventContent?.variable_name === "string") {
     return eventContent.variable_name.trim();
@@ -2041,6 +2165,512 @@ const createExampleElement = ({
   ...element,
 });
 
+const POINTER_TEST_ID = 41;
+
+const DRAG_TEST_ELEMENT_LIST: Element[] = [
+  createExampleElement({
+    sequenceNumber: 1,
+    type: "interaction",
+    content: "?[%{{drag_test_choice}} Option A | Option B | Option C]",
+    isNew: true,
+    readonly: false,
+  }),
+];
+
+const INTERACTION_GATE_TEST_SENTINEL = "Interaction gate regression sentinel";
+const INTERACTION_GATE_TEST_ELEMENT_LIST: Element[] = [
+  ...DRAG_TEST_ELEMENT_LIST,
+  createExampleElement({
+    sequenceNumber: 2,
+    type: "title",
+    content: INTERACTION_GATE_TEST_SENTINEL,
+  }),
+];
+
+const MOBILE_VIEWPORT_INPUT_TEST_ELEMENT_LIST: Element[] = [
+  createExampleElement({
+    sequenceNumber: 1,
+    type: "interaction",
+    content: "?[%{{mobile_resize_input}}...Type your answer]",
+    isNew: true,
+    readonly: false,
+  }),
+];
+
+type TestVisualViewport = EventTarget & {
+  dispatchOrientationChange: () => void;
+  height: number;
+  offsetLeft: number;
+  offsetTop: number;
+  onresize: ((event: Event) => void) | null;
+  onscroll: ((event: Event) => void) | null;
+  pageLeft: number;
+  pageTop: number;
+  scale: number;
+  setSize: (width: number, height: number) => void;
+  width: number;
+};
+
+const createTestVisualViewport = (): TestVisualViewport => {
+  const viewport = Object.assign(new EventTarget(), {
+    height: 844,
+    offsetLeft: 0,
+    offsetTop: 0,
+    onresize: null,
+    onscroll: null,
+    pageLeft: 0,
+    pageTop: 0,
+    scale: 1,
+    width: 390,
+  }) as TestVisualViewport;
+
+  viewport.dispatchOrientationChange = () => {
+    window.dispatchEvent(new Event("orientationchange"));
+  };
+
+  viewport.setSize = (width, height) => {
+    viewport.width = width;
+    viewport.height = height;
+    viewport.dispatchEvent(new Event("resize"));
+  };
+
+  return viewport;
+};
+
+type PointerTestEventOptions = {
+  button?: number;
+  buttons?: number;
+  clientX: number;
+  clientY: number;
+  pointerId?: number;
+  pointerType?: string;
+};
+
+const dispatchPointerEvent = (
+  element: HTMLElement,
+  type: string,
+  {
+    button = 0,
+    buttons,
+    clientX,
+    clientY,
+    pointerId = POINTER_TEST_ID,
+    pointerType = "mouse",
+  }: PointerTestEventOptions
+) => {
+  element.dispatchEvent(
+    new PointerEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      button,
+      buttons: buttons ?? (type === "pointerup" ? 0 : 1),
+      clientX,
+      clientY,
+      pointerId,
+      pointerType,
+    })
+  );
+};
+
+const ensurePointerCaptureTracking = (element: HTMLElement) => {
+  const capturedPointerIds: number[] = [];
+  const capturedPointerIdSet = new Set<number>();
+  const originalSetPointerCapture = element.setPointerCapture?.bind(element);
+  const originalHasPointerCapture = element.hasPointerCapture?.bind(element);
+  const originalReleasePointerCapture =
+    element.releasePointerCapture?.bind(element);
+
+  Object.defineProperty(element, "setPointerCapture", {
+    configurable: true,
+    value: (pointerId: number) => {
+      if (!capturedPointerIdSet.has(pointerId)) {
+        capturedPointerIdSet.add(pointerId);
+        capturedPointerIds.push(pointerId);
+      }
+
+      try {
+        originalSetPointerCapture?.(pointerId);
+      } catch {
+        // Browser story tests synthesize the drag chain, so pointer capture may
+        // not have a native active pointer behind it. The component only needs
+        // the capture state to stay coherent for the rest of the chain.
+      }
+    },
+  });
+
+  Object.defineProperty(element, "hasPointerCapture", {
+    configurable: true,
+    value: (pointerId: number) =>
+      capturedPointerIdSet.has(pointerId) ||
+      originalHasPointerCapture?.(pointerId) === true,
+  });
+
+  Object.defineProperty(element, "releasePointerCapture", {
+    configurable: true,
+    value: (pointerId: number) => {
+      capturedPointerIdSet.delete(pointerId);
+
+      try {
+        originalReleasePointerCapture?.(pointerId);
+      } catch {
+        // See setPointerCapture fallback above.
+      }
+    },
+  });
+
+  return capturedPointerIds;
+};
+
+const getOverlayDragOffsets = (overlay: HTMLElement) => ({
+  x: overlay.style.getPropertyValue("--slide-interaction-drag-x").trim(),
+  y: overlay.style.getPropertyValue("--slide-interaction-drag-y").trim(),
+});
+
+const getOverlayDragOffsetNumbers = (overlay: HTMLElement) => {
+  const offsets = getOverlayDragOffsets(overlay);
+
+  return {
+    x: Number.parseFloat(offsets.x) || 0,
+    y: Number.parseFloat(offsets.y) || 0,
+  };
+};
+
+const expectOverlayHasMoved = async (overlay: HTMLElement) => {
+  await waitFor(() => {
+    const offsets = getOverlayDragOffsetNumbers(overlay);
+
+    expect(Math.abs(offsets.x) + Math.abs(offsets.y)).toBeGreaterThan(0);
+  });
+};
+
+const expectOverlayIsReset = async (overlay: HTMLElement) => {
+  await waitFor(() => {
+    expect(getOverlayDragOffsets(overlay)).toEqual({
+      x: "0px",
+      y: "0px",
+    });
+  });
+};
+
+const triggerPointerDrag = async (
+  element: HTMLElement,
+  start: PointerTestEventOptions,
+  end: PointerTestEventOptions
+) => {
+  // Separate native pointer events let React commit the intermediate drag state.
+  // Keep the same frame boundaries when synthesizing the chain in browser tests.
+  dispatchPointerEvent(element, "pointerdown", start);
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  dispatchPointerEvent(element, "pointermove", end);
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  dispatchPointerEvent(element, "pointerup", end);
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+};
+
+const triggerSyntheticPointerDrag = async (
+  handle: HTMLElement,
+  deltaX: number,
+  deltaY: number,
+  pointerId = POINTER_TEST_ID
+) => {
+  const rect = handle.getBoundingClientRect();
+
+  expect(rect.width).toBeGreaterThan(0);
+  expect(rect.height).toBeGreaterThan(0);
+
+  await triggerPointerDrag(
+    handle,
+    {
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height / 2,
+      pointerId,
+      pointerType: "touch",
+    },
+    {
+      clientX: rect.left + rect.width / 2 + deltaX,
+      clientY: rect.top + rect.height / 2 + deltaY,
+      pointerId,
+      pointerType: "touch",
+    }
+  );
+};
+
+const installWindowValueOverride = <T extends object, K extends keyof T>(
+  target: T,
+  key: K,
+  value: T[K]
+) => {
+  const descriptor = Object.getOwnPropertyDescriptor(target, key);
+
+  Object.defineProperty(target, key, {
+    configurable: true,
+    value,
+  });
+
+  return () => {
+    if (descriptor) {
+      Object.defineProperty(target, key, descriptor);
+      return;
+    }
+
+    delete (target as Record<PropertyKey, unknown>)[key as PropertyKey];
+  };
+};
+
+const createSilentWaveAudioBlob = (durationMs = 5000) => {
+  const sampleRate = 8000;
+  const sampleCount = Math.ceil((sampleRate * durationMs) / 1000);
+  const buffer = new ArrayBuffer(44 + sampleCount);
+  const view = new DataView(buffer);
+  const writeAscii = (offset: number, value: string) => {
+    for (let index = 0; index < value.length; index += 1) {
+      view.setUint8(offset + index, value.charCodeAt(index));
+    }
+  };
+
+  writeAscii(0, "RIFF");
+  view.setUint32(4, 36 + sampleCount, true);
+  writeAscii(8, "WAVE");
+  writeAscii(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate, true);
+  view.setUint16(32, 1, true);
+  view.setUint16(34, 8, true);
+  writeAscii(36, "data");
+  view.setUint32(40, sampleCount, true);
+
+  for (let index = 44; index < buffer.byteLength; index += 1) {
+    view.setUint8(index, 128);
+  }
+
+  return new Blob([buffer], { type: "audio/wav" });
+};
+
+const SubtitleLayoutStabilityPreview = (
+  props: React.ComponentProps<typeof Slide>
+) => {
+  const [audioUrl, setAudioUrl] = useState("");
+
+  useEffect(() => {
+    const nextAudioUrl = URL.createObjectURL(createSilentWaveAudioBlob());
+
+    setAudioUrl(nextAudioUrl);
+
+    return () => {
+      URL.revokeObjectURL(nextAudioUrl);
+    };
+  }, []);
+
+  const elementList = useMemo<Element[]>(
+    () =>
+      audioUrl
+        ? [
+            {
+              audio_url: audioUrl,
+              blockBid: "layout-stability-subtitle",
+              content: "Player controls can hide without moving this subtitle.",
+              is_marker: true,
+              is_new: true,
+              is_renderable: true,
+              is_speakable: true,
+              sequence_number: 1,
+              subtitle_cues: [
+                {
+                  end_ms: 5000,
+                  position: 0,
+                  segment_index: 0,
+                  start_ms: 0,
+                  text: "This subtitle keeps the player footprint reserved.",
+                },
+              ],
+              type: "text",
+            },
+          ]
+        : [],
+    [audioUrl]
+  );
+
+  if (!audioUrl) {
+    return null;
+  }
+
+  return (
+    <div className="flex h-[100dvh] w-full items-center justify-center bg-muted/20 p-8">
+      <Slide
+        className="h-full w-full max-w-4xl"
+        {...props}
+        elementList={elementList}
+      />
+    </div>
+  );
+};
+
+const getVerticalBounds = (element: HTMLElement) => {
+  const rect = element.getBoundingClientRect();
+
+  return {
+    bottom: rect.bottom,
+    top: rect.top,
+  };
+};
+
+const expectVerticalBoundsToStayStable = (
+  element: HTMLElement,
+  expectedBounds: ReturnType<typeof getVerticalBounds>
+) => {
+  const currentBounds = getVerticalBounds(element);
+
+  expect(Math.abs(currentBounds.top - expectedBounds.top)).toBeLessThanOrEqual(
+    1
+  );
+  expect(
+    Math.abs(currentBounds.bottom - expectedBounds.bottom)
+  ).toBeLessThanOrEqual(1);
+};
+
+const MobilePointerDragSlidePreview = ({
+  elementList = [],
+  ...props
+}: React.ComponentProps<typeof Slide>) => {
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const restoreUserAgent = installWindowValueOverride(
+      window.navigator,
+      "userAgent",
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)"
+    );
+    const restoreMatchMedia = installWindowValueOverride(
+      window,
+      "matchMedia",
+      ((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        dispatchEvent: () => false,
+      })) as Window["matchMedia"]
+    );
+
+    setIsReady(true);
+
+    return () => {
+      restoreMatchMedia();
+      restoreUserAgent();
+    };
+  }, []);
+
+  if (!isReady) {
+    return null;
+  }
+
+  return (
+    <div className="mx-auto h-[100dvh] w-[390px] bg-background">
+      <Slide className="h-full w-full" {...props} elementList={elementList} />
+    </div>
+  );
+};
+
+const MobileViewportResizeSlidePreview = ({
+  elementList = [],
+  ...props
+}: React.ComponentProps<typeof Slide>) => {
+  const [isReady, setIsReady] = useState(false);
+  const [viewportResizeCount, setViewportResizeCount] = useState(0);
+
+  useEffect(() => {
+    const visualViewport = createTestVisualViewport();
+    const screenOrientation = Object.assign(new EventTarget(), {
+      angle: 0,
+      lock: async () => undefined,
+      onchange: null,
+      type: "portrait-primary",
+      unlock: () => undefined,
+    });
+    const restorers: Array<() => void> = [];
+    const handleViewportResize = () => {
+      setViewportResizeCount((count) => count + 1);
+    };
+
+    try {
+      restorers.push(
+        installWindowValueOverride(
+          window.navigator,
+          "userAgent",
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)"
+        )
+      );
+      restorers.push(
+        installWindowValueOverride(
+          window,
+          "visualViewport",
+          visualViewport as VisualViewport
+        )
+      );
+      restorers.push(
+        installWindowValueOverride(
+          window.screen,
+          "orientation",
+          screenOrientation as ScreenOrientation
+        )
+      );
+      restorers.push(
+        installWindowValueOverride(window, "matchMedia", ((query: string) => ({
+          matches:
+            query === "(orientation: landscape)" &&
+            visualViewport.width > visualViewport.height,
+          media: query,
+          onchange: null,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+          addListener: () => undefined,
+          removeListener: () => undefined,
+          dispatchEvent: () => false,
+        })) as Window["matchMedia"])
+      );
+
+      visualViewport.addEventListener("resize", handleViewportResize);
+      setIsReady(true);
+    } catch (error) {
+      [...restorers].reverse().forEach((restore) => restore());
+      throw error;
+    }
+
+    return () => {
+      visualViewport.removeEventListener("resize", handleViewportResize);
+      [...restorers].reverse().forEach((restore) => restore());
+    };
+  }, []);
+
+  if (!isReady) {
+    return null;
+  }
+
+  return (
+    <div className="mx-auto h-[100dvh] w-[390px] bg-background">
+      <Slide
+        className="h-full w-full"
+        {...props}
+        elementList={elementList}
+        interactionDefaultValueOptions={{
+          resolveDefaultValues: () => ({
+            selectedValues: ["Existing choice"],
+          }),
+        }}
+        interactionTitle={`Interaction ${viewportResizeCount}`}
+        onSend={() => undefined}
+      />
+    </div>
+  );
+};
+
 const exampleElementList: Element[] = [
   createExampleElement({
     sequenceNumber: 1,
@@ -2120,10 +2750,18 @@ const exampleElementList: Element[] = [
   }),
 ];
 
+type CustomPlayerActionSlidePreviewProps = React.ComponentProps<
+  typeof Slide
+> & {
+  customActionEnabled?: boolean;
+};
+
 const CustomPlayerActionSlidePreview = ({
+  customActionEnabled = true,
   elementList = [],
+  playerCustomActionPauseOnActive = true,
   ...props
-}: React.ComponentProps<typeof Slide>) => {
+}: CustomPlayerActionSlidePreviewProps) => {
   const handleCustomActionClick = useCallback((element?: Element) => {
     console.log("custom-player-action-clicked", element);
   }, []);
@@ -2158,9 +2796,65 @@ const CustomPlayerActionSlidePreview = ({
     <Slide
       {...props}
       elementList={elementList}
-      playerCustomActionPauseOnActive
-      playerCustomActions={customPlayerAction}
+      playerCustomActionPauseOnActive={playerCustomActionPauseOnActive}
+      playerCustomActions={customActionEnabled ? customPlayerAction : undefined}
     />
+  );
+};
+
+interface CustomActionToggleLabels {
+  remove: {
+    ariaLabel: string;
+    buttonText: string;
+  };
+  restore: {
+    ariaLabel: string;
+    buttonText: string;
+  };
+}
+
+const CUSTOM_ACTION_INTERACTION_EXCLUSIVITY_LABELS: CustomActionToggleLabels = {
+  remove: {
+    ariaLabel: "Remove custom player action",
+    buttonText: "Remove custom action",
+  },
+  restore: {
+    ariaLabel: "Restore custom player action",
+    buttonText: "Restore custom action",
+  },
+};
+
+type RemovableCustomActionSlidePreviewProps = React.ComponentProps<
+  typeof Slide
+> & {
+  customActionToggleLabels: CustomActionToggleLabels;
+};
+
+const RemovableCustomActionSlidePreview = ({
+  customActionToggleLabels,
+  ...props
+}: RemovableCustomActionSlidePreviewProps) => {
+  const [customActionEnabled, setCustomActionEnabled] = useState(true);
+  const toggleLabels = customActionEnabled
+    ? customActionToggleLabels.remove
+    : customActionToggleLabels.restore;
+
+  return (
+    <div className="flex h-[100dvh] w-full flex-col items-center justify-center gap-4 bg-muted/20 p-8">
+      <button
+        aria-label={toggleLabels.ariaLabel}
+        className="rounded border border-border bg-background px-3 py-2 text-sm"
+        onClick={() => setCustomActionEnabled((enabled) => !enabled)}
+        type="button"
+      >
+        {toggleLabels.buttonText}
+      </button>
+      <CustomPlayerActionSlidePreview
+        {...props}
+        className="w-full max-w-4xl"
+        customActionEnabled={customActionEnabled}
+      />
+    </div>
   );
 };
 
@@ -2279,9 +2973,688 @@ export const Default: Story = {
   },
 };
 
+export const PlayerDisabled: Story = {
+  args: {
+    elementList: exampleElementList,
+    playerEnabled: false,
+  },
+};
+
+export const ControlsHiddenWithKeyboardShortcuts: Story = {
+  args: {
+    elementList: exampleElementList,
+    enableKeyboardShortcuts: true,
+    playerControlsVisibility: "hidden",
+  },
+};
+
+export const ControlsAlwaysVisible: Story = {
+  args: {
+    elementList: exampleElementList,
+    playerControlsVisibility: "visible",
+  },
+};
+
+export const ControlsAutoHide: Story = {
+  args: {
+    elementList: exampleElementList,
+    playerAutoHideDelay: 3000,
+    playerControlsVisibility: "auto",
+  },
+};
+
+export const ControlsAutoHideSubtitleLayoutStability: Story = {
+  args: {
+    elementList: [],
+    playerAutoHideDelay: 600,
+    playerControlsVisibility: "auto",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Keeps the active subtitle anchored above the reserved player footprint while auto-hidden controls disappear and return.",
+      },
+    },
+  },
+  render: (args) => <SubtitleLayoutStabilityPreview {...args} />,
+  play: async ({ canvasElement }) => {
+    const slide = await waitFor(() => {
+      const element = canvasElement.querySelector("section") as HTMLElement;
+
+      expect(element).not.toBeNull();
+      return element;
+    });
+    const player = canvasElement.querySelector(".slide-player") as HTMLElement;
+    const audio = canvasElement.querySelector("audio") as HTMLAudioElement;
+
+    expect(player).not.toBeNull();
+    expect(audio).not.toBeNull();
+
+    audio.dispatchEvent(new Event("play"));
+
+    const subtitle = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide-subtitle-overlay"
+      ) as HTMLElement;
+
+      expect(element).not.toBeNull();
+      expect(element).toHaveClass("slide-subtitle-overlay--with-player-gap");
+      return element;
+    });
+    const initialBounds = getVerticalBounds(subtitle);
+
+    slide.click();
+
+    await waitFor(() => {
+      expect(player).toHaveClass("opacity-0");
+      expect(subtitle).toHaveClass("slide-subtitle-overlay--with-player-gap");
+      expectVerticalBoundsToStayStable(subtitle, initialBounds);
+    });
+
+    slide.click();
+
+    await waitFor(() => {
+      expect(player).not.toHaveClass("opacity-0");
+      expectVerticalBoundsToStayStable(subtitle, initialBounds);
+    });
+  },
+};
+
+export const ControlsAutoHideInteractionLayoutStability: Story = {
+  args: {
+    elementList: DRAG_TEST_ELEMENT_LIST,
+    playerAutoHideDelay: 300,
+    playerControlsVisibility: "auto",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Keeps a dragged desktop interaction anchored above the reserved player footprint across automatic control hiding and reveal.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="flex h-[100dvh] w-full items-center justify-center bg-muted/20 p-8">
+      <Slide className="h-full w-full max-w-4xl" {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const overlay = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide-interaction-overlay"
+      ) as HTMLElement;
+
+      expect(element).not.toBeNull();
+      expect(element).toHaveClass("slide-interaction-overlay--with-player");
+      return element;
+    });
+    const handle = overlay.querySelector(
+      '[aria-label="Move interaction"]'
+    ) as HTMLElement;
+    const player = canvasElement.querySelector(".slide-player") as HTMLElement;
+    const slide = canvasElement.querySelector("section") as HTMLElement;
+
+    expect(handle).not.toBeNull();
+    expect(player).not.toBeNull();
+    expect(slide).not.toBeNull();
+
+    ensurePointerCaptureTracking(handle);
+    await triggerSyntheticPointerDrag(handle, 64, 36);
+    await expectOverlayHasMoved(overlay);
+
+    const draggedOffsets = getOverlayDragOffsets(overlay);
+    const draggedBounds = getVerticalBounds(overlay);
+
+    slide.click();
+
+    await waitFor(() => {
+      expect(player).toHaveClass("opacity-0");
+      expect(overlay).toHaveClass("slide-interaction-overlay--with-player");
+      expect(getOverlayDragOffsets(overlay)).toEqual(draggedOffsets);
+      expectVerticalBoundsToStayStable(overlay, draggedBounds);
+    });
+
+    slide.click();
+
+    await waitFor(() => {
+      expect(player).not.toHaveClass("opacity-0");
+      expect(getOverlayDragOffsets(overlay)).toEqual(draggedOffsets);
+      expectVerticalBoundsToStayStable(overlay, draggedBounds);
+    });
+  },
+};
+
+export const MobileFullscreenControlsAutoHideLayoutStability: Story = {
+  args: {
+    elementList: DRAG_TEST_ELEMENT_LIST,
+    playerAutoHideDelay: 300,
+    playerControlsVisibility: "auto",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Keeps mobile fullscreen content padding and a dragged interaction stable while the player controls and header auto-hide.",
+      },
+    },
+  },
+  render: (args) => <MobilePointerDragSlidePreview {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const labels = getSlideLocaleTexts(args.locale);
+    const more = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide-player__action--mobile-more"
+      ) as HTMLButtonElement;
+
+      expect(element).not.toBeNull();
+      return element;
+    });
+
+    await userEvent.click(more);
+
+    const page = within(canvasElement.ownerDocument.body);
+    await waitFor(() => expect(page.getByRole("dialog")).toBeVisible());
+    await userEvent.click(
+      page.getByRole("radio", {
+        name: labels.playerTexts.fullscreenLabel,
+      })
+    );
+
+    const slide = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        "section.slide--mobile-landscape"
+      ) as HTMLElement;
+
+      expect(element).not.toBeNull();
+      return element;
+    });
+    const viewportContent = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide__viewport-content--with-header"
+      ) as HTMLElement;
+
+      expect(element).not.toBeNull();
+      return element;
+    });
+    const overlay = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide-interaction-overlay"
+      ) as HTMLElement;
+
+      expect(element).not.toBeNull();
+      return element;
+    });
+    const handle = overlay.querySelector(
+      '[aria-label="Move interaction"]'
+    ) as HTMLElement;
+    const player = canvasElement.querySelector(".slide-player") as HTMLElement;
+    const controls = canvasElement.querySelector(
+      ".slide-player__controls"
+    ) as HTMLElement;
+
+    expect(viewportContent).not.toBeNull();
+    expect(overlay).not.toBeNull();
+    expect(handle).not.toBeNull();
+    expect(player).not.toBeNull();
+    expect(controls).not.toBeNull();
+
+    await userEvent.unhover(controls);
+    slide.click();
+    await waitFor(() => expect(player).not.toHaveClass("opacity-0"));
+
+    ensurePointerCaptureTracking(handle);
+    await triggerSyntheticPointerDrag(handle, 36, 28, POINTER_TEST_ID + 10);
+    await expectOverlayHasMoved(overlay);
+
+    const draggedOffsets = getOverlayDragOffsets(overlay);
+    const draggedBounds = getVerticalBounds(overlay);
+
+    await userEvent.unhover(controls);
+    slide.click();
+
+    await waitFor(() => {
+      expect(player).toHaveClass("opacity-0");
+      expect(canvasElement.querySelector(".slide-landscape-header")).toBeNull();
+      expect(viewportContent).toHaveClass(
+        "slide__viewport-content--with-header"
+      );
+      expect(overlay).toHaveClass("slide-interaction-overlay--with-player");
+      expect(getOverlayDragOffsets(overlay)).toEqual(draggedOffsets);
+      expectVerticalBoundsToStayStable(overlay, draggedBounds);
+    });
+
+    slide.click();
+
+    await waitFor(() => {
+      expect(player).not.toHaveClass("opacity-0");
+      expect(
+        canvasElement.querySelector(".slide-landscape-header")
+      ).not.toBeNull();
+      expect(viewportContent).toHaveClass(
+        "slide__viewport-content--with-header"
+      );
+      expect(getOverlayDragOffsets(overlay)).toEqual(draggedOffsets);
+      expectVerticalBoundsToStayStable(overlay, draggedBounds);
+    });
+  },
+};
+
+export const DesktopInteractionOverlayPointerDrag: Story = {
+  args: {
+    elementList: DRAG_TEST_ELEMENT_LIST,
+    playerControlsVisibility: "visible",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Exercises desktop overlay dragging from the header handle and verifies the interaction body no longer starts a drag.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="flex h-[100dvh] w-full items-center justify-center bg-muted/20 p-8">
+      <Slide className="w-full max-w-4xl" {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const overlay = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide-interaction-overlay"
+      ) as HTMLElement | null;
+
+      expect(element).not.toBeNull();
+      return element as HTMLElement;
+    });
+    const handle = overlay.querySelector(
+      '[aria-label="Move interaction"]'
+    ) as HTMLElement | null;
+    const body = overlay.querySelector(
+      ".slide-player__interaction-body"
+    ) as HTMLElement | null;
+
+    expect(handle).not.toBeNull();
+    expect(body).not.toBeNull();
+
+    const capturedPointerIds = ensurePointerCaptureTracking(
+      handle as HTMLElement
+    );
+    const beforeOffsets = getOverlayDragOffsets(overlay);
+    const handleRect = (handle as HTMLElement).getBoundingClientRect();
+
+    await triggerPointerDrag(
+      handle as HTMLElement,
+      {
+        clientX: handleRect.left + handleRect.width / 2,
+        clientY: handleRect.top + handleRect.height / 2,
+      },
+      {
+        clientX: handleRect.left + handleRect.width / 2 + 80,
+        clientY: handleRect.top + handleRect.height / 2 + 44,
+      }
+    );
+
+    await waitFor(() => {
+      expect(capturedPointerIds).toContain(POINTER_TEST_ID);
+      expect(getOverlayDragOffsets(overlay)).not.toEqual(beforeOffsets);
+      expect(
+        overlay.classList.contains("slide-interaction-overlay--dragging")
+      ).toBe(false);
+    });
+
+    const afterHandleOffsets = getOverlayDragOffsets(overlay);
+    const bodyRect = (body as HTMLElement).getBoundingClientRect();
+
+    await triggerPointerDrag(
+      body as HTMLElement,
+      {
+        clientX: bodyRect.left + 48,
+        clientY: bodyRect.top + 48,
+      },
+      {
+        clientX: bodyRect.left + 108,
+        clientY: bodyRect.top + 104,
+      }
+    );
+
+    await waitFor(() => {
+      expect(getOverlayDragOffsets(overlay)).toEqual(afterHandleOffsets);
+    });
+  },
+};
+
+export const MobileInteractionOverlayPointerDrag: Story = {
+  args: {
+    elementList: DRAG_TEST_ELEMENT_LIST,
+    playerControlsVisibility: "visible",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Exercises the mobile drag handle pointer chain so touch-style dragging keeps the interaction movable without using the full card as the drag target.",
+      },
+    },
+  },
+  render: (args) => <MobilePointerDragSlidePreview {...args} />,
+  play: async ({ canvasElement }) => {
+    const overlay = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide--mobile-device .slide-interaction-overlay"
+      ) as HTMLElement | null;
+
+      expect(element).not.toBeNull();
+      return element as HTMLElement;
+    });
+    const handle = overlay.querySelector(
+      '[aria-label="Move interaction"]'
+    ) as HTMLElement | null;
+
+    expect(handle).not.toBeNull();
+
+    const capturedPointerIds = ensurePointerCaptureTracking(
+      handle as HTMLElement
+    );
+    const beforeOffsets = getOverlayDragOffsets(overlay);
+    const handleRect = (handle as HTMLElement).getBoundingClientRect();
+
+    await triggerPointerDrag(
+      handle as HTMLElement,
+      {
+        clientX: handleRect.left + handleRect.width / 2,
+        clientY: handleRect.top + handleRect.height / 2,
+        pointerType: "touch",
+      },
+      {
+        clientX: handleRect.left + handleRect.width / 2 + 36,
+        clientY: handleRect.top + handleRect.height / 2 + 52,
+        pointerType: "touch",
+      }
+    );
+
+    await waitFor(() => {
+      expect(capturedPointerIds).toContain(POINTER_TEST_ID);
+      expect(getOverlayDragOffsets(overlay)).not.toEqual(beforeOffsets);
+    });
+  },
+};
+
+export const ArabicInteractionDragHandle: Story = {
+  args: { elementList: DRAG_TEST_ELEMENT_LIST, locale: "ar-SA" },
+  play: async ({ canvasElement, args }) => {
+    await waitFor(() => {
+      const handle = canvasElement.querySelector(
+        ".slide-player__interaction-drag-handle"
+      );
+      expect(handle).not.toBeNull();
+      expect(handle).toHaveAccessibleName(
+        args.interactionTexts?.dragHandleAriaLabel ??
+          getSlideLocaleTexts(args.locale).interactionTexts.dragHandleAriaLabel
+      );
+    });
+  },
+};
+
+export const ThaiInteractionDragHandle: Story = {
+  ...ArabicInteractionDragHandle,
+  args: { ...ArabicInteractionDragHandle.args, locale: "th-TH" },
+};
+
+export const CustomInteractionDragHandle: Story = {
+  ...ArabicInteractionDragHandle,
+  args: {
+    ...ArabicInteractionDragHandle.args,
+    interactionTexts: { dragHandleAriaLabel: "Move answer panel" },
+  },
+};
+
+export const ArabicFullscreenBackIcon: Story = {
+  args: {
+    elementList: DRAG_TEST_ELEMENT_LIST,
+    locale: "ar-SA",
+    playerEnabled: true,
+    playerControlsVisibility: "visible",
+  },
+  parameters: { expectedDirection: "rtl" },
+  render: (args) => <MobilePointerDragSlidePreview {...args} />,
+  play: async ({ canvasElement, args, parameters }) => {
+    const labels = getSlideLocaleTexts(args.locale);
+    const more = await waitFor(() => {
+      const button = canvasElement.querySelector<HTMLButtonElement>(
+        ".slide-player__action--mobile-more"
+      );
+      expect(button).not.toBeNull();
+      return button!;
+    });
+    expect(
+      getComputedStyle(canvasElement.querySelector(".slide-player")!).direction
+    ).toBe(parameters.expectedDirection);
+    more.click();
+    const page = within(canvasElement.ownerDocument.body);
+    await waitFor(() => expect(page.getByRole("dialog")).toBeVisible());
+    expect(getComputedStyle(page.getByRole("dialog")).direction).toBe(
+      parameters.expectedDirection
+    );
+    await userEvent.click(
+      page.getByRole("radio", {
+        name: labels.playerTexts.fullscreenLabel,
+      })
+    );
+    const back = await waitFor(() => {
+      const button = within(canvasElement).getByRole("button", {
+        name: labels.fullscreenBackAriaLabel,
+      });
+      expect(button).toBeVisible();
+      return button;
+    });
+    expect(getComputedStyle(back).direction).toBe(parameters.expectedDirection);
+    const transform = getComputedStyle(back.querySelector("svg")!).transform;
+    const scaleX = transform === "none" ? 1 : new DOMMatrix(transform).a;
+    expect(scaleX).toBe(parameters.expectedDirection === "rtl" ? -1 : 1);
+    await userEvent.click(back);
+    await waitFor(() =>
+      expect(canvasElement.querySelector(".slide-landscape-header")).toBeNull()
+    );
+  },
+};
+
+export const ArabicFullscreenBackIconLtrOverride: Story = {
+  ...ArabicFullscreenBackIcon,
+  args: { ...ArabicFullscreenBackIcon.args, dir: "ltr" },
+  parameters: { expectedDirection: "ltr" },
+};
+
+export const ThaiFullscreenBackIcon: Story = {
+  ...ArabicFullscreenBackIcon,
+  args: { ...ArabicFullscreenBackIcon.args, locale: "th-TH" },
+  parameters: { expectedDirection: "ltr" },
+};
+
+export const ThaiFullscreenBackIconRtlOverride: Story = {
+  ...ThaiFullscreenBackIcon,
+  args: { ...ThaiFullscreenBackIcon.args, dir: "rtl" },
+  parameters: { expectedDirection: "rtl" },
+};
+
+export const InheritedRtlFullscreenBackIcon: Story = {
+  ...ArabicFullscreenBackIcon,
+  args: { ...ArabicFullscreenBackIcon.args, locale: undefined },
+  render: (args) => (
+    <div dir="rtl">
+      <MobilePointerDragSlidePreview {...args} />
+    </div>
+  ),
+};
+
+export const MobileInteractionOverlayViewportReset: Story = {
+  args: {
+    elementList: DRAG_TEST_ELEMENT_LIST,
+    playerControlsVisibility: "visible",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Resets stale mobile interaction drag offsets when the viewport orientation changes without remounting or moving away from the interaction step.",
+      },
+    },
+  },
+  render: (args) => <MobileViewportResizeSlidePreview {...args} />,
+  play: async ({ canvasElement }) => {
+    const overlay = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide--mobile-device .slide-interaction-overlay"
+      ) as HTMLElement | null;
+
+      expect(element).not.toBeNull();
+      return element as HTMLElement;
+    });
+    const handle = canvasElement.querySelector(
+      '[aria-label="Move interaction"]'
+    ) as HTMLElement | null;
+
+    expect(handle).not.toBeNull();
+    ensurePointerCaptureTracking(handle as HTMLElement);
+
+    await triggerSyntheticPointerDrag(
+      handle as HTMLElement,
+      36,
+      52,
+      POINTER_TEST_ID + 1
+    );
+    await expectOverlayHasMoved(overlay);
+
+    const visualViewport =
+      window.visualViewport as unknown as TestVisualViewport;
+
+    visualViewport.setSize(844, 390);
+    // Rotation emits an orientation event as well as a visual viewport resize.
+    visualViewport.dispatchOrientationChange();
+    await expectOverlayIsReset(overlay);
+
+    await triggerSyntheticPointerDrag(
+      handle as HTMLElement,
+      -42,
+      34,
+      POINTER_TEST_ID + 2
+    );
+    await expectOverlayHasMoved(overlay);
+
+    visualViewport.dispatchOrientationChange();
+    await expectOverlayIsReset(overlay);
+
+    visualViewport.setSize(390, 844);
+    visualViewport.dispatchOrientationChange();
+    await expectOverlayIsReset(overlay);
+
+    await triggerSyntheticPointerDrag(
+      handle as HTMLElement,
+      28,
+      -46,
+      POINTER_TEST_ID + 3
+    );
+    await expectOverlayHasMoved(overlay);
+
+    visualViewport.dispatchOrientationChange();
+    await expectOverlayIsReset(overlay);
+
+    visualViewport.setSize(844, 390);
+    visualViewport.dispatchOrientationChange();
+
+    await waitFor(() => {
+      expect(
+        canvasElement.querySelector(
+          ".slide--mobile-device .slide-interaction-overlay"
+        )
+      ).toBe(overlay);
+    });
+    await expectOverlayIsReset(overlay);
+  },
+};
+
+export const MobileInteractionInputViewportResize: Story = {
+  args: {
+    elementList: MOBILE_VIEWPORT_INPUT_TEST_ELEMENT_LIST,
+    playerControlsVisibility: "visible",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Keeps the mobile interaction textarea mounted, focused, and unchanged when the virtual viewport resizes for the on-screen keyboard.",
+      },
+    },
+  },
+  render: (args) => <MobileViewportResizeSlidePreview {...args} />,
+  play: async ({ canvasElement }) => {
+    const textarea = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide--mobile-device .slide-interaction-overlay textarea"
+      ) as HTMLTextAreaElement | null;
+
+      expect(element).not.toBeNull();
+      return element as HTMLTextAreaElement;
+    });
+    const typedValue = "Keyboard input stays here";
+
+    await userEvent.click(textarea);
+    await userEvent.type(textarea, typedValue);
+
+    expect(document.activeElement).toBe(textarea);
+    expect(textarea.value).toBe(typedValue);
+
+    const visualViewport =
+      window.visualViewport as unknown as TestVisualViewport;
+    visualViewport.setSize(390, 320);
+
+    await waitFor(() => {
+      const currentTextarea = canvasElement.querySelector(
+        ".slide--mobile-device .slide-interaction-overlay textarea"
+      ) as HTMLTextAreaElement | null;
+      const interactionTitle = canvasElement.querySelector(
+        ".slide-player__interaction-title"
+      );
+
+      expect(interactionTitle?.textContent).toBe("Interaction 1");
+      expect(currentTextarea).toBe(textarea);
+      expect(document.activeElement).toBe(textarea);
+      expect(currentTextarea?.value).toBe(typedValue);
+    });
+  },
+};
+
+export const FrenchLocale: Story = {
+  args: {
+    locale: "fr-FR",
+    playerControlsVisibility: "visible",
+    interactionTexts: undefined,
+    playerTexts: undefined,
+    elementList: [
+      {
+        sequence_number: 1,
+        type: "html",
+        content:
+          '<div class="flex h-full min-h-[320px] items-center justify-center bg-slate-50 p-8 text-center"><div><h1 class="text-3xl font-semibold text-slate-900">Bienvenue</h1><p class="mt-3 text-slate-600">Les libellés intégrés utilisent la locale française.</p></div></div>',
+        is_renderable: true,
+        is_speakable: false,
+      },
+      {
+        sequence_number: 2,
+        type: "interaction",
+        content:
+          "Sélectionnez les formats à utiliser : ?[%{{ formats }}Article||Vidéo||Exercice||...Autre format]",
+        is_renderable: false,
+        is_speakable: false,
+      },
+    ],
+  },
+};
+
 export const CustomPlayerActionButton: Story = {
   args: {
-    playerAlwaysVisible: true,
+    playerControlsVisibility: "visible",
     elementList: [
       {
         sequence_number: 90,
@@ -2669,7 +4042,7 @@ export const CustomPlayerActionButton: Story = {
     docs: {
       description: {
         story:
-          "Renders one external custom action button before the default notes action in the Slide player.",
+          "Renders one external custom action button after the built-in Slide player controls.",
       },
     },
   },
@@ -2678,6 +4051,91 @@ export const CustomPlayerActionButton: Story = {
       <CustomPlayerActionSlidePreview className="w-full" {...args} />
     </div>
   ),
+};
+
+export const CustomActionInteractionExclusivity: Story = {
+  args: {
+    elementList: INTERACTION_GATE_TEST_ELEMENT_LIST,
+    markerAutoAdvanceDelay: 40,
+    playerCustomActionPauseOnActive: false,
+    playerControlsVisibility: "visible",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Keeps a non-pausing custom player action mutually exclusive with an unresolved interaction, preserves the interaction playback gate, and restores the overlay after the custom action closes.",
+      },
+    },
+  },
+  render: (args) => (
+    <RemovableCustomActionSlidePreview
+      {...args}
+      customActionToggleLabels={CUSTOM_ACTION_INTERACTION_EXCLUSIVITY_LABELS}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const customAction = canvas.getByRole("button", {
+      name: "Custom player action",
+    });
+
+    await waitFor(() => {
+      expect(
+        canvasElement.querySelector(".slide-interaction-overlay")
+      ).not.toBeNull();
+    });
+    expect(
+      canvasElement.querySelector(".slide-player__action--notes")
+    ).toBeNull();
+
+    await userEvent.click(customAction);
+    await waitFor(() => {
+      expect(
+        canvasElement.querySelector(".slide-interaction-overlay")
+      ).toBeNull();
+    });
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+    expect(canvas.queryByText(INTERACTION_GATE_TEST_SENTINEL)).toBeNull();
+
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Remove custom player action" })
+    );
+    await waitFor(() => {
+      expect(
+        canvas.queryByRole("button", { name: "Custom player action" })
+      ).toBeNull();
+      expect(
+        canvasElement.querySelector(".slide-interaction-overlay")
+      ).not.toBeNull();
+    });
+
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Restore custom player action" })
+    );
+    const restoredCustomAction = await canvas.findByRole("button", {
+      name: "Custom player action",
+    });
+    expect(restoredCustomAction).not.toHaveClass(
+      "slide-player__action--active"
+    );
+    expect(
+      canvasElement.querySelector(".slide-interaction-overlay")
+    ).not.toBeNull();
+
+    await userEvent.click(restoredCustomAction);
+    await waitFor(() => {
+      expect(
+        canvasElement.querySelector(".slide-interaction-overlay")
+      ).toBeNull();
+    });
+    await userEvent.click(restoredCustomAction);
+    await waitFor(() => {
+      expect(
+        canvasElement.querySelector(".slide-interaction-overlay")
+      ).not.toBeNull();
+    });
+  },
 };
 
 export const FullViewportSlides: Story = {
@@ -2698,9 +4156,651 @@ export const FullViewportSlides: Story = {
   ),
 };
 
+const renderFullViewportMarkdownStory = (
+  args: React.ComponentProps<typeof Slide>
+) => (
+  <div className="h-[100dvh] w-full bg-background p-8">
+    <Slide className="w-full" {...args} />
+  </div>
+);
+
+const waitForFittedMarkdownStory = async (canvasElement: HTMLElement) =>
+  waitFor(() => {
+    const viewport = canvasElement.querySelector(
+      ".slide-markdown-scaling[data-markdown-slide-scaling='fit']"
+    ) as HTMLElement | null;
+    const content = viewport?.querySelector(
+      ":scope > .slide-markdown-scaling__content[data-markdown-slide-font-size]"
+    ) as HTMLElement | null;
+    const markdown = viewport?.querySelector(
+      ".content-render.markdown-body"
+    ) as HTMLElement | null;
+
+    expect(viewport).not.toBeNull();
+    expect(content).not.toBeNull();
+    expect(markdown).not.toBeNull();
+
+    return {
+      content: content as HTMLElement,
+      markdown: markdown as HTMLElement,
+      viewport: viewport as HTMLElement,
+    };
+  });
+
+const expectFittedMarkdownStoryToFit = (viewport: HTMLElement) => {
+  expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth + 4);
+  expect(viewport.scrollHeight).toBeLessThanOrEqual(viewport.clientHeight + 4);
+};
+
+interface FullViewportMarkdownStoryConfig {
+  content: string;
+  description: string;
+  play: NonNullable<Story["play"]>;
+  sequenceNumber: number;
+  type: Element["type"];
+}
+
+const createFullViewportMarkdownStory = ({
+  content,
+  description,
+  play,
+  sequenceNumber,
+  type,
+}: FullViewportMarkdownStoryConfig): Story => ({
+  args: {
+    elementList: [
+      createExampleElement({ sequenceNumber, type, content, isNew: true }),
+    ],
+    enableMarkdownScaling: true,
+    playerEnabled: false,
+  },
+  parameters: {
+    layout: "fullscreen",
+    docs: { description: { story: description } },
+  },
+  render: renderFullViewportMarkdownStory,
+  play,
+});
+
+export const FullViewportMarkdownSlide: Story = {
+  args: {
+    elementList: [
+      createExampleElement({
+        sequenceNumber: 30,
+        type: "text",
+        content: PRESENTATION_MARKDOWN_CONTENT,
+        isNew: true,
+      }),
+    ],
+    enableMarkdownScaling: true,
+    playerEnabled: false,
+  },
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "Fits a dense Markdown composition to the full viewport using the same base font-size and overflow compression rules as HTML presentation slides.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="h-[100dvh] w-full bg-background p-8">
+      <Slide className="w-full" {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    await waitFor(
+      () => {
+        expect(
+          canvasElement.querySelector(
+            ".slide-markdown-scaling[data-markdown-slide-scaling='fit'] .content-render-mermaid svg"
+          )
+        ).not.toBeNull();
+
+        const viewport = canvasElement.querySelector(
+          ".slide-markdown-scaling[data-markdown-slide-scaling='fit']"
+        ) as HTMLElement;
+
+        expect(viewport.scrollWidth).toBeLessThanOrEqual(
+          viewport.clientWidth + 4
+        );
+        expect(viewport.scrollHeight).toBeLessThanOrEqual(
+          viewport.clientHeight + 4
+        );
+      },
+      { timeout: 10000 }
+    );
+
+    const viewport = canvasElement.querySelector(
+      ".slide-markdown-scaling[data-markdown-slide-scaling='fit']"
+    ) as HTMLElement;
+    const content = viewport.querySelector(
+      ":scope > .slide-markdown-scaling__content"
+    ) as HTMLElement;
+    const markdown = viewport.querySelector(
+      ".content-render.markdown-body"
+    ) as HTMLElement;
+    const code = viewport.querySelector(
+      ".code-block-container pre"
+    ) as HTMLElement;
+    const fittedFontSize = Number(content.dataset.markdownSlideFontSize);
+    const baseFontSize = resolvePresentationBaseFontSize({
+      height: viewport.clientHeight,
+      width: viewport.clientWidth,
+    });
+
+    expect(fittedFontSize).toBeLessThan(baseFontSize);
+    expect(parseFloat(getComputedStyle(markdown).fontSize)).toBeCloseTo(
+      fittedFontSize,
+      1
+    );
+    expect(parseFloat(getComputedStyle(code).fontSize)).toBeLessThan(
+      fittedFontSize
+    );
+    expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth + 4);
+    expect(viewport.scrollHeight).toBeLessThanOrEqual(
+      viewport.clientHeight + 4
+    );
+  },
+};
+
+export const FullViewportCodeOnlyMarkdownSlide =
+  createFullViewportMarkdownStory({
+    sequenceNumber: 33,
+    type: "code",
+    content: FULL_VIEWPORT_CODE_ONLY_CONTENT,
+    description:
+      "Fills one Markdown slide with a dense TypeScript code block to exercise fullscreen compression and syntax highlighting.",
+    play: async ({ canvasElement }) => {
+      const { content, markdown, viewport } =
+        await waitForFittedMarkdownStory(canvasElement);
+      const markdownRenderer = markdown.querySelector(
+        ".markdown-renderer"
+      ) as HTMLElement;
+      const codeBlock = markdownRenderer.querySelector(
+        ":scope > .code-block-container"
+      ) as HTMLElement;
+      const code = codeBlock.querySelector("pre > code") as HTMLElement;
+      const language = codeBlock.querySelector(".language-name") as HTMLElement;
+      const fittedFontSize = Number(content.dataset.markdownSlideFontSize);
+
+      expect(markdownRenderer.children).toHaveLength(1);
+      expect(language.textContent?.trim()).toBe("typescript");
+      expect(code.textContent).toContain("fitMarkdownFontSize");
+      expect(parseFloat(getComputedStyle(code).fontSize)).toBeLessThan(
+        fittedFontSize
+      );
+      expectFittedMarkdownStoryToFit(viewport);
+    },
+  });
+
+export const FullViewportHeadingOnlyMarkdownSlide =
+  createFullViewportMarkdownStory({
+    sequenceNumber: 34,
+    type: "title",
+    content: FULL_VIEWPORT_HEADING_ONLY_CONTENT,
+    description:
+      "Renders exactly one level-one heading so sparse Markdown typography and centering can be inspected in isolation.",
+    play: async ({ canvasElement }) => {
+      const { markdown, viewport } =
+        await waitForFittedMarkdownStory(canvasElement);
+      const markdownRenderer = markdown.querySelector(
+        ".markdown-renderer"
+      ) as HTMLElement;
+      const headings = markdownRenderer.querySelectorAll("h1");
+      const heading = headings[0] as HTMLElement;
+
+      expect(markdownRenderer.children).toHaveLength(1);
+      expect(headings).toHaveLength(1);
+      expect(heading.textContent?.trim()).toBe("Markdown 全屏标题");
+      expect(parseFloat(getComputedStyle(heading).fontSize)).toBeGreaterThan(
+        parseFloat(getComputedStyle(markdown).fontSize)
+      );
+      expectFittedMarkdownStoryToFit(viewport);
+    },
+  });
+
+export const FullViewportMermaidOnlyMarkdownSlide =
+  createFullViewportMarkdownStory({
+    sequenceNumber: 35,
+    type: "mermaid",
+    content: FULL_VIEWPORT_MERMAID_ONLY_CONTENT,
+    description:
+      "Renders one Mermaid diagram without surrounding prose and verifies the asynchronous SVG refits inside the presentation viewport.",
+    play: async ({ canvasElement }) => {
+      const { markdown, viewport } =
+        await waitForFittedMarkdownStory(canvasElement);
+
+      await waitFor(
+        () => {
+          const diagrams = markdown.querySelectorAll(".content-render-mermaid");
+          const svg = markdown.querySelector(
+            ".content-render-mermaid-inner svg"
+          ) as SVGElement | null;
+          const svgRect = svg?.getBoundingClientRect();
+          const viewportRect = viewport.getBoundingClientRect();
+
+          expect(diagrams).toHaveLength(1);
+          expect(svg).not.toBeNull();
+          expect(svgRect?.width).toBeGreaterThan(0);
+          expect(svgRect?.height).toBeGreaterThan(0);
+          expect(svgRect?.left).toBeGreaterThanOrEqual(viewportRect.left - 4);
+          expect(svgRect?.right).toBeLessThanOrEqual(viewportRect.right + 4);
+          expect(markdown.querySelector(".code-block-container")).toBeNull();
+          expectFittedMarkdownStoryToFit(viewport);
+        },
+        { timeout: 10000 }
+      );
+    },
+  });
+
+export const FullViewportMathOnlyMarkdownSlide =
+  createFullViewportMarkdownStory({
+    sequenceNumber: 36,
+    type: "latex",
+    content: FULL_VIEWPORT_MATH_ONLY_CONTENT,
+    description:
+      "Renders one display-math block so KaTeX sizing and fullscreen fitting can be inspected without other Markdown content.",
+    play: async ({ canvasElement }) => {
+      const { markdown, viewport } =
+        await waitForFittedMarkdownStory(canvasElement);
+      const markdownRenderer = markdown.querySelector(
+        ".markdown-renderer"
+      ) as HTMLElement;
+      const displays = markdownRenderer.querySelectorAll(".katex-display");
+      const katex = markdownRenderer.querySelector(
+        ".katex-display > .katex"
+      ) as HTMLElement;
+      const annotation = markdownRenderer.querySelector(
+        ".katex-mathml annotation[encoding='application/x-tex']"
+      );
+
+      expect(markdownRenderer.children).toHaveLength(1);
+      expect(displays).toHaveLength(1);
+      expect(annotation?.textContent).toContain("\\begin{aligned}");
+      expect(markdownRenderer.querySelector(".katex-error")).toBeNull();
+      expect(parseFloat(getComputedStyle(katex).fontSize)).toBeGreaterThan(
+        parseFloat(getComputedStyle(markdown).fontSize)
+      );
+      expectFittedMarkdownStoryToFit(viewport);
+    },
+  });
+
+export const FullViewportSparseMarkdownSlide: Story = {
+  args: {
+    elementList: [
+      createExampleElement({
+        sequenceNumber: 29,
+        type: "title",
+        content:
+          "# Responsive Markdown\n\nSparse slides expand their typography to use the available presentation viewport.",
+        isNew: true,
+      }),
+    ],
+    enableMarkdownScaling: true,
+    playerEnabled: false,
+  },
+  parameters: {
+    layout: "fullscreen",
+  },
+  render: (args) => (
+    <div className="h-[100dvh] w-full bg-background p-8">
+      <Slide className="w-full" {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    await waitFor(() => {
+      expect(
+        canvasElement.querySelector(
+          ".slide-markdown-scaling__content[data-markdown-slide-font-size]"
+        )
+      ).not.toBeNull();
+    });
+
+    const viewport = canvasElement.querySelector(
+      ".slide-markdown-scaling[data-markdown-slide-scaling='fit']"
+    ) as HTMLElement;
+    const markdown = viewport.querySelector(
+      ".content-render.markdown-body"
+    ) as HTMLElement;
+
+    expect(parseFloat(getComputedStyle(markdown).fontSize)).toBeGreaterThan(16);
+    expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth + 4);
+    expect(viewport.scrollHeight).toBeLessThanOrEqual(
+      viewport.clientHeight + 4
+    );
+  },
+};
+
+export const FullViewportAccumulatedMarkdownSlide: Story = {
+  args: {
+    elementList: [
+      {
+        ...createExampleElement({
+          sequenceNumber: 26,
+          type: "title",
+          content: "# One logical Markdown slide",
+          isNew: true,
+        }),
+        is_renderable: false,
+      },
+      {
+        ...createExampleElement({
+          sequenceNumber: 27,
+          type: "text",
+          content:
+            "Title, body copy, and code can arrive as separate elements while sharing one presentation-scale calculation.",
+        }),
+        is_renderable: false,
+      },
+      createExampleElement({
+        sequenceNumber: 28,
+        type: "code",
+        content: CODE_CONTENT,
+      }),
+    ],
+    enableMarkdownScaling: true,
+    playerEnabled: false,
+  },
+  parameters: {
+    layout: "fullscreen",
+  },
+  render: (args) => (
+    <div className="h-[100dvh] w-full bg-background p-8">
+      <Slide className="w-full" {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    await waitFor(() => {
+      expect(
+        canvasElement.querySelector(
+          ".slide-markdown-scaling__content[data-markdown-slide-font-size]"
+        )
+      ).not.toBeNull();
+    });
+
+    const viewport = canvasElement.querySelector(
+      ".slide-markdown-scaling[data-markdown-slide-scaling='fit']"
+    ) as HTMLElement;
+    const markdownElements = Array.from(
+      viewport.querySelectorAll(".content-render.markdown-body")
+    ) as HTMLElement[];
+    const fontSizes = markdownElements.map(
+      (element) => getComputedStyle(element).fontSize
+    );
+
+    expect(markdownElements).toHaveLength(3);
+    expect(markdownElements.every((element) => element.offsetParent)).toBe(
+      true
+    );
+    expect(new Set(fontSizes).size).toBe(1);
+  },
+};
+
+export const FullViewportMixedSlideTopAlignment: Story = {
+  args: {
+    elementList: [
+      {
+        ...createExampleElement({
+          sequenceNumber: 30,
+          type: "title",
+          content: "# Mixed slide stays top aligned",
+          isNew: true,
+        }),
+        is_renderable: false,
+      },
+      createExampleElement({
+        sequenceNumber: 31,
+        type: "slot",
+        content: (
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-6 text-blue-950">
+            Mixed Markdown and slot content uses the viewport base size without
+            changing the existing top-aligned layout.
+          </div>
+        ),
+      }),
+    ],
+    enableMarkdownScaling: true,
+    playerEnabled: false,
+  },
+  parameters: {
+    layout: "fullscreen",
+  },
+  render: (args) => (
+    <div className="h-[100dvh] w-full bg-background p-8">
+      <Slide className="w-full" {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const viewport = await waitFor(() => {
+      const element = canvasElement.querySelector(
+        ".slide-markdown-scaling[data-markdown-slide-scaling='base']"
+      ) as HTMLElement | null;
+
+      expect(element).not.toBeNull();
+      return element as HTMLElement;
+    });
+    const content = viewport.querySelector(
+      ".slide-markdown-scaling__content"
+    ) as HTMLElement;
+    const firstSlideElement = content.firstElementChild as HTMLElement;
+    const topOffset =
+      firstSlideElement.getBoundingClientRect().top -
+      viewport.getBoundingClientRect().top;
+
+    expect(topOffset).toBeGreaterThanOrEqual(-1);
+    expect(topOffset).toBeLessThanOrEqual(4);
+  },
+};
+
+export const FullViewportMarkdownSlideWithoutScaling: Story = {
+  args: {
+    elementList: [
+      createExampleElement({
+        sequenceNumber: 25,
+        type: "text",
+        content: PRESENTATION_MARKDOWN_CONTENT,
+        isNew: true,
+      }),
+    ],
+    enableMarkdownScaling: false,
+    playerEnabled: false,
+  },
+  parameters: {
+    layout: "fullscreen",
+  },
+  render: (args) => (
+    <div className="h-[100dvh] w-full bg-background p-8">
+      <Slide className="w-full" {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const markdown = canvasElement.querySelector(
+      ".content-render.markdown-body"
+    ) as HTMLElement;
+    const code = canvasElement.querySelector(
+      ".code-block-container pre"
+    ) as HTMLElement;
+    const language = canvasElement.querySelector(
+      ".code-block-container .language-name"
+    ) as HTMLElement;
+
+    expect(
+      canvasElement.querySelector("[data-markdown-slide-scaling]")
+    ).toBeNull();
+    expect(getComputedStyle(markdown).fontSize).toBe("16px");
+    expect(getComputedStyle(markdown).lineHeight).toBe("30px");
+    expect(getComputedStyle(code).fontSize).toBe("13px");
+    expect(getComputedStyle(language).fontSize).toBe("12px");
+  },
+};
+
+export const PreloadedHtmlTailwindRefresh: Story = {
+  args: {
+    elementList: [
+      createExampleElement({
+        sequenceNumber: 23,
+        type: "html",
+        content:
+          '<div class="flex h-screen w-full items-center justify-center bg-slate-100 p-[4vmin]"><div class="rounded-[2vmin] bg-white p-[5vmin] text-center shadow-xl"><h1 class="text-[5vmin] font-bold text-slate-900">First HTML slide</h1><p class="mt-[2vmin] text-[2.5vmin] text-slate-600">The next slide starts preloaded under display:none.</p></div></div>',
+        isNew: true,
+      }),
+      {
+        ...createExampleElement({
+          sequenceNumber: 24,
+          type: "html",
+          content:
+            '<div data-tailwind-regression-target class="h-screen w-full bg-gradient-to-br from-blue-600 to-indigo-950 p-[4vmin] text-white"><h1 class="text-[6vmin] font-bold">Preloaded Tailwind restored</h1><div class="mt-[4vmin] grid grid-cols-2 gap-[3vmin]"><div class="rounded-[2vmin] bg-white/20 p-[4vmin] shadow-xl"><h2 class="text-[3.5vmin] font-semibold">Gradient</h2><p class="mt-[1vmin] text-[2.5vmin] text-blue-100">Utilities are compiled after the hidden iframe becomes visible.</p></div><div class="rounded-[2vmin] border border-white/30 bg-white/10 p-[4vmin]"><h2 class="text-[3.5vmin] font-semibold">Spacing</h2><p class="mt-[1vmin] text-[2.5vmin] text-indigo-100">Padding, color, grid, and typography must all remain styled.</p></div></div></div>',
+          isNew: true,
+        }),
+        is_renderable: false,
+      },
+    ],
+    playerControlsVisibility: "visible",
+  },
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "Navigates to an HTML sandbox that was preloaded under display:none and verifies Tailwind Play recompiles its utilities after becoming visible.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="h-[100dvh] w-full bg-background">
+      <Slide className="w-full" {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const nextButton = canvasElement.querySelector(
+      "button[aria-label='Next page']"
+    ) as HTMLButtonElement;
+
+    await userEvent.click(nextButton);
+    await waitFor(
+      () => {
+        const activeStep = Array.from(
+          canvasElement.querySelectorAll(".slide-stage__layer > div")
+        ).find((element) => getComputedStyle(element).display !== "none");
+        const iframe = activeStep?.querySelector("iframe");
+        const target = iframe?.contentDocument?.querySelector(
+          "[data-tailwind-regression-target]"
+        ) as HTMLElement | null;
+
+        expect(iframe?.clientWidth).toBeGreaterThan(0);
+        expect(iframe?.clientHeight).toBeGreaterThan(0);
+        expect(target).not.toBeNull();
+        expect(getComputedStyle(target as HTMLElement).paddingTop).not.toBe(
+          "0px"
+        );
+        expect(
+          getComputedStyle(target as HTMLElement).backgroundImage
+        ).not.toBe("none");
+      },
+      { timeout: 10000 }
+    );
+  },
+};
+
+const DynamicSlideContentTypeExample = () => {
+  const [isHtml, setIsHtml] = useState(false);
+  const elementList = useMemo(
+    () => [
+      createExampleElement({
+        sequenceNumber: 32,
+        type: isHtml ? "html" : "text",
+        content: isHtml
+          ? '<div data-dynamic-sandbox-target class="flex h-full w-full items-center justify-center bg-blue-600 p-[4vmin] text-white"><h1 class="text-[5vmin] font-bold">Sandbox initialized</h1></div>'
+          : "# Markdown mode\n\nSwitch to HTML without remounting the surrounding slide element.",
+        isNew: true,
+      }),
+    ],
+    [isHtml]
+  );
+
+  return (
+    <div className="relative h-[100dvh] w-full bg-background p-8">
+      <button
+        type="button"
+        data-dynamic-type-toggle
+        className="absolute right-10 top-10 z-[100] rounded bg-black px-4 py-2 text-white"
+        onClick={() => setIsHtml((current) => !current)}
+      >
+        {isHtml ? "Show Markdown" : "Show HTML"}
+      </button>
+      <Slide
+        className="w-full"
+        elementList={elementList}
+        playerEnabled={false}
+      />
+    </div>
+  );
+};
+
+export const DynamicMarkdownToHtmlSandbox: Story = {
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "Switches one keyed slide element between Markdown and HTML to verify the iframe sandbox initializes on every content-type transition.",
+      },
+    },
+  },
+  render: () => <DynamicSlideContentTypeExample />,
+  play: async ({ canvasElement }) => {
+    expect(canvasElement.querySelector("iframe")).toBeNull();
+
+    const toggle = canvasElement.querySelector(
+      "[data-dynamic-type-toggle]"
+    ) as HTMLButtonElement;
+
+    await userEvent.click(toggle);
+    await waitFor(
+      () => {
+        const iframe = canvasElement.querySelector("iframe");
+        const target = iframe?.contentDocument?.querySelector(
+          "[data-dynamic-sandbox-target]"
+        );
+
+        expect(target).not.toBeNull();
+        expect(getComputedStyle(target as HTMLElement).paddingTop).not.toBe(
+          "0px"
+        );
+      },
+      { timeout: 10000 }
+    );
+
+    await userEvent.click(toggle);
+    await waitFor(() => {
+      expect(canvasElement.querySelector("iframe")).toBeNull();
+      expect(
+        canvasElement.querySelector(".content-render.markdown-body")
+      ).not.toBeNull();
+    });
+
+    await userEvent.click(toggle);
+    await waitFor(
+      () => {
+        const iframe = canvasElement.querySelector("iframe");
+        const target = iframe?.contentDocument?.querySelector(
+          "[data-dynamic-sandbox-target]"
+        );
+
+        expect(target).not.toBeNull();
+        expect(getComputedStyle(target as HTMLElement).paddingTop).not.toBe(
+          "0px"
+        );
+      },
+      { timeout: 10000 }
+    );
+  },
+};
+
 export const FullViewportSingleSlide: Story = {
   args: {
-    playerAlwaysVisible: false,
     elementList: [
       {
         sequence_number: 31,
@@ -3213,7 +5313,6 @@ export const FullViewportSingleSlideWithEmptyPpt: Story = {
 export const StuckSpeakableFixtureSSE: Story = {
   args: {
     bufferingText: "Audio buffering...",
-    playerAlwaysVisible: false,
   },
   parameters: {
     docs: {
@@ -3236,7 +5335,6 @@ export const StuckSpeakableFixtureSSE: Story = {
 
 export const HistorySlides: Story = {
   args: {
-    // playerAlwaysVisible: true,
     fullscreenHeader: {
       content: (
         <div className="flex min-w-0 items-center gap-2 overflow-hidden text-[16px] font-bold leading-6 text-black">
@@ -3259,7 +5357,6 @@ export const HistorySlides: Story = {
       moreOptionsAriaLabel: "更多设置",
       nextLabel: "下一页",
       nextSubtitleLabel: "下一句",
-      notesLabel: "笔记",
       pauseAutoplayLabel: "暂停自动播放",
       pauseLabel: "暂停",
       playAutoplayLabel: "开启自动播放",
@@ -3536,7 +5633,6 @@ export const HistorySlides: Story = {
 
 export const StreamingSingleIframeSlide: Story = {
   args: {
-    playerAlwaysVisible: false,
     elementList: [
       createExampleElement({
         sequenceNumber: 1,
@@ -3564,7 +5660,6 @@ export const StreamingSingleIframeSlide: Story = {
 export const StreamingSpeakableLoadingOnlySlide: Story = {
   args: {
     bufferingText: "Audio buffering...",
-    playerAlwaysVisible: false,
     elementList: [
       createExampleElement({
         sequenceNumber: 1,
@@ -3687,7 +5782,6 @@ export const FullViewportSingleSlideWithSSE: Story = {
 
 export const HistoryInteractionTriggeredSSE: Story = {
   args: {
-    playerAlwaysVisible: false,
     interactionDefaultValueOptions: {
       resolveDefaultValues: () => ({
         selectedValues: ["都不同意"],
@@ -3721,7 +5815,6 @@ export const HistoryInteractionTriggeredSSE: Story = {
 
 export const InteractionTriggeredFixtureSwitchSSE: Story = {
   args: {
-    playerAlwaysVisible: false,
     interactionDefaultValueOptions: {
       resolveDefaultValues: () => ({
         selectedValues: ["非常了解"],
@@ -4060,7 +6153,6 @@ const delayedAudioSourceElement =
 export const StreamingSpeakableDelayedAudioSlide: Story = {
   args: {
     bufferingText: "Audio buffering...",
-    playerAlwaysVisible: false,
     elementList: [
       createExampleElement({
         sequenceNumber: 1,
@@ -4085,6 +6177,45 @@ export const StreamingSpeakableDelayedAudioSlide: Story = {
   render: (args) => (
     <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
       <StreamingSlidePreview className="w-full" {...args} />
+    </div>
+  ),
+};
+
+export const GeneratedSlideNavigationTimeline: Story = {
+  args: {
+    showSlideProgress: true,
+    elementList: [
+      createExampleElement({
+        sequenceNumber: 1,
+        type: "text",
+        content: "First generated slide",
+        isNew: true,
+      }),
+      createExampleElement({
+        sequenceNumber: 2,
+        type: "text",
+        content: "Second generated slide",
+        isNew: true,
+      }),
+      createExampleElement({
+        sequenceNumber: 3,
+        type: "text",
+        content: "Third generated slide",
+        isNew: true,
+      }),
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Shows generated slide position as a non-interactive segmented indicator below the player controls.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="flex h-[100dvh] w-full items-center justify-center border-b border-dashed border-border bg-muted/20">
+      <Slide className="h-full w-full" {...args} />
     </div>
   ),
 };

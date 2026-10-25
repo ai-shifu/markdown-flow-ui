@@ -5,6 +5,7 @@ interface ShouldPresentInteractionOverlayParams {
   hasPlaybackContextChanged: boolean;
   hasResolvedCurrentInteraction: boolean;
   currentStepHasSpeakableElement: boolean;
+  isPlayerCustomActionActive: boolean;
 }
 
 export const shouldPresentInteractionOverlay = ({
@@ -14,8 +15,9 @@ export const shouldPresentInteractionOverlay = ({
   hasPlaybackContextChanged,
   hasResolvedCurrentInteraction,
   currentStepHasSpeakableElement,
+  isPlayerCustomActionActive,
 }: ShouldPresentInteractionOverlayParams) => {
-  if (!hasInteraction) {
+  if (!hasInteraction || isPlayerCustomActionActive) {
     return false;
   }
 
@@ -27,9 +29,8 @@ export const shouldPresentInteractionOverlay = ({
     return true;
   }
 
-  // Re-open the interaction entry state whenever playback navigates into
-  // the interaction step so the notes action stays highlighted for history
-  // playback and manual prev/next navigation.
+  // Re-open the interaction entry state whenever playback navigates into the
+  // interaction step so history and manual prev/next navigation surface it.
   if (hasPlaybackContextChanged) {
     return true;
   }
@@ -42,3 +43,42 @@ export const shouldPresentInteractionOverlay = ({
   // keep the overlay closed so the step can continue as normal playback.
   return !currentStepHasSpeakableElement;
 };
+
+export interface ShouldRenderInteractionOverlayParams {
+  hasActiveInteraction: boolean;
+  isInteractionOverlayOpen: boolean;
+}
+
+export const shouldRenderInteractionOverlay = ({
+  hasActiveInteraction,
+  isInteractionOverlayOpen,
+}: ShouldRenderInteractionOverlayParams) => {
+  if (!hasActiveInteraction || !isInteractionOverlayOpen) {
+    return false;
+  }
+
+  return true;
+};
+
+export interface InteractionOverlayDragOffset {
+  x: number;
+  y: number;
+}
+
+export interface InteractionOverlayDragBounds {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+
+const clampNumber = (value: number, min: number, max: number) =>
+  Math.min(Math.max(value, min), max);
+
+export const clampInteractionOverlayDragOffset = (
+  offset: InteractionOverlayDragOffset,
+  bounds: InteractionOverlayDragBounds
+): InteractionOverlayDragOffset => ({
+  x: clampNumber(offset.x, bounds.minX, bounds.maxX),
+  y: clampNumber(offset.y, bounds.minY, bounds.maxY),
+});

@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { createRoot, Root } from "react-dom/client";
 import SandboxApp from "./SandboxApp";
+import { normalizeContentViewportMinHeight } from "./utils/content-viewport-min-height";
 import ContentRender from "./ContentRender";
 import {
   EMPTY_ROOT_HEIGHT_META,
@@ -23,18 +24,24 @@ import {
   injectScalingSystem,
   type ScalingWindow,
 } from "./utils/iframe-scaling";
+import {
+  getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
+import { useDetachedLanguage } from "../../lib/useDetachedLanguage";
+import { useResolvedDirection } from "../../lib/useResolvedDirection";
+import { getContentRenderLocaleTexts } from "./contentRenderI18n";
+import { CJK_SAFE_SANS_FONT_FAMILY } from "./cjkFontFamily";
 
-type InjectBlackboardLibraries =
-  typeof import("./blackboard-vendor").injectBlackboardLibraries;
+type BlackboardVendorModule = typeof import("./blackboard-vendor");
 
 // Cache the sandbox vendor loader so every iframe reuses the same preload request.
-let blackboardVendorPromise: Promise<InjectBlackboardLibraries> | null = null;
+let blackboardVendorPromise: Promise<BlackboardVendorModule> | null = null;
 
 const loadBlackboardVendor = () => {
   if (!blackboardVendorPromise) {
-    blackboardVendorPromise = import("./blackboard-vendor").then(
-      (m) => m.injectBlackboardLibraries
-    );
+    blackboardVendorPromise = import("./blackboard-vendor");
   }
 
   return blackboardVendorPromise;
@@ -47,10 +54,16 @@ const SANDBOX_INTERACTION_THROTTLE_MS = 240;
 export interface IframeSandboxProps {
   content: string;
   className?: string;
+  locale?: MarkdownFlowLocale;
+  /** Overrides the locale-derived language without changing authored HTML language. */
+  lang?: string;
+  /** Overrides locale-derived direction without replacing authored HTML direction. */
+  dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   loadingText?: string;
   styleLoadingText?: string;
   scriptLoadingText?: string;
   fullScreenButtonText?: string;
+  exitFullScreenButtonText?: string;
   hideFullScreen?: boolean;
   mode?: "content" | "blackboard";
   type: "sandbox" | "markdown";
@@ -107,26 +120,73 @@ const replaceRootScreenHeightWithFullClass = (
   );
 };
 
-const IframeSandbox: React.FC<IframeSandboxProps> = ({
+const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   content,
   type,
   className,
+  locale,
+  lang,
+  dir,
+  loadingText,
   styleLoadingText,
   scriptLoadingText,
   fullScreenButtonText,
+  exitFullScreenButtonText,
   hideFullScreen = false,
   mode = "content",
   replaceRootScreenHeightWithFull = false,
   enableScaling = false,
   disableLoadingOverlay = false,
 }) => {
+  const localeTexts = getContentRenderLocaleTexts(locale);
+  const direction = dir ?? getMarkdownFlowDirection(locale);
+  const language = lang ?? getMarkdownFlowLanguage(locale);
+  const resolvedFullScreenButtonText =
+    fullScreenButtonText || localeTexts.sandboxFullscreenButtonText;
+  const resolvedExitFullScreenButtonText =
+    exitFullScreenButtonText || localeTexts.sandboxExitFullscreenButtonText;
   const containerRef = useRef<HTMLDivElement>(null);
+  const fullscreenButtonRef = useRef<HTMLButtonElement>(null);
+  const sandboxLanguage = useDetachedLanguage(containerRef, language);
+  const { resolvedDirection } = useResolvedDirection(containerRef, direction);
+  const markdownContainerRef = useRef<HTMLDivElement>(null);
+  const markdownContentRef = useRef<HTMLElement>(null);
+  const setMarkdownContentContainerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      markdownContainerRef.current = node;
+      markdownContentRef.current =
+        node?.querySelector<HTMLElement>(".content-render") ?? null;
+    },
+    []
+  );
+  const { resolvedDirection: markdownContentDirection } = useResolvedDirection(
+    markdownContentRef,
+    direction
+  );
+  const sandboxDirection = direction ?? resolvedDirection;
+  const requestedDirectionRef = useRef(direction);
+  requestedDirectionRef.current = direction;
+  // Auto direction cannot inspect text across the iframe document boundary.
+  // Mirror the rendered sandbox direction to host controls instead.
+  const [sandboxContentDirection, setSandboxContentDirection] = useState<
+    "ltr" | "rtl"
+  >();
+  let fullscreenControlDirection: "ltr" | "rtl" | undefined;
+  if (direction === "auto") {
+    fullscreenControlDirection = resolvedDirection;
+    if (type === "sandbox") {
+      fullscreenControlDirection = sandboxContentDirection ?? resolvedDirection;
+    } else if (mode === "blackboard") {
+      fullscreenControlDirection = markdownContentDirection;
+    }
+  }
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const rootRef = useRef<Root | null>(null);
   const updateHeightRef = useRef<() => void>(() => {});
   const [height, setHeight] = useState(480);
-  const [contentHeight, setContentHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState<number | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [fullscreenControlHeight, setFullscreenControlHeight] = useState(0);
   const isMeasuringContentRef = useRef(false);
   const pendingHeightUpdateRef = useRef(false);
   const lastSandboxInteractionTimeRef = useRef(0);
@@ -199,6 +259,15 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       window.location.origin
     );
   }, []);
+
+  useEffect(() => {
+    if (type !== "markdown" || mode !== "blackboard") return;
+    const container = markdownContainerRef.current;
+    if (!container) return;
+    const handleClick = () => emitSandboxInteraction("click");
+    container.addEventListener("click", handleClick);
+    return () => container.removeEventListener("click", handleClick);
+  }, [emitSandboxInteraction, mode, type]);
 
   const clearDeferredRenderTimer = () => {
     if (deferRenderTimerRef.current === null) return;
@@ -299,7 +368,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
       :root { color-scheme: light; }
-      html, body, #root { width: 100%; }
+      html, body, #root { width: 100%; font-family: ${CJK_SAFE_SANS_FONT_FAMILY}; }
       ${mode === "blackboard" ? "html, body, #root { height: 100%; }" : ""}
       html, body { margin: 0; padding: 0; overflow: ${shouldEnableScaling ? "hidden auto" : mode === "blackboard" ? "auto" : "hidden"}; }
       *, *::before, *::after { box-sizing: border-box; }
@@ -426,14 +495,18 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
           return;
         }
         isMeasuringContentRef.current = true;
+        const contentContainer =
+          doc.body.querySelector<HTMLElement>(".sandbox-container");
+        if (contentContainer)
+          normalizeContentViewportMinHeight(contentContainer);
 
         // Content mode height measurement strategy:
-        // Temporarily set iframe height to the 16:9 minimum so that:
+        // Temporarily set iframe height to the 16:9 layout viewport so that:
         // 1. vmin units are stable: vmin = min(cw, minH)/100 = minH/100,
         //    consistent with the final rendered 16:9 iframe.
         // 2. Viewport-filling content (e.g. inline style="height:100vh")
-        //    fills the 16:9 space → scrollHeight = minH, which is then
-        //    correctly bounded by the 16:9 minimum in contentModeStyle.
+        //    retains its 16:9 viewport. Naturally sized content reserves only
+        //    its measured body height in the host page.
         //    (Previously using cw caused such content to report 1:1 height,
         //    overriding the 16:9 minimum.)
         const iframe = iframeRef.current;
@@ -461,13 +534,20 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
           // element's full scroll height based on its position in the iframe.
           const iframeWin = doc.defaultView;
           if (iframeWin) {
-            // Returns the max natural bottom of inner elements that clip
-            // content via overflow:auto/scroll (i.e. internal scrollbars).
+            // Include fixed-position widgets, which do not contribute to body
+            // scrollHeight, as well as content behind internal scrollbars.
             const getInnerScrollableHeight = (root: Element): number => {
               let maxH = 0;
               const walk = (el: Element) => {
+                const style = iframeWin.getComputedStyle(el);
+                if (style.position === "fixed") {
+                  maxH = Math.max(
+                    maxH,
+                    Math.ceil(el.getBoundingClientRect().bottom)
+                  );
+                }
                 if (el !== root && el.scrollHeight > el.clientHeight + 1) {
-                  const oy = iframeWin.getComputedStyle(el).overflowY;
+                  const oy = style.overflowY;
                   if (oy === "auto" || oy === "scroll") {
                     const rect = el.getBoundingClientRect();
                     if (rect.top >= 0) {
@@ -513,7 +593,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
           iframe.style.height = prevH;
 
           setContentHeight((prev) => {
-            const next = Math.min(maxH, Math.max(200, Math.ceil(measuredH)));
+            const next = Math.min(maxH, Math.max(1, Math.ceil(measuredH)));
             return prev === next ? prev : next;
           });
         }
@@ -564,9 +644,9 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     if (shouldInjectSandboxVendor) {
       // Inject Tailwind/DaisyUI/GSAP before rendering sandbox content to avoid FOUC.
       loadBlackboardVendor()
-        .then((inject) => {
+        .then(({ injectBlackboardLibraries }) => {
           if (isDestroyed) return;
-          inject(doc);
+          injectBlackboardLibraries(doc);
           if (shouldEnableScaling) {
             injectScalingSystem(doc);
           }
@@ -581,28 +661,140 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
         });
     }
 
-    const resizeObserver = new ResizeObserver(() => updateHeight());
-    resizeObserver.observe(doc.body);
-    if (rootEl) {
-      resizeObserver.observe(rootEl);
+    const hostElement = containerRef.current;
+    let needsTailwindRefreshAfterHidden = Boolean(
+      hostElement &&
+      (hostElement.clientWidth <= 0 || hostElement.clientHeight <= 0)
+    );
+    let isTailwindRefreshQueued = false;
+    let tailwindRefreshFrame: number | null = null;
+    let tailwindRefreshTimer: number | null = null;
+    const runPostTailwindRefreshLayout = () => {
+      if (isDestroyed) return;
+      scheduleHeightUpdate();
+      const iframeWin = iframe.contentWindow as ScalingWindow | null;
+      iframeWin?.__mdf_triggerFitContent?.();
+    };
+    const isHostVisible = () =>
+      Boolean(
+        hostElement &&
+        hostElement.clientWidth > 0 &&
+        hostElement.clientHeight > 0
+      );
+    const queueTailwindRefreshAfterHidden = () => {
+      if (
+        !shouldInjectSandboxVendor ||
+        !hostElement ||
+        !needsTailwindRefreshAfterHidden ||
+        isTailwindRefreshQueued ||
+        !isHostVisible()
+      ) {
+        return;
+      }
+
+      isTailwindRefreshQueued = true;
+      loadBlackboardVendor()
+        .then(({ refreshTailwindRuntime }) => {
+          if (isDestroyed) return;
+
+          tailwindRefreshFrame = window.requestAnimationFrame(() => {
+            tailwindRefreshFrame = null;
+            isTailwindRefreshQueued = false;
+
+            const sandboxContainer = doc.querySelector(".sandbox-container");
+            if (
+              isDestroyed ||
+              !isHostVisible() ||
+              !sandboxContainer?.childNodes.length ||
+              !refreshTailwindRuntime(doc)
+            ) {
+              return;
+            }
+
+            needsTailwindRefreshAfterHidden = false;
+            runPostTailwindRefreshLayout();
+            tailwindRefreshTimer = window.setTimeout(() => {
+              tailwindRefreshTimer = null;
+              runPostTailwindRefreshLayout();
+            }, 100);
+          });
+        })
+        .catch(() => {
+          isTailwindRefreshQueued = false;
+        });
+    };
+    const canObserveResize = typeof ResizeObserver !== "undefined";
+    const hostResizeObserver =
+      shouldInjectSandboxVendor && hostElement && canObserveResize
+        ? new ResizeObserver((entries) => {
+            const contentRect = entries[0]?.contentRect;
+            const hostWidth = contentRect?.width ?? hostElement.clientWidth;
+            const hostHeight = contentRect?.height ?? hostElement.clientHeight;
+            const isHostSizeVisible = hostWidth > 0 && hostHeight > 0;
+
+            if (!isHostSizeVisible) {
+              return;
+            }
+
+            queueTailwindRefreshAfterHidden();
+          })
+        : null;
+    if (hostResizeObserver && hostElement) {
+      hostResizeObserver.observe(hostElement);
     }
+
+    const resizeObserver = canObserveResize
+      ? new ResizeObserver(() => updateHeight())
+      : null;
+    resizeObserver?.observe(doc.body);
+    if (rootEl) {
+      resizeObserver?.observe(rootEl);
+    }
+
+    const syncSandboxContentDirection = () => {
+      if (type !== "sandbox" || requestedDirectionRef.current !== "auto") {
+        return;
+      }
+      const wrapper = doc.querySelector<HTMLElement>(".sandbox-wrapper");
+      const view = doc.defaultView;
+      if (!wrapper || !view) return;
+      const nextDirection =
+        view.getComputedStyle(wrapper).direction === "rtl" ? "rtl" : "ltr";
+      setSandboxContentDirection((currentDirection) =>
+        currentDirection === nextDirection ? currentDirection : nextDirection
+      );
+    };
 
     // MutationObserver: detect DOM changes that ResizeObserver might miss
     // (e.g. content injected by scripts, images loading, dynamic rendering)
     const mutationObserver = new MutationObserver(() => {
+      syncSandboxContentDirection();
       scheduleHeightUpdate();
+      if (!isHostVisible()) {
+        needsTailwindRefreshAfterHidden = true;
+        return;
+      }
+      queueTailwindRefreshAfterHidden();
     });
     mutationObserver.observe(doc.body, {
       childList: true,
+      characterData: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["style", "class"],
+      attributeFilter: ["style", "class", "dir"],
     });
 
     return () => {
       isDestroyed = true;
-      resizeObserver.disconnect();
+      hostResizeObserver?.disconnect();
+      resizeObserver?.disconnect();
       mutationObserver.disconnect();
+      if (tailwindRefreshFrame !== null) {
+        window.cancelAnimationFrame(tailwindRefreshFrame);
+      }
+      if (tailwindRefreshTimer !== null) {
+        window.clearTimeout(tailwindRefreshTimer);
+      }
       if (shouldEnableScaling) {
         const iframeWin = iframe.contentWindow as ScalingWindow | null;
         iframeWin?.__mdf_cleanupScaling?.();
@@ -610,11 +802,13 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       if (shouldBridgeSandboxInteraction) {
         doc.removeEventListener("click", handleSandboxClick, true);
       }
+      if (rootRef.current === root) {
+        rootRef.current = null;
+        updateHeightRef.current = () => {};
+      }
       // Defer unmount to avoid React warning when parent is mid-render
       setTimeout(() => {
         root.unmount();
-        rootRef.current = null;
-        updateHeightRef.current = () => {};
       }, 0);
     };
   }, []);
@@ -628,26 +822,52 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       document.removeEventListener("fullscreenchange", onFullscreenChange);
   }, []);
 
-  // Track container width for computing min-height in content mode
+  // Track the layout viewport width and enough host space for its own control.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    const button = fullscreenButtonRef.current;
+    const updateControlHeight = () => {
+      setFullscreenControlHeight(
+        button ? Math.ceil(button.offsetTop + button.offsetHeight) : 0
+      );
+    };
+    if (typeof ResizeObserver === "undefined") {
+      setContainerWidth(el.clientWidth);
+      updateControlHeight();
+      return;
+    }
     const ro = new ResizeObserver((entries) => {
-      setContainerWidth(entries[0]?.contentRect.width ?? el.clientWidth);
+      const hostEntry = entries.find((entry) => entry.target === el);
+      if (hostEntry) setContainerWidth(hostEntry.contentRect.width);
+      updateControlHeight();
     });
     ro.observe(el);
+    if (button) ro.observe(button);
     setContainerWidth(el.clientWidth);
+    updateControlHeight();
     return () => ro.disconnect();
-  }, []);
+  }, [hideFullScreen]);
 
-  // Content mode: min 16:9 aspect ratio, grow to fit content (no scrollbar)
+  // Keep a stable layout viewport for authored vh/vmin sizing, while the host
+  // reserves only the measured content height. The iframe is top-aligned inside
+  // the clipped host so a short card does not leave a slide-sized blank area.
   const contentModeStyle = useMemo<React.CSSProperties | undefined>(() => {
     if (isBlackboardMode || containerWidth === 0 || isFullscreen)
       return undefined;
     const minH = Math.round((containerWidth * 9) / 16);
-    const h = Math.max(minH, contentHeight);
-    return { height: h };
-  }, [isBlackboardMode, containerWidth, contentHeight, isFullscreen]);
+    return { height: Math.max(contentHeight ?? minH, fullscreenControlHeight) };
+  }, [
+    isBlackboardMode,
+    containerWidth,
+    contentHeight,
+    isFullscreen,
+    fullscreenControlHeight,
+  ]);
+
+  const contentIframeHeight = contentModeStyle
+    ? Math.max(Math.round((containerWidth * 9) / 16), contentHeight ?? 0)
+    : undefined;
 
   const toggleFullscreen = () => {
     const target = containerRef.current || iframeRef.current;
@@ -668,6 +888,10 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     root.render(
       <SandboxApp
         html={renderHtmlContent}
+        locale={locale}
+        dir={sandboxDirection}
+        lang={sandboxLanguage}
+        loadingText={loadingText}
         styleLoadingText={styleLoadingText}
         scriptLoadingText={scriptLoadingText}
         disableLoadingOverlay={disableLoadingOverlay}
@@ -692,22 +916,34 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     const t1 = setTimeout(() => updateHeightRef.current?.(), 100);
     const t2 = setTimeout(() => updateHeightRef.current?.(), 500);
     return () => {
+      if (initialPaintFrameRef.current !== null) {
+        window.cancelAnimationFrame(initialPaintFrameRef.current);
+        initialPaintFrameRef.current = null;
+      }
       clearTimeout(t1);
       clearTimeout(t2);
     };
   }, [
     renderHtmlContent,
+    locale,
+    sandboxDirection,
+    sandboxLanguage,
+    loadingText,
     styleLoadingText,
     scriptLoadingText,
     resetToken,
+    disableLoadingOverlay,
+    hasRootVhHeight,
     mode,
+    shouldStretchRootHeight,
+    shouldEnableScaling,
   ]);
   const containerClassName = [
-    "w-full relative content-render-iframe-sandbox",
+    `w-full relative content-render-iframe-sandbox content-render-iframe-sandbox--${type}`,
     isBlackboardMode
       ? "h-full overflow-auto flex flex-col"
       : contentModeStyle
-        ? "overflow-hidden flex items-center justify-center"
+        ? "overflow-hidden"
         : "aspect-[16/9] overflow-hidden flex items-center justify-center",
   ]
     .filter(Boolean)
@@ -716,6 +952,8 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
   return (
     <div
       ref={containerRef}
+      dir={direction}
+      lang={language}
       data-root-vh={hasRootVhHeight ? "true" : "false"}
       className={containerClassName}
       style={
@@ -729,19 +967,26 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
     >
       {!hideFullScreen && (
         <button
+          ref={fullscreenButtonRef}
           type="button"
+          dir={fullscreenControlDirection}
           onClick={toggleFullscreen}
           className={
-            "absolute top-2 right-2 z-50 p-1.5 bg-black/75 text-white rounded-md cursor-pointer"
+            "absolute top-2 end-2 z-50 p-1.5 bg-black/75 text-white rounded-md cursor-pointer"
           }
         >
-          {isFullscreen ? "退出全屏" : fullScreenButtonText || "全屏浏览"}
+          {isFullscreen
+            ? resolvedExitFullScreenButtonText
+            : resolvedFullScreenButtonText}
         </button>
       )}
       {mode === "blackboard" && type === "markdown" ? (
-        <div onClick={() => emitSandboxInteraction("click")}>
+        <div ref={setMarkdownContentContainerRef}>
           <ContentRender
             content={content}
+            locale={locale}
+            dir={direction}
+            lang={language}
             disableSandboxLoadingOverlay={disableLoadingOverlay}
           />
         </div>
@@ -755,7 +1000,7 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
             .filter(Boolean)
             .join(" ")}
           style={{
-            height: sandboxViewportHeight ?? "100%",
+            height: sandboxViewportHeight ?? contentIframeHeight ?? "100%",
             minHeight: sandboxViewportHeight,
             margin: "auto",
           }}
@@ -763,6 +1008,18 @@ const IframeSandbox: React.FC<IframeSandboxProps> = ({
       )}
     </div>
   );
+};
+
+const IframeSandbox: React.FC<IframeSandboxProps> = (props) => {
+  const mode = props.mode ?? "content";
+  const shouldEnableScaling = Boolean(
+    props.enableScaling && mode === "blackboard" && props.type === "sandbox"
+  );
+  // The iframe shell captures these initialization-only values. Remounting the
+  // inner instance keeps old and new React roots from sharing cleanup refs.
+  const lifecycleKey = `${props.type}:${mode}:${shouldEnableScaling ? "scaled" : "unscaled"}`;
+
+  return <IframeSandboxInstance key={lifecycleKey} {...props} />;
 };
 
 export default IframeSandbox;

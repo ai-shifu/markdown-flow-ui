@@ -22,12 +22,6 @@
   --slide-player-bottom-offset: 12px;
 }
 
-.slide-subtitle-overlay--player-hidden {
-  bottom: calc(
-    var(--slide-player-bottom-offset) + var(--slide-subtitle-extra-offset)
-  );
-}
-
 .slide-subtitle-overlay__surface {
   width: fit-content;
   max-width: 100%;

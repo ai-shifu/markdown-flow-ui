@@ -1,24 +1,24 @@
-import "highlight.js/styles/github.css";
-import "katex/dist/katex.min.css";
+import { trimVariablePadding } from "remark-flow";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
-import remarkBreaks from "remark-breaks";
-import remarkFlow from "remark-flow";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
+import { unified, type PluggableList, type Plugin } from "unified";
+import remarkRehype from "remark-rehype";
+import type { Element, Root } from "hast";
 import { CustomRenderBarProps, OnSendContentParams } from "../types";
 import { sanitizeInvalidTagName } from "./utils/sanitize-invalid-tag-name";
 import { stripSvgTextLineBreaks } from "./utils/strip-svg-text-line-breaks";
 import "./contentRender.css";
 import "./github-markdown-light.css";
-import CodeBlock from "./CodeBlock";
+import "highlight.js/styles/github.css";
+import "katex/dist/katex.min.css";
+import CodeBlock, { CodeBlockContext } from "./CodeBlock";
 import CustomButtonInputVariable, {
   ComponentsWithCustomVariable,
 } from "./plugins/CustomVariable";
-import MermaidChart from "./plugins/MermaidChart";
+import MermaidChart, { type MermaidChartProps } from "./plugins/MermaidChart";
 import {
   preserveCustomVariableProperties,
   restoreCustomVariableProperties,
@@ -32,9 +32,27 @@ import {
   parseMarkdownSegments,
   mermaidBlockIsComplete,
 } from "./utils/mermaid-parse";
+import {
+  getInlineCodeRanges,
+  getMarkdownSourceAnalysis,
+} from "./utils/inline-code-ranges";
+import { remarkPlugins } from "./utils/markdown-plugins";
 import { normalizeInlineHtml } from "./utils/normalize-inline-html";
+import {
+  escapeTypedMarkdownMetadata,
+  type MarkdownMetadataRange,
+} from "./utils/escape-typed-metadata";
 import IframeSandbox from "./IframeSandbox";
 import {
+  appendContentAwareTypewriterQueue,
+  CONTENT_AWARE_TYPEWRITER_TICK_BUDGET,
+  consumeContentAwareTypewriterQueue,
+  getTrailingTypewriterGrapheme,
+  isContentAwareTypewriterQueueEmpty,
+  type ContentAwareTypewriterQueue,
+} from "./utils/typewriter-pacing";
+import {
+  normalizeWrappedSandboxContent,
   splitContentSegments,
   type RenderSegment,
 } from "./utils/split-content";
@@ -42,14 +60,35 @@ import {
   getInteractionDefaultValues,
   type InteractionDefaultValueOptions,
 } from "../../lib/interaction-defaults";
+import {
+  getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
+import { getContentRenderLocaleTexts } from "./contentRenderI18n";
+import {
+  createVideoMarkdownRunPlan,
+  cloneVideoMarkdownSourceTree,
+  projectVideoMarkdownRun,
+  prepareVideoMarkdownRun,
+  getVideoMarkdownNodeState,
+  type VideoMarkdownRunPlan,
+} from "./utils/video-markdown-run";
 
-const SANDBOX_TAG_HINT_PATTERN =
-  /<(script|style|link|iframe|html|head|body|meta|title|base|template|div|section|article|main)\b/i;
+const FIXED_TYPEWRITER_CHUNK_SIZE = 2;
+
+export type ContentRenderTypewriterPacing = "fixed" | "content-aware";
 
 // Define component Props type
 export interface ContentRenderProps {
   content: string;
   contentType?: string;
+  /** Locale used for built-in UI text when a more specific text prop is not provided. */
+  locale?: MarkdownFlowLocale;
+  /** Overrides the locale-derived language; omitted values inherit from the host. */
+  lang?: string;
+  /** Overrides locale-derived direction; omitted values inherit when no locale is set. */
+  dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   /**
    * Callback invoked when the custom button after content is clicked.
    * This button is rendered via the `<custom-button-after-content>` tag in markdown content.
@@ -65,7 +104,10 @@ export interface ContentRenderProps {
   onClickCustomButtonAfterContent?: () => void;
   onSend?: (content: OnSendContentParams) => void;
   typingSpeed?: number;
+  /** Types prose only; following HTML renders progressively once preceding prose is displayed. */
   enableTypewriter?: boolean;
+  /** Controls how much text is revealed per tick. Defaults to the legacy fixed pacing. */
+  typewriterPacing?: ContentRenderTypewriterPacing;
   onTypeFinished?: () => void;
   onTypewriterStateChange?: (state: ContentRenderTypewriterState) => void;
   userInput?: string;
@@ -92,6 +134,8 @@ export interface ContentRenderProps {
   disableSandboxLoadingOverlay?: boolean;
   // Fullscreen button text for iframe sandbox
   sandboxFullscreenButtonText?: string;
+  // Exit fullscreen button text for iframe sandbox
+  sandboxExitFullscreenButtonText?: string;
   // Sandbox render mode
   sandboxMode?: "content" | "blackboard";
   beforeSend?: (param: OnSendContentParams) => boolean;
@@ -102,13 +146,18 @@ export interface ContentRenderTypewriterState {
   isTypewriterEnabled: boolean;
   isTyping: boolean;
   isComplete: boolean;
+  /** Received source units already displayed, including unpaced HTML. */
   renderedLength: number;
   totalLength: number;
 }
 
 // Render svg string via Shadow DOM to avoid markdown wrapping
-const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
-  const hostRef = useRef<HTMLDivElement>(null);
+const SvgBlockInShadow: React.FC<{ svg: string; inline?: boolean }> = ({
+  svg,
+  inline = false,
+}) => {
+  const hostRef = useRef<HTMLElement | null>(null);
+  const Wrapper = inline ? "span" : "div";
 
   useEffect(() => {
     const host = hostRef.current;
@@ -217,9 +266,14 @@ const SvgBlockInShadow: React.FC<{ svg: string }> = ({ svg }) => {
   }, [svg]);
 
   return (
-    <div className="content-render-svg-scroll">
-      <div className="content-render-svg" ref={hostRef} />
-    </div>
+    <Wrapper className="content-render-svg-scroll">
+      <Wrapper
+        className="content-render-svg"
+        ref={(node) => {
+          hostRef.current = node;
+        }}
+      />
+    </Wrapper>
   );
 };
 
@@ -230,44 +284,264 @@ type CustomComponents = ComponentsWithCustomVariable & {
   }>;
 };
 
-const remarkPlugins = [remarkGfm, remarkMath, remarkFlow, remarkBreaks];
+type MarkdownComponentRuntimeValues = {
+  direction?: ContentRenderProps["dir"];
+  language?: string;
+  mermaidMessages: MermaidChartProps["messages"];
+  beforeSend?: (param: OnSendContentParams) => boolean;
+  locale?: MarkdownFlowLocale;
+  onClickCustomButtonAfterContent?: () => void;
+  onSend?: (content: OnSendContentParams) => void;
+  readonly: boolean;
+  renderContent: string;
+  resolvedConfirmButtonText: string;
+  resolvedCopiedButtonText: string;
+  resolvedCopyButtonText: string;
+  resolvedDefaultButtonText?: string;
+  resolvedDefaultInputText?: string;
+  resolvedDefaultSelectedValues?: string[];
+};
 
-const rehypePlugins = [
+const MarkdownComponentRuntimeContext =
+  React.createContext<React.RefObject<MarkdownComponentRuntimeValues> | null>(
+    null
+  );
+
+const MarkdownCode = (
+  props: React.ComponentProps<"code"> & { receivedTree?: boolean }
+) => {
+  const { receivedTree, ...codeProps } = props;
+  const runtimeValuesRef = React.useContext(MarkdownComponentRuntimeContext);
+  const isInCodeBlock = React.useContext(CodeBlockContext);
+  if (!runtimeValuesRef) {
+    throw new Error("Markdown code renderer requires ContentRender context.");
+  }
+  const { className, children, ...rest } = codeProps as {
+    className?: string;
+    children?: React.ReactNode;
+    dir?: string;
+  };
+  const match = /language-(\w+)/.exec(className || "");
+  const language = match?.[1];
+  if (language === "mermaid") {
+    const chartContent = children?.toString().replace(/\n$/, "") || "";
+    const complete = mermaidBlockIsComplete(
+      runtimeValuesRef.current.renderContent,
+      chartContent
+    );
+    // The received-tree path replaces standalone Mermaid segments, whose
+    // unfinished charts freeze until the closing fence reaches the prose budget.
+    const frozen = receivedTree ? !complete : complete;
+    return (
+      <MermaidChart
+        chart={chartContent}
+        frozen={frozen}
+        messages={runtimeValuesRef.current.mermaidMessages}
+      />
+    );
+  }
+
+  return (
+    <code
+      className={className}
+      {...rest}
+      dir={rest.dir ?? (isInCodeBlock ? undefined : "ltr")}
+    >
+      {children}
+    </code>
+  );
+};
+
+const sourceRehypePlugins: PluggableList = [
   preserveCustomVariableProperties,
   rehypeRaw,
   sanitizeInvalidTagName,
   restoreCustomVariableProperties,
+];
+const formattingRehypePlugins: PluggableList = [
   [rehypeHighlight, { languages: highlightLanguages, subset: subsetLanguages }],
   rehypeKatex,
+];
+const rehypePlugins: PluggableList = [
+  ...sourceRehypePlugins,
+  ...formattingRehypePlugins,
 ];
 
 export const MarkdownRenderer: React.FC<{
   content: string;
   components: CustomComponents;
-}> = ({ content: markdownContent, components }) => (
-  <div className="markdown-renderer">
-    <ReactMarkdown
-      remarkPlugins={remarkPlugins}
-      rehypePlugins={rehypePlugins}
-      components={components}
-    >
-      {markdownContent}
-    </ReactMarkdown>
-  </div>
-);
+  locale?: MarkdownFlowLocale;
+}> = ({ content: markdownContent, components, locale }) => {
+  const texts = getContentRenderLocaleTexts(locale);
+  return (
+    <div className="markdown-renderer">
+      <ReactMarkdown
+        remarkPlugins={remarkPlugins}
+        rehypePlugins={rehypePlugins}
+        remarkRehypeOptions={{
+          footnoteLabel: texts.footnoteLabel,
+          footnoteBackLabel: (referenceIndex, rereferenceIndex) => {
+            const reference =
+              String(referenceIndex + 1) +
+              (rereferenceIndex > 1 ? `-${rereferenceIndex}` : "");
+            return texts.footnoteBackLabel.replace("{reference}", reference);
+          },
+        }}
+        components={components}
+      >
+        {markdownContent}
+      </ReactMarkdown>
+    </div>
+  );
+};
+
+// ReactMarkdown still owns URL handling and JSX conversion. Its parser is
+// bypassed because the received source was already parsed and transformed.
+const usePreparedTree: Plugin = function () {
+  this.parser = () => ({ type: "root", children: [] });
+};
+
+const StableVideoMarkdownRenderer: React.FC<{
+  plan: VideoMarkdownRunPlan;
+  renderedSegments: readonly RenderSegment[];
+  components: CustomComponents;
+  locale?: MarkdownFlowLocale;
+}> = ({ plan, renderedSegments, components, locale }) => {
+  const prepared = useMemo(() => {
+    const texts = getContentRenderLocaleTexts(locale);
+    const sourceProcessor = unified()
+      .use(remarkPlugins)
+      .use(remarkRehype, {
+        allowDangerousHtml: true,
+        footnoteLabel: texts.footnoteLabel,
+        footnoteBackLabel: (referenceIndex, rereferenceIndex) =>
+          texts.footnoteBackLabel.replace(
+            "{reference}",
+            String(referenceIndex + 1) +
+              (rereferenceIndex > 1 ? `-${rereferenceIndex}` : "")
+          ),
+      })
+      .use(sourceRehypePlugins);
+    const formattingProcessor = unified().use(formattingRehypePlugins);
+    const tree = sourceProcessor.runSync(
+      cloneVideoMarkdownSourceTree(plan),
+      plan.markdownSource
+    ) as Root;
+    return prepareVideoMarkdownRun(
+      plan,
+      tree,
+      (value) => formattingProcessor.runSync(value, plan.fullSource) as Root
+    );
+  }, [plan, locale]);
+  const projected = useMemo(
+    () => projectVideoMarkdownRun(prepared, renderedSegments),
+    [prepared, renderedSegments]
+  );
+  const originalComponents = useRef(components);
+  originalComponents.current = components;
+  const wrappers = useRef(
+    new Map<
+      string,
+      React.ComponentType<{
+        node: Element;
+        children?: React.ReactNode;
+      }>
+    >()
+  );
+  const stableComponents = useMemo(() => {
+    const tags = new Set<string>();
+    const collect = (node: Root | Root["children"][number]) => {
+      if (node.type === "element") tags.add(node.tagName);
+      if ("children" in node) node.children.forEach(collect);
+    };
+    collect(prepared.tree!);
+    const result: Record<
+      string,
+      React.ComponentType<{
+        node: Element;
+        children?: React.ReactNode;
+      }>
+    > = {};
+    for (const tag of tags) {
+      if (!wrappers.current.has(tag)) {
+        const Component = ({
+          node,
+          children,
+          ...props
+        }: {
+          node: Element;
+          children?: React.ReactNode;
+        }) => {
+          const state = getVideoMarkdownNodeState(node);
+          if (state?.svg) {
+            return state.svgSource ? (
+              <SvgBlockInShadow svg={state.svgSource} inline />
+            ) : null;
+          }
+          if (state?.atomic) {
+            return state.active ? <>{children}</> : null;
+          }
+          if (state?.active === false && tag !== "a") return null;
+          const current = originalComponents.current as Record<
+            string,
+            React.ElementType
+          >;
+          const Original = current[tag];
+          const visibleProps =
+            state?.active === false
+              ? { ...props, href: undefined, tabIndex: -1 }
+              : props;
+          return Original
+            ? React.createElement(
+                Original,
+                {
+                  ...visibleProps,
+                  node,
+                  ...(Original === MarkdownCode ? { receivedTree: true } : {}),
+                },
+                children
+              )
+            : React.createElement(tag, visibleProps, children);
+        };
+        Component.displayName = `StableMarkdown(${tag})`;
+        wrappers.current.set(tag, Component);
+      }
+      result[tag] = wrappers.current.get(tag)!;
+    }
+    return result as CustomComponents;
+  }, [prepared]);
+  const preparedPlugins = useMemo<PluggableList>(
+    () => [() => () => projected],
+    [projected]
+  );
+  return (
+    <div className="markdown-renderer">
+      <ReactMarkdown
+        remarkPlugins={[usePreparedTree]}
+        rehypePlugins={preparedPlugins}
+        components={stableComponents}
+      >
+        {""}
+      </ReactMarkdown>
+    </div>
+  );
+};
+
+const isImmediateSegment = (segment: RenderSegment) =>
+  segment.type === "markdown" && segment.immediate === true;
 
 const mergeNonSandboxSegments = (segments: RenderSegment[]) => {
   if (segments.length <= 1) return segments;
   const merged: RenderSegment[] = [];
 
   segments.forEach((segment) => {
-    if (segment.type === "sandbox") {
+    if (segment.type === "sandbox" || isImmediateSegment(segment)) {
       merged.push(segment);
       return;
     }
 
     const last = merged[merged.length - 1];
-    if (last && last.type !== "sandbox") {
+    if (last && last.type !== "sandbox" && !isImmediateSegment(last)) {
       merged[merged.length - 1] = {
         type: "markdown",
         value: `${last.value}${segment.value}`,
@@ -281,6 +555,44 @@ const mergeNonSandboxSegments = (segments: RenderSegment[]) => {
   return merged;
 };
 
+const closeTypedInlineCode = (
+  visible: string,
+  source: string,
+  ranges: ReturnType<typeof getInlineCodeRanges>
+) => {
+  if (visible.length >= source.length) return visible;
+  const range = ranges.find(
+    ({ start, end }) => start < visible.length && visible.length < end
+  );
+  if (!range) return visible;
+  const delimiter = /^`+/.exec(source.slice(range.start))?.[0];
+  if (!delimiter || visible.length < range.start + delimiter.length) {
+    return visible;
+  }
+  const closingStart = range.end - delimiter.length;
+  if (visible.length > closingStart) {
+    return visible + delimiter.slice(visible.length - closingStart);
+  }
+  // Close only the render copy so a typed prefix cannot activate code as HTML.
+  return visible + (visible.endsWith("`") ? " " : "") + delimiter;
+};
+
+const protectTypedMarkdownPrefix = (
+  visible: string,
+  source: string,
+  inlineCodeRanges: ReturnType<typeof getInlineCodeRanges>,
+  metadataRanges: readonly MarkdownMetadataRange[],
+  sourceOffset = 0
+) => {
+  // Both protections use raw coordinates. Append any synthetic code delimiter
+  // after escaping so encoded '<' characters cannot shift the typing budget.
+  const closed = closeTypedInlineCode(visible, source, inlineCodeRanges);
+  return (
+    escapeTypedMarkdownMetadata(visible, metadataRanges, sourceOffset) +
+    closed.slice(visible.length)
+  );
+};
+
 const splitTextByCharacterChunk = (value: string, chunkSize: number) => {
   const safeChunkSize = Math.max(1, chunkSize);
   const characters = Array.from(value);
@@ -291,13 +603,37 @@ const splitTextByCharacterChunk = (value: string, chunkSize: number) => {
   };
 };
 
+const areStringArraysEqual = (left?: string[], right?: string[]) => {
+  if (left === right) {
+    return true;
+  }
+  if (!left || !right || left.length !== right.length) {
+    return false;
+  }
+  return left.every((value, index) => value === right[index]);
+};
+
+const useStableStringArray = (values?: string[]) => {
+  const valuesRef = useRef<string[] | undefined>(values);
+
+  if (!areStringArraysEqual(valuesRef.current, values)) {
+    valuesRef.current = values;
+  }
+
+  return valuesRef.current;
+};
+
 const ContentRender: React.FC<ContentRenderProps> = ({
   content,
   contentType,
+  locale,
+  lang,
+  dir,
   customRenderBar,
   onSend,
-  typingSpeed = 40,
+  typingSpeed = 30,
   enableTypewriter = false,
+  typewriterPacing = "fixed",
   onTypeFinished,
   onTypewriterStateChange,
   userInput,
@@ -314,51 +650,245 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   sandboxScriptLoadingText,
   disableSandboxLoadingOverlay = false,
   sandboxFullscreenButtonText,
+  sandboxExitFullscreenButtonText,
   sandboxMode = "content",
   onClickCustomButtonAfterContent,
   beforeSend,
   // tooltipMinLength,
 }) => {
+  const localeTexts = getContentRenderLocaleTexts(locale);
+  const mermaidMessages = useMemo(
+    () => ({
+      loading: localeTexts.mermaidLoadingText,
+      emptyChart: localeTexts.mermaidEmptyChartText,
+      error: localeTexts.mermaidErrorText,
+    }),
+    [localeTexts]
+  );
+  const direction = dir ?? getMarkdownFlowDirection(locale);
+  const language = lang ?? getMarkdownFlowLanguage(locale);
+  const resolvedConfirmButtonText =
+    confirmButtonText || localeTexts.confirmButtonText;
+  const resolvedCopyButtonText = copyButtonText || localeTexts.copyButtonText;
+  const resolvedCopiedButtonText =
+    copiedButtonText || localeTexts.copiedButtonText;
+  const resolvedSandboxFullscreenButtonText =
+    sandboxFullscreenButtonText || localeTexts.sandboxFullscreenButtonText;
+  const resolvedSandboxExitFullscreenButtonText =
+    sandboxExitFullscreenButtonText ||
+    localeTexts.sandboxExitFullscreenButtonText;
   const shouldApplyTypewriterByContentType =
     !contentType || contentType === "text";
   const isTypewriterEnabled =
     Boolean(enableTypewriter) && shouldApplyTypewriterByContentType;
-  const typewriterChunkSize = 2;
-  const typewriterTickMs = Math.max(0, typingSpeed);
-  const [displayContent, setDisplayContent] = useState(() =>
-    isTypewriterEnabled ? "" : content
+  const sourceContent = useMemo(
+    () => normalizeWrappedSandboxContent(content),
+    [content]
   );
+  const sourceAnalysis = useMemo(
+    () => getMarkdownSourceAnalysis(sourceContent),
+    [sourceContent]
+  );
+  // Parse the received source, never a typewriter-truncated HTML string.
+  const sourceSegments = useMemo(() => {
+    const segments = mergeNonSandboxSegments(
+      splitContentSegments(sourceContent, true, true, sourceAnalysis)
+    );
+    if (
+      sourceContent !== content &&
+      segments.length &&
+      (segments[0].type === "sandbox" || isImmediateSegment(segments[0]))
+    ) {
+      // The removed opening quote occupied a prose slot before the wrapper
+      // completed. Retain its empty slot so the existing iframe keeps its key.
+      return [{ type: "text" as const, value: "" }, ...segments];
+    }
+    return segments;
+  }, [content, sourceContent, sourceAnalysis]);
+  const hasRichSegments = sourceSegments.some(
+    (segment) => segment.type === "sandbox" || isImmediateSegment(segment)
+  );
+  const typewriterContent = hasRichSegments
+    ? sourceSegments
+        .filter(
+          (segment) =>
+            segment.type !== "sandbox" && !isImmediateSegment(segment)
+        )
+        .map((segment) => segment.value)
+        .join("")
+    : sourceContent;
+  const typewriterTickMs = Math.max(0, typingSpeed);
+  const fixedTypewriterContentVersion =
+    typewriterPacing === "fixed" ? typewriterContent : undefined;
+  const [displayContent, setDisplayContent] = useState(() =>
+    isTypewriterEnabled ? "" : typewriterContent
+  );
+  const displayContentRef = useRef(displayContent);
   const pendingContentRef = useRef("");
+  const contentAwareQueueRef = useRef<ContentAwareTypewriterQueue>({
+    tokens: [],
+    head: 0,
+    trailingGrapheme: "",
+  });
+  const contentAwareBudgetRef = useRef(0);
   const previousTypewriterEnabledRef = useRef(isTypewriterEnabled);
+  const previousTypewriterPacingRef = useRef(typewriterPacing);
+  const previousSourceContentRef = useRef(typewriterContent);
+  const previousReceivedContentRef = useRef(content);
   const hasReportedTypeFinishedRef = useRef(false);
+  const [typewriterWakeVersion, setTypewriterWakeVersion] = useState(0);
 
   useEffect(() => {
     const wasTypewriterEnabled = previousTypewriterEnabledRef.current;
+    const previousTypewriterPacing = previousTypewriterPacingRef.current;
+    const previousSourceContent = previousSourceContentRef.current;
+    const wasPending = Boolean(pendingContentRef.current);
+    const receivedContentChanged =
+      previousReceivedContentRef.current !== content;
+    const receivedContentAppended =
+      receivedContentChanged &&
+      content.startsWith(previousReceivedContentRef.current);
+    previousReceivedContentRef.current = content;
+
     previousTypewriterEnabledRef.current = isTypewriterEnabled;
-    hasReportedTypeFinishedRef.current = false;
+    previousTypewriterPacingRef.current = typewriterPacing;
+    previousSourceContentRef.current = typewriterContent;
+
+    if (
+      receivedContentChanged ||
+      isTypewriterEnabled !== wasTypewriterEnabled
+    ) {
+      hasReportedTypeFinishedRef.current = false;
+    }
+
+    const clearPendingContent = () => {
+      pendingContentRef.current = "";
+      contentAwareQueueRef.current = {
+        tokens: [],
+        head: 0,
+        trailingGrapheme: "",
+      };
+      contentAwareBudgetRef.current = 0;
+    };
+
+    const updateDisplayContent = (nextContent: string) => {
+      displayContentRef.current = nextContent;
+      setDisplayContent(nextContent);
+    };
 
     if (!isTypewriterEnabled) {
-      pendingContentRef.current = "";
-      setDisplayContent(content);
+      clearPendingContent();
+      updateDisplayContent(typewriterContent);
       return;
     }
 
-    setDisplayContent((current) => {
-      const shouldRestartTyping = !wasTypewriterEnabled;
-      const canContinueTyping = content.startsWith(current);
+    if (!wasTypewriterEnabled) {
+      clearPendingContent();
+      updateDisplayContent("");
+    }
 
-      if (!shouldRestartTyping && !canContinueTyping) {
-        pendingContentRef.current = "";
-        return content;
+    let visibleContent = !wasTypewriterEnabled ? "" : displayContentRef.current;
+
+    if (!typewriterContent.startsWith(visibleContent)) {
+      clearPendingContent();
+      if (!receivedContentAppended) {
+        updateDisplayContent(typewriterContent);
+        if (typewriterPacing === "content-aware") {
+          contentAwareQueueRef.current = {
+            tokens: [],
+            head: 0,
+            trailingGrapheme: getTrailingTypewriterGrapheme(typewriterContent),
+          };
+        }
+        return;
       }
+      // A newly recognized HTML tag can replace a previously literal prefix.
+      // Keep the shared prose visible and pace only the newly received prose.
+      let sharedLength = 0;
+      while (
+        sharedLength < visibleContent.length &&
+        sharedLength < typewriterContent.length &&
+        visibleContent[sharedLength] === typewriterContent[sharedLength]
+      ) {
+        sharedLength += 1;
+      }
+      visibleContent = visibleContent.slice(0, sharedLength);
+      updateDisplayContent(visibleContent);
+    }
 
-      const nextVisibleContent =
-        shouldRestartTyping || !canContinueTyping ? "" : current;
+    let nextPendingContent = typewriterContent.slice(visibleContent.length);
+    if (!nextPendingContent) {
+      pendingContentRef.current = "";
+      contentAwareBudgetRef.current = 0;
+      contentAwareQueueRef.current =
+        typewriterPacing === "content-aware"
+          ? {
+              tokens: [],
+              head: 0,
+              trailingGrapheme: getTrailingTypewriterGrapheme(visibleContent),
+            }
+          : { tokens: [], head: 0, trailingGrapheme: "" };
+      return;
+    }
 
-      pendingContentRef.current = content.slice(nextVisibleContent.length);
-      return nextVisibleContent;
-    });
-  }, [content, isTypewriterEnabled]);
+    if (typewriterPacing === "content-aware") {
+      const previousPendingContent = previousSourceContent.slice(
+        visibleContent.length
+      );
+      const canAppendToCachedQueue =
+        wasTypewriterEnabled &&
+        previousTypewriterPacing === "content-aware" &&
+        typewriterContent.startsWith(previousSourceContent) &&
+        pendingContentRef.current === previousPendingContent;
+
+      if (canAppendToCachedQueue) {
+        const appended = appendContentAwareTypewriterQueue(
+          contentAwareQueueRef.current,
+          typewriterContent.slice(previousSourceContent.length)
+        );
+        contentAwareQueueRef.current = appended.queue;
+
+        if (appended.immediateChunk) {
+          nextPendingContent = nextPendingContent.slice(
+            appended.immediateChunk.length
+          );
+          updateDisplayContent(`${visibleContent}${appended.immediateChunk}`);
+        }
+      } else {
+        const appended = appendContentAwareTypewriterQueue(
+          {
+            tokens: [],
+            head: 0,
+            trailingGrapheme: getTrailingTypewriterGrapheme(visibleContent),
+          },
+          nextPendingContent
+        );
+        contentAwareQueueRef.current = appended.queue;
+
+        if (appended.immediateChunk) {
+          nextPendingContent = nextPendingContent.slice(
+            appended.immediateChunk.length
+          );
+          updateDisplayContent(`${visibleContent}${appended.immediateChunk}`);
+        }
+
+        contentAwareBudgetRef.current = 0;
+      }
+    } else {
+      contentAwareQueueRef.current = {
+        tokens: [],
+        head: 0,
+        trailingGrapheme: "",
+      };
+      contentAwareBudgetRef.current = 0;
+    }
+
+    pendingContentRef.current = nextPendingContent;
+
+    if (!wasPending && nextPendingContent) {
+      setTypewriterWakeVersion((version) => version + 1);
+    }
+  }, [content, typewriterContent, isTypewriterEnabled, typewriterPacing]);
 
   useEffect(() => {
     if (!isTypewriterEnabled) {
@@ -368,14 +898,20 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     if (
       hasReportedTypeFinishedRef.current ||
       pendingContentRef.current ||
-      displayContent !== content
+      displayContent !== typewriterContent
     ) {
       return;
     }
 
     hasReportedTypeFinishedRef.current = true;
     onTypeFinished?.();
-  }, [content, displayContent, isTypewriterEnabled, onTypeFinished]);
+  }, [
+    content,
+    typewriterContent,
+    displayContent,
+    isTypewriterEnabled,
+    onTypeFinished,
+  ]);
 
   useEffect(() => {
     if (!isTypewriterEnabled || !pendingContentRef.current) {
@@ -383,49 +919,231 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     }
 
     const typewriterTimer = window.setTimeout(() => {
-      setDisplayContent((current) => {
-        const { chunk, rest } = splitTextByCharacterChunk(
-          pendingContentRef.current,
-          typewriterChunkSize
+      if (!pendingContentRef.current) {
+        return;
+      }
+
+      let chunk = "";
+
+      if (typewriterPacing === "content-aware") {
+        const result = consumeContentAwareTypewriterQueue(
+          contentAwareQueueRef.current,
+          contentAwareBudgetRef.current + CONTENT_AWARE_TYPEWRITER_TICK_BUDGET
         );
 
-        if (!chunk) {
-          return current;
-        }
+        chunk = result.chunk;
+        contentAwareQueueRef.current = result.queue;
 
-        pendingContentRef.current = rest;
-        return `${current}${chunk}`;
-      });
+        if (isContentAwareTypewriterQueueEmpty(result.queue)) {
+          contentAwareBudgetRef.current = 0;
+        } else {
+          contentAwareBudgetRef.current = result.remainingBudget;
+        }
+      } else {
+        const fixedChunk = splitTextByCharacterChunk(
+          pendingContentRef.current,
+          FIXED_TYPEWRITER_CHUNK_SIZE
+        );
+        chunk = fixedChunk.chunk;
+      }
+
+      if (!chunk) {
+        return;
+      }
+
+      pendingContentRef.current = pendingContentRef.current.slice(chunk.length);
+      if (!pendingContentRef.current) {
+        contentAwareQueueRef.current =
+          typewriterPacing === "content-aware"
+            ? {
+                tokens: [],
+                head: 0,
+                trailingGrapheme: contentAwareQueueRef.current.trailingGrapheme,
+              }
+            : { tokens: [], head: 0, trailingGrapheme: "" };
+        contentAwareBudgetRef.current = 0;
+      }
+
+      const nextDisplayContent = `${displayContentRef.current}${chunk}`;
+      displayContentRef.current = nextDisplayContent;
+      setDisplayContent(nextDisplayContent);
     }, typewriterTickMs);
 
     return () => window.clearTimeout(typewriterTimer);
   }, [
-    content,
     displayContent,
+    fixedTypewriterContentVersion,
     isTypewriterEnabled,
-    typewriterChunkSize,
+    typewriterPacing,
     typewriterTickMs,
+    typewriterWakeVersion,
   ]);
 
+  const mergedRenderSegments = useMemo(() => {
+    let textOffset = 0;
+    return sourceSegments.map((segment) => {
+      if (!isTypewriterEnabled) return segment;
+      if (segment.type === "sandbox" || isImmediateSegment(segment)) {
+        // HTML skips the prose budget only after earlier prose has caught up.
+        // Retain its source slot so later updates keep the same render key.
+        return displayContent.length >= textOffset
+          ? segment
+          : { ...segment, value: "" };
+      }
+      const value = displayContent.slice(
+        textOffset,
+        textOffset + segment.value.length
+      );
+      textOffset += segment.value.length;
+      // Keep empty prose slots so an existing sandbox never changes its key.
+      return { ...segment, value };
+    });
+  }, [sourceSegments, displayContent, isTypewriterEnabled]);
   const typewriterState = useMemo<ContentRenderTypewriterState>(
     () => ({
       isTypewriterEnabled,
-      isTyping: isTypewriterEnabled && displayContent !== content,
-      isComplete: displayContent === content,
-      renderedLength: displayContent.length,
+      isTyping: isTypewriterEnabled && displayContent !== typewriterContent,
+      isComplete: displayContent === typewriterContent,
+      renderedLength:
+        content.length -
+        sourceSegments.reduce(
+          (remaining, segment, index) =>
+            remaining +
+            segment.value.length -
+            mergedRenderSegments[index].value.length,
+          0
+        ),
       totalLength: content.length,
     }),
-    [content, displayContent, isTypewriterEnabled]
+    [
+      content,
+      typewriterContent,
+      displayContent,
+      isTypewriterEnabled,
+      sourceSegments,
+      mergedRenderSegments,
+    ]
   );
 
   useEffect(() => {
     onTypewriterStateChange?.(typewriterState);
   }, [onTypewriterStateChange, typewriterState]);
-
-  const renderContent = isTypewriterEnabled ? displayContent : content;
+  const sourceSegmentOffsets = useMemo(() => {
+    let offset = 0;
+    return sourceSegments.map((segment) => {
+      const start = offset;
+      offset += segment.value.length;
+      return start;
+    });
+  }, [sourceSegments]);
+  const sourceInlineCodeRanges = useMemo(
+    () =>
+      isTypewriterEnabled
+        ? sourceSegments.map((segment) =>
+            segment.type === "sandbox" || isImmediateSegment(segment)
+              ? []
+              : segment.value === sourceContent
+                ? sourceAnalysis.inline
+                : getInlineCodeRanges(segment.value)
+          )
+        : [],
+    [isTypewriterEnabled, sourceSegments, sourceContent, sourceAnalysis]
+  );
+  const safeRichMarkdownContent = useMemo(
+    () =>
+      hasRichSegments
+        ? mergedRenderSegments.map((segment, index) =>
+            segment.type === "sandbox" || isImmediateSegment(segment)
+              ? segment.value
+              : isTypewriterEnabled
+                ? protectTypedMarkdownPrefix(
+                    segment.value,
+                    sourceSegments[index].value,
+                    sourceInlineCodeRanges[index] ?? [],
+                    sourceAnalysis.metadata,
+                    sourceSegmentOffsets[index]
+                  )
+                : escapeTypedMarkdownMetadata(
+                    segment.value,
+                    sourceAnalysis.metadata,
+                    sourceSegmentOffsets[index]
+                  )
+          )
+        : [],
+    [
+      hasRichSegments,
+      isTypewriterEnabled,
+      mergedRenderSegments,
+      sourceInlineCodeRanges,
+      sourceSegments,
+      sourceAnalysis.metadata,
+      sourceSegmentOffsets,
+    ]
+  );
+  const richRenderRuns = useMemo(() => {
+    const runs: Array<{
+      indices: number[];
+      sandbox: boolean;
+      plan?: ReturnType<typeof createVideoMarkdownRunPlan>;
+    }> = [];
+    sourceSegments.forEach((segment, index) => {
+      const previous = runs.at(-1);
+      if (segment.type !== "sandbox" && previous && !previous.sandbox) {
+        previous.indices.push(index);
+      } else {
+        runs.push({ indices: [index], sandbox: segment.type === "sandbox" });
+      }
+    });
+    for (const run of runs) {
+      if (
+        !run.sandbox &&
+        run.indices.some((index) => isImmediateSegment(sourceSegments[index]))
+      ) {
+        const segments = run.indices.map((index) => sourceSegments[index]);
+        const fullSource = segments.map((segment) => segment.value).join("");
+        run.plan = createVideoMarkdownRunPlan(
+          segments,
+          fullSource === sourceContent ? sourceAnalysis : undefined
+        );
+      }
+    }
+    return runs;
+  }, [sourceSegments, sourceContent, sourceAnalysis]);
+  const renderContent = hasRichSegments
+    ? mergedRenderSegments.map((segment) => segment.value).join("")
+    : isTypewriterEnabled
+      ? displayContent
+      : sourceContent;
   const normalizedContent = useMemo(
-    () => normalizeInlineHtml(renderContent),
-    [renderContent]
+    () => (customRenderBar ? normalizeInlineHtml(renderContent) : ""),
+    [customRenderBar, renderContent]
+  );
+
+  const safeMarkdownContent = useMemo(
+    () =>
+      hasRichSegments
+        ? ""
+        : normalizeInlineHtml(
+            isTypewriterEnabled
+              ? protectTypedMarkdownPrefix(
+                  renderContent,
+                  sourceContent,
+                  sourceInlineCodeRanges[0] ?? [],
+                  sourceAnalysis.metadata
+                )
+              : escapeTypedMarkdownMetadata(
+                  renderContent,
+                  sourceAnalysis.metadata
+                )
+          ),
+    [
+      sourceContent,
+      hasRichSegments,
+      isTypewriterEnabled,
+      renderContent,
+      sourceInlineCodeRanges,
+      sourceAnalysis.metadata,
+    ]
   );
 
   const interactionDefaults = useMemo(
@@ -439,7 +1157,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   );
 
   const resolvedDefaultButtonText =
-    defaultButtonText?.trim() || interactionDefaults.buttonText;
+    (defaultButtonText ? trimVariablePadding(defaultButtonText) : undefined) ||
+    interactionDefaults.buttonText;
   const resolvedDefaultInputText =
     defaultInputText?.trim() || interactionDefaults.inputText;
   const fallbackSelectedValues = useMemo(
@@ -447,7 +1166,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       userInput
         ? userInput
             .split(",")
-            .map((value) => value.trim())
+            .map((value) => trimVariablePadding(value))
             .filter(Boolean)
         : undefined,
     [userInput]
@@ -455,126 +1174,147 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   const resolvedDefaultSelectedValues = defaultSelectedValues?.length
     ? defaultSelectedValues
     : interactionDefaults.selectedValues || fallbackSelectedValues;
+  const stableDefaultSelectedValues = useStableStringArray(
+    resolvedDefaultSelectedValues
+  );
+  const componentRuntimeValuesRef = useRef<MarkdownComponentRuntimeValues>({
+    direction,
+    language,
+    mermaidMessages,
+    beforeSend,
+    locale,
+    onClickCustomButtonAfterContent,
+    onSend,
+    readonly,
+    renderContent,
+    resolvedConfirmButtonText,
+    resolvedCopiedButtonText,
+    resolvedCopyButtonText,
+    resolvedDefaultButtonText,
+    resolvedDefaultInputText,
+    resolvedDefaultSelectedValues: stableDefaultSelectedValues,
+  });
 
-  const components: CustomComponents = {
-    "custom-button-after-content": ({
-      children,
-    }: {
-      children: React.ReactNode;
-    }) => {
-      return (
-        <button
-          className="content-render-custom-button-after-content"
-          onClick={onClickCustomButtonAfterContent}
-        >
-          <span className="content-render-custom-button-after-content-inner">
-            {children}
-          </span>
-        </button>
-      );
-    },
-    "custom-variable": (props) => (
-      <CustomButtonInputVariable
-        {...props}
-        readonly={readonly}
-        defaultButtonText={resolvedDefaultButtonText}
-        defaultInputText={resolvedDefaultInputText}
-        defaultSelectedValues={resolvedDefaultSelectedValues}
-        onSend={onSend}
-        beforeSend={beforeSend}
-        confirmButtonText={confirmButtonText}
-        // tooltipMinLength={tooltipMinLength}
-      />
-    ),
-    code: (props) => {
-      const { className, children, ...rest } = props as {
-        className?: string;
-        children?: React.ReactNode;
-      };
-      const match = /language-(\w+)/.exec(className || "");
-      const language = match?.[1];
-      if (language === "mermaid") {
-        const chartContent = children?.toString().replace(/\n$/, "") || "";
-        const frozen = mermaidBlockIsComplete(renderContent, chartContent);
-        return <MermaidChart chart={chartContent} frozen={frozen} />;
-      }
-
-      return (
-        <code className={className} {...rest}>
-          {children}
-        </code>
-      );
-    },
-    table: ({ ...props }) => (
-      <div className="content-render-table-container">
-        <table className="content-render-table" {...props} />
-      </div>
-    ),
-    th: ({ ...props }) => <th className="content-render-th" {...props} />,
-    td: ({ ...props }) => <td className="content-render-td" {...props} />,
-    tr: ({ ...props }) => <tr className="content-render-tr" {...props} />,
-    li: ({ node, ...props }) => {
-      const className = node?.properties?.className;
-      const hasTaskListItem =
-        (typeof className === "string" &&
-          className.includes("task-list-item")) ||
-        (Array.isArray(className) && className.includes("task-list-item"));
-      if (hasTaskListItem) {
-        return <li className="content-render-task-list-item" {...props} />;
-      }
-      return <li {...props} />;
-    },
-    ol: ({ ...props }) => <ol className="content-render-ol" {...props} />,
-    ul: ({ ...props }) => <ul className="content-render-ul" {...props} />,
-    input: ({ ...props }) => {
-      if (props.type === "checkbox") {
-        return (
-          <input
-            type="checkbox"
-            className="content-render-checkbox"
-            disabled
-            {...props}
-          />
-        );
-      }
-      return <input {...props} />;
-    },
-    a: ({ children, ...props }) => (
-      <a target="_blank" rel="noopener noreferrer" {...props}>
-        {children}
-      </a>
-    ),
-    pre: (props) => (
-      <CodeBlock
-        {...props}
-        copyButtonText={copyButtonText}
-        copiedButtonText={copiedButtonText}
-      />
-    ),
+  componentRuntimeValuesRef.current = {
+    direction,
+    language,
+    mermaidMessages,
+    beforeSend,
+    locale,
+    onClickCustomButtonAfterContent,
+    onSend,
+    readonly,
+    renderContent,
+    resolvedConfirmButtonText,
+    resolvedCopiedButtonText,
+    resolvedCopyButtonText,
+    resolvedDefaultButtonText,
+    resolvedDefaultInputText,
+    resolvedDefaultSelectedValues: stableDefaultSelectedValues,
   };
 
-  const hasPotentialSandboxTags = useMemo(
-    () => SANDBOX_TAG_HINT_PATTERN.test(renderContent),
-    [renderContent]
-  );
-
-  const renderSegments = useMemo(
-    () =>
-      hasPotentialSandboxTags ? splitContentSegments(renderContent, true) : [],
-    [renderContent, hasPotentialSandboxTags]
-  );
-
-  const hasSandbox = renderSegments.some(
-    (segment) => segment.type === "sandbox"
-  );
-  const mergedRenderSegments = useMemo(
-    () => mergeNonSandboxSegments(renderSegments),
-    [renderSegments]
+  const components = useMemo<CustomComponents>(
+    () => ({
+      "custom-button-after-content": ({
+        children,
+      }: {
+        children: React.ReactNode;
+      }) => {
+        return (
+          <button
+            className="content-render-custom-button-after-content"
+            onClick={
+              componentRuntimeValuesRef.current.onClickCustomButtonAfterContent
+            }
+          >
+            <span className="content-render-custom-button-after-content-inner">
+              {children}
+            </span>
+          </button>
+        );
+      },
+      "custom-variable": (props) => (
+        <CustomButtonInputVariable
+          {...props}
+          readonly={componentRuntimeValuesRef.current.readonly}
+          defaultButtonText={
+            componentRuntimeValuesRef.current.resolvedDefaultButtonText
+          }
+          defaultInputText={
+            componentRuntimeValuesRef.current.resolvedDefaultInputText
+          }
+          defaultSelectedValues={
+            componentRuntimeValuesRef.current.resolvedDefaultSelectedValues
+          }
+          onSend={componentRuntimeValuesRef.current.onSend}
+          beforeSend={componentRuntimeValuesRef.current.beforeSend}
+          locale={componentRuntimeValuesRef.current.locale}
+          dir={componentRuntimeValuesRef.current.direction}
+          lang={componentRuntimeValuesRef.current.language}
+          confirmButtonText={
+            componentRuntimeValuesRef.current.resolvedConfirmButtonText
+          }
+          // tooltipMinLength={tooltipMinLength}
+        />
+      ),
+      code: MarkdownCode,
+      table: ({ ...props }) => (
+        <div className="content-render-table-container">
+          <table className="content-render-table" {...props} />
+        </div>
+      ),
+      th: ({ ...props }) => <th className="content-render-th" {...props} />,
+      td: ({ ...props }) => <td className="content-render-td" {...props} />,
+      tr: ({ ...props }) => <tr className="content-render-tr" {...props} />,
+      li: ({ node, ...props }) => {
+        const className = node?.properties?.className;
+        const hasTaskListItem =
+          (typeof className === "string" &&
+            className.includes("task-list-item")) ||
+          (Array.isArray(className) && className.includes("task-list-item"));
+        if (hasTaskListItem) {
+          return <li className="content-render-task-list-item" {...props} />;
+        }
+        return <li {...props} />;
+      },
+      ol: ({ ...props }) => <ol className="content-render-ol" {...props} />,
+      ul: ({ ...props }) => <ul className="content-render-ul" {...props} />,
+      input: ({ ...props }) => {
+        if (props.type === "checkbox") {
+          return (
+            <input
+              type="checkbox"
+              className="content-render-checkbox"
+              disabled
+              {...props}
+            />
+          );
+        }
+        return <input {...props} />;
+      },
+      a: ({ children, ...props }) => (
+        <a target="_blank" rel="noopener noreferrer" {...props}>
+          {children}
+        </a>
+      ),
+      pre: (props) => (
+        <CodeBlock
+          {...props}
+          copyButtonText={
+            componentRuntimeValuesRef.current.resolvedCopyButtonText
+          }
+          copiedButtonText={
+            componentRuntimeValuesRef.current.resolvedCopiedButtonText
+          }
+        />
+      ),
+    }),
+    []
   );
 
   const segments = useMemo(
-    () => parseMarkdownSegments(normalizedContent),
-    [normalizedContent]
+    () => parseMarkdownSegments(safeMarkdownContent),
+    [safeMarkdownContent]
   );
 
   const renderMarkdownSegments = (raw: string, keyPrefix: string) => {
@@ -586,17 +1326,27 @@ const ContentRender: React.FC<ContentRenderProps> = ({
 
       if (seg.type === "text") {
         return (
-          <MarkdownRenderer
+          <MarkdownComponentRuntimeContext.Provider
             key={key}
-            components={components}
-            content={seg.value}
-          />
+            value={componentRuntimeValuesRef}
+          >
+            <MarkdownRenderer
+              locale={locale}
+              components={components}
+              content={seg.value}
+            />
+          </MarkdownComponentRuntimeContext.Provider>
         );
       }
 
       if (seg.type === "mermaid") {
         return (
-          <MermaidChart key={key} chart={seg.value} frozen={!seg.complete} />
+          <MermaidChart
+            key={key}
+            chart={seg.value}
+            frozen={!seg.complete}
+            messages={mermaidMessages}
+          />
         );
       }
 
@@ -608,44 +1358,102 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     });
   };
 
-  if (hasSandbox) {
+  const customBar = customRenderBar ? (
+    <div className="content-render-custom-bar">
+      {React.createElement(customRenderBar, {
+        content,
+        displayContent: normalizedContent,
+        onSend,
+      })}
+    </div>
+  ) : null;
+
+  if (hasRichSegments) {
     return (
-      <div className="content-render markdown-body">
-        {mergedRenderSegments.map((segment, idx) =>
-          segment.type === "sandbox" ? (
-            <IframeSandbox
-              key={`sandbox-${idx}`}
-              hideFullScreen
-              type="sandbox"
-              content={segment.value}
-              className="content-render-iframe"
-              loadingText={sandboxLoadingText}
-              styleLoadingText={sandboxStyleLoadingText}
-              scriptLoadingText={sandboxScriptLoadingText}
-              disableLoadingOverlay={disableSandboxLoadingOverlay}
-              fullScreenButtonText={sandboxFullscreenButtonText}
-              mode={sandboxMode}
-            />
-          ) : (
-            <React.Fragment key={`md-${idx}`}>
-              {renderMarkdownSegments(segment.value, `md-${idx}`)}
+      <div
+        className="content-render markdown-body"
+        dir={direction}
+        lang={language}
+      >
+        {richRenderRuns.map((run) => {
+          const idx = run.indices[0];
+          const segment = mergedRenderSegments[idx];
+          if (run.sandbox)
+            return segment.type === "sandbox" &&
+              segment.value &&
+              !segment.pending ? (
+              <IframeSandbox
+                key={`sandbox-${idx}`}
+                hideFullScreen
+                type="sandbox"
+                content={segment.value}
+                className="content-render-iframe"
+                locale={locale}
+                dir={direction}
+                lang={language}
+                loadingText={sandboxLoadingText}
+                styleLoadingText={sandboxStyleLoadingText}
+                scriptLoadingText={sandboxScriptLoadingText}
+                disableLoadingOverlay={disableSandboxLoadingOverlay}
+                fullScreenButtonText={resolvedSandboxFullscreenButtonText}
+                exitFullScreenButtonText={
+                  resolvedSandboxExitFullscreenButtonText
+                }
+                mode={sandboxMode}
+              />
+            ) : null;
+          if (run.plan)
+            return (
+              <MarkdownComponentRuntimeContext.Provider
+                key={`md-${idx}`}
+                value={componentRuntimeValuesRef}
+              >
+                <StableVideoMarkdownRenderer
+                  locale={locale}
+                  components={components}
+                  plan={run.plan}
+                  renderedSegments={run.indices.map(
+                    (index) => mergedRenderSegments[index]
+                  )}
+                />
+              </MarkdownComponentRuntimeContext.Provider>
+            );
+          return run.indices.map((index) => (
+            <React.Fragment key={`md-${index}`}>
+              {mergedRenderSegments[index].type === "markdown" &&
+              mergedRenderSegments[index].pending
+                ? null
+                : renderMarkdownSegments(
+                    safeRichMarkdownContent[index],
+                    `md-${index}`
+                  )}
             </React.Fragment>
-          )
-        )}
+          ));
+        })}
+        {customBar}
       </div>
     );
   }
 
   return (
-    <div className="content-render markdown-body">
+    <div
+      className="content-render markdown-body"
+      dir={direction}
+      lang={language}
+    >
       {segments.map((seg, index) => {
         if (seg.type === "text") {
           return (
-            <MarkdownRenderer
+            <MarkdownComponentRuntimeContext.Provider
               key={index}
-              components={components}
-              content={seg.value}
-            />
+              value={componentRuntimeValuesRef}
+            >
+              <MarkdownRenderer
+                locale={locale}
+                components={components}
+                content={seg.value}
+              />
+            </MarkdownComponentRuntimeContext.Provider>
           );
         }
 
@@ -655,6 +1463,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
               key={index}
               chart={seg.value}
               frozen={!seg.complete}
+              messages={mermaidMessages}
             />
           );
         }
@@ -664,15 +1473,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
         }
       })}
 
-      {customRenderBar && (
-        <div className="content-render-custom-bar">
-          {React.createElement(customRenderBar, {
-            content,
-            displayContent: normalizedContent,
-            onSend,
-          })}
-        </div>
-      )}
+      {customBar}
     </div>
   );
 };

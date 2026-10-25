@@ -90,7 +90,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
         {label && (
           <span
             className={cn(
-              "ml-2 select-none",
+              "ms-2 select-none",
               disabled && "text-muted-foreground"
             )}
           >

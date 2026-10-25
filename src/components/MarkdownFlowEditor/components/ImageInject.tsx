@@ -329,6 +329,7 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
             <Input
               type="text"
               placeholder={t("imageUrlPlaceholder", "Please enter image URL")}
+              dir="ltr"
               value={tempUrl}
               onChange={handleUrlChange}
               autoComplete="off"
@@ -370,7 +371,7 @@ const ImageInject = React.forwardRef<HTMLDivElement, ImageInjectProps>(
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={resource.resourceUrl}
-                  alt={resource.resourceTitle || "preview"}
+                  alt={resource.resourceTitle || t("imageDefaultTitle")}
                   className="h-full w-full object-contain"
                 />
                 {!isUploading && (

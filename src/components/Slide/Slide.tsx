@@ -3,30 +3,34 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, GripHorizontal } from "lucide-react";
 
 import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
+import { useResolvedDirection } from "../../lib/useResolvedDirection";
+import {
+  getMarkdownFlowDirection,
+  getMarkdownFlowLanguage,
+  type MarkdownFlowLocale,
+} from "../../lib/locale";
 import LoadingOverlayCard from "../ui/loading-overlay-card";
 import ContentRender from "../ContentRender";
 import type { ContentRenderProps } from "../ContentRender/ContentRender";
 import IframeSandbox from "../ContentRender/IframeSandbox";
 import type { OnSendContentParams } from "../types";
-import {
-  getInteractionDefaultSelectedValues,
-  getInteractionDefaultValues,
-  type InteractionDefaultValueOptions,
-} from "../../lib/interaction-defaults";
+import type { InteractionDefaultValueOptions } from "../../lib/interaction-defaults";
 import {
   isLandscapeViewport as getIsFullscreenPreferredViewport,
   isMobileDevice as getIsMobileDevice,
   subscribeMobileDeviceChange,
 } from "../../lib/mobileDevice";
 import Player from "./Player";
+import MarkdownSlideScaling from "./MarkdownSlideScaling";
 import SubtitleOverlay from "./SubtitleOverlay";
 import type {
   PlayerProps,
@@ -46,9 +50,20 @@ import {
   resolveMobileViewModeState,
   type MobileViewMode,
 } from "./utils/mobileScreenMode";
-import { shouldPresentInteractionOverlay } from "./utils/interactionPlayback";
+import {
+  clampInteractionOverlayDragOffset,
+  shouldPresentInteractionOverlay,
+  shouldRenderInteractionOverlay,
+  type InteractionOverlayDragBounds,
+  type InteractionOverlayDragOffset,
+} from "./utils/interactionPlayback";
+import { resolveMarkdownScalingMode } from "./utils/markdownScaling";
 import { shouldWakePlayerControlsAfterNavigation } from "./utils/playerNavigationContext";
 import { shouldAutoAdvanceIntoAppendedMarker } from "./utils/appendedMarkerAdvance";
+import {
+  hasUnplayedStepAudio,
+  resolvePendingStepAudioKey,
+} from "./utils/stepAudioProgress";
 import {
   getPlaybackSequenceTransition,
   shouldStartDefaultAudioSequence,
@@ -62,7 +77,23 @@ import {
   resolvePlayerCustomActionElement,
 } from "./utils/playerCustomActions";
 import { createPlaybackTimeStore } from "./utils/playbackTimeStore";
+import { resolveSlideInteractionState } from "./utils/interactionResolution";
 import { shouldUseAutoAdvanceToggle } from "./utils/playerToggleMode";
+import {
+  areImageOnlyStepIframeVisualsReady,
+  DEFAULT_IMAGE_ONLY_VISUAL_READY_TIMEOUT_MS,
+} from "./utils/imageOnlyStepVisualReady";
+import { resolveSilentStepAutoAdvanceBehavior } from "./utils/silentStepAutoAdvance";
+import {
+  resolveSlidePlayerLayoutState,
+  resolveSlidePlayerVisibility,
+  type SlidePlayerControlsVisibility,
+} from "./utils/playerVisibility";
+import {
+  DEFAULT_SLIDE_BUFFERING_TEXTS,
+  getSlideLocaleTexts,
+  type SlideBufferingReason,
+} from "./slideI18n";
 import "./slide.css";
 export type {
   Element,
@@ -71,24 +102,53 @@ export type {
   SlidePlayerCustomActionContext,
   SlidePlayerCustomActions,
 } from "./types";
+export type { SlidePlayerControlsVisibility } from "./utils/playerVisibility";
 
 const DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS = 2000;
 const DEFAULT_INTERACTION_OVERLAY_OPEN_DELAY_MS = 300;
 const DEFAULT_INTERACTION_OVERLAY_FALLBACK_OFFSET_PX = 160;
 const DEFAULT_INTERACTION_SUBTITLE_GAP_PX = 16;
-const DEFAULT_BUFFERING_REASON = "waitingForAudio";
+const DEFAULT_RESOLVED_INTERACTION_AUTO_CLOSE_DELAY_MS = 3000;
+const DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET: InteractionOverlayDragOffset = {
+  x: 0,
+  y: 0,
+};
+const INTERACTION_OVERLAY_LAYOUT_EPSILON_PX = 0.5;
+type InteractionOverlayLayoutRect = Pick<DOMRect, "left" | "top">;
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
+const INTERACTION_ACTIVITY_SELECTOR = [
+  "button",
+  "input",
+  "textarea",
+  '[contenteditable=""]',
+  '[contenteditable="true"]',
+  '[contenteditable="plaintext-only"]',
+].join(", ");
+const DEFAULT_BUFFERING_REASON: SlideBufferingReason = "waitingForAudio";
 
-export type SlideBufferingReason = "waitingForAudio" | SlidePlayerLoadingReason;
+const normalizeInteractionOverlayDragOffset = ({
+  x,
+  y,
+}: InteractionOverlayDragOffset): InteractionOverlayDragOffset => ({
+  x: Number(x.toFixed(2)),
+  y: Number(y.toFixed(2)),
+});
+
+const hasMeaningfulInteractionOverlayLayoutDelta = (delta: number) =>
+  Math.abs(delta) >= INTERACTION_OVERLAY_LAYOUT_EPSILON_PX;
+
+const areInteractionOverlayDragOffsetsEqual = (
+  first: InteractionOverlayDragOffset,
+  second: InteractionOverlayDragOffset
+) =>
+  Math.abs(first.x - second.x) < INTERACTION_OVERLAY_LAYOUT_EPSILON_PX &&
+  Math.abs(first.y - second.y) < INTERACTION_OVERLAY_LAYOUT_EPSILON_PX;
+
+export type { SlideBufferingReason } from "./slideI18n";
 
 export type SlideBufferingTextConfig =
-  | string
-  | Partial<Record<SlideBufferingReason, string>>;
-
-const DEFAULT_SLIDE_BUFFERING_TEXTS: Record<SlideBufferingReason, string> = {
-  waitingForAudio: "Waiting for current slide audio...",
-  loadingAudio: "Loading current slide audio...",
-  waitingForMoreAudio: "Waiting for more current slide audio...",
-};
+  string | Partial<Record<SlideBufferingReason, string>>;
 
 const resolveBufferingTextByReason = (
   bufferingText: SlideBufferingTextConfig,
@@ -103,6 +163,20 @@ const resolveBufferingTextByReason = (
     bufferingText[DEFAULT_BUFFERING_REASON] ??
     DEFAULT_SLIDE_BUFFERING_TEXTS[reason]
   );
+};
+
+const mergeBufferingTextWithLocaleDefaults = (
+  bufferingText: SlideBufferingTextConfig | undefined,
+  localeBufferingText: Record<string, string>
+): SlideBufferingTextConfig => {
+  if (typeof bufferingText === "string") {
+    return bufferingText;
+  }
+
+  return {
+    ...localeBufferingText,
+    ...bufferingText,
+  };
 };
 
 const shouldShowBufferingOverlay = (
@@ -122,8 +196,12 @@ type RenderSlideElementOptions = {
 };
 
 interface InteractionOverlayCardProps {
+  dir?: ContentRenderProps["dir"];
+  lang?: string;
   content: string;
   title: string;
+  dragHandleAriaLabel: string;
+  locale?: MarkdownFlowLocale;
   defaultButtonText?: string;
   defaultInputText?: string;
   defaultSelectedValues?: string[];
@@ -131,15 +209,20 @@ interface InteractionOverlayCardProps {
   copyButtonText?: string;
   copiedButtonText?: string;
   onSend?: (content: OnSendContentParams) => void;
+  onDragHandlePointerCancel?: React.PointerEventHandler<HTMLButtonElement>;
+  onDragHandlePointerDown?: React.PointerEventHandler<HTMLButtonElement>;
+  onDragHandlePointerMove?: React.PointerEventHandler<HTMLButtonElement>;
+  onDragHandlePointerUp?: React.PointerEventHandler<HTMLButtonElement>;
   readonly?: boolean;
 }
 
-export interface SlideInteractionTexts
-  extends Pick<
-    ContentRenderProps,
-    "confirmButtonText" | "copyButtonText" | "copiedButtonText"
-  > {
+export interface SlideInteractionTexts extends Pick<
+  ContentRenderProps,
+  "confirmButtonText" | "copyButtonText" | "copiedButtonText"
+> {
   title?: string;
+  /** Accessible label for the interaction panel drag handle. */
+  dragHandleAriaLabel?: string;
 }
 
 export type SlideFullscreenHeader = {
@@ -152,6 +235,10 @@ const InteractionOverlayCard = memo(
   ({
     content,
     title,
+    dragHandleAriaLabel,
+    locale,
+    dir,
+    lang,
     defaultButtonText,
     defaultInputText,
     defaultSelectedValues,
@@ -159,15 +246,37 @@ const InteractionOverlayCard = memo(
     copyButtonText,
     copiedButtonText,
     onSend,
+    onDragHandlePointerCancel,
+    onDragHandlePointerDown,
+    onDragHandlePointerMove,
+    onDragHandlePointerUp,
     readonly = false,
   }: InteractionOverlayCardProps) => (
     <div className="slide-player__interaction-card">
+      <button
+        type="button"
+        className="slide-player__interaction-drag-handle"
+        aria-label={dragHandleAriaLabel}
+        onPointerCancel={onDragHandlePointerCancel}
+        onPointerDown={onDragHandlePointerDown}
+        onPointerMove={onDragHandlePointerMove}
+        onPointerUp={onDragHandlePointerUp}
+      >
+        <span className="slide-player__interaction-drag-handle-icon">
+          <GripHorizontal aria-hidden="true" />
+          <GripHorizontal aria-hidden="true" />
+          <GripHorizontal aria-hidden="true" />
+        </span>
+      </button>
       <div className="slide-player__interaction-header">
         <p className="slide-player__interaction-title">{title}</p>
       </div>
       <div className="slide-player__interaction-body">
         <ContentRender
           content={content}
+          locale={locale}
+          dir={dir}
+          lang={lang}
           defaultButtonText={defaultButtonText}
           defaultInputText={defaultInputText}
           defaultSelectedValues={defaultSelectedValues}
@@ -200,10 +309,29 @@ const areStepElementListsEqual = (
     );
   });
 
+const isInteractionActivityTarget = (
+  target: EventTarget | null
+): target is HTMLElement =>
+  target instanceof HTMLElement &&
+  Boolean(target.closest(INTERACTION_ACTIVITY_SELECTOR));
 export interface SlideProps extends React.ComponentProps<"section"> {
   elementList?: Element[];
-  showPlayer?: boolean;
-  playerAlwaysVisible?: boolean;
+  /** Locale used for built-in UI text when a more specific text prop is not provided. */
+  locale?: MarkdownFlowLocale;
+  /** Enables the player runtime, including audio playback and keyboard shortcuts. */
+  playerEnabled?: boolean;
+  /**
+   * Controls whether the player controls are always visible, always hidden, or auto-hidden.
+   *
+   * Use `"hidden"` to keep audio playback and keyboard shortcuts active while
+   * hiding the visual controls.
+   *
+   * @example
+   * ```tsx
+   * <Slide playerControlsVisibility="hidden" enableKeyboardShortcuts />
+   * ```
+   */
+  playerControlsVisibility?: SlidePlayerControlsVisibility;
   playerClassName?: string;
   fullscreenHeader?: SlideFullscreenHeader;
   playerCustomActions?: PlayerProps["customActions"];
@@ -214,11 +342,24 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   playerTexts?: SlidePlayerTexts;
   playerAutoHideDelay?: number;
   markerAutoAdvanceDelay?: number;
+  /** Shows an interactive navigation timeline for generated slide steps. */
+  showSlideProgress?: boolean;
+  /** Indicates that more generated slide steps may still be appended. */
+  isSlideProgressGenerating?: boolean;
+  /** Fired when a generated slide is selected from the progress navigation. */
+  onSlideProgressNavigate?: (
+    element: Element | undefined,
+    index: number
+  ) => void;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   onSend?: (content: OnSendContentParams, element?: Element) => void;
   onPlayerVisibilityChange?: (visible: boolean) => void;
   onMobileViewModeChange?: (viewMode: MobileViewMode) => void;
   onStepChange?: (element: Element | undefined, index: number) => void;
+  /** Emits a low-frequency checkpoint for the active logical audio item. */
+  onPlaybackCheckpoint?: (checkpoint: SlidePlaybackCheckpoint) => void;
+  /** Restores one logical audio item and continues its normal playback. */
+  playbackRestoreRequest?: SlidePlaybackRestoreRequest | null;
   /**
    * Enables keyboard shortcuts for existing player actions.
    *
@@ -233,46 +374,106 @@ export interface SlideProps extends React.ComponentProps<"section"> {
    */
   enableKeyboardShortcuts?: boolean;
   enableIframeScaling?: boolean;
+  /**
+   * Fits Markdown-only slides to the available presentation viewport.
+   *
+   * Defaults to `true`. Disable this to preserve the fixed 16px article
+   * typography used by standalone ContentRender.
+   */
+  enableMarkdownScaling?: boolean;
   disableLoadingOverlay?: boolean;
+}
+
+export interface SlidePlaybackCheckpoint {
+  audioKey: string;
+  element: Element;
+  isComplete: boolean;
+  stepIndex: number;
+  timeMs: number;
+}
+
+export interface SlidePlaybackRestoreRequest {
+  audioKey: string;
+  id: number | string;
+  timeMs: number;
 }
 
 const Slide: React.FC<SlideProps> = ({
   elementList = [],
-  showPlayer = true,
-  playerAlwaysVisible = false,
+  locale,
+  playerEnabled,
+  playerControlsVisibility,
   playerClassName,
   fullscreenHeader,
   playerCustomActions,
   playerCustomActionPauseOnActive = true,
-  bufferingText = DEFAULT_SLIDE_BUFFERING_TEXTS,
+  bufferingText,
   interactionTitle,
   interactionTexts,
   playerTexts,
   playerAutoHideDelay = 3000,
   markerAutoAdvanceDelay = DEFAULT_MARKER_AUTO_ADVANCE_DELAY_MS,
+  showSlideProgress = false,
+  isSlideProgressGenerating = false,
+  onSlideProgressNavigate,
   interactionDefaultValueOptions,
   onSend,
   onPlayerVisibilityChange,
   onMobileViewModeChange,
   onStepChange,
+  onPlaybackCheckpoint,
+  playbackRestoreRequest = null,
   enableKeyboardShortcuts = true,
   enableIframeScaling = true,
+  enableMarkdownScaling = true,
   disableLoadingOverlay = false,
   className,
+  dir,
+  lang,
   onPointerDown,
   onFocusCapture,
   ...props
 }) => {
+  const direction = dir ?? getMarkdownFlowDirection(locale);
+  const language = lang ?? getMarkdownFlowLanguage(locale);
+  const localeTexts = useMemo(() => getSlideLocaleTexts(locale), [locale]);
+  const resolvedBufferingText = useMemo(
+    () =>
+      mergeBufferingTextWithLocaleDefaults(
+        bufferingText,
+        localeTexts.bufferingText
+      ),
+    [bufferingText, localeTexts.bufferingText]
+  );
+  const {
+    playerEnabled: resolvedPlayerEnabled,
+    playerControlsVisibility: resolvedPlayerControlsVisibility,
+  } = resolveSlidePlayerVisibility({
+    playerEnabled,
+    playerControlsVisibility,
+  });
   const keyboardShortcutOwnerId = useId();
   const sectionRef = useRef<HTMLElement | null>(null);
+  const { resolvedDirection } = useResolvedDirection(sectionRef, direction);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const stageLayerRef = useRef<HTMLDivElement | null>(null);
   const lastElementRef = useRef<HTMLDivElement | null>(null);
   const playerHideTimerRef = useRef<number | null>(null);
+  const isPointerInsidePlayerControlsRef = useRef(false);
   const autoAdvanceTimerRef = useRef<number | null>(null);
+  const imageOnlyStepReadyTimeoutRef = useRef<number | null>(null);
   const interactionAutoCloseTimerRef = useRef<number | null>(null);
   const interactionOverlayOpenTimerRef = useRef<number | null>(null);
   const interactionOverlayRef = useRef<HTMLDivElement | null>(null);
+  const interactionOverlayLayoutRectRef =
+    useRef<InteractionOverlayLayoutRect | null>(null);
+  const interactionOverlayDragRef = useRef<{
+    pointerId: number;
+    startClientX: number;
+    startClientY: number;
+    startOffset: InteractionOverlayDragOffset;
+    bounds: InteractionOverlayDragBounds;
+  } | null>(null);
   const prevRenderElementKeysRef = useRef<string[]>([]);
   const shouldScrollToBottomRef = useRef(false);
   const pendingInteractionOverlayStepIndexRef = useRef<number | null>(null);
@@ -313,12 +514,18 @@ const Slide: React.FC<SlideProps> = ({
 
     return slideElementList[currentIndex];
   }, [currentIndex, slideElementList]);
-  const visibleMarkerCount = slideElementList.filter(
-    (element) => element.is_renderable !== false
-  ).length;
-  const isSingleSlide = visibleMarkerCount === 1;
-  const shouldRenderPlayer =
-    showPlayer &&
+  const currentRenderElementKeys = useMemo(
+    () =>
+      currentElementList.map(
+        (element, index) =>
+          `${element.sequence_number ?? `${element.type}-${index}`}:${String(element.is_new ?? "")}`
+      ),
+    [currentElementList]
+  );
+  const generatedSlideCount = slideElementList.length;
+  const isSingleSlide = generatedSlideCount === 1;
+  const shouldMountPlayer =
+    resolvedPlayerEnabled &&
     (slideElementList.length > 0 ||
       audioList.length > 0 ||
       Boolean(currentInteractionElement));
@@ -330,12 +537,12 @@ const Slide: React.FC<SlideProps> = ({
     [enableKeyboardShortcuts, keyboardShortcutOwnerId]
   );
   const activateKeyboardShortcutOwner = useCallback(() => {
-    if (!enableKeyboardShortcuts || !shouldRenderPlayer) {
+    if (!enableKeyboardShortcuts || !shouldMountPlayer) {
       return;
     }
 
     activatePlayerKeyboardShortcutOwner(keyboardShortcutOwnerId);
-  }, [enableKeyboardShortcuts, keyboardShortcutOwnerId, shouldRenderPlayer]);
+  }, [enableKeyboardShortcuts, keyboardShortcutOwnerId, shouldMountPlayer]);
   const currentAudioSequenceKeys = useMemo(
     () =>
       currentAudioSequenceIndexes
@@ -348,6 +555,12 @@ const Slide: React.FC<SlideProps> = ({
   const [isPlaybackRequested, setIsPlaybackRequested] = useState(true);
   const [isAutoAdvanceEnabled, setIsAutoAdvanceEnabled] = useState(true);
   const [currentAudioKey, setCurrentAudioKey] = useState<string | null>(null);
+  const [pendingPlaybackRestore, setPendingPlaybackRestore] =
+    useState<SlidePlaybackRestoreRequest | null>(null);
+  const pendingPlaybackRestoreRef = useRef<SlidePlaybackRestoreRequest | null>(
+    null
+  );
+  const lastPlaybackRestoreRequestIdRef = useRef<number | string | null>(null);
   const [subtitleSeekRequest, setSubtitleSeekRequest] =
     useState<SlidePlayerSubtitleSeekRequest | null>(null);
   const [isAudioLoadingVisible, setIsAudioLoadingVisible] = useState(false);
@@ -355,6 +568,10 @@ const Slide: React.FC<SlideProps> = ({
     useState<SlideBufferingReason>(DEFAULT_BUFFERING_REASON);
   const [hasCompletedCurrentStepAudio, setHasCompletedCurrentStepAudio] =
     useState(false);
+  // Audio keys already played within the current step. A step's audio arrives
+  // progressively while content is still being generated, so "completed" has to
+  // mean "every key played" rather than "reached the end of the list once".
+  const playedAudioKeysRef = useRef<Set<string>>(new Set());
   const [hasCurrentAudioPlaybackStarted, setHasCurrentAudioPlaybackStarted] =
     useState(false);
   const [isSubtitleEnabled, setIsSubtitleEnabled] = useState(true);
@@ -364,6 +581,14 @@ const Slide: React.FC<SlideProps> = ({
     Element | undefined
   >();
   const [isInteractionOverlayOpen, setIsInteractionOverlayOpen] =
+    useState(false);
+  const [hasInteractionOverlayActivity, setHasInteractionOverlayActivity] =
+    useState(false);
+  const [interactionOverlayDragOffset, setInteractionOverlayDragOffset] =
+    useState<InteractionOverlayDragOffset>(
+      DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET
+    );
+  const [isInteractionOverlayDragging, setIsInteractionOverlayDragging] =
     useState(false);
   const [
     interactionOverlaySubtitleOffset,
@@ -401,12 +626,18 @@ const Slide: React.FC<SlideProps> = ({
     ]
   );
   const previousEffectiveMobileViewModeRef = useRef(effectiveMobileViewMode);
-  const playerVisible =
-    shouldRenderPlayer && (playerAlwaysVisible || isPlayerVisible);
+  const {
+    controlsVisible: playerControlsVisible,
+    layoutReserved: playerLayoutReserved,
+  } = resolveSlidePlayerLayoutState({
+    isAutoVisible: isPlayerVisible,
+    playerControlsVisibility: resolvedPlayerControlsVisibility,
+    shouldMountPlayer,
+  });
   const shouldShowFullscreenHeader =
-    isImmersiveMobileFullscreen && playerVisible;
+    isImmersiveMobileFullscreen && playerControlsVisible;
   const shouldApplyFullscreenViewportPadding =
-    isImmersiveMobileFullscreen && playerVisible;
+    isImmersiveMobileFullscreen && playerLayoutReserved;
   const shouldShowMobileFullscreenMask =
     isImmersiveMobileFullscreen || isNativeMobileFullscreen;
   const isDesktopBrowserFullscreen = isBrowserFullscreen && !isMobileDevice;
@@ -426,11 +657,56 @@ const Slide: React.FC<SlideProps> = ({
     handleMobileViewModeReset();
     fullscreenHeader?.onBack?.();
   }, [fullscreenHeader, handleMobileViewModeReset]);
-  const setPlayerCustomActionActive = useCallback((active: boolean) => {
-    setIsPlayerCustomActionActive(active);
+
+  const clearInteractionAutoCloseTimer = useCallback(() => {
+    if (interactionAutoCloseTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(interactionAutoCloseTimerRef.current);
+    interactionAutoCloseTimerRef.current = null;
   }, []);
+
+  const clearInteractionOverlayOpenTimer = useCallback(() => {
+    if (interactionOverlayOpenTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(interactionOverlayOpenTimerRef.current);
+    interactionOverlayOpenTimerRef.current = null;
+  }, []);
+
+  const closeInteractionOverlayForCustomAction = useCallback(() => {
+    clearInteractionAutoCloseTimer();
+    clearInteractionOverlayOpenTimer();
+    setIsInteractionOverlayOpen(false);
+    setInteractionOverlaySubtitleOffset(0);
+  }, [clearInteractionAutoCloseTimer, clearInteractionOverlayOpenTimer]);
+
+  const setPlayerCustomActionActive = useCallback(
+    (active: boolean) => {
+      if (active) {
+        closeInteractionOverlayForCustomAction();
+      }
+
+      setIsPlayerCustomActionActive(active);
+    },
+    [closeInteractionOverlayForCustomAction]
+  );
   const togglePlayerCustomActionActive = useCallback(() => {
-    setIsPlayerCustomActionActive((previous) => !previous);
+    closeInteractionOverlayForCustomAction();
+    setIsPlayerCustomActionActive((previousActive) => !previousActive);
+  }, [closeInteractionOverlayForCustomAction]);
+  const resetInteractionOverlayDragState = useCallback(() => {
+    setInteractionOverlayDragOffset((previousOffset) =>
+      previousOffset.x === DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET.x &&
+      previousOffset.y === DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET.y
+        ? previousOffset
+        : DEFAULT_INTERACTION_OVERLAY_DRAG_OFFSET
+    );
+    setIsInteractionOverlayDragging(false);
+    interactionOverlayDragRef.current = null;
+    interactionOverlayLayoutRectRef.current = null;
   }, []);
   const { mountedStepStates, currentMountedStateIndex } = useMemo(() => {
     const nextMountedStepStates: Array<{
@@ -485,6 +761,42 @@ const Slide: React.FC<SlideProps> = ({
     () => (currentAudioIndex >= 0 ? audioList[currentAudioIndex] : undefined),
     [audioList, currentAudioIndex]
   );
+
+  useEffect(() => {
+    if (
+      !playbackRestoreRequest ||
+      playbackRestoreRequest.id === lastPlaybackRestoreRequestIdRef.current
+    ) {
+      return;
+    }
+
+    const targetAudioIndex = audioList.findIndex(
+      (audioItem) => audioItem.audioKey === playbackRestoreRequest.audioKey
+    );
+    if (targetAudioIndex < 0) {
+      return;
+    }
+
+    const targetStepIndex = audioSlideIndexes[targetAudioIndex];
+    if (targetStepIndex == null) {
+      return;
+    }
+
+    lastPlaybackRestoreRequestIdRef.current = playbackRestoreRequest.id;
+    setIsPlaybackRequested(true);
+    setCurrentAudioKey(playbackRestoreRequest.audioKey);
+    pendingPlaybackRestoreRef.current = playbackRestoreRequest;
+    setPendingPlaybackRestore(playbackRestoreRequest);
+    if (currentIndex !== targetStepIndex) {
+      goTo(targetStepIndex);
+    }
+  }, [
+    audioList,
+    audioSlideIndexes,
+    currentIndex,
+    goTo,
+    playbackRestoreRequest,
+  ]);
   const currentSubtitleCues = currentAudioItem?.element?.subtitle_cues ?? [];
   const currentAudioSequenceStartKey = useMemo(
     () => currentAudioSequenceKeys[0] ?? "none",
@@ -525,6 +837,9 @@ const Slide: React.FC<SlideProps> = ({
       ),
     [playerCustomActionContext, playerCustomActions]
   );
+  const hasPlayerCustomActions = playerCustomActionCount > 0;
+  const isPlayerCustomActionEffectivelyActive =
+    hasPlayerCustomActions && isPlayerCustomActionActive;
   const interactionOverlayStyle = useMemo(
     () =>
       ({
@@ -532,8 +847,14 @@ const Slide: React.FC<SlideProps> = ({
         "--slide-player-mobile-control-count": String(
           playerCustomActionCount + 4
         ),
+        "--slide-interaction-drag-x": `${interactionOverlayDragOffset.x}px`,
+        "--slide-interaction-drag-y": `${interactionOverlayDragOffset.y}px`,
       }) as React.CSSProperties,
-    [playerCustomActionCount]
+    [
+      interactionOverlayDragOffset.x,
+      interactionOverlayDragOffset.y,
+      playerCustomActionCount,
+    ]
   );
   const hasAvailableStepAudio = currentAudioSequenceKeys.length > 0;
   const currentInteractionResetKey = useMemo(() => {
@@ -574,9 +895,7 @@ const Slide: React.FC<SlideProps> = ({
   }, [audioList, currentAudioSequenceStartKey]);
   const hasCurrentStepAudioUrl = Boolean(currentStepAudioUrl);
   const shouldPausePlaybackForCustomAction =
-    playerCustomActionPauseOnActive &&
-    Boolean(playerCustomActions) &&
-    isPlayerCustomActionActive;
+    playerCustomActionPauseOnActive && isPlayerCustomActionEffectivelyActive;
   const shouldUseSilentStepAutoAdvanceToggle = useMemo(
     () =>
       shouldUseAutoAdvanceToggle({
@@ -592,6 +911,34 @@ const Slide: React.FC<SlideProps> = ({
       currentStepHasSpeakableElement,
     ]
   );
+  const silentStepAutoAdvanceBehavior = useMemo(
+    () =>
+      resolveSilentStepAutoAdvanceBehavior({
+        currentElementList,
+        currentStepHasSpeakableElement,
+        currentInteractionElement,
+        markerAutoAdvanceDelay,
+      }),
+    [
+      currentElementList,
+      currentInteractionElement,
+      currentStepHasSpeakableElement,
+      markerAutoAdvanceDelay,
+    ]
+  );
+  const silentStepAutoAdvanceDelay = silentStepAutoAdvanceBehavior.delayMs;
+  const isImageOnlySilentStep =
+    silentStepAutoAdvanceBehavior.usesImageOnlyDelay;
+  const imageOnlyStepVisualReadyKey = useMemo(
+    () => `${currentIndex}:${currentRenderElementKeys.join("|")}`,
+    [currentIndex, currentRenderElementKeys]
+  );
+  const [readyImageOnlyStepKey, setReadyImageOnlyStepKey] = useState<
+    string | null
+  >(null);
+  const isImageOnlyStepVisualReady =
+    !isImageOnlySilentStep ||
+    readyImageOnlyStepKey === imageOnlyStepVisualReadyKey;
 
   const clearPlayerHideTimer = useCallback(() => {
     if (playerHideTimerRef.current === null) {
@@ -600,24 +947,6 @@ const Slide: React.FC<SlideProps> = ({
 
     window.clearTimeout(playerHideTimerRef.current);
     playerHideTimerRef.current = null;
-  }, []);
-
-  const clearInteractionAutoCloseTimer = useCallback(() => {
-    if (interactionAutoCloseTimerRef.current === null) {
-      return;
-    }
-
-    window.clearTimeout(interactionAutoCloseTimerRef.current);
-    interactionAutoCloseTimerRef.current = null;
-  }, []);
-
-  const clearInteractionOverlayOpenTimer = useCallback(() => {
-    if (interactionOverlayOpenTimerRef.current === null) {
-      return;
-    }
-
-    window.clearTimeout(interactionOverlayOpenTimerRef.current);
-    interactionOverlayOpenTimerRef.current = null;
   }, []);
 
   const clearAutoAdvanceTimer = useCallback(() => {
@@ -629,6 +958,15 @@ const Slide: React.FC<SlideProps> = ({
     autoAdvanceTimerRef.current = null;
   }, []);
 
+  const clearImageOnlyStepReadyTimeout = useCallback(() => {
+    if (imageOnlyStepReadyTimeoutRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(imageOnlyStepReadyTimeoutRef.current);
+    imageOnlyStepReadyTimeoutRef.current = null;
+  }, []);
+
   const resetAudioSequence = useCallback(
     (
       options: {
@@ -638,11 +976,13 @@ const Slide: React.FC<SlideProps> = ({
       clearAutoAdvanceTimer();
       clearInteractionAutoCloseTimer();
       clearInteractionOverlayOpenTimer();
+      clearImageOnlyStepReadyTimeout();
       setCurrentAudioKey(null);
       playbackTimeStore.reset();
       setIsAudioLoadingVisible(false);
       setAudioLoadingReason(DEFAULT_BUFFERING_REASON);
       setHasCompletedCurrentStepAudio(false);
+      playedAudioKeysRef.current = new Set();
       setHasCurrentAudioPlaybackStarted(false);
       setSubtitleSeekRequest(null);
       if (!options.preservePendingSubtitleJump) {
@@ -654,6 +994,7 @@ const Slide: React.FC<SlideProps> = ({
     },
     [
       clearAutoAdvanceTimer,
+      clearImageOnlyStepReadyTimeout,
       clearInteractionAutoCloseTimer,
       clearInteractionOverlayOpenTimer,
       playbackTimeStore,
@@ -672,13 +1013,19 @@ const Slide: React.FC<SlideProps> = ({
   );
 
   const startCurrentAudioSequence = useCallback(() => {
-    const nextAudioKey = currentAudioSequenceKeys[0];
+    // Resume at the first key that has not played yet. Falling back to index 0
+    // unconditionally would replay the opening segment every time late audio
+    // extends the current step.
+    const nextAudioKey = resolvePendingStepAudioKey(
+      currentAudioSequenceKeys,
+      playedAudioKeysRef.current
+    );
 
     if (!nextAudioKey) {
       return false;
     }
 
-    // Start the first audio segment for the current step immediately.
+    // Start the first pending audio segment for the current step immediately.
     setCurrentAudioKey(nextAudioKey);
     return true;
   }, [currentAudioSequenceKeys]);
@@ -729,20 +1076,39 @@ const Slide: React.FC<SlideProps> = ({
     [clearInteractionOverlayOpenTimer]
   );
 
-  const showPlayerControls = useCallback(
+  const isPlayerControlsHovered = useCallback(
+    () =>
+      isPointerInsidePlayerControlsRef.current ||
+      Boolean(
+        sectionRef.current?.querySelector(".slide-player__controls:hover")
+      ),
+    []
+  );
+
+  const revealPlayerControls = useCallback(
     (enableAutoHide = hasPlayerInteracted) => {
-      if (!shouldRenderPlayer) {
+      if (!shouldMountPlayer || resolvedPlayerControlsVisibility === "hidden") {
         return;
       }
 
       setIsPlayerVisible(true);
       clearPlayerHideTimer();
 
-      if (playerAlwaysVisible || !enableAutoHide || playerAutoHideDelay <= 0) {
+      if (
+        resolvedPlayerControlsVisibility === "visible" ||
+        !enableAutoHide ||
+        playerAutoHideDelay <= 0 ||
+        isPlayerControlsHovered()
+      ) {
         return;
       }
 
       playerHideTimerRef.current = window.setTimeout(() => {
+        if (isPlayerControlsHovered()) {
+          playerHideTimerRef.current = null;
+          return;
+        }
+
         setIsPlayerVisible(false);
         playerHideTimerRef.current = null;
       }, playerAutoHideDelay);
@@ -750,9 +1116,10 @@ const Slide: React.FC<SlideProps> = ({
     [
       clearPlayerHideTimer,
       hasPlayerInteracted,
-      playerAlwaysVisible,
+      isPlayerControlsHovered,
       playerAutoHideDelay,
-      shouldRenderPlayer,
+      resolvedPlayerControlsVisibility,
+      shouldMountPlayer,
     ]
   );
 
@@ -769,44 +1136,189 @@ const Slide: React.FC<SlideProps> = ({
 
   const syncPlaybackPreferenceBeforeNavigation = useCallback(
     (context?: SlidePlayerNavigationContext) => {
-      const shouldContinuePlayback =
-        context?.shouldContinuePlayback ?? isPlaybackRequested;
-
-      setIsPlaybackRequested(shouldContinuePlayback);
+      if (context) {
+        setIsPlaybackRequested(context.shouldContinuePlayback);
+      }
     },
-    [isPlaybackRequested]
+    []
   );
 
   useEffect(() => {
     // Keep silent-step autoplay aligned with the same play/pause preference as audio.
     setIsAutoAdvanceEnabled(isPlaybackRequested);
+  }, [currentIndex, isPlaybackRequested, playerCustomActionPauseOnActive]);
 
+  useEffect(() => {
     if (playerCustomActionPauseOnActive) {
+      setPlayerCustomActionActive(false);
+    }
+  }, [
+    currentIndex,
+    playerCustomActionPauseOnActive,
+    setPlayerCustomActionActive,
+  ]);
+
+  useEffect(() => {
+    if (!hasPlayerCustomActions) {
       setIsPlayerCustomActionActive(false);
     }
-  }, [currentIndex, isPlaybackRequested, playerCustomActionPauseOnActive]);
+  }, [hasPlayerCustomActions]);
 
   useEffect(() => {
     return () => {
       clearAutoAdvanceTimer();
+      clearImageOnlyStepReadyTimeout();
       clearPlayerHideTimer();
       clearInteractionAutoCloseTimer();
       clearInteractionOverlayOpenTimer();
     };
   }, [
     clearAutoAdvanceTimer,
+    clearImageOnlyStepReadyTimeout,
     clearInteractionAutoCloseTimer,
     clearInteractionOverlayOpenTimer,
     clearPlayerHideTimer,
   ]);
 
   useEffect(() => {
-    onPlayerVisibilityChange?.(playerVisible);
+    if (!isImageOnlySilentStep) {
+      clearImageOnlyStepReadyTimeout();
+      return;
+    }
+
+    let cancelled = false;
+    let rafId: number | null = null;
+    let cleanupListeners: (() => void) | null = null;
+
+    const detachListeners = () => {
+      cleanupListeners?.();
+      cleanupListeners = null;
+    };
+
+    const finishVisualReady = () => {
+      if (cancelled) {
+        return;
+      }
+
+      detachListeners();
+      clearImageOnlyStepReadyTimeout();
+      setReadyImageOnlyStepKey(imageOnlyStepVisualReadyKey);
+    };
+
+    const evaluateVisualReady = () => {
+      if (cancelled) {
+        return;
+      }
+
+      detachListeners();
+
+      const activeStepContainer = stageLayerRef.current?.querySelector(
+        '[data-active-step="true"]'
+      ) as HTMLElement | null;
+
+      if (!activeStepContainer) {
+        return;
+      }
+
+      const iframeElements = Array.from(
+        activeStepContainer.querySelectorAll("iframe")
+      ) as HTMLIFrameElement[];
+
+      if (
+        iframeElements.length === 0 ||
+        areImageOnlyStepIframeVisualsReady(iframeElements)
+      ) {
+        finishVisualReady();
+        return;
+      }
+
+      const cleanupCallbacks: Array<() => void> = [];
+      const queueRecheck = () => {
+        if (cancelled) {
+          return;
+        }
+
+        if (rafId !== null) {
+          window.cancelAnimationFrame(rafId);
+        }
+
+        rafId = window.requestAnimationFrame(() => {
+          rafId = null;
+          evaluateVisualReady();
+        });
+      };
+      const registerEvent = (
+        target: EventTarget,
+        eventName: string,
+        listener: EventListener
+      ) => {
+        target.addEventListener(eventName, listener, { once: true });
+        cleanupCallbacks.push(() =>
+          target.removeEventListener(eventName, listener)
+        );
+      };
+
+      iframeElements.forEach((iframeElement) => {
+        const iframeDocument = iframeElement.contentDocument;
+
+        if (!iframeDocument || iframeDocument.readyState !== "complete") {
+          registerEvent(iframeElement, "load", queueRecheck);
+          return;
+        }
+
+        Array.from(iframeDocument.images)
+          .filter((image) => !image.complete)
+          .forEach((image) => {
+            registerEvent(image, "load", queueRecheck);
+            registerEvent(image, "error", queueRecheck);
+          });
+      });
+
+      cleanupListeners = () => {
+        cleanupCallbacks.forEach((cleanup) => cleanup());
+      };
+    };
+
+    rafId = window.requestAnimationFrame(() => {
+      rafId = null;
+      evaluateVisualReady();
+    });
+
+    imageOnlyStepReadyTimeoutRef.current = window.setTimeout(() => {
+      finishVisualReady();
+    }, DEFAULT_IMAGE_ONLY_VISUAL_READY_TIMEOUT_MS);
+
+    return () => {
+      cancelled = true;
+      detachListeners();
+      clearImageOnlyStepReadyTimeout();
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
+  }, [
+    clearImageOnlyStepReadyTimeout,
+    currentElementList,
+    currentIndex,
+    imageOnlyStepVisualReadyKey,
+    isImageOnlySilentStep,
+  ]);
+
+  useEffect(() => {
+    onPlayerVisibilityChange?.(playerControlsVisible);
 
     return () => {
       onPlayerVisibilityChange?.(false);
     };
-  }, [onPlayerVisibilityChange, playerVisible]);
+  }, [onPlayerVisibilityChange, playerControlsVisible]);
+
+  useEffect(() => {
+    if (playerControlsVisible) {
+      return;
+    }
+
+    isPointerInsidePlayerControlsRef.current = false;
+  }, [playerControlsVisible]);
 
   useEffect(() => {
     if (isMobileDevice || mobileViewMode === DEFAULT_MOBILE_VIEW_MODE) {
@@ -825,20 +1337,44 @@ const Slide: React.FC<SlideProps> = ({
 
     const syncViewportFullscreenPreference = () => {
       setIsViewportFullscreenPreferred(getIsFullscreenPreferredViewport());
+      resetInteractionOverlayDragState();
+    };
+    const handleOrientationChange = () => {
+      resetInteractionOverlayDragState();
     };
 
     syncViewportFullscreenPreference();
+    window.addEventListener("orientationchange", handleOrientationChange);
+    window.screen?.orientation?.addEventListener?.(
+      "change",
+      handleOrientationChange
+    );
+    const unsubscribeMobileDeviceChange = subscribeMobileDeviceChange(
+      syncViewportFullscreenPreference
+    );
 
-    return subscribeMobileDeviceChange(syncViewportFullscreenPreference);
-  }, [isMobileDevice]);
+    return () => {
+      unsubscribeMobileDeviceChange();
+      window.removeEventListener("orientationchange", handleOrientationChange);
+      window.screen?.orientation?.removeEventListener?.(
+        "change",
+        handleOrientationChange
+      );
+    };
+  }, [isMobileDevice, resetInteractionOverlayDragState]);
 
   useEffect(() => {
     onMobileViewModeChange?.(effectiveMobileViewMode);
   }, [effectiveMobileViewMode, onMobileViewModeChange]);
 
   useEffect(() => {
+    if (
+      previousEffectiveMobileViewModeRef.current !== effectiveMobileViewMode
+    ) {
+      resetInteractionOverlayDragState();
+    }
     previousEffectiveMobileViewModeRef.current = effectiveMobileViewMode;
-  }, [effectiveMobileViewMode]);
+  }, [effectiveMobileViewMode, resetInteractionOverlayDragState]);
 
   useEffect(() => {
     onStepChange?.(currentStepElement, currentIndex);
@@ -889,13 +1425,13 @@ const Slide: React.FC<SlideProps> = ({
   ]);
 
   useEffect(() => {
-    if (!shouldRenderPlayer) {
+    if (!shouldMountPlayer || resolvedPlayerControlsVisibility === "hidden") {
       clearPlayerHideTimer();
       setIsPlayerVisible(false);
       return;
     }
 
-    if (playerAlwaysVisible) {
+    if (resolvedPlayerControlsVisibility === "visible") {
       clearPlayerHideTimer();
       setIsPlayerVisible(true);
       return;
@@ -903,14 +1439,14 @@ const Slide: React.FC<SlideProps> = ({
 
     if (!hasPlayerInteracted) {
       // Keep the initial player visible briefly, then hide it automatically.
-      showPlayerControls(true);
+      revealPlayerControls(true);
     }
   }, [
     clearPlayerHideTimer,
     hasPlayerInteracted,
-    playerAlwaysVisible,
-    shouldRenderPlayer,
-    showPlayerControls,
+    resolvedPlayerControlsVisibility,
+    shouldMountPlayer,
+    revealPlayerControls,
   ]);
 
   useEffect(() => {
@@ -931,14 +1467,14 @@ const Slide: React.FC<SlideProps> = ({
         return;
       }
 
-      if (!shouldRenderPlayer) {
+      if (!shouldMountPlayer) {
         return;
       }
 
       // Restore player controls on explicit click/tap without waking on scroll start.
       activateKeyboardShortcutOwner();
       setHasPlayerInteracted(true);
-      showPlayerControls(true);
+      revealPlayerControls(true);
     };
 
     window.addEventListener("message", handleSandboxInteraction);
@@ -946,21 +1482,37 @@ const Slide: React.FC<SlideProps> = ({
     return () => {
       window.removeEventListener("message", handleSandboxInteraction);
     };
-  }, [activateKeyboardShortcutOwner, shouldRenderPlayer, showPlayerControls]);
+  }, [activateKeyboardShortcutOwner, shouldMountPlayer, revealPlayerControls]);
 
   useWakePlayerFromIframe({
     sectionRef,
-    enabled: shouldRenderPlayer,
+    enabled: shouldMountPlayer,
     keyboardShortcutsEnabled: enableKeyboardShortcuts,
     onKeyboardShortcut: activateKeyboardShortcutOwner,
     onWake: () => {
       activateKeyboardShortcutOwner();
       setHasPlayerInteracted(true);
-      showPlayerControls(true);
+      revealPlayerControls(true);
     },
   });
 
   useEffect(() => {
+    if (!shouldMountPlayer) {
+      resetAudioSequence();
+      return;
+    }
+
+    // A restore request sets the target audio in an earlier effect. Without
+    // this guard, the normal first-audio initializer in this same commit can
+    // overwrite that target before Player receives the restore request.
+    if (pendingPlaybackRestoreRef.current) {
+      // Record the target context before Player finishes its restore callback.
+      // The next sequence effect then sees this step as initialized instead of
+      // resetting it back to the default first audio item.
+      playbackResetKeyRef.current = currentPlaybackResetKey;
+      return;
+    }
+
     const { hasPlaybackContextChanged, shouldInitializeAudioSequence } =
       getPlaybackSequenceTransition({
         previousResetKey: playbackResetKeyRef.current,
@@ -981,6 +1533,7 @@ const Slide: React.FC<SlideProps> = ({
       hasPlaybackContextChanged,
       hasResolvedCurrentInteraction,
       currentStepHasSpeakableElement,
+      isPlayerCustomActionActive: isPlayerCustomActionEffectivelyActive,
     });
 
     const pendingSubtitleJump = pendingSubtitleJumpRef.current;
@@ -1038,6 +1591,13 @@ const Slide: React.FC<SlideProps> = ({
     clearInteractionOverlayOpenTimer();
     pendingInteractionOverlayStepIndexRef.current = null;
 
+    // A custom action may intentionally remain active without pausing ordinary
+    // playback. Unresolved interactions still gate progression even while that
+    // action temporarily owns the visible overlay surface.
+    if (shouldBlockPlaybackForInteraction) {
+      return;
+    }
+
     if (!shouldInitializeAudioSequence) {
       return;
     }
@@ -1064,11 +1624,15 @@ const Slide: React.FC<SlideProps> = ({
       return;
     }
 
+    if (isImageOnlySilentStep && !isImageOnlyStepVisualReady) {
+      return;
+    }
+
     // Auto-advance silent marker-only steps so playback flow does not stall.
     autoAdvanceTimerRef.current = window.setTimeout(() => {
       autoAdvanceTimerRef.current = null;
       goNext();
-    }, markerAutoAdvanceDelay);
+    }, silentStepAutoAdvanceDelay);
 
     return () => {
       clearAutoAdvanceTimer();
@@ -1083,17 +1647,21 @@ const Slide: React.FC<SlideProps> = ({
     currentAudioKey,
     currentPlaybackResetKey,
     currentStepHasSpeakableElement,
-    markerAutoAdvanceDelay,
+    isImageOnlySilentStep,
+    isImageOnlyStepVisualReady,
+    silentStepAutoAdvanceDelay,
     goNext,
     hasCompletedCurrentStepAudio,
     disableLoadingOverlay,
     isAutoAdvanceEnabled,
     hasResolvedCurrentInteraction,
+    isPlayerCustomActionEffectivelyActive,
     shouldBlockPlaybackForInteraction,
     clearInteractionOverlayOpenTimer,
     resetAudioSequence,
     requestSubtitleCueSeek,
     scheduleInteractionOverlayOpen,
+    shouldMountPlayer,
     slideElementList,
     startCurrentAudioSequence,
     shouldPausePlaybackForCustomAction,
@@ -1132,7 +1700,37 @@ const Slide: React.FC<SlideProps> = ({
     shouldBlockPlaybackForInteraction,
   ]);
 
+  // A step's audio can keep arriving after the last available segment finished,
+  // because narration is synthesized while the lesson is still streaming. The
+  // step-completed flag is otherwise only cleared when the reset key changes -
+  // which tracks the step index and the interaction content, neither of which
+  // moves while new audio is appended to the step the learner is already on.
+  // Without this, everything synthesized after that first gap stays silent.
   useEffect(() => {
+    if (!hasCompletedCurrentStepAudio) {
+      return;
+    }
+
+    if (
+      !hasUnplayedStepAudio(
+        currentAudioSequenceKeys,
+        playedAudioKeysRef.current
+      )
+    ) {
+      return;
+    }
+
+    setHasCompletedCurrentStepAudio(false);
+  }, [currentAudioSequenceKeys, hasCompletedCurrentStepAudio]);
+
+  useEffect(() => {
+    // A restore request may arrive after the slide itself mounts. Do not let
+    // this independent default-start path select the first audio item while
+    // the restore target is still being applied.
+    if (pendingPlaybackRestoreRef.current) {
+      return;
+    }
+
     const shouldSkipDefaultAudioStart =
       shouldSkipDefaultAudioStartForSubtitleJumpRef.current;
     shouldSkipDefaultAudioStartForSubtitleJumpRef.current = false;
@@ -1182,56 +1780,26 @@ const Slide: React.FC<SlideProps> = ({
     setHasCurrentAudioPlaybackStarted(false);
   }, [currentPlaybackStartedResetKey]);
 
-  const interactionDefaults = useMemo(() => {
-    if (!activeInteractionElement) {
-      return {};
-    }
-
-    const shouldPreferResolvedInteractionInput = Boolean(
-      activeInteractionElement.user_input?.trim()
-    );
-
-    return getInteractionDefaultValues(
-      typeof activeInteractionElement.content === "string"
-        ? activeInteractionElement.content
-        : undefined,
-      activeInteractionElement.user_input,
-      shouldPreferResolvedInteractionInput
-        ? undefined
-        : interactionDefaultValueOptions
-    );
-  }, [activeInteractionElement, interactionDefaultValueOptions]);
-
-  const interactionDefaultSelectedValues = useMemo(() => {
-    if (!activeInteractionElement) {
-      return undefined;
-    }
-
-    const shouldPreferResolvedInteractionInput = Boolean(
-      activeInteractionElement.user_input?.trim()
-    );
-
-    return getInteractionDefaultSelectedValues(
-      typeof activeInteractionElement.content === "string"
-        ? activeInteractionElement.content
-        : undefined,
-      activeInteractionElement.user_input,
-      shouldPreferResolvedInteractionInput
-        ? undefined
-        : interactionDefaultValueOptions
-    );
-  }, [activeInteractionElement, interactionDefaultValueOptions]);
-
-  const hasResolvedInteractionInput = Boolean(
-    activeInteractionElement?.user_input?.trim()
+  const {
+    interactionDefaults,
+    interactionDefaultSelectedValues,
+    hasResolvedInteractionInput,
+    isInteractionReadonly: resolvedInteractionReadonly,
+    shouldAutoContinueInteraction,
+  } = useMemo(
+    () =>
+      resolveSlideInteractionState(activeInteractionElement, {
+        interactionDefaultValueOptions,
+      }),
+    [activeInteractionElement, interactionDefaultValueOptions]
   );
 
   const isInteractionReadonly =
-    Boolean(activeInteractionElement?.readonly) || hasResolvedInteractionInput;
-  const shouldAutoContinueInteraction =
-    isInteractionReadonly || hasResolvedInteractionInput;
-  const shouldShowInteractionOverlay =
-    Boolean(activeInteractionElement) && isInteractionOverlayOpen;
+    Boolean(activeInteractionElement?.readonly) || resolvedInteractionReadonly;
+  const shouldShowInteractionOverlay = shouldRenderInteractionOverlay({
+    hasActiveInteraction: Boolean(activeInteractionElement),
+    isInteractionOverlayOpen,
+  });
 
   const handleInteractionSend = useCallback(
     (content: OnSendContentParams) => {
@@ -1272,6 +1840,18 @@ const Slide: React.FC<SlideProps> = ({
       document.removeEventListener("fullscreenchange", syncFullscreenState);
     };
   }, []);
+
+  useEffect(() => {
+    if (activeInteractionElement && isInteractionOverlayOpen) {
+      return;
+    }
+
+    setHasInteractionOverlayActivity(false);
+  }, [activeInteractionElement, isInteractionOverlayOpen]);
+
+  useEffect(() => {
+    resetInteractionOverlayDragState();
+  }, [activeInteractionElement, resetInteractionOverlayDragState]);
 
   useEffect(() => {
     if (!shouldShowInteractionOverlay) {
@@ -1315,16 +1895,33 @@ const Slide: React.FC<SlideProps> = ({
   useEffect(() => {
     clearInteractionAutoCloseTimer();
 
-    if (!isInteractionOverlayOpen || !shouldAutoContinueInteraction) {
+    if (!isInteractionOverlayOpen) {
       return;
     }
 
-    // Auto-close passive interaction markers to keep playback moving.
+    if (shouldAutoContinueInteraction) {
+      // Auto-close passive interaction markers to keep playback moving.
+      interactionAutoCloseTimerRef.current = window.setTimeout(() => {
+        interactionAutoCloseTimerRef.current = null;
+
+        continueAfterInteraction();
+      }, DEFAULT_RESOLVED_INTERACTION_AUTO_CLOSE_DELAY_MS);
+      return () => {
+        clearInteractionAutoCloseTimer();
+      };
+    }
+
+    if (hasInteractionOverlayActivity || !hasResolvedInteractionInput) {
+      return;
+    }
+
+    // Give resolved history interactions a short revisit window before
+    // playback resumes, but stop auto-closing once the learner starts editing.
     interactionAutoCloseTimerRef.current = window.setTimeout(() => {
       interactionAutoCloseTimerRef.current = null;
 
       continueAfterInteraction();
-    }, 2000);
+    }, DEFAULT_RESOLVED_INTERACTION_AUTO_CLOSE_DELAY_MS);
 
     return () => {
       clearInteractionAutoCloseTimer();
@@ -1332,6 +1929,8 @@ const Slide: React.FC<SlideProps> = ({
   }, [
     clearInteractionAutoCloseTimer,
     continueAfterInteraction,
+    hasInteractionOverlayActivity,
+    hasResolvedInteractionInput,
     isInteractionOverlayOpen,
     shouldAutoContinueInteraction,
   ]);
@@ -1354,6 +1953,9 @@ const Slide: React.FC<SlideProps> = ({
           className="content-render-iframe"
           disableLoadingOverlay={disableLoadingOverlay}
           hideFullScreen
+          locale={locale}
+          dir={direction}
+          lang={language}
           mode="blackboard"
           replaceRootScreenHeightWithFull={
             options.replaceRootScreenHeightWithFull
@@ -1370,6 +1972,9 @@ const Slide: React.FC<SlideProps> = ({
         className="content-render-iframe"
         disableLoadingOverlay={disableLoadingOverlay}
         hideFullScreen
+        locale={locale}
+        dir={direction}
+        lang={language}
         mode="blackboard"
         type="markdown"
         content={element.content as string}
@@ -1388,6 +1993,10 @@ const Slide: React.FC<SlideProps> = ({
     const visibleElementCount = elementList.filter(
       (element) => element.is_renderable !== false
     ).length;
+    const markdownScalingMode =
+      isActiveStep && enableMarkdownScaling
+        ? resolveMarkdownScalingMode(elementList)
+        : "disabled";
     const lastVisibleElementIndex = elementList.reduce(
       (lastVisibleIndex, element, index) =>
         element.is_renderable !== false ? index : lastVisibleIndex,
@@ -1395,7 +2004,10 @@ const Slide: React.FC<SlideProps> = ({
     );
 
     return (
-      <div className="slide-stage__content flex w-full flex-col gap-4">
+      <MarkdownSlideScaling
+        className="slide-stage__content flex w-full flex-col gap-4"
+        mode={markdownScalingMode}
+      >
         {elementList.map((element, index) => {
           const isPreRenderedHtml =
             element.type === "html" && element.is_renderable === false;
@@ -1428,7 +2040,7 @@ const Slide: React.FC<SlideProps> = ({
             </div>
           );
         })}
-      </div>
+      </MarkdownSlideScaling>
     );
   };
 
@@ -1501,7 +2113,7 @@ const Slide: React.FC<SlideProps> = ({
 
       if (shouldWakePlayerControlsAfterNavigation(context)) {
         setHasPlayerInteracted(true);
-        showPlayerControls(true);
+        revealPlayerControls(true);
       }
 
       if (targetSlideIndex === currentIndex) {
@@ -1532,7 +2144,7 @@ const Slide: React.FC<SlideProps> = ({
       goTo,
       requestSubtitleCueSeek,
       resetAudioSequence,
-      showPlayerControls,
+      revealPlayerControls,
       syncPlaybackPreferenceBeforeNavigation,
     ]
   );
@@ -1545,7 +2157,7 @@ const Slide: React.FC<SlideProps> = ({
       setIsAudioLoadingVisible(false);
       if (shouldWakePlayerControlsAfterNavigation(context)) {
         setHasPlayerInteracted(true);
-        showPlayerControls(true);
+        revealPlayerControls(true);
       }
       resetAudioSequence();
       goPrev();
@@ -1553,7 +2165,7 @@ const Slide: React.FC<SlideProps> = ({
     [
       goPrev,
       resetAudioSequence,
-      showPlayerControls,
+      revealPlayerControls,
       syncPlaybackPreferenceBeforeNavigation,
     ]
   );
@@ -1566,7 +2178,7 @@ const Slide: React.FC<SlideProps> = ({
       setIsAudioLoadingVisible(false);
       if (shouldWakePlayerControlsAfterNavigation(context)) {
         setHasPlayerInteracted(true);
-        showPlayerControls(true);
+        revealPlayerControls(true);
       }
       resetAudioSequence();
       goNext();
@@ -1574,7 +2186,38 @@ const Slide: React.FC<SlideProps> = ({
     [
       goNext,
       resetAudioSequence,
-      showPlayerControls,
+      revealPlayerControls,
+      syncPlaybackPreferenceBeforeNavigation,
+    ]
+  );
+
+  const handleSlideProgressNavigate = useCallback(
+    (targetIndex: number, context: SlidePlayerNavigationContext) => {
+      if (
+        targetIndex < 0 ||
+        targetIndex >= slideElementList.length ||
+        targetIndex === currentIndex
+      ) {
+        return;
+      }
+
+      syncPlaybackPreferenceBeforeNavigation(context);
+      shouldScrollToBottomRef.current = true;
+      pendingInteractionOverlayStepIndexRef.current = null;
+      setIsAudioLoadingVisible(false);
+      setHasPlayerInteracted(true);
+      revealPlayerControls(true);
+      resetAudioSequence();
+      goTo(targetIndex);
+      onSlideProgressNavigate?.(slideElementList[targetIndex], targetIndex);
+    },
+    [
+      currentIndex,
+      goTo,
+      onSlideProgressNavigate,
+      resetAudioSequence,
+      revealPlayerControls,
+      slideElementList,
       syncPlaybackPreferenceBeforeNavigation,
     ]
   );
@@ -1629,6 +2272,8 @@ const Slide: React.FC<SlideProps> = ({
         return;
       }
 
+      playedAudioKeysRef.current.add(endedAudioKey);
+
       const activeSequencePosition = currentAudioSequenceKeys.findIndex(
         (audioSequenceKey) => audioSequenceKey === endedAudioKey
       );
@@ -1673,28 +2318,210 @@ const Slide: React.FC<SlideProps> = ({
     ]
   );
 
-  const handleInteractionToggle = useCallback(() => {
-    if (!activeInteractionElement) {
-      return;
-    }
+  const handlePlayerControlsPointerEnter = useCallback(() => {
+    isPointerInsidePlayerControlsRef.current = true;
+    clearPlayerHideTimer();
 
-    setIsInteractionOverlayOpen((prevOpen) => !prevOpen);
-  }, [activeInteractionElement]);
+    if (shouldMountPlayer) {
+      setIsPlayerVisible(true);
+    }
+  }, [clearPlayerHideTimer, shouldMountPlayer]);
+
+  const handlePlayerControlsPointerLeave = useCallback(() => {
+    isPointerInsidePlayerControlsRef.current = false;
+    revealPlayerControls(true);
+  }, [revealPlayerControls]);
 
   const stopOverlayPropagation = useCallback(
     (
-      event:
-        | React.PointerEvent<HTMLDivElement>
-        | React.MouseEvent<HTMLDivElement>
+      event: React.PointerEvent<HTMLElement> | React.MouseEvent<HTMLElement>
     ) => {
       event.stopPropagation();
 
       // Keep the player visible a bit longer when users interact with the overlay.
-      if (playerVisible) {
-        showPlayerControls(true);
+      if (playerControlsVisible) {
+        revealPlayerControls(true);
       }
     },
-    [isPlayerVisible, showPlayerControls]
+    [playerControlsVisible, revealPlayerControls]
+  );
+
+  const getInteractionOverlayDragBounds = useCallback(
+    (
+      overlayElement: HTMLElement,
+      startOffset: InteractionOverlayDragOffset
+    ): InteractionOverlayDragBounds | null => {
+      const viewportElement = viewportRef.current;
+
+      if (!viewportElement) {
+        return null;
+      }
+
+      const overlayRect = overlayElement.getBoundingClientRect();
+      const viewportRect = viewportElement.getBoundingClientRect();
+
+      return {
+        minX: startOffset.x + viewportRect.left - overlayRect.left,
+        maxX: startOffset.x + viewportRect.right - overlayRect.right,
+        minY: startOffset.y + viewportRect.top - overlayRect.top,
+        maxY: startOffset.y + viewportRect.bottom - overlayRect.bottom,
+      };
+    },
+    []
+  );
+
+  useIsomorphicLayoutEffect(() => {
+    const overlayElement = interactionOverlayRef.current;
+
+    if (!shouldShowInteractionOverlay || !overlayElement) {
+      interactionOverlayLayoutRectRef.current = null;
+      return;
+    }
+
+    const previousRect = interactionOverlayLayoutRectRef.current;
+    const currentRect = overlayElement.getBoundingClientRect();
+
+    if (!previousRect || isInteractionOverlayDragging) {
+      interactionOverlayLayoutRectRef.current = {
+        left: currentRect.left,
+        top: currentRect.top,
+      };
+      return;
+    }
+
+    const deltaX = previousRect.left - currentRect.left;
+    const deltaY = previousRect.top - currentRect.top;
+
+    if (
+      !hasMeaningfulInteractionOverlayLayoutDelta(deltaX) &&
+      !hasMeaningfulInteractionOverlayLayoutDelta(deltaY)
+    ) {
+      interactionOverlayLayoutRectRef.current = {
+        left: currentRect.left,
+        top: currentRect.top,
+      };
+      return;
+    }
+
+    const nextOffset = {
+      x: interactionOverlayDragOffset.x + deltaX,
+      y: interactionOverlayDragOffset.y + deltaY,
+    };
+    const bounds = getInteractionOverlayDragBounds(
+      overlayElement,
+      interactionOverlayDragOffset
+    );
+    const clampedOffset = normalizeInteractionOverlayDragOffset(
+      bounds
+        ? clampInteractionOverlayDragOffset(nextOffset, bounds)
+        : nextOffset
+    );
+
+    interactionOverlayLayoutRectRef.current = {
+      left: currentRect.left + clampedOffset.x - interactionOverlayDragOffset.x,
+      top: currentRect.top + clampedOffset.y - interactionOverlayDragOffset.y,
+    };
+
+    if (
+      !areInteractionOverlayDragOffsetsEqual(
+        clampedOffset,
+        interactionOverlayDragOffset
+      )
+    ) {
+      setInteractionOverlayDragOffset((previousOffset) =>
+        areInteractionOverlayDragOffsetsEqual(previousOffset, clampedOffset)
+          ? previousOffset
+          : clampedOffset
+      );
+    }
+  }, [
+    getInteractionOverlayDragBounds,
+    interactionOverlayDragOffset,
+    isInteractionOverlayDragging,
+    playerLayoutReserved,
+    shouldShowInteractionOverlay,
+  ]);
+
+  const handleInteractionOverlayPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      stopOverlayPropagation(event);
+
+      if (
+        event.button !== 0 ||
+        !event.currentTarget.isConnected ||
+        !interactionOverlayRef.current
+      ) {
+        return;
+      }
+
+      const bounds = getInteractionOverlayDragBounds(
+        interactionOverlayRef.current,
+        interactionOverlayDragOffset
+      );
+
+      if (!bounds) {
+        return;
+      }
+
+      event.preventDefault();
+      if (event.currentTarget.hasPointerCapture?.(event.pointerId) !== true) {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
+      interactionOverlayDragRef.current = {
+        pointerId: event.pointerId,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        startOffset: interactionOverlayDragOffset,
+        bounds,
+      };
+      setIsInteractionOverlayDragging(true);
+    },
+    [
+      getInteractionOverlayDragBounds,
+      interactionOverlayDragOffset,
+      stopOverlayPropagation,
+    ]
+  );
+
+  const handleInteractionOverlayPointerMove = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      const dragState = interactionOverlayDragRef.current;
+
+      if (!dragState || dragState.pointerId !== event.pointerId) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      setInteractionOverlayDragOffset(
+        clampInteractionOverlayDragOffset(
+          {
+            x: dragState.startOffset.x + event.clientX - dragState.startClientX,
+            y: dragState.startOffset.y + event.clientY - dragState.startClientY,
+          },
+          dragState.bounds
+        )
+      );
+    },
+    []
+  );
+
+  const endInteractionOverlayDrag = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      const dragState = interactionOverlayDragRef.current;
+
+      if (!dragState || dragState.pointerId !== event.pointerId) {
+        return;
+      }
+
+      event.stopPropagation();
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      interactionOverlayDragRef.current = null;
+      setIsInteractionOverlayDragging(false);
+    },
+    []
   );
 
   const handleSurfacePointerDown = useCallback(
@@ -1715,18 +2542,8 @@ const Slide: React.FC<SlideProps> = ({
 
   const handleSurfaceClick = useCallback(() => {
     setHasPlayerInteracted(true);
-    showPlayerControls(true);
-  }, [showPlayerControls]);
-
-  const currentRenderElementKeys = useMemo(
-    () =>
-      currentElementList.map(
-        (element, index) =>
-          `${element.sequence_number ?? `${element.type}-${index}`}:${String(element.is_new ?? "")}`
-      ),
-    [currentElementList]
-  );
-
+    revealPlayerControls(true);
+  }, [revealPlayerControls]);
   useEffect(() => {
     const prevKeys = prevRenderElementKeysRef.current;
     const hasStablePrefix =
@@ -1802,6 +2619,8 @@ const Slide: React.FC<SlideProps> = ({
         isNativeMobileFullscreen && "slide--mobile-landscape-native",
         className
       )}
+      dir={direction}
+      lang={language}
       onClick={handleSurfaceClick}
       onFocusCapture={handleSurfaceFocusCapture}
       onPointerDown={handleSurfacePointerDown}
@@ -1827,7 +2646,10 @@ const Slide: React.FC<SlideProps> = ({
         {shouldShowFullscreenHeader ? (
           <div className="slide-landscape-header">
             <button
-              aria-label={fullscreenHeader?.backAriaLabel ?? "Back"}
+              aria-label={
+                fullscreenHeader?.backAriaLabel ??
+                localeTexts.fullscreenBackAriaLabel
+              }
               className="slide-landscape-header__back"
               onClick={handleFullscreenHeaderBack}
               type="button"
@@ -1868,6 +2690,7 @@ const Slide: React.FC<SlideProps> = ({
                           mountedStepState.sourceStepIndexes[0] ??
                           mountedStepStateIndex
                         }
+                        data-active-step={isActiveStep ? "true" : undefined}
                         aria-hidden={!isActiveStep || undefined}
                         className="w-full h-full"
                         style={{ display: isActiveStep ? undefined : "none" }}
@@ -1888,7 +2711,7 @@ const Slide: React.FC<SlideProps> = ({
         {isAudioLoadingVisible ? (
           <LoadingOverlayCard
             message={resolveBufferingTextByReason(
-              bufferingText,
+              resolvedBufferingText,
               audioLoadingReason
             )}
             className="absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2"
@@ -1897,9 +2720,8 @@ const Slide: React.FC<SlideProps> = ({
 
         <SubtitleOverlay
           extraBottomOffset={interactionOverlaySubtitleOffset}
-          hasPlayerGap={playerVisible}
+          hasPlayerGap={playerLayoutReserved}
           isEnabled={isSubtitleEnabled && hasCurrentAudioPlaybackStarted}
-          isPlayerHidden={shouldRenderPlayer && !playerVisible}
           playbackTimeStore={playbackTimeStore}
           subtitleCues={currentSubtitleCues}
         />
@@ -1910,57 +2732,124 @@ const Slide: React.FC<SlideProps> = ({
             data-player-keyboard-shortcuts-ignore="true"
             className={cn(
               "slide-interaction-overlay",
-              playerVisible && shouldRenderPlayer
+              playerLayoutReserved
                 ? "slide-interaction-overlay--with-player"
-                : "slide-interaction-overlay--standalone"
+                : "slide-interaction-overlay--standalone",
+              isInteractionOverlayDragging &&
+                "slide-interaction-overlay--dragging"
             )}
             onClick={stopOverlayPropagation}
-            onPointerDown={stopOverlayPropagation}
+            onPointerDownCapture={(event) => {
+              if (isInteractionActivityTarget(event.target)) {
+                setHasInteractionOverlayActivity(true);
+              }
+            }}
+            onFocusCapture={(event) => {
+              if (isInteractionActivityTarget(event.target)) {
+                setHasInteractionOverlayActivity(true);
+              }
+            }}
+            onInputCapture={(event) => {
+              if (isInteractionActivityTarget(event.target)) {
+                setHasInteractionOverlayActivity(true);
+              }
+            }}
             style={interactionOverlayStyle}
           >
             <InteractionOverlayCard
+              dir={direction}
+              lang={language}
               content={String(activeInteractionElement?.content ?? "")}
+              dragHandleAriaLabel={
+                interactionTexts?.dragHandleAriaLabel ??
+                localeTexts.interactionTexts.dragHandleAriaLabel
+              }
+              locale={locale}
               defaultButtonText={interactionDefaults.buttonText ?? ""}
               defaultInputText={interactionDefaults.inputText ?? ""}
               defaultSelectedValues={interactionDefaultSelectedValues}
-              confirmButtonText={interactionTexts?.confirmButtonText}
-              copyButtonText={interactionTexts?.copyButtonText}
-              copiedButtonText={interactionTexts?.copiedButtonText}
+              confirmButtonText={
+                interactionTexts?.confirmButtonText ??
+                localeTexts.interactionTexts.confirmButtonText
+              }
+              copyButtonText={
+                interactionTexts?.copyButtonText ??
+                localeTexts.interactionTexts.copyButtonText
+              }
+              copiedButtonText={
+                interactionTexts?.copiedButtonText ??
+                localeTexts.interactionTexts.copiedButtonText
+              }
               onSend={handleInteractionSend}
+              onDragHandlePointerCancel={endInteractionOverlayDrag}
+              onDragHandlePointerDown={handleInteractionOverlayPointerDown}
+              onDragHandlePointerMove={handleInteractionOverlayPointerMove}
+              onDragHandlePointerUp={endInteractionOverlayDrag}
               readonly={isInteractionReadonly}
               title={
                 interactionTexts?.title ??
                 interactionTitle ??
-                "Submit the content below to continue."
+                localeTexts.interactionTexts.title
               }
             />
           </div>
         ) : null}
 
-        {shouldRenderPlayer ? (
+        {shouldMountPlayer ? (
           <PlayerKeyboardShortcutContext.Provider
             value={keyboardShortcutContextValue}
           >
             <Player
+              dir={direction === "auto" ? resolvedDirection : direction}
+              lang={language}
               audioList={audioList}
               className={cn(
                 "absolute left-1/2 z-[2] -translate-x-1/2",
-                isDesktopBrowserFullscreen ? "bottom-3" : "-bottom-3",
+                showSlideProgress
+                  ? "bottom-9"
+                  : isDesktopBrowserFullscreen
+                    ? "bottom-3"
+                    : "-bottom-3",
                 playerClassName,
-                !playerVisible && "pointer-events-none opacity-0"
+                !playerControlsVisible && "pointer-events-none opacity-0"
               )}
               currentAudioIndex={currentAudioIndex}
               defaultPlaying={isPlaybackRequested}
               enableKeyboardShortcuts={enableKeyboardShortcuts}
               isPlaybackPaused={shouldPausePlaybackForCustomAction}
               isAutoAdvanceEnabled={isAutoAdvanceEnabled}
-              hasInteraction={Boolean(activeInteractionElement)}
+              locale={locale}
               isInteractionOpen={isInteractionOverlayOpen}
               isSubtitleEnabled={isSubtitleEnabled}
               onAutoAdvanceToggle={setIsAutoAdvanceEnabled}
               onLoadingChange={handlePlayerLoadingChange}
               onPlaybackStarted={() => {
                 setHasCurrentAudioPlaybackStarted(true);
+              }}
+              onPlaybackCheckpoint={({ audioKey, isComplete, timeMs }) => {
+                const checkpointAudioIndex = audioList.findIndex(
+                  (audioItem) => audioItem.audioKey === audioKey
+                );
+                const checkpointAudioItem =
+                  checkpointAudioIndex >= 0
+                    ? audioList[checkpointAudioIndex]
+                    : undefined;
+
+                if (
+                  !checkpointAudioItem?.audioKey ||
+                  !checkpointAudioItem.element
+                ) {
+                  return;
+                }
+
+                onPlaybackCheckpoint?.({
+                  audioKey: checkpointAudioItem.audioKey,
+                  element: checkpointAudioItem.element,
+                  isComplete,
+                  stepIndex:
+                    audioSlideIndexes[checkpointAudioIndex] ?? currentIndex,
+                  timeMs,
+                });
               }}
               onPlaybackPreferenceChange={handlePlaybackPreferenceChange}
               onPlaybackTimeChange={playbackTimeStore.setTime}
@@ -1974,14 +2863,44 @@ const Slide: React.FC<SlideProps> = ({
               mobileViewMode={effectiveMobileViewMode}
               settingsPortalContainer={viewportRef.current}
               onMobileViewModeChange={handleMobileViewModeSelect}
-              onInteractionToggle={handleInteractionToggle}
+              onControlsPointerEnter={handlePlayerControlsPointerEnter}
+              onControlsPointerLeave={handlePlayerControlsPointerLeave}
               onNext={handleNext}
               onPrev={handlePrev}
               onSubtitleJump={handleSubtitleJump}
               canJumpToSubtitleTarget={canJumpToSubtitleTarget}
               prevDisabled={!canGoPrev}
-              showControls={playerVisible}
+              showControls={playerControlsVisible}
+              slideProgress={
+                showSlideProgress
+                  ? {
+                      ariaLabel: localeTexts.slideProgressAriaLabel,
+                      currentIndex,
+                      generatingLabel: localeTexts.slideProgressGeneratingLabel,
+                      isGenerating: isSlideProgressGenerating,
+                      onNavigate: handleSlideProgressNavigate,
+                      totalSteps: generatedSlideCount,
+                    }
+                  : null
+              }
               subtitleSeekRequest={subtitleSeekRequest}
+              playbackRestoreRequest={
+                pendingPlaybackRestore &&
+                pendingPlaybackRestore.audioKey === currentAudioItem?.audioKey
+                  ? {
+                      id: pendingPlaybackRestore.id,
+                      timeMs: pendingPlaybackRestore.timeMs,
+                    }
+                  : null
+              }
+              onPlaybackRestoreComplete={(requestId) => {
+                if (pendingPlaybackRestoreRef.current?.id !== requestId) {
+                  return;
+                }
+
+                pendingPlaybackRestoreRef.current = null;
+                setPendingPlaybackRestore(null);
+              }}
               texts={playerTexts}
               customActionContext={playerCustomActionContext}
               customActions={playerCustomActions}

@@ -1,26 +1,3 @@
 export const DEFAULT_FULLSCREEN_HINT_DURATION_MS = 3000;
 
-export const DEFAULT_SLIDE_PLAYER_TEXTS = {
-  closeSettingsLabel: "Close settings",
-  enterFullscreenLabel: "Enter fullscreen",
-  exitFullscreenLabel: "Exit fullscreen",
-  moreOptionsAriaLabel: "More options",
-  nextLabel: "Next page",
-  nextSubtitleLabel: "Next sentence",
-  notesLabel: "Notes",
-  pauseAutoplayLabel: "Pause autoplay",
-  pauseLabel: "Pause",
-  playAutoplayLabel: "Play autoplay",
-  playLabel: "Play",
-  previousLabel: "Previous page",
-  previousSubtitleLabel: "Previous sentence",
-  screenModeLabel: "Screen mode",
-  settingsTitle: "Settings",
-  subtitleLabel: "Subtitles",
-  subtitleToggleAriaLabel: "Toggle subtitles",
-  volumeAriaLabel: "Volume",
-  screenLabel: "Screen",
-  nonFullscreenLabel: "Non-fullscreen",
-  fullscreenLabel: "Fullscreen",
-  fullscreenHintText: "Rotate your screen for the best experience.",
-} as const;
+export const DEFAULT_IMAGE_ONLY_AUTO_ADVANCE_DELAY_MS = 5000;

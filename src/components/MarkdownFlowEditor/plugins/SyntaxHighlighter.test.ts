@@ -94,3 +94,174 @@ describe("collectSyntaxHighlightRanges", () => {
     expect(commentTexts).toEqual([]);
   });
 });
+
+describe("interactions whose options escape a bracket", () => {
+  it("highlights to the interaction's real end, not the first bracket inside it", () => {
+    // `\]` is option text, so the closing bracket is the last one. Cut short, the highlight
+    // ended mid-option and the rest of the line was painted as prose.
+    const docText = "?[%{{pattern}}^[a-z\\]+$|array[0\\]]";
+
+    const brackets = rangeTextsByClass(docText, "syntax-bracket");
+
+    expect(brackets).toEqual(["[", "]"]);
+    const closing = collectSyntaxHighlightRanges(docText).filter(
+      (range) => range.className === "syntax-bracket"
+    );
+    expect(closing[closing.length - 1].to).toBe(docText.length);
+  });
+});
+
+describe("escaped delimiters inside an interaction", () => {
+  it("does not paint an escaped bar as a separator", () => {
+    // The parser reads `a\|b` as one option. Painted as a separator, the highlight told the
+    // author the grammar had split an option it had in fact left whole.
+    const docText = "?[%{{choice}}a\\|b|c]";
+
+    const separators = rangeTextsByClass(docText, "syntax-keyword");
+
+    // The `?` is a keyword too; what matters is that only the real separator joins it.
+    expect(separators.filter((text) => text !== "?")).toEqual(["|"]);
+  });
+
+  it("does not paint an escaped ellipsis as a text-input marker", () => {
+    // `\...` is the minimal escape: the first dot is escaped, so the run can no longer be read
+    // as the marker. A scan that does not know about escapes still sees three dots in a row.
+    const docText = "?[%{{choice}}wait\\...|go]";
+
+    const separators = rangeTextsByClass(docText, "syntax-keyword");
+
+    expect(separators.filter((text) => text !== "?")).toEqual(["|"]);
+  });
+
+  it("leaves a markdown link alone, as the parser does", () => {
+    // `?[text](url)` is a link, not an interaction; remark-flow rejects it with `(?!\()`.
+    const docText = "?[label](https://example.com)";
+
+    expect(rangeTextsByClass(docText, "syntax-bracket")).toEqual([]);
+  });
+});
+
+it.each([
+  "你的性别是？",
+  "Which-option?",
+  "user_name",
+  "年齢🙂?",
+  "\ufeffkey\ufeff",
+])("highlights %s consistently inside and outside an interaction", (name) => {
+  const content = `{{ ${name} }} ?[%{{${name}}} Yes | No]`;
+  expect(rangeTextsByClass(content, "syntax-variable")).toEqual([
+    `{{ ${name} }}`,
+    `{{${name}}}`,
+  ]);
+  expect(rangeTextsByClass(content, "syntax-percent-valid")).toEqual(["%"]);
+});
+
+it("does not decorate punctuation inside a key as option operators", () => {
+  const content = "?[%{{a|b...c?}} Yes | No]";
+  expect(rangeTextsByClass(content, "syntax-variable")).toEqual([
+    "{{a|b...c?}}",
+  ]);
+  expect(rangeTextsByClass(content, "syntax-keyword")).toEqual(["?", "|"]);
+});
+
+it.each([
+  "first  name",
+  "Which [path] | level//hint...?",
+  "a{b",
+  "a}",
+  "{{inner",
+  "<!-- key --> === value",
+])("treats the entire opaque key %s as one highlighted token", (name) => {
+  const marker = `{{ ${name} }}`;
+  const source = `?[%${marker} A | B]`;
+  expect(rangeTextsByClass(source, "syntax-variable")).toEqual([marker]);
+  expect(rangeTextsByClass(source, "syntax-keyword")).toEqual(["?", "|"]);
+  expect(rangeTextsByClass(source, "syntax-percent-valid")).toEqual(["%"]);
+  expect(rangeTextsByClass(source, "syntax-comment")).toEqual([]);
+  expect(rangeTextsByClass(source, "syntax-fixed")).toEqual([]);
+});
+
+it("does not recognize an inner opening brace as a separate variable", () => {
+  const source = "{{ invalid\u0000{{inner }} after";
+  expect(rangeTextsByClass(source, "syntax-variable")).toEqual([]);
+});
+
+it("does not highlight a question nested in a standalone opaque variable", () => {
+  const source = "{{ key ?[A|B] }}";
+  expect(rangeTextsByClass(source, "syntax-variable")).toEqual([source]);
+  expect(rangeTextsByClass(source, "syntax-keyword")).toEqual([]);
+});
+
+it("highlights an assignment after Python whitespace padding without skipping BOM", () => {
+  const source = "?[ \t%{{ x]y }} A | B]";
+  expect(rangeTextsByClass(source, "syntax-percent-valid")).toEqual(["%"]);
+  expect(
+    rangeTextsByClass("?[\ufeff%{{ x]y }} A | B]", "syntax-percent-valid")
+  ).toEqual([]);
+});
+
+it.each([
+  "{{ unterminated ?[Go]",
+  "?[%{{unterminated ?[Go]",
+  "?[A {{unterminated ?[Go]",
+])("leaves nested syntax literal inside an unfinished marker: %s", (source) => {
+  expect(rangeTextsByClass(source, "syntax-keyword")).toEqual([]);
+});
+
+import contract from "../../../../tests/fixtures/variable-name-contract.json";
+import { readVariableMarker } from "remark-flow";
+
+it.each(contract.document_context_cases)(
+  "highlights names without crossing document context $id",
+  ({ source, names }) => {
+    expect(
+      rangeTextsByClass(source, "syntax-variable").map(
+        (marker) => readVariableMarker(marker)?.name
+      )
+    ).toEqual(names);
+    expect(
+      rangeTextsByClass(source, "syntax-keyword").filter(
+        (token) => token === "?"
+      )
+    ).toHaveLength(1);
+  }
+);
+
+import documentBoundaries from "../../../../tests/fixtures/document-boundary-cases.json";
+
+it.each(documentBoundaries)(
+  "does not invent a control across $id",
+  ({ source, names, interaction_count }) => {
+    expect(
+      rangeTextsByClass(source, "syntax-variable").map(
+        (marker) => readVariableMarker(marker)?.name
+      )
+    ).toEqual(names);
+    expect(
+      rangeTextsByClass(source, "syntax-keyword").filter(
+        (token) => token === "?"
+      )
+    ).toHaveLength(interaction_count);
+  }
+);
+
+it.each(["\n", "\r\n", "\r"])(
+  "highlights the real control after an unfinished interaction with %j line endings",
+  (eol) => {
+    const source = [
+      "?[ unfinished",
+      "~~~",
+      "{{ x",
+      "~~~",
+      "?[%{{ real }} A|B]",
+    ].join(eol);
+    const questions = collectSyntaxHighlightRanges(source).filter(
+      (range) =>
+        range.className === "syntax-keyword" &&
+        source.slice(range.from, range.to) === "?"
+    );
+    expect(questions.map((range) => range.from)).toEqual([
+      source.lastIndexOf("?["),
+    ]);
+  }
+);

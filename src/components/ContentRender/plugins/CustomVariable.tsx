@@ -1,4 +1,5 @@
 import React from "react";
+import { normalizeVariableName } from "remark-flow";
 import type { Components } from "react-markdown";
 import { OnSendContentParams } from "../../types";
 import { Button } from "../../ui/button";
@@ -8,7 +9,9 @@ import {
   InputGroup,
   InputGroupTextarea,
 } from "../../ui/inputGroup/input-group";
+import type { MarkdownFlowLocale } from "../../../lib/locale";
 import { cn } from "../../../lib/utils";
+import { getContentRenderLocaleTexts } from "../contentRenderI18n";
 
 // Define custom variable node type
 interface CustomVariableNode {
@@ -24,10 +27,15 @@ interface CustomVariableNode {
 
 // Define custom variable component Props type
 interface CustomVariableProps {
+  /** Explicit direction for nested input controls. */
+  dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
+  /** Explicit language for nested input controls. */
+  lang?: string;
   node: CustomVariableNode;
   defaultButtonText?: string;
   defaultInputText?: string;
   defaultSelectedValues?: string[];
+  locale?: MarkdownFlowLocale;
   readonly?: boolean;
   onSend?: (content: OnSendContentParams) => void;
   // Multi-select confirm button text (i18n support)
@@ -132,8 +140,11 @@ const MultiSelectSection = ({
 
 // Single select section( with buttons and input)
 interface SingleSelectSectionProps {
+  dir?: CustomVariableProps["dir"];
+  lang?: string;
   node: CustomVariableNode;
   readonly?: boolean;
+  locale?: MarkdownFlowLocale;
   resolvedDefaultButtonText?: string;
   handleButtonClick: (value: string) => void;
   inputValue: string;
@@ -142,8 +153,11 @@ interface SingleSelectSectionProps {
 }
 
 const SingleSelectSection = ({
+  dir,
+  lang,
   node,
   readonly,
+  locale,
   resolvedDefaultButtonText,
   handleButtonClick,
   inputValue,
@@ -164,7 +178,7 @@ const SingleSelectSection = ({
             size="sm"
             onClick={() => handleButtonClick(buttonValue)}
             className={cn(
-              "max-w-full shrink whitespace-normal break-words text-left leading-5 h-auto min-h-8 px-3 py-1.5",
+              "max-w-full shrink whitespace-normal break-words text-start leading-5 h-auto min-h-8 px-3 py-1.5",
               "hover:bg-gray-200",
               resolvedDefaultButtonText === text && "select"
             )}
@@ -177,7 +191,10 @@ const SingleSelectSection = ({
     {node.properties?.placeholder && (
       <span className="mt-[9px] mb-1">
         <MarkdownFlowInput
+          dir={dir}
+          lang={lang}
           disabled={readonly}
+          locale={locale}
           placeholder={node.properties.placeholder}
           value={inputValue}
           onChange={handleInputChange}
@@ -191,7 +208,10 @@ const SingleSelectSection = ({
 
 // Pure input
 interface InputSectionProps {
+  dir?: CustomVariableProps["dir"];
+  lang?: string;
   readonly?: boolean;
+  locale?: MarkdownFlowLocale;
   placeholder?: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
@@ -199,7 +219,10 @@ interface InputSectionProps {
 }
 
 const InputSection = ({
+  dir,
+  lang,
   readonly,
+  locale,
   placeholder,
   value,
   onChange,
@@ -211,7 +234,10 @@ const InputSection = ({
 
   return (
     <MarkdownFlowInput
+      dir={dir}
+      lang={lang}
       disabled={readonly}
+      locale={locale}
       placeholder={placeholder}
       value={value}
       onChange={onChange}
@@ -223,19 +249,32 @@ const InputSection = ({
 
 // Define custom variable component
 const CustomButtonInputVariable = ({
+  dir,
+  lang,
   node,
   readonly,
+  locale,
   defaultButtonText,
   defaultInputText,
   defaultSelectedValues,
   onSend,
-  confirmButtonText = "Submit", // Default to English, can be overridden
+  confirmButtonText,
   beforeSend = () => true,
 }: CustomVariableProps) => {
+  const localeTexts = getContentRenderLocaleTexts(locale);
+  const resolvedConfirmButtonText =
+    confirmButtonText || localeTexts.confirmButtonText;
   const [inputValue, setInputValue] = React.useState(defaultInputText || "");
   const [selectedValues, setSelectedValues] = React.useState<string[]>(
     defaultSelectedValues || []
   );
+  const interactionDefinitionKey = JSON.stringify({
+    buttonTexts: node.properties?.buttonTexts,
+    buttonValues: node.properties?.buttonValues,
+    isMultiSelect: node.properties?.isMultiSelect,
+    placeholder: node.properties?.placeholder,
+    variableName: node.properties?.variableName,
+  });
   const isMultiSelect = node.properties?.isMultiSelect ?? false;
   const baseButtonTexts = node.properties?.buttonTexts || [];
   const shouldUseFallbackButton =
@@ -243,7 +282,9 @@ const CustomButtonInputVariable = ({
     baseButtonTexts.length === 0 &&
     !node.properties?.placeholder;
   const fallbackButtonLabel =
-    node.properties?.variableName?.trim() || defaultButtonText || "Submit";
+    normalizeVariableName(node.properties?.variableName || "") ||
+    defaultButtonText ||
+    resolvedConfirmButtonText;
 
   const singleSelectNode = React.useMemo<CustomVariableNode>(() => {
     if (!shouldUseFallbackButton) {
@@ -339,11 +380,11 @@ const CustomButtonInputVariable = ({
 
   React.useEffect(() => {
     setInputValue(defaultInputText || "");
-  }, [defaultInputText, node]);
+  }, [defaultInputText, interactionDefinitionKey]);
 
   React.useEffect(() => {
     setSelectedValues(defaultSelectedValues || []);
-  }, [defaultSelectedValues, node]);
+  }, [defaultSelectedValues, interactionDefinitionKey]);
 
   return (
     <span className="custom-variable-container inline-flex items-center flex-wrap">
@@ -353,7 +394,7 @@ const CustomButtonInputVariable = ({
           readonly={readonly}
           selectedValues={selectedValues}
           inputValue={inputValue}
-          confirmButtonText={confirmButtonText}
+          confirmButtonText={resolvedConfirmButtonText}
           handleCheckboxChange={handleCheckboxChange}
           handleInputChange={handleInputChange}
           handleKeyDown={handleKeyDown}
@@ -363,8 +404,11 @@ const CustomButtonInputVariable = ({
 
       {!isMultiSelect && isSingleSelect && (
         <SingleSelectSection
+          dir={dir}
+          lang={lang}
           node={singleSelectNode}
           readonly={readonly}
+          locale={locale}
           resolvedDefaultButtonText={resolvedDefaultButtonText}
           handleButtonClick={handleButtonClick}
           inputValue={inputValue}
@@ -375,7 +419,10 @@ const CustomButtonInputVariable = ({
 
       {!isMultiSelect && !isSingleSelect && node.properties?.placeholder && (
         <InputSection
+          dir={dir}
+          lang={lang}
           readonly={readonly}
+          locale={locale}
           placeholder={node.properties.placeholder}
           value={inputValue}
           onChange={handleInputChange}

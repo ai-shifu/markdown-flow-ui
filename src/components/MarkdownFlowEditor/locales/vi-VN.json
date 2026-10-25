@@ -53,8 +53,6 @@
   "variableSectionSystem": "Biến hệ thống",
   "variableSectionCustom": "Biến tùy chỉnh",
   "variableAddNew": "Thêm biến",
-  "toolbarInsertNewVariable": "Chèn biến mới",
-  "toolbarInsertExistingVariable": "Chèn biến đã có",
   "toolbarConfirmOutput": "Chèn kết quả xác nhận",
   "toolbarInsertLink": "Chèn liên kết",
   "toolbarInsertButton": "Chèn nút",

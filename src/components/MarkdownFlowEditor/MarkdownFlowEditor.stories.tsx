@@ -2,7 +2,8 @@ import React, { useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { Sparkles } from "lucide-react";
 
-// import { fn } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from "storybook/test";
+import { getEditorLocaleMessages } from "./editorI18n";
 
 import MarkdownFlowEditor from "./MarkdownFlowEditor";
 import { EditMode } from "./MarkdownFlowEditor";
@@ -567,5 +568,40 @@ Which-option?
       { name: "Which [path] | level//hint...?" },
       { name: "name}" },
     ],
+  },
+};
+
+export const ToolbarWithoutVariableActions: Story = {
+  args: { locale: "en-US", editMode: EditMode.QuickEdit },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const texts = getEditorLocaleMessages("en-US");
+    const toolbar = canvasElement.querySelector(
+      ".markdown-flow-editor-toolbar-left"
+    )!;
+    expect(
+      within(toolbar)
+        .getAllByRole("button")
+        .map((button) => button.getAttribute("aria-label"))
+    ).toEqual([
+      texts.toolbarInsertSingleChoice,
+      texts.toolbarInsertMultiChoice,
+      texts.toolbarInsertInput,
+      texts.toolbarInsertButton,
+      texts.toolbarConfirmOutput,
+      texts.toolbarInsertImage,
+      texts.toolbarInsertVideo,
+    ]);
+    await userEvent.click(
+      canvas.getByRole("button", { name: texts.toolbarInsertSingleChoice })
+    );
+    await waitFor(() =>
+      expect(canvasElement.querySelector(".cm-content")?.textContent).toBe(
+        "?[%{{  }} Option 1 | Option 2]"
+      )
+    );
+    expect(
+      canvasElement.querySelector(".markdown-flow-editor-variable-search")
+    ).toBeNull();
   },
 };

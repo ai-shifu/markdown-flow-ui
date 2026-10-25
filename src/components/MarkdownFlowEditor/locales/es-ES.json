@@ -53,8 +53,6 @@
   "variableSectionSystem": "Variables del sistema",
   "variableSectionCustom": "Variables personalizadas",
   "variableAddNew": "Añadir variable",
-  "toolbarInsertNewVariable": "Insertar variable nueva",
-  "toolbarInsertExistingVariable": "Insertar variable existente",
   "toolbarConfirmOutput": "Insertar salida de confirmación",
   "toolbarInsertLink": "Insertar enlace",
   "toolbarInsertButton": "Insertar botón",

@@ -53,8 +53,6 @@
   "variableSectionSystem": "متغيرات النظام",
   "variableSectionCustom": "متغيرات مخصصة",
   "variableAddNew": "إضافة متغير",
-  "toolbarInsertNewVariable": "إدراج متغير جديد",
-  "toolbarInsertExistingVariable": "إدراج متغير موجود",
   "toolbarConfirmOutput": "إدراج ناتج التأكيد",
   "toolbarInsertLink": "إدراج رابط",
   "toolbarInsertButton": "إدراج زر",

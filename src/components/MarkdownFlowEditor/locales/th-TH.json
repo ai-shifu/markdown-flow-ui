@@ -53,8 +53,6 @@
   "variableSectionSystem": "ตัวแปรระบบ",
   "variableSectionCustom": "ตัวแปรที่กำหนดเอง",
   "variableAddNew": "เพิ่มตัวแปร",
-  "toolbarInsertNewVariable": "แทรกตัวแปรใหม่",
-  "toolbarInsertExistingVariable": "แทรกตัวแปรที่มีอยู่",
   "toolbarConfirmOutput": "แทรกผลลัพธ์การยืนยัน",
   "toolbarInsertLink": "แทรกลิงก์",
   "toolbarInsertButton": "แทรกปุ่ม",

@@ -13,7 +13,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import CustomDialog from "./components/CustomDialog";
 import CustomPopover from "./components/CustomPopover";
 import EditorToolbar from "./components/EditorToolbar";
-import VariableSearchDropdown from "./components/VariableSearchDropdown";
 import EditorContext from "./editor-context";
 import ImageInject from "./components/ImageInject";
 import VideoInject from "./components/VideoInject";
@@ -165,15 +164,6 @@ const Editor: React.FC<EditorProps> = ({
       video: t("toolbarInsertVideo", {
         defaultValue: "Insert video",
       }),
-      variable: t("slashVariable", {
-        defaultValue: "Variable",
-      }),
-      addVariable: t("toolbarInsertNewVariable", {
-        defaultValue: "Insert new variable",
-      }),
-      search: t("toolbarInsertExistingVariable", {
-        defaultValue: "Insert existing variable",
-      }),
       confirmOutput: t("toolbarConfirmOutput", {
         defaultValue: "Confirm output",
       }),
@@ -201,17 +191,6 @@ const Editor: React.FC<EditorProps> = ({
       inputPlaceholder: t("toolbarInputPlaceholder", {
         defaultValue: "Please enter",
       }),
-    }),
-    [t]
-  );
-  const variableSearchLabels = useMemo(
-    () => ({
-      searchPlaceholder: t("variableSearchPlaceholder", {
-        defaultValue: "Search variable",
-      }),
-      systemLabel: t("variableSectionSystem", "System Variables"),
-      customLabel: t("variableSectionCustom", "Custom Variables"),
-      emptyLabel: t("variableNotFound", "No variables found"),
     }),
     [t]
   );
@@ -285,27 +264,6 @@ const Editor: React.FC<EditorProps> = ({
     useState<SelectContentInfo | null>();
   const editorViewRef = useRef<EditorView | null>(null);
   const pendingVariableContentRef = useRef<string | null>(null);
-  const variableSearchAnchorRef = useRef<HTMLButtonElement | null>(null);
-  const [variableSearchOpen, setVariableSearchOpen] = useState(false);
-  const closeVariableSearch = useCallback(() => {
-    setVariableSearchOpen(false);
-    variableSearchAnchorRef.current = null;
-  }, []);
-  const handleVariableSearchToggle = useCallback(
-    (button: HTMLButtonElement) => {
-      if (disabled) {
-        return;
-      }
-      if (variableSearchOpen && variableSearchAnchorRef.current === button) {
-        closeVariableSearch();
-        return;
-      }
-      variableSearchAnchorRef.current = button;
-      setVariableSearchOpen(true);
-    },
-    [closeVariableSearch, disabled, variableSearchOpen]
-  );
-
   const editorContextValue: IEditorContext = {
     selectedOption,
     setSelectedOption,
@@ -326,9 +284,7 @@ const Editor: React.FC<EditorProps> = ({
     setSelectedOption(SelectedOption.Empty);
     setSelectContentInfo(null);
     setPopoverPosition(null);
-    closeVariableSearch();
   }, [
-    closeVariableSearch,
     disabled,
     setDialogOpen,
     setPopoverOpen,
@@ -433,7 +389,6 @@ const Editor: React.FC<EditorProps> = ({
       if (disabled) {
         return;
       }
-      closeVariableSearch();
       // if (option === SelectedOption.FixedText) {
       //   insertFixedText();
       //   setSelectedOption(SelectedOption.Empty);
@@ -473,7 +428,7 @@ const Editor: React.FC<EditorProps> = ({
         setDialogOpen(true);
       }
     },
-    [closeVariableSearch, disabled]
+    [disabled]
   );
 
   const insertText = useCallback(
@@ -583,14 +538,6 @@ const Editor: React.FC<EditorProps> = ({
     },
     [disabled]
   );
-
-  const insertVariableTemplate = useCallback(() => {
-    if (disabled) {
-      return;
-    }
-    closeVariableSearch();
-    insertVariableContent("");
-  }, [closeVariableSearch, disabled, insertVariableContent]);
 
   const insertConfirmOutputMarker = useCallback(() => {
     if (disabled || !editorViewRef.current) {
@@ -800,9 +747,8 @@ const Editor: React.FC<EditorProps> = ({
           : undefined;
       insertVariableContent(variable.name, selectionRange, true);
       setPopoverOpen(false);
-      closeVariableSearch();
     },
-    [disabled, insertVariableContent, selectContentInfo, closeVariableSearch]
+    [disabled, insertVariableContent, selectContentInfo]
   );
 
   const slashCommandsExtension = useCallback(() => {
@@ -997,7 +943,6 @@ const Editor: React.FC<EditorProps> = ({
     [addVariablesFromContent, onChange, disabled]
   );
 
-  const isVariableSearchOpen = !disabled && variableSearchOpen;
   const editorApi = useMemo(
     () => ({
       insertTextAtCursor: insertText,
@@ -1108,26 +1053,13 @@ const Editor: React.FC<EditorProps> = ({
         tooltipDirection={portalDirection}
         tooltipLanguage={portalLanguage}
         onSelect={onSelectedOption}
-        onInsertVariablePlaceholder={insertVariableTemplate}
-        onVariableSearchToggle={handleVariableSearchToggle}
-        onVariableSearchClose={closeVariableSearch}
         onInsertConfirmOutput={insertConfirmOutputMarker}
         onInsertLink={insertLinkTemplate}
         onInsertButton={insertButtonTemplate}
         onInsertSingleChoice={insertSingleChoiceTemplate}
         onInsertMultiChoice={insertMultiChoiceTemplate}
         onInsertInputField={insertInputFieldTemplate}
-        variableSearchActive={isVariableSearchOpen}
         rightSlot={toolbarRightSlot}
-      />
-      <VariableSearchDropdown
-        open={isVariableSearchOpen}
-        anchorElement={variableSearchAnchorRef.current}
-        onClose={closeVariableSearch}
-        onSelect={handleSelectVariable}
-        variables={variables}
-        systemVariables={systemVariables}
-        labels={variableSearchLabels}
       />
       <div className="markdown-flow-editor-body relative overflow-auto">
         <EditorContext.Provider value={editorContextValue}>

@@ -344,7 +344,7 @@ export const MarkdownFlowEditorFrenchLocale: Story = {
   args: {
     content: `## Bonjour
 
-Tapez '/' pour insérer une image, une vidéo ou une variable.
+Tapez '/' pour insérer une image ou une vidéo.
 
 Variable système: {{sys_user_language}}
 `,
@@ -358,7 +358,7 @@ export const MarkdownFlowEditorSpanishLocale: Story = {
   args: {
     content: `## Hola
 
-Escribe '/' para insertar una imagen, un vídeo o una variable.
+Escribe '/' para insertar una imagen o un vídeo.
 
 Variable del sistema: {{sys_user_language}}
 `,
@@ -372,7 +372,7 @@ export const MarkdownFlowEditorArabicLocale: Story = {
   args: {
     content: `## مرحبًا
 
-اكتب '/' لإدراج صورة أو فيديو أو متغير.
+اكتب '/' لإدراج صورة أو فيديو.
 
 متغير النظام: {{sys_user_language}}
 `,
@@ -386,7 +386,7 @@ export const MarkdownFlowEditorThaiLocale: Story = {
   args: {
     content: `## สวัสดี
 
-พิมพ์ '/' เพื่อแทรกรูปภาพ วิดีโอ หรือตัวแปร
+พิมพ์ '/' เพื่อแทรกรูปภาพหรือวิดีโอ
 
 ตัวแปรระบบ: {{sys_user_language}}
 `,
@@ -399,7 +399,7 @@ export const MarkdownFlowEditorThaiLocale: Story = {
 export const MarkdownFlowEditorGermanLocale: Story = {
   args: {
     content:
-      "## Hallo\n\nGib '/' ein, um ein Bild, Video oder eine Variable einzufügen.\n\nSystemvariable: {{sys_user_language}}\n",
+      "## Hallo\n\nGib '/' ein, um ein Bild oder Video einzufügen.\n\nSystemvariable: {{sys_user_language}}\n",
     editMode: EditMode.QuickEdit,
     locale: "de-DE",
     variables: [{ name: "sys_user_language" }, { name: "plan" }],
@@ -409,7 +409,7 @@ export const MarkdownFlowEditorGermanLocale: Story = {
 export const MarkdownFlowEditorJapaneseLocale: Story = {
   args: {
     content:
-      "## こんにちは\n\n「/」を入力して画像、動画、変数を挿入します。\n\nシステム変数: {{sys_user_language}}\n",
+      "## こんにちは\n\n「/」を入力して画像や動画を挿入します。\n\nシステム変数: {{sys_user_language}}\n",
     editMode: EditMode.QuickEdit,
     locale: "ja-JP",
     variables: [{ name: "sys_user_language" }, { name: "plan" }],
@@ -419,7 +419,7 @@ export const MarkdownFlowEditorJapaneseLocale: Story = {
 export const MarkdownFlowEditorUrduLocale: Story = {
   args: {
     content:
-      "## خوش آمدید\n\nتصویر، ویڈیو یا متغیر شامل کرنے کے لیے '/' ٹائپ کریں۔\n\nنظام کا متغیر: {{sys_user_language}}\n",
+      "## خوش آمدید\n\nتصویر یا ویڈیو شامل کرنے کے لیے '/' ٹائپ کریں۔\n\nنظام کا متغیر: {{sys_user_language}}\n",
     editMode: EditMode.QuickEdit,
     locale: "ur-PK",
     variables: [{ name: "sys_user_language" }, { name: "plan" }],
@@ -429,7 +429,7 @@ export const MarkdownFlowEditorUrduLocale: Story = {
 export const MarkdownFlowEditorFilipinoLocale: Story = {
   args: {
     content:
-      "## Kumusta\n\nI-type ang '/' para maglagay ng larawan, bidyo, o baryabol.\n\nBaryabol ng sistema: {{sys_user_language}}\n",
+      "## Kumusta\n\nI-type ang '/' para maglagay ng larawan o bidyo.\n\nBaryabol ng sistema: {{sys_user_language}}\n",
     editMode: EditMode.QuickEdit,
     locale: "fil-PH",
     variables: [{ name: "sys_user_language" }, { name: "plan" }],
@@ -439,7 +439,7 @@ export const MarkdownFlowEditorFilipinoLocale: Story = {
 export const MarkdownFlowEditorVietnameseLocale: Story = {
   args: {
     content:
-      "## Xin chào\n\nNhập '/' để chèn hình ảnh, video hoặc biến.\n\nBiến hệ thống: {{sys_user_language}}\n",
+      "## Xin chào\n\nNhập '/' để chèn hình ảnh hoặc video.\n\nBiến hệ thống: {{sys_user_language}}\n",
     editMode: EditMode.QuickEdit,
     locale: "vi-VN",
     variables: [{ name: "sys_user_language" }, { name: "plan" }],
@@ -614,5 +614,27 @@ export const ToolbarWithoutVariableActions: Story = {
     expect(
       canvasElement.querySelector(".markdown-flow-editor-variable-search")
     ).toBeNull();
+  },
+};
+
+export const SlashMenuWithoutVariables: Story = {
+  render: (args) => <ControlledEditor {...args} />,
+  args: { locale: "en-US", editMode: EditMode.QuickEdit },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    const texts = getEditorLocaleMessages("en-US");
+    const editor = canvasElement.querySelector<HTMLElement>(".cm-content")!;
+    await userEvent.click(editor);
+    await userEvent.type(editor, "/");
+    await waitFor(() =>
+      expect(
+        canvas.getAllByRole("option").map((option) => option.textContent)
+      ).toEqual([texts.slashImage, texts.slashVideo])
+    );
+    await userEvent.click(
+      canvas.getByRole("option", { name: texts.slashImage })
+    );
+    await page.findByRole("dialog", { name: texts.dialogTitleImage });
   },
 };

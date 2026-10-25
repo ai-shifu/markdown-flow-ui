@@ -244,7 +244,7 @@ importers:
         specifier: ^1.54.1
         version: 1.64.0
       prettier:
-        specifier: ^3.5.3
+        specifier: 3.9.9
         version: 3.9.9
       react:
         specifier: 19.3.0

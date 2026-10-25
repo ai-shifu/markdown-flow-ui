@@ -748,9 +748,9 @@ const resolveSubmittedUserInput = (content: OnSendContentParams) =>
 const isSameStoryElement = (currentElement: Element, targetElement?: Element) =>
   Boolean(
     targetElement &&
-      currentElement.type === targetElement.type &&
-      currentElement.sequence_number === targetElement.sequence_number &&
-      currentElement.content === targetElement.content
+    currentElement.type === targetElement.type &&
+    currentElement.sequence_number === targetElement.sequence_number &&
+    currentElement.content === targetElement.content
   );
 
 const applyInteractionSubmission = (
@@ -812,9 +812,7 @@ const getLatestInteractionVariableName = (elementList: Element[]) => {
 
 const getRunStreamVariableName = (event: RunStreamFixtureEvent) => {
   const eventContent = event.content as
-    | { variable_name?: string; variableName?: string }
-    | null
-    | undefined;
+    { variable_name?: string; variableName?: string } | null | undefined;
 
   if (typeof eventContent?.variable_name === "string") {
     return eventContent.variable_name.trim();

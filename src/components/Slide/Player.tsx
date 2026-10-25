@@ -119,8 +119,7 @@ export interface SlidePlayerNavigationContext {
 
 export type SlidePlayerSubtitleJumpTarget = SubtitleCueJumpTarget;
 
-export interface SlidePlayerSubtitleSeekRequest
-  extends SlidePlayerSubtitleJumpTarget {
+export interface SlidePlayerSubtitleSeekRequest extends SlidePlayerSubtitleJumpTarget {
   id: number | string;
 }
 
@@ -1451,10 +1450,10 @@ const Player = ({
     if (isPlaybackPaused) {
       wasPlayingBeforeExternalPauseRef.current = Boolean(
         currentAudioRef.current &&
-          !isPausedByUserRef.current &&
-          (!audioElement.paused ||
-            pendingAutoPlayRef.current ||
-            waitingSegmentIndexRef.current !== null)
+        !isPausedByUserRef.current &&
+        (!audioElement.paused ||
+          pendingAutoPlayRef.current ||
+          waitingSegmentIndexRef.current !== null)
       );
 
       pendingAutoPlayRef.current = false;

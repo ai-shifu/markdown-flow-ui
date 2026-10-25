@@ -29,8 +29,7 @@ const areFitSnapshotsEqual = (
   left.viewportHeight === right.viewportHeight &&
   left.viewportWidth === right.viewportWidth;
 
-export interface MarkdownSlideScalingProps
-  extends React.ComponentPropsWithoutRef<"div"> {
+export interface MarkdownSlideScalingProps extends React.ComponentPropsWithoutRef<"div"> {
   /** Controls whether Markdown content is fitted, base-scaled, or unscaled. */
   mode: MarkdownScalingMode;
 }

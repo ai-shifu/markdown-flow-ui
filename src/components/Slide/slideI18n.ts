@@ -41,8 +41,7 @@ export interface SlideInteractionLocaleTexts {
 }
 
 export type SlideBufferingReason =
-  | "waitingForAudio"
-  | import("./Player").SlidePlayerLoadingReason;
+  "waitingForAudio" | import("./Player").SlidePlayerLoadingReason;
 
 export interface SlideLocaleTexts {
   bufferingText: Record<SlideBufferingReason, string>;

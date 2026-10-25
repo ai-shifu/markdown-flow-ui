@@ -664,7 +664,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     const hostElement = containerRef.current;
     let needsTailwindRefreshAfterHidden = Boolean(
       hostElement &&
-        (hostElement.clientWidth <= 0 || hostElement.clientHeight <= 0)
+      (hostElement.clientWidth <= 0 || hostElement.clientHeight <= 0)
     );
     let isTailwindRefreshQueued = false;
     let tailwindRefreshFrame: number | null = null;
@@ -678,8 +678,8 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     const isHostVisible = () =>
       Boolean(
         hostElement &&
-          hostElement.clientWidth > 0 &&
-          hostElement.clientHeight > 0
+        hostElement.clientWidth > 0 &&
+        hostElement.clientHeight > 0
       );
     const queueTailwindRefreshAfterHidden = () => {
       if (

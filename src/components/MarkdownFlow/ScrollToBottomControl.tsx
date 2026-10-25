@@ -7,7 +7,8 @@ import useScrollToBottom, {
 } from "./useScrollToBottom";
 
 export interface ScrollToBottomControlProps
-  extends UseScrollToBottomOptions,
+  extends
+    UseScrollToBottomOptions,
     Omit<ScrollToBottomButtonProps, "onClick" | "visible"> {
   /** Existing host viewport; no wrapper or content ownership is required. */
   viewportRef: RefObject<HTMLElement | null>;

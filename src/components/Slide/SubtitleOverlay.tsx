@@ -7,8 +7,10 @@ import type { PlaybackTimeStore } from "./utils/playbackTimeStore";
 import type { ElementSubtitleCue } from "./types";
 import "./subtitle-overlay.css";
 
-export interface SubtitleOverlayProps
-  extends Omit<React.ComponentProps<"div">, "children"> {
+export interface SubtitleOverlayProps extends Omit<
+  React.ComponentProps<"div">,
+  "children"
+> {
   extraBottomOffset?: number;
   hasPlayerGap?: boolean;
   isEnabled?: boolean;

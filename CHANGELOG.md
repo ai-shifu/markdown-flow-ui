@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.1 - 2026-10-25
+
+### Fixed
+
+- Ship Mermaid 11.16.1 with js-yaml 4.3.2 for both module formats and lazy
+  diagrams, so consumers no longer need aliases for embedded parser files.
+- Use the same patched YAML parser in Storybook previews, browser tests and
+  static builds while preserving diagram syntax and renderer APIs.
+- Keep Chinese diagram labels visible after a zoomed mount and preserve XY tick
+  labels in centered and narrow layouts.
+- Retain valid XY diagrams when optional font geometry measurement is unavailable.
+
 ## 0.3.0 - 2026-10-24
 
 ### Added

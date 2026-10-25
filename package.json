@@ -30,9 +30,10 @@
     "github-markdown-css": "^5.8.1",
     "highlight.js": "^11.11.1",
     "i18next": "^23.15.1",
+    "js-yaml": "4.3.2",
     "katex": "^0.16.22",
     "lucide-react": "^0.525.0",
-    "mermaid": "^11.10.1",
+    "mermaid": "11.16.1",
     "micromark-util-decode-string": "^2.0.1",
     "rc-textarea": "^1.10.2",
     "react-i18next": "^15.5.1",
@@ -135,6 +136,14 @@
   "types": "dist/index.d.ts",
   "name": "markdown-flow-ui",
   "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748",
+  "overrides": {
+    "js-yaml": "$js-yaml"
+  },
+  "pnpm": {
+    "overrides": {
+      "js-yaml": "4.3.2"
+    }
+  },
   "peerDependencies": {
     "next": "^15.3.6",
     "react": "^18.3.1 || ^19.0.0",
@@ -187,7 +196,7 @@
       ]
     }
   },
-  "version": "0.3.0",
+  "version": "0.3.1",
   "type": "module",
   "exports": {
     ".": {

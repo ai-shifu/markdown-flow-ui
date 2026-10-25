@@ -47,6 +47,31 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+export const MermaidYamlLimits: Story = {
+  args: {
+    content: [
+      "```mermaid\n---\ntitle: Safe frontmatter\n---\nflowchart TD; A[Start] --> B[Finish]\n```",
+      `\`\`\`mermaid\n---\ntitle: ${"[".repeat(110)}0${"]".repeat(110)}\n---\nflowchart TD; A-->B\n\`\`\``,
+    ].join("\n\n"),
+  },
+  play: async ({ canvasElement }) => {
+    await waitFor(
+      () => {
+        expect(
+          canvasElement.querySelector(".content-render-mermaid svg")
+        ).toBeTruthy();
+        expect(
+          canvasElement.querySelector("[data-mermaid-error]")
+        ).toHaveAttribute(
+          "data-mermaid-error",
+          expect.stringContaining("maxdepth")
+        );
+      },
+      { timeout: 10000 }
+    );
+  },
+};
+
 const MixedInteractionReplayPreview = () => {
   const [userInput, setUserInput] = useState("");
 

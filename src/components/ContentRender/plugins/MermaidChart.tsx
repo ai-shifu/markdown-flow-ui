@@ -175,11 +175,17 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
           cleaned,
           container
         );
-        setSvg(
-          parsed && parsed.diagramType === "xychart"
-            ? fitXYViewBox(renderedSvg, container)
-            : renderedSvg
-        );
+        let displaySvg = renderedSvg;
+        if (parsed && parsed.diagramType === "xychart") {
+          try {
+            displaySvg = fitXYViewBox(renderedSvg, container);
+          } catch {
+            // Geometry fitting is optional; preserve a successful diagram if
+            // the browser cannot measure its glyphs.
+            displaySvg = renderedSvg;
+          }
+        }
+        setSvg(displaySvg);
         setError("");
       } finally {
         container.remove();

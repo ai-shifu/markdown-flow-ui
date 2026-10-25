@@ -96,6 +96,48 @@ it("removes the measurement host when drawing fails and preserves the error fall
   );
 });
 
+it("keeps a successful XY diagram when optional glyph measurement throws", async () => {
+  const original = Object.getOwnPropertyDescriptor(
+    SVGSVGElement.prototype,
+    "getScreenCTM"
+  );
+  const measure = vi.fn(() => {
+    throw new Error("Geometry unavailable");
+  });
+  Object.defineProperty(SVGSVGElement.prototype, "getScreenCTM", {
+    configurable: true,
+    value: measure,
+  });
+  vi.mocked(mermaid.parse).mockResolvedValueOnce({
+    diagramType: "xychart",
+    config: {},
+  });
+  vi.mocked(mermaid.render).mockResolvedValueOnce({
+    svg: '<svg viewBox="0 0 700 500" data-rendered="true"></svg>',
+    diagramType: "xychart",
+  });
+  try {
+    const { container } = render(
+      <MermaidChart chart="xychart\nline [1, 2, 3]" />
+    );
+    await waitFor(() =>
+      expect(container.querySelector('[data-rendered="true"]')).not.toBeNull()
+    );
+    expect(measure).toHaveBeenCalledOnce();
+    expect(container.querySelector("[data-mermaid-error]")).toBeNull();
+    expect(container.querySelector("svg")?.getAttribute("viewBox")).toBe(
+      "0 0 700 500"
+    );
+    expect(vi.mocked(mermaid.render).mock.calls[0][2]?.isConnected).toBe(false);
+  } finally {
+    if (original) {
+      Object.defineProperty(SVGSVGElement.prototype, "getScreenCTM", original);
+    } else {
+      Reflect.deleteProperty(SVGSVGElement.prototype, "getScreenCTM");
+    }
+  }
+});
+
 it("gives concurrent renders separate hosts and SVG identifiers", async () => {
   vi.spyOn(Date, "now").mockReturnValue(1);
   render(

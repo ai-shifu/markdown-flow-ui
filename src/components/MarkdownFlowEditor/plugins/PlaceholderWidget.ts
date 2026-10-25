@@ -68,7 +68,7 @@ class PlaceholderWidget extends WidgetType {
   constructor(
     private text: string,
     private dataset: {
-      tag: "image" | "video" | "variable";
+      tag: "image" | "video";
       title?: string;
       url?: string;
       scalePercent?: number;

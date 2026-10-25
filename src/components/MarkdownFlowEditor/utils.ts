@@ -9,14 +9,27 @@ import { getVideoEmbedUrl } from "./utils/video";
 import {
   createVariableExpressionRegex,
   extractVariableNames,
-  findVariableMarkers,
-  findDocumentVariableMarkers,
+  findVariableMarkers as findVariableMarkersFromRemarkFlow,
+  findDocumentVariableMarkers as findDocumentVariableMarkersFromRemarkFlow,
   formatVariableReference,
   formatVariableAssignment,
   isValidVariableName,
-  normalizeVariableName,
-  trimVariablePadding,
+  normalizeVariableName as normalizeVariableNameFromRemarkFlow,
+  trimVariablePadding as trimVariablePaddingFromRemarkFlow,
 } from "remark-flow";
+
+// Runtime calls keep the CommonJS dependency bound in preserved-module builds.
+const findVariableMarkers: typeof findVariableMarkersFromRemarkFlow = (
+  ...args
+) => findVariableMarkersFromRemarkFlow(...args);
+const findDocumentVariableMarkers: typeof findDocumentVariableMarkersFromRemarkFlow =
+  (...args) => findDocumentVariableMarkersFromRemarkFlow(...args);
+const normalizeVariableName: typeof normalizeVariableNameFromRemarkFlow = (
+  ...args
+) => normalizeVariableNameFromRemarkFlow(...args);
+const trimVariablePadding: typeof trimVariablePaddingFromRemarkFlow = (
+  ...args
+) => trimVariablePaddingFromRemarkFlow(...args);
 
 const FIXED_OUTPUT_MARKER = "===";
 const createVariableExpressionRegexp = () =>
@@ -39,10 +52,6 @@ const parseContentInfo = (
         resourceUrl: dataset.url,
         resourceTitle: dataset.title,
       };
-    case SelectedOption.Variable:
-      return {
-        variableName: normalizeVariableName(dataset.title ?? "") ?? undefined,
-      };
     default:
       return {
         resourceUrl: dataset.url ?? "",
@@ -58,7 +67,6 @@ function createSlashCommands(
     fixedText?: string;
     image?: string;
     video?: string;
-    variable?: string;
   }
 ) {
   return (context: CompletionContext): CompletionResult | null => {
@@ -94,12 +102,6 @@ function createSlashCommands(
         //     handleSelect(view, _, from, to, SelectedOption.FixedText);
         //   },
         // },
-        {
-          label: labels?.variable ?? "Variable",
-          apply: (view, _, from, to) => {
-            handleSelect(view, _, from, to, SelectedOption.Variable);
-          },
-        },
         {
           label: labels?.image ?? "Image",
           apply: (view, _, from, to) => {

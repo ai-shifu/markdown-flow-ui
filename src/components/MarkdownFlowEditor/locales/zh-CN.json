@@ -53,8 +53,6 @@
   "variableSectionSystem": "系统变量",
   "variableSectionCustom": "自定义变量",
   "variableAddNew": "添加变量",
-  "toolbarInsertNewVariable": "插入新变量",
-  "toolbarInsertExistingVariable": "插入已有变量",
   "toolbarConfirmOutput": "插入确定内容",
   "toolbarInsertLink": "插入链接",
   "toolbarInsertButton": "插入按钮",

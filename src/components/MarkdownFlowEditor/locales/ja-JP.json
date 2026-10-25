@@ -53,8 +53,6 @@
   "variableSectionSystem": "システム変数",
   "variableSectionCustom": "カスタム変数",
   "variableAddNew": "変数を追加",
-  "toolbarInsertNewVariable": "新しい変数を挿入",
-  "toolbarInsertExistingVariable": "既存の変数を挿入",
   "toolbarConfirmOutput": "確認出力を挿入",
   "toolbarInsertLink": "リンクを挿入",
   "toolbarInsertButton": "ボタンを挿入",

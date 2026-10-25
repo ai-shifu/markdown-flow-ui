@@ -314,9 +314,9 @@ export const LanguageAcrossBoundaries: Story = {
       await expectDetachedTooltip(
         canvasElement.ownerDocument.body,
         editor.getByRole("button", {
-          name: texts.toolbarInsertExistingVariable,
+          name: texts.toolbarInsertSingleChoice,
         }),
-        texts.toolbarInsertExistingVariable,
+        texts.toolbarInsertSingleChoice,
         language,
         direction
       );
@@ -2279,68 +2279,6 @@ export const VariablePickerDirection: Story = {
       );
     }
   },
-};
-
-export const ArabicVariableDropdown: Story = {
-  parameters: { dropdownLocale: "ar-SA" },
-  render: (_args, { parameters }) => (
-    <div style={{ width: 320, marginLeft: "auto" }}>
-      <MarkdownFlowEditor
-        locale={parameters.dropdownLocale}
-        variables={[
-          {
-            name: "learner",
-            label: parameters.dropdownLocale === "ar-SA" ? "متعلم" : "ผู้เรียน",
-          },
-        ]}
-      />
-    </div>
-  ),
-  play: async ({ canvasElement, parameters }) => {
-    const canvas = within(canvasElement);
-    const trigger = canvas.getByRole("button", {
-      name: getEditorLocaleMessages(parameters.dropdownLocale)
-        .toolbarInsertExistingVariable,
-    });
-    await userEvent.click(trigger);
-    await waitFor(() => {
-      const panel = canvasElement.querySelector(
-        ".markdown-flow-editor-variable-search"
-      )!;
-      expect(panel).not.toBeNull();
-      expectSearchAffordance(panel.querySelector("input")!);
-      const rect = panel.getBoundingClientRect();
-      expect(rect.left).toBeGreaterThanOrEqual(8);
-      expect(rect.right).toBeLessThanOrEqual(
-        canvasElement.ownerDocument.documentElement.clientWidth - 8
-      );
-      if (parameters.dropdownLocale === "ar-SA") {
-        expect(rect.right).toBeCloseTo(
-          trigger.getBoundingClientRect().right,
-          0
-        );
-      }
-      const item = panel.querySelector(".variable-search-item")!;
-      expect(item).not.toBeNull();
-      for (const element of [
-        item,
-        ...item.querySelectorAll(
-          ".variable-search-item-name, .variable-search-item-label"
-        ),
-      ]) {
-        const style = getComputedStyle(element);
-        expect(style.direction).toBe(
-          parameters.dropdownLocale === "ar-SA" ? "rtl" : "ltr"
-        );
-        expect(style.textAlign).toBe("start");
-      }
-    });
-  },
-};
-
-export const ThaiVariableDropdown: Story = {
-  ...ArabicVariableDropdown,
-  parameters: { dropdownLocale: "th-TH" },
 };
 
 export const SandboxFullscreenPlacement: Story = {

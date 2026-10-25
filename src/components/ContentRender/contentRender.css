@@ -138,6 +138,10 @@
 }
 
 /* Mermaid chart styles */
+.content-render-mermaid-measurement svg {
+  height: auto;
+}
+
 .content-render .mermaid-chart-container {
   margin: 1.5rem 0;
   padding: 1rem;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import mermaid from "mermaid";
+import mermaid, { type ParseResult } from "mermaid";
 import { CJK_SAFE_SANS_FONT_FAMILY } from "../cjkFontFamily";
 
 export interface MermaidChartProps {
@@ -22,6 +22,104 @@ const DEFAULT_MESSAGES = {
 
 const preprocessChart = (raw: string) =>
   raw.trim().replace(/^_streaming\s*/i, "");
+
+let renderSequence = 0;
+
+const createMeasurementContainer = (parsed: ParseResult | false) => {
+  const container = document.createElement("div");
+  container.className = "content-render-mermaid-measurement";
+  let width = document.documentElement.clientWidth || window.innerWidth;
+  if (parsed && parsed.diagramType === "xychart") {
+    // XY charts measure text after setting their fixed SVG viewBox. Keep that
+    // SVG at its natural size while measuring, even on a narrow screen.
+    width = Math.max(
+      width,
+      parsed.config.xyChart?.width ??
+        mermaid.mermaidAPI.defaultConfig.xyChart!.width!
+    );
+  }
+  Object.assign(container.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: `${width}px`,
+    display: "block",
+    visibility: "hidden",
+    pointerEvents: "none",
+    margin: "0",
+    padding: "0",
+    border: "0",
+    transformOrigin: "0 0",
+  });
+  container.setAttribute("aria-hidden", "true");
+  document.body.appendChild(container);
+
+  // Mermaid uses screen-space getBoundingClientRect values as SVG units.
+  // Cancel inherited scaling locally without changing the consumer's body.
+  const probe = document.createElement("div");
+  Object.assign(probe.style, {
+    width: "100px",
+    height: "100px",
+    padding: "0",
+    border: "0",
+    margin: "0",
+    boxSizing: "border-box",
+  });
+  container.appendChild(probe);
+  const bounds = probe.getBoundingClientRect();
+  if (bounds.width > 0 && bounds.height > 0) {
+    container.style.transform = `scale(${100 / bounds.width}, ${100 / bounds.height})`;
+  }
+  probe.remove();
+  return container;
+};
+
+const fitXYViewBox = (svg: string, container: HTMLElement) => {
+  container.innerHTML = svg;
+  const element = container.querySelector("svg");
+  if (!element?.hasAttribute("viewBox")) return svg;
+  const viewBox = element.viewBox.baseVal;
+  const screenToSvg = element.getScreenCTM()?.inverse();
+  if (!screenToSvg) return svg;
+  // Some fonts extend above the top tick's middle-aligned baseline. Include
+  // their actual glyph bounds instead of clipping them to the fixed XY canvas.
+  let left = viewBox.x;
+  let top = viewBox.y;
+  let right = viewBox.x + viewBox.width;
+  let bottom = viewBox.y + viewBox.height;
+  const labels = element.querySelectorAll<SVGGraphicsElement>(
+    ".left-axis .label, .right-axis .label, .top-axis .label, .bottom-axis .label"
+  );
+  for (const label of labels) {
+    const transform = label.getScreenCTM();
+    if (!transform) continue;
+    const matrix = screenToSvg.multiply(transform);
+    const bounds = label.getBBox();
+    for (const x of [bounds.x, bounds.x + bounds.width]) {
+      for (const y of [bounds.y, bounds.y + bounds.height]) {
+        const point = new DOMPoint(x, y).matrixTransform(matrix);
+        if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) continue;
+        left = Math.min(left, Math.floor(point.x));
+        top = Math.min(top, Math.floor(point.y));
+        right = Math.max(right, Math.ceil(point.x));
+        bottom = Math.max(bottom, Math.ceil(point.y));
+      }
+    }
+  }
+  if (
+    left === viewBox.x &&
+    top === viewBox.y &&
+    right === viewBox.x + viewBox.width &&
+    bottom === viewBox.y + viewBox.height
+  ) {
+    return svg;
+  }
+  element.setAttribute(
+    "viewBox",
+    `${left} ${top} ${right - left} ${bottom - top}`
+  );
+  return element.outerHTML;
+};
 
 const MermaidChart: React.FC<MermaidChartProps> = ({
   chart,
@@ -56,8 +154,9 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
       });
 
       // use mermaid.parse to check for errors
+      let parsed: ParseResult | false;
       try {
-        await mermaid.parse(cleaned);
+        parsed = await mermaid.parse(cleaned);
       } catch (parseErr) {
         const parseErrorMsg = String(parseErr).toLowerCase();
         setError(parseErrorMsg);
@@ -67,12 +166,24 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
         return;
       }
 
-      const id = `mermaid-${Date.now()}`;
+      const id = `mermaid-${Date.now()}-${++renderSequence}`;
 
-      // Render the chart
-      const { svg: renderedSvg } = await mermaid.render(id, cleaned);
-      setSvg(renderedSvg);
-      setError("");
+      const container = createMeasurementContainer(parsed);
+      try {
+        const { svg: renderedSvg } = await mermaid.render(
+          id,
+          cleaned,
+          container
+        );
+        setSvg(
+          parsed && parsed.diagramType === "xychart"
+            ? fitXYViewBox(renderedSvg, container)
+            : renderedSvg
+        );
+        setError("");
+      } finally {
+        container.remove();
+      }
     } catch (err) {
       const errorMsg = String(err).toLowerCase();
       setError(errorMsg);

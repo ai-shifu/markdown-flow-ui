@@ -1189,6 +1189,273 @@ pie title 编程语言使用统计
   },
 };
 
+const MERMAID_LAYOUT_FLOW_CONTENT = `\`\`\`mermaid
+flowchart TD
+    A[开始] --> B[显示用户界面]
+    B --> C[结束]
+\`\`\``;
+
+const MERMAID_LAYOUT_XY_CONTENT = `\`\`\`mermaid
+xychart
+    x-axis 1 --> 3
+    line [1, 2, 3]
+\`\`\``;
+
+const MERMAID_LAYOUT_WIDE_XY_CONTENT = `\`\`\`mermaid
+---
+config:
+    xyChart:
+        width: 900
+---
+xychart
+    x-axis 1 --> 3
+    line [1, 2, 3]
+\`\`\``;
+
+const MERMAID_LAYOUT_OUTLIER_XY_CONTENT = `\`\`\`mermaid
+xychart
+    x-axis 1 --> 3
+    y-axis 0 --> 10
+    line [1, 100, 3]
+\`\`\``;
+
+const MermaidLayoutMeasurementPreview = ({
+  content,
+  allowNarrowContainer = false,
+  wideChartContent,
+  outlierChartContent,
+}: {
+  content: string;
+  allowNarrowContainer?: boolean;
+  wideChartContent?: string;
+  outlierChartContent?: string;
+}) => {
+  const [renderCount, setRenderCount] = useState(0);
+  const [narrow, setNarrow] = useState(false);
+  const [chartContent, setChartContent] = useState(content);
+
+  return (
+    <div
+      style={{
+        width: narrow ? 320 : 700,
+        maxWidth: "calc(100vw - 32px)",
+      }}
+    >
+      <button
+        type="button"
+        data-testid="mount-mermaid-layout-chart"
+        onClick={() => setRenderCount((count) => count + 1)}
+      >
+        Render diagram
+      </button>
+      {allowNarrowContainer && (
+        <button
+          type="button"
+          data-testid="narrow-mermaid-layout-container"
+          onClick={() => setNarrow(true)}
+        >
+          Use narrow container
+        </button>
+      )}
+      {wideChartContent && (
+        <button
+          type="button"
+          data-testid="wide-mermaid-layout-chart"
+          onClick={() => {
+            setChartContent(wideChartContent);
+            setRenderCount((count) => count + 1);
+          }}
+        >
+          Render 900px chart
+        </button>
+      )}
+      {outlierChartContent && (
+        <button
+          type="button"
+          data-testid="outlier-mermaid-layout-chart"
+          onClick={() => {
+            setChartContent(outlierChartContent);
+            setRenderCount((count) => count + 1);
+          }}
+        >
+          Render chart with an outlier
+        </button>
+      )}
+      <div data-testid="mermaid-layout-chart">
+        {renderCount > 0 && (
+          <ContentRender
+            key={renderCount}
+            content={chartContent}
+            enableTypewriter={false}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const waitForMermaidLayoutSvg = (canvasElement: HTMLElement) =>
+  waitFor(
+    () => {
+      const svg = canvasElement.querySelector<SVGSVGElement>(
+        '[data-testid="mermaid-layout-chart"] .content-render-mermaid-inner > svg'
+      );
+      expect(svg).not.toBeNull();
+      return svg!;
+    },
+    { timeout: 15000 }
+  );
+
+export const MermaidZoomMeasurementRegression: Story = {
+  name: "Mermaid Labels After Zoom Reset",
+  render: () => (
+    <MermaidLayoutMeasurementPreview content={MERMAID_LAYOUT_FLOW_CONTENT} />
+  ),
+  play: async ({ canvasElement }) => {
+    const body = canvasElement.ownerDocument.body;
+    const originalStyle = body.getAttribute("style");
+    const restoreBody = () => {
+      if (originalStyle === null) body.removeAttribute("style");
+      else body.setAttribute("style", originalStyle);
+    };
+
+    try {
+      // Match the Storybook toolbar's 64% zoom before mounting the chart.
+      Object.assign(body.style, {
+        width: "156.25%",
+        height: "156.25%",
+        transform: "scale(0.64)",
+        transformOrigin: "left top",
+      });
+      await userEvent.click(
+        canvasElement.querySelector<HTMLButtonElement>(
+          '[data-testid="mount-mermaid-layout-chart"]'
+        )!
+      );
+      const svg = await waitForMermaidLayoutSvg(canvasElement);
+      restoreBody();
+
+      // Resetting zoom must keep the existing SVG's label boxes large enough.
+      await waitFor(() => {
+        const labels = Array.from(
+          svg.querySelectorAll<HTMLElement>("foreignObject .nodeLabel")
+        );
+        expect(labels.length).toBe(3);
+        for (const label of labels) {
+          const box = label.closest("foreignObject")!.getBoundingClientRect();
+          const text = label.getBoundingClientRect();
+          expect(box.width + 1).toBeGreaterThanOrEqual(text.width);
+          expect(box.height + 1).toBeGreaterThanOrEqual(text.height);
+        }
+      });
+    } finally {
+      restoreBody();
+    }
+  },
+};
+
+const expectMermaidXYTicksInsideSvg = (svg: SVGSVGElement) => {
+  const bounds = svg.getBoundingClientRect();
+  const labels = Array.from(svg.querySelectorAll("text")).filter((text) =>
+    text.textContent?.trim()
+  );
+  expect(labels.length).toBeGreaterThan(5);
+  for (const label of labels) {
+    const rect = label.getBoundingClientRect();
+    expect(rect.left).toBeGreaterThanOrEqual(bounds.left - 1);
+    expect(rect.top).toBeGreaterThanOrEqual(bounds.top - 1);
+    expect(rect.right).toBeLessThanOrEqual(bounds.right + 1);
+    expect(rect.bottom).toBeLessThanOrEqual(bounds.bottom + 1);
+  }
+};
+
+export const MermaidCenteredXYMeasurementRegression: Story = {
+  name: "Mermaid XY Ticks in Centered and Narrow Layouts",
+  render: () => (
+    <MermaidLayoutMeasurementPreview
+      content={MERMAID_LAYOUT_XY_CONTENT}
+      wideChartContent={MERMAID_LAYOUT_WIDE_XY_CONTENT}
+      outlierChartContent={MERMAID_LAYOUT_OUTLIER_XY_CONTENT}
+      allowNarrowContainer
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const body = canvasElement.ownerDocument.body;
+    const originalStyle = body.getAttribute("style");
+    const mount = canvasElement.querySelector<HTMLButtonElement>(
+      '[data-testid="mount-mermaid-layout-chart"]'
+    )!;
+
+    try {
+      Object.assign(body.style, {
+        display: "flex",
+        alignItems: "center",
+        minHeight: "100vh",
+      });
+      await userEvent.click(mount);
+      expectMermaidXYTicksInsideSvg(
+        await waitForMermaidLayoutSvg(canvasElement)
+      );
+
+      // Preserve ordinary document layout as well as centered Storybook pages.
+      body.style.display = "block";
+      await userEvent.click(mount);
+      expectMermaidXYTicksInsideSvg(
+        await waitForMermaidLayoutSvg(canvasElement)
+      );
+
+      Object.assign(body.style, {
+        width: "156.25%",
+        height: "156.25%",
+        transform: "scale(0.64)",
+        transformOrigin: "left top",
+      });
+      await userEvent.click(mount);
+      const zoomedSvg = await waitForMermaidLayoutSvg(canvasElement);
+      if (originalStyle === null) body.removeAttribute("style");
+      else body.setAttribute("style", originalStyle);
+      body.style.display = "block";
+      expectMermaidXYTicksInsideSvg(zoomedSvg);
+
+      await userEvent.click(
+        canvasElement.querySelector<HTMLButtonElement>(
+          '[data-testid="wide-mermaid-layout-chart"]'
+        )!
+      );
+      const wideSvg = await waitForMermaidLayoutSvg(canvasElement);
+      expect(wideSvg.viewBox.baseVal.width).toBe(900);
+      expectMermaidXYTicksInsideSvg(wideSvg);
+
+      await userEvent.click(
+        canvasElement.querySelector<HTMLButtonElement>(
+          '[data-testid="narrow-mermaid-layout-container"]'
+        )!
+      );
+      await userEvent.click(mount);
+      const narrowSvg = await waitForMermaidLayoutSvg(canvasElement);
+      expect(narrowSvg.getBoundingClientRect().width).toBeLessThanOrEqual(320);
+      expectMermaidXYTicksInsideSvg(narrowSvg);
+
+      await userEvent.click(
+        canvasElement.querySelector<HTMLButtonElement>(
+          '[data-testid="outlier-mermaid-layout-chart"]'
+        )!
+      );
+      const outlierSvg = await waitForMermaidLayoutSvg(canvasElement);
+      expect(outlierSvg.viewBox.baseVal.height).toBeGreaterThanOrEqual(500);
+      expect(outlierSvg.viewBox.baseVal.height).toBeLessThanOrEqual(510);
+      expectMermaidXYTicksInsideSvg(outlierSvg);
+      const outlierPath =
+        outlierSvg.querySelector<SVGPathElement>(".plot path");
+      expect(outlierPath).not.toBeNull();
+      expect(outlierPath!.getBBox().y).toBeLessThan(0);
+    } finally {
+      if (originalStyle === null) body.removeAttribute("style");
+      else body.setAttribute("style", originalStyle);
+    }
+  },
+};
+
 export const CustomButtonAfterContentDemo: Story = {
   name: "Custom Button After Content",
   args: {

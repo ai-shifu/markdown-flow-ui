@@ -31,7 +31,7 @@
     "highlight.js": "^11.11.1",
     "i18next": "^23.15.1",
     "js-yaml": "4.3.2",
-    "katex": "^0.16.22",
+    "katex": "0.18.2",
     "lucide-react": "^0.525.0",
     "mermaid": "11.16.1",
     "micromark-util-decode-string": "^2.0.1",
@@ -137,11 +137,13 @@
   "name": "markdown-flow-ui",
   "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748",
   "overrides": {
-    "js-yaml": "$js-yaml"
+    "js-yaml": "$js-yaml",
+    "katex": "$katex"
   },
   "pnpm": {
     "overrides": {
-      "js-yaml": "4.3.2"
+      "js-yaml": "4.3.2",
+      "katex": "0.18.2"
     }
   },
   "peerDependencies": {

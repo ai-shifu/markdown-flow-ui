@@ -1,11 +1,10 @@
-import type React from "react";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Search, Plus, Check, X } from "lucide-react";
 import { Input } from "../../ui/input";
 import { Button } from "../../ui/button";
 import { cn } from "../../../lib/utils";
 import { Variable } from "../types";
-import { isValidVariableName } from "../utils";
+import { normalizeVariableName } from "../utils";
 import { useTranslation } from "react-i18next";
 
 interface VariableSelectProps {
@@ -64,16 +63,15 @@ const VariableSelect = ({
     filteredSystemVariables.length > 0 || filteredCustomVariables.length > 0;
 
   const handleAddVariable = () => {
-    const inputValue = newVariableName;
-    if (!inputValue || !isValidVariableName(inputValue)) {
+    const inputValue = normalizeVariableName(newVariableName);
+    if (!inputValue) {
       setInvalidNameError(true);
       setDuplicateError(false);
       return;
     }
 
-    const lowerName = inputValue.toLowerCase();
     const isDuplicate = [...variables, ...systemVariables].some(
-      (v) => v.name.toLowerCase() === lowerName
+      (v) => normalizeVariableName(v.name) === inputValue
     );
 
     if (isDuplicate) {
@@ -243,7 +241,7 @@ const VariableSelect = ({
                   ? t("variableAlreadyExists", "Variable already exists")
                   : t(
                       "variableNameInvalid",
-                      "Use letters, numbers, or underscores without spaces"
+                      "Use a non-empty name without control characters, line breaks, or }}"
                     )}
               </p>
             )}

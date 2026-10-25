@@ -10,6 +10,8 @@ export function parseMarkdownSegments(markdown: string) {
   const analysis = getMarkdownSourceAnalysis(markdown);
   const codeRanges = analysis.markdown;
   const inlineCodeRanges = analysis.inline;
+  const variableAt = (index: number) =>
+    analysis.variables.find(({ start, end }) => index >= start && index < end);
   const metadataAt = (index: number) => {
     let low = 0;
     let high = analysis.metadata.length;
@@ -47,6 +49,11 @@ export function parseMarkdownSegments(markdown: string) {
     const end = regex.lastIndex;
     const rawMatch = match[0];
 
+    const variable = variableAt(start);
+    if (variable) {
+      regex.lastIndex = variable.end;
+      continue;
+    }
     const metadata = metadataAt(start);
     if (metadata) {
       // A quoted opener may make this regex match extend into real markup.
@@ -129,6 +136,7 @@ export function parseMarkdownSegments(markdown: string) {
     !isInsideCodeBlock &&
     !isInsideCode(incompleteSvgStart) &&
     !isInsideMetadata(incompleteSvgStart) &&
+    !variableAt(incompleteSvgStart) &&
     incompleteSvgStart !== -1 &&
     (lastSvgClose === -1 || lastSvgClose < incompleteSvgStart) &&
     incompleteSvgStart >= lastIndex;

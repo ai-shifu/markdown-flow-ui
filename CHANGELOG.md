@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.3.1 - 2026-10-25
+
+### Fixed
+
+- Ship Mermaid 11.16.1 with js-yaml 4.3.2 for both module formats and lazy
+  diagrams, so consumers no longer need aliases for embedded parser files.
+- Use the same patched YAML parser in Storybook previews, browser tests and
+  static builds while preserving diagram syntax and renderer APIs.
+- Keep Chinese diagram labels visible after a zoomed mount and preserve XY tick
+  labels in centered and narrow layouts.
+- Retain valid XY diagrams when optional font geometry measurement is unavailable.
+
+## 0.3.0 - 2026-10-24
+
+### Added
+
+- Use complete questions and other Unicode text as memory keys, preserving
+  internal spaces, punctuation, emoji, and single braces after boundary trimming.
+
+### Fixed
+
+- Use the stable remark-flow 1.4.1 parser so link titles containing variable-like
+  examples preserve following headings and answer controls with newer parsers.
+- Share variable rules across rendering, editing, validation, suggestions, and
+  answer replay while preserving existing compact markers.
+- Keep markup and interaction delimiters inside variable names opaque, and keep
+  incomplete code or HTML examples from hiding later real controls.
+- Preserve literal code boundaries across blank paragraphs and fences, and use
+  padded markers when inserting names that end with a single closing brace.
+
 ## 0.2.34 - 2026-10-11
 
 ### Fixed

@@ -20,7 +20,7 @@ export type RenderSegment =
       /** A native HTML header has not arrived fully, so it cannot mount yet. */
       pending?: true;
     }
-  | { type: "sandbox"; value: string }
+  | { type: "sandbox"; value: string; pending?: true }
   | { type: "text"; value: string };
 
 const SANDBOX_START_PATTERN =
@@ -132,11 +132,20 @@ const firstNonEmptyLine = (content: string) =>
     .map((line) => line.trim())
     .find(Boolean) ?? "";
 
-const extractFirstFenceBlock = (raw: string): FenceBlock | null => {
-  const start = raw.indexOf("```");
+const extractFirstFenceBlock = (
+  raw: string,
+  variables: readonly FenceRange[] = []
+): FenceBlock | null => {
+  const nextFence = (from: number) => {
+    let index = raw.indexOf("```", from);
+    while (index !== -1 && isIndexInRanges(index, variables))
+      index = raw.indexOf("```", index + 3);
+    return index;
+  };
+  const start = nextFence(0);
   if (start === -1) return null;
 
-  const closing = raw.indexOf("```", start + 3);
+  const closing = nextFence(start + 3);
   if (closing === -1) {
     return {
       start,
@@ -202,19 +211,22 @@ export const normalizeWrappedSandboxContent = (raw: string) => {
     : raw;
 };
 
-const getFenceRanges = (raw: string): FenceRange[] => {
+const getFenceRanges = (
+  raw: string,
+  variables: readonly FenceRange[] = []
+): FenceRange[] => {
   const ranges: FenceRange[] = [];
-  const fencePattern = /```/g;
-  let match: RegExpExecArray | null;
-
-  while ((match = fencePattern.exec(raw)) !== null) {
-    const start = match.index;
-    const closeMatch = fencePattern.exec(raw);
-    if (!closeMatch) {
-      ranges.push({ start, end: raw.length });
-      break;
-    }
-    ranges.push({ start, end: closeMatch.index + 3 });
+  const positions = [...raw.matchAll(/```/g)]
+    .map((match) => match.index)
+    .filter((position) => !isIndexInRanges(position, variables));
+  for (let index = 0; index < positions.length; index += 2) {
+    ranges.push({
+      start: positions[index],
+      end:
+        positions[index + 1] === undefined
+          ? raw.length
+          : positions[index + 1] + 3,
+    });
   }
 
   return ranges;
@@ -579,6 +591,14 @@ const appendStreamingSandbox = (
   match: StreamingMatch,
   segments: RenderSegment[]
 ) => {
+  if (match.pending) {
+    segments.push({
+      type: "sandbox",
+      value: source.slice(match.start, match.end),
+      pending: true,
+    });
+    return;
+  }
   let start = match.start;
   let position = start;
   while (position < match.end) {
@@ -679,6 +699,7 @@ const splitStreamingContent = (
   let literalIndex = 0;
   let fenceIndex = 0;
   let htmlIndex = 0;
+  let interactionIndex = 0;
   let position = 0;
   let resumedProse = false;
   let resumedLiterals: ReturnType<typeof resumedProseLiteralIndex> | undefined;
@@ -741,10 +762,17 @@ const splitStreamingContent = (
       continue;
     }
     const markup = readHtmlMarkup(source, position);
+    while (analysis.interactions[interactionIndex]?.end <= position)
+      interactionIndex += 1;
+    const control = analysis.interactions[interactionIndex];
+    const controlBoundary =
+      html?.start === position && control && control.start >= html.end
+        ? html.end
+        : undefined;
     if (isStreamingSandboxStart(source, position)) {
       const video = findStreamingVideoIframeMatch(source, position);
       const nativeRoot = isNativeMarkdownHtmlStart(source, position);
-      const end =
+      let end =
         video?.end ??
         (nativeRoot
           ? findStreamingHtmlElementEnd(source, position)
@@ -755,14 +783,43 @@ const splitStreamingContent = (
                 isNativeMarkdownHtmlStart(source, nextRoot)
               );
             }));
+      // A marker example in a raw HTML closing line keeps that line's native
+      // context. Splitting it into fresh Markdown could make it own a later question.
+      if (
+        html?.start === position &&
+        (markup.kind === "declaration" ||
+          (markup.kind === "tag" &&
+            ["script", "style", "pre", "textarea"].includes(markup.name))) &&
+        analysis.documentVariables.some(
+          (marker) => marker.start >= end && marker.start < html.end
+        )
+      )
+        end = Math.max(end, html.end);
+      // Native Markdown can end an incomplete HTML block before a real control.
+      // The streaming HTML scanner must not move that control into its sandbox.
+      const crossesControlBoundary =
+        controlBoundary !== undefined && end > controlBoundary;
+      const pendingHtml =
+        crossesControlBoundary &&
+        (markup.kind === "incomplete" ||
+          (markup.kind === "tag" &&
+            ["script", "style", "pre", "textarea"].includes(markup.name) &&
+            analysis.documentVariables.some(
+              (marker) => marker.start > position && marker.start < markup.end
+            )));
+      if (crossesControlBoundary) end = controlBoundary;
       const nativeHtml =
-        nativeRoot && !containsWidgetResources(source, position, end);
+        nativeRoot &&
+        !pendingHtml &&
+        !containsWidgetResources(source, position, end);
       matches.push({
         start: position,
         end,
         type: video || nativeHtml ? "markdown" : "sandbox",
         ...(video?.immediate || nativeHtml ? { immediate: true as const } : {}),
-        ...(video?.pending || (nativeHtml && markup.kind === "incomplete")
+        ...(video?.pending ||
+        pendingHtml ||
+        (nativeHtml && markup.kind === "incomplete")
           ? { pending: true as const }
           : {}),
       });
@@ -780,6 +837,16 @@ const splitStreamingContent = (
         position = end;
       } else if (!markup.closing && isHtmlRawTextTag(markup.name)) {
         const end = findStreamingHtmlElementEnd(source, position);
+        if (controlBoundary !== undefined && end > controlBoundary) {
+          matches.push({
+            start: position,
+            end: controlBoundary,
+            type: "sandbox",
+            pending: true,
+          });
+          position = controlBoundary;
+          continue;
+        }
         actualLiterals.push({ start: position, end });
         position = end;
       } else {
@@ -790,6 +857,16 @@ const splitStreamingContent = (
         actualLiterals.push({ start: position, end: markup.end });
       position = markup.end;
     } else if (markup.kind === "incomplete") {
+      if (controlBoundary !== undefined) {
+        matches.push({
+          start: position,
+          end: controlBoundary,
+          type: "sandbox",
+          pending: true,
+        });
+        position = controlBoundary;
+        continue;
+      }
       // The rest belongs to this unfinished token, including quoted attributes.
       if (/^<svg(?=[\s/>])/i.test(source.slice(position)))
         matches.push({ start: position, end: source.length, type: "markdown" });
@@ -849,9 +926,15 @@ export const splitContentSegments = (
   const finalizeSegments = (segments: RenderSegment[]) =>
     splitCustomButtonsFromSandbox(segments);
   const hasText = (value: string) => Boolean(value.trim());
+  const analysis = getMarkdownSourceAnalysis(source);
+  const variables = analysis.variables;
   const codeRanges = getInlineCodeRanges(source);
-  const fenceBlock = extractFirstFenceBlock(source);
-  const fenceRanges = [...getFenceRanges(source), ...codeRanges];
+  const fenceBlock = extractFirstFenceBlock(source, variables);
+  const fenceRanges = [
+    ...getFenceRanges(source, variables),
+    ...codeRanges,
+    ...variables,
+  ];
   const sandboxStartIndex = findFirstMatchOutsideFence(
     source,
     SANDBOX_START_PATTERN,
@@ -914,7 +997,7 @@ export const splitContentSegments = (
       return finalizeSegments([{ type: "markdown", value: svgBlock }]);
   }
 
-  const tableBlock = extractTableBlock(source, []);
+  const tableBlock = extractTableBlock(source, variables);
   if (tableBlock) {
     const segments: RenderSegment[] = [];
     const before = source.slice(0, tableBlock.start);
@@ -928,7 +1011,7 @@ export const splitContentSegments = (
   }
 
   const inlineCandidate = pickEarliestMatch(
-    findInlineSandboxMatch(source),
+    findInlineSandboxMatch(source, variables),
     findMarkdownImageMatch(source, fenceRanges),
     findMarkdownVideoIframeMatch(source, fenceRanges)
   );

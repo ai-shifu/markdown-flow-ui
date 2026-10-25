@@ -285,35 +285,25 @@ export const MarkdownFlowEditorWithVariables: Story = {
   args: {
     content: `Here is a variable: {{sys_user_email}}.
 
-    有效的变量名称：
-    {{name}} ✓ 简单字母
-    {{userName}} ✓ 驼峰命名法
-    {{user_name}} ✓ 下划线命名法
-    {{UserName}} ✓ 帕斯卡命名法
-    {{user123}} ✓ 包含数字
-    {{_private}} ✓ 以下划线开头
-    {{CONSTANT}} ✓ 全大写
-    {{a}} ✓ 单个字符
-    {{123user}} ✓ 以数字开头
-    {{用户名}} ✓ Unicode 字符（中文）
-    {{ユーザー}} ✓ Unicode 字符（日文）
-    {{пользователь}} ✓ Unicode 字符（俄文）
-    {{utilisateur}} ✓ Unicode 字符（法文）
+Valid variable names preserve their Unicode text and internal spaces:
+{{ name }} ✓ Boundary whitespace is trimmed
+{{ user_name }} ✓ Existing identifiers remain compatible
+{{ 你的性别是？ }} ✓ A complete question
+{{ user name }} ✓ Internal spaces
+{{ user-name }} ✓ Punctuation
+{{ 🚀rocket }} ✓ Emoji
+{{ name[0] | hint//value...? }} ✓ Delimiters remain part of the name
+{{ user} }} ✓ A single closing brace with padded serialization
+{{ {{inner }} ✓ A literal opening marker in the name
 
-    无效的变量名称：
-    {{user}name}} ✗ 包含 } 字符
-    {{user name}} ✗ 名称内包含空格
-    {{user-name}} ✗ 包含连字符
-    {{user.name}} ✗ 包含点号
-    {{user@email}} ✗ 包含特殊字符
-    {{🚀rocket}} ✗ 包含表情符号
-    {{name[0]}} ✗ 包含方括号
-    {{user+id}} ✗ 包含加号
-    {{}} ✗ 空变量
-    {{   }} ✗ 只有空格
-    {{ name }} ✗ 大括号与名称之间有空格（不会被识别为变量）
-    {{ name}} ✗ 名称前有空格（不会被识别为变量）
-    {{name }} ✗ 名称后有空格（不会被识别为变量）
+Invalid names:
+{{}} ✗ Empty name
+{{   }} ✗ Whitespace-only name
+{{ first
+second }} ✗ A line break inside the trimmed name
+
+The first literal pair of closing braces ends a marker. Names cannot contain
+that pair or control characters. UserName and username are distinct, case-sensitive identities.
     `,
     editMode: EditMode.QuickEdit,
     locale: "zh-CN",
@@ -556,5 +546,26 @@ export const MarkdownFlowEditorWithToolbarRight: Story = {
     content: "点击右侧按钮或外部按钮快速插入内容。\n",
     editMode: EditMode.QuickEdit,
     locale: "zh-CN",
+  },
+};
+
+export const QuestionMemoryKeys: Story = {
+  args: {
+    editMode: EditMode.QuickEdit,
+    content: `你的性别是？
+?[%{{ 你的性别是？ }} 男 | 女 | 秘密]
+
+Which-option?
+?[%{{ Which [path] | level//hint...? }} A | B]
+
+{{ name} }}
+
+{{你的性别是？}} / {{user_name}}`,
+    variables: [
+      { name: "你的性别是？" },
+      { name: "user_name" },
+      { name: "Which [path] | level//hint...?" },
+      { name: "name}" },
+    ],
   },
 };

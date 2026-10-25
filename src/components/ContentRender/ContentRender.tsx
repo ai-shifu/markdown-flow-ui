@@ -1,3 +1,4 @@
+import { trimVariablePadding } from "remark-flow";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
@@ -1156,7 +1157,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   );
 
   const resolvedDefaultButtonText =
-    defaultButtonText?.trim() || interactionDefaults.buttonText;
+    (defaultButtonText ? trimVariablePadding(defaultButtonText) : undefined) ||
+    interactionDefaults.buttonText;
   const resolvedDefaultInputText =
     defaultInputText?.trim() || interactionDefaults.inputText;
   const fallbackSelectedValues = useMemo(
@@ -1164,7 +1166,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       userInput
         ? userInput
             .split(",")
-            .map((value) => value.trim())
+            .map((value) => trimVariablePadding(value))
             .filter(Boolean)
         : undefined,
     [userInput]
@@ -1377,7 +1379,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
           const idx = run.indices[0];
           const segment = mergedRenderSegments[idx];
           if (run.sandbox)
-            return segment.value ? (
+            return segment.type === "sandbox" &&
+              segment.value &&
+              !segment.pending ? (
               <IframeSandbox
                 key={`sandbox-${idx}`}
                 hideFullScreen

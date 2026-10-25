@@ -1,4 +1,5 @@
 import { unified } from "unified";
+import { findDocumentVariableMarkers } from "remark-flow";
 import remarkParse from "remark-parse";
 import { visit } from "unist-util-visit";
 import { remarkPlugins } from "./markdown-plugins";
@@ -32,6 +33,9 @@ export type MarkdownSourceAnalysis = {
   inline: readonly CodeRange[];
   markdown: readonly CodeRange[];
   literal: readonly CodeRange[];
+  variables: readonly CodeRange[];
+  documentVariables: readonly CodeRange[];
+  interactions: readonly CodeRange[];
   metadata: readonly MetadataRange[];
   comments: readonly CodeRange[];
   fences: readonly CodeRange[];
@@ -385,6 +389,8 @@ const parseCodeRanges = (raw: string): MarkdownSourceAnalysis => {
   const inline: CodeRange[] = [];
   const markdown: CodeRange[] = [];
   const literal: CodeRange[] = [];
+  const flowRanges: CodeRange[] = [];
+  const interactions: CodeRange[] = [];
   const metadata: MetadataRange[] = [];
   const html: CodeRange[] = [];
   const htmlBlocks = new Map<number, number>();
@@ -396,6 +402,13 @@ const parseCodeRanges = (raw: string): MarkdownSourceAnalysis => {
     const start = node.position?.start.offset;
     const end = node.position?.end.offset;
     if (start === undefined || end === undefined) return;
+    // Flow tokens own their source before HTML, links or code inside a marker.
+    if (["flowInteraction", "flowVariableMarker"].includes(node.type)) {
+      const range = Object.freeze({ start, end });
+      flowRanges.push(range);
+      if (String(node.type) === "flowInteraction") interactions.push(range);
+      return;
+    }
     if (node.type === "definition" && !definitionEnds.has(node.identifier))
       definitionEnds.set(node.identifier, end);
     if (
@@ -479,6 +492,27 @@ const parseCodeRanges = (raw: string): MarkdownSourceAnalysis => {
           ),
         };
   });
+  // Document scanning bounds syntax examples to their code/HTML context while
+  // preserving real marker bodies, including incomplete streamed markers.
+  const ownedRanges = [...literal, ...resolvedMetadata, ...html];
+  const documentVariables = findDocumentVariableMarkers(raw).map(
+    ({ start, end }) => Object.freeze({ start, end })
+  );
+  const variables: CodeRange[] = documentVariables.filter(
+    (marker) =>
+      !ownedRanges.some(
+        (range) => range.start <= marker.start && marker.start < range.end
+      )
+  );
+  literal.push(
+    ...variables.filter(
+      (marker) =>
+        !flowRanges.some(
+          (range) => range.start <= marker.start && marker.end <= range.end
+        )
+    ),
+    ...flowRanges
+  );
   const protectedRanges = [...literal, ...resolvedMetadata].sort(
     (left, right) => left.start - right.start
   );
@@ -519,6 +553,9 @@ const parseCodeRanges = (raw: string): MarkdownSourceAnalysis => {
     inline: Object.freeze(inline),
     markdown: Object.freeze(markdown),
     literal: Object.freeze(literal),
+    variables: Object.freeze(variables.map((range) => Object.freeze(range))),
+    documentVariables: Object.freeze(documentVariables),
+    interactions: Object.freeze(interactions),
     metadata: Object.freeze(allMetadata),
     comments: Object.freeze(comments),
     fences: Object.freeze(fences),

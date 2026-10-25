@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { dirname, relative, resolve } from "node:path";
 import dts from "vite-plugin-dts";
+import { patchedMermaidYaml } from "./scripts/mermaid-yaml.mjs";
 
 const peerPackageNames = ["next", "react", "react-dom"];
 const sourceRoot = resolve(__dirname, "src");
@@ -49,6 +50,7 @@ const makeNodeNextCompatible = (filePath, content) =>
 
 export default defineConfig({
   plugins: [
+    patchedMermaidYaml(),
     react(),
     dts({
       insertTypesEntry: true,
@@ -81,7 +83,7 @@ export default defineConfig({
     },
 
     rollupOptions: {
-      external: isPeerImport,
+      external: (id) => isPeerImport(id) || id === "js-yaml",
 
       output: [
         {

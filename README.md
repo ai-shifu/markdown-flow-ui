@@ -11,7 +11,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![Storybook](https://img.shields.io/badge/Storybook-Enabled-ff69b4.svg)](https://storybook.js.org/)
 
-English | [简体中文](README_ZH-CN.md)
+English | [Simplified Chinese](README_ZH-CN.md)
 
 </div>
 
@@ -90,12 +90,24 @@ can change that structure; typing an already received snapshot preserves it.
 
 ### Interactive Elements
 
+Variable names are opaque Unicode text. Both ends are trimmed using the same
+Unicode whitespace set as Python; internal spaces, punctuation, emoji, and single
+braces are preserved. The trimmed name must be non-empty and contain no control
+characters, line separators, or literal `}}`. The first literal `}}` closes the
+marker. Quotes and backslashes remain part of the name.
+
+Use padded markers such as `{{ Which [path] | level//hint...? }}` or
+`%{{ name} }}`. Assignment markers remain atomic inside an interaction, so
+`?[%{{ Which [path] | level//hint...? }} Yes | No]` stores the answer under that
+exact name. Write the question text separately when it should be displayed.
+Existing names and compact markers such as `{{user_name}}` continue to work.
+
 ```tsx
 import { MarkdownFlow } from "markdown-flow-ui";
 
 function InteractiveExample() {
   const content = `
-Choose your language: ?[%{{lang}} English | 中文 | Español]
+Choose your language: ?[%{{lang}} English | French | Spanish]
 
 Your name: ?[%{{name}} Enter your name...]
 

@@ -15,8 +15,8 @@
   development installs with both npm and pnpm.
 - Update Vite, Storybook and Vitest to patched versions, and keep browser gesture
   tests consistent with native pointer and orientation event timing.
-- Remove unused direct Rollup and daisyUI development dependencies while keeping
-  the bundled blackboard styles unchanged.
+- Remove the unused Rollup CommonJS and Terser plugins and the daisyUI development
+  dependency while keeping the bundled blackboard styles unchanged.
 
 ## 0.3.2 - 2026-10-25
 

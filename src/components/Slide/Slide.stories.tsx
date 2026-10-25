@@ -2353,17 +2353,22 @@ const expectOverlayIsReset = async (overlay: HTMLElement) => {
   });
 };
 
-const triggerPointerDrag = (
+const triggerPointerDrag = async (
   element: HTMLElement,
   start: PointerTestEventOptions,
   end: PointerTestEventOptions
 ) => {
+  // Separate native pointer events let React commit the intermediate drag state.
+  // Keep the same frame boundaries when synthesizing the chain in browser tests.
   dispatchPointerEvent(element, "pointerdown", start);
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   dispatchPointerEvent(element, "pointermove", end);
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   dispatchPointerEvent(element, "pointerup", end);
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 };
 
-const triggerSyntheticPointerDrag = (
+const triggerSyntheticPointerDrag = async (
   handle: HTMLElement,
   deltaX: number,
   deltaY: number,
@@ -2374,7 +2379,7 @@ const triggerSyntheticPointerDrag = (
   expect(rect.width).toBeGreaterThan(0);
   expect(rect.height).toBeGreaterThan(0);
 
-  triggerPointerDrag(
+  await triggerPointerDrag(
     handle,
     {
       clientX: rect.left + rect.width / 2,
@@ -3096,7 +3101,7 @@ export const ControlsAutoHideInteractionLayoutStability: Story = {
     expect(slide).not.toBeNull();
 
     ensurePointerCaptureTracking(handle);
-    triggerSyntheticPointerDrag(handle, 64, 36);
+    await triggerSyntheticPointerDrag(handle, 64, 36);
     await expectOverlayHasMoved(overlay);
 
     const draggedOffsets = getOverlayDragOffsets(overlay);
@@ -3200,7 +3205,7 @@ export const MobileFullscreenControlsAutoHideLayoutStability: Story = {
     await waitFor(() => expect(player).not.toHaveClass("opacity-0"));
 
     ensurePointerCaptureTracking(handle);
-    triggerSyntheticPointerDrag(handle, 36, 28, POINTER_TEST_ID + 10);
+    await triggerSyntheticPointerDrag(handle, 36, 28, POINTER_TEST_ID + 10);
     await expectOverlayHasMoved(overlay);
 
     const draggedOffsets = getOverlayDragOffsets(overlay);
@@ -3279,7 +3284,7 @@ export const DesktopInteractionOverlayPointerDrag: Story = {
     const beforeOffsets = getOverlayDragOffsets(overlay);
     const handleRect = (handle as HTMLElement).getBoundingClientRect();
 
-    triggerPointerDrag(
+    await triggerPointerDrag(
       handle as HTMLElement,
       {
         clientX: handleRect.left + handleRect.width / 2,
@@ -3302,7 +3307,7 @@ export const DesktopInteractionOverlayPointerDrag: Story = {
     const afterHandleOffsets = getOverlayDragOffsets(overlay);
     const bodyRect = (body as HTMLElement).getBoundingClientRect();
 
-    triggerPointerDrag(
+    await triggerPointerDrag(
       body as HTMLElement,
       {
         clientX: bodyRect.left + 48,
@@ -3355,7 +3360,7 @@ export const MobileInteractionOverlayPointerDrag: Story = {
     const beforeOffsets = getOverlayDragOffsets(overlay);
     const handleRect = (handle as HTMLElement).getBoundingClientRect();
 
-    triggerPointerDrag(
+    await triggerPointerDrag(
       handle as HTMLElement,
       {
         clientX: handleRect.left + handleRect.width / 2,
@@ -3513,7 +3518,7 @@ export const MobileInteractionOverlayViewportReset: Story = {
     expect(handle).not.toBeNull();
     ensurePointerCaptureTracking(handle as HTMLElement);
 
-    triggerSyntheticPointerDrag(
+    await triggerSyntheticPointerDrag(
       handle as HTMLElement,
       36,
       52,
@@ -3525,9 +3530,11 @@ export const MobileInteractionOverlayViewportReset: Story = {
       window.visualViewport as unknown as TestVisualViewport;
 
     visualViewport.setSize(844, 390);
+    // Rotation emits an orientation event as well as a visual viewport resize.
+    visualViewport.dispatchOrientationChange();
     await expectOverlayIsReset(overlay);
 
-    triggerSyntheticPointerDrag(
+    await triggerSyntheticPointerDrag(
       handle as HTMLElement,
       -42,
       34,
@@ -3539,9 +3546,10 @@ export const MobileInteractionOverlayViewportReset: Story = {
     await expectOverlayIsReset(overlay);
 
     visualViewport.setSize(390, 844);
+    visualViewport.dispatchOrientationChange();
     await expectOverlayIsReset(overlay);
 
-    triggerSyntheticPointerDrag(
+    await triggerSyntheticPointerDrag(
       handle as HTMLElement,
       28,
       -46,
@@ -3553,6 +3561,7 @@ export const MobileInteractionOverlayViewportReset: Story = {
     await expectOverlayIsReset(overlay);
 
     visualViewport.setSize(844, 390);
+    visualViewport.dispatchOrientationChange();
 
     await waitFor(() => {
       expect(

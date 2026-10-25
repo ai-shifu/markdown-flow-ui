@@ -52,5 +52,6 @@
   "toolbarInsertInput": "入力欄を挿入",
   "toolbarInputPlaceholder": "入力してください",
   "toolbarInsertImage": "画像を挿入",
-  "toolbarInsertVideo": "動画を挿入"
+  "toolbarInsertVideo": "動画を挿入",
+  "questionPlaceholder": "質問"
 }

@@ -52,5 +52,6 @@
   "toolbarInsertInput": "Insertar campo de entrada",
   "toolbarInputPlaceholder": "Introduce el texto",
   "toolbarInsertImage": "Insertar imagen",
-  "toolbarInsertVideo": "Insertar vídeo"
+  "toolbarInsertVideo": "Insertar vídeo",
+  "questionPlaceholder": "Tu pregunta"
 }

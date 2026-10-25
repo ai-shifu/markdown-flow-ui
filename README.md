@@ -202,3 +202,16 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - 📖 [Documentation](https://github.com/ai-shifu/markdown-flow-ui#readme)
 - 🐛 [Issue Tracker](https://github.com/ai-shifu/markdown-flow-ui/issues)
 - 💬 [Discussions](https://github.com/ai-shifu/markdown-flow-ui/discussions)
+
+### Question and memory authoring
+
+Use `<MarkdownFlowEditor questionMode />` to author question-based scripts.
+In `?[%{{ What would you like to learn? }} Practice | Theory]`, the marker
+contains the question and identifies the memory key for its answer. The editor
+keeps standalone `{{...}}` as ordinary source text. Choice and input buttons
+insert and select a localized question hint in the marker for the author to replace.
+
+`questionMode` defaults to `false`, retaining the existing blank interaction
+markers until an integration adopts the question and memory contract. Variable
+authoring controls remain absent in both modes. The editor never
+writes learner memory; the host runtime owns answer persistence.

@@ -22,8 +22,7 @@
   color: #800080;
 }
 .tag-image,
-.tag-video,
-.tag-variable {
+.tag-video {
   &:hover {
     background: #d9d9d9;
     border-radius: 2px;
@@ -129,14 +128,6 @@
 
 .tag-icon {
   margin-left: 10px;
-}
-
-.tag-variable {
-  color: #0e46fb;
-  cursor: pointer;
-  &:hover {
-    color: hsl(226, 97%, 40%);
-  }
 }
 
 /* Syntax Highlighting */

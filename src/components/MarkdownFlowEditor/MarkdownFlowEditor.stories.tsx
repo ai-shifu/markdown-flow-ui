@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { EditorView } from "@codemirror/view";
 import { Sparkles } from "lucide-react";
 
 import { expect, userEvent, waitFor, within } from "storybook/test";
@@ -18,7 +19,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "The editor does not bind search shortcuts. Ctrl+F (Cmd+F on macOS) uses the browser's page search instead of opening an editor search panel.",
+          "The editor does not bind search shortcuts. Ctrl+F (Cmd+F on macOS) uses the browser's page search instead of opening an editor search panel. Variable references and assignment markers remain editable source text in both editing modes, including QuickEdit.",
       },
     },
   },
@@ -636,5 +637,94 @@ export const SlashMenuWithoutVariables: Story = {
       canvas.getByRole("option", { name: texts.slashImage })
     );
     await page.findByRole("dialog", { name: texts.dialogTitleImage });
+  },
+};
+
+export const EditableVariableSyntax: Story = {
+  render: (args) => <ControlledEditor {...args} />,
+  args: {
+    locale: "en-US",
+    editMode: EditMode.QuickEdit,
+    content: "Before {{ learner }} / ?[%{{完整问题}} A | B] after",
+  },
+  play: async ({ canvasElement, args }) => {
+    const getView = () => {
+      const editor = canvasElement.querySelector<HTMLElement>(".cm-content");
+      expect(editor).not.toBeNull();
+      const view = EditorView.findFromDOM(editor!);
+      expect(view).not.toBeNull();
+      return view!;
+    };
+    await waitFor(() =>
+      expect(getView().state.doc.toString()).toBe(args.content)
+    );
+    getView().dispatch({ selection: { anchor: 0 } });
+    await waitFor(() => {
+      expect(canvasElement.querySelector(".cm-content")?.textContent).toBe(
+        args.content
+      );
+      expect(canvasElement.querySelector(".tag-variable")).toBeNull();
+    });
+
+    const referenceView = getView();
+    referenceView.dispatch({
+      selection: {
+        anchor: referenceView.state.doc.toString().indexOf("learner") + 3,
+      },
+    });
+    referenceView.focus();
+    await userEvent.keyboard("X");
+    await waitFor(() =>
+      expect(getView().state.doc.toString()).toBe(
+        "Before {{ leaXrner }} / ?[%{{完整问题}} A | B] after"
+      )
+    );
+
+    const assignmentView = getView();
+    assignmentView.dispatch({
+      selection: {
+        anchor: assignmentView.state.doc.toString().indexOf("完整问题") + 2,
+      },
+    });
+    assignmentView.focus();
+    await userEvent.keyboard("X");
+    const editedSource =
+      "Before {{ leaXrner }} / ?[%{{完整X问题}} A | B] after";
+    await waitFor(() =>
+      expect(getView().state.doc.toString()).toBe(editedSource)
+    );
+
+    const finalView = getView();
+    finalView.dispatch({ selection: { anchor: finalView.state.doc.length } });
+    await waitFor(() => {
+      expect(getView().state.doc.toString()).toBe(editedSource);
+      expect(canvasElement.querySelector(".cm-content")?.textContent).toBe(
+        editedSource
+      );
+      expect(canvasElement.querySelector(".tag-variable")).toBeNull();
+    });
+  },
+};
+
+export const MediaLikeVariableNames: Story = {
+  render: (args) => <ControlledEditor {...args} />,
+  args: {
+    editMode: EditMode.QuickEdit,
+    content: [
+      "Before {{ ![avatar](https://example.com/a.png) }} after",
+      '{{ <img src="https://example.com/b.png"> }}',
+      '{{ <iframe data-tag="video" src="https://example.com/movie"></iframe> }}',
+    ].join("\n"),
+  },
+  play: async ({ canvasElement, args }) => {
+    await waitFor(() => {
+      const lines = canvasElement.querySelectorAll(".cm-content .cm-line");
+      expect(Array.from(lines, (line) => line.textContent).join("\n")).toBe(
+        args.content
+      );
+      expect(
+        canvasElement.querySelector(".tag-variable, .tag-image, .tag-video")
+      ).toBeNull();
+    });
   },
 };

@@ -34,7 +34,9 @@ import {
 import ImgPlaceholder from "./plugins/ImgPlaceholder";
 import VideoPlaceholder from "./plugins/VideoPlaceholder";
 import { mediaPlaceholderLabels } from "./plugins/mediaPlaceholderLabels";
-import SyntaxHighlighter from "./plugins/SyntaxHighlighter";
+import SyntaxHighlighter, {
+  QuestionSyntaxHighlighter,
+} from "./plugins/SyntaxHighlighter";
 // import createFixedTextPlaceholder from "./plugins/FixedTextPlaceholder";
 // import DividerPlaceholder from "./plugins/DividerPlaceholder";
 import { initReactI18next, useTranslation } from "react-i18next";
@@ -81,6 +83,8 @@ export enum EditMode {
 type EditorProps = {
   content?: string;
   editMode?: EditMode;
+  /** Insert localized question text for question-based memory authoring. */
+  questionMode?: boolean;
   /** @deprecated Variable picking is no longer supported. Retained for compatibility. */
   variables?: Variable[];
   /** @deprecated Variable picking is no longer supported. Retained for compatibility. */
@@ -99,6 +103,7 @@ type EditorProps = {
 const Editor: React.FC<EditorProps> = ({
   content = "",
   editMode = EditMode.CodeEdit,
+  questionMode = false,
   onChange,
   onBlur,
   locale,
@@ -416,7 +421,7 @@ const Editor: React.FC<EditorProps> = ({
     const selection = state.selection.main;
     const optionLabel1 = toolbarLabels.singleChoiceOption1;
     const optionLabel2 = toolbarLabels.singleChoiceOption2;
-    const template = `?[%{{  }} ${optionLabel1} | ${optionLabel2}]`;
+    const template = `?[%{{ ${questionMode ? currentStrings.questionPlaceholder : ""} }} ${optionLabel1} | ${optionLabel2}]`;
     dispatch({
       changes: {
         from: selection.from,
@@ -425,6 +430,10 @@ const Editor: React.FC<EditorProps> = ({
       },
       selection: {
         anchor: selection.from + 6,
+        head:
+          selection.from +
+          6 +
+          (questionMode ? currentStrings.questionPlaceholder.length : 0),
       },
     });
     view.focus();
@@ -432,6 +441,8 @@ const Editor: React.FC<EditorProps> = ({
     disabled,
     toolbarLabels.singleChoiceOption1,
     toolbarLabels.singleChoiceOption2,
+    questionMode,
+    currentStrings.questionPlaceholder,
   ]);
 
   const insertMultiChoiceTemplate = useCallback(() => {
@@ -443,7 +454,7 @@ const Editor: React.FC<EditorProps> = ({
     const selection = state.selection.main;
     const optionLabel1 = toolbarLabels.singleChoiceOption1;
     const optionLabel2 = toolbarLabels.singleChoiceOption2;
-    const template = `?[%{{  }} ${optionLabel1} || ${optionLabel2}]`;
+    const template = `?[%{{ ${questionMode ? currentStrings.questionPlaceholder : ""} }} ${optionLabel1} || ${optionLabel2}]`;
     dispatch({
       changes: {
         from: selection.from,
@@ -452,6 +463,10 @@ const Editor: React.FC<EditorProps> = ({
       },
       selection: {
         anchor: selection.from + 6,
+        head:
+          selection.from +
+          6 +
+          (questionMode ? currentStrings.questionPlaceholder.length : 0),
       },
     });
     view.focus();
@@ -459,6 +474,8 @@ const Editor: React.FC<EditorProps> = ({
     disabled,
     toolbarLabels.singleChoiceOption1,
     toolbarLabels.singleChoiceOption2,
+    questionMode,
+    currentStrings.questionPlaceholder,
   ]);
 
   const insertInputFieldTemplate = useCallback(() => {
@@ -469,7 +486,7 @@ const Editor: React.FC<EditorProps> = ({
     const { state, dispatch } = view;
     const selection = state.selection.main;
     const placeholder = toolbarLabels.inputPlaceholder ?? "请输入";
-    const template = `?[%{{  }}...${placeholder}]`;
+    const template = `?[%{{ ${questionMode ? currentStrings.questionPlaceholder : ""} }}...${placeholder}]`;
     dispatch({
       changes: {
         from: selection.from,
@@ -478,10 +495,19 @@ const Editor: React.FC<EditorProps> = ({
       },
       selection: {
         anchor: selection.from + 6,
+        head:
+          selection.from +
+          6 +
+          (questionMode ? currentStrings.questionPlaceholder.length : 0),
       },
     });
     view.focus();
-  }, [disabled, toolbarLabels.inputPlaceholder]);
+  }, [
+    disabled,
+    toolbarLabels.inputPlaceholder,
+    questionMode,
+    currentStrings.questionPlaceholder,
+  ]);
 
   const handleSelectImage = useCallback(
     ({
@@ -635,7 +661,7 @@ const Editor: React.FC<EditorProps> = ({
       EditorView.lineWrapping,
       markdown(),
       syntaxHighlighting(defaultHighlightStyle),
-      SyntaxHighlighter,
+      questionMode ? QuestionSyntaxHighlighter : SyntaxHighlighter,
     ];
 
     if (!disabled) {
@@ -665,6 +691,7 @@ const Editor: React.FC<EditorProps> = ({
     slashCommandsExtension,
     handleEditorUpdate,
     mediaPlaceholderLabelsExtension,
+    questionMode,
   ]);
 
   const handleContentChange = useCallback(

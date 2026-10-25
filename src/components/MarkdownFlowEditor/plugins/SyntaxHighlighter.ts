@@ -213,7 +213,8 @@ export function collectOuterBlockRanges(
  */
 export function collectSyntaxHighlightRanges(
   docText: string,
-  isCursorInside: (from: number, to: number) => boolean = () => false
+  isCursorInside: (from: number, to: number) => boolean = () => false,
+  questionMode = false
 ): SyntaxHighlightRange[] {
   const matches: SyntaxHighlightRange[] = [];
   const documentVariables = findDocumentVariableMarkers(docText);
@@ -437,7 +438,7 @@ export function collectSyntaxHighlightRanges(
   }
 
   // 3. Variables (only if not already decorated; invalid ones stay default outside control blocks)
-  for (const variable of documentVariables) {
+  for (const variable of questionMode ? [] : documentVariables) {
     if (
       variable.name !== null &&
       !isCursorInside(variable.start, variable.end)
@@ -455,14 +456,21 @@ export function collectSyntaxHighlightRanges(
   return matches;
 }
 
-function buildDecorations(view: EditorView): DecorationSet {
+function buildDecorations(
+  view: EditorView,
+  questionMode = false
+): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
   const docText = view.state.doc.toString();
-  const matches = collectSyntaxHighlightRanges(docText, (from, to) => {
-    return view.state.selection.ranges.some((range) => {
-      return range.from >= from && range.to <= to;
-    });
-  });
+  const matches = collectSyntaxHighlightRanges(
+    docText,
+    (from, to) => {
+      return view.state.selection.ranges.some((range) => {
+        return range.from >= from && range.to <= to;
+      });
+    },
+    questionMode
+  );
 
   for (const m of matches) {
     if (m.from < m.to) {
@@ -477,23 +485,31 @@ function buildDecorations(view: EditorView): DecorationSet {
   return builder.finish();
 }
 
-const SyntaxHighlighter = ViewPlugin.fromClass(
-  class {
-    decorations: DecorationSet;
+const createSyntaxHighlighter = (questionMode = false) =>
+  ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
 
-    constructor(view: EditorView) {
-      this.decorations = buildDecorations(view);
-    }
-
-    update(update: ViewUpdate) {
-      if (update.docChanged || update.viewportChanged || update.selectionSet) {
-        this.decorations = buildDecorations(update.view);
+      constructor(view: EditorView) {
+        this.decorations = buildDecorations(view, questionMode);
       }
+
+      update(update: ViewUpdate) {
+        if (
+          update.docChanged ||
+          update.viewportChanged ||
+          update.selectionSet
+        ) {
+          this.decorations = buildDecorations(update.view, questionMode);
+        }
+      }
+    },
+    {
+      decorations: (instance) => instance.decorations,
     }
-  },
-  {
-    decorations: (instance) => instance.decorations,
-  }
-);
+  );
+
+const SyntaxHighlighter = createSyntaxHighlighter();
+export const QuestionSyntaxHighlighter = createSyntaxHighlighter(true);
 
 export default SyntaxHighlighter;

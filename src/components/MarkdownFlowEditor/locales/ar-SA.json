@@ -52,5 +52,6 @@
   "toolbarInsertInput": "إدراج حقل إدخال",
   "toolbarInputPlaceholder": "يرجى الإدخال",
   "toolbarInsertImage": "إدراج صورة",
-  "toolbarInsertVideo": "إدراج فيديو"
+  "toolbarInsertVideo": "إدراج فيديو",
+  "questionPlaceholder": "سؤالك"
 }

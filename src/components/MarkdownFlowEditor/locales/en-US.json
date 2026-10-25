@@ -52,5 +52,6 @@
   "toolbarInsertInput": "Insert input",
   "toolbarInputPlaceholder": "Please enter",
   "toolbarInsertImage": "Insert image",
-  "toolbarInsertVideo": "Insert video"
+  "toolbarInsertVideo": "Insert video",
+  "questionPlaceholder": "Your question"
 }

@@ -52,5 +52,6 @@
   "toolbarInsertInput": "插入输入框",
   "toolbarInputPlaceholder": "请输入",
   "toolbarInsertImage": "插入图片",
-  "toolbarInsertVideo": "插入视频"
+  "toolbarInsertVideo": "插入视频",
+  "questionPlaceholder": "你的问题"
 }

@@ -52,5 +52,6 @@
   "toolbarInsertInput": "แทรกช่องป้อนข้อมูล",
   "toolbarInputPlaceholder": "โปรดป้อนข้อมูล",
   "toolbarInsertImage": "แทรกรูปภาพ",
-  "toolbarInsertVideo": "แทรกวิดีโอ"
+  "toolbarInsertVideo": "แทรกวิดีโอ",
+  "questionPlaceholder": "คำถามของคุณ"
 }

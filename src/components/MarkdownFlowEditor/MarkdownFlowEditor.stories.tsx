@@ -728,3 +728,21 @@ export const MediaLikeVariableNames: Story = {
     });
   },
 };
+
+export const QuestionMode: Story = {
+  args: {
+    questionMode: true,
+    editMode: EditMode.QuickEdit,
+    locale: "en-US",
+    content:
+      "{{Ordinary text}}\n\n?[%{{ What would you like to learn? }} Practice | Theory | ...Your answer]",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Questions name memory keys. Standalone braces remain ordinary editable text; no variable controls or suggestions are shown. Interaction insertion places the localized question in the memory-key slot.",
+      },
+    },
+  },
+};

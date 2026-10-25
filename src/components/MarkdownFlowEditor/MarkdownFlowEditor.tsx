@@ -759,7 +759,6 @@ const Editor: React.FC<EditorProps> = ({
           // fixedText: currentStrings.slashFixedText,
           image: currentStrings.slashImage,
           video: currentStrings.slashVideo,
-          variable: currentStrings.slashVariable,
         }),
       ],
     });
@@ -768,7 +767,6 @@ const Editor: React.FC<EditorProps> = ({
     // currentStrings.slashFixedText,
     currentStrings.slashImage,
     currentStrings.slashVideo,
-    currentStrings.slashVariable,
     onSelectedOption,
   ]);
 

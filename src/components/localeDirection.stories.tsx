@@ -338,15 +338,6 @@ export const LanguageAcrossBoundaries: Story = {
         within(dialog).getByRole("button", { name: texts.dialogCloseLabel })
       );
       await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
-      await userEvent.click(
-        canvas
-          .getByTestId("language-editor")
-          .querySelector<HTMLElement>(".tag-variable .tag-placeholder-content")!
-      );
-      const popover = await page.findByRole("dialog");
-      expect(popover).toHaveAttribute("lang", language);
-      await userEvent.keyboard("{Escape}");
-      await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
       canvas
         .getByTestId("language-player")
         .querySelector<HTMLButtonElement>(".slide-player__action--mobile-more")!
@@ -2004,42 +1995,6 @@ export const EditorUrlDirection: Story = {
   },
 };
 
-const expectSearchAffordance = (input: HTMLInputElement) => {
-  const style = getComputedStyle(input);
-  const inputRect = input.getBoundingClientRect();
-  const iconRect = input
-    .parentElement!.querySelector("svg")!
-    .getBoundingClientRect();
-  expect(
-    style.direction === "rtl"
-      ? inputRect.right - iconRect.right
-      : iconRect.left - inputRect.left
-  ).toBeCloseTo(12, 0);
-  expect(Number.parseFloat(style.paddingInlineStart)).toBeGreaterThanOrEqual(
-    32
-  );
-  expect(Number.parseFloat(style.paddingInlineEnd)).toBeLessThan(32);
-};
-
-const expectVariablePopoverAnchor = async (
-  host: HTMLElement,
-  popover: HTMLElement,
-  direction: string
-) => {
-  await waitFor(() => {
-    const trigger = host.querySelector(
-      ".tag-variable .tag-placeholder-content"
-    )!;
-    const edge = direction === "rtl" ? "right" : "left";
-    expect(
-      Math.abs(
-        popover.getBoundingClientRect()[edge] -
-          trigger.getBoundingClientRect()[edge]
-      )
-    ).toBeLessThanOrEqual(1);
-  });
-};
-
 export const InheritedEditorPortalDirection: Story = {
   render: () => (
     <div
@@ -2082,30 +2037,6 @@ export const InheritedEditorPortalDirection: Story = {
         name: getEditorLocaleMessages().dialogCloseLabel,
       })
     );
-    await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
-    await userEvent.click(
-      host.querySelector<HTMLElement>(".tag-variable .tag-placeholder-content")!
-    );
-    const popover = await page.findByRole("dialog");
-    await waitFor(() =>
-      expect(getComputedStyle(popover).direction).toBe("ltr")
-    );
-    expectSearchAffordance(popover.querySelector("input")!);
-    await expectVariablePopoverAnchor(host, popover, "ltr");
-    host.dir = "rtl";
-    await waitFor(() =>
-      expect(getComputedStyle(popover).direction).toBe("rtl")
-    );
-    expectSearchAffordance(popover.querySelector("input")!);
-    expect(root).not.toHaveAttribute("dir");
-    await userEvent.keyboard("{Escape}");
-    await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
-    await userEvent.click(
-      host.querySelector<HTMLElement>(".tag-variable .tag-placeholder-content")!
-    );
-    const rtlPopover = await page.findByRole("dialog");
-    await expectVariablePopoverAnchor(host, rtlPopover, "rtl");
-    await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
   },
 };
@@ -2195,22 +2126,20 @@ export const LocalizedMediaPlaceholders: Story = {
   },
 };
 
-const VariablePickerLocaleFixture = () => {
+const variableSourceWithoutPicker =
+  "Reference: {{learner}} / {{system}}\n?[%{{ 你的性别是？ }} A | B]";
+
+const VariablesWithoutPickerFixture = () => {
   const [locale, setLocale] = useState<MarkdownFlowLocale>("ar-SA");
-  const [content, setContent] = useState("{{learner}}");
+  const [content, setContent] = useState(variableSourceWithoutPicker);
   return (
     <div style={{ width: 320, marginInline: "auto" }}>
-      <button
-        type="button"
-        onClick={() => {
-          setLocale("th-TH");
-          setContent("{{learner}}");
-        }}
-      >
+      <button type="button" onClick={() => setLocale("th-TH")}>
         Thai
       </button>
-      <output data-testid="picker-content">{content}</output>
+      <output data-testid="variable-source">{content}</output>
       <MarkdownFlowEditor
+        key={locale}
         locale={locale}
         editMode={EditMode.QuickEdit}
         content={content}
@@ -2222,61 +2151,34 @@ const VariablePickerLocaleFixture = () => {
   );
 };
 
-export const VariablePickerDirection: Story = {
-  render: () => <VariablePickerLocaleFixture />,
+export const VariablesWithoutPicker: Story = {
+  render: () => <VariablesWithoutPickerFixture />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const page = within(canvasElement.ownerDocument.body);
-    const openPicker = async () => {
+    for (const locale of ["ar-SA", "th-TH"] as const) {
+      if (locale === "th-TH") {
+        await userEvent.click(canvas.getByRole("button", { name: "Thai" }));
+      }
+      await waitFor(() =>
+        expect(
+          canvasElement.querySelector(".markdown-flow-editor")
+        ).toHaveAttribute("lang", locale)
+      );
+      await userEvent.click(
+        canvasElement.querySelector<HTMLElement>(".cm-content")!
+      );
       await userEvent.click(
         canvasElement.querySelector<HTMLElement>(
           ".tag-variable .tag-placeholder-content"
         )!
       );
-      return page.findByRole("dialog");
-    };
-    for (const locale of ["ar-SA", "th-TH"] as const) {
-      if (locale === "th-TH")
-        await userEvent.click(canvas.getByRole("button", { name: "Thai" }));
-      const picker = await openPicker();
-      await expectVariablePopoverAnchor(
-        canvasElement,
-        picker,
-        locale === "ar-SA" ? "rtl" : "ltr"
-      );
-      for (const name of ["learner", "system"]) {
-        const option = within(picker).getByText(name).closest("button")!;
-        expect(getComputedStyle(option).direction).toBe(
-          locale === "ar-SA" ? "rtl" : "ltr"
+      await waitFor(() => {
+        expect(page.queryByRole("dialog")).toBeNull();
+        expect(canvas.getByTestId("variable-source").textContent).toBe(
+          variableSourceWithoutPicker
         );
-        expect(getComputedStyle(option).textAlign).toBe("start");
-      }
-      const add = within(picker).getByRole("button", {
-        name: getEditorLocaleMessages(locale).variableAddNew,
       });
-      const iconStyle = getComputedStyle(add.querySelector("svg")!);
-      expect(iconStyle.marginInlineEnd).toBe("8px");
-      expect(iconStyle.marginInlineStart).toBe("0px");
-      expect(getComputedStyle(add).justifyContent).toBe("flex-start");
-      await userEvent.click(within(picker).getByText("system"));
-      await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
-      expect(canvas.getByTestId("picker-content")).toHaveTextContent(
-        "{{ system }}"
-      );
-      const reopened = await openPicker();
-      await userEvent.click(
-        within(reopened).getByRole("button", {
-          name: getEditorLocaleMessages(locale).variableAddNew,
-        })
-      );
-      const input = within(reopened).getByPlaceholderText(
-        getEditorLocaleMessages(locale).variableNamePlaceholder
-      );
-      await userEvent.type(input, `added_${locale.slice(0, 2)}{Enter}`);
-      await waitFor(() => expect(page.queryByRole("dialog")).toBeNull());
-      expect(canvas.getByTestId("picker-content")).toHaveTextContent(
-        `{{ added_${locale.slice(0, 2)} }}`
-      );
     }
   },
 };

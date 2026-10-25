@@ -6,9 +6,5 @@ const EditorContext = createContext<IEditorContext>({
   setSelectedOption: () => {},
   dialogOpen: false,
   setDialogOpen: () => {},
-  popoverOpen: false,
-  setPopoverOpen: () => {},
-  popoverPosition: null,
-  setPopoverPosition: () => {},
 });
 export default EditorContext;

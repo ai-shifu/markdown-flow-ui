@@ -21,20 +21,11 @@ interface SelectContentInfo {
   to: number;
 }
 
-interface PopoverPosition {
-  x: number;
-  y: number;
-}
-
 interface IEditorContext {
   selectedOption: SelectedOption;
   setSelectedOption: (selectedOption: SelectedOption) => void;
   dialogOpen: boolean;
   setDialogOpen: (dialogOpen: boolean) => void;
-  popoverOpen: boolean;
-  setPopoverOpen: (popoverOpen: boolean) => void;
-  popoverPosition: PopoverPosition | null;
-  setPopoverPosition: (position: PopoverPosition | null) => void;
 }
 
 interface Variable {
@@ -70,7 +61,6 @@ export type {
   SelectContentInfo,
   IEditorContext,
   Variable,
-  PopoverPosition,
   EditorAction,
   EditorApi,
 };

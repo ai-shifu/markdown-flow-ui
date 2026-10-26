@@ -724,7 +724,7 @@ const Editor: React.FC<EditorProps> = ({
               onClick={() => handleToolbarActionClick(action)}
               className="markdown-flow-editor-toolbar-right-button"
               aria-label={ariaLabel}
-              title={action.label || action.tooltip}
+              title={action.tooltip ? undefined : action.label}
             >
               {action.icon ? (
                 <span className="toolbar-right-icon">{action.icon}</span>

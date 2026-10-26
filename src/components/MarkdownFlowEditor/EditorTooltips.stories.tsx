@@ -1,9 +1,13 @@
+import { useEffect, useRef } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { EditorState } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
 import { Sparkles } from "lucide-react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import MarkdownFlowEditor, { EditMode } from "./MarkdownFlowEditor";
 import { getEditorLocaleMessages } from "./editorI18n";
+import createFixedTextPlaceholder from "./plugins/FixedTextPlaceholder";
 
 const meta = {
   title: "MarkdownFlow/EditorTooltips",
@@ -93,6 +97,51 @@ export const CustomActionTooltips: Story = {
       });
       await userEvent.unhover(button);
       await waitFor(() => expect(page.queryByRole("tooltip")).toBeNull());
+    }
+  },
+};
+
+export const FixedOutputPlaceholderTooltips: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Exercises the legacy fixed output extension directly. The main editor currently leaves this extension disabled.",
+      },
+    },
+  },
+  render: () => {
+    const container = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+      const texts = getEditorLocaleMessages("en-US");
+      const view = new EditorView({
+        state: EditorState.create({
+          doc: "======\n===Fixed output===",
+          extensions: [
+            createFixedTextPlaceholder(
+              texts.fixedTextPlaceholder,
+              texts.fixedTextTooltip
+            ),
+          ],
+        }),
+        parent: container.current!,
+      });
+      return () => view.destroy();
+    }, []);
+    return <div ref={container} />;
+  },
+  play: async ({ canvasElement }) => {
+    const tooltip = getEditorLocaleMessages("en-US").fixedTextTooltip;
+    await waitFor(() =>
+      expect(canvasElement.querySelectorAll("[data-tooltip]")).toHaveLength(2)
+    );
+    const tags = canvasElement.querySelectorAll<HTMLElement>("[data-tooltip]");
+    for (const tag of tags) {
+      expect(tag.closest("[title]")).toBeNull();
+      expect(tag).toHaveAttribute("data-tooltip", tooltip);
+      await userEvent.hover(tag);
+      expect(tag).not.toHaveAttribute("title");
+      await userEvent.unhover(tag);
     }
   },
 };

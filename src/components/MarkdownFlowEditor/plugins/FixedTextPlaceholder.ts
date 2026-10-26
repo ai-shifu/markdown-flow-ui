@@ -24,7 +24,6 @@ class FixedTextPlaceholderWidget extends WidgetType {
     const span = document.createElement("span");
     span.className = "tag-fixed-text-placeholder";
     span.textContent = this.placeholder;
-    span.title = this.tooltip;
     span.dataset.tooltip = this.tooltip;
     span.setAttribute("aria-hidden", "true");
     span.style.cursor = "text";
@@ -71,7 +70,6 @@ const createDecorations = (
         Decoration.mark({
           class: "tag-fixed-text",
           attributes: {
-            title: tooltip,
             "data-tooltip": tooltip,
           },
         }).range(startTagTo, endTagFrom)

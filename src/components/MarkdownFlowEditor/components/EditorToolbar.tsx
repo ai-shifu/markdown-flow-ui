@@ -233,7 +233,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               disabled={disabled}
               onClick={handleInsertLink}
               aria-label={labels.insertLink}
-              title={labels.insertLink}
             >
               <Link strokeWidth={1.75} size={ICON_SIZE} />
             </button>

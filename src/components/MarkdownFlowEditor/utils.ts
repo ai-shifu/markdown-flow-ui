@@ -97,7 +97,7 @@ function createSlashCommands(
         //   },
         // },
         // {
-        //   label: labels?.fixedText ?? "Fixed Text",
+        //   label: labels?.fixedText ?? "Preserved output",
         //   apply: (view, _, from, to) => {
         //     handleSelect(view, _, from, to, SelectedOption.FixedText);
         //   },

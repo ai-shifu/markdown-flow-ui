@@ -9,10 +9,10 @@ function rangeTextsByClass(docText: string, className: string) {
 }
 
 describe("collectSyntaxHighlightRanges", () => {
-  it("uses a multiline fixed output block as the outer highlight", () => {
+  it("uses a multiline preserved output block as the outer highlight", () => {
     const docText = [
       "!===",
-      "Fixed output",
+      "Preserved output",
       "<!--- ignored comment --->",
       "!===",
     ].join("\n");
@@ -28,7 +28,7 @@ describe("collectSyntaxHighlightRanges", () => {
     const docText = [
       "<!---",
       "!===",
-      "Ignored fixed output",
+      "Ignored preserved output",
       "!===",
       "--->",
     ].join("\n");
@@ -40,12 +40,12 @@ describe("collectSyntaxHighlightRanges", () => {
     expect(fixedTexts).toEqual([]);
   });
 
-  it("keeps standalone comments and fixed output blocks highlighted", () => {
+  it("keeps standalone comments and preserved output blocks highlighted", () => {
     const docText = [
       "<!--- note --->",
       "",
       "!===",
-      "Fixed output",
+      "Preserved output",
       "!===",
     ].join("\n");
 
@@ -53,7 +53,7 @@ describe("collectSyntaxHighlightRanges", () => {
     const commentTexts = rangeTextsByClass(docText, "syntax-comment");
 
     expect(commentTexts).toEqual(["<!--- note --->"]);
-    expect(fixedTexts).toEqual(["!===" + "\nFixed output\n" + "!==="]);
+    expect(fixedTexts).toEqual(["!===" + "\nPreserved output\n" + "!==="]);
   });
 
   it("keeps syntax after an outer block highlighted", () => {
@@ -74,7 +74,7 @@ describe("collectSyntaxHighlightRanges", () => {
     expect(keywordTexts).toContain("|");
   });
 
-  it("uses single-line fixed output as the outer highlight", () => {
+  it("uses single-line preserved output as the outer highlight", () => {
     const docText = "=== <!--- ignored comment ---> ===";
 
     const fixedTexts = rangeTextsByClass(docText, "syntax-fixed");
@@ -84,7 +84,7 @@ describe("collectSyntaxHighlightRanges", () => {
     expect(commentTexts).toEqual([]);
   });
 
-  it("ignores fixed output markers inside inner comments", () => {
+  it("ignores preserved output markers inside inner comments", () => {
     const docText = "=== <!--- ignored === marker ---> ===";
 
     const fixedTexts = rangeTextsByClass(docText, "syntax-fixed");

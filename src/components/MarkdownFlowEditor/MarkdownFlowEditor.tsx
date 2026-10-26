@@ -131,7 +131,7 @@ const Editor: React.FC<EditorProps> = ({
         defaultValue: "Insert video",
       }),
       confirmOutput: t("toolbarConfirmOutput", {
-        defaultValue: "Confirm output",
+        defaultValue: "Insert preserved output",
       }),
       insertLink: t("toolbarInsertLink", {
         defaultValue: "Insert link",
@@ -563,10 +563,10 @@ const Editor: React.FC<EditorProps> = ({
   // const fixedTextPlaceholderExtension = useMemo(
   //   () =>
   //     createFixedTextPlaceholder(
-  //       currentStrings.fixedTextPlaceholder ?? "添加固定文本",
+  //       currentStrings.fixedTextPlaceholder ?? "Add preserved output",
   //       currentStrings.fixedTextTooltip ??
   //         currentStrings.slashFixedText ??
-  //         "固定文本"
+  //         "Preserved output"
   //     ),
   //   [
   //     currentStrings.fixedTextPlaceholder,

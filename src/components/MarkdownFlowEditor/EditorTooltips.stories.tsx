@@ -102,11 +102,12 @@ export const CustomActionTooltips: Story = {
 };
 
 export const FixedOutputPlaceholderTooltips: Story = {
+  name: "Preserved output placeholder tooltips",
   parameters: {
     docs: {
       description: {
         story:
-          "Exercises the legacy fixed output extension directly. The main editor currently leaves this extension disabled.",
+          "Exercises the legacy preserved output extension directly. The main editor currently leaves this extension disabled.",
       },
     },
   },
@@ -116,7 +117,7 @@ export const FixedOutputPlaceholderTooltips: Story = {
       const texts = getEditorLocaleMessages("en-US");
       const view = new EditorView({
         state: EditorState.create({
-          doc: "======\n===Fixed output===",
+          doc: "======\n===Preserved output===",
           extensions: [
             createFixedTextPlaceholder(
               texts.fixedTextPlaceholder,

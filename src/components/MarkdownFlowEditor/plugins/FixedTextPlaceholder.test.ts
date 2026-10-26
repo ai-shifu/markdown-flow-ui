@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 
 import createFixedTextPlaceholder from "./FixedTextPlaceholder";
 
-const placeholder = "Add fixed output";
-const tooltip = "Fixed output";
+const placeholder = "Add preserved output";
+const tooltip = "Preserved output";
 
 const createView = (doc: string) =>
   new EditorView({
@@ -25,7 +25,7 @@ const expectSingleTooltipSource = (view: EditorView, text: string) => {
   expect(tags[0].closest("[title]")).toBeNull();
 };
 
-describe("fixed output placeholder tooltips", () => {
+describe("preserved output placeholder tooltips", () => {
   it.each([
     ["======", placeholder],
     ["===Hello===", "Hello"],
@@ -39,7 +39,7 @@ describe("fixed output placeholder tooltips", () => {
     }
   });
 
-  it("keeps one tooltip source when an empty fixed output is filled and cleared", () => {
+  it("keeps one tooltip source when an empty preserved output is filled and cleared", () => {
     const view = createView("======");
     try {
       view.dispatch({ changes: { from: 3, insert: "Hello" } });

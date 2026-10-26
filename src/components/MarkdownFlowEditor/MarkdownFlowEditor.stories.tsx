@@ -64,10 +64,10 @@ const content = `
 
 <!-- 这是注释内容，不会被输出 -->
 
-=== 单行固定输出 ===
+=== 单行确定输出 ===
 
 !===
-多行固定输出
+多行确定输出
 !===
 
 
@@ -318,12 +318,45 @@ that pair or control characters. UserName and username are distinct, case-sensit
 };
 
 export const MarkdownFlowEditorWithFixedText: Story = {
+  name: "Preserved output",
+  render: (args) => <ControlledEditor {...args} />,
   args: {
-    content: `Fixed text: ===Fixed text===`,
+    content: "Preserved output: ===Preserved output===",
     editMode: EditMode.QuickEdit,
-    onChange: (value) => {
-      console.log("value", value);
-    },
+    locale: "en-US",
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const texts = getEditorLocaleMessages(args.locale);
+    await userEvent.click(
+      canvasElement.querySelector<HTMLElement>(".cm-content")!
+    );
+    const insertOutput = canvas.getByRole("button", {
+      name: texts.toolbarConfirmOutput,
+    });
+    await userEvent.hover(insertOutput);
+    await waitFor(() =>
+      expect(
+        within(canvasElement.ownerDocument.body).getByRole("tooltip")
+      ).toHaveTextContent(texts.toolbarConfirmOutput)
+    );
+    await userEvent.click(insertOutput);
+    const editor = EditorView.findFromDOM(
+      canvasElement.querySelector<HTMLElement>(".cm-editor")!
+    )!;
+    await waitFor(() =>
+      expect(editor.state.doc.toString()).toContain("======")
+    );
+  },
+};
+
+export const MarkdownFlowEditorWithPreservedOutputChinese: Story = {
+  ...MarkdownFlowEditorWithFixedText,
+  name: "Preserved output (Chinese)",
+  args: {
+    ...MarkdownFlowEditorWithFixedText.args,
+    locale: "zh-CN",
+    content: "确定输出：===确定输出===",
   },
 };
 

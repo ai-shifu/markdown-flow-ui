@@ -20,6 +20,27 @@ describe("getEditorLocaleMessages", () => {
     }
   });
 
+  it.each(["en-US", undefined, "unsupported"])(
+    "uses preserved output terminology for %s",
+    (locale) => {
+      expect(getEditorLocaleMessages(locale)).toMatchObject({
+        fixedTextPlaceholder: "Add preserved output",
+        fixedTextTooltip: "Preserved output",
+        slashFixedText: "Preserved output",
+        toolbarConfirmOutput: "Insert preserved output",
+      });
+    }
+  );
+
+  it("uses the Chinese product term for all preserved output labels", () => {
+    expect(getEditorLocaleMessages("zh-CN")).toMatchObject({
+      fixedTextPlaceholder: "添加确定输出",
+      fixedTextTooltip: "确定输出",
+      slashFixedText: "确定输出",
+      toolbarConfirmOutput: "插入确定输出",
+    });
+  });
+
   it.each([
     ["es_ES", "es-ES"],
     ["ar", "ar-SA"],

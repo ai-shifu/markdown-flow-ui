@@ -165,7 +165,7 @@ function collectCommentRanges(
 }
 
 /**
- * Collects non-overlapping fixed-output and comment wrapper ranges.
+ * Collects non-overlapping preserved output and comment wrapper ranges.
  *
  * @param docText - Document text to scan.
  * @returns Outer syntax highlight ranges sorted by document position.

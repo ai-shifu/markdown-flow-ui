@@ -21,6 +21,15 @@ describe("getEditorLocaleMessages", () => {
   });
 
   it.each([
+    ["en-US", "Insert fixed output"],
+    ["zh-CN", "插入固定输出"],
+    [undefined, "Insert fixed output"],
+    ["unsupported", "Insert fixed output"],
+  ])("names the fixed-output action for %s", (locale, label) => {
+    expect(getEditorLocaleMessages(locale).toolbarConfirmOutput).toBe(label);
+  });
+
+  it.each([
     ["es_ES", "es-ES"],
     ["ar", "ar-SA"],
     ["th_TH", "th-TH"],

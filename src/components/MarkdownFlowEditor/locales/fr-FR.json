@@ -42,7 +42,7 @@
   "slashImage": "Image",
   "slashVideo": "Vidéo",
   "slashFixedText": "Texte fixe",
-  "toolbarConfirmOutput": "Insérer une sortie de confirmation",
+  "toolbarConfirmOutput": "Insérer une sortie fixe",
   "toolbarInsertLink": "Insérer un lien",
   "toolbarInsertButton": "Insérer un bouton",
   "toolbarInsertSingleChoice": "Insérer un choix unique",

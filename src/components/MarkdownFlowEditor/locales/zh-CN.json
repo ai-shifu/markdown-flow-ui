@@ -42,7 +42,7 @@
   "slashImage": "图片",
   "slashVideo": "视频",
   "slashFixedText": "固定文本",
-  "toolbarConfirmOutput": "插入确定内容",
+  "toolbarConfirmOutput": "插入固定输出",
   "toolbarInsertLink": "插入链接",
   "toolbarInsertButton": "插入按钮",
   "toolbarInsertSingleChoice": "插入单选",

@@ -318,12 +318,28 @@ that pair or control characters. UserName and username are distinct, case-sensit
 };
 
 export const MarkdownFlowEditorWithFixedText: Story = {
+  name: "Fixed output",
+  render: (args) => <ControlledEditor {...args} />,
   args: {
-    content: `Fixed text: ===Fixed text===`,
+    content: "Fixed output: ===Fixed output===",
     editMode: EditMode.QuickEdit,
-    onChange: (value) => {
-      console.log("value", value);
-    },
+    locale: "en-US",
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const texts = getEditorLocaleMessages("en-US");
+    await userEvent.click(
+      canvasElement.querySelector<HTMLElement>(".cm-content")!
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: texts.toolbarConfirmOutput })
+    );
+    const editor = EditorView.findFromDOM(
+      canvasElement.querySelector<HTMLElement>(".cm-editor")!
+    )!;
+    await waitFor(() =>
+      expect(editor.state.doc.toString()).toContain("======")
+    );
   },
 };
 

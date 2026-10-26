@@ -42,7 +42,7 @@
   "slashImage": "画像",
   "slashVideo": "動画",
   "slashFixedText": "固定テキスト",
-  "toolbarConfirmOutput": "確認出力を挿入",
+  "toolbarConfirmOutput": "固定出力を挿入",
   "toolbarInsertLink": "リンクを挿入",
   "toolbarInsertButton": "ボタンを挿入",
   "toolbarInsertSingleChoice": "単一選択を挿入",

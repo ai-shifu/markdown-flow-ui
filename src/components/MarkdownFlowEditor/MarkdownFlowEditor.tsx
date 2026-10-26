@@ -131,7 +131,7 @@ const Editor: React.FC<EditorProps> = ({
         defaultValue: "Insert video",
       }),
       confirmOutput: t("toolbarConfirmOutput", {
-        defaultValue: "Confirm output",
+        defaultValue: "Insert fixed output",
       }),
       insertLink: t("toolbarInsertLink", {
         defaultValue: "Insert link",

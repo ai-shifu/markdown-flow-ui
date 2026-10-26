@@ -122,7 +122,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                 disabled={disabled}
                 onClick={handleInsertSingleChoice}
                 aria-label={labels.insertSingleChoice}
-                title={labels.insertSingleChoice}
               >
                 <CircleCheck strokeWidth={1.75} size={ICON_SIZE} />
               </button>
@@ -138,7 +137,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                 disabled={disabled}
                 onClick={handleInsertMultiChoice}
                 aria-label={labels.insertMultiChoice}
-                title={labels.insertMultiChoice}
               >
                 <SquareCheck strokeWidth={1.75} size={ICON_SIZE} />
               </button>
@@ -154,7 +152,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                 disabled={disabled}
                 onClick={handleInsertInputField}
                 aria-label={labels.insertInput}
-                title={labels.insertInput}
               >
                 <TextCursorInput strokeWidth={1.75} size={ICON_SIZE} />
               </button>
@@ -170,7 +167,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                 disabled={disabled}
                 onClick={handleInsertButton}
                 aria-label={labels.insertButton}
-                title={labels.insertButton}
               >
                 <ButtonIcon strokeWidth={1.75} size={ICON_SIZE} />
               </button>
@@ -186,7 +182,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                 disabled={disabled}
                 onClick={handleConfirmOutput}
                 aria-label={labels.confirmOutput}
-                title={labels.confirmOutput}
               >
                 <FileType strokeWidth={1.75} size={ICON_SIZE} />
               </button>
@@ -202,7 +197,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                 disabled={disabled}
                 onClick={() => onSelect(SelectedOption.Image)}
                 aria-label={labels.image}
-                title={labels.image}
               >
                 <ImageIcon strokeWidth={1.75} size={ICON_SIZE} />
               </button>
@@ -218,7 +212,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                 disabled={disabled}
                 onClick={() => onSelect(SelectedOption.Video)}
                 aria-label={labels.video}
-                title={labels.video}
               >
                 <SquarePlay strokeWidth={1.75} size={ICON_SIZE} />
               </button>

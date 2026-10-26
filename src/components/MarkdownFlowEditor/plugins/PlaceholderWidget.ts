@@ -116,18 +116,6 @@ class PlaceholderWidget extends WidgetType {
     span.dataset["tag"] = this.dataset.tag || "";
     span.dataset["url"] = this.dataset.url || "";
     span.dataset["title"] = this.dataset.title || "";
-    // const icon = document.createElement("span");
-    // icon.className = "tag-icon";
-    // icon.innerHTML = "✕";
-    // icon.addEventListener("click", (e) => {
-    //   e.stopPropagation();
-    //   const [from, to] = this.getPosition() ?? [-1, -1];
-    //   if (from !== -1 && to !== -1) {
-    //     this.view.dispatch({
-    //       changes: { from, to, insert: "" },
-    //     });
-    //   }
-    // });
     content.addEventListener("click", (e) => {
       const [from, to] = this.getPosition() ?? [-1, -1];
       const event = new CustomEvent("globalTagClick", {
@@ -170,7 +158,6 @@ class PlaceholderWidget extends WidgetType {
       container.appendChild(suffix);
     }
 
-    // container.appendChild(icon);
     return container;
   }
 

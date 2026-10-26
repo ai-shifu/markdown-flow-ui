@@ -3,7 +3,6 @@ import {
   FileType,
   Image as ImageIcon,
   TextCursorInput,
-  // Link,
   SquareCheck,
   SquarePlay,
   CircleCheck,
@@ -56,7 +55,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   tooltipLanguage,
   onSelect,
   onInsertConfirmOutput,
-  // onInsertLink,
   onInsertButton,
   onInsertSingleChoice,
   onInsertMultiChoice,
@@ -69,13 +67,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     }
     onInsertConfirmOutput?.();
   }, [disabled, onInsertConfirmOutput]);
-
-  // const handleInsertLink = useCallback(() => {
-  //   if (disabled) {
-  //     return;
-  //   }
-  //   onInsertLink?.();
-  // }, [disabled, onInsertLink]);
 
   const handleInsertButton = useCallback(() => {
     if (disabled) {
@@ -226,21 +217,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
             {rightSlot}
           </div>
         ) : null}
-        {/* <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={handleInsertLink}
-              aria-label={labels.insertLink}
-            >
-              <Link strokeWidth={1.75} size={ICON_SIZE} />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top">
-            {labels.insertLink ?? ""}
-          </TooltipContent>
-        </Tooltip> */}
       </div>
     </TooltipProvider>
   );

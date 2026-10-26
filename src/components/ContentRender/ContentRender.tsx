@@ -27,7 +27,6 @@ import {
   highlightLanguages,
   subsetLanguages,
 } from "./utils/highlight-languages";
-// import { processMarkdownText } from "./utils/process-markdown";
 import {
   parseMarkdownSegments,
   mermaidBlockIsComplete,
@@ -139,7 +138,6 @@ export interface ContentRenderProps {
   // Sandbox render mode
   sandboxMode?: "content" | "blackboard";
   beforeSend?: (param: OnSendContentParams) => boolean;
-  // tooltipMinLength?: number; // Control minimum character length for tooltip display, default 10
 }
 
 export interface ContentRenderTypewriterState {
@@ -654,7 +652,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   sandboxMode = "content",
   onClickCustomButtonAfterContent,
   beforeSend,
-  // tooltipMinLength,
 }) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
   const mermaidMessages = useMemo(
@@ -1254,7 +1251,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
           confirmButtonText={
             componentRuntimeValuesRef.current.resolvedConfirmButtonText
           }
-          // tooltipMinLength={tooltipMinLength}
         />
       ),
       code: MarkdownCode,

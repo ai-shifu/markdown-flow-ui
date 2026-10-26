@@ -90,18 +90,6 @@ function createSlashCommands(
       from: word.from,
       to: word.to,
       options: [
-        // {
-        //   label: labels?.divider ?? "Divider",
-        //   apply: (view, _, from, to) => {
-        //     handleSelect(view, _, from, to, SelectedOption.Divider);
-        //   },
-        // },
-        // {
-        //   label: labels?.fixedText ?? "Preserved output",
-        //   apply: (view, _, from, to) => {
-        //     handleSelect(view, _, from, to, SelectedOption.FixedText);
-        //   },
-        // },
         {
           label: labels?.image ?? "Image",
           apply: (view, _, from, to) => {

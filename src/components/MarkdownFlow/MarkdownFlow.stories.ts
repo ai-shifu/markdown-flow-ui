@@ -1,8 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { MARKDOWN_FLOW_LOCALES } from "../../lib/locale";
 
-// import { fn } from 'storybook/test';
-
 import MarkdownFlow from "./MarkdownFlow";
 
 const meta = {

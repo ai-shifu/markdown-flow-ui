@@ -407,7 +407,6 @@
 .markdown-body h4,
 .markdown-body h5,
 .markdown-body h6 {
-  /* margin-top: var(--base-size-24); */
   margin-bottom: var(--base-size-16);
   font-weight: var(--base-text-weight-semibold, 600);
   line-height: 1.25;
@@ -536,10 +535,6 @@
   clear: both;
   content: "";
 }
-
-/* .markdown-body>*:first-child {
-    margin-top: 0 !important;
-  } */
 
 .markdown-body > *:last-child {
   margin-bottom: 0 !important;

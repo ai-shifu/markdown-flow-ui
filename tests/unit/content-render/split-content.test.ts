@@ -150,7 +150,6 @@ describe("splitContentSegments", () => {
 这张图片生动地捕捉了传统春节的典型场景：画面中央是戴着虎头帽、穿着棉袄的可爱孩童，他正在点燃地上的爆竹，脸上洋溢着兴奋和期待。背景是贴着春联和门神的古朴木门，以及悬挂的红灯笼，充满了浓郁的**年味和喜庆氛围**。图片色彩鲜艳，以红色和金色为主，构图温馨，很好地体现了春节**热闹、祥和、充满童趣**的一面。`;
 
     const segments = splitContentSegments(raw, true);
-    // console.log('segments', segments);
     expect(segments).toHaveLength(7);
     expect(segments[0].type).toBe("text");
     expect(segments[0].value).toBe("先说一下这是第二个块的开始");
@@ -236,7 +235,6 @@ kk，通过这次旅程，我们一起揭开了春节神秘而温暖的面纱。
 
 **kk，愿您和您的家人，在新的一年里，身体健康，生活像春节的年夜饭一样丰盛美满，每一天都充满温馨与欢笑！**`;
     const segments = splitContentSegments(raw, true);
-    // console.log('segments', segments);
     expect(segments).toHaveLength(5);
     expect(segments[0].type).toBe("text");
     expect(segments[0].value).toBe("先说一下这是第六个块的开始");
@@ -358,7 +356,6 @@ kk，通过这次旅程，我们一起揭开了春节神秘而温暖的面纱。
 整个过程充分利用了平台的**用户互动、输出给 AI、AI 判断、AI 输出**这些核心能力，为你提供即时、个性化的学习效果检验。`;
 
     const segments = splitContentSegments(raw);
-    // console.log("segments", segments);
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("sandbox");
     expect(segments[0].value).toContain(
@@ -495,44 +492,6 @@ kk，通过这次旅程，我们一起揭开了春节神秘而温暖的面纱。
     );
   });
 
-  //   it("splits text and partial mermaid fenced block when keepText is true", () => {
-  //     const raw = `简单说，AI 的发展历程可以浓缩为四个阶段：
-
-  // \`\`\`mermaid
-  // timeline
-  //     title AI 发展四阶段
-  //     section 第一阶段
-  //         穷举法
-  //     : 基于规则与计算`;
-  //     // console.log('splits text and partial mermaid fenced block when keepText is true', splitContentSegments(raw, true));
-  //     const segments = splitContentSegments(raw, true);
-  //     expect(segments).toHaveLength(2);
-  //     expect(segments[0].type).toBe("text");
-  //     expect(segments[0].value).toBe("简单说，AI 的发展历程可以浓缩为四个阶段：");
-  //     expect(segments[1].type).toBe("markdown");
-  //     expect(segments[1].value).toContain("```mermaid");
-  //     expect(segments[1].value).toContain("timeline");
-  //   });
-
-  //   it("splits text and partial mermaid fenced block when keepText is false", () => {
-  //     const raw = `简单说，AI 的发展历程可以浓缩为四个阶段：
-
-  // \`\`\`mermaid
-  // timeline
-  //     title AI 发展四阶段
-  //     section 第一阶段
-  //         穷举法
-  //     : 基于规则与计算`;
-  //     // console.log('splits text and partial mermaid fenced block when keepText is false', splitContentSegments(raw));
-  //     const segments = splitContentSegments(raw);
-  //     expect(segments).toHaveLength(1);
-  //     expect(segments[0].type).toBe("markdown");
-  //     expect(segments[0].value).toContain("```mermaid");
-  //     expect(segments[0].value).toContain("timeline");
-  //     expect(segments[0].value).not.toContain("的发展历程可以浓缩为四个阶段：");
-
-  //   });
-
   it("splits leading text, img, and trailing text when keepText is true", () => {
     const raw = `你好，我是孙志岗，初次见面，很高兴认识你。
 
@@ -663,7 +622,6 @@ graph TD
 3.  打造 AI 产品是技术高手的事情`;
 
     const segments = splitContentSegments(raw, true);
-    // console.log('splits leading text, table, and trailing text when keepText is true', segments);
     expect(segments).toHaveLength(3);
     expect(segments[0].type).toBe("text");
     expect(segments[0].value).toBe(
@@ -693,7 +651,6 @@ graph TD
 3.  打造 AI 产品是技术高手的事情`;
 
     const segments = splitContentSegments(raw);
-    // console.log('splits leading text, table, and trailing text when keepText is true', segments);
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toBe(`| Header 1 | Header 2 |
@@ -729,7 +686,6 @@ graph TD
 
     const segments = splitContentSegments(raw, true);
 
-    // console.log('keeps streamed svg as a single markdown block when keepText is true', segments);
     expect(segments).toHaveLength(2);
     expect(segments[1].type).toBe("markdown");
     expect(segments[1].value).toContain("</svg>");
@@ -741,7 +697,6 @@ graph TD
 
     const segments = splitContentSegments(raw);
 
-    // console.log('keeps streamed svg as a single markdown block when keepText is true', segments);
     expect(segments).toHaveLength(1);
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toContain("</svg>");
@@ -760,16 +715,6 @@ graph TD
     expect(segments[0].type).toBe("markdown");
     expect(segments[0].value).toContain("```c");
   });
-
-  // it("keeps long fenced code block as single markdown segment when keepText is false", () => {
-  //   const raw = "```c\n  int a[N][N] = {\n      {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},\n      {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},\n      {1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1},\n      {1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1},\n      {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, ";
-
-  //   const segments = splitContentSegments(raw);
-
-  //   expect(segments).toHaveLength(1);
-  //   expect(segments[0].type).toBe("markdown");
-  //   expect(segments[0].value).toContain("```c");
-  // });
 
   it("keeps markdown table as markdown segment", () => {
     const raw = `## Tables

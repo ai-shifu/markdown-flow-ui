@@ -11,9 +11,6 @@
   word-break: break-word;
   overflow-wrap: break-word;
   hyphens: auto;
-  /* Allow responsive rules to react to this container's width */
-  /* container-type: inline-size;
-  container-name: content-render; */
 }
 
 .content-render.markdown-body {
@@ -235,7 +232,6 @@
 .content-render .input-container {
   display: flex;
   align-items: end;
-  /* margin-top: 12px; */
   max-width: 500px;
   width: 100%;
   border-radius: var(--border-radius-rounded-md, 8px);
@@ -270,7 +266,6 @@
   font-style: normal;
   font-weight: 400;
   line-height: var(--text-xs-line-height, 16px); /* 114.286% */
-  /* margin-top: 12px; */
 }
 
 .content-render .single-select-container .select {
@@ -347,10 +342,6 @@
   line-height: var(--text-sm-line-height, 20px);
 }
 
-.content-render .multi-select-container .block {
-  /* margin-top: 16px; */
-}
-
 .content-render-iframe-sandbox {
   justify-content: safe center;
 }
@@ -401,10 +392,6 @@
   );
 }
 
-/*
-  .content-render-iframe-sandbox {
-    justify-content: safe center !important;
-  } */
 .markdown-body p,
 .markdown-body blockquote,
 .markdown-body ul,
@@ -415,11 +402,3 @@
 .markdown-body details {
   margin-bottom: 12px !important;
 }
-/* Disabled dark mode support for Mermaid charts - always use light theme
-@media (prefers-color-scheme: dark) {
-  .content-render .mermaid-chart-container {
-    background-color: #2d3748;
-    border-color: #4a5568;
-  }
-}
-*/

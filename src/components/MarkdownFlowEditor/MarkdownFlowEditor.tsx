@@ -35,8 +35,6 @@ import ImgPlaceholder from "./plugins/ImgPlaceholder";
 import VideoPlaceholder from "./plugins/VideoPlaceholder";
 import { mediaPlaceholderLabels } from "./plugins/mediaPlaceholderLabels";
 import SyntaxHighlighter from "./plugins/SyntaxHighlighter";
-// import createFixedTextPlaceholder from "./plugins/FixedTextPlaceholder";
-// import DividerPlaceholder from "./plugins/DividerPlaceholder";
 import { initReactI18next, useTranslation } from "react-i18next";
 import i18next from "i18next";
 import { UploadProps } from "./uploadTypes";
@@ -197,70 +195,11 @@ const Editor: React.FC<EditorProps> = ({
     setSelectContentInfo(null);
   }, [disabled, setDialogOpen, setSelectedOption, setSelectContentInfo]);
 
-  // const insertFixedText = useCallback(() => {
-  //   if (!editorViewRef.current) return;
-  //   const view = editorViewRef.current;
-  //   const { state, dispatch } = view;
-  //   const selection = state.selection.main;
-  //   const selectedText = state.sliceDoc(selection.from, selection.to);
-  //   const startTag = "===";
-  //   const endTag = "===";
-  //   const insertContent = `${startTag}${selectedText ?? ""}${endTag}`;
-
-  //   dispatch({
-  //     changes: {
-  //       from: selection.from,
-  //       to: selection.to,
-  //       insert: insertContent,
-  //     },
-  //     selection: {
-  //       anchor: selection.from + startTag.length + (selectedText?.length ?? 0),
-  //     },
-  //   });
-  //   view.focus();
-  // }, []);
-
-  // const insertDivider = useCallback(() => {
-  //   if (!editorViewRef.current) return;
-  //   const view = editorViewRef.current;
-  //   const { state, dispatch } = view;
-  //   const selection = state.selection.main;
-  //   const insertContent = `\n\n---\n\n`;
-
-  //   dispatch({
-  //     changes: {
-  //       from: selection.from,
-  //       to: selection.to,
-  //       insert: insertContent,
-  //     },
-  //     selection: {
-  //       anchor: selection.from + insertContent.length,
-  //     },
-  //   });
-  //   view.focus();
-  // }, []);
-
   const onSelectedOption = useCallback(
     (option: SelectedOption) => {
       if (disabled) {
         return;
       }
-      // if (option === SelectedOption.FixedText) {
-      //   insertFixedText();
-      //   setSelectedOption(SelectedOption.Empty);
-      //   setDialogOpen(false);
-      //   setSelectContentInfo(null);
-      //   return;
-      // }
-
-      // if (option === SelectedOption.Divider) {
-      //   insertDivider();
-      //   setSelectedOption(SelectedOption.Empty);
-      //   setDialogOpen(false);
-      //   setSelectContentInfo(null);
-      //   return;
-      // }
-
       setSelectedOption(option);
 
       setDialogOpen(true);
@@ -545,35 +484,12 @@ const Editor: React.FC<EditorProps> = ({
     return autocompletion({
       override: [
         createSlashCommands(onSelectedOption, {
-          // divider: currentStrings.slashDivider,
-          // fixedText: currentStrings.slashFixedText,
           image: currentStrings.slashImage,
           video: currentStrings.slashVideo,
         }),
       ],
     });
-  }, [
-    // currentStrings.slashDivider,
-    // currentStrings.slashFixedText,
-    currentStrings.slashImage,
-    currentStrings.slashVideo,
-    onSelectedOption,
-  ]);
-
-  // const fixedTextPlaceholderExtension = useMemo(
-  //   () =>
-  //     createFixedTextPlaceholder(
-  //       currentStrings.fixedTextPlaceholder ?? "Add preserved output",
-  //       currentStrings.fixedTextTooltip ??
-  //         currentStrings.slashFixedText ??
-  //         "Preserved output"
-  //     ),
-  //   [
-  //     currentStrings.fixedTextPlaceholder,
-  //     currentStrings.fixedTextTooltip,
-  //     currentStrings.slashFixedText,
-  //   ]
-  // );
+  }, [currentStrings.slashImage, currentStrings.slashVideo, onSelectedOption]);
 
   const handleEditorUpdate = useCallback((update: ViewUpdate) => {
     editorViewRef.current = update.view;
@@ -647,8 +563,6 @@ const Editor: React.FC<EditorProps> = ({
         mediaPlaceholderLabelsExtension,
         ImgPlaceholder,
         VideoPlaceholder
-        // fixedTextPlaceholderExtension,
-        // DividerPlaceholder,
       );
     }
 

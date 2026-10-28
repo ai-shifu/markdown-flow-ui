@@ -42,7 +42,7 @@
     "rehype-katex": "^7.0.1",
     "rehype-raw": "^7.0.0",
     "remark-breaks": "^4.0.0",
-    "remark-flow": "1.4.1",
+    "remark-flow": "1.4.2",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "remark-parse": "^11.0.0",
@@ -196,7 +196,7 @@
       ]
     }
   },
-  "version": "0.3.3",
+  "version": "0.3.4",
   "type": "module",
   "exports": {
     ".": {

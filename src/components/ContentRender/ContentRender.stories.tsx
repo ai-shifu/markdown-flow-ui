@@ -1706,6 +1706,21 @@ Which path and level?
   },
 };
 
+export const CompatibleVariableMarkers: Story = {
+  args: {
+    content: `# Compatible named answers
+
+Both marker spellings collect the same named answer.
+
+## Bare marker
+?[{{goal}} A//a | B//b]
+
+## Percent marker
+?[%{{goal}} A//a | B//b]`,
+    onSend: (params) => console.log("Named answer received:", params),
+  },
+};
+
 export const NonAssignmentInteractionDemo: Story = {
   name: "Non-Assignment Interaction Demo",
   args: {

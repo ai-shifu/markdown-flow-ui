@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.4 - Unreleased
+
+### Fixed
+
+- Include remark-flow 1.4.2 in the published renderer and editor bundles so
+  interactions accept both `%{{name}}` and `{{name}}` as a leading named binding.
+- Verify both packaged module formats submit named answers and preserve stored
+  values when interactions are replayed.
+
 ## 0.3.3 - 2026-10-26
 
 ### Fixed

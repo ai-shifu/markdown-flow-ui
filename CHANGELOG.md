@@ -1,6 +1,24 @@
 # Changelog
 
-## 0.3.4 - Unreleased
+## 0.3.5 - 2026-10-29
+
+### Fixed
+
+- Prevent encoded whitespace in fenced code languages from injecting additional
+  CSS classes into rendered Markdown, while preserving normal highlighting.
+- Remove vulnerable dependency resolutions from both npm and pnpm lockfiles,
+  including obsolete preview mockers and the unused deepmerge dependency chain.
+
+### Changed
+
+- Upgrade the bundled remark-flow parser to 1.4.3, preserving standard and legacy
+  interaction bindings, stored answers, and literal Markdown boundaries.
+- Upgrade Storybook to 10.6.5 and Vitest to 4.1.12 with the Playwright browser
+  provider, and constrain the PostCSS and TOML parsers to patched versions.
+- Validate and audit both dependency lockfiles in CI, and verify packaged ESM
+  and CommonJS rendering against code-language class injection.
+
+## 0.3.4 - 2026-10-29
 
 ### Fixed
 

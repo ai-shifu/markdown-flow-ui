@@ -52,13 +52,13 @@ const content = `
 
 {{ quick}}
 
-?[%{{单选}} 选项1 | 选项2]
+?[{{单选}} 选项1 | 选项2]
 
-?[%{{多选}} 选项1 || 选项2]
+?[{{多选}} 选项1 || 选项2]
 
-?[%{{多选  }} 选项1 || 选项2]
+?[{{多选  }} 选项1 || 选项2]
 
-?[%{{输入框}}...请输入]
+?[{{输入框}}...请输入]
 
 ?[继续]
 
@@ -147,21 +147,21 @@ Inline code: \`\`\` console.log("Hello World!"); \`\`\`
 ## Custom Variable Syntax Examples
 
 ### Format 1: Multiple Buttons + Placeholder
-Choose your profession: ?[%{{occupation}}Warrior|Mage|Rogue|... Other profession]
+Choose your profession: ?[{{occupation}}Warrior|Mage|Rogue|... Other profession]
 
 ### Format 2: Multiple Buttons (with spaces)
-Select color: ?[%{{ color }} Red | Blue | Green ]
+Select color: ?[{{ color }} Red | Blue | Green ]
 
 ### Format 3: Single Button (with spaces)
-Confirm submission: ?[%{{ submit }} Confirm ]
+Confirm submission: ?[{{ submit }} Confirm ]
 
 ### Format 4: Placeholder (with spaces)
-Enter username: ?[%{{ username }} ... Please enter username ]
+Enter username: ?[{{ username }} ... Please enter username ]
 
 ### Mixed Formats
-1. No spaces: ?[%{{quick}}Option1|Option2]
-2. With spaces: ?[%{{ variable }} Option A | Option B | ... Custom option]
-3. Complex combination: ?[%{{ complex }} Step 1 | Step 2 | Step 3 | ... Other steps]
+1. No spaces: ?[{{quick}}Option1|Option2]
+2. With spaces: ?[{{ variable }} Option A | Option B | ... Custom option]
+3. Complex combination: ?[{{ complex }} Step 1 | Step 2 | Step 3 | ... Other steps]
 
 ## Horizontal Rules
 ---
@@ -549,10 +549,10 @@ export const QuestionMemoryKeys: Story = {
   args: {
     editMode: EditMode.QuickEdit,
     content: `你的性别是？
-?[%{{ 你的性别是？ }} 男 | 女 | 秘密]
+?[{{ 你的性别是？ }} 男 | 女 | 秘密]
 
 Which-option?
-?[%{{ Which [path] | level//hint...? }} A | B]
+?[{{ Which [path] | level//hint...? }} A | B]
 
 {{ name} }}
 
@@ -598,14 +598,40 @@ export const ToolbarWithoutVariableActions: Story = {
     await userEvent.click(
       canvasElement.querySelector<HTMLElement>(".cm-content")!
     );
-    await userEvent.click(
-      canvas.getByRole("button", { name: texts.toolbarInsertSingleChoice })
-    );
-    await waitFor(() =>
-      expect(canvasElement.querySelector(".cm-content")?.textContent).toBe(
-        "?[%{{  }} Option 1 | Option 2]"
-      )
-    );
+    for (const [label, template] of [
+      [
+        texts.toolbarInsertSingleChoice,
+        `?[{{  }} ${texts.toolbarChoiceOption1} | ${texts.toolbarChoiceOption2}]`,
+      ],
+      [
+        texts.toolbarInsertMultiChoice,
+        `?[{{  }} ${texts.toolbarChoiceOption1} || ${texts.toolbarChoiceOption2}]`,
+      ],
+      [
+        texts.toolbarInsertInput,
+        `?[{{  }}...${texts.toolbarInputPlaceholder}]`,
+      ],
+    ]) {
+      const prefix = "Before ";
+      const view = EditorView.findFromDOM(
+        canvasElement.querySelector<HTMLElement>(".cm-content")!
+      )!;
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: prefix },
+        selection: { anchor: prefix.length },
+      });
+      await userEvent.click(canvas.getByRole("button", { name: label }));
+      await waitFor(() =>
+        expect(view.state.doc.toString()).toBe(prefix + template)
+      );
+      expect(view.state.selection.main.anchor).toBe(prefix.length + 5);
+      await userEvent.keyboard("answer");
+      await waitFor(() =>
+        expect(view.state.doc.toString()).toBe(
+          prefix + template.replace("{{  }}", "{{ answer }}")
+        )
+      );
+    }
     expect(
       canvasElement.querySelector(".markdown-flow-editor-variable-search")
     ).toBeNull();
@@ -639,7 +665,7 @@ export const EditableVariableSyntax: Story = {
   args: {
     locale: "en-US",
     editMode: EditMode.QuickEdit,
-    content: "Before {{ learner }} / ?[%{{完整问题}} A | B] after",
+    content: "Before {{ learner }} / ?[{{完整问题}} A | B] after",
   },
   play: async ({ canvasElement, args }) => {
     const getView = () => {
@@ -670,7 +696,7 @@ export const EditableVariableSyntax: Story = {
     await userEvent.keyboard("X");
     await waitFor(() =>
       expect(getView().state.doc.toString()).toBe(
-        "Before {{ leaXrner }} / ?[%{{完整问题}} A | B] after"
+        "Before {{ leaXrner }} / ?[{{完整问题}} A | B] after"
       )
     );
 
@@ -682,8 +708,7 @@ export const EditableVariableSyntax: Story = {
     });
     assignmentView.focus();
     await userEvent.keyboard("X");
-    const editedSource =
-      "Before {{ leaXrner }} / ?[%{{完整X问题}} A | B] after";
+    const editedSource = "Before {{ leaXrner }} / ?[{{完整X问题}} A | B] after";
     await waitFor(() =>
       expect(getView().state.doc.toString()).toBe(editedSource)
     );

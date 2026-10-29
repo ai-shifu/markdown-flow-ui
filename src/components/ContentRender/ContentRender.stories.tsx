@@ -113,7 +113,7 @@ export const MixedChoiceInputReplay: Story = {
 };
 
 const CONTENT_RENDER_INPUT_CHURN_CONTENT =
-  "?[%{{content_render_input_churn}}...Type your answer]";
+  "?[{{content_render_input_churn}}...Type your answer]";
 
 const ContentRenderInputPropChurnPreview = () => {
   const [renderCount, setRenderCount] = useState(0);
@@ -383,21 +383,21 @@ Inline code: \`\`\` console.log("Hello World!"); \`\`\`
 ## Custom Variable Syntax Examples
 
 ### Format 1: Multiple Buttons + Placeholder
-Choose your profession: ?[%{{occupation}}Warrior|Mage|Rogue|... Other profession]
+Choose your profession: ?[{{occupation}}Warrior|Mage|Rogue|... Other profession]
 
 ### Format 2: Multiple Buttons (with spaces)
-Select color: ?[%{{ color }} Red | Blue | Green ]
+Select color: ?[{{ color }} Red | Blue | Green ]
 
 ### Format 3: Single Button (with spaces)
-Confirm submission: ?[%{{ submit }} Confirm ]
+Confirm submission: ?[{{ submit }} Confirm ]
 
 ### Format 4: Placeholder (with spaces)
-Enter username: ?[%{{ username }} ... Please enter username ]
+Enter username: ?[{{ username }} ... Please enter username ]
 
 ### Mixed Formats
-1. No spaces: ?[%{{quick}}Option1|Option2]
-2. With spaces: ?[%{{ variable }} Option A | Option B | ... Custom option]
-3. Complex combination: ?[%{{ complex }} Step 1 | Step 2 | Step 3 | ... Other steps]
+1. No spaces: ?[{{quick}}Option1|Option2]
+2. With spaces: ?[{{ variable }} Option A | Option B | ... Custom option]
+3. Complex combination: ?[{{ complex }} Step 1 | Step 2 | Step 3 | ... Other steps]
 
 ## Horizontal Rules
 ---
@@ -493,7 +493,7 @@ pie title Programming Language Usage Statistics
 
 ## Custom Variable Example
 
-Please select a math concept you'd like to learn: ?[%{{math_concept}}Calculus|Linear Algebra|Probability|...Other concepts]
+Please select a math concept you'd like to learn: ?[{{math_concept}}Calculus|Linear Algebra|Probability|...Other concepts]
 
 You selected **{{math_concept}}**, which is a very important mathematical field!
 
@@ -931,63 +931,63 @@ const MULTI_SELECT_EXAMPLES = `# Multi-Select Feature Examples
 ## Basic Multi-Select
 
 Choose your favorite programming languages (select multiple):
-?[%{{programming_languages}}JavaScript||Python||TypeScript||Java||Go||Rust]
+?[{{programming_languages}}JavaScript||Python||TypeScript||Java||Go||Rust]
 
 ## Multi-Select with Text Input
 
 Select features you want and describe any additional requirements:
-?[%{{intro_teaching_problem}}备课很慢，想更快产出教案、课件或课程结构//备课很慢，想更快产出教案、课件或课程结构||资料很多很散，想整理成可讲、可学、可练的内容//资料很多很散，想整理成可讲、可学、可练的内容||学生或学员不爱学，想提升互动、完课和参与感//学生或学员不爱学，想提升互动、完课和参与感||学完不会用，想增加练习、反馈和答疑//学完不会用，想增加练习、反馈和答疑||教研经验难复制，想沉淀 SOP、案例库或标准课//教研经验难复制，想沉淀 SOP、案例库或标准课||还没有明确问题，只想先了解可能性//还没有明确问题，只想先了解可能性||...其他问题]
-// ?[%{{features}}User Authentication||API Integration||Database Support||File Upload||...Additional requirements]
+?[{{intro_teaching_problem}}备课很慢，想更快产出教案、课件或课程结构//备课很慢，想更快产出教案、课件或课程结构||资料很多很散，想整理成可讲、可学、可练的内容//资料很多很散，想整理成可讲、可学、可练的内容||学生或学员不爱学，想提升互动、完课和参与感//学生或学员不爱学，想提升互动、完课和参与感||学完不会用，想增加练习、反馈和答疑//学完不会用，想增加练习、反馈和答疑||教研经验难复制，想沉淀 SOP、案例库或标准课//教研经验难复制，想沉淀 SOP、案例库或标准课||还没有明确问题，只想先了解可能性//还没有明确问题，只想先了解可能性||...其他问题]
+// ?[{{features}}User Authentication||API Integration||Database Support||File Upload||...Additional requirements]
 
 ## Mixed Single and Multi-Select Examples
 
 ### Single Selection (traditional buttons)
-Choose your experience level: ?[%{{experience}}Beginner|Intermediate|Advanced]
+Choose your experience level: ?[{{experience}}Beginner|Intermediate|Advanced]
 
 ### Multi-Selection (checkboxes + confirm)
 Select technologies you're interested in:
-?[%{{technologies}}React||Vue||Angular||Svelte||Next.js||Nuxt.js]
+?[{{technologies}}React||Vue||Angular||Svelte||Next.js||Nuxt.js]
 
 ### Text Only Input
-Enter your project name: ?[%{{project_name}}...Project name]
+Enter your project name: ?[{{project_name}}...Project name]
 
 ### Single Button with Text
-Choose action and add comment: ?[%{{action}}Approve|Reject|...Add your comment]
+Choose action and add comment: ?[{{action}}Approve|Reject|...Add your comment]
 
 ## Complex Multi-Select Scenarios
 
 ### Skills Assessment
 Select all skills you have (choose multiple):
-?[%{{skills}}HTML/CSS||JavaScript||TypeScript||React||Vue.js||Node.js||Python||Java||Database Design||API Development]
+?[{{skills}}HTML/CSS||JavaScript||TypeScript||React||Vue.js||Node.js||Python||Java||Database Design||API Development]
 
 ### Restaurant Order
 Choose your toppings (multiple selections allowed):
-?[%{{toppings}}Cheese||Pepperoni||Mushrooms||Onions||Bell Peppers||Olives||Tomatoes||...Special instructions]
+?[{{toppings}}Cheese||Pepperoni||Mushrooms||Onions||Bell Peppers||Olives||Tomatoes||...Special instructions]
 
 ## Comparison: Single vs Multi-Select
 
 **Single Select (radio-style buttons):**
-Pick one main technology: ?[%{{main_tech}}Frontend|Backend|Mobile|DevOps]
+Pick one main technology: ?[{{main_tech}}Frontend|Backend|Mobile|DevOps]
 
 **Multi-Select (checkbox-style):**
 Areas of expertise (select all that apply):
-?[%{{expertise}}Frontend Development||Backend Development||Mobile Development||DevOps||UI/UX Design||Data Science]
+?[{{expertise}}Frontend Development||Backend Development||Mobile Development||DevOps||UI/UX Design||Data Science]
 
 **Mixed Mode:**
 Choose primary role and additional skills:
-Primary: ?[%{{primary_role}}Developer|Designer|Manager|QA]
-Additional skills: ?[%{{additional_skills}}Leadership||Teaching||Project Management||Technical Writing||...Other skills]
+Primary: ?[{{primary_role}}Developer|Designer|Manager|QA]
+Additional skills: ?[{{additional_skills}}Leadership||Teaching||Project Management||Technical Writing||...Other skills]
 
 ## Interactive Flow Example
 
 1. **First, choose your role:**
-   ?[%{{user_role}}Student|Professional|Freelancer|Entrepreneur]
+   ?[{{user_role}}Student|Professional|Freelancer|Entrepreneur]
 
 2. **Then select your interests (multiple):**
-   ?[%{{interests}}Web Development||Mobile Apps||AI/ML||Data Science||Cybersecurity||Game Development||...Other interests]
+   ?[{{interests}}Web Development||Mobile Apps||AI/ML||Data Science||Cybersecurity||Game Development||...Other interests]
 
 3. **Finally, tell us about your goals:**
-   ?[%{{goals}}...What do you want to achieve?]
+   ?[{{goals}}...What do you want to achieve?]
 
 This demonstrates the power of combining single-select, multi-select, and text input modes in a conversational flow!`;
 
@@ -1199,7 +1199,7 @@ pie title 编程语言使用统计
 
 ## 自定义变量示例
 
-请选择你想了解的数学概念：?[%{{math_concept}}微积分|线性代数|概率论|...其他概念]
+请选择你想了解的数学概念：?[{{math_concept}}微积分|线性代数|概率论|...其他概念]
 
 你选择了 **{{math_concept}}**，这是一个非常重要的数学分支！
 
@@ -1565,23 +1565,23 @@ Welcome! Let's test the multi-select functionality.
 
 ## Step 1: Choose Your Interests (Multi-Select)
 Select all topics that interest you:
-?[%{{interests}}Web Development||Mobile Development||AI/Machine Learning||Data Science||Cybersecurity||Game Development||DevOps||UI/UX Design]
+?[{{interests}}Web Development||Mobile Development||AI/Machine Learning||Data Science||Cybersecurity||Game Development||DevOps||UI/UX Design]
 
 ## Step 2: Primary Focus (Single Select)
 What's your primary focus area?
-?[%{{primary_focus}}Frontend|Backend|Full Stack|Mobile|Data|AI/ML]
+?[{{primary_focus}}Frontend|Backend|Full Stack|Mobile|Data|AI/ML]
 
 ## Step 3: Experience Level (Single Select)
 How would you describe your experience level?
-?[%{{experience}}Beginner|Intermediate|Advanced|Expert]
+?[{{experience}}Beginner|Intermediate|Advanced|Expert]
 
 ## Step 4: Learning Goals (Multi-Select with Text)
 What would you like to learn or improve? Select options and add custom goals:
-?[%{{learning_goals}}React/Next.js||Vue/Nuxt.js||Node.js||Python||Machine Learning||Cloud Computing||...Other specific goals]
+?[{{learning_goals}}React/Next.js||Vue/Nuxt.js||Node.js||Python||Machine Learning||Cloud Computing||...Other specific goals]
 
 ## Step 5: Additional Comments
 Any additional thoughts or questions?
-?[%{{comments}}...Feel free to share your thoughts]
+?[{{comments}}...Feel free to share your thoughts]
 
 ---
 
@@ -1618,49 +1618,49 @@ export const ChineseMultiSelectDemo: Story = {
 欢迎体验多选功能！
 ## 全面测试（单选）
 单选没有选项
-?[%{{answer}}]
-?[%{{answer}}...]
+?[{{answer}}]
+?[{{answer}}...]
 ?[继续]
 
 单选有选项
-?[%{{answer}}选项A|选项B|选项C]
+?[{{answer}}选项A|选项B|选项C]
 单选有选项和输入框
-?[%{{answer}}选项A|选项B|选项C|...其他选项]
+?[{{answer}}选项A|选项B|选项C|...其他选项]
 单选有输入框
-?[%{{answer}}...其他选项]
+?[{{answer}}...其他选项]
 
 
 ## 第一步：选择你的兴趣（多选）
 选择所有你感兴趣的主题：
-?[%{{interests}}Web开发||移动开发||人工智能||数据科学||网络安全||游戏开发||运维||UI/UX设计]
+?[{{interests}}Web开发||移动开发||人工智能||数据科学||网络安全||游戏开发||运维||UI/UX设计]
 
 ## 第二步：主要方向（单选）
 你的主要专业方向是？
-?[%{{primary_focus}}前端|后端|全栈|移动端|数据|人工智能]
+?[{{primary_focus}}前端|后端|全栈|移动端|数据|人工智能]
 
 ## 第三步：经验水平（单选）
 你如何描述自己的经验水平？
-?[%{{experience}}初学者|中级|高级|专家]
+?[{{experience}}初学者|中级|高级|专家]
 
 ## 第四步：学习目标（多选+文本，测试多行的情况）
 你想学习或提升什么？选择选项并添加自定义目标：
-?[%{{learning_goals}}React/Next.js||Vue/Nuxt.js||Node.js||Python||机器学习||云计算||...其他具体目标]
+?[{{learning_goals}}React/Next.js||Vue/Nuxt.js||Node.js||Python||机器学习||云计算||...其他具体目标]
 
 ## 第四步：学习目标（多选+文本，测试一行的情况）
 你想学习或提升什么？选择选项并添加自定义目标：
-?[%{{learning_goals}}React/Next.js||Vue/Nuxt.js||...其他具体目标]
+?[{{learning_goals}}React/Next.js||Vue/Nuxt.js||...其他具体目标]
 
 ## 第五步：学习意图（单选+文本，测试多行的情况）
 你主要想学习什么？选择选项并添加自定义目标：
-?[%{{learning_goals}}React/Next.js|Vue/Nuxt.js|Node.js|Python|React Native|Flutter|...其他具体目标]
+?[{{learning_goals}}React/Next.js|Vue/Nuxt.js|Node.js|Python|React Native|Flutter|...其他具体目标]
 
 ## 第五步：学习意图（单选+文本， 测试一行的情况）
 你主要想学习什么？选择选项并添加自定义目标：
-?[%{{learning_goals}}React/Next.js|Vue/Nuxt.js|...其他具体目标]
+?[{{learning_goals}}React/Next.js|Vue/Nuxt.js|...其他具体目标]
 
 ## 第六步：补充说明（文本）
 还有什么想法或问题吗？
-?[%{{comments}}...请分享你的想法]
+?[{{comments}}...请分享你的想法]
 
 
 ---
@@ -1698,11 +1698,26 @@ export const QuestionMemoryKey: Story = {
   args: {
     content: `你的性别是？
 
-?[%{{ 你的性别是？ }} 男//male | 女//female | 秘密//secret]
+?[{{ 你的性别是？ }} 男//male | 女//female | 秘密//secret]
 
 Which path and level?
-?[%{{ Which [path] | level//hint...? }} A//a | B//b]`,
+?[{{ Which [path] | level//hint...? }} A//a | B//b]`,
     onSend: (params) => console.log("Question answer received:", params),
+  },
+};
+
+export const StandardVariableBindings: Story = {
+  args: {
+    content: `# Named answers
+
+A leading variable binding stores the answer under its variable name.
+
+## Single choice
+?[{{goal}} A//a | B//b]
+
+## Text input
+?[{{details}}...Describe your goal]`,
+    onSend: (params) => console.log("Named answer received:", params),
   },
 };
 
@@ -1711,8 +1726,8 @@ export const NonAssignmentInteractionDemo: Story = {
   args: {
     content: `# Non-Assignment Interactions (no variable)
 
-Interactions without \`%{{variable}}\` collect an answer that is not stored in
-any variable — the host feeds it back into the conversation context instead.
+Interactions without a leading variable binding collect an answer that is not
+stored in any variable — the host feeds it back into the conversation context instead.
 \`variableName\` arrives as an empty string in the onSend params.
 
 ## Single Select

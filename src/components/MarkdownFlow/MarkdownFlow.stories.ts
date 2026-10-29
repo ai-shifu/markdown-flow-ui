@@ -39,7 +39,7 @@ export const MarkdownFlowStory: Story = {
         content: `你好呀！👋 我是孙志岗，很高兴能和你一起探索AI的奇妙世界~ \n\n在开始之前，我想先和你聊聊为什么学习AI这么重要🌟：\n\n- AI正在改变我们的生活、工作和学习方式\n\n- 掌握AI技能可以让你在未来更有竞争力\n\n- 学习AI不仅能解决实际问题，还能培养创新思维\n\n说了这么多，还不知道该怎么称呼你呢？😊 可以告诉我你的名字或你喜欢的称呼吗？`,
       },
       {
-        content: "?[%{{ sys_user_nickname }}...希望我怎么称呼你？]",
+        content: "?[{{ sys_user_nickname }}...希望我怎么称呼你？]",
         defaultInputText: "amy",
         readonly: true,
       },
@@ -55,7 +55,7 @@ export const MarkdownFlowStory: Story = {
         content: `Amy，为了更好地适配讲课内容，我可以了解一下你的性别吗？（这样我能用更合适的称呼方式~）`,
       },
       {
-        content: `?[%{{ gender }}男|女]`,
+        content: `?[{{ gender }}男|女]`,
         defaultButtonText: "男",
         readonly: true,
       },
@@ -66,7 +66,7 @@ export const MarkdownFlowStory: Story = {
         },
       },
       {
-        content: `?[%{{ sys_user_style }}幽默|大气|二次元｜...具体描述下你喜欢的风格]`,
+        content: `?[{{ sys_user_style }}幽默|大气|二次元｜...具体描述下你喜欢的风格]`,
         defaultButtonText: "幽默",
         readonly: true,
       },
@@ -80,7 +80,7 @@ export const FrenchLocale: Story = {
     initialContentList: [
       {
         content:
-          "Choisissez les sujets à approfondir : ?[%{{ topics }}Markdown||Interactions||Rendu HTML||...Autre sujet]",
+          "Choisissez les sujets à approfondir : ?[{{ topics }}Markdown||Interactions||Rendu HTML||...Autre sujet]",
       },
       {
         content: "```ts\nconst locale = 'fr-FR';\n```",

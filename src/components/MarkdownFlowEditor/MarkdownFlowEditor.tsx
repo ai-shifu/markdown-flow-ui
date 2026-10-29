@@ -355,7 +355,7 @@ const Editor: React.FC<EditorProps> = ({
     const selection = state.selection.main;
     const optionLabel1 = toolbarLabels.singleChoiceOption1;
     const optionLabel2 = toolbarLabels.singleChoiceOption2;
-    const template = `?[%{{  }} ${optionLabel1} | ${optionLabel2}]`;
+    const template = `?[{{  }} ${optionLabel1} | ${optionLabel2}]`;
     dispatch({
       changes: {
         from: selection.from,
@@ -363,7 +363,7 @@ const Editor: React.FC<EditorProps> = ({
         insert: template,
       },
       selection: {
-        anchor: selection.from + 6,
+        anchor: selection.from + 5,
       },
     });
     view.focus();
@@ -382,7 +382,7 @@ const Editor: React.FC<EditorProps> = ({
     const selection = state.selection.main;
     const optionLabel1 = toolbarLabels.singleChoiceOption1;
     const optionLabel2 = toolbarLabels.singleChoiceOption2;
-    const template = `?[%{{  }} ${optionLabel1} || ${optionLabel2}]`;
+    const template = `?[{{  }} ${optionLabel1} || ${optionLabel2}]`;
     dispatch({
       changes: {
         from: selection.from,
@@ -390,7 +390,7 @@ const Editor: React.FC<EditorProps> = ({
         insert: template,
       },
       selection: {
-        anchor: selection.from + 6,
+        anchor: selection.from + 5,
       },
     });
     view.focus();
@@ -408,7 +408,7 @@ const Editor: React.FC<EditorProps> = ({
     const { state, dispatch } = view;
     const selection = state.selection.main;
     const placeholder = toolbarLabels.inputPlaceholder ?? "请输入";
-    const template = `?[%{{  }}...${placeholder}]`;
+    const template = `?[{{  }}...${placeholder}]`;
     dispatch({
       changes: {
         from: selection.from,
@@ -416,7 +416,7 @@ const Editor: React.FC<EditorProps> = ({
         insert: template,
       },
       selection: {
-        anchor: selection.from + 6,
+        anchor: selection.from + 5,
       },
     });
     view.focus();

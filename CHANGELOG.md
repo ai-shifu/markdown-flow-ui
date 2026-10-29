@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.4 - Unreleased
+
+### Fixed
+
+- Include remark-flow 1.4.2 in the published renderer and editor bundles so
+  `?[{{name}} ...]` binds answers using the standard interaction syntax.
+- Generate standard bindings from the editor toolbar and use them consistently
+  in documentation and examples, while retaining legacy content compatibility.
+- Verify both packaged module formats submit named answers and preserve stored
+  values when interactions are replayed.
+
 ## 0.3.3 - 2026-10-26
 
 ### Fixed

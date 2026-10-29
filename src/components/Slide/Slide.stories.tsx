@@ -169,7 +169,7 @@ const DIFF_CONTENT = `**示例**（用户：替换 aaa 为 ddd）：
 
 const IMG_CONTENT = `<img src="https://resource.ai-shifu.cn/7b007ca873b14edeb4d3e6817f520550" />`;
 
-const INTERACTION_CONTENT = `?[%{{teaching_style}} 幽默 | 严谨 | 故事化 | ... 请输入更多偏好 ]`;
+const INTERACTION_CONTENT = `?[{{teaching_style}} 幽默 | 严谨 | 故事化 | ... 请输入更多偏好 ]`;
 
 const TABLES_CONTENT = `| 阶段 | 输入 | 输出 |
 | --- | --- | --- |
@@ -2117,7 +2117,7 @@ const DRAG_TEST_ELEMENT_LIST: Element[] = [
   createExampleElement({
     sequenceNumber: 1,
     type: "interaction",
-    content: "?[%{{drag_test_choice}} Option A | Option B | Option C]",
+    content: "?[{{drag_test_choice}} Option A | Option B | Option C]",
     isNew: true,
     readonly: false,
   }),
@@ -2137,7 +2137,7 @@ const MOBILE_VIEWPORT_INPUT_TEST_ELEMENT_LIST: Element[] = [
   createExampleElement({
     sequenceNumber: 1,
     type: "interaction",
-    content: "?[%{{mobile_resize_input}}...Type your answer]",
+    content: "?[{{mobile_resize_input}}...Type your answer]",
     isNew: true,
     readonly: false,
   }),
@@ -3590,7 +3590,7 @@ export const FrenchLocale: Story = {
         sequence_number: 2,
         type: "interaction",
         content:
-          "Sélectionnez les formats à utiliser : ?[%{{ formats }}Article||Vidéo||Exercice||...Autre format]",
+          "Sélectionnez les formats à utiliser : ?[{{ formats }}Article||Vidéo||Exercice||...Autre format]",
         is_renderable: false,
         is_speakable: false,
       },
@@ -3835,7 +3835,7 @@ export const CustomPlayerActionButton: Story = {
         sequence_number: 224,
         type: "interaction",
         content:
-          "?[%{{flow_quiz_1}} 月底流程可跨月补完 | 月底流程必须完结 | 只要口头请假就可不走系统]",
+          "?[{{flow_quiz_1}} 月底流程可跨月补完 | 月底流程必须完结 | 只要口头请假就可不走系统]",
         is_marker: true,
         is_renderable: false,
         is_new: true,
@@ -3973,7 +3973,7 @@ export const CustomPlayerActionButton: Story = {
       {
         sequence_number: 159,
         type: "interaction",
-        content: "?[%{{flow_quiz_2}} 公出发薪 | 按事假处理 | 自动转加班]",
+        content: "?[{{flow_quiz_2}} 公出发薪 | 按事假处理 | 自动转加班]",
         is_marker: true,
         is_renderable: false,
         is_new: true,
@@ -4943,7 +4943,7 @@ export const FullViewportSingleSlide: Story = {
         sequence_number: 131,
         type: "interaction",
         content:
-          "?[%{{agreeed_points}} AI 是一种工具 || 每种 AI 产品都需要学习使用方法 || 打造 AI 产品是技术高手的事情 || 都不同意 ]",
+          "?[{{agreeed_points}} AI 是一种工具 || 每种 AI 产品都需要学习使用方法 || 打造 AI 产品是技术高手的事情 || 都不同意 ]",
         is_marker: true,
         is_renderable: true,
         is_new: true,

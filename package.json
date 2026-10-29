@@ -30,7 +30,7 @@
     "github-markdown-css": "^5.8.1",
     "highlight.js": "^11.11.1",
     "i18next": "^23.15.1",
-    "js-yaml": "4.3.2",
+    "js-yaml": "5.5.0",
     "katex": "0.18.2",
     "lucide-react": "^0.525.0",
     "mermaid": "11.16.1",

@@ -115,8 +115,8 @@ importers:
         specifier: ^4.0.0
         version: 4.0.0
       remark-flow:
-        specifier: 1.4.2
-        version: 1.4.2
+        specifier: 1.4.3
+        version: 1.4.3
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
@@ -5595,8 +5595,8 @@ packages:
   remark-breaks@4.0.0:
     resolution: {integrity: sha512-IjEjJOkH4FuJvHZVIW0QCDWxcG96kCq7An/KVH2NfJe6rKZU2AsHeB3OEjPNRxi4QC34Xdx7I2KGYn6IpT7gxQ==}
 
-  remark-flow@1.4.2:
-    resolution: {integrity: sha512-8klHxYhDcYz1PVl5OQmSJiQyuSjw4jadsfHIDsCgBvY4FQlctwmObUF/FOvpUIy8y49PrKoWcMYIns2/hh0GpQ==}
+  remark-flow@1.4.3:
+    resolution: {integrity: sha512-I1ViNu7WctO7aMS3OV5eE+7FUSrsrQXA4pXHm0/CkIvScTMBalC71JIrPwZltalvx4waS0iN2Inoxqj7vhlMXQ==}
 
   remark-gfm@4.0.1:
     resolution: {integrity: sha512-1quofZ2RQ9EWdeN34S79+KExV1764+wCUGop5CPL1WGdD0ocPpu91lzPGbwWMECpEpd42kJGQwzRfyov9j4yNg==}
@@ -12585,7 +12585,7 @@ snapshots:
       mdast-util-newline-to-break: 2.0.0
       unified: 11.0.5
 
-  remark-flow@1.4.2:
+  remark-flow@1.4.3:
     dependencies:
       unist: 0.0.1
       unist-util-visit: 5.2.0

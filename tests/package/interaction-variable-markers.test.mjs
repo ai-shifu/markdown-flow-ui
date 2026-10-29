@@ -183,6 +183,18 @@ for (const format of ["esm", "cjs"]) {
         if (expectedElement) {
           assert.ok(container.querySelector(expectedElement));
         }
+        const literal = `?[${marker} A | B]`;
+        if (expectedElement === "img") {
+          assert.equal(
+            container.querySelector("img").getAttribute("alt"),
+            literal
+          );
+        } else {
+          const rendered = expectedElement
+            ? container.querySelector(expectedElement).textContent
+            : container.textContent;
+          assert.ok(rendered.includes(literal));
+        }
         assert.deepEqual(sent, []);
       });
     }

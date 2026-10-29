@@ -97,8 +97,9 @@ characters, line separators, or literal `}}`. The first literal `}}` closes the
 marker. Quotes and backslashes remain part of the name.
 
 Use padded markers such as `{{ Which [path] | level//hint...? }}` or
-`%{{ name} }}`. Assignment markers remain atomic inside an interaction, so
-`?[%{{ Which [path] | level//hint...? }} Yes | No]` stores the answer under that
+`{{ name} }}`. A leading `{{name}}` inside `?[...]` binds the answer; outside
+interactions it remains a variable reference. Binding markers stay atomic, so
+`?[{{ Which [path] | level//hint...? }} Yes | No]` stores the answer under that
 exact name. Write the question text separately when it should be displayed.
 Existing names and compact markers such as `{{user_name}}` continue to work.
 
@@ -107,9 +108,9 @@ import { MarkdownFlow } from "markdown-flow-ui";
 
 function InteractiveExample() {
   const content = `
-Choose your language: ?[%{{lang}} English | French | Spanish]
+Choose your language: ?[{{lang}} English | French | Spanish]
 
-Your name: ?[%{{name}} Enter your name...]
+Your name: ?[{{name}}...Enter your name]
 
 ?[Continue | Cancel]
 `;
@@ -127,6 +128,9 @@ Your name: ?[%{{name}} Enter your name...]
 ```
 
 ## 📖 Documentation
+
+Existing percent-prefixed bindings remain accepted during the transition.
+Use the standard `?[{{name}} ...]` form for new content.
 
 For detailed API documentation, examples, and advanced usage, see:
 

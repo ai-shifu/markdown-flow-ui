@@ -229,7 +229,7 @@ const LanguageBoundaryFixture = () => {
         <ContentRender
           {...props}
           content={
-            'نص <span lang="it">Ciao</span>\n\n<pre lang="es">Hola</pre>\n\n?[%{{reply}}...Answer]'
+            'نص <span lang="it">Ciao</span>\n\n<pre lang="es">Hola</pre>\n\n?[{{reply}}...Answer]'
           }
         />
       </div>
@@ -924,7 +924,7 @@ const slideDirectionElements: { id: string; element: SlideElement }[] = [
     id: "interaction-slide",
     element: {
       type: "interaction",
-      content: "?[%{{answer}}...Answer]\n\n?[%{{choice}}First|...Other]",
+      content: "?[{{answer}}...Answer]\n\n?[{{choice}}First|...Other]",
       readonly: false,
     },
   },
@@ -1719,7 +1719,7 @@ export const DirectionAwareWrappedChoices: Story = {
         <div key={id} data-testid={id}>
           <ContentRender
             locale={locale}
-            content={`?[%{{choice}}${label}|Short]`}
+            content={`?[{{choice}}${label}|Short]`}
             onSend={onWrappedChoiceSend}
           />
         </div>
@@ -1757,13 +1757,10 @@ export const DirectionAwareCheckboxLabels: Story = {
     <div dir="rtl">
       {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
         <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
+          <ContentRender locale={locale} content="?[{{choice}}First||Second]" />
           <ContentRender
             locale={locale}
-            content="?[%{{choice}}First||Second]"
-          />
-          <ContentRender
-            locale={locale}
-            content="?[%{{readonlyChoice}}Disabled||Unavailable]"
+            content="?[{{readonlyChoice}}Disabled||Unavailable]"
             readonly
           />
         </div>
@@ -2127,7 +2124,7 @@ export const LocalizedMediaPlaceholders: Story = {
 };
 
 const variableSourceWithoutPicker =
-  "Reference: {{learner}} / {{system}}\n?[%{{ 你的性别是？ }} A | B]";
+  "Reference: {{learner}} / {{system}}\n?[{{ 你的性别是？ }} A | B]";
 
 const VariablesWithoutPickerFixture = () => {
   const [locale, setLocale] = useState<MarkdownFlowLocale>("ar-SA");

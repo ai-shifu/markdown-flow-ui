@@ -47,7 +47,7 @@ type OnSendContentParams = {
 <MarkdownFlow
   initialContentList={[
     {
-      content: "# Welcome\n\nChoose: ?[%{{choice}} A | B | C]",
+      content: "# Welcome\n\nChoose: ?[{{choice}} A | B | C]",
       isFinished: false,
     },
   ]}
@@ -184,11 +184,11 @@ interface ContentRenderProps {
 
 # Variable inputs
 
-?[%{{userName}} Enter name...]
+?[{{userName}}...Enter name]
 
 # Multiple choice
 
-?[%{{color}} Red | Blue | Green]
+?[{{color}} Red | Blue | Green]
 
 # Mermaid diagrams
 
@@ -319,8 +319,8 @@ Handles interactive buttons and inputs.
 
 ```markdown
 ?[Button Text] # Simple button
-?[%{{variable}} Placeholder...] # Input field
-?[%{{choice}} A | B | C] # Multiple choice
+?[{{variable}}...Placeholder] # Input field
+?[{{choice}} A | B | C] # Multiple choice
 ```
 
 **Mermaid Plugin:**

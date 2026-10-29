@@ -47,14 +47,16 @@ function App() {
 
 ### 交互式元素
 
+标准写法是在交互开头使用 `{{变量名}}` 绑定答案；交互之外的 `{{变量名}}` 仍表示变量引用。
+
 ```tsx
 import { MarkdownFlow } from "markdown-flow-ui";
 
 function InteractiveExample() {
   const content = `
-选择您的语言：?[%{{lang}} English | 中文 | Español]
+选择您的语言：?[{{lang}} English | 中文 | Español]
 
-您的姓名：?[%{{name}} 输入您的姓名...]
+您的姓名：?[{{name}}...输入您的姓名]
 
 ?[继续 | 取消]
 `;
@@ -70,6 +72,8 @@ function InteractiveExample() {
   );
 }
 ```
+
+已有内容的百分号前缀写法在过渡期内继续兼容，新内容统一使用 `?[{{变量名}} ...]`。
 
 ### SSE 流式传输
 
@@ -160,7 +164,7 @@ type OnSendContentParams = {
 <MarkdownFlow
   initialContentList={[
     {
-      content: "# 欢迎\n\n选择：?[%{{choice}} A | B | C]",
+      content: "# 欢迎\n\n选择：?[{{choice}} A | B | C]",
       isFinished: false,
     },
   ]}
@@ -288,11 +292,11 @@ interface ContentRenderProps {
 
 # 变量输入
 
-?[%{{userName}} 输入姓名...]
+?[{{userName}}...输入姓名]
 
 # 多选
 
-?[%{{color}} 红色 | 蓝色 | 绿色]
+?[{{color}} 红色 | 蓝色 | 绿色]
 
 # Mermaid 图表
 
@@ -457,8 +461,8 @@ import type {
 
 ```markdown
 ?[按钮文本] # 简单按钮
-?[%{{variable}} 占位符...] # 输入字段
-?[%{{choice}} A | B | C] # 多选
+?[{{variable}}...占位符] # 输入字段
+?[{{choice}} A | B | C] # 多选
 ```
 
 **Mermaid 插件：**
@@ -592,7 +596,7 @@ const Conversation = () => {
   const [blocks, setBlocks] = useState([
     { content: "# 助手\n\n你好！我能帮你什么？", isFinished: true },
     {
-      content: "你想了解什么？\n\n?[%{{topic}} 输入主题...]",
+      content: "你想了解什么？\n\n?[{{topic}}...输入主题]",
       isFinished: false,
     },
   ]);

@@ -139,24 +139,28 @@ The project follows a component-based architecture with these main parts:
 
 ##### Interactive Variable System
 
+Use `?[{{name}} ...]` as the standard named interaction in documentation,
+examples and newly generated content. Keep percent-prefixed bindings only as
+transition compatibility; retain compatibility tests and existing content.
+
 The CustomVariable plugin supports various interaction modes:
 
 **Single-Select Mode (using `|` separator):**
 
 ```markdown
-Choose your role: ?[%{{role}}Developer|Designer|Manager]
+Choose your role: ?[{{role}}Developer|Designer|Manager]
 ```
 
 **Multi-Select Mode (using `||` separator):**
 
 ```markdown
-Select skills: ?[%{{skills}}React||Vue||Angular||Node.js]
+Select skills: ?[{{skills}}React||Vue||Angular||Node.js]
 ```
 
 **Mixed Mode (Multi-select + Text Input):**
 
 ```markdown
-Choose technologies: ?[%{{tech}}Frontend||Backend||Mobile||...Other technologies]
+Choose technologies: ?[{{tech}}Frontend||Backend||Mobile||...Other technologies]
 ```
 
 **Props for Multi-Select Support:**
@@ -356,7 +360,7 @@ export const Alternative: Story = {
 
 When working with multi-select components:
 
-- **Use `||` separator** for multi-select syntax in markdown: `?[%{{var}}Option1||Option2]`
+- **Use `||` separator** for multi-select syntax in markdown: `?[{{var}}Option1||Option2]`
 - **Provide `confirmButtonText` prop** for internationalization support
 - **Handle `selectedValues` array** in callback functions
 - **Support mixed mode**: Multi-select + text input combination

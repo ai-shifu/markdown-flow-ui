@@ -45,6 +45,52 @@ for (const format of ["esm", "cjs"]) {
       ? await import("markdown-flow-ui/renderer")
       : require("markdown-flow-ui/renderer");
 
+  for (const [kind, template, expected] of [
+    [
+      "single choice",
+      "?[{{  }} Option 1 | Option 2]",
+      { variableName: "answer", buttonText: "Option 2" },
+    ],
+    [
+      "multiple choice",
+      "?[{{  }} Option 1 || Option 2]",
+      {
+        variableName: "answer",
+        selectedValues: ["Option 2"],
+        inputText: undefined,
+      },
+    ],
+    [
+      "text input",
+      "?[{{  }}...Please enter]",
+      { variableName: "answer", inputText: "My answer" },
+    ],
+  ]) {
+    test(`the built ${format} renderer submits the padded ${kind} toolbar binding`, () => {
+      const sent = [];
+      const { getByRole } = render(
+        React.createElement(ContentRender, {
+          content: template.replace("{{  }}", "{{ answer }}"),
+          confirmButtonText: "Confirm",
+          onSend: (params) => sent.push(params),
+        })
+      );
+      if (kind === "text input") {
+        const input = getByRole("textbox");
+        fireEvent.change(input, { target: { value: "My answer" } });
+        fireEvent.keyDown(input, { key: "Enter" });
+      } else if (kind === "multiple choice") {
+        fireEvent.click(
+          getByRole("checkbox", { name: "Option 2", exact: true })
+        );
+        fireEvent.click(getByRole("button", { name: "Confirm", exact: true }));
+      } else {
+        fireEvent.click(getByRole("button", { name: "Option 2", exact: true }));
+      }
+      assert.deepEqual(sent, [expected]);
+    });
+  }
+
   for (const marker of ["{{goal}}", "%{{goal}}"]) {
     const name = `the built ${format} renderer with ${marker}`;
 

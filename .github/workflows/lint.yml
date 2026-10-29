@@ -48,6 +48,11 @@ jobs:
       - name: Build and verify package assets
         run: npm run test:package
 
+      - name: Validate and audit both dependency lockfiles
+        run: |
+          pnpm install --lockfile-only --frozen-lockfile --ignore-scripts
+          npm run audit:dependencies
+
       - name: Verify public type exports
         run: npm run typecheck:exports
 

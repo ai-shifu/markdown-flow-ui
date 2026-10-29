@@ -1263,7 +1263,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       td: ({ ...props }) => <td className="content-render-td" {...props} />,
       tr: ({ ...props }) => <tr className="content-render-tr" {...props} />,
       li: ({ node, ...props }) => {
-        const className = node?.properties?.className;
+        const className: unknown = node?.properties?.className;
         const hasTaskListItem =
           (typeof className === "string" &&
             className.includes("task-list-item")) ||

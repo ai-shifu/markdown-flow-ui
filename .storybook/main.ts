@@ -30,7 +30,10 @@ const config: StorybookConfig = {
     ) {
       config.plugins.push(patchedMermaidYaml());
     }
-    const aliasEntry = { find: "@", replacement: resolve(__dirname, "../src") };
+    const aliasEntry = {
+      find: "@",
+      replacement: resolve(import.meta.dirname, "../src"),
+    };
 
     if (Array.isArray(config.resolve?.alias)) {
       config.resolve.alias = [...config.resolve.alias, aliasEntry];

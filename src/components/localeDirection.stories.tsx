@@ -250,7 +250,7 @@ const expectDetachedTooltip = async (
   const page = within(body);
   await userEvent.hover(trigger);
   const tooltip = await page.findByRole("tooltip", { name: text });
-  const content = tooltip.parentElement!;
+  const content = tooltip.closest("[data-state]")!;
   expect(content).toHaveAttribute("lang", language);
   expect(content).toHaveAttribute("dir", direction);
   expect(tooltip.closest("[lang]")).toBe(content);

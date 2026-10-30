@@ -275,21 +275,27 @@ export function collectSyntaxHighlightRanges(
       percentIndex >= 0 &&
       content[percentIndex] === "%" &&
       trimVariablePadding(content.slice(0, percentIndex)) === "";
-    if (content.startsWith("%") || hasLeadingAssignment) {
+    const hasLeadingVariable =
+      firstVariable &&
+      trimVariablePadding(content.slice(0, firstVariable.start)) === "";
+    const hasPercent = content.startsWith("%") || hasLeadingAssignment;
+    if (hasPercent || hasLeadingVariable) {
       // Input / Select
-      let percentClass = "syntax-percent-invalid";
-      if (firstVariable && hasLeadingAssignment) {
-        const varFrom = contentStart + firstVariable.start;
-        const varTo = contentStart + firstVariable.end;
-        const cursorInsideVar = isCursorInside(varFrom, varTo);
-        percentClass =
-          firstVariable.name !== null && !cursorInsideVar
-            ? "syntax-percent-valid"
-            : "syntax-percent-invalid";
-      }
       const percentStart =
         contentStart + (hasLeadingAssignment ? percentIndex : 0);
-      addMatch(percentStart, percentStart + 1, percentClass); // %
+      if (hasPercent) {
+        let percentClass = "syntax-percent-invalid";
+        if (firstVariable && hasLeadingAssignment) {
+          const varFrom = contentStart + firstVariable.start;
+          const varTo = contentStart + firstVariable.end;
+          const cursorInsideVar = isCursorInside(varFrom, varTo);
+          percentClass =
+            firstVariable.name !== null && !cursorInsideVar
+              ? "syntax-percent-valid"
+              : "syntax-percent-invalid";
+        }
+        addMatch(percentStart, percentStart + 1, percentClass); // %
+      }
 
       const operatorRanges: { from: number; to: number }[] = [];
       const variableRanges: { from: number; to: number; className: string }[] =
@@ -369,7 +375,7 @@ export function collectSyntaxHighlightRanges(
       }
 
       // Content (Dark Blue) for remaining text segments
-      const stringStart = percentStart + 1;
+      const stringStart = hasPercent ? percentStart + 1 : contentStart;
       const stringEnd = fullEnd - 1;
       let cursor = stringStart;
       const sortedApplied = appliedTokenRanges.sort((a, b) => {

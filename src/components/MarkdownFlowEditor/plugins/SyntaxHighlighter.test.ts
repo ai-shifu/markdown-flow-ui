@@ -95,6 +95,106 @@ describe("collectSyntaxHighlightRanges", () => {
   });
 });
 
+describe.each(["", "%"])("named interactions with prefix %j", (prefix) => {
+  it.each([
+    {
+      content: "{{choice}} Yes | No",
+      operators: ["|"],
+      strings: [" Yes ", " No"],
+    },
+    {
+      content:
+        "{{对 AI 的观点}} AI 是一种工具 || 每种 AI 产品都需要学习使用方法 || 打造 AI 产品是技术高手的事情 || 都不同意\n",
+      operators: ["||", "||", "||"],
+    },
+    {
+      content: "{{answer}}... Your answer",
+      operators: ["..."],
+      strings: [" Your answer"],
+    },
+    {
+      content: "{{skills}} React||Vue||... Other",
+      operators: ["||", "||", "..."],
+    },
+    {
+      content: "{{a|b...c?}} Yes | No",
+      operators: ["|"],
+    },
+    {
+      content: "{{choice}} a\\|b|wait\\...|go",
+      operators: ["|", "|"],
+    },
+  ])("highlights operators in $content", ({ content, operators, strings }) => {
+    const source = `?[${prefix}${content}]`;
+
+    expect(rangeTextsByClass(source, "syntax-keyword")).toEqual([
+      "?",
+      ...operators,
+    ]);
+    expect(rangeTextsByClass(source, "syntax-variable")).toEqual([
+      content.slice(0, content.indexOf("}}") + 2),
+    ]);
+    expect(rangeTextsByClass(source, "syntax-bracket")).toEqual(["[", "]"]);
+    expect(rangeTextsByClass(source, "syntax-percent-valid")).toEqual(
+      prefix ? ["%"] : []
+    );
+    expect(rangeTextsByClass(source, "syntax-button-text")).toEqual([]);
+    if (strings) {
+      expect(rangeTextsByClass(source, "syntax-string")).toEqual(strings);
+    }
+  });
+
+  it("recognizes an assignment after whitespace padding", () => {
+    const source = `?[ \t${prefix}{{ choice }} A||B]`;
+    expect(rangeTextsByClass(source, "syntax-keyword")).toEqual(["?", "||"]);
+    expect(rangeTextsByClass(source, "syntax-variable")).toEqual([
+      "{{ choice }}",
+    ]);
+  });
+
+  it("keeps operators highlighted while editing the variable", () => {
+    const source = `?[${prefix}{{choice}} A||B]`;
+    const ranges = collectSyntaxHighlightRanges(
+      source,
+      (from, to) =>
+        from <= source.indexOf("choice") && to > source.indexOf("choice")
+    );
+    expect(
+      ranges.filter((range) => range.className === "syntax-variable")
+    ).toEqual([]);
+    expect(
+      ranges
+        .filter((range) => range.className === "syntax-keyword")
+        .map((range) => source.slice(range.from, range.to))
+    ).toEqual(["?", "||"]);
+  });
+
+  it("keeps an invalid leading marker atomic", () => {
+    const source = `?[${prefix}{{ }} A|B]`;
+    expect(rangeTextsByClass(source, "syntax-variable-invalid")).toEqual([
+      "{{ }}",
+    ]);
+    expect(rangeTextsByClass(source, "syntax-keyword")).toEqual(["?", "|"]);
+    expect(rangeTextsByClass(source, "syntax-percent-invalid")).toEqual(
+      prefix ? ["%"] : []
+    );
+  });
+});
+
+it.each([
+  "Continue",
+  "Hello {{name}} | ...",
+  "\\{{choice}} A|B",
+  "\ufeff{{choice}} A|B",
+])("keeps ordinary button text highlighted: %s", (content) => {
+  const source = `?[${content}]`;
+  expect(rangeTextsByClass(source, "syntax-keyword")).toEqual(["?"]);
+  expect(rangeTextsByClass(source, "syntax-string")).toEqual([]);
+  expect(
+    rangeTextsByClass(source, "syntax-button-text").length
+  ).toBeGreaterThan(0);
+});
+
 describe("interactions whose options escape a bracket", () => {
   it("highlights to the interaction's real end, not the first bracket inside it", () => {
     // `\]` is option text, so the closing bracket is the last one. Cut short, the highlight

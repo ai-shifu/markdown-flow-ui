@@ -199,6 +199,43 @@ export const MarkdownFlowEditorWithCodeEditStory: Story = {
   },
 };
 
+export const NamedInteractionHighlighting: Story = {
+  render: (args) => (
+    <div style={{ width: "1000px", maxWidth: "90vw" }}>
+      <MarkdownFlowEditor {...args} />
+    </div>
+  ),
+  args: {
+    content: [
+      "?[{{对 AI 的观点}} AI 是一种工具 || 每种 AI 产品都需要学习使用方法 || 打造 AI 产品是技术高手的事情 || 都不同意 ]",
+      "?[%{{对 AI 的观点}} AI 是一种工具 || 每种 AI 产品都需要学习使用方法 || 打造 AI 产品是技术高手的事情 || 都不同意 ]",
+      "?[{{role}} Developer|Designer]",
+      "?[%{{role}} Developer|Designer]",
+      "?[{{answer}}... Your answer]",
+      "?[%{{answer}}... Your answer]",
+      "?[{{skills}} React||Vue||... Other]",
+      "?[%{{skills}} React||Vue||... Other]",
+    ].join("\n"),
+  },
+  play: async ({ canvasElement }) => {
+    await waitFor(() => {
+      const lines = canvasElement.querySelectorAll(".cm-line");
+      expect(lines).toHaveLength(8);
+      for (let index = 0; index < lines.length; index += 2) {
+        const tokens = (line: Element) =>
+          Array.from(line.querySelectorAll(".syntax-keyword")).map(
+            (token) => token.textContent
+          );
+        expect(tokens(lines[index])).toEqual(tokens(lines[index + 1]));
+        expect(tokens(lines[index]).length).toBeGreaterThan(1);
+        expect(lines[index].querySelector(".syntax-variable")).not.toBeNull();
+        expect(lines[index].querySelector(".syntax-string")).not.toBeNull();
+        expect(lines[index].querySelector(".syntax-button-text")).toBeNull();
+      }
+    });
+  },
+};
+
 export const MarkdownFlowEditorWithQuickEditStory: Story = {
   args: {
     content,

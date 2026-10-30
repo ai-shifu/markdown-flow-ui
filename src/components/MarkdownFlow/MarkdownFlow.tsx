@@ -34,6 +34,8 @@ export interface MarkdownFlowProps {
   dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   customRenderBar?: CustomRenderBarProps;
   onSend?: (content: OnSendContentParams) => void;
+  /** Observes an accepted Tab completion without receiving authored text. */
+  onPlaceholderAccepted?: () => void;
   // Multi-select confirm button text (i18n support)
   confirmButtonText?: string;
   // Copy button text for code blocks
@@ -51,6 +53,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   dir,
   customRenderBar,
   onSend: onSendProp,
+  onPlaceholderAccepted,
   confirmButtonText,
   copyButtonText,
   copiedButtonText,
@@ -78,6 +81,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             readonly={contentInfo.readonly}
             customRenderBar={contentInfo.customRenderBar || customRenderBar}
             onSend={onSend}
+            onPlaceholderAccepted={onPlaceholderAccepted}
             beforeSend={beforeSend}
             locale={locale}
             lang={lang}

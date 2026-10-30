@@ -8,6 +8,7 @@ import ContentRender, {
   type ContentRenderTypewriterState,
 } from "./ContentRender";
 import IframeSandbox from "./IframeSandbox";
+import MarkdownFlowInput from "./MarkdownFlowInput";
 import {
   normalizeRunStreamElement,
   upsertRunStreamElementList,
@@ -46,6 +47,141 @@ const meta = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const TabPlaceholderPlayground: Story = {
+  name: "Tab 填充体验",
+  render: () => {
+    const [answer, setAnswer] = useState("");
+    const [followUp, setFollowUp] = useState("");
+    const examples = [
+      { label: "纯文本题", content: "?[...说说你最想用 AI 解决的一件事]" },
+      {
+        label: "单选题附加输入",
+        content:
+          "?[整理：把各处来的数据弄成统一格式|核对：找出两边对不上的地方|汇总：按规则算出要的结果|...也可以说说具体卡在哪，比如格式总是不一致、差异总要看很久]",
+      },
+      {
+        label: "多选题附加输入",
+        content: "?[整理数据||核对差异||生成汇总||...补充你还想处理的工作]",
+      },
+    ];
+    return (
+      <main style={{ width: "min(760px, 90vw)", padding: "24px 0" }}>
+        <h1 style={{ fontSize: 26, fontWeight: 700 }}>Tab 填充体验</h1>
+        <p style={{ margin: "12px 0 24px" }}>
+          点击空输入框，按 Tab 填入灰色提示。填入后可修改，按 Enter
+          或点击提交按钮查看结果；再次按 Tab 会移到下一个控件。
+        </p>
+        {examples.map(({ label, content }) => (
+          <section key={label} style={{ margin: "24px 0" }}>
+            <h2 style={{ marginBottom: 10, fontWeight: 600 }}>{label}</h2>
+            <ContentRender
+              locale="zh-CN"
+              content={content}
+              onSend={(value) =>
+                setAnswer(
+                  value.inputText ||
+                    value.selectedValues?.join("、") ||
+                    value.buttonText ||
+                    ""
+                )
+              }
+            />
+          </section>
+        ))}
+        <section style={{ margin: "24px 0" }}>
+          <h2 style={{ marginBottom: 10, fontWeight: 600 }}>
+            普通追问框：Tab 正常切换焦点
+          </h2>
+          <MarkdownFlowInput
+            locale="zh-CN"
+            value={followUp}
+            onChange={(event) => setFollowUp(event.target.value)}
+            placeholder="请输入你想追问的问题"
+            onSend={() => setAnswer(followUp)}
+          />
+          <button type="button" style={{ marginTop: 12 }}>
+            下一个控件
+          </button>
+        </section>
+        <output
+          style={{
+            display: "block",
+            padding: 16,
+            borderRadius: 8,
+            background: "#f3f4f6",
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          {answer
+            ? `最近提交：${answer}`
+            : "提交结果会显示在这里。刷新页面可重新体验。"}
+        </output>
+      </main>
+    );
+  },
+};
+
+export const TabPlaceholderCompletion: Story = {
+  render: () => {
+    const [accepted, setAccepted] = useState(0);
+    const [submitted, setSubmitted] = useState(0);
+    return (
+      <div style={{ width: 520 }}>
+        {[
+          "?[...Describe your work]",
+          "?[First|Second|...Describe your work]",
+          "?[First||Second||...Describe your work]",
+        ].map((content, index) => (
+          <section key={content} data-testid={`completion-${index}`}>
+            <ContentRender
+              content={content}
+              onPlaceholderAccepted={() => setAccepted((count) => count + 1)}
+              onSend={() => setSubmitted((count) => count + 1)}
+            />
+            <button type="button">Next field</button>
+          </section>
+        ))}
+        <section data-testid="ordinary-follow-up">
+          <MarkdownFlowInput value="" placeholder="Ask a follow-up question" />
+          <button type="button">After follow-up</button>
+        </section>
+        <output data-testid="accepted-count">{accepted}</output>
+        <output data-testid="submitted-count">{submitted}</output>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const textareas = canvasElement.querySelectorAll("textarea");
+    for (let index = 0; index < 3; index += 1) {
+      const textarea = textareas[index];
+      await userEvent.click(textarea);
+      await userEvent.tab();
+      await expect(textarea).toHaveValue("Describe your work");
+      await expect(textarea).toHaveFocus();
+      await waitFor(() =>
+        expect(textarea.selectionStart).toBe(textarea.value.length)
+      );
+      await expect(textarea.selectionEnd).toBe(textarea.value.length);
+      await expect(
+        canvasElement.querySelector('[data-testid="submitted-count"]')
+      ).toHaveTextContent("0");
+      await userEvent.tab();
+      await expect(textarea).not.toHaveFocus();
+    }
+    await expect(
+      canvasElement.querySelector('[data-testid="accepted-count"]')
+    ).toHaveTextContent("3");
+    const ordinary = textareas[3];
+    await userEvent.click(ordinary);
+    await userEvent.tab();
+    await expect(ordinary).toHaveValue("");
+    await expect(ordinary).not.toHaveFocus();
+    await expect(
+      canvasElement.querySelector('[data-testid="accepted-count"]')
+    ).toHaveTextContent("3");
+  },
+};
 
 export const MermaidYamlLimits: Story = {
   args: {

@@ -660,3 +660,15 @@ MIT 许可证 - 详见 [LICENSE](LICENSE) 文件。
 - 📖 [文档](https://github.com/ai-shifu/markdown-flow-ui#readme)
 - 🐛 [问题跟踪](https://github.com/ai-shifu/markdown-flow-ui/issues)
 - 💬 [讨论](https://github.com/ai-shifu/markdown-flow-ui/discussions)
+
+## Tab 填充输入提示
+
+MarkdownFlow 问答中的纯文本输入、单选附加输入和多选附加输入支持 Tab
+填充：输入框获得焦点且完全为空时，按 Tab 将完整提示填入输入框，光标留在
+末尾。填入后可以继续修改，需要手动提交；再次按 Tab 正常切换焦点。
+已有内容（含空格）、Shift+Tab、组合快捷键、长按重复事件及输入法组词期间
+不触发填充，只读和禁用输入也不触发。
+
+可使用渲染组件的 `onPlaceholderAccepted` 监听采用动作，回调不包含提示或
+回答正文。独立使用 `MarkdownFlowInput` 时，只有传入
+`onAcceptPlaceholder={setValue}` 才启用此能力，普通追问输入框可以保持原行为。

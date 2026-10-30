@@ -398,3 +398,33 @@ The library uses Tailwind CSS and provides customization through:
   --markdown-flow-code-bg: #f3f4f6;
 }
 ```
+
+## Tab hint completion
+
+MarkdownFlow text-only, single-choice-with-text and multiple-choice-with-text
+interactions accept their placeholder with an unmodified Tab while the input is
+focused, editable and completely empty. Completion preserves the full hint,
+keeps focus, places the caret at the end, and never submits an answer. Existing
+text (including whitespace), Shift+Tab, modified keys, held-key repeats and IME
+composition keep their native behavior. A subsequent Tab moves focus normally.
+
+`ContentRender`, `MarkdownFlow`, `ScrollableMarkdownFlow` and `Slide` accept an
+optional `onPlaceholderAccepted?: () => void` observer. It receives no hint,
+answer or variable name. Observer throws and rejected promises cannot interrupt
+completion. A cleared input can be deliberately completed again.
+
+Standalone `MarkdownFlowInput` keeps native Tab behavior unless the host provides
+`onAcceptPlaceholder?: (value: string) => void`. This callback receives the exact
+placeholder and must update the controlled `value`; it does not call `onChange`
+or `onSend`. It works independently of `sendShortcut` and `onSend`.
+
+```tsx
+const [value, setValue] = useState("");
+
+<MarkdownFlowInput
+  value={value}
+  placeholder="Describe your work"
+  onChange={(event) => setValue(event.target.value)}
+  onAcceptPlaceholder={setValue}
+/>;
+```

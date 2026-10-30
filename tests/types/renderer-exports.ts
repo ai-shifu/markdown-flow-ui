@@ -7,6 +7,9 @@ import {
 import type {
   ContentRenderTypewriterPacing,
   ContentRenderTypewriterState,
+  ContentRenderProps,
+  MarkdownFlowInputProps,
+  MarkdownFlowProps,
   InteractionDefaultValueOptions,
   MarkdownFlowInputSendShortcut,
   OnSendContentParams,
@@ -32,4 +35,19 @@ void onSendContentParams;
 void renderSegment;
 void interactionDefaultValueOptions;
 void sendShortcut;
+const completionInput: MarkdownFlowInputProps = {
+  onAcceptPlaceholder: (value: string) => {
+    void value;
+  },
+};
+const completionRenderer: ContentRenderProps = {
+  content: "?[...Answer]",
+  onPlaceholderAccepted: () => {},
+};
+const completionFlow: MarkdownFlowProps = {
+  onPlaceholderAccepted: () => {},
+};
+void completionInput;
+void completionRenderer;
+void completionFlow;
 export { typewriterPacing, typewriterState };

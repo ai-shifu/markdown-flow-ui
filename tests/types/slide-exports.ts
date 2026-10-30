@@ -1,4 +1,5 @@
 import type {
+  SlideProps,
   SlidePlaybackCheckpoint,
   SlidePlaybackRestoreRequest,
   SlidePlayerPlaybackCheckpoint,
@@ -23,3 +24,5 @@ type PublicSlideTypes = [
 ];
 
 export type { PublicSlideTypes };
+const completionSlide: SlideProps = { onPlaceholderAccepted: () => {} };
+void completionSlide;

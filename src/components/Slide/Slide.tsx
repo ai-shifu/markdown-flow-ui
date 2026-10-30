@@ -196,6 +196,7 @@ type RenderSlideElementOptions = {
 };
 
 interface InteractionOverlayCardProps {
+  onPlaceholderAccepted?: () => void;
   dir?: ContentRenderProps["dir"];
   lang?: string;
   content: string;
@@ -246,6 +247,7 @@ const InteractionOverlayCard = memo(
     copyButtonText,
     copiedButtonText,
     onSend,
+    onPlaceholderAccepted,
     onDragHandlePointerCancel,
     onDragHandlePointerDown,
     onDragHandlePointerMove,
@@ -284,6 +286,7 @@ const InteractionOverlayCard = memo(
           copyButtonText={copyButtonText}
           copiedButtonText={copiedButtonText}
           onSend={onSend}
+          onPlaceholderAccepted={onPlaceholderAccepted}
           readonly={readonly}
           sandboxMode="content"
         />
@@ -353,6 +356,8 @@ export interface SlideProps extends React.ComponentProps<"section"> {
   ) => void;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
   onSend?: (content: OnSendContentParams, element?: Element) => void;
+  /** Observes an accepted interaction Tab completion without receiving text. */
+  onPlaceholderAccepted?: () => void;
   onPlayerVisibilityChange?: (visible: boolean) => void;
   onMobileViewModeChange?: (viewMode: MobileViewMode) => void;
   onStepChange?: (element: Element | undefined, index: number) => void;
@@ -418,6 +423,7 @@ const Slide: React.FC<SlideProps> = ({
   onSlideProgressNavigate,
   interactionDefaultValueOptions,
   onSend,
+  onPlaceholderAccepted,
   onPlayerVisibilityChange,
   onMobileViewModeChange,
   onStepChange,
@@ -2781,6 +2787,7 @@ const Slide: React.FC<SlideProps> = ({
                 localeTexts.interactionTexts.copiedButtonText
               }
               onSend={handleInteractionSend}
+              onPlaceholderAccepted={onPlaceholderAccepted}
               onDragHandlePointerCancel={endInteractionOverlayDrag}
               onDragHandlePointerDown={handleInteractionOverlayPointerDown}
               onDragHandlePointerMove={handleInteractionOverlayPointerMove}

@@ -5,6 +5,7 @@ import { OnSendContentParams } from "../../types";
 import { Button } from "../../ui/button";
 import { Checkbox } from "../../ui/checkbox";
 import MarkdownFlowInput from "../MarkdownFlowInput";
+import { acceptPlaceholder } from "../utils/accept-placeholder";
 import {
   InputGroup,
   InputGroupTextarea,
@@ -38,6 +39,7 @@ interface CustomVariableProps {
   locale?: MarkdownFlowLocale;
   readonly?: boolean;
   onSend?: (content: OnSendContentParams) => void;
+  onPlaceholderAccepted?: () => void;
   // Multi-select confirm button text (i18n support)
   confirmButtonText?: string;
   beforeSend?: (param: OnSendContentParams) => boolean;
@@ -150,6 +152,7 @@ interface SingleSelectSectionProps {
   inputValue: string;
   handleInputChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleSendClick: () => void;
+  onAcceptPlaceholder: (value: string) => void;
 }
 
 const SingleSelectSection = ({
@@ -163,6 +166,7 @@ const SingleSelectSection = ({
   inputValue,
   handleInputChange,
   handleSendClick,
+  onAcceptPlaceholder,
 }: SingleSelectSectionProps) => (
   <span className="single-select-container inline-flex w-full flex-col">
     <span className="flex flex-wrap gap-y-[9px] gap-x-2">
@@ -199,6 +203,7 @@ const SingleSelectSection = ({
           value={inputValue}
           onChange={handleInputChange}
           onSend={handleSendClick}
+          onAcceptPlaceholder={onAcceptPlaceholder}
           title={node.properties.placeholder}
         />
       </span>
@@ -216,6 +221,7 @@ interface InputSectionProps {
   value: string;
   onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onSend: () => void;
+  onAcceptPlaceholder: (value: string) => void;
 }
 
 const InputSection = ({
@@ -227,6 +233,7 @@ const InputSection = ({
   value,
   onChange,
   onSend,
+  onAcceptPlaceholder,
 }: InputSectionProps) => {
   if (!placeholder) {
     return null;
@@ -242,6 +249,7 @@ const InputSection = ({
       value={value}
       onChange={onChange}
       onSend={onSend}
+      onAcceptPlaceholder={onAcceptPlaceholder}
       title={placeholder}
     />
   );
@@ -260,6 +268,7 @@ const CustomButtonInputVariable = ({
   onSend,
   confirmButtonText,
   beforeSend = () => true,
+  onPlaceholderAccepted,
 }: CustomVariableProps) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
   const resolvedConfirmButtonText =
@@ -340,7 +349,24 @@ const CustomButtonInputVariable = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
   };
+  const handleAcceptPlaceholder = (value: string) => {
+    setInputValue(value);
+    // Observer failures must never prevent editing or submitting an answer.
+    try {
+      void Promise.resolve(onPlaceholderAccepted?.()).catch(() => {});
+    } catch {}
+  };
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (
+      acceptPlaceholder(
+        e,
+        node.properties?.placeholder,
+        readonly,
+        handleAcceptPlaceholder
+      )
+    ) {
+      return;
+    }
     if (e.nativeEvent.isComposing || e.keyCode === 229) {
       return;
     }
@@ -414,6 +440,7 @@ const CustomButtonInputVariable = ({
           inputValue={inputValue}
           handleInputChange={handleInputChange}
           handleSendClick={handleSendClick}
+          onAcceptPlaceholder={handleAcceptPlaceholder}
         />
       )}
 
@@ -427,6 +454,7 @@ const CustomButtonInputVariable = ({
           value={inputValue}
           onChange={handleInputChange}
           onSend={handleSendClick}
+          onAcceptPlaceholder={handleAcceptPlaceholder}
         />
       )}
     </span>

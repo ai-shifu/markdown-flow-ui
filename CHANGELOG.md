@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.6 - Unreleased
+
+### Added
+
+- Accept the full placeholder with Tab in empty MarkdownFlow interaction inputs,
+  preserving focus, editing, explicit submission and selected choices.
+- Add optional text-free completion observers to renderer, flow and slide
+  components, and opt-in completion for standalone MarkdownFlowInput hosts.
+- Cover keyboard guards, observer failures, packaged application integration
+  and browser focus navigation with regression tests and interactive examples.
+
 ## 0.3.5 - 2026-10-29
 
 ### Fixed

@@ -102,6 +102,8 @@ export interface ContentRenderProps {
   customRenderBar?: CustomRenderBarProps;
   onClickCustomButtonAfterContent?: () => void;
   onSend?: (content: OnSendContentParams) => void;
+  /** Observes an accepted Tab completion without receiving authored text. */
+  onPlaceholderAccepted?: () => void;
   typingSpeed?: number;
   /** Types prose only; following HTML renders progressively once preceding prose is displayed. */
   enableTypewriter?: boolean;
@@ -283,6 +285,7 @@ type CustomComponents = ComponentsWithCustomVariable & {
 };
 
 type MarkdownComponentRuntimeValues = {
+  onPlaceholderAccepted?: () => void;
   direction?: ContentRenderProps["dir"];
   language?: string;
   mermaidMessages: MermaidChartProps["messages"];
@@ -622,6 +625,7 @@ const useStableStringArray = (values?: string[]) => {
 };
 
 const ContentRender: React.FC<ContentRenderProps> = ({
+  onPlaceholderAccepted,
   content,
   contentType,
   locale,
@@ -1175,6 +1179,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     resolvedDefaultSelectedValues
   );
   const componentRuntimeValuesRef = useRef<MarkdownComponentRuntimeValues>({
+    onPlaceholderAccepted,
     direction,
     language,
     mermaidMessages,
@@ -1193,6 +1198,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   });
 
   componentRuntimeValuesRef.current = {
+    onPlaceholderAccepted,
     direction,
     language,
     mermaidMessages,
@@ -1244,6 +1250,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
             componentRuntimeValuesRef.current.resolvedDefaultSelectedValues
           }
           onSend={componentRuntimeValuesRef.current.onSend}
+          onPlaceholderAccepted={
+            componentRuntimeValuesRef.current.onPlaceholderAccepted
+          }
           beforeSend={componentRuntimeValuesRef.current.beforeSend}
           locale={componentRuntimeValuesRef.current.locale}
           dir={componentRuntimeValuesRef.current.direction}

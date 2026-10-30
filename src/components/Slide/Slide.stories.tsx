@@ -21,6 +21,62 @@ import {
 } from "./utils/listenModeElementList";
 import { parseRunStreamFixture } from "./utils/runStreamFixture";
 
+export const TabPlaceholderCompletion: Story = {
+  args: {
+    elementList: [
+      {
+        type: "interaction",
+        content: "?[...Describe your work]",
+        sequence_number: 1,
+        is_marker: true,
+        is_renderable: true,
+        is_new: true,
+      },
+    ],
+  },
+  render: (args) => {
+    const [accepted, setAccepted] = useState(0);
+    const [submitted, setSubmitted] = useState(0);
+    return (
+      <div style={{ width: 800, height: 600 }}>
+        <Slide
+          {...args}
+          className="h-full w-full"
+          onPlaceholderAccepted={() => setAccepted((count) => count + 1)}
+          onSend={() => setSubmitted((count) => count + 1)}
+        />
+        <output data-testid="slide-completion-count">{accepted}</output>
+        <output data-testid="slide-submission-count">{submitted}</output>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const textarea = await canvas.findByRole("textbox");
+    await userEvent.click(textarea);
+    await userEvent.tab();
+    await expect(textarea).toHaveValue("Describe your work");
+    await expect(textarea).toHaveFocus();
+    await expect(
+      canvas.getByTestId("slide-completion-count")
+    ).toHaveTextContent("1");
+    await expect(
+      canvas.getByTestId("slide-submission-count")
+    ).toHaveTextContent("0");
+    await userEvent.keyboard(" updated");
+    await userEvent.keyboard("{Enter}");
+    await expect(
+      canvas.getByTestId("slide-submission-count")
+    ).toHaveTextContent("1");
+  },
+};
+
+export const TabPlaceholderPlayground: Story = {
+  name: "Tab 填充体验",
+  args: TabPlaceholderCompletion.args,
+  render: TabPlaceholderCompletion.render,
+};
+
 import Slide from "./Slide";
 import { getSlideLocaleTexts } from "./slideI18n";
 import type { Element, ElementSubtitleCue } from "./Slide";

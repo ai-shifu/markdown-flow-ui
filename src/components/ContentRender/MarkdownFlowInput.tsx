@@ -14,6 +14,7 @@ import {
   type MarkdownFlowLocale,
 } from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
+import { acceptPlaceholder } from "./utils/accept-placeholder";
 
 type MarkdownFlowInputSendShortcut = "enter" | "none";
 
@@ -30,6 +31,8 @@ interface MarkdownFlowInputProps {
   title?: string;
   onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onSend?: () => void;
+  /** Enables Tab completion of an empty input; the host must update its value. */
+  onAcceptPlaceholder?: (value: string) => void;
   /**
    * Keyboard policy for sending a multi-line input. `enter` sends on Enter
    * while Shift+Enter keeps its native newline behavior. `none` leaves Enter
@@ -55,6 +58,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   title,
   onChange,
   onSend,
+  onAcceptPlaceholder,
   sendShortcut = "enter",
   className,
   textareaClassName,
@@ -64,6 +68,9 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
     sendButtonLabel || localeTexts.sendButtonLabel;
   const isSendDisabled = disabled || !value?.trim();
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (acceptPlaceholder(e, placeholder, disabled, onAcceptPlaceholder)) {
+      return;
+    }
     if (sendShortcut !== "enter" || !onSend) {
       return;
     }

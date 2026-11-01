@@ -27,7 +27,7 @@ description: 为 `markdown-flow-ui` 的幻灯片（`Slide`）新增或更新可�
 - 如果内容目标是 iframe sandbox，使用 `type: "html"`，不要新增无必要元素类型。
 - 当流式更新复用同一 `audio_url` 时，保留当前播放进度，仅在 URL 实际变化时重置播放。
 - 当流式负载持续增加 `sequence_number` 时，不要用它作为当前音频项的重置标识；优先使用稳定元素级 key，例如 `element_bid`。
-- 当 `Slide.stories.tsx` 需要把 `测试数据.json` 这类 run-stream 事件转成 `elementList` 并对齐 ai-shifu 听课模式时，应采用 `itemType + element_bid` 的稳定序号映射（含冲突顺延、失活键清理、页码重算），不要直接信任流式包里的递增 `sequence_number`。
+- 当 `Slide.stories.tsx` 需要把 `tests/fixtures/ai-shifu-run-stream.sse` 这类 run-stream 事件转成 `elementList` 并对齐 ai-shifu 听课模式时，应采用 `itemType + element_bid` 的稳定序号映射（含冲突顺延、失活键清理、页码重算），不要直接信任流式包里的递增 `sequence_number`。
 - 当 `history + submit-to-stream` story 需要从 run-stream fixture 中截取“交互提交后的 follow-up 流”时，优先按当前 interaction 的变量名命中对应 `variable_update`，并从其后的首个 `element` 事件开始回放；不要写死依赖某段文案内容匹配，否则 fixture 文案一变 story 会静默不触发。
 - 当 `markdown-flow-ui` 需要复现 `ai-shifu` 听课模式的 SSE 问题时，run-stream 的 `normalize / audio source resolve / audio segment merge / upsert elementList` 必须复用同一套 listen-mode helper，保持 `audioTracks` 优先、重复分段可提升 `is_final`、视频 iframe 优先识别为 `video`，不要在 story 内再维护一份裁剪版逻辑。
 - 当 `Slide` 播放器在流式追加 `audio_segments` 或新增后续元素时出现“当前音频被中断并重播”，应把播放状态从 index 驱动改为稳定 `audioKey` 驱动，并避免把 `index` 拼进播放器重置 key。
@@ -37,8 +37,8 @@ description: 为 `markdown-flow-ui` 的幻灯片（`Slide`）新增或更新可�
 - 当流式 `elementList` 的内容元素在首段阶段仅出现 `text`（尚未出现非 `text` 内容）时，应在首个 `text` 之前插入 `empty-ppt` 占位页，待后续出现非 `text` 内容后再按正常内容序列渲染。
 - 当同一份流式 fixture 既需要保留原始 baseline 场景，又需要复现 `empty-ppt` 占位场景时，应拆成两个独立 story，并通过 preview wrapper 的显式开关控制是否插入占位页，避免污染原 story。
 - 若需要在 `markdownflow-slide--full-viewport-single-slide` 复现该行为，优先在对应 preview wrapper（如 `RunStreamSlidePreview`）里做 `elementList` 预处理，再传给 `Slide`，避免修改通用组件行为。
-- 当需要复现“首次 SSE 出交互块，用户提交后第二次 SSE 触发音频卡住/循环”的问题时，应新增双阶段 story：首段回放 `测试数据2.json`，等待 `onSend` 后再回放 `测试数据.json`，并保持两段都走同一套 listen-mode 对齐的 `elementList` 组装逻辑。
-- 当需要复现“run SSE 停在某个 speakable element、既没有 `done` 也没有 close、导致听课模式一直 buffering”的问题时，应直接基于 `测试数据.json` 截断到“同一 `element_bid` 最后一个仍无可播音频的 speakable 快照”，不要手写伪造 payload；这样能更稳定地对齐 ai-shifu 的真实卡住位置。
+- 当需要复现“首次 SSE 出交互块，用户提交后第二次 SSE 触发音频卡住/循环”的问题时，应新增双阶段 story：首段回放 `tests/fixtures/ai-shifu-initial-run-stream.sse`，等待 `onSend` 后再回放 `tests/fixtures/ai-shifu-run-stream.sse`，并保持两段都走同一套 listen-mode 对齐的 `elementList` 组装逻辑。
+- 当需要复现“run SSE 停在某个 speakable element、既没有 `done` 也没有 close、导致听课模式一直 buffering”的问题时，应直接基于 `tests/fixtures/ai-shifu-run-stream.sse` 截断到“同一 `element_bid` 最后一个仍无可播音频的 speakable 快照”，不要手写伪造 payload；这样能更稳定地对齐 ai-shifu 的真实卡住位置。
 - 当这类“卡住的 SSE” story 还需要在 Storybook 中体现超时兜底时，优先在 run-stream preview wrapper 上增加可选 `streamTimeoutMs`，并在超时后由 story 自己维护错误态；`Slide` 视图不要追加 `error` marker element 到画面内部，而应在 story 外层显示 alert，并通过独立开关关闭 loading。
 - 当同一个 `Slide` SSE story 需要像 ai-shifu 一样在 Storybook 里切换“听课视图 / 阅读视图”时，优先在 story preview wrapper 顶部增加单独一行的分段切换按钮；`Slide` 继续复用原有 run-stream 回放，`ContentRender` 视图只需遍历当前 `elementList` 并按顺序渲染字符串 `content`，不要跟随 `Slide` 的 `is_renderable` 门禁去裁剪文本元素，也不要顺手加入额外业务能力。
 - 当交互块提交后、同一步里马上开始收到 follow-up 可播语音时，不要继续强制打开 resolved interaction overlay；否则交互步会和后续语音抢同一个 step，触发重复 reset，表现为首段音频反复从头播放。

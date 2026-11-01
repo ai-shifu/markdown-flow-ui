@@ -4,9 +4,9 @@ import { Sparkles } from "lucide-react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import { MARKDOWN_FLOW_LOCALES } from "../../lib/locale";
 
-import historyFixtureText from "../../../测试历史数据.json?raw";
-import runStreamFixtureText from "../../../测试数据.json?raw";
-import runStreamFixtureText2 from "../../../测试数据2.json?raw";
+import historyFixtureText from "../../../tests/fixtures/ai-shifu-history.json?raw";
+import runStreamFixtureText from "../../../tests/fixtures/ai-shifu-run-stream.sse?raw";
+import runStreamFixtureText2 from "../../../tests/fixtures/ai-shifu-initial-run-stream.sse?raw";
 import ContentRender from "../ContentRender";
 import { resolvePresentationBaseFontSize } from "../ContentRender/utils/presentation-scaling";
 import type { OnSendContentParams } from "../types";
@@ -5017,7 +5017,7 @@ export const FullViewportSingleSlide: Story = {
     docs: {
       description: {
         story:
-          "Replays the raw ai-shifu run stream from the repo root fixture with listen-mode sequence mapping so each `data:` payload updates the Slide like a live SSE event and auto-prepends empty-ppt for leading text content.",
+          "Replays `tests/fixtures/ai-shifu-run-stream.sse` with listen-mode sequence mapping so each `data:` payload updates the Slide like a live SSE event and auto-prepends empty-ppt for leading text content.",
       },
     },
   },
@@ -5057,7 +5057,7 @@ export const StuckSpeakableFixtureSSE: Story = {
     docs: {
       description: {
         story:
-          "Replays `测试数据.json` only up to the last speakable-without-audio snapshot so the listen-mode fixture can stay stuck on a buffering element, while also letting Storybook switch between Slide and a simple ContentRender list preview.",
+          "Replays `tests/fixtures/ai-shifu-run-stream.sse` only up to the last speakable-without-audio snapshot so the listen-mode fixture can stay stuck on a buffering element, while also letting Storybook switch between Slide and a simple ContentRender list preview.",
       },
     },
   },
@@ -5297,7 +5297,7 @@ export const HistoryInteractionTriggeredSSE: Story = {
     docs: {
       description: {
         story:
-          "Preloads the repo root history fixture, focuses the latest interaction marker, and replays the updated run-stream fixture only after `onSend` fires.",
+          "Preloads `tests/fixtures/ai-shifu-history.json`, focuses the latest interaction marker, and replays the updated run-stream fixture only after `onSend` fires.",
       },
     },
   },
@@ -5329,7 +5329,7 @@ export const InteractionTriggeredFixtureSwitchSSE: Story = {
     docs: {
       description: {
         story:
-          "Streams `测试数据2.json` first, then replays `测试数据.json` only after the interaction `onSend` fires so the Slide can reproduce the post-submit audio looping scenario.",
+          "Streams `tests/fixtures/ai-shifu-initial-run-stream.sse` first, then replays `tests/fixtures/ai-shifu-run-stream.sse` only after the interaction `onSend` fires so the Slide can reproduce the post-submit audio looping scenario.",
       },
     },
   },

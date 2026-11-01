@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, resolve } from "node:path";
+import { dirname, posix, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import yaml from "js-yaml";
@@ -72,6 +72,23 @@ function checkLegacyEntry(entry) {
   );
 }
 
+function resolveNpmCause(lock, node, name) {
+  const entry = lock.packages[node];
+  const dependencies = {
+    ...entry.dependencies,
+    ...entry.optionalDependencies,
+    ...entry.peerDependencies,
+  };
+  if (!own(dependencies, name)) return;
+  for (let directory = node; ; directory = posix.dirname(directory)) {
+    if (posix.basename(directory) !== "node_modules") {
+      const candidate = posix.join(directory, "node_modules", name);
+      if (own(lock.packages, candidate)) return candidate;
+    }
+    if (directory === ".") return;
+  }
+}
+
 export function validateNpmReport(report, lock) {
   requireCondition(
     object(report) &&
@@ -126,22 +143,53 @@ export function validateNpmReport(report, lock) {
       }
     }
   }
-  // Dependency-carried findings can contain cycles. A cycle alone is not proof
-  // that a known direct advisory accounts for the finding.
-  for (const name of Object.keys(entries)) {
-    const todo = [name];
+  const graph = new Map();
+  const directNodes = new Set();
+  for (const [name, entry] of Object.entries(entries)) {
+    const accounted = new Set();
+    for (const node of entry.nodes) {
+      requireCondition(
+        node.split(/(?:^|\/)node_modules\//).at(-1) === name,
+        `npm finding package does not match its node: ${node}`
+      );
+      const edges = new Set();
+      graph.set(node, edges);
+      for (const cause of entry.via) {
+        if (typeof cause !== "string") {
+          directNodes.add(node);
+          continue;
+        }
+        const target = resolveNpmCause(lock, node, cause);
+        if (target && entries[cause].nodes.includes(target)) {
+          edges.add(target);
+          accounted.add(cause);
+        }
+      }
+    }
+    for (const cause of entry.via) {
+      requireCondition(
+        typeof cause !== "string" || accounted.has(cause),
+        `npm advisory reference has no locked dependency edge: ${name} -> ${cause}`
+      );
+    }
+  }
+  // Each installed instance must reach the verified advisory through real
+  // dependency edges; another instance or a peer cycle cannot stand in for it.
+  for (const node of graph.keys()) {
+    const todo = [node];
     const seen = new Set();
     let reachesDirect = false;
     while (todo.length) {
       const current = todo.pop();
       if (seen.has(current)) continue;
       seen.add(current);
-      for (const cause of entries[current].via) {
-        if (typeof cause === "string") todo.push(cause);
-        else reachesDirect = true;
+      if (directNodes.has(current)) {
+        reachesDirect = true;
+        break;
       }
+      todo.push(...graph.get(current));
     }
-    requireCondition(reachesDirect, `Unaccounted npm advisory cycle: ${name}`);
+    requireCondition(reachesDirect, `Unaccounted npm advisory path: ${node}`);
   }
   return { findings: Object.keys(entries).length, direct };
 }

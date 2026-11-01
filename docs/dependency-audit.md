@@ -31,8 +31,10 @@ The disposition applies only when all of the following remain true:
 - Every affected npm node is a development dependency. Every pnpm finding path
   begins in a development dependency, matches the lockfile, and the production
   snapshot graph cannot reach legacy minimatch.
-- Every dependency-carried npm finding reaches the verified direct advisory;
-  circular references alone do not satisfy that condition.
+- Every dependency-carried npm finding follows declared dependency, optional or
+  peer edges in the lockfile, resolving the nearest nested or hoisted instance.
+  Each installed instance must reach the verified direct advisory; circular
+  references or another instance alone do not satisfy that condition.
 
 Any change to these conditions requires revalidation. Additional advisories,
 versions or severities remain blocking. Remove this disposition when upstream

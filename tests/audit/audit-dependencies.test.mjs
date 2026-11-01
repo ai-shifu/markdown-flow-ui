@@ -46,6 +46,13 @@ function npmFixture() {
       ])
     ),
   };
+  lock.packages["node_modules/eslint"].dependencies = {
+    minimatch: "^3.1.5",
+    "eslint-utils": "^1.0.0",
+  };
+  lock.packages["node_modules/eslint-utils"].peerDependencies = {
+    eslint: "^1.0.0",
+  };
   const entry = (name, via) => ({
     name,
     severity: "moderate",
@@ -108,6 +115,68 @@ test("accepts only the proven legacy advisory and its dependency-carried cycles"
   const { report, lock } = npmFixture();
   assert.deepEqual(validateNpmReport(report, lock), { findings: 3, direct: 1 });
 });
+test("rejects a carrier's fabricated dependency edge", () => {
+  const { report, lock } = npmFixture();
+  delete lock.packages["node_modules/eslint"].dependencies.minimatch;
+  assert.throws(
+    () => validateNpmReport(report, lock),
+    /no locked dependency edge/
+  );
+});
+test("does not substitute a hoisted legacy node for a nested patched instance", () => {
+  const { report, lock } = npmFixture();
+  lock.packages["node_modules/eslint/node_modules/minimatch"] = {
+    version: "11.0.3",
+    dev: true,
+  };
+  assert.throws(
+    () => validateNpmReport(report, lock),
+    /no locked dependency edge/
+  );
+});
+test("every installed carrier instance must have its own verified path", () => {
+  const { report, lock } = npmFixture();
+  const nested = "node_modules/other/node_modules/eslint";
+  lock.packages[nested] = { version: "2.0.0", dev: true };
+  report.vulnerabilities.eslint.nodes.push(nested);
+  assert.throws(
+    () => validateNpmReport(report, lock),
+    /Unaccounted npm advisory path/
+  );
+});
+for (const shadowed of [false, true]) {
+  test(`resolves scoped carriers through their nearest node_modules (shadowed: ${shadowed})`, () => {
+    const { report, lock } = npmFixture();
+    const node = "node_modules/host/node_modules/@scope/tool";
+    lock.packages[node] = {
+      version: "1.0.0",
+      dev: true,
+      optionalDependencies: { minimatch: "^3.1.5" },
+    };
+    report.vulnerabilities["@scope/tool"] = {
+      name: "@scope/tool",
+      severity: "moderate",
+      via: ["minimatch"],
+      nodes: [node],
+    };
+    report.metadata = counts(4);
+    if (shadowed) {
+      lock.packages["node_modules/host/node_modules/minimatch"] = {
+        version: "11.0.3",
+        dev: true,
+      };
+      assert.throws(
+        () => validateNpmReport(report, lock),
+        /no locked dependency edge/
+      );
+    } else {
+      assert.deepEqual(validateNpmReport(report, lock), {
+        findings: 4,
+        direct: 1,
+      });
+    }
+  });
+}
 test("accepts structurally valid zero-finding reports", () => {
   assert.deepEqual(
     validateNpmReport(

@@ -1,6 +1,21 @@
 # Changelog
 
-## 0.3.6 - Unreleased
+## 0.3.7 - 2026-11-01
+
+### Fixed
+
+- Highlight standard named interactions such as `?[{{name}}...]` in the editor
+  across single-select, multi-select, text-input and mixed modes, while retaining
+  compatibility with percent-prefixed bindings.
+
+### Changed
+
+- Update Radix UI, KaTeX, i18next and Lucide dependencies while preserving
+  existing component interfaces.
+- Upgrade affected tooling dependencies, use the official npm download registry
+  and strengthen dependency audits for both npm and pnpm lockfiles.
+
+## 0.3.6 - 2026-10-30
 
 ### Added
 

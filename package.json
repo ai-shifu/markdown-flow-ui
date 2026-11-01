@@ -138,7 +138,9 @@
     "postcss": "8.5.23",
     "sharp": "0.35.5",
     "smol-toml": "1.9.1",
-    "re2js": "2.8.7"
+    "re2js": "2.8.7",
+    "glob@>=9": "14.0.2",
+    "minimatch@>=9": "11.0.3"
   },
   "pnpm": {
     "overrides": {
@@ -147,7 +149,9 @@
       "postcss": "8.5.23",
       "sharp": "0.35.5",
       "smol-toml": "1.9.1",
-      "re2js": "2.8.7"
+      "re2js": "2.8.7",
+      "glob@>=9": "14.0.2",
+      "minimatch@>=9": "11.0.3"
     }
   },
   "peerDependencies": {
@@ -161,7 +165,7 @@
     "url": "git+https://github.com/ai-shifu/markdown-flow-ui.git"
   },
   "scripts": {
-    "audit:dependencies": "npm audit --audit-level=low --registry=https://registry.npmjs.org && pnpm audit --audit-level=low --registry=https://registry.npmjs.org",
+    "audit:dependencies": "npm run test:audit && node scripts/audit-dependencies.mjs",
     "build:css": "pnpm exec tailwindcss --input src/styles/library.css --output dist/markdown-flow-ui-lib.css --config tailwind.build.config.ts --minify && node scripts/copy-katex-fonts.mjs",
     "build:fonts": "node scripts/copy-fonts.mjs",
     "build": "vite build && pnpm run build:css && node scripts/externalize-katex-fonts.mjs && node scripts/copy-legacy-css-entry.mjs",
@@ -179,6 +183,7 @@
     "start": "next start",
     "storybook": "storybook dev -p 6006",
     "test": "vitest run --project unit",
+    "test:audit": "node --test tests/audit/*.test.mjs",
     "test:package": "npm run build && node --test tests/package/*.test.mjs",
     "test:storybook": "vitest run --project storybook",
     "typecheck:exports": "pnpm exec tsc -p tsconfig.exports.json --pretty false"

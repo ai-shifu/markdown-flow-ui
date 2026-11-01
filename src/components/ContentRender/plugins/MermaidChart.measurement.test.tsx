@@ -31,6 +31,21 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+it("preserves the existing chart layout and appearance when Mermaid defaults change", async () => {
+  const { container } = render(<MermaidChart chart="graph TD; A-->B" />);
+  await waitFor(() => expect(container.querySelector("svg")).not.toBeNull());
+
+  expect(mermaid.initialize).toHaveBeenCalledWith(
+    expect.objectContaining({
+      startOnLoad: false,
+      theme: "default",
+      layout: "dagre",
+      look: "classic",
+      securityLevel: "loose",
+    })
+  );
+});
+
 it("isolates measurement from flex layout and inherited scaling, then removes the host", async () => {
   const originalStyle = document.body.getAttribute("style");
   document.body.style.transform = "scale(0.64)";

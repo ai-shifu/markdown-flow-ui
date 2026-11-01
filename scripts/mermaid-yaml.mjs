@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 const mermaidManifest = require.resolve("mermaid/package.json");
 const yamlModule = resolve(
   dirname(mermaidManifest),
-  "dist/chunks/mermaid.core/chunk-ZIRB5QZD.mjs"
+  "dist/chunks/mermaid.core/chunk-LNGE3PJU.mjs"
 );
 const patchedYamlModule = resolve(
   dirname(require.resolve("js-yaml/package.json")),
@@ -30,7 +30,7 @@ export function patchedMermaidYaml() {
               {
                 name: "patched-mermaid-yaml",
                 setup(build) {
-                  build.onResolve({ filter: /chunk-ZIRB5QZD\.mjs$/ }, (args) =>
+                  build.onResolve({ filter: /chunk-LNGE3PJU\.mjs$/ }, (args) =>
                     resolve(args.resolveDir, args.path) === yamlModule
                       ? { path: patchedYamlModule }
                       : undefined
@@ -47,14 +47,14 @@ export function patchedMermaidYaml() {
     },
     buildStart() {
       const { version } = JSON.parse(readFileSync(mermaidManifest, "utf8"));
-      if (version !== "11.16.1") {
+      if (version !== "12.2.0") {
         this.error(
           "Revalidate the embedded YAML module when upgrading Mermaid."
         );
       }
       const source = readFileSync(yamlModule, "utf8");
       if (
-        !source.includes("js-yaml@4.1.1/") ||
+        !source.includes("js-yaml@4.3.0/") ||
         !/export\s*\{\s*JSON_SCHEMA,\s*load\s*\}/.test(source)
       ) {
         this.error(

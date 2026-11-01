@@ -163,6 +163,33 @@ const CustomBar: CustomRenderBarProps = ({ displayContent, onSend }) => {
 <MarkdownFlow customRenderBar={CustomBar} initialContentList={messages} />;
 ```
 
+## Mermaid compatibility
+
+Mermaid diagrams use version 12.2.0. MarkdownFlow explicitly keeps the `dagre`
+layout, `default` theme and `classic` look so existing diagrams do not adopt
+Mermaid 12's new defaults. Common legacy syntax, including `graph`,
+`classDiagram`, `classDiagram-v2`, `stateDiagram` and `stateDiagram-v2`, remains
+supported. Layout fixes can still change individual diagrams; compare real
+course content when upgrading.
+
+Mermaid 12 ignores the legacy `defaultRenderer` setting. Diagrams that select a
+renderer through that setting should use the top-level `layout` option instead,
+for example:
+
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart LR
+  Learn --> Practice
+```
+
+Mermaid 12 targets ES2024 and Safari 17.4 or newer. Hosts supporting older
+browsers must provide appropriate transpilation or polyfills and verify their
+browser matrix. Development requires Node.js 22.12 or newer; `.nvmrc` pins the
+tested runtime.
+
 ## Development verification
 
 Run `npm test` for unit tests and `npm run test:package` for distribution checks.

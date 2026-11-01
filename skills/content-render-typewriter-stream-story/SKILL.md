@@ -12,7 +12,7 @@ description: 为 `markdown-flow-ui` 的 `ContentRender` 新增或更新“后端
 ## 工作流
 
 1. 将后端返回的原始文本片段定义为独立 fixture 常量，保持“多数情况下按句到达”的真实形态。
-2. 若项目里已经有 `测试数据.json` 这类 SSE fixture，优先通过 `?raw` 导入原始文本，再按 `data:` 行解析成事件并抽取真实 `text` 元素内容，不要手写一份近似文案。
+2. 若项目里已经有 `tests/fixtures/ai-shifu-run-stream.sse` 这类 SSE fixture，优先通过 `?raw` 导入原始文本，再按 `data:` 行解析成事件并抽取真实 `text` 元素内容，不要手写一份近似文案。
 3. 在 `ContentRender` 上增加类似 `typewriter` 的可选 prop，至少包含开关和节奏参数；默认不传时应继续直接渲染 `content`。
 4. 组件内部处理 append-only 文本逐步显示时，优先兼容内容持续追加的场景；若流式内容不是追加关系，应安全回退，不要让普通渲染卡住。
 5. story preview wrapper 里只保留“后端分段到达”的状态，真正的逐字显示由 `ContentRender` 配置项接管。

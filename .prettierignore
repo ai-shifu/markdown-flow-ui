@@ -14,7 +14,7 @@ yarn.lock
 .git
 .DS_Store
 
-# Local SSE fixtures with non-JSON payloads
-测试数据.json
-测试数据2.json
-测试历史数据.json
+# Raw playback fixtures preserve their original payload formatting
+tests/fixtures/ai-shifu-run-stream.sse
+tests/fixtures/ai-shifu-initial-run-stream.sse
+tests/fixtures/ai-shifu-history.json

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, userEvent, waitFor } from "storybook/test";
 import { MARKDOWN_FLOW_LOCALES } from "../../lib/locale";
 
-import runStreamFixtureText from "../../../测试数据.json?raw";
+import runStreamFixtureText from "../../../tests/fixtures/ai-shifu-run-stream.sse?raw";
 import ContentRender, {
   type ContentRenderTypewriterState,
 } from "./ContentRender";

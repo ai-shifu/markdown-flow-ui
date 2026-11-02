@@ -36,7 +36,7 @@
     "mermaid": "12.2.0",
     "micromark-util-decode-string": "^2.0.1",
     "rc-textarea": "^1.10.2",
-    "react-i18next": "^15.5.1",
+    "react-i18next": "^17.1.9",
     "react-markdown": "^10.1.0",
     "rehype-highlight": "^7.0.2",
     "rehype-katex": "^7.0.1",

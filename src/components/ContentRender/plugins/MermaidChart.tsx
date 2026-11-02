@@ -143,9 +143,9 @@ const MermaidChart: React.FC<MermaidChartProps> = ({
       // Initialize Mermaid with an explicit CJK-safe font stack.
       // Using a concrete stack avoids clipping caused by `inherit` resolving to
       // Storybook's default font during off-screen rendering.
+      // Let Mermaid resolve its native per-diagram layout and appearance.
       mermaid.initialize({
         startOnLoad: false,
-        theme: "default",
         securityLevel: "loose",
         fontFamily: CJK_SAFE_SANS_FONT_FAMILY,
         themeVariables: {

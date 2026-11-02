@@ -208,6 +208,175 @@ export const MermaidYamlLimits: Story = {
   },
 };
 
+const MERMAID_LEGACY_DIAGRAMS = [
+  {
+    id: "graph",
+    title: "Graph with a named subgraph",
+    chart:
+      "graph TD\nsubgraph Course[课程流程]\nA[开始学习] --> B{完成练习}\nB -->|是| C[课程完成]\nB -->|否| A\nend",
+    labels: ["课程流程", "开始学习", "完成练习", "课程完成"],
+  },
+  {
+    id: "sequence",
+    title: "Sequence diagram with a conditional response",
+    chart:
+      "sequenceDiagram\nparticipant Student\nparticipant Teacher\nStudent->>Teacher: Ask\nalt Understood\nTeacher-->>Student: Continue\nelse Needs help\nTeacher-->>Student: Explain\nend",
+    labels: ["Student", "Teacher", "Ask", "Continue", "Explain"],
+  },
+  {
+    id: "class",
+    title: "Original class diagram keyword",
+    chart:
+      "classDiagram\nAnimal <|-- Duck\nclass Animal {\n+int age\n+move()\n}",
+    labels: ["Animal", "Duck", "age", "move"],
+  },
+  {
+    id: "class-v2",
+    title: "Class diagram v2 alias",
+    chart: "classDiagram-v2\nAnimal <|-- Duck",
+    labels: ["Animal", "Duck"],
+  },
+  {
+    id: "state",
+    title: "Original state diagram keyword",
+    chart: "stateDiagram\n[*] --> Idle\nIdle --> Active: start\nActive --> [*]",
+    labels: ["Idle", "Active", "start"],
+  },
+  {
+    id: "state-v2",
+    title: "State diagram v2 alias",
+    chart:
+      "stateDiagram-v2\n[*] --> Idle\nIdle --> Active: start\nActive --> [*]",
+    labels: ["Idle", "Active", "start"],
+  },
+  {
+    id: "elk",
+    title: "Explicit ELK flowchart keyword",
+    chart: "flowchart-elk\nA[Start] --> B[Finish]",
+    labels: ["Start", "Finish"],
+  },
+  {
+    id: "xy",
+    title: "XY chart keeps the global classic appearance",
+    chart: 'xychart\nx-axis [A, B]\ny-axis "Score" 0 --> 10\nbar [4, 8]',
+    labels: ["A", "B", "Score"],
+  },
+] as const;
+
+export const MermaidLegacyDiagramCompatibility: Story = {
+  name: "Mermaid Legacy Diagram Compatibility",
+  render: () => (
+    <div style={{ width: 700, maxWidth: "calc(100vw - 32px)" }}>
+      {MERMAID_LEGACY_DIAGRAMS.map(({ id, title, chart }) => (
+        <section key={id} data-mermaid-compatibility={id}>
+          <h2>{title}</h2>
+          <ContentRender
+            content={`\`\`\`mermaid\n${chart}\n\`\`\``}
+            enableTypewriter={false}
+          />
+        </section>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    for (const { id, labels } of MERMAID_LEGACY_DIAGRAMS) {
+      await waitFor(
+        () => {
+          const section = canvasElement.querySelector(
+            `[data-mermaid-compatibility="${id}"]`
+          )!;
+          expect(section.querySelector("[data-mermaid-error]")).toBeNull();
+          const svg = section.querySelector<SVGSVGElement>(
+            ".content-render-mermaid-inner > svg"
+          );
+          expect(svg).not.toBeNull();
+          for (const label of labels) {
+            expect(svg!.textContent).toContain(label);
+          }
+          // Mermaid applies neo to these diagram types; XY keeps the global
+          // classic default. Check rendered metadata rather than theme colors.
+          if (id === "xy") {
+            expect(svg!.querySelector('[data-look="neo"]')).toBeNull();
+          } else {
+            expect(svg!.querySelector('[data-look="neo"]')).not.toBeNull();
+          }
+          const { width, height } = svg!.getBoundingClientRect();
+          expect(Number.isFinite(width)).toBe(true);
+          expect(Number.isFinite(height)).toBe(true);
+          expect(width).toBeGreaterThan(0);
+          expect(height).toBeGreaterThan(0);
+        },
+        { timeout: 15000 }
+      );
+    }
+  },
+};
+
+const MERMAID_APPEARANCE_FLOW =
+  "graph TD\nA[Start] --> B{Choice}\nB --> C[Yes]\nB --> D[No]\nC --> E[Finish]\nD --> E";
+const MERMAID_CLASSIC_OVERRIDE = `---
+config:
+  layout: dagre
+  theme: default
+  look: classic
+---
+${MERMAID_APPEARANCE_FLOW}`;
+
+export const MermaidNativeDefaultsAndDiagramOverrides: Story = {
+  name: "Mermaid Native Defaults and Diagram Overrides",
+  render: () => (
+    <div style={{ width: 700, maxWidth: "calc(100vw - 32px)" }}>
+      {[
+        { id: "native", chart: MERMAID_APPEARANCE_FLOW },
+        { id: "classic", chart: MERMAID_CLASSIC_OVERRIDE },
+      ].map(({ id, chart }) => (
+        <section key={id} data-mermaid-appearance={id}>
+          <h2>{id === "native" ? "Native defaults" : "Diagram override"}</h2>
+          <ContentRender
+            content={`\`\`\`mermaid\n${chart}\n\`\`\``}
+            enableTypewriter={false}
+          />
+        </section>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    for (const look of ["neo", "classic"] as const) {
+      const id = look === "neo" ? "native" : "classic";
+      await waitFor(
+        () => {
+          const section = canvasElement.querySelector(
+            `[data-mermaid-appearance="${id}"]`
+          )!;
+          expect(section.querySelector("[data-mermaid-error]")).toBeNull();
+          const svg = section.querySelector<SVGSVGElement>(
+            ".content-render-mermaid-inner > svg"
+          );
+          expect(svg).not.toBeNull();
+          expect(svg!.textContent).toContain("Start");
+          expect(svg!.textContent).toContain("Finish");
+          expect(svg!.querySelector(`[data-look="${look}"]`)).not.toBeNull();
+          expect(
+            svg!.querySelector(
+              `[data-look="${look === "neo" ? "classic" : "neo"}"]`
+            )
+          ).toBeNull();
+        },
+        { timeout: 15000 }
+      );
+    }
+
+    const { default: mermaid } = await import("mermaid");
+    const parsed = await mermaid.parse(MERMAID_CLASSIC_OVERRIDE);
+    expect(parsed).not.toBe(false);
+    expect(parsed && parsed.config).toMatchObject({
+      layout: "dagre",
+      theme: "default",
+      look: "classic",
+    });
+  },
+};
+
 const MixedInteractionReplayPreview = () => {
   const [userInput, setUserInput] = useState("");
 

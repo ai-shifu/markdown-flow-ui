@@ -4,6 +4,7 @@ import mermaid from "mermaid";
 import { cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import MermaidChart from "./MermaidChart";
+import { CJK_SAFE_SANS_FONT_FAMILY } from "../cjkFontFamily";
 
 vi.mock("mermaid", () => ({
   default: {
@@ -31,19 +32,22 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-it("preserves the existing chart layout and appearance when Mermaid defaults change", async () => {
+it("uses native Mermaid appearance without overriding layout, theme or look", async () => {
   const { container } = render(<MermaidChart chart="graph TD; A-->B" />);
   await waitFor(() => expect(container.querySelector("svg")).not.toBeNull());
 
   expect(mermaid.initialize).toHaveBeenCalledWith(
     expect.objectContaining({
       startOnLoad: false,
-      theme: "default",
-      layout: "dagre",
-      look: "classic",
       securityLevel: "loose",
+      fontFamily: CJK_SAFE_SANS_FONT_FAMILY,
+      themeVariables: { fontFamily: CJK_SAFE_SANS_FONT_FAMILY },
     })
   );
+  const options = vi.mocked(mermaid.initialize).mock.calls[0][0];
+  for (const key of ["layout", "theme", "look"]) {
+    expect(options).not.toHaveProperty(key);
+  }
 });
 
 it("isolates measurement from flex layout and inherited scaling, then removes the host", async () => {

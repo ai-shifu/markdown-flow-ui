@@ -96,9 +96,6 @@ for (const format of ["es.js", "cjs"]) {
         mermaid.initialize({
           startOnLoad: false,
           securityLevel: "loose",
-          layout: "dagre",
-          theme: "default",
-          look: "classic",
         });
         assert.ok(await mermaid.parse(source));
       });

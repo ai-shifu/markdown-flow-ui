@@ -165,21 +165,25 @@ const CustomBar: CustomRenderBarProps = ({ displayContent, onSend }) => {
 
 ## Mermaid compatibility
 
-Mermaid diagrams use version 12.2.0. MarkdownFlow explicitly keeps the `dagre`
-layout, `default` theme and `classic` look so existing diagrams do not adopt
-Mermaid 12's new defaults. Common legacy syntax, including `graph`,
-`classDiagram`, `classDiagram-v2`, `stateDiagram` and `stateDiagram-v2`, remains
-supported. Layout fixes can still change individual diagrams; compare real
-course content when upgrading.
+Mermaid diagrams use version 12.2.0 with its native layout and appearance
+defaults. Flowcharts, class diagrams and state diagrams use the new ELK layout
+and `redux-color` / `neo` appearance; other diagram types keep their own native
+defaults. Common legacy syntax, including `graph`, `classDiagram`,
+`classDiagram-v2`, `stateDiagram` and `stateDiagram-v2`, remains supported.
+Existing diagrams can change layout, size and colors; compare real course
+content when upgrading.
 
 Mermaid 12 ignores the legacy `defaultRenderer` setting. Diagrams that select a
-renderer through that setting should use the top-level `layout` option instead,
-for example:
+renderer through that setting should use the top-level `layout` option instead.
+To opt an individual diagram into the previous default layout and appearance,
+set all three options in its frontmatter:
 
 ```mermaid
 ---
 config:
-  layout: elk
+  layout: dagre
+  theme: default
+  look: classic
 ---
 flowchart LR
   Learn --> Practice

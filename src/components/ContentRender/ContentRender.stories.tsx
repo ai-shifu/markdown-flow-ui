@@ -255,6 +255,12 @@ const MERMAID_LEGACY_DIAGRAMS = [
     chart: "flowchart-elk\nA[Start] --> B[Finish]",
     labels: ["Start", "Finish"],
   },
+  {
+    id: "xy",
+    title: "XY chart keeps the global classic appearance",
+    chart: 'xychart\nx-axis [A, B]\ny-axis "Score" 0 --> 10\nbar [4, 8]',
+    labels: ["A", "B", "Score"],
+  },
 ] as const;
 
 export const MermaidLegacyDiagramCompatibility: Story = {
@@ -287,6 +293,13 @@ export const MermaidLegacyDiagramCompatibility: Story = {
           for (const label of labels) {
             expect(svg!.textContent).toContain(label);
           }
+          // Mermaid applies neo to these diagram types; XY keeps the global
+          // classic default. Check rendered metadata rather than theme colors.
+          if (id === "xy") {
+            expect(svg!.querySelector('[data-look="neo"]')).toBeNull();
+          } else {
+            expect(svg!.querySelector('[data-look="neo"]')).not.toBeNull();
+          }
           const { width, height } = svg!.getBoundingClientRect();
           expect(Number.isFinite(width)).toBe(true);
           expect(Number.isFinite(height)).toBe(true);
@@ -296,6 +309,71 @@ export const MermaidLegacyDiagramCompatibility: Story = {
         { timeout: 15000 }
       );
     }
+  },
+};
+
+const MERMAID_APPEARANCE_FLOW =
+  "graph TD\nA[Start] --> B{Choice}\nB --> C[Yes]\nB --> D[No]\nC --> E[Finish]\nD --> E";
+const MERMAID_CLASSIC_OVERRIDE = `---
+config:
+  layout: dagre
+  theme: default
+  look: classic
+---
+${MERMAID_APPEARANCE_FLOW}`;
+
+export const MermaidNativeDefaultsAndDiagramOverrides: Story = {
+  name: "Mermaid Native Defaults and Diagram Overrides",
+  render: () => (
+    <div style={{ width: 700, maxWidth: "calc(100vw - 32px)" }}>
+      {[
+        { id: "native", chart: MERMAID_APPEARANCE_FLOW },
+        { id: "classic", chart: MERMAID_CLASSIC_OVERRIDE },
+      ].map(({ id, chart }) => (
+        <section key={id} data-mermaid-appearance={id}>
+          <h2>{id === "native" ? "Native defaults" : "Diagram override"}</h2>
+          <ContentRender
+            content={`\`\`\`mermaid\n${chart}\n\`\`\``}
+            enableTypewriter={false}
+          />
+        </section>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    for (const look of ["neo", "classic"] as const) {
+      const id = look === "neo" ? "native" : "classic";
+      await waitFor(
+        () => {
+          const section = canvasElement.querySelector(
+            `[data-mermaid-appearance="${id}"]`
+          )!;
+          expect(section.querySelector("[data-mermaid-error]")).toBeNull();
+          const svg = section.querySelector<SVGSVGElement>(
+            ".content-render-mermaid-inner > svg"
+          );
+          expect(svg).not.toBeNull();
+          expect(svg!.textContent).toContain("Start");
+          expect(svg!.textContent).toContain("Finish");
+          expect(svg!.querySelector(`[data-look="${look}"]`)).not.toBeNull();
+          expect(
+            svg!.querySelector(
+              `[data-look="${look === "neo" ? "classic" : "neo"}"]`
+            )
+          ).toBeNull();
+        },
+        { timeout: 15000 }
+      );
+    }
+
+    const { default: mermaid } = await import("mermaid");
+    const parsed = await mermaid.parse(MERMAID_CLASSIC_OVERRIDE);
+    expect(parsed).not.toBe(false);
+    expect(parsed && parsed.config).toMatchObject({
+      layout: "dagre",
+      theme: "default",
+      look: "classic",
+    });
   },
 };
 

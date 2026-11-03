@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { createInstance } from "i18next";
+import { I18nextProvider } from "react-i18next";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import {
@@ -1814,13 +1816,17 @@ export const StandaloneArabicInput: Story = {
 
 const ToolbarDirectionFixture = () => {
   const [lastAction, setLastAction] = useState("");
+  const [firstLocale, setFirstLocale] = useState<MarkdownFlowLocale>("ar-SA");
   return (
     <div dir="rtl" style={{ width: 900, maxWidth: "100%" }}>
       <output data-testid="toolbar-action-result">{lastAction}</output>
+      <button type="button" onClick={() => setFirstLocale("fr-FR")}>
+        Switch first editor to French
+      </button>
       {(["ar-SA", "th-TH", undefined] as const).map((locale) => (
         <div key={locale ?? "inherit"} data-testid={locale ?? "inherit"}>
           <MarkdownFlowEditor
-            locale={locale}
+            locale={locale === "ar-SA" ? firstLocale : locale}
             toolbarActionsRight={[
               {
                 key: "custom",
@@ -1872,6 +1878,88 @@ export const DirectionAwareToolbarActions: Story = {
         locale
       );
     }
+
+    const firstEditor = canvas.getByTestId("ar-SA").querySelector(".cm-editor");
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Switch first editor to French" })
+    );
+    for (const [fixtureId, locale] of [
+      ["ar-SA", "fr-FR"],
+      ["th-TH", "th-TH"],
+      ["inherit", undefined],
+    ] as const) {
+      const fixture = within(canvas.getByTestId(fixtureId));
+      const messages = getEditorLocaleMessages(locale);
+      await waitFor(() =>
+        expect(
+          fixture.getByRole("button", { name: messages.toolbarInsertImage })
+        ).toBeVisible()
+      );
+      await userEvent.click(
+        fixture.getByRole("button", { name: messages.toolbarInsertImage })
+      );
+      const page = within(canvasElement.ownerDocument.body);
+      const dialog = await page.findByRole("dialog", {
+        name: messages.dialogTitleImage,
+      });
+      expect(
+        within(dialog).getByPlaceholderText(messages.imageUrlPlaceholder)
+      ).toBeVisible();
+      await userEvent.click(
+        within(dialog).getByRole("button", { name: messages.dialogCloseLabel })
+      );
+    }
+    expect(canvas.getByTestId("ar-SA").querySelector(".cm-editor")).toBe(
+      firstEditor
+    );
+  },
+};
+
+const EditorProviderFixture = () => {
+  const hostI18n = useMemo(() => {
+    const instance = createInstance();
+    instance.init({
+      lng: "en-US",
+      defaultNS: "translation",
+      initAsync: false,
+      resources: {
+        "en-US": {
+          translation: { toolbarInsertImage: "Wrong namespace" },
+          host: {
+            ...getEditorLocaleMessages("en-US"),
+            toolbarInsertImage: "Host image action",
+            imageUrlPlaceholder: "Host image URL",
+          },
+        },
+      },
+    });
+    return instance;
+  }, []);
+
+  return (
+    <I18nextProvider i18n={hostI18n} defaultNS="host">
+      <MarkdownFlowEditor locale="en-US" />
+    </I18nextProvider>
+  );
+};
+
+export const EditorProviderOverrides: Story = {
+  render: () => <EditorProviderFixture />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Host image action" })
+    );
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole("dialog", {
+      name: getEditorLocaleMessages("en-US").dialogTitleImage,
+    });
+    expect(within(dialog).getByPlaceholderText("Host image URL")).toBeVisible();
+    await userEvent.click(
+      within(dialog).getByRole("button", {
+        name: getEditorLocaleMessages("en-US").dialogCloseLabel,
+      })
+    );
   },
 };
 

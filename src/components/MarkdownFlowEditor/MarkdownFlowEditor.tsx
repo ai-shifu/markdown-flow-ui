@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  useMemo,
+  useContext,
+} from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { autocompletion } from "@codemirror/autocomplete";
 import { EditorView, ViewUpdate } from "@codemirror/view";
@@ -35,7 +42,12 @@ import ImgPlaceholder from "./plugins/ImgPlaceholder";
 import VideoPlaceholder from "./plugins/VideoPlaceholder";
 import { mediaPlaceholderLabels } from "./plugins/mediaPlaceholderLabels";
 import SyntaxHighlighter from "./plugins/SyntaxHighlighter";
-import { initReactI18next, useTranslation } from "react-i18next";
+import {
+  I18nContext,
+  I18nextProvider,
+  initReactI18next,
+  useTranslation,
+} from "react-i18next";
 import i18next from "i18next";
 import { UploadProps } from "./uploadTypes";
 import {
@@ -94,7 +106,7 @@ type EditorProps = {
   onReady?: (api: EditorApi) => void;
 };
 
-const Editor: React.FC<EditorProps> = ({
+const EditorContent: React.FC<EditorProps> = ({
   content = "",
   editMode = EditMode.CodeEdit,
   onChange,
@@ -106,18 +118,12 @@ const Editor: React.FC<EditorProps> = ({
   toolbarActionsRight,
   onReady,
 }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const resolvedLocale = normalizeMarkdownFlowLocale(
     locale ?? DEFAULT_EDITOR_LOCALE
   );
   const direction = getMarkdownFlowDirection(locale);
   const language = lang ?? getMarkdownFlowLanguage(locale);
-
-  useEffect(() => {
-    if (i18n.language !== resolvedLocale) {
-      i18n.changeLanguage(resolvedLocale);
-    }
-  }, [i18n, resolvedLocale]);
 
   const currentStrings = getEditorLocaleMessages(resolvedLocale);
   const toolbarLabels = useMemo(
@@ -762,6 +768,24 @@ const Editor: React.FC<EditorProps> = ({
         </EditorContext.Provider>
       </div>
     </div>
+  );
+};
+
+const Editor: React.FC<EditorProps> = (props) => {
+  const inheritedContext = useContext(I18nContext);
+  const inheritedI18n = inheritedContext?.i18n ?? i18next;
+  const resolvedLocale = normalizeMarkdownFlowLocale(
+    props.locale ?? DEFAULT_EDITOR_LOCALE
+  );
+  const scopedI18n = useMemo(
+    () => inheritedI18n.cloneInstance({ lng: resolvedLocale }),
+    [inheritedI18n, resolvedLocale]
+  );
+
+  return (
+    <I18nextProvider i18n={scopedI18n} defaultNS={inheritedContext?.defaultNS}>
+      <EditorContent {...props} />
+    </I18nextProvider>
   );
 };
 

@@ -1,41 +1,15 @@
 version: 2
 updates:
-  # Group routine npm minor/patch updates. Plan major upgrades separately,
-  # including compatibility checks with ai-shifu.
+  # Disable routine version PRs; security updates retain their independent limit.
+  # A schedule is required, but it does not control security update timing.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
-    # This filter applies only to version updates, not security updates.
-    allow:
-      - dependency-name: "*"
-        update-types:
-          - "version-update:semver-minor"
-          - "version-update:semver-patch"
-    groups:
-      minor-and-patch:
-        applies-to: "version-updates"
-        update-types:
-          - "minor"
-          - "patch"
+    open-pull-requests-limit: 0
 
-  # Group routine GitHub Actions minor/patch updates into one weekly PR.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    # This filter applies only to version updates, not security updates.
-    allow:
-      - dependency-name: "*"
-        update-types:
-          - "version-update:semver-minor"
-          - "version-update:semver-patch"
-    groups:
-      github-actions:
-        applies-to: "version-updates"
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
+    open-pull-requests-limit: 0

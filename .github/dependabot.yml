@@ -1,14 +1,21 @@
 version: 2
 updates:
-  # npm dependencies. Minor/patch updates are grouped into a single PR to keep
-  # the noise down; major updates come as individual PRs so they can be reviewed.
+  # Group routine npm minor/patch updates. Plan major upgrades separately,
+  # including compatibility checks with ai-shifu.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    # This filter applies only to version updates, not security updates.
+    allow:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
     groups:
       minor-and-patch:
+        applies-to: "version-updates"
         update-types:
           - "minor"
           - "patch"

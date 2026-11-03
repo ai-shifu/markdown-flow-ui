@@ -2,26 +2,33 @@
 import storybook from "eslint-plugin-storybook";
 import prettier from "eslint-plugin-prettier/recommended";
 
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTypeScript from "eslint-config-next/typescript";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+// Preserve the existing hooks policy until React Compiler is enabled.
+const compilerRules = Object.fromEntries(
+  nextVitals
+    .flatMap((config) => Object.keys(config.rules ?? {}))
+    .filter(
+      (rule) =>
+        rule.startsWith("react-hooks/") &&
+        rule !== "react-hooks/rules-of-hooks" &&
+        rule !== "react-hooks/exhaustive-deps"
+    )
+    .map((rule) => [rule, "off"])
+);
 
 const eslintConfig = [
   {
     ignores: ["src/components/ContentRender/vendor/**"],
   },
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  ...nextVitals,
+  ...nextTypeScript,
   ...storybook.configs["flat/recommended"],
   prettier,
   {
     rules: {
+      ...compilerRules,
       "prettier/prettier": "error",
       "@next/next/no-html-link-for-pages": "off",
       "@typescript-eslint/no-unused-vars": [

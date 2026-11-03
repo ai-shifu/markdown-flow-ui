@@ -123,7 +123,7 @@
       "prettier --write"
     ],
     "src/**/*.{js,jsx,ts,tsx,mjs,cjs}": [
-      "next lint --fix --max-warnings 20 --file",
+      "eslint --fix --max-warnings 20",
       "prettier --write"
     ]
   },
@@ -155,7 +155,7 @@
     }
   },
   "peerDependencies": {
-    "next": "^15.5.28",
+    "next": "^15.5.28 || ^16.4.3",
     "react": "^18.3.1 || ^19.0.0",
     "react-dom": "^18.3.1 || ^19.0.0"
   },
@@ -174,8 +174,8 @@
     "dev": "next dev --turbopack",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "next lint --max-warnings 20 && npm run lint:md",
-    "lint:fix": "next lint --fix --max-warnings 20 && npm run lint:md:fix",
+    "lint": "eslint src --max-warnings 20 && npm run lint:md",
+    "lint:fix": "eslint src --fix --max-warnings 20 && npm run lint:md:fix",
     "lint:md": "markdownlint *.md",
     "lint:md:fix": "markdownlint --fix *.md",
     "prepare": "husky",

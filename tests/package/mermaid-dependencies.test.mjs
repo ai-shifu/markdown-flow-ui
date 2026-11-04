@@ -202,6 +202,18 @@ for (const format of ["es.js", "cjs"]) {
         yaml.load("value: {<<: [{}, {}, {}, {}]}", { maxTotalMergeKeys: 3 }),
       /maxTotalMergeKeys/
     );
+    // Keep each merge sequence at 100 sources to exercise the default total
+    // budget of 10,000, rather than the independent per-sequence size limit.
+    const emptySources = `sources: &sources [${Array(100).fill("{}").join(", ")}]\ntargets:\n`;
+    const mergeTarget = "  - <<: *sources\n";
+    assert.equal(
+      yaml.load(emptySources + mergeTarget.repeat(100)).targets.length,
+      100
+    );
+    assert.throws(
+      () => yaml.load(emptySources + mergeTarget.repeat(101)),
+      /maxTotalMergeKeys/
+    );
     assert.throws(
       () => yaml.load("!!omap [{duplicate: 1}, {duplicate: 2}]"),
       /omap/

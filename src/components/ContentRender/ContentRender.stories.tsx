@@ -256,6 +256,13 @@ const MERMAID_LEGACY_DIAGRAMS = [
     labels: ["Start", "Finish"],
   },
   {
+    id: "nested-elk",
+    title: "Nested ELK subgraphs with edges to a contained node",
+    chart:
+      "graph TD\nsubgraph outer[Course]\nsubgraph inner[Lesson]\na[Learn]\nend\nda[Practice] --> a\nend\nouter --> a\na --> finish[Finish]",
+    labels: ["Course", "Lesson", "Learn", "Practice", "Finish"],
+  },
+  {
     id: "xy",
     title: "XY chart keeps the global classic appearance",
     chart: 'xychart\nx-axis [A, B]\ny-axis "Score" 0 --> 10\nbar [4, 8]',
@@ -305,6 +312,17 @@ export const MermaidLegacyDiagramCompatibility: Story = {
           expect(Number.isFinite(height)).toBe(true);
           expect(width).toBeGreaterThan(0);
           expect(height).toBeGreaterThan(0);
+          if (id === "nested-elk") {
+            const edges = svg!.querySelectorAll<SVGPathElement>(
+              "path.flowchart-link"
+            );
+            expect(edges).toHaveLength(3);
+            for (const edge of edges) {
+              expect(edge.getAttribute("d")).not.toMatch(/NaN|Infinity/);
+              expect(Number.isFinite(edge.getTotalLength())).toBe(true);
+              expect(edge.getTotalLength()).toBeGreaterThan(0);
+            }
+          }
         },
         { timeout: 15000 }
       );

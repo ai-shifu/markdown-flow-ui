@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.3.8 - 2026-11-04
+
+### Fixed
+
+- Keep Mermaid labels within their measured bounds by excluding diagram label
+  paragraphs from Markdown paragraph spacing.
+
+### Changed
+
+- Upgrade Mermaid to 12.3.0 and use its native diagram layouts and appearance,
+  while preserving common legacy syntax and explicit per-diagram styling.
+- Use Mermaid's upstream guarded YAML parser and remove the local parser
+  replacement and runtime js-yaml dependency.
+- Expand packaged-module and browser coverage for diagram compatibility,
+  YAML limits and English, Chinese and multi-paragraph labels.
+
+### Compatibility
+
+- Mermaid 12 can change diagram layout, size and colors, requires Safari 17.4
+  or later, and replaces the deprecated `defaultRenderer` setting with `layout`.
+  See the README migration notes for supported edge IDs and diagram options.
+
 ## 0.3.7 - 2026-11-01
 
 ### Fixed

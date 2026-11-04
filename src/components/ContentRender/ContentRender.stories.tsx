@@ -1702,6 +1702,99 @@ export const MermaidZoomMeasurementRegression: Story = {
   },
 };
 
+const MERMAID_LABEL_TYPOGRAPHY_CONTENT = `Paragraph before the diagram.
+
+\`\`\`mermaid
+flowchart TD
+    A[English label] --> B[中文标签]
+    B --> C["\`First paragraph
+
+第二段中文\`"]
+\`\`\`
+
+Paragraph after the diagram.`;
+
+export const MermaidLabelTypographyRegression: Story = {
+  name: "Mermaid Labels Keep Their Paragraph Layout",
+  render: () => (
+    <div style={{ width: 700, maxWidth: "calc(100vw - 32px)" }}>
+      <ContentRender
+        content={MERMAID_LABEL_TYPOGRAPHY_CONTENT}
+        enableTypewriter={false}
+      />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const document = canvasElement.ownerDocument;
+    await waitFor(
+      () => {
+        expect(canvasElement.querySelector("[data-mermaid-error]")).toBeNull();
+        const objects = Array.from(
+          canvasElement.querySelectorAll<SVGForeignObjectElement>(
+            ".content-render-mermaid-inner foreignObject"
+          )
+        );
+        expect(objects).toHaveLength(3);
+        for (const text of ["English label", "中文标签"]) {
+          expect(
+            objects.some((object) => object.textContent?.includes(text))
+          ).toBe(true);
+        }
+        const richLabel = objects.find((object) =>
+          object.textContent?.includes("First paragraph")
+        )!;
+        expect(richLabel.textContent).toContain("第二段中文");
+        expect(richLabel.querySelectorAll("p").length).toBeGreaterThanOrEqual(
+          2
+        );
+
+        for (const object of objects) {
+          const viewport = object.getBoundingClientRect();
+          for (const paragraph of object.querySelectorAll("p")) {
+            const style = document.defaultView!.getComputedStyle(paragraph);
+            expect(style.marginTop).toBe("0px");
+            expect(style.marginBottom).toBe("0px");
+          }
+          const walker = document.createTreeWalker(
+            object,
+            NodeFilter.SHOW_TEXT
+          );
+          for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+            if (!node.textContent?.trim()) continue;
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            const rectangles = Array.from(range.getClientRects());
+            expect(rectangles.length).toBeGreaterThan(0);
+            for (const text of rectangles) {
+              expect(text.width).toBeGreaterThan(0);
+              expect(text.height).toBeGreaterThan(0);
+              expect(text.left).toBeGreaterThanOrEqual(viewport.left - 1);
+              expect(text.right).toBeLessThanOrEqual(viewport.right + 1);
+              expect(text.top).toBeGreaterThanOrEqual(viewport.top - 1);
+              expect(text.bottom).toBeLessThanOrEqual(viewport.bottom + 1);
+            }
+          }
+        }
+
+        const paragraphs = Array.from(canvasElement.querySelectorAll("p"));
+        for (const text of [
+          "Paragraph before the diagram.",
+          "Paragraph after the diagram.",
+        ]) {
+          const paragraph = paragraphs.find(
+            (node) => node.textContent === text
+          )!;
+          expect(paragraph).toBeDefined();
+          expect(
+            document.defaultView!.getComputedStyle(paragraph).marginBottom
+          ).toBe("12px");
+        }
+      },
+      { timeout: 10000 }
+    );
+  },
+};
+
 const expectMermaidXYTicksInsideSvg = (svg: SVGSVGElement) => {
   const bounds = svg.getBoundingClientRect();
   const labels = Array.from(svg.querySelectorAll("text")).filter((text) =>

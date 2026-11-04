@@ -392,7 +392,8 @@
   );
 }
 
-.markdown-body p,
+/* Mermaid measures its own label paragraphs outside the Markdown container. */
+.markdown-body p:not(:where(.content-render-mermaid *)),
 .markdown-body blockquote,
 .markdown-body ul,
 .markdown-body ol,

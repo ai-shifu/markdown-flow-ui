@@ -3,7 +3,6 @@ import { readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { test } from "node:test";
 import { build } from "vite";
-import { patchedMermaidYaml } from "../../scripts/mermaid-yaml.mjs";
 
 const packageRoot = new URL("../../", import.meta.url);
 const require = createRequire(new URL("package.json", packageRoot));
@@ -13,6 +12,32 @@ const { JSDOM } = require("jsdom");
 const { window } = new JSDOM("<!doctype html><html><body></body></html>");
 globalThis.window = window;
 globalThis.document = window.document;
+
+const isEmbeddedYamlParser = (code) =>
+  code.includes("maxTotalMergeKeys") && code.includes("tag:yaml.org,2002:omap");
+
+const findShippedYamlParser = (format) => {
+  const directory = new URL("dist/node_modules/mermaid/dist/", packageRoot);
+  const matches = readdirSync(directory, { recursive: true }).filter(
+    (file) =>
+      file.endsWith(`.${format}`) &&
+      isEmbeddedYamlParser(readFileSync(new URL(file, directory), "utf8"))
+  );
+  assert.equal(
+    matches.length,
+    1,
+    `Expected one embedded Mermaid YAML parser in ${format}, found ${matches.join(", ")}`
+  );
+  return new URL(matches[0], directory);
+};
+
+const assertNoUnsafeYaml = (code) => {
+  assert.doesNotMatch(code, /js-yaml(?:@| )4\.(?:[012]\.|3\.[01](?!\d))/);
+  assert.doesNotMatch(
+    code,
+    /(?:from\s*|require\(|import\(\s*)["']js-yaml(?:\/[^"']*)?["']/
+  );
+};
 
 const legacyDiagrams = [
   [
@@ -61,26 +86,19 @@ const legacyDiagrams = [
   ["explicit ELK keyword", "flowchart-elk\nA --> B"],
 ];
 
-test("ships the patched Mermaid engine without a vendored YAML parser", () => {
-  assert.equal(manifest.dependencies.mermaid, "12.2.0");
-  assert.equal(manifest.dependencies["js-yaml"], "4.3.2");
+test("ships Mermaid's guarded YAML parser without a runtime js-yaml dependency", () => {
+  assert.equal(manifest.dependencies.mermaid, "12.3.0");
+  assert.equal(manifest.dependencies["js-yaml"], undefined);
   const files = readdirSync(new URL("dist/", packageRoot), {
     recursive: true,
   }).filter((file) => /\.(?:es\.js|cjs)$/.test(file));
-  let yamlImportCount = 0;
   for (const file of files) {
     const code = readFileSync(new URL(`dist/${file}`, packageRoot), "utf8");
-    assert.doesNotMatch(file, /(?:js-yaml|chunk-LNGE3PJU)/);
-    assert.doesNotMatch(
-      code,
-      /js-yaml@|js-yaml 4\.(?:1\.|3\.0)|chunk-LNGE3PJU/
-    );
-    if (/(?:from\s*|require\()["']js-yaml["']/.test(code)) {
-      yamlImportCount += 1;
-    }
+    assertNoUnsafeYaml(code);
   }
-  // Frontmatter and lazy flow, sequence and Kanban metadata in both formats.
-  assert.ok(yamlImportCount >= 8, "Missing shared YAML imports");
+  for (const format of ["es.js", "cjs"]) {
+    findShippedYamlParser(format);
+  }
 });
 
 for (const format of ["es.js", "cjs"]) {
@@ -99,6 +117,24 @@ for (const format of ["es.js", "cjs"]) {
         });
         assert.ok(await mermaid.parse(source));
       });
+    }
+  });
+  test(`${format} preserves shape metadata and adjacent edge IDs`, async () => {
+    const module = await import(entry.href);
+    const mermaid = format === "cjs" ? module.default.default : module.default;
+    for (const spacing of ["", " "]) {
+      mermaid.initialize({ startOnLoad: false, securityLevel: "loose" });
+      const diagram = await mermaid.mermaidAPI.getDiagramFromText(
+        `flowchart TD\nA@{shape: circle}${spacing}e1@--> B`
+      );
+      assert.deepEqual(
+        diagram.db.getEdges().map(({ id, start, end }) => ({ id, start, end })),
+        [{ id: "e1", start: "A", end: "B" }]
+      );
+      assert.equal(
+        diagram.db.getData().nodes.find(({ id }) => id === "A")?.shape,
+        "circle"
+      );
     }
   });
   test(`${format} preserves Mermaid parsing and rejects excessive YAML nesting`, async () => {
@@ -147,29 +183,48 @@ for (const format of ["es.js", "cjs"]) {
       assert.ok(await mermaid.parse(chart), chart);
     }
   });
+
+  test(`${format} embedded YAML preserves normal merges and enforces parser guards`, async () => {
+    // Import the parser shipped inside Mermaid, never the audit tool's dev dependency.
+    const module = await import(findShippedYamlParser(format).href);
+    const yaml = format === "cjs" ? module.default : module;
+    assert.equal(typeof yaml.load, "function");
+    assert.deepEqual(
+      yaml.load("base: &base {a: 1}\nvalue: {<<: *base, b: true}"),
+      { base: { a: 1 }, value: { a: 1, b: true } }
+    );
+    assert.deepEqual(yaml.load("!!omap [{first: 1}, {second: 2}]"), [
+      { first: 1 },
+      { second: 2 },
+    ]);
+    assert.throws(
+      () =>
+        yaml.load("value: {<<: [{}, {}, {}, {}]}", { maxTotalMergeKeys: 3 }),
+      /maxTotalMergeKeys/
+    );
+    // Keep each merge sequence at 100 sources to exercise the default total
+    // budget of 10,000, rather than the independent per-sequence size limit.
+    const emptySources = `sources: &sources [${Array(100).fill("{}").join(", ")}]\ntargets:\n`;
+    const mergeTarget = "  - <<: *sources\n";
+    assert.equal(
+      yaml.load(emptySources + mergeTarget.repeat(100)).targets.length,
+      100
+    );
+    assert.throws(
+      () => yaml.load(emptySources + mergeTarget.repeat(101)),
+      /maxTotalMergeKeys/
+    );
+    assert.throws(
+      () => yaml.load("!!omap [{duplicate: 1}, {duplicate: 2}]"),
+      /omap/
+    );
+  });
 }
 
-test("the shared YAML dependency preserves normal merges and bounds empty merges", () => {
-  const yaml = require("js-yaml");
-  assert.deepEqual(
-    yaml.load("base: &base {a: 1}\nvalue: {<<: *base, b: true}"),
-    { base: { a: 1 }, value: { a: 1, b: true } }
-  );
-  assert.deepEqual(yaml.load("!!omap [{first: 1}, {second: 2}]"), [
-    { first: 1 },
-    { second: 2 },
-  ]);
-  assert.throws(
-    () => yaml.load("value: {<<: [{}, {}, {}, {}]}", { maxTotalMergeKeys: 3 }),
-    /maxTotalMergeKeys/
-  );
-});
-
-test("browser builds bundle the patched YAML dependency without bare imports", async () => {
+test("browser builds bundle Mermaid's guarded YAML without a custom plugin or bare imports", async () => {
   const { output } = await build({
     configFile: false,
     logLevel: "silent",
-    plugins: [patchedMermaidYaml()],
     build: {
       write: false,
       minify: false,
@@ -177,9 +232,9 @@ test("browser builds bundle the patched YAML dependency without bare imports", a
     },
   });
   const chunks = output.filter((entry) => entry.type === "chunk");
-  assert.ok(chunks.some((chunk) => chunk.code.includes("maxTotalMergeKeys")));
+  assert.ok(chunks.some((chunk) => isEmbeddedYamlParser(chunk.code)));
   for (const chunk of chunks) {
     assert.ok(!chunk.imports.includes("js-yaml"));
-    assert.doesNotMatch(chunk.code, /js-yaml(?:@| )4\.(?:1\.|3\.0)/);
+    assertNoUnsafeYaml(chunk.code);
   }
 });

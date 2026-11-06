@@ -3330,13 +3330,15 @@ export const DesktopInteractionOverlayPointerDrag: Story = {
 export const MobileInteractionOverlayPointerDrag: Story = {
   args: {
     elementList: DRAG_TEST_ELEMENT_LIST,
+    interactionTitle:
+      "Which of these statements best describes how you currently think about AI in your work?",
     playerControlsVisibility: "visible",
   },
   parameters: {
     docs: {
       description: {
         story:
-          "Exercises the mobile drag handle pointer chain so touch-style dragging keeps the interaction movable without using the full card as the drag target.",
+          "Keeps the drag handle above a wrapping question on mobile and verifies touch-style dragging still moves the interaction.",
       },
     },
   },
@@ -3353,14 +3355,20 @@ export const MobileInteractionOverlayPointerDrag: Story = {
     const handle = overlay.querySelector(
       '[aria-label="Move interaction"]'
     ) as HTMLElement | null;
+    const title = overlay.querySelector(".slide-player__interaction-title");
 
     expect(handle).not.toBeNull();
+    expect(title).not.toBeNull();
 
     const capturedPointerIds = ensurePointerCaptureTracking(
       handle as HTMLElement
     );
     const beforeOffsets = getOverlayDragOffsets(overlay);
     const handleRect = (handle as HTMLElement).getBoundingClientRect();
+
+    expect(handleRect.bottom).toBeLessThan(
+      (title as HTMLElement).getBoundingClientRect().top
+    );
 
     await triggerPointerDrag(
       handle as HTMLElement,

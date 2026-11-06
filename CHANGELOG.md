@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.10 - 2026-11-06
+
+### Fixed
+
+- Keep streamed HTML visible under a transparent layer that blocks premature
+  clicks. Show one preparation message for longer waits without restarting it
+  for each streamed update.
+- Allow hosts to mark an HTML block as streaming so controls and scripts wait
+  until that block is complete, even when the markup arrives before any script.
+
 ## 0.3.9 - 2026-11-06
 
 ### Fixed

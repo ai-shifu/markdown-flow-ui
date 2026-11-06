@@ -22,8 +22,6 @@ export interface SandboxAppProps {
   /** Overrides the wrapper direction while preserving explicit direction in authored HTML. */
   dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   loadingText?: string;
-  styleLoadingText?: string;
-  scriptLoadingText?: string;
   resetToken?: number;
   mode?: "content" | "blackboard";
   hasRootVhHeight?: boolean;
@@ -107,64 +105,37 @@ const reuseRenderedImages = (
   });
 };
 
-const SandboxApp: React.FC<SandboxAppProps> = ({
+export const hasCompleteScriptTags = (html: string) => {
+  const openScriptCount = (html.match(/<script[\s>]/gi) || []).length;
+  const closeScriptCount = (html.match(/<\/script>/gi) || []).length;
+  return openScriptCount > 0 && openScriptCount === closeScriptCount;
+};
+
+const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
   html,
   locale,
   dir,
   lang,
   loadingText,
-  styleLoadingText,
-  scriptLoadingText,
   resetToken = 0,
   mode = "content",
   hasRootVhHeight = false,
   stretchRootHeight = false,
   enableScaling = false,
   disableLoadingOverlay = false,
+  deferScripts = false,
 }) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isGeneratingStyles, setIsGeneratingStyles] = useState(false);
-  const [isGeneratingScripts, setIsGeneratingScripts] = useState(false);
   const [hasRenderedContent, setHasRenderedContent] = useState(false);
   const appendedStylesRef = useRef<HTMLStyleElement[]>([]);
   const appendedScriptsRef = useRef<HTMLScriptElement[]>([]);
-  const styleStartRef = useRef(0);
-  const scriptStartRef = useRef(0);
-  const styleTimerRef = useRef<number | null>(null);
-  const scriptTimerRef = useRef<number | null>(null);
-  const hasStylesRef = useRef(false);
-  const hasScriptsRef = useRef(false);
   const prevResetTokenRef = useRef(resetToken);
-  const MIN_LOADING_MS = 200;
-
-  const clearTimer = (timerRef: React.MutableRefObject<number | null>) => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  };
-
-  const settleStateWithMinimumDelay = (
-    setter: React.Dispatch<React.SetStateAction<boolean>>,
-    timerRef: React.MutableRefObject<number | null>,
-    startRef: React.MutableRefObject<number>,
-    onDone?: () => void
-  ) => {
-    const elapsed = performance.now() - startRef.current;
-    const delay = Math.max(0, MIN_LOADING_MS - elapsed);
-    clearTimer(timerRef);
-    timerRef.current = window.setTimeout(() => {
-      setter(false);
-      onDone?.();
-      timerRef.current = null;
-    }, delay);
-  };
 
   useEffect(() => {
     const doc = containerRef.current?.ownerDocument;
     if (!doc) return;
-    const styleId = "sandbox-spinner-style";
+    const styleId = "sandbox-layout-style";
     let styleEl = doc.getElementById(styleId) as HTMLStyleElement | null;
     if (!styleEl) {
       styleEl = doc.createElement("style");
@@ -198,11 +169,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       setHasRenderedContent(false);
       prevResetTokenRef.current = resetToken;
     }
-    clearTimer(styleTimerRef);
-    clearTimer(scriptTimerRef);
-    hasStylesRef.current = false;
-    hasScriptsRef.current = false;
-
     const container = containerRef.current;
     if (!container) return;
     const doc = container.ownerDocument;
@@ -215,8 +181,6 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     appendedScriptsRef.current.forEach((node) => node.remove());
     appendedScriptsRef.current = [];
 
-    setIsGeneratingStyles(false);
-    setIsGeneratingScripts(false);
     const wrapper = doc.createElement("div");
     wrapper.innerHTML = html;
     wrapper.querySelectorAll("a[href]").forEach((node) => {
@@ -232,10 +196,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       node.setAttribute("rel", mergeAnchorRelValue(node.getAttribute("rel")));
     });
 
-    const openScriptCount = (html.match(/<script[\s>]/gi) || []).length;
-    const closeScriptCount = (html.match(/<\/script>/gi) || []).length;
-    const shouldExecuteScripts =
-      openScriptCount > 0 && openScriptCount === closeScriptCount;
+    const shouldExecuteScripts = !deferScripts && hasCompleteScriptTags(html);
 
     const resourceQueue: HTMLElement[] = [];
 
@@ -259,24 +220,9 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
     });
     reuseRenderedImages(wrapper, reusableImages);
 
-    const hasStyles = resourceQueue.some(
-      (node) => node.tagName.toLowerCase() === "style"
-    );
     const hasScripts = resourceQueue.some(
       (node) => node.tagName.toLowerCase() === "script"
     );
-    if (hasStyles) {
-      hasStylesRef.current = true;
-      styleStartRef.current = performance.now();
-      clearTimer(styleTimerRef);
-      setIsGeneratingStyles(true);
-    }
-    if (hasScripts) {
-      hasScriptsRef.current = true;
-      scriptStartRef.current = performance.now();
-      clearTimer(scriptTimerRef);
-      setIsGeneratingScripts(true);
-    }
 
     const contentNodes = Array.from(wrapper.childNodes);
     const hasInitialContent = contentNodes.length > 0;
@@ -352,7 +298,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
           scriptNode.remove();
         }
       } else {
-        // Defer execution until all script tags are fully received
+        // Leave scripts out of partial and intermediate render frames.
         node.remove();
       }
     });
@@ -362,73 +308,16 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       win?.__mdf_triggerFitContent?.();
     }
 
-    requestAnimationFrame(() => {
-      if (hasStyles) {
-        settleStateWithMinimumDelay(
-          setIsGeneratingStyles,
-          styleTimerRef,
-          styleStartRef,
-          () => {
-            hasStylesRef.current = false;
-          }
-        );
-      }
-      if (hasScripts) {
-        settleStateWithMinimumDelay(
-          setIsGeneratingScripts,
-          scriptTimerRef,
-          scriptStartRef,
-          () => {
-            hasScriptsRef.current = false;
-          }
-        );
-      }
-    });
-
     return () => {
       scriptContentObserver?.disconnect();
       container.removeEventListener("click", handleLinkClick, true);
     };
-  }, [html, resetToken, enableScaling]);
+  }, [html, resetToken, enableScaling, deferScripts]);
 
-  useEffect(
-    () => () => {
-      clearTimer(styleTimerRef);
-      clearTimer(scriptTimerRef);
-    },
-    []
-  );
-
-  useEffect(() => {
-    if (!disableLoadingOverlay) {
-      return;
-    }
-
-    clearTimer(styleTimerRef);
-    clearTimer(scriptTimerRef);
-    hasStylesRef.current = false;
-    hasScriptsRef.current = false;
-    setIsGeneratingStyles(false);
-    setIsGeneratingScripts(false);
-  }, [disableLoadingOverlay]);
-
-  const overlayMessage = (() => {
-    if (disableLoadingOverlay) {
-      return null;
-    }
-
-    if (isGeneratingScripts || hasScriptsRef.current)
-      return (
-        scriptLoadingText || loadingText || localeTexts.sandboxScriptLoadingText
-      );
-    if (isGeneratingStyles || hasStylesRef.current)
-      return (
-        styleLoadingText || loadingText || localeTexts.sandboxStyleLoadingText
-      );
-    if (!hasRenderedContent)
-      return loadingText || localeTexts.sandboxLoadingText;
-    return null;
-  })();
+  const overlayMessage =
+    !disableLoadingOverlay && !hasRenderedContent
+      ? loadingText || localeTexts.sandboxLoadingText
+      : null;
 
   const isBlackboard = mode === "blackboard";
   const shouldStretchRootHeight = isBlackboard && stretchRootHeight;

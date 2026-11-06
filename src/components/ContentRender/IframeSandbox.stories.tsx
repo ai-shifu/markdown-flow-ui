@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, userEvent, waitFor } from "storybook/test";
 import IframeSandbox from "./IframeSandbox";
@@ -264,6 +264,100 @@ export const LateImageAndDomChanges: Story = {
     cardElement.style.height = "auto";
     await expectHeight(canvasElement, 300);
     expect(canvasElement.querySelector("iframe")).toBe(iframe);
+  },
+};
+
+const streamingImageSrc =
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="90"><rect width="160" height="90" fill="lightblue"/></svg>'
+  );
+const imageStreamChunks = [
+  '<section><p>Lesson introduction</p><button type="button" data-diagram-button>Check diagram</button><output data-diagram-result></output>',
+  `<img src="${streamingImageSrc}" alt="Lesson diagram" width="160" height="90">`,
+  `<script>
+    document.documentElement.dataset.scriptRuns = String(
+      Number(document.documentElement.dataset.scriptRuns || "0") + 1
+    );
+    document.querySelector("[data-diagram-button]").addEventListener("click", () => {
+      document.querySelector("[data-diagram-result]").textContent = "Diagram checked";
+    });
+  </script>`,
+  ...Array.from({ length: 35 }, (_, index) => `<p>Detail ${index + 1}</p>`),
+  "</section>",
+];
+
+export const StreamedImageWithFollowingContent: Story = {
+  args: { content: imageStreamChunks[0] },
+  render: function Render(args) {
+    const [chunkCount, setChunkCount] = useState(1);
+    const isReceiving = chunkCount > 1 && chunkCount < imageStreamChunks.length;
+
+    useEffect(() => {
+      if (!isReceiving) return;
+      const interval = window.setInterval(() => {
+        setChunkCount((count) => Math.min(count + 1, imageStreamChunks.length));
+      }, 45);
+      return () => window.clearInterval(interval);
+    }, [isReceiving]);
+
+    return (
+      <div>
+        <button
+          type="button"
+          disabled={isReceiving}
+          onClick={() => setChunkCount(2)}
+        >
+          Stream lesson content
+        </button>
+        <p data-stream-status>
+          {isReceiving ? "Receiving lesson content" : "Stream idle"}
+        </p>
+        <IframeSandbox
+          {...args}
+          content={imageStreamChunks.slice(0, chunkCount).join("")}
+        />
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const doc = await waitFor(() => {
+      const iframe = canvasElement.querySelector("iframe");
+      expect(iframe?.contentDocument?.body.textContent).toContain(
+        "Lesson introduction"
+      );
+      return iframe!.contentDocument!;
+    });
+    await userEvent.click(canvasElement.querySelector("button")!);
+    const image = await waitFor(() => {
+      const element = doc.querySelector("img");
+      expect(element).not.toBeNull();
+      return element!;
+    });
+    await waitFor(() => {
+      expect(doc.querySelector(".sandbox-container")?.textContent).toContain(
+        "Detail 5"
+      );
+    });
+    expect(
+      canvasElement.querySelector("[data-stream-status]")
+    ).toHaveTextContent("Receiving lesson content");
+    expect(doc.querySelector("img")).toBe(image);
+    expect(doc.documentElement).not.toHaveAttribute("data-script-runs");
+
+    await waitFor(
+      () => {
+        expect(doc.querySelector(".sandbox-container")?.textContent).toContain(
+          "Detail 35"
+        );
+        expect(doc.documentElement).toHaveAttribute("data-script-runs", "1");
+      },
+      { timeout: 4000 }
+    );
+    doc.querySelector<HTMLButtonElement>("[data-diagram-button]")!.click();
+    expect(doc.querySelector("[data-diagram-result]")).toHaveTextContent(
+      "Diagram checked"
+    );
   },
 };
 

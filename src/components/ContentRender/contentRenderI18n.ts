@@ -9,8 +9,6 @@ export interface ContentRenderLocaleTexts {
   copyButtonText: string;
   copiedButtonText: string;
   sandboxLoadingText: string;
-  sandboxStyleLoadingText: string;
-  sandboxScriptLoadingText: string;
   sandboxFullscreenButtonText: string;
   sandboxExitFullscreenButtonText: string;
   sendButtonLabel: string;

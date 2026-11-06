@@ -364,7 +364,8 @@ export const StreamedLessonPreparation: Story = {
       expect(pointerEvents()).toBe("auto");
       expect(status()).toBeNull();
     });
-    await userEvent.click(answerButton());
+    // Check the handler without leaving focus inside the iframe during teardown.
+    answerButton().click();
     expect(doc.querySelector("[data-answer-result]")).toHaveTextContent(
       "Answer checked"
     );

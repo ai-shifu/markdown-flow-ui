@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.3.9 - 2026-11-06
+
+### Fixed
+
+- Keep streamed HTML visible while styles and scripts arrive. The empty HTML
+  sandbox and Slide audio buffering still show their loading indicators.
+- Continue displaying content after the first complete image during streaming.
+  Run complete scripts once the stream pauses so they initialize against the
+  latest content.
+
+### Compatibility
+
+- Remove the unused `sandboxStyleLoadingText` and `sandboxScriptLoadingText`
+  props from `ContentRender`, and `styleLoadingText` and `scriptLoadingText`
+  from `IframeSandboxProps` and `SandboxAppProps`. Remove these props from
+  existing calls when upgrading.
+
 ## 0.3.8 - 2026-11-04
 
 ### Fixed

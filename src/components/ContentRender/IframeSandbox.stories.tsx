@@ -273,8 +273,16 @@ const streamingImageSrc =
     '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="90"><rect width="160" height="90" fill="lightblue"/></svg>'
   );
 const imageStreamChunks = [
-  "<section><p>Lesson introduction</p>",
+  '<section><p>Lesson introduction</p><button type="button" data-diagram-button>Check diagram</button><output data-diagram-result></output>',
   `<img src="${streamingImageSrc}" alt="Lesson diagram" width="160" height="90">`,
+  `<script>
+    document.documentElement.dataset.scriptRuns = String(
+      Number(document.documentElement.dataset.scriptRuns || "0") + 1
+    );
+    document.querySelector("[data-diagram-button]").addEventListener("click", () => {
+      document.querySelector("[data-diagram-result]").textContent = "Diagram checked";
+    });
+  </script>`,
   ...Array.from({ length: 35 }, (_, index) => `<p>Detail ${index + 1}</p>`),
   "</section>",
 ];
@@ -335,6 +343,21 @@ export const StreamedImageWithFollowingContent: Story = {
       canvasElement.querySelector("[data-stream-status]")
     ).toHaveTextContent("Receiving lesson content");
     expect(doc.querySelector("img")).toBe(image);
+    expect(doc.documentElement).not.toHaveAttribute("data-script-runs");
+
+    await waitFor(
+      () => {
+        expect(doc.querySelector(".sandbox-container")?.textContent).toContain(
+          "Detail 35"
+        );
+        expect(doc.documentElement).toHaveAttribute("data-script-runs", "1");
+      },
+      { timeout: 4000 }
+    );
+    doc.querySelector<HTMLButtonElement>("[data-diagram-button]")!.click();
+    expect(doc.querySelector("[data-diagram-result]")).toHaveTextContent(
+      "Diagram checked"
+    );
   },
 };
 

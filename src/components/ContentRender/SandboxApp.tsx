@@ -105,7 +105,13 @@ const reuseRenderedImages = (
   });
 };
 
-const SandboxApp: React.FC<SandboxAppProps> = ({
+export const hasCompleteScriptTags = (html: string) => {
+  const openScriptCount = (html.match(/<script[\s>]/gi) || []).length;
+  const closeScriptCount = (html.match(/<\/script>/gi) || []).length;
+  return openScriptCount > 0 && openScriptCount === closeScriptCount;
+};
+
+const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
   html,
   locale,
   dir,
@@ -117,6 +123,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   stretchRootHeight = false,
   enableScaling = false,
   disableLoadingOverlay = false,
+  deferScripts = false,
 }) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -189,10 +196,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       node.setAttribute("rel", mergeAnchorRelValue(node.getAttribute("rel")));
     });
 
-    const openScriptCount = (html.match(/<script[\s>]/gi) || []).length;
-    const closeScriptCount = (html.match(/<\/script>/gi) || []).length;
-    const shouldExecuteScripts =
-      openScriptCount > 0 && openScriptCount === closeScriptCount;
+    const shouldExecuteScripts = !deferScripts && hasCompleteScriptTags(html);
 
     const resourceQueue: HTMLElement[] = [];
 
@@ -294,7 +298,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
           scriptNode.remove();
         }
       } else {
-        // Defer execution until all script tags are fully received
+        // Leave scripts out of partial and intermediate render frames.
         node.remove();
       }
     });
@@ -308,7 +312,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
       scriptContentObserver?.disconnect();
       container.removeEventListener("click", handleLinkClick, true);
     };
-  }, [html, resetToken, enableScaling]);
+  }, [html, resetToken, enableScaling, deferScripts]);
 
   const overlayMessage =
     !disableLoadingOverlay && !hasRenderedContent

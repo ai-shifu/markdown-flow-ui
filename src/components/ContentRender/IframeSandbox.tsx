@@ -6,7 +6,7 @@ import React, {
   useState,
 } from "react";
 import { createRoot, Root } from "react-dom/client";
-import SandboxApp from "./SandboxApp";
+import SandboxApp, { hasCompleteScriptTags } from "./SandboxApp";
 import { normalizeContentViewportMinHeight } from "./utils/content-viewport-min-height";
 import ContentRender from "./ContentRender";
 import {
@@ -225,12 +225,13 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       shouldProcessRootScreenHeight,
     ]
   );
-  const [renderHtmlContent, setRenderHtmlContent] = useState(
-    normalizedHtmlContent
+  const [{ html: renderHtmlContent, deferScripts }, setRenderFrame] = useState(
+    () => ({ html: normalizedHtmlContent, deferScripts: false })
   );
   const prevIncomingHtmlRef = useRef(normalizedHtmlContent);
-  const pendingHtmlRef = useRef(normalizedHtmlContent);
+  const pendingFrameRef = useRef({ html: renderHtmlContent, deferScripts });
   const deferRenderTimerRef = useRef<number | null>(null);
+  const deferScriptTimerRef = useRef<number | null>(null);
   const initialPaintFrameRef = useRef<number | null>(null);
   const renderViewportHeightCssRef = useRef<string | null>(null);
 
@@ -271,6 +272,12 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     deferRenderTimerRef.current = null;
   };
 
+  const clearDeferredScriptTimer = () => {
+    if (deferScriptTimerRef.current === null) return;
+    window.clearTimeout(deferScriptTimerRef.current);
+    deferScriptTimerRef.current = null;
+  };
+
   const clearInitialPaintFrames = () => {
     if (initialPaintFrameRef.current !== null) {
       window.cancelAnimationFrame(initialPaintFrameRef.current);
@@ -281,6 +288,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   useEffect(
     () => () => {
       clearDeferredRenderTimer();
+      clearDeferredScriptTimer();
       clearInitialPaintFrames();
     },
     []
@@ -294,22 +302,46 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       !!prevIncomingHtml &&
       normalizedHtmlContent.length > prevIncomingHtml.length &&
       normalizedHtmlContent.startsWith(prevIncomingHtml);
+    const isImageStream =
+      isAppendOnlyStream &&
+      COMPLETE_IMAGE_TAG_PATTERN.test(normalizedHtmlContent);
+    const nextFrame = {
+      html: normalizedHtmlContent,
+      deferScripts:
+        isImageStream && hasCompleteScriptTags(normalizedHtmlContent),
+    };
+    pendingFrameRef.current = nextFrame;
+    clearDeferredScriptTimer();
+
+    if (nextFrame.deferScripts) {
+      // Run complete scripts once the stream pauses, against the final DOM.
+      // Intermediate visual updates replace DOM nodes and must not rerun scripts.
+      deferScriptTimerRef.current = window.setTimeout(() => {
+        deferScriptTimerRef.current = null;
+        clearDeferredRenderTimer();
+        setRenderFrame({ html: nextFrame.html, deferScripts: false });
+      }, POST_IMAGE_STREAM_RENDER_INTERVAL_MS);
+    }
+
     // Show the first complete image immediately. Batch subsequent appends
     // without waiting for the stream to pause.
     const shouldDeferRender =
-      isAppendOnlyStream && COMPLETE_IMAGE_TAG_PATTERN.test(prevIncomingHtml);
+      isImageStream && COMPLETE_IMAGE_TAG_PATTERN.test(prevIncomingHtml);
 
     if (!shouldDeferRender) {
       clearDeferredRenderTimer();
-      pendingHtmlRef.current = normalizedHtmlContent;
-      setRenderHtmlContent(normalizedHtmlContent);
+      setRenderFrame((frame) =>
+        frame.html === nextFrame.html &&
+        frame.deferScripts === nextFrame.deferScripts
+          ? frame
+          : nextFrame
+      );
       return;
     }
 
-    pendingHtmlRef.current = normalizedHtmlContent;
     if (deferRenderTimerRef.current !== null) return;
     deferRenderTimerRef.current = window.setTimeout(() => {
-      setRenderHtmlContent(pendingHtmlRef.current);
+      setRenderFrame(pendingFrameRef.current);
       deferRenderTimerRef.current = null;
     }, POST_IMAGE_STREAM_RENDER_INTERVAL_MS);
   }, [normalizedHtmlContent]);
@@ -894,6 +926,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
         mode={mode}
         stretchRootHeight={shouldStretchRootHeight}
         enableScaling={shouldEnableScaling}
+        deferScripts={deferScripts}
       />
     );
 
@@ -929,6 +962,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     mode,
     shouldStretchRootHeight,
     shouldEnableScaling,
+    deferScripts,
   ]);
   const containerClassName = [
     `w-full relative content-render-iframe-sandbox content-render-iframe-sandbox--${type}`,

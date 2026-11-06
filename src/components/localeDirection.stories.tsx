@@ -978,20 +978,29 @@ export const SlideContentDirectionOverride: Story = {
           .querySelector(".content-render")!;
         expect(markdown).not.toBeNull();
         expect(getComputedStyle(markdown).direction).toBe(dir);
-        const interaction = canvas
-          .getByTestId("interaction-slide")
-          .querySelector(".slide-player__interaction-body .content-render")!;
+        const interactionSlide = canvas.getByTestId("interaction-slide");
+        const interaction = interactionSlide.querySelector(
+          ".slide-player__interaction-body .content-render"
+        )!;
         expect(interaction).not.toBeNull();
         expect(getComputedStyle(interaction).direction).toBe(dir);
         const inputs = interaction.querySelectorAll("textarea");
         expect(inputs).toHaveLength(2);
         for (const input of inputs)
           expect(getComputedStyle(input).direction).toBe(dir);
-        const interactionHeader = canvas
-          .getByTestId("interaction-slide")
-          .querySelector(".slide-player__interaction-header")!;
+        const interactionHeader = interactionSlide.querySelector(
+          ".slide-player__interaction-header"
+        )!;
+        const dragHandle = interactionSlide.querySelector(
+          ".slide-player__interaction-drag-handle"
+        )!;
+        const title = interactionHeader.querySelector(
+          ".slide-player__interaction-title"
+        )!;
         const headerStyle = getComputedStyle(interactionHeader);
-        expect(headerStyle.paddingTop).toBe("24px");
+        expect(title.getBoundingClientRect().top).toBeGreaterThan(
+          dragHandle.getBoundingClientRect().bottom
+        );
         expect(
           dir === "rtl" ? headerStyle.paddingRight : headerStyle.paddingLeft
         ).toBe("24px");

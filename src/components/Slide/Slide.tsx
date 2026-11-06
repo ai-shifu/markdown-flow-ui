@@ -8,7 +8,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { ChevronLeft, GripHorizontal } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 
 import { isSandboxInteractionMessage } from "../../lib/sandboxInteraction";
 import { cn } from "../../lib/utils";
@@ -263,13 +263,7 @@ const InteractionOverlayCard = memo(
         onPointerDown={onDragHandlePointerDown}
         onPointerMove={onDragHandlePointerMove}
         onPointerUp={onDragHandlePointerUp}
-      >
-        <span className="slide-player__interaction-drag-handle-icon">
-          <GripHorizontal aria-hidden="true" />
-          <GripHorizontal aria-hidden="true" />
-          <GripHorizontal aria-hidden="true" />
-        </span>
-      </button>
+      />
       <div className="slide-player__interaction-header">
         <p className="slide-player__interaction-title">{title}</p>
       </div>

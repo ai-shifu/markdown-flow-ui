@@ -4,8 +4,9 @@
 
 ### Fixed
 
-- Restore the 0.3.8 HTML click blocking, rendering, and script execution
-  behavior. Show a small preparation hint after 400 ms of continuous waiting.
+- Restore the 0.3.8 HTML loading card, rendering, and script execution
+  behavior. Keep the card and click blocking active until pending HTML has
+  rendered and updates have stopped for 400 ms.
 - Restore support for custom style and script loading messages.
 
 ## 0.3.9 - 2026-11-06

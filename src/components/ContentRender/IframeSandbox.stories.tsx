@@ -269,15 +269,11 @@ export const LateImageAndDomChanges: Story = {
 
 const lessonStreamChunks = [
   "<style>[data-check-answer] { color: darkblue; }</style>",
-  ...Array.from(
-    { length: 6 },
-    (_, index) => `<p>Lesson detail ${index + 1}</p>`
-  ),
+  "<p data-first-detail>First lesson detail</p>",
   "<p data-extra-detail>More lesson content</p><script data-answer-handler>",
-  'document.querySelector("[data-check-answer]").addEventListener("click", () => {',
-  '  const result = document.querySelector("[data-answer-result]");',
-  '  result.textContent = "Answer checked";',
-  "});",
+  `document.querySelector("[data-check-answer]").addEventListener("click", () => {
+    document.querySelector("[data-answer-result]").textContent = "Answer checked";
+  });`,
   "</script>",
 ];
 
@@ -295,11 +291,12 @@ export const StreamedLessonPreparation: Story = {
 
     useEffect(() => {
       if (!isReceiving) return;
+      // This gap used to be long enough for the overlay to unmount between chunks.
       const interval = window.setInterval(() => {
         setChunkCount((count) =>
           Math.min(count + 1, lessonStreamChunks.length)
         );
-      }, 100);
+      }, 270);
       return () => window.clearInterval(interval);
     }, [isReceiving]);
 
@@ -335,27 +332,37 @@ export const StreamedLessonPreparation: Story = {
     const pointerEvents = () =>
       doc.defaultView!.getComputedStyle(answerButton()).pointerEvents;
 
+    expect(status()).toBeNull();
     await userEvent.click(canvasElement.querySelector("button")!);
-    await waitFor(() => {
+    const overlay = await waitFor(() => {
+      const currentStatus = status();
+      expect(currentStatus).toHaveTextContent("Building styles...");
       expect(pointerEvents()).toBe("none");
-      expect(status()).toBeNull();
+      return currentStatus!;
     });
+    expect(overlay.querySelector("svg")).not.toBeNull();
 
     await waitFor(() => {
-      expect(status()).toHaveTextContent("Preparing content…");
+      expect(doc.querySelector("[data-first-detail]")).toBeVisible();
     });
-    expect(status()!.querySelector("svg")).toBeNull();
+    expect(status()).toBe(overlay);
 
     await waitFor(() => {
       expect(doc.querySelector("[data-extra-detail]")).toBeVisible();
+      expect(status()).toHaveTextContent("Building scripts cache...");
     });
+    expect(status()).toBe(overlay);
     expect(pointerEvents()).toBe("none");
     expect(doc.querySelector("script[data-answer-handler]")).toBeNull();
 
     await waitFor(() => {
+      expect(doc.querySelector("script[data-answer-handler]")).not.toBeNull();
+    });
+    expect(status()).toBe(overlay);
+
+    await waitFor(() => {
       expect(pointerEvents()).toBe("auto");
       expect(status()).toBeNull();
-      expect(doc.querySelector("script[data-answer-handler]")).not.toBeNull();
     });
     await userEvent.click(answerButton());
     expect(doc.querySelector("[data-answer-result]")).toHaveTextContent(

@@ -232,6 +232,9 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   const [renderHtmlContent, setRenderHtmlContent] = useState(
     normalizedHtmlContent
   );
+  const hasPendingHtml =
+    renderHtmlContent !== normalizedHtmlContent &&
+    COMPLETE_IMAGE_TAG_PATTERN.test(normalizedHtmlContent);
   const prevIncomingHtmlRef = useRef(normalizedHtmlContent);
   const pendingHtmlRef = useRef(normalizedHtmlContent);
   const deferRenderTimerRef = useRef<number | null>(null);
@@ -888,6 +891,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     root.render(
       <SandboxApp
         html={renderHtmlContent}
+        hasPendingHtml={hasPendingHtml}
         locale={locale}
         dir={sandboxDirection}
         lang={sandboxLanguage}
@@ -925,6 +929,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     };
   }, [
     renderHtmlContent,
+    hasPendingHtml,
     locale,
     sandboxDirection,
     sandboxLanguage,

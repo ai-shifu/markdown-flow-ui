@@ -1,11 +1,37 @@
 // @vitest-environment jsdom
 import React from "react";
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, expect, it } from "vitest";
+import { act, cleanup, render, screen } from "@testing-library/react";
+import { afterEach, expect, it, vi } from "vitest";
 import SandboxApp from "./SandboxApp";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 
 afterEach(cleanup);
+
+it("keeps the same loading card while the iframe holds newer HTML", () => {
+  vi.useFakeTimers();
+  try {
+    const html = "<style>p { color: navy; }</style><p>Lesson</p>";
+    const { container, rerender } = render(<SandboxApp html={html} />);
+    const card = screen.getByRole("status");
+    const content = container.querySelector<HTMLElement>(".sandbox-container");
+
+    act(() => vi.advanceTimersByTime(200));
+    rerender(<SandboxApp html={html} hasPendingHtml />);
+    act(() => vi.advanceTimersByTime(800));
+    expect(screen.getByRole("status")).toBe(card);
+    expect(content?.style.pointerEvents).toBe("none");
+
+    rerender(<SandboxApp html={html + "<p>Last chunk</p>"} />);
+    act(() => vi.advanceTimersByTime(399));
+    expect(screen.getByRole("status")).toBe(card);
+
+    act(() => vi.advanceTimersByTime(1));
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(content?.style.pointerEvents).toBe("");
+  } finally {
+    vi.useRealTimers();
+  }
+});
 
 it("honors direction overrides while keeping authored direction intact", () => {
   const { container, rerender } = render(

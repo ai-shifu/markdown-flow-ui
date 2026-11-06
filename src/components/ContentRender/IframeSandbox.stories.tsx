@@ -267,37 +267,36 @@ export const LateImageAndDomChanges: Story = {
   },
 };
 
-const streamingImageSrc =
-  "data:image/svg+xml," +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="90"><rect width="160" height="90" fill="lightblue"/></svg>'
-  );
-const imageStreamChunks = [
-  '<section><p>Lesson introduction</p><button type="button" data-diagram-button>Check diagram</button><output data-diagram-result></output>',
-  `<img src="${streamingImageSrc}" alt="Lesson diagram" width="160" height="90">`,
-  `<script>
-    document.documentElement.dataset.scriptRuns = String(
-      Number(document.documentElement.dataset.scriptRuns || "0") + 1
-    );
-    document.querySelector("[data-diagram-button]").addEventListener("click", () => {
-      document.querySelector("[data-diagram-result]").textContent = "Diagram checked";
-    });
-  </script>`,
-  ...Array.from({ length: 35 }, (_, index) => `<p>Detail ${index + 1}</p>`),
-  "</section>",
+const lessonStreamChunks = [
+  "<style>[data-check-answer] { color: darkblue; }</style>",
+  "<p data-first-detail>First lesson detail</p>",
+  "<p data-extra-detail>More lesson content</p><script data-answer-handler>",
+  `document.querySelector("[data-check-answer]").addEventListener("click", () => {
+    document.querySelector("[data-answer-result]").textContent = "Answer checked";
+  });`,
+  "</script>",
 ];
 
-export const StreamedImageWithFollowingContent: Story = {
-  args: { content: imageStreamChunks[0] },
+export const StreamedLessonPreparation: Story = {
+  args: {
+    content:
+      '<p data-introduction>Lesson introduction</p><button type="button" data-check-answer>Check answer</button><output data-answer-result></output>',
+    disableLoadingOverlay: false,
+    locale: "zh-CN",
+  },
   render: function Render(args) {
-    const [chunkCount, setChunkCount] = useState(1);
-    const isReceiving = chunkCount > 1 && chunkCount < imageStreamChunks.length;
+    const [chunkCount, setChunkCount] = useState(0);
+    const isReceiving =
+      chunkCount > 0 && chunkCount < lessonStreamChunks.length;
 
     useEffect(() => {
       if (!isReceiving) return;
+      // This gap used to be long enough for the overlay to unmount between chunks.
       const interval = window.setInterval(() => {
-        setChunkCount((count) => Math.min(count + 1, imageStreamChunks.length));
-      }, 45);
+        setChunkCount((count) =>
+          Math.min(count + 1, lessonStreamChunks.length)
+        );
+      }, 270);
       return () => window.clearInterval(interval);
     }, [isReceiving]);
 
@@ -306,57 +305,69 @@ export const StreamedImageWithFollowingContent: Story = {
         <button
           type="button"
           disabled={isReceiving}
-          onClick={() => setChunkCount(2)}
+          onClick={() => setChunkCount(1)}
         >
           Stream lesson content
         </button>
-        <p data-stream-status>
-          {isReceiving ? "Receiving lesson content" : "Stream idle"}
-        </p>
         <IframeSandbox
           {...args}
-          content={imageStreamChunks.slice(0, chunkCount).join("")}
+          content={
+            args.content + lessonStreamChunks.slice(0, chunkCount).join("")
+          }
         />
       </div>
     );
   },
   play: async ({ canvasElement }) => {
     const doc = await waitFor(() => {
-      const iframe = canvasElement.querySelector("iframe");
-      expect(iframe?.contentDocument?.body.textContent).toContain(
-        "Lesson introduction"
-      );
-      return iframe!.contentDocument!;
+      const frame = canvasElement.querySelector("iframe");
+      expect(
+        frame?.contentDocument?.querySelector("[data-introduction]")
+      ).toBeVisible();
+      return frame!.contentDocument!;
     });
-    await userEvent.click(canvasElement.querySelector("button")!);
-    const image = await waitFor(() => {
-      const element = doc.querySelector("img");
-      expect(element).not.toBeNull();
-      return element!;
-    });
-    await waitFor(() => {
-      expect(doc.querySelector(".sandbox-container")?.textContent).toContain(
-        "Detail 5"
-      );
-    });
-    expect(
-      canvasElement.querySelector("[data-stream-status]")
-    ).toHaveTextContent("Receiving lesson content");
-    expect(doc.querySelector("img")).toBe(image);
-    expect(doc.documentElement).not.toHaveAttribute("data-script-runs");
+    const status = () => doc.querySelector('[role="status"]');
+    const answerButton = () =>
+      doc.querySelector<HTMLButtonElement>("[data-check-answer]")!;
+    const pointerEvents = () =>
+      doc.defaultView!.getComputedStyle(answerButton()).pointerEvents;
 
-    await waitFor(
-      () => {
-        expect(doc.querySelector(".sandbox-container")?.textContent).toContain(
-          "Detail 35"
-        );
-        expect(doc.documentElement).toHaveAttribute("data-script-runs", "1");
-      },
-      { timeout: 4000 }
-    );
-    doc.querySelector<HTMLButtonElement>("[data-diagram-button]")!.click();
-    expect(doc.querySelector("[data-diagram-result]")).toHaveTextContent(
-      "Diagram checked"
+    expect(status()).toBeNull();
+    await userEvent.click(canvasElement.querySelector("button")!);
+    const overlay = await waitFor(() => {
+      const currentStatus = status();
+      expect(currentStatus).toHaveTextContent("正在生成幻灯片…");
+      expect(pointerEvents()).toBe("none");
+      return currentStatus!;
+    });
+    expect(overlay.querySelector("svg")).not.toBeNull();
+
+    await waitFor(() => {
+      expect(doc.querySelector("[data-first-detail]")).toBeVisible();
+    });
+    expect(status()).toBe(overlay);
+
+    await waitFor(() => {
+      expect(doc.querySelector("[data-extra-detail]")).toBeVisible();
+      expect(status()).toHaveTextContent("正在生成幻灯片…");
+    });
+    expect(status()).toBe(overlay);
+    expect(pointerEvents()).toBe("none");
+    expect(doc.querySelector("script[data-answer-handler]")).toBeNull();
+
+    await waitFor(() => {
+      expect(doc.querySelector("script[data-answer-handler]")).not.toBeNull();
+    });
+    expect(status()).toBe(overlay);
+
+    await waitFor(() => {
+      expect(pointerEvents()).toBe("auto");
+      expect(status()).toBeNull();
+    });
+    // Check the handler without leaving focus inside the iframe during teardown.
+    answerButton().click();
+    expect(doc.querySelector("[data-answer-result]")).toHaveTextContent(
+      "Answer checked"
     );
   },
 };

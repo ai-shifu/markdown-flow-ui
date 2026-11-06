@@ -1,53 +1,35 @@
 // @vitest-environment jsdom
 import React from "react";
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, expect, it } from "vitest";
+import { act, cleanup, render, screen } from "@testing-library/react";
+import { afterEach, expect, it, vi } from "vitest";
 import SandboxApp from "./SandboxApp";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 
 afterEach(cleanup);
 
-it("shows streamed HTML as it arrives without covering it during style or script updates", () => {
-  const styledHtml =
-    '<button type="button">Read the lesson</button><style data-sandbox-test>button { color: red; }</style>';
-  const partialScript = "<script data-sandbox-test>void 0;";
-  const loadingText = "Waiting for content";
-  const { rerender } = render(<SandboxApp html="" loadingText={loadingText} />);
-
+it("keeps the same loading card while the iframe holds newer HTML", () => {
+  vi.useFakeTimers();
   try {
-    expect(screen.getByRole("status").textContent).toContain(loadingText);
+    const html = "<style>p { color: navy; }</style><p>Lesson</p>";
+    const { container, rerender } = render(<SandboxApp html={html} />);
+    const card = screen.getByRole("status");
+    const content = container.querySelector<HTMLElement>(".sandbox-container");
 
-    rerender(<SandboxApp html={styledHtml} loadingText={loadingText} />);
-    expect(
-      screen.getByRole("button", { name: "Read the lesson" })
-    ).toBeTruthy();
-    expect(
-      document.head.querySelector("style[data-sandbox-test]")
-    ).not.toBeNull();
-    expect(screen.queryByRole("status")).toBeNull();
+    act(() => vi.advanceTimersByTime(200));
+    rerender(<SandboxApp html={html} hasPendingHtml />);
+    act(() => vi.advanceTimersByTime(800));
+    expect(screen.getByRole("status")).toBe(card);
+    expect(content?.style.pointerEvents).toBe("none");
 
-    rerender(
-      <SandboxApp html={styledHtml + partialScript} loadingText={loadingText} />
-    );
-    expect(
-      screen.getByRole("button", { name: "Read the lesson" })
-    ).toBeTruthy();
-    expect(document.body.querySelector("script[data-sandbox-test]")).toBeNull();
-    expect(screen.queryByRole("status")).toBeNull();
+    rerender(<SandboxApp html={html + "<p>Last chunk</p>"} />);
+    act(() => vi.advanceTimersByTime(399));
+    expect(screen.getByRole("status")).toBe(card);
 
-    rerender(
-      <SandboxApp
-        html={`${styledHtml}${partialScript}</script><p>More content</p>`}
-        loadingText={loadingText}
-      />
-    );
-    expect(screen.getByText("More content")).toBeTruthy();
-    expect(
-      document.body.querySelector("script[data-sandbox-test]")
-    ).not.toBeNull();
+    act(() => vi.advanceTimersByTime(1));
     expect(screen.queryByRole("status")).toBeNull();
+    expect(content?.style.pointerEvents).toBe("");
   } finally {
-    rerender(<SandboxApp html="" loadingText={loadingText} />);
+    vi.useRealTimers();
   }
 });
 

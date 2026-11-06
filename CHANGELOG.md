@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.10 - 2026-11-06
+
+### Fixed
+
+- Restore the 0.3.8 HTML loading card, rendering, and script execution
+  behavior. Keep the card and click blocking active until pending HTML has
+  rendered and updates have stopped for 400 ms.
+- Restore support for custom style and script loading messages.
+- Use a single default slide generation message throughout HTML loading.
+
 ## 0.3.9 - 2026-11-06
 
 ### Fixed

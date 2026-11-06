@@ -22,6 +22,8 @@ export interface SandboxAppProps {
   /** Overrides the wrapper direction while preserving explicit direction in authored HTML. */
   dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   loadingText?: string;
+  styleLoadingText?: string;
+  scriptLoadingText?: string;
   resetToken?: number;
   mode?: "content" | "blackboard";
   hasRootVhHeight?: boolean;
@@ -45,6 +47,8 @@ const IMAGE_REUSE_ATTRIBUTES = [
   "referrerpolicy",
   "fetchpriority",
 ];
+
+const RESOURCE_SETTLE_MS = 400;
 
 const getImageReuseKey = (image: HTMLImageElement) =>
   IMAGE_REUSE_ATTRIBUTES.map(
@@ -105,28 +109,27 @@ const reuseRenderedImages = (
   });
 };
 
-export const hasCompleteScriptTags = (html: string) => {
-  const openScriptCount = (html.match(/<script[\s>]/gi) || []).length;
-  const closeScriptCount = (html.match(/<\/script>/gi) || []).length;
-  return openScriptCount > 0 && openScriptCount === closeScriptCount;
-};
-
-const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
+const SandboxApp: React.FC<SandboxAppProps & { hasPendingHtml?: boolean }> = ({
   html,
+  hasPendingHtml = false,
   locale,
   dir,
   lang,
   loadingText,
+  styleLoadingText,
+  scriptLoadingText,
   resetToken = 0,
   mode = "content",
   hasRootVhHeight = false,
   stretchRootHeight = false,
   enableScaling = false,
   disableLoadingOverlay = false,
-  deferScripts = false,
 }) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [loadingResource, setLoadingResource] = useState<
+    "style" | "script" | null
+  >(null);
   const [hasRenderedContent, setHasRenderedContent] = useState(false);
   const appendedStylesRef = useRef<HTMLStyleElement[]>([]);
   const appendedScriptsRef = useRef<HTMLScriptElement[]>([]);
@@ -135,7 +138,7 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
   useEffect(() => {
     const doc = containerRef.current?.ownerDocument;
     if (!doc) return;
-    const styleId = "sandbox-layout-style";
+    const styleId = "sandbox-spinner-style";
     let styleEl = doc.getElementById(styleId) as HTMLStyleElement | null;
     if (!styleEl) {
       styleEl = doc.createElement("style");
@@ -196,7 +199,10 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
       node.setAttribute("rel", mergeAnchorRelValue(node.getAttribute("rel")));
     });
 
-    const shouldExecuteScripts = !deferScripts && hasCompleteScriptTags(html);
+    const openScriptCount = (html.match(/<script[\s>]/gi) || []).length;
+    const closeScriptCount = (html.match(/<\/script>/gi) || []).length;
+    const shouldExecuteScripts =
+      openScriptCount > 0 && openScriptCount === closeScriptCount;
 
     const resourceQueue: HTMLElement[] = [];
 
@@ -220,9 +226,13 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
     });
     reuseRenderedImages(wrapper, reusableImages);
 
+    const hasStyles = resourceQueue.some(
+      (node) => node.tagName.toLowerCase() === "style"
+    );
     const hasScripts = resourceQueue.some(
       (node) => node.tagName.toLowerCase() === "script"
     );
+    setLoadingResource(hasScripts ? "script" : hasStyles ? "style" : null);
 
     const contentNodes = Array.from(wrapper.childNodes);
     const hasInitialContent = contentNodes.length > 0;
@@ -298,7 +308,7 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
           scriptNode.remove();
         }
       } else {
-        // Leave scripts out of partial and intermediate render frames.
+        // Defer execution until all script tags are fully received
         node.remove();
       }
     });
@@ -312,12 +322,43 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
       scriptContentObserver?.disconnect();
       container.removeEventListener("click", handleLinkClick, true);
     };
-  }, [html, resetToken, enableScaling, deferScripts]);
+  }, [html, resetToken, enableScaling]);
 
-  const overlayMessage =
-    !disableLoadingOverlay && !hasRenderedContent
-      ? loadingText || localeTexts.sandboxLoadingText
-      : null;
+  useEffect(() => {
+    if (disableLoadingOverlay) {
+      setLoadingResource(null);
+      return;
+    }
+    if (!loadingResource || hasPendingHtml) return;
+
+    // Dismiss after the last update, including any HTML held by the iframe.
+    const timer = window.setTimeout(
+      () => setLoadingResource(null),
+      RESOURCE_SETTLE_MS
+    );
+    return () => window.clearTimeout(timer);
+  }, [
+    disableLoadingOverlay,
+    enableScaling,
+    hasPendingHtml,
+    html,
+    loadingResource,
+    resetToken,
+  ]);
+
+  const overlayMessage = (() => {
+    if (disableLoadingOverlay) {
+      return null;
+    }
+
+    if (loadingResource === "script" && scriptLoadingText)
+      return scriptLoadingText;
+    if (loadingResource === "style" && styleLoadingText)
+      return styleLoadingText;
+    if (loadingResource || !hasRenderedContent)
+      return loadingText || localeTexts.sandboxLoadingText;
+    return null;
+  })();
 
   const isBlackboard = mode === "blackboard";
   const shouldStretchRootHeight = isBlackboard && stretchRootHeight;

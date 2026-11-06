@@ -3252,7 +3252,7 @@ export const DesktopInteractionOverlayPointerDrag: Story = {
     docs: {
       description: {
         story:
-          "Exercises desktop dragging near the edge of the full-width drag strip and verifies that the interaction body does not start a drag.",
+          "Exercises dragging near the edge of the full-width strip. In forced-colors mode, the strip uses a system-colored bottom border to stay visible.",
       },
     },
   },

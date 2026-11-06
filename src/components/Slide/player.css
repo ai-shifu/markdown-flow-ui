@@ -433,6 +433,12 @@
   cursor: grabbing;
 }
 
+@media (forced-colors: active) {
+  .slide-player__interaction-drag-handle {
+    border-bottom: 1px solid ButtonText;
+  }
+}
+
 .slide-player__interaction-header {
   padding-block-start: 8px;
   padding-inline: 24px 56px;

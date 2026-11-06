@@ -154,6 +154,7 @@ interface ContentRenderProps {
   defaultButtonText?: string;
   defaultInputText?: string;
   readonly?: boolean;
+  sandboxStreaming?: boolean;
   onTypeFinished?: () => void;
 }
 ```
@@ -164,6 +165,9 @@ interface ContentRenderProps {
 - `typingSpeed` - Animation speed (default: 30)
 - `enableTypewriter` - Enable animation (default: false)
 - `readonly` - Make interactive elements read-only
+- `sandboxStreaming` - Signal that more HTML may arrive for this block. Sandbox
+  scripts and controls wait while the HTML continues to render. Clear the flag
+  when the block finishes streaming.
 - `onTypeFinished` - Called when typing completes
 
 **Supported Markdown:**

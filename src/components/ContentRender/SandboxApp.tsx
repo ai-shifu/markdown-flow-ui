@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import LoadingOverlayCard from "../ui/loading-overlay-card";
 import {
   getMarkdownFlowDirection,
   getMarkdownFlowLanguage,
@@ -28,6 +27,8 @@ export interface SandboxAppProps {
   stretchRootHeight?: boolean;
   enableScaling?: boolean;
   disableLoadingOverlay?: boolean;
+  /** Whether more HTML may arrive for this sandbox. */
+  streaming?: boolean;
 }
 
 const IMAGE_REUSE_ATTRIBUTES = [
@@ -111,6 +112,19 @@ export const hasCompleteScriptTags = (html: string) => {
   return openScriptCount > 0 && openScriptCount === closeScriptCount;
 };
 
+const INTERACTION_HINT_DELAY_MS = 400;
+
+const loadingHintStyle: React.CSSProperties = {
+  maxWidth: "calc(100% - 1rem)",
+  padding: "0.25rem 0.5rem",
+  borderRadius: "0.375rem",
+  backgroundColor: "#f1f5f9",
+  color: "#334155",
+  fontSize: "0.75rem",
+  lineHeight: 1.4,
+  pointerEvents: "none",
+};
+
 const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
   html,
   locale,
@@ -123,14 +137,35 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
   stretchRootHeight = false,
   enableScaling = false,
   disableLoadingOverlay = false,
+  streaming = false,
   deferScripts = false,
 }) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
   const containerRef = useRef<HTMLDivElement>(null);
   const [hasRenderedContent, setHasRenderedContent] = useState(false);
+  const [hasPendingScripts, setHasPendingScripts] = useState(false);
+  const [showLoadingHint, setShowLoadingHint] = useState(false);
   const appendedStylesRef = useRef<HTMLStyleElement[]>([]);
   const appendedScriptsRef = useRef<HTMLScriptElement[]>([]);
   const prevResetTokenRef = useRef(resetToken);
+  const shouldExecuteScripts =
+    !streaming && !deferScripts && hasCompleteScriptTags(html);
+  const isPreparingInteraction = streaming || hasPendingScripts;
+  const isLoadingOverlayActive =
+    !disableLoadingOverlay && (isPreparingInteraction || !hasRenderedContent);
+
+  useEffect(() => {
+    if (!isLoadingOverlayActive) {
+      setShowLoadingHint(false);
+      return;
+    }
+
+    const timer = window.setTimeout(
+      () => setShowLoadingHint(true),
+      INTERACTION_HINT_DELAY_MS
+    );
+    return () => window.clearTimeout(timer);
+  }, [isLoadingOverlayActive]);
 
   useEffect(() => {
     const doc = containerRef.current?.ownerDocument;
@@ -196,8 +231,6 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
       node.setAttribute("rel", mergeAnchorRelValue(node.getAttribute("rel")));
     });
 
-    const shouldExecuteScripts = !deferScripts && hasCompleteScriptTags(html);
-
     const resourceQueue: HTMLElement[] = [];
 
     Array.from(wrapper.querySelectorAll("style, script")).forEach((node) => {
@@ -223,6 +256,20 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
     const hasScripts = resourceQueue.some(
       (node) => node.tagName.toLowerCase() === "script"
     );
+    const scriptsPending = hasScripts && !shouldExecuteScripts;
+    setHasPendingScripts(scriptsPending);
+    if (streaming || scriptsPending) {
+      // Render the frame while its scripts arrive, but keep controls from
+      // accepting input before their handlers can be installed.
+      wrapper
+        .querySelectorAll("button, input, select, textarea")
+        .forEach((control) => control.setAttribute("disabled", ""));
+      wrapper
+        .querySelectorAll(
+          'a[href], [role="button"]:not(button, input, select, textarea)'
+        )
+        .forEach((control) => control.setAttribute("inert", ""));
+    }
 
     const contentNodes = Array.from(wrapper.childNodes);
     const hasInitialContent = contentNodes.length > 0;
@@ -312,11 +359,14 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
       scriptContentObserver?.disconnect();
       container.removeEventListener("click", handleLinkClick, true);
     };
-  }, [html, resetToken, enableScaling, deferScripts]);
+  }, [html, resetToken, enableScaling, shouldExecuteScripts, streaming]);
 
   const overlayMessage =
-    !disableLoadingOverlay && !hasRenderedContent
-      ? loadingText || localeTexts.sandboxLoadingText
+    isLoadingOverlayActive &&
+    (showLoadingHint || (!isPreparingInteraction && !html.trim()))
+      ? isPreparingInteraction
+        ? localeTexts.sandboxPreparingText
+        : loadingText || localeTexts.sandboxLoadingText
       : null;
 
   const isBlackboard = mode === "blackboard";
@@ -335,7 +385,7 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
         : "flex-start",
   };
   const sandboxContainerStyle: React.CSSProperties = {
-    pointerEvents: overlayMessage ? "none" : undefined,
+    pointerEvents: isLoadingOverlayActive ? "none" : undefined,
     margin: isBlackboard ? undefined : "auto 0",
     width: "100%",
     height: shouldStretchRootHeight ? "100%" : undefined,
@@ -350,15 +400,17 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
       dir={dir ?? getMarkdownFlowDirection(locale)}
       lang={lang ?? getMarkdownFlowLanguage(locale)}
       style={sandboxWrapperStyle}
-      aria-busy={!!overlayMessage}
     >
       <div
         ref={containerRef}
         className="sandbox-container"
+        aria-busy={isLoadingOverlayActive}
         style={sandboxContainerStyle}
       />
-      {overlayMessage && (
+      {isLoadingOverlayActive && (
         <div
+          data-sandbox-loading-overlay=""
+          onClick={(event) => event.stopPropagation()}
           style={{
             position: "absolute",
             inset: 0,
@@ -366,10 +418,14 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            pointerEvents: "none",
+            cursor: "wait",
           }}
         >
-          <LoadingOverlayCard message={overlayMessage} />
+          {overlayMessage && (
+            <div role="status" style={loadingHintStyle}>
+              {overlayMessage}
+            </div>
+          )}
         </div>
       )}
     </div>

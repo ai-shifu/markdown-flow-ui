@@ -68,6 +68,8 @@ export interface IframeSandboxProps {
   replaceRootScreenHeightWithFull?: boolean;
   enableScaling?: boolean;
   disableLoadingOverlay?: boolean;
+  /** Whether more HTML may arrive for this sandbox. */
+  streaming?: boolean;
 }
 
 const replaceRootScreenHeightToken = (className: string) =>
@@ -133,6 +135,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   replaceRootScreenHeightWithFull = false,
   enableScaling = false,
   disableLoadingOverlay = false,
+  streaming = false,
 }) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
   const direction = dir ?? getMarkdownFlowDirection(locale);
@@ -225,11 +228,19 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       shouldProcessRootScreenHeight,
     ]
   );
-  const [{ html: renderHtmlContent, deferScripts }, setRenderFrame] = useState(
-    () => ({ html: normalizedHtmlContent, deferScripts: false })
-  );
+  const [renderFrame, setRenderFrame] = useState(() => ({
+    html: normalizedHtmlContent,
+    deferScripts: false,
+    streaming,
+  }));
+  const {
+    html: renderHtmlContent,
+    deferScripts,
+    streaming: renderStreaming,
+  } = renderFrame;
   const prevIncomingHtmlRef = useRef(normalizedHtmlContent);
-  const pendingFrameRef = useRef({ html: renderHtmlContent, deferScripts });
+  const prevStreamingRef = useRef(streaming);
+  const pendingFrameRef = useRef(renderFrame);
   const deferRenderTimerRef = useRef<number | null>(null);
   const deferScriptTimerRef = useRef<number | null>(null);
   const initialPaintFrameRef = useRef<number | null>(null);
@@ -297,6 +308,8 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   useEffect(() => {
     const prevIncomingHtml = prevIncomingHtmlRef.current;
     prevIncomingHtmlRef.current = normalizedHtmlContent;
+    const streamingChanged = prevStreamingRef.current !== streaming;
+    prevStreamingRef.current = streaming;
 
     const isAppendOnlyStream =
       !!prevIncomingHtml &&
@@ -308,7 +321,11 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     const nextFrame = {
       html: normalizedHtmlContent,
       deferScripts:
-        isImageStream && hasCompleteScriptTags(normalizedHtmlContent),
+        !streaming &&
+        !streamingChanged &&
+        isImageStream &&
+        hasCompleteScriptTags(normalizedHtmlContent),
+      streaming,
     };
     pendingFrameRef.current = nextFrame;
     clearDeferredScriptTimer();
@@ -319,20 +336,23 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       deferScriptTimerRef.current = window.setTimeout(() => {
         deferScriptTimerRef.current = null;
         clearDeferredRenderTimer();
-        setRenderFrame({ html: nextFrame.html, deferScripts: false });
+        setRenderFrame({ ...nextFrame, deferScripts: false });
       }, POST_IMAGE_STREAM_RENDER_INTERVAL_MS);
     }
 
-    // Show the first complete image immediately. Batch subsequent appends
-    // without waiting for the stream to pause.
+    // Show the first complete image and stream transitions immediately. Apply
+    // the stream flag with its HTML so old controls cannot unlock on completion.
     const shouldDeferRender =
-      isImageStream && COMPLETE_IMAGE_TAG_PATTERN.test(prevIncomingHtml);
+      !streamingChanged &&
+      isImageStream &&
+      COMPLETE_IMAGE_TAG_PATTERN.test(prevIncomingHtml);
 
     if (!shouldDeferRender) {
       clearDeferredRenderTimer();
       setRenderFrame((frame) =>
         frame.html === nextFrame.html &&
-        frame.deferScripts === nextFrame.deferScripts
+        frame.deferScripts === nextFrame.deferScripts &&
+        frame.streaming === nextFrame.streaming
           ? frame
           : nextFrame
       );
@@ -344,7 +364,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       setRenderFrame(pendingFrameRef.current);
       deferRenderTimerRef.current = null;
     }, POST_IMAGE_STREAM_RENDER_INTERVAL_MS);
-  }, [normalizedHtmlContent]);
+  }, [normalizedHtmlContent, streaming]);
 
   const rootViewportHeightCss = React.useMemo(() => {
     if (!shouldMeasureDynamicHeight) {
@@ -425,7 +445,13 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
 
     const shouldBridgeSandboxInteraction =
       isBlackboardMode && type === "sandbox";
-    const handleSandboxClick = () => emitSandboxInteraction("click");
+    const handleSandboxClick = (event: MouseEvent) => {
+      if (
+        event.target !== doc.querySelector("[data-sandbox-loading-overlay]")
+      ) {
+        emitSandboxInteraction("click");
+      }
+    };
 
     if (shouldBridgeSandboxInteraction) {
       doc.addEventListener("click", handleSandboxClick, true);
@@ -926,6 +952,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
         mode={mode}
         stretchRootHeight={shouldStretchRootHeight}
         enableScaling={shouldEnableScaling}
+        streaming={renderStreaming}
         deferScripts={deferScripts}
       />
     );
@@ -962,6 +989,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     mode,
     shouldStretchRootHeight,
     shouldEnableScaling,
+    renderStreaming,
     deferScripts,
   ]);
   const containerClassName = [
@@ -1014,6 +1042,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
             dir={direction}
             lang={language}
             disableSandboxLoadingOverlay={disableLoadingOverlay}
+            sandboxStreaming={streaming}
           />
         </div>
       ) : (

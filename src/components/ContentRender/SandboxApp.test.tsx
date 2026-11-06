@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
 import React from "react";
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, expect, it } from "vitest";
+import { act, cleanup, render, screen } from "@testing-library/react";
+import { afterEach, expect, it, vi } from "vitest";
 import SandboxApp from "./SandboxApp";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 
 afterEach(cleanup);
 
-it("shows streamed HTML as it arrives without covering it during style or script updates", () => {
+it("shows streamed HTML before its script is complete and defers executing the script", () => {
   const styledHtml =
     '<button type="button">Read the lesson</button><style data-sandbox-test>button { color: red; }</style>';
   const partialScript = "<script data-sandbox-test>void 0;";
@@ -32,6 +32,7 @@ it("shows streamed HTML as it arrives without covering it during style or script
     expect(
       screen.getByRole("button", { name: "Read the lesson" })
     ).toBeTruthy();
+    expect(screen.getByRole("button").hasAttribute("disabled")).toBe(true);
     expect(document.body.querySelector("script[data-sandbox-test]")).toBeNull();
     expect(screen.queryByRole("status")).toBeNull();
 
@@ -48,6 +49,43 @@ it("shows streamed HTML as it arrives without covering it during style or script
     expect(screen.queryByRole("status")).toBeNull();
   } finally {
     rerender(<SandboxApp html="" loadingText={loadingText} />);
+  }
+});
+
+it("blocks immediately and shows one delayed message across streamed frames", () => {
+  vi.useFakeTimers();
+  try {
+    const html = '<div><button type="button">Check answer</button></div>';
+    const { container, rerender } = render(
+      <SandboxApp html={html} streaming locale="zh-CN" />
+    );
+    const getOverlay = () =>
+      container.querySelector("[data-sandbox-loading-overlay]");
+    const overlay = getOverlay();
+    expect(overlay).not.toBeNull();
+    expect(screen.getByRole("button").hasAttribute("disabled")).toBe(true);
+    expect(screen.queryByRole("status")).toBeNull();
+
+    act(() => vi.advanceTimersByTime(250));
+    rerender(
+      <SandboxApp html={`${html}<p>More</p>`} streaming locale="zh-CN" />
+    );
+    act(() => vi.advanceTimersByTime(150));
+    const hint = screen.getByRole("status");
+    expect(hint.textContent).toBe("正在准备内容…");
+    expect(getOverlay()).toBe(overlay);
+
+    const finalHtml = `${html}<p>More content</p>`;
+    rerender(<SandboxApp html={finalHtml} streaming locale="zh-CN" />);
+    expect(screen.getByRole("status")).toBe(hint);
+    expect(screen.getByText("More content")).toBeTruthy();
+
+    rerender(<SandboxApp html={finalHtml} locale="zh-CN" />);
+    expect(getOverlay()).toBeNull();
+    expect(screen.getByRole("button").hasAttribute("disabled")).toBe(false);
+  } finally {
+    cleanup();
+    vi.useRealTimers();
   }
 });
 

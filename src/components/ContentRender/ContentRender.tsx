@@ -129,6 +129,8 @@ export interface ContentRenderProps {
   sandboxLoadingText?: string;
   // Disable sandbox loading overlays when upper layers have already entered an error state
   disableSandboxLoadingOverlay?: boolean;
+  /** Whether more HTML may arrive for this content block. */
+  sandboxStreaming?: boolean;
   // Fullscreen button text for iframe sandbox
   sandboxFullscreenButtonText?: string;
   // Exit fullscreen button text for iframe sandbox
@@ -645,6 +647,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   copiedButtonText,
   sandboxLoadingText,
   disableSandboxLoadingOverlay = false,
+  sandboxStreaming = false,
   sandboxFullscreenButtonText,
   sandboxExitFullscreenButtonText,
   sandboxMode = "content",
@@ -1392,6 +1395,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
                 lang={language}
                 loadingText={sandboxLoadingText}
                 disableLoadingOverlay={disableSandboxLoadingOverlay}
+                streaming={sandboxStreaming}
                 fullScreenButtonText={resolvedSandboxFullscreenButtonText}
                 exitFullScreenButtonText={
                   resolvedSandboxExitFullscreenButtonText

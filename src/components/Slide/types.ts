@@ -39,6 +39,8 @@ export interface Element {
   content: React.ReactNode;
   type: ElementType;
   is_renderable?: boolean;
+  /** Whether more HTML may arrive for this element. */
+  is_html_streaming?: boolean;
   is_new?: boolean;
   is_marker?: boolean;
   sequence_number?: number;

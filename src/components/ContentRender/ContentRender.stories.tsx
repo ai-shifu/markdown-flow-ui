@@ -2657,7 +2657,13 @@ export const HTMLDemo: Story = {
       };
     }, []);
 
-    return <ContentRender {...args} content={streamContent} />;
+    return (
+      <ContentRender
+        {...args}
+        content={streamContent}
+        sandboxStreaming={streamContent.length < HTML_DEMO_STREAM_SOURCE.length}
+      />
+    );
   },
 };
 

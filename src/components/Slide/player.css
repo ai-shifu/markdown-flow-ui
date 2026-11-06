@@ -406,14 +406,14 @@
   border: 0;
   border-radius: 9999px;
   background: transparent;
-  color: color-mix(in srgb, var(--foreground) 42%, var(--border));
+  color: color-mix(in srgb, var(--foreground) 24%, var(--border));
   cursor: grab;
   touch-action: none;
 }
 
 .slide-player__interaction-drag-handle::before {
   content: "";
-  width: 96px;
+  width: 132px;
   max-width: 40%;
   height: 3px;
   border-radius: 9999px;
@@ -422,7 +422,7 @@
 }
 
 .slide-player__interaction-drag-handle:hover {
-  color: color-mix(in srgb, var(--foreground) 56%, var(--border));
+  color: color-mix(in srgb, var(--foreground) 42%, var(--border));
 }
 
 .slide-player__interaction-drag-handle:active {

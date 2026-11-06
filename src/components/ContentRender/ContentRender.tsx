@@ -127,9 +127,9 @@ export interface ContentRenderProps {
   dynamicInteractionFormat?: string;
   // Loading text before first HTML block renders inside iframe (i18n support)
   sandboxLoadingText?: string;
-  // Loading text while styles are being generated inside iframe
+  /** @deprecated Style loading overlays are no longer shown. */
   sandboxStyleLoadingText?: string;
-  // Loading text while scripts are being cached/executed inside iframe
+  /** @deprecated Script loading overlays are no longer shown. */
   sandboxScriptLoadingText?: string;
   // Disable sandbox loading overlays when upper layers have already entered an error state
   disableSandboxLoadingOverlay?: boolean;
@@ -648,8 +648,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   copyButtonText,
   copiedButtonText,
   sandboxLoadingText,
-  sandboxStyleLoadingText,
-  sandboxScriptLoadingText,
   disableSandboxLoadingOverlay = false,
   sandboxFullscreenButtonText,
   sandboxExitFullscreenButtonText,
@@ -1397,8 +1395,6 @@ const ContentRender: React.FC<ContentRenderProps> = ({
                 dir={direction}
                 lang={language}
                 loadingText={sandboxLoadingText}
-                styleLoadingText={sandboxStyleLoadingText}
-                scriptLoadingText={sandboxScriptLoadingText}
                 disableLoadingOverlay={disableSandboxLoadingOverlay}
                 fullScreenButtonText={resolvedSandboxFullscreenButtonText}
                 exitFullScreenButtonText={

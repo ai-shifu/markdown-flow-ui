@@ -48,7 +48,7 @@ const loadBlackboardVendor = () => {
 };
 
 const COMPLETE_IMAGE_TAG_PATTERN = /<img\b[^>]*>/i;
-const POST_IMAGE_STREAM_DEBOUNCE_MS = 180;
+const POST_IMAGE_STREAM_RENDER_INTERVAL_MS = 180;
 const SANDBOX_INTERACTION_THROTTLE_MS = 240;
 
 export interface IframeSandboxProps {
@@ -60,7 +60,9 @@ export interface IframeSandboxProps {
   /** Overrides locale-derived direction without replacing authored HTML direction. */
   dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   loadingText?: string;
+  /** @deprecated Style loading overlays are no longer shown. */
   styleLoadingText?: string;
+  /** @deprecated Script loading overlays are no longer shown. */
   scriptLoadingText?: string;
   fullScreenButtonText?: string;
   exitFullScreenButtonText?: string;
@@ -128,8 +130,6 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   lang,
   dir,
   loadingText,
-  styleLoadingText,
-  scriptLoadingText,
   fullScreenButtonText,
   exitFullScreenButtonText,
   hideFullScreen = false,
@@ -298,10 +298,10 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       !!prevIncomingHtml &&
       normalizedHtmlContent.length > prevIncomingHtml.length &&
       normalizedHtmlContent.startsWith(prevIncomingHtml);
-    const containsCompleteImage = COMPLETE_IMAGE_TAG_PATTERN.test(
-      normalizedHtmlContent
-    );
-    const shouldDeferRender = isAppendOnlyStream && containsCompleteImage;
+    // Show the first complete image immediately. Batch subsequent appends
+    // without waiting for the stream to pause.
+    const shouldDeferRender =
+      isAppendOnlyStream && COMPLETE_IMAGE_TAG_PATTERN.test(prevIncomingHtml);
 
     if (!shouldDeferRender) {
       clearDeferredRenderTimer();
@@ -311,11 +311,11 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     }
 
     pendingHtmlRef.current = normalizedHtmlContent;
-    clearDeferredRenderTimer();
+    if (deferRenderTimerRef.current !== null) return;
     deferRenderTimerRef.current = window.setTimeout(() => {
       setRenderHtmlContent(pendingHtmlRef.current);
       deferRenderTimerRef.current = null;
-    }, POST_IMAGE_STREAM_DEBOUNCE_MS);
+    }, POST_IMAGE_STREAM_RENDER_INTERVAL_MS);
   }, [normalizedHtmlContent]);
 
   const rootViewportHeightCss = React.useMemo(() => {
@@ -892,8 +892,6 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
         dir={sandboxDirection}
         lang={sandboxLanguage}
         loadingText={loadingText}
-        styleLoadingText={styleLoadingText}
-        scriptLoadingText={scriptLoadingText}
         disableLoadingOverlay={disableLoadingOverlay}
         resetToken={resetToken}
         hasRootVhHeight={hasRootVhHeight}
@@ -929,8 +927,6 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     sandboxDirection,
     sandboxLanguage,
     loadingText,
-    styleLoadingText,
-    scriptLoadingText,
     resetToken,
     disableLoadingOverlay,
     hasRootVhHeight,

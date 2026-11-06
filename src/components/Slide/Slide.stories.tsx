@@ -5181,6 +5181,11 @@ export const StreamingSpeakableLoadingOnlySlide: Story = {
       <StreamingSlidePreview className="w-full" {...args} />
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    const audioStatus =
+      await within(canvasElement).findByText("Audio buffering...");
+    await expect(audioStatus.closest('[role="status"]')).toBeVisible();
+  },
 };
 
 export const FullViewportSingleSlideWithSSE: Story = {

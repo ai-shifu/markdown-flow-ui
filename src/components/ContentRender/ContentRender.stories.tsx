@@ -2665,8 +2665,6 @@ export const HTMLDemoIframeOnly: Story = {
   name: "HTML Demo (Iframe Only)",
   args: {
     sandboxLoadingText: "正在生成动画...",
-    sandboxStyleLoadingText: "正在生成样式...",
-    sandboxScriptLoadingText: "正在生成脚本...",
     sandboxFullscreenButtonText: "全屏浏览",
     sandboxMode: "blackboard",
   },
@@ -2737,8 +2735,6 @@ export const HTMLDemoIframeOnly: Story = {
             }
             className="content-render-iframe"
             loadingText={args.sandboxLoadingText}
-            styleLoadingText={args.sandboxStyleLoadingText}
-            scriptLoadingText={args.sandboxScriptLoadingText}
             fullScreenButtonText={args.sandboxFullscreenButtonText}
             mode={args.sandboxMode}
           />
@@ -2750,8 +2746,6 @@ export const HTMLDemoIframeOnly: Story = {
             content={codeContent}
             className="content-render-iframe"
             loadingText={args.sandboxLoadingText}
-            styleLoadingText={args.sandboxStyleLoadingText}
-            scriptLoadingText={args.sandboxScriptLoadingText}
             fullScreenButtonText={args.sandboxFullscreenButtonText}
             mode={args.sandboxMode}
           />
@@ -2763,8 +2757,6 @@ export const HTMLDemoIframeOnly: Story = {
             content={svgContent}
             className="content-render-iframe"
             loadingText={args.sandboxLoadingText}
-            styleLoadingText={args.sandboxStyleLoadingText}
-            scriptLoadingText={args.sandboxScriptLoadingText}
             fullScreenButtonText={args.sandboxFullscreenButtonText}
             mode={args.sandboxMode}
           />
@@ -2776,8 +2768,6 @@ export const HTMLDemoIframeOnly: Story = {
             content={mermaidContent}
             className="content-render-iframe"
             loadingText={args.sandboxLoadingText}
-            styleLoadingText={args.sandboxStyleLoadingText}
-            scriptLoadingText={args.sandboxScriptLoadingText}
             fullScreenButtonText={args.sandboxFullscreenButtonText}
             mode={args.sandboxMode}
           />
@@ -2789,8 +2779,6 @@ export const HTMLDemoIframeOnly: Story = {
             content={imageContent}
             className="content-render-iframe"
             loadingText={args.sandboxLoadingText}
-            styleLoadingText={args.sandboxStyleLoadingText}
-            scriptLoadingText={args.sandboxScriptLoadingText}
             fullScreenButtonText={args.sandboxFullscreenButtonText}
             mode={args.sandboxMode}
           />
@@ -2802,8 +2790,6 @@ export const HTMLDemoIframeOnly: Story = {
             content={tableContent}
             className="content-render-iframe"
             loadingText={args.sandboxLoadingText}
-            styleLoadingText={args.sandboxStyleLoadingText}
-            scriptLoadingText={args.sandboxScriptLoadingText}
             fullScreenButtonText={args.sandboxFullscreenButtonText}
             mode={args.sandboxMode}
           />
@@ -2815,8 +2801,6 @@ export const HTMLDemoIframeOnly: Story = {
             content={`<div class=\"w-full h-screen p-[4vmin] bg-gradient-to-br from-sky-50 to-blue-100 flex flex-col  justify-[safe_center] gap-[4vmin]\">\n  <h2 class=\"text-[4vmin] font-bold text-gray-800 mb-[2vmin]\">这三个观点，你认同吗？</h2>\n  <div class=\"bg-white rounded-[1.5vmin] p-[3vmin] shadow-lg\">\n    <span class=\"inline-block w-[6vmin] h-[6vmin] leading-[6vmin] text-center rounded-full bg-[#0F63EE] text-white font-bold text-[3vmin] mr-[2vmin]\">1</span>\n    <span class=\"text-[3vmin] text-gray-800\">AI 是一种工具</span>\n  </div>\n  <div class=\"bg-white rounded-[1.5vmin] p-[3vmin] shadow-lg\">\n    <span class=\"inline-block w-[6vmin] h-[6vmin] leading-[6vmin] text-center rounded-full bg-[#0F63EE] text-white font-bold text-[3vmin] mr-[2vmin]\">2</span>\n    <span class=\"text-[3vmin] text-gray-800\">每种 AI 产品都需要学习使用方法</span>\n  </div>\n  <div class=\"bg-white rounded-[1.5vmin] p-[3vmin] shadow-lg\">\n    <span class=\"inline-block w-[6vmin] h-[6vmin] leading-[6vmin] text-center rounded-full bg-[#0F63EE] text-white font-bold text-[3vmin] mr-[2vmin]\">3</span>\n    <span class=\"text-[3vmin] text-gray-800\">打造 AI 产品是技术高手的事情</span>\n  </div>\n</div>`}
             className="content-render-iframe"
             loadingText={args.sandboxLoadingText}
-            styleLoadingText={args.sandboxStyleLoadingText}
-            scriptLoadingText={args.sandboxScriptLoadingText}
             fullScreenButtonText={args.sandboxFullscreenButtonText}
             mode={args.sandboxMode}
           />
@@ -2827,8 +2811,6 @@ export const HTMLDemoIframeOnly: Story = {
             content={HTML_DEMO_STREAM_SOURCE}
             className="content-render-iframe"
             loadingText={args.sandboxLoadingText}
-            styleLoadingText={args.sandboxStyleLoadingText}
-            scriptLoadingText={args.sandboxScriptLoadingText}
             fullScreenButtonText={args.sandboxFullscreenButtonText}
             mode={args.sandboxMode}
           />

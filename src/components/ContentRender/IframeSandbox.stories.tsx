@@ -267,37 +267,39 @@ export const LateImageAndDomChanges: Story = {
   },
 };
 
-const streamingImageSrc =
-  "data:image/svg+xml," +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="90"><rect width="160" height="90" fill="lightblue"/></svg>'
-  );
-const imageStreamChunks = [
-  '<section><p>Lesson introduction</p><button type="button" data-diagram-button>Check diagram</button><output data-diagram-result></output>',
-  `<img src="${streamingImageSrc}" alt="Lesson diagram" width="160" height="90">`,
-  `<script>
-    document.documentElement.dataset.scriptRuns = String(
-      Number(document.documentElement.dataset.scriptRuns || "0") + 1
-    );
-    document.querySelector("[data-diagram-button]").addEventListener("click", () => {
-      document.querySelector("[data-diagram-result]").textContent = "Diagram checked";
-    });
-  </script>`,
-  ...Array.from({ length: 35 }, (_, index) => `<p>Detail ${index + 1}</p>`),
-  "</section>",
+const lessonStreamChunks = [
+  "<style>[data-check-answer] { color: darkblue; }</style>",
+  ...Array.from(
+    { length: 6 },
+    (_, index) => `<p>Lesson detail ${index + 1}</p>`
+  ),
+  "<p data-extra-detail>More lesson content</p><script data-answer-handler>",
+  'document.querySelector("[data-check-answer]").addEventListener("click", () => {',
+  '  const result = document.querySelector("[data-answer-result]");',
+  '  result.textContent = "Answer checked";',
+  "});",
+  "</script>",
 ];
 
-export const StreamedImageWithFollowingContent: Story = {
-  args: { content: imageStreamChunks[0], disableLoadingOverlay: false },
+export const StreamedLessonPreparation: Story = {
+  args: {
+    content:
+      '<p data-introduction>Lesson introduction</p><button type="button" data-check-answer>Check answer</button><output data-answer-result></output>',
+    disableLoadingOverlay: false,
+    locale: "en-US",
+  },
   render: function Render(args) {
-    const [chunkCount, setChunkCount] = useState(1);
-    const isReceiving = chunkCount > 1 && chunkCount < imageStreamChunks.length;
+    const [chunkCount, setChunkCount] = useState(0);
+    const isReceiving =
+      chunkCount > 0 && chunkCount < lessonStreamChunks.length;
 
     useEffect(() => {
       if (!isReceiving) return;
       const interval = window.setInterval(() => {
-        setChunkCount((count) => Math.min(count + 1, imageStreamChunks.length));
-      }, 45);
+        setChunkCount((count) =>
+          Math.min(count + 1, lessonStreamChunks.length)
+        );
+      }, 100);
       return () => window.clearInterval(interval);
     }, [isReceiving]);
 
@@ -306,190 +308,59 @@ export const StreamedImageWithFollowingContent: Story = {
         <button
           type="button"
           disabled={isReceiving}
-          onClick={() => setChunkCount(2)}
+          onClick={() => setChunkCount(1)}
         >
           Stream lesson content
         </button>
-        <p data-stream-status>
-          {isReceiving ? "Receiving lesson content" : "Stream idle"}
-        </p>
         <IframeSandbox
           {...args}
-          content={imageStreamChunks.slice(0, chunkCount).join("")}
+          content={
+            args.content + lessonStreamChunks.slice(0, chunkCount).join("")
+          }
         />
       </div>
     );
   },
   play: async ({ canvasElement }) => {
-    const doc = await waitFor(() => {
-      const iframe = canvasElement.querySelector("iframe");
-      expect(iframe?.contentDocument?.body.textContent).toContain(
-        "Lesson introduction"
-      );
-      return iframe!.contentDocument!;
-    });
-    await userEvent.click(canvasElement.querySelector("button")!);
-    const image = await waitFor(() => {
-      const element = doc.querySelector("img");
-      expect(element).not.toBeNull();
-      return element!;
-    });
-    await waitFor(() => {
-      expect(doc.querySelector(".sandbox-container")?.textContent).toContain(
-        "Detail 5"
-      );
-    });
-    expect(
-      canvasElement.querySelector("[data-stream-status]")
-    ).toHaveTextContent("Receiving lesson content");
-    expect(doc.querySelector("img")).toBe(image);
-    expect(doc.documentElement).not.toHaveAttribute("data-script-runs");
-    expect(doc.querySelector("[data-diagram-button]")).toBeVisible();
-    expect(doc.querySelector("[data-diagram-button]")).toBeDisabled();
-    const overlay = doc.querySelector("[data-sandbox-loading-overlay]");
-    expect(overlay).not.toBeNull();
-
-    await waitFor(() => {
-      expect(doc.querySelector(".sandbox-container")?.textContent).toContain(
-        "Detail 15"
-      );
-    });
-    expect(doc.querySelectorAll("[data-sandbox-loading-overlay]")).toHaveLength(
-      1
-    );
-    expect(doc.querySelector("[data-sandbox-loading-overlay]")).toBe(overlay);
-
-    await waitFor(
-      () => {
-        expect(doc.querySelector(".sandbox-container")?.textContent).toContain(
-          "Detail 35"
-        );
-        expect(doc.documentElement).toHaveAttribute("data-script-runs", "1");
-        expect(doc.querySelector("[data-diagram-button]")).toBeEnabled();
-        expect(doc.querySelector("[data-sandbox-loading-overlay]")).toBeNull();
-      },
-      { timeout: 4000 }
-    );
-    doc.querySelector<HTMLButtonElement>("[data-diagram-button]")!.click();
-    expect(doc.querySelector("[data-diagram-result]")).toHaveTextContent(
-      "Diagram checked"
-    );
-  },
-};
-
-const streamedButtonMarkup = `
-  <p id="lesson-note">The lesson stays readable.</p>
-  <button type="button" data-check-answer>Check answer</button>
-  <button type="button" data-authored-disabled disabled>Unavailable option</button>
-  <a href="#lesson-note">Read the lesson note</a>
-  <output data-answer-result></output>
-  <style>[data-check-answer] { color: darkblue; }</style>
-`;
-const incompleteButtonScript = `<script data-answer-handler>
-  document.querySelector("[data-check-answer]").addEventListener("click", () => {
-    document.querySelector("[data-answer-result]").textContent = "Answer checked";
-  });
-`;
-
-export const StreamedButtonWaitsForScript: Story = {
-  args: {
-    content: streamedButtonMarkup,
-    disableLoadingOverlay: false,
-    locale: "en-US",
-  },
-  render: function Render(args) {
-    const [streaming, setStreaming] = useState(true);
-    const [script, setScript] = useState("");
-    return (
-      <div>
-        <button onClick={() => setStreaming(false)}>
-          Finish script-free stream
-        </button>
-        <button onClick={() => setScript(incompleteButtonScript)}>
-          Append incomplete script
-        </button>
-        <button onClick={() => setScript(`${incompleteButtonScript}</script>`)}>
-          Finish script
-        </button>
-        <IframeSandbox
-          {...args}
-          content={args.content + script}
-          streaming={streaming}
-        />
-      </div>
-    );
-  },
-  play: async ({ canvasElement }) => {
-    const [finishStream, appendScript, finishScript] =
-      canvasElement.querySelectorAll("button");
     const doc = await waitFor(() => {
       const frame = canvasElement.querySelector("iframe");
       expect(
-        frame?.contentDocument?.querySelector("[data-check-answer]")
-      ).toBeDisabled();
+        frame?.contentDocument?.querySelector("[data-introduction]")
+      ).toBeVisible();
       return frame!.contentDocument!;
     });
-    expect(doc.querySelector("[data-check-answer]")).toBeVisible();
-    expect(doc.querySelector("#lesson-note")).toBeVisible();
-    expect(doc.querySelector("script[data-answer-handler]")).toBeNull();
-    await waitFor(() => {
-      expect(doc.querySelector('[role="status"]')).toHaveTextContent(
-        "Preparing content…"
-      );
-    });
-    expect(doc.querySelector('[role="status"] svg')).toBeNull();
+    const status = () => doc.querySelector('[role="status"]');
+    const answerButton = () =>
+      doc.querySelector<HTMLButtonElement>("[data-check-answer]")!;
+    const pointerEvents = () =>
+      doc.defaultView!.getComputedStyle(answerButton()).pointerEvents;
 
-    await userEvent.click(finishStream);
+    await userEvent.click(canvasElement.querySelector("button")!);
     await waitFor(() => {
-      expect(doc.querySelector("[data-check-answer]")).toBeEnabled();
-      expect(doc.querySelector("[data-sandbox-loading-overlay]")).toBeNull();
+      expect(pointerEvents()).toBe("none");
+      expect(status()).toBeNull();
     });
 
-    await userEvent.click(appendScript);
     await waitFor(() => {
-      expect(doc.querySelector("[data-check-answer]")).toBeVisible();
-      expect(doc.querySelector("[data-check-answer]")).toBeDisabled();
-      expect(
-        doc.querySelector("[data-sandbox-loading-overlay]")
-      ).not.toBeNull();
+      expect(status()).toHaveTextContent("Preparing content…");
     });
-    expect(doc.querySelector("#lesson-note")).toBeVisible();
+    expect(status()!.querySelector("svg")).toBeNull();
+
+    await waitFor(() => {
+      expect(doc.querySelector("[data-extra-detail]")).toBeVisible();
+    });
+    expect(pointerEvents()).toBe("none");
     expect(doc.querySelector("script[data-answer-handler]")).toBeNull();
 
-    const pendingLink = doc.querySelector<HTMLAnchorElement>("a[href]")!;
-    expect(pendingLink).toHaveAttribute("inert");
-    const { left, top, width, height } = pendingLink.getBoundingClientRect();
-    const hit = doc.elementFromPoint(left + width / 2, top + height / 2);
-    const overlay = doc.querySelector("[data-sandbox-loading-overlay]")!;
-    expect(hit?.closest("[data-sandbox-loading-overlay]")).toBe(overlay);
-    expect(doc.defaultView!.getComputedStyle(overlay).backgroundColor).toBe(
-      "rgba(0, 0, 0, 0)"
-    );
-
-    await userEvent.click(finishScript);
-    const button = await waitFor(() => {
-      const control = doc.querySelector<HTMLButtonElement>(
-        "[data-check-answer]"
-      );
-      expect(control).toBeEnabled();
-      expect(doc.querySelector("[data-sandbox-loading-overlay]")).toBeNull();
-      return control!;
+    await waitFor(() => {
+      expect(pointerEvents()).toBe("auto");
+      expect(status()).toBeNull();
+      expect(doc.querySelector("script[data-answer-handler]")).not.toBeNull();
     });
-    expect(doc.querySelector("[data-authored-disabled]")).toBeDisabled();
-    await userEvent.click(button);
+    await userEvent.click(answerButton());
     expect(doc.querySelector("[data-answer-result]")).toHaveTextContent(
       "Answer checked"
     );
-
-    const link = doc.querySelector<HTMLAnchorElement>("a[href]")!;
-    expect(link).not.toHaveAttribute("inert");
-    let linkActivated = false;
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-      linkActivated = true;
-    });
-    await userEvent.click(link);
-    expect(linkActivated).toBe(true);
   },
 };
 

@@ -308,7 +308,6 @@ const areStepElementListsEqual = (
     return (
       element.sequence_number === nextElement?.sequence_number &&
       element.type === nextElement?.type &&
-      element.is_html_streaming === nextElement?.is_html_streaming &&
       element.content === nextElement?.content
     );
   });
@@ -1969,7 +1968,6 @@ const Slide: React.FC<SlideProps> = ({
           }
           type="sandbox"
           content={element.content as string}
-          streaming={element.is_html_streaming}
           enableScaling={enableIframeScaling}
         />
       );
@@ -1986,7 +1984,6 @@ const Slide: React.FC<SlideProps> = ({
         mode="blackboard"
         type="markdown"
         content={element.content as string}
-        streaming={element.is_html_streaming}
       />
     );
   };

@@ -6,7 +6,7 @@ import React, {
   useState,
 } from "react";
 import { createRoot, Root } from "react-dom/client";
-import SandboxApp, { hasCompleteScriptTags } from "./SandboxApp";
+import SandboxApp from "./SandboxApp";
 import { normalizeContentViewportMinHeight } from "./utils/content-viewport-min-height";
 import ContentRender from "./ContentRender";
 import {
@@ -48,7 +48,7 @@ const loadBlackboardVendor = () => {
 };
 
 const COMPLETE_IMAGE_TAG_PATTERN = /<img\b[^>]*>/i;
-const POST_IMAGE_STREAM_RENDER_INTERVAL_MS = 180;
+const POST_IMAGE_STREAM_DEBOUNCE_MS = 180;
 const SANDBOX_INTERACTION_THROTTLE_MS = 240;
 
 export interface IframeSandboxProps {
@@ -60,6 +60,8 @@ export interface IframeSandboxProps {
   /** Overrides locale-derived direction without replacing authored HTML direction. */
   dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   loadingText?: string;
+  styleLoadingText?: string;
+  scriptLoadingText?: string;
   fullScreenButtonText?: string;
   exitFullScreenButtonText?: string;
   hideFullScreen?: boolean;
@@ -68,8 +70,6 @@ export interface IframeSandboxProps {
   replaceRootScreenHeightWithFull?: boolean;
   enableScaling?: boolean;
   disableLoadingOverlay?: boolean;
-  /** Whether more HTML may arrive for this sandbox. */
-  streaming?: boolean;
 }
 
 const replaceRootScreenHeightToken = (className: string) =>
@@ -128,6 +128,8 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   lang,
   dir,
   loadingText,
+  styleLoadingText,
+  scriptLoadingText,
   fullScreenButtonText,
   exitFullScreenButtonText,
   hideFullScreen = false,
@@ -135,7 +137,6 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   replaceRootScreenHeightWithFull = false,
   enableScaling = false,
   disableLoadingOverlay = false,
-  streaming = false,
 }) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
   const direction = dir ?? getMarkdownFlowDirection(locale);
@@ -228,21 +229,12 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
       shouldProcessRootScreenHeight,
     ]
   );
-  const [renderFrame, setRenderFrame] = useState(() => ({
-    html: normalizedHtmlContent,
-    deferScripts: false,
-    streaming,
-  }));
-  const {
-    html: renderHtmlContent,
-    deferScripts,
-    streaming: renderStreaming,
-  } = renderFrame;
+  const [renderHtmlContent, setRenderHtmlContent] = useState(
+    normalizedHtmlContent
+  );
   const prevIncomingHtmlRef = useRef(normalizedHtmlContent);
-  const prevStreamingRef = useRef(streaming);
-  const pendingFrameRef = useRef(renderFrame);
+  const pendingHtmlRef = useRef(normalizedHtmlContent);
   const deferRenderTimerRef = useRef<number | null>(null);
-  const deferScriptTimerRef = useRef<number | null>(null);
   const initialPaintFrameRef = useRef<number | null>(null);
   const renderViewportHeightCssRef = useRef<string | null>(null);
 
@@ -283,12 +275,6 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     deferRenderTimerRef.current = null;
   };
 
-  const clearDeferredScriptTimer = () => {
-    if (deferScriptTimerRef.current === null) return;
-    window.clearTimeout(deferScriptTimerRef.current);
-    deferScriptTimerRef.current = null;
-  };
-
   const clearInitialPaintFrames = () => {
     if (initialPaintFrameRef.current !== null) {
       window.cancelAnimationFrame(initialPaintFrameRef.current);
@@ -299,7 +285,6 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   useEffect(
     () => () => {
       clearDeferredRenderTimer();
-      clearDeferredScriptTimer();
       clearInitialPaintFrames();
     },
     []
@@ -308,63 +293,30 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
   useEffect(() => {
     const prevIncomingHtml = prevIncomingHtmlRef.current;
     prevIncomingHtmlRef.current = normalizedHtmlContent;
-    const streamingChanged = prevStreamingRef.current !== streaming;
-    prevStreamingRef.current = streaming;
 
     const isAppendOnlyStream =
       !!prevIncomingHtml &&
       normalizedHtmlContent.length > prevIncomingHtml.length &&
       normalizedHtmlContent.startsWith(prevIncomingHtml);
-    const isImageStream =
-      isAppendOnlyStream &&
-      COMPLETE_IMAGE_TAG_PATTERN.test(normalizedHtmlContent);
-    const nextFrame = {
-      html: normalizedHtmlContent,
-      deferScripts:
-        !streaming &&
-        !streamingChanged &&
-        isImageStream &&
-        hasCompleteScriptTags(normalizedHtmlContent),
-      streaming,
-    };
-    pendingFrameRef.current = nextFrame;
-    clearDeferredScriptTimer();
-
-    if (nextFrame.deferScripts) {
-      // Run complete scripts once the stream pauses, against the final DOM.
-      // Intermediate visual updates replace DOM nodes and must not rerun scripts.
-      deferScriptTimerRef.current = window.setTimeout(() => {
-        deferScriptTimerRef.current = null;
-        clearDeferredRenderTimer();
-        setRenderFrame({ ...nextFrame, deferScripts: false });
-      }, POST_IMAGE_STREAM_RENDER_INTERVAL_MS);
-    }
-
-    // Show the first complete image and stream transitions immediately. Apply
-    // the stream flag with its HTML so old controls cannot unlock on completion.
-    const shouldDeferRender =
-      !streamingChanged &&
-      isImageStream &&
-      COMPLETE_IMAGE_TAG_PATTERN.test(prevIncomingHtml);
+    const containsCompleteImage = COMPLETE_IMAGE_TAG_PATTERN.test(
+      normalizedHtmlContent
+    );
+    const shouldDeferRender = isAppendOnlyStream && containsCompleteImage;
 
     if (!shouldDeferRender) {
       clearDeferredRenderTimer();
-      setRenderFrame((frame) =>
-        frame.html === nextFrame.html &&
-        frame.deferScripts === nextFrame.deferScripts &&
-        frame.streaming === nextFrame.streaming
-          ? frame
-          : nextFrame
-      );
+      pendingHtmlRef.current = normalizedHtmlContent;
+      setRenderHtmlContent(normalizedHtmlContent);
       return;
     }
 
-    if (deferRenderTimerRef.current !== null) return;
+    pendingHtmlRef.current = normalizedHtmlContent;
+    clearDeferredRenderTimer();
     deferRenderTimerRef.current = window.setTimeout(() => {
-      setRenderFrame(pendingFrameRef.current);
+      setRenderHtmlContent(pendingHtmlRef.current);
       deferRenderTimerRef.current = null;
-    }, POST_IMAGE_STREAM_RENDER_INTERVAL_MS);
-  }, [normalizedHtmlContent, streaming]);
+    }, POST_IMAGE_STREAM_DEBOUNCE_MS);
+  }, [normalizedHtmlContent]);
 
   const rootViewportHeightCss = React.useMemo(() => {
     if (!shouldMeasureDynamicHeight) {
@@ -445,13 +397,7 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
 
     const shouldBridgeSandboxInteraction =
       isBlackboardMode && type === "sandbox";
-    const handleSandboxClick = (event: MouseEvent) => {
-      if (
-        event.target !== doc.querySelector("[data-sandbox-loading-overlay]")
-      ) {
-        emitSandboxInteraction("click");
-      }
-    };
+    const handleSandboxClick = () => emitSandboxInteraction("click");
 
     if (shouldBridgeSandboxInteraction) {
       doc.addEventListener("click", handleSandboxClick, true);
@@ -946,14 +892,14 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
         dir={sandboxDirection}
         lang={sandboxLanguage}
         loadingText={loadingText}
+        styleLoadingText={styleLoadingText}
+        scriptLoadingText={scriptLoadingText}
         disableLoadingOverlay={disableLoadingOverlay}
         resetToken={resetToken}
         hasRootVhHeight={hasRootVhHeight}
         mode={mode}
         stretchRootHeight={shouldStretchRootHeight}
         enableScaling={shouldEnableScaling}
-        streaming={renderStreaming}
-        deferScripts={deferScripts}
       />
     );
 
@@ -983,14 +929,14 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
     sandboxDirection,
     sandboxLanguage,
     loadingText,
+    styleLoadingText,
+    scriptLoadingText,
     resetToken,
     disableLoadingOverlay,
     hasRootVhHeight,
     mode,
     shouldStretchRootHeight,
     shouldEnableScaling,
-    renderStreaming,
-    deferScripts,
   ]);
   const containerClassName = [
     `w-full relative content-render-iframe-sandbox content-render-iframe-sandbox--${type}`,
@@ -1042,7 +988,6 @@ const IframeSandboxInstance: React.FC<IframeSandboxProps> = ({
             dir={direction}
             lang={language}
             disableSandboxLoadingOverlay={disableLoadingOverlay}
-            sandboxStreaming={streaming}
           />
         </div>
       ) : (

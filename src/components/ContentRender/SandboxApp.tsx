@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import LoadingOverlayCard from "../ui/loading-overlay-card";
 import {
   getMarkdownFlowDirection,
   getMarkdownFlowLanguage,
@@ -21,14 +22,14 @@ export interface SandboxAppProps {
   /** Overrides the wrapper direction while preserving explicit direction in authored HTML. */
   dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   loadingText?: string;
+  styleLoadingText?: string;
+  scriptLoadingText?: string;
   resetToken?: number;
   mode?: "content" | "blackboard";
   hasRootVhHeight?: boolean;
   stretchRootHeight?: boolean;
   enableScaling?: boolean;
   disableLoadingOverlay?: boolean;
-  /** Whether more HTML may arrive for this sandbox. */
-  streaming?: boolean;
 }
 
 const IMAGE_REUSE_ATTRIBUTES = [
@@ -46,6 +47,18 @@ const IMAGE_REUSE_ATTRIBUTES = [
   "referrerpolicy",
   "fetchpriority",
 ];
+
+const RESOURCE_HINT_DELAY_MS = 400;
+
+const resourceHintStyle: React.CSSProperties = {
+  maxWidth: "calc(100% - 1rem)",
+  padding: "0.25rem 0.5rem",
+  borderRadius: "0.375rem",
+  backgroundColor: "#f1f5f9",
+  color: "#334155",
+  fontSize: "0.75rem",
+  lineHeight: 1.4,
+};
 
 const getImageReuseKey = (image: HTMLImageElement) =>
   IMAGE_REUSE_ATTRIBUTES.map(
@@ -106,71 +119,65 @@ const reuseRenderedImages = (
   });
 };
 
-export const hasCompleteScriptTags = (html: string) => {
-  const openScriptCount = (html.match(/<script[\s>]/gi) || []).length;
-  const closeScriptCount = (html.match(/<\/script>/gi) || []).length;
-  return openScriptCount > 0 && openScriptCount === closeScriptCount;
-};
-
-const INTERACTION_HINT_DELAY_MS = 400;
-
-const loadingHintStyle: React.CSSProperties = {
-  maxWidth: "calc(100% - 1rem)",
-  padding: "0.25rem 0.5rem",
-  borderRadius: "0.375rem",
-  backgroundColor: "#f1f5f9",
-  color: "#334155",
-  fontSize: "0.75rem",
-  lineHeight: 1.4,
-  pointerEvents: "none",
-};
-
-const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
+const SandboxApp: React.FC<SandboxAppProps> = ({
   html,
   locale,
   dir,
   lang,
   loadingText,
+  styleLoadingText,
+  scriptLoadingText,
   resetToken = 0,
   mode = "content",
   hasRootVhHeight = false,
   stretchRootHeight = false,
   enableScaling = false,
   disableLoadingOverlay = false,
-  streaming = false,
-  deferScripts = false,
 }) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isGeneratingStyles, setIsGeneratingStyles] = useState(false);
+  const [isGeneratingScripts, setIsGeneratingScripts] = useState(false);
   const [hasRenderedContent, setHasRenderedContent] = useState(false);
-  const [hasPendingScripts, setHasPendingScripts] = useState(false);
-  const [showLoadingHint, setShowLoadingHint] = useState(false);
+  const [showResourceHint, setShowResourceHint] = useState(false);
   const appendedStylesRef = useRef<HTMLStyleElement[]>([]);
   const appendedScriptsRef = useRef<HTMLScriptElement[]>([]);
+  const styleStartRef = useRef(0);
+  const scriptStartRef = useRef(0);
+  const styleTimerRef = useRef<number | null>(null);
+  const scriptTimerRef = useRef<number | null>(null);
+  const hasStylesRef = useRef(false);
+  const hasScriptsRef = useRef(false);
   const prevResetTokenRef = useRef(resetToken);
-  const shouldExecuteScripts =
-    !streaming && !deferScripts && hasCompleteScriptTags(html);
-  const isPreparingInteraction = streaming || hasPendingScripts;
-  const isLoadingOverlayActive =
-    !disableLoadingOverlay && (isPreparingInteraction || !hasRenderedContent);
+  const MIN_LOADING_MS = 200;
 
-  useEffect(() => {
-    if (!isLoadingOverlayActive) {
-      setShowLoadingHint(false);
-      return;
+  const clearTimer = (timerRef: React.MutableRefObject<number | null>) => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
     }
+  };
 
-    const timer = window.setTimeout(
-      () => setShowLoadingHint(true),
-      INTERACTION_HINT_DELAY_MS
-    );
-    return () => window.clearTimeout(timer);
-  }, [isLoadingOverlayActive]);
+  const settleStateWithMinimumDelay = (
+    setter: React.Dispatch<React.SetStateAction<boolean>>,
+    timerRef: React.MutableRefObject<number | null>,
+    startRef: React.MutableRefObject<number>,
+    onDone?: () => void
+  ) => {
+    const elapsed = performance.now() - startRef.current;
+    const delay = Math.max(0, MIN_LOADING_MS - elapsed);
+    clearTimer(timerRef);
+    timerRef.current = window.setTimeout(() => {
+      setter(false);
+      onDone?.();
+      timerRef.current = null;
+    }, delay);
+  };
 
   useEffect(() => {
     const doc = containerRef.current?.ownerDocument;
     if (!doc) return;
-    const styleId = "sandbox-layout-style";
+    const styleId = "sandbox-spinner-style";
     let styleEl = doc.getElementById(styleId) as HTMLStyleElement | null;
     if (!styleEl) {
       styleEl = doc.createElement("style");
@@ -204,6 +211,11 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
       setHasRenderedContent(false);
       prevResetTokenRef.current = resetToken;
     }
+    clearTimer(styleTimerRef);
+    clearTimer(scriptTimerRef);
+    hasStylesRef.current = false;
+    hasScriptsRef.current = false;
+
     const container = containerRef.current;
     if (!container) return;
     const doc = container.ownerDocument;
@@ -216,6 +228,8 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
     appendedScriptsRef.current.forEach((node) => node.remove());
     appendedScriptsRef.current = [];
 
+    setIsGeneratingStyles(false);
+    setIsGeneratingScripts(false);
     const wrapper = doc.createElement("div");
     wrapper.innerHTML = html;
     wrapper.querySelectorAll("a[href]").forEach((node) => {
@@ -230,6 +244,11 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
       node.setAttribute("target", "_blank");
       node.setAttribute("rel", mergeAnchorRelValue(node.getAttribute("rel")));
     });
+
+    const openScriptCount = (html.match(/<script[\s>]/gi) || []).length;
+    const closeScriptCount = (html.match(/<\/script>/gi) || []).length;
+    const shouldExecuteScripts =
+      openScriptCount > 0 && openScriptCount === closeScriptCount;
 
     const resourceQueue: HTMLElement[] = [];
 
@@ -253,22 +272,23 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
     });
     reuseRenderedImages(wrapper, reusableImages);
 
+    const hasStyles = resourceQueue.some(
+      (node) => node.tagName.toLowerCase() === "style"
+    );
     const hasScripts = resourceQueue.some(
       (node) => node.tagName.toLowerCase() === "script"
     );
-    const scriptsPending = hasScripts && !shouldExecuteScripts;
-    setHasPendingScripts(scriptsPending);
-    if (streaming || scriptsPending) {
-      // Render the frame while its scripts arrive, but keep controls from
-      // accepting input before their handlers can be installed.
-      wrapper
-        .querySelectorAll("button, input, select, textarea")
-        .forEach((control) => control.setAttribute("disabled", ""));
-      wrapper
-        .querySelectorAll(
-          'a[href], [role="button"]:not(button, input, select, textarea)'
-        )
-        .forEach((control) => control.setAttribute("inert", ""));
+    if (hasStyles) {
+      hasStylesRef.current = true;
+      styleStartRef.current = performance.now();
+      clearTimer(styleTimerRef);
+      setIsGeneratingStyles(true);
+    }
+    if (hasScripts) {
+      hasScriptsRef.current = true;
+      scriptStartRef.current = performance.now();
+      clearTimer(scriptTimerRef);
+      setIsGeneratingScripts(true);
     }
 
     const contentNodes = Array.from(wrapper.childNodes);
@@ -345,7 +365,7 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
           scriptNode.remove();
         }
       } else {
-        // Leave scripts out of partial and intermediate render frames.
+        // Defer execution until all script tags are fully received
         node.remove();
       }
     });
@@ -355,19 +375,92 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
       win?.__mdf_triggerFitContent?.();
     }
 
+    requestAnimationFrame(() => {
+      if (hasStyles) {
+        settleStateWithMinimumDelay(
+          setIsGeneratingStyles,
+          styleTimerRef,
+          styleStartRef,
+          () => {
+            hasStylesRef.current = false;
+          }
+        );
+      }
+      if (hasScripts) {
+        settleStateWithMinimumDelay(
+          setIsGeneratingScripts,
+          scriptTimerRef,
+          scriptStartRef,
+          () => {
+            hasScriptsRef.current = false;
+          }
+        );
+      }
+    });
+
     return () => {
       scriptContentObserver?.disconnect();
       container.removeEventListener("click", handleLinkClick, true);
     };
-  }, [html, resetToken, enableScaling, shouldExecuteScripts, streaming]);
+  }, [html, resetToken, enableScaling]);
 
-  const overlayMessage =
-    isLoadingOverlayActive &&
-    (showLoadingHint || (!isPreparingInteraction && !html.trim()))
-      ? isPreparingInteraction
-        ? localeTexts.sandboxPreparingText
-        : loadingText || localeTexts.sandboxLoadingText
-      : null;
+  useEffect(
+    () => () => {
+      clearTimer(styleTimerRef);
+      clearTimer(scriptTimerRef);
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!disableLoadingOverlay) {
+      return;
+    }
+
+    clearTimer(styleTimerRef);
+    clearTimer(scriptTimerRef);
+    hasStylesRef.current = false;
+    hasScriptsRef.current = false;
+    setIsGeneratingStyles(false);
+    setIsGeneratingScripts(false);
+  }, [disableLoadingOverlay]);
+
+  const isStyleLoading = isGeneratingStyles || hasStylesRef.current;
+  const isScriptLoading = isGeneratingScripts || hasScriptsRef.current;
+  const isResourceLoading =
+    !disableLoadingOverlay && (isStyleLoading || isScriptLoading);
+
+  // Keep the original click gate active while delaying only the visible hint.
+  useEffect(() => {
+    if (!isResourceLoading) {
+      setShowResourceHint(false);
+      return;
+    }
+
+    const timer = window.setTimeout(
+      () => setShowResourceHint(true),
+      RESOURCE_HINT_DELAY_MS
+    );
+    return () => window.clearTimeout(timer);
+  }, [isResourceLoading]);
+
+  const overlayMessage = (() => {
+    if (disableLoadingOverlay) {
+      return null;
+    }
+
+    if (isScriptLoading)
+      return (
+        scriptLoadingText || loadingText || localeTexts.sandboxScriptLoadingText
+      );
+    if (isStyleLoading)
+      return (
+        styleLoadingText || loadingText || localeTexts.sandboxStyleLoadingText
+      );
+    if (!hasRenderedContent)
+      return loadingText || localeTexts.sandboxLoadingText;
+    return null;
+  })();
 
   const isBlackboard = mode === "blackboard";
   const shouldStretchRootHeight = isBlackboard && stretchRootHeight;
@@ -385,7 +478,7 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
         : "flex-start",
   };
   const sandboxContainerStyle: React.CSSProperties = {
-    pointerEvents: isLoadingOverlayActive ? "none" : undefined,
+    pointerEvents: overlayMessage ? "none" : undefined,
     margin: isBlackboard ? undefined : "auto 0",
     width: "100%",
     height: shouldStretchRootHeight ? "100%" : undefined,
@@ -400,17 +493,15 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
       dir={dir ?? getMarkdownFlowDirection(locale)}
       lang={lang ?? getMarkdownFlowLanguage(locale)}
       style={sandboxWrapperStyle}
+      aria-busy={!!overlayMessage}
     >
       <div
         ref={containerRef}
         className="sandbox-container"
-        aria-busy={isLoadingOverlayActive}
         style={sandboxContainerStyle}
       />
-      {isLoadingOverlayActive && (
+      {overlayMessage && (!isResourceLoading || showResourceHint) && (
         <div
-          data-sandbox-loading-overlay=""
-          onClick={(event) => event.stopPropagation()}
           style={{
             position: "absolute",
             inset: 0,
@@ -418,13 +509,15 @@ const SandboxApp: React.FC<SandboxAppProps & { deferScripts?: boolean }> = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            cursor: "wait",
+            pointerEvents: "none",
           }}
         >
-          {overlayMessage && (
-            <div role="status" style={loadingHintStyle}>
+          {isResourceLoading ? (
+            <div role="status" style={resourceHintStyle}>
               {overlayMessage}
             </div>
+          ) : (
+            <LoadingOverlayCard message={overlayMessage} />
           )}
         </div>
       )}

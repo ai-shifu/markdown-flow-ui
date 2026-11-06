@@ -127,10 +127,12 @@ export interface ContentRenderProps {
   dynamicInteractionFormat?: string;
   // Loading text before first HTML block renders inside iframe (i18n support)
   sandboxLoadingText?: string;
+  // Loading text while styles are being generated inside iframe
+  sandboxStyleLoadingText?: string;
+  // Loading text while scripts are being cached/executed inside iframe
+  sandboxScriptLoadingText?: string;
   // Disable sandbox loading overlays when upper layers have already entered an error state
   disableSandboxLoadingOverlay?: boolean;
-  /** Whether more HTML may arrive for this content block. */
-  sandboxStreaming?: boolean;
   // Fullscreen button text for iframe sandbox
   sandboxFullscreenButtonText?: string;
   // Exit fullscreen button text for iframe sandbox
@@ -646,8 +648,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   copyButtonText,
   copiedButtonText,
   sandboxLoadingText,
+  sandboxStyleLoadingText,
+  sandboxScriptLoadingText,
   disableSandboxLoadingOverlay = false,
-  sandboxStreaming = false,
   sandboxFullscreenButtonText,
   sandboxExitFullscreenButtonText,
   sandboxMode = "content",
@@ -1394,8 +1397,9 @@ const ContentRender: React.FC<ContentRenderProps> = ({
                 dir={direction}
                 lang={language}
                 loadingText={sandboxLoadingText}
+                styleLoadingText={sandboxStyleLoadingText}
+                scriptLoadingText={sandboxScriptLoadingText}
                 disableLoadingOverlay={disableSandboxLoadingOverlay}
-                streaming={sandboxStreaming}
                 fullScreenButtonText={resolvedSandboxFullscreenButtonText}
                 exitFullScreenButtonText={
                   resolvedSandboxExitFullscreenButtonText

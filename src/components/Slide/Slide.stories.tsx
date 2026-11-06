@@ -4801,50 +4801,6 @@ export const DynamicMarkdownToHtmlSandbox: Story = {
   },
 };
 
-export const StreamedHtmlSlideControls: Story = {
-  render: function Render() {
-    const [streaming, setStreaming] = useState(true);
-
-    return (
-      <div style={{ width: 800 }}>
-        <button type="button" onClick={() => setStreaming(false)}>
-          Finish HTML stream
-        </button>
-        <div style={{ height: 600 }}>
-          <Slide
-            className="h-full w-full"
-            playerEnabled={false}
-            elementList={[
-              createExampleElement({
-                sequenceNumber: 1,
-                type: "html",
-                content: '<button type="button">Check answer</button>',
-                is_html_streaming: streaming,
-              }),
-            ]}
-          />
-        </div>
-      </div>
-    );
-  },
-  play: async ({ canvasElement }) => {
-    const getSlideButton = () =>
-      canvasElement
-        .querySelector("iframe")
-        ?.contentDocument?.querySelector("button");
-
-    await waitFor(() => {
-      expect(getSlideButton()).toBeVisible();
-      expect(getSlideButton()).toBeDisabled();
-    });
-
-    await userEvent.click(
-      within(canvasElement).getByRole("button", { name: "Finish HTML stream" })
-    );
-    await waitFor(() => expect(getSlideButton()).toBeEnabled());
-  },
-};
-
 export const FullViewportSingleSlide: Story = {
   args: {
     elementList: [
@@ -5225,10 +5181,6 @@ export const StreamingSpeakableLoadingOnlySlide: Story = {
       <StreamingSlidePreview className="w-full" {...args} />
     </div>
   ),
-  play: async ({ canvasElement }) => {
-    const audioStatus = await within(canvasElement).findByRole("status");
-    await expect(audioStatus).toBeVisible();
-  },
 };
 
 export const FullViewportSingleSlideWithSSE: Story = {

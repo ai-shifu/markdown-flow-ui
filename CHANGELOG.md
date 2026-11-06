@@ -4,11 +4,9 @@
 
 ### Fixed
 
-- Keep streamed HTML visible under a transparent layer that blocks premature
-  clicks. Show one preparation message for longer waits without restarting it
-  for each streamed update.
-- Allow hosts to mark an HTML block as streaming so controls and scripts wait
-  until that block is complete, even when the markup arrives before any script.
+- Restore the 0.3.8 HTML click blocking, rendering, and script execution
+  behavior. Show a small preparation hint after 400 ms of continuous waiting.
+- Restore support for custom style and script loading messages.
 
 ## 0.3.9 - 2026-11-06
 

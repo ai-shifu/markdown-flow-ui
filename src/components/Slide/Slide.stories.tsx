@@ -3252,7 +3252,7 @@ export const DesktopInteractionOverlayPointerDrag: Story = {
     docs: {
       description: {
         story:
-          "Exercises desktop overlay dragging from the header handle and verifies the interaction body no longer starts a drag.",
+          "Exercises desktop dragging near the edge of the full-width drag strip and verifies that the interaction body does not start a drag.",
       },
     },
   },
@@ -3285,16 +3285,22 @@ export const DesktopInteractionOverlayPointerDrag: Story = {
     );
     const beforeOffsets = getOverlayDragOffsets(overlay);
     const handleRect = (handle as HTMLElement).getBoundingClientRect();
+    const startX = handleRect.left + 12;
+    const startY = handleRect.top + handleRect.height / 2;
+
+    expect(canvasElement.ownerDocument.elementFromPoint(startX, startY)).toBe(
+      handle
+    );
 
     await triggerPointerDrag(
       handle as HTMLElement,
       {
-        clientX: handleRect.left + handleRect.width / 2,
-        clientY: handleRect.top + handleRect.height / 2,
+        clientX: startX,
+        clientY: startY,
       },
       {
-        clientX: handleRect.left + handleRect.width / 2 + 80,
-        clientY: handleRect.top + handleRect.height / 2 + 44,
+        clientX: startX + 80,
+        clientY: startY + 44,
       }
     );
 

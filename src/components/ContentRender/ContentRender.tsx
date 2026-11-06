@@ -127,10 +127,6 @@ export interface ContentRenderProps {
   dynamicInteractionFormat?: string;
   // Loading text before first HTML block renders inside iframe (i18n support)
   sandboxLoadingText?: string;
-  /** @deprecated Style loading overlays are no longer shown. */
-  sandboxStyleLoadingText?: string;
-  /** @deprecated Script loading overlays are no longer shown. */
-  sandboxScriptLoadingText?: string;
   // Disable sandbox loading overlays when upper layers have already entered an error state
   disableSandboxLoadingOverlay?: boolean;
   // Fullscreen button text for iframe sandbox

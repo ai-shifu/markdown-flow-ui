@@ -60,10 +60,6 @@ export interface IframeSandboxProps {
   /** Overrides locale-derived direction without replacing authored HTML direction. */
   dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   loadingText?: string;
-  /** @deprecated Style loading overlays are no longer shown. */
-  styleLoadingText?: string;
-  /** @deprecated Script loading overlays are no longer shown. */
-  scriptLoadingText?: string;
   fullScreenButtonText?: string;
   exitFullScreenButtonText?: string;
   hideFullScreen?: boolean;

@@ -22,10 +22,6 @@ export interface SandboxAppProps {
   /** Overrides the wrapper direction while preserving explicit direction in authored HTML. */
   dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   loadingText?: string;
-  /** @deprecated Style loading overlays are no longer shown. */
-  styleLoadingText?: string;
-  /** @deprecated Script loading overlays are no longer shown. */
-  scriptLoadingText?: string;
   resetToken?: number;
   mode?: "content" | "blackboard";
   hasRootVhHeight?: boolean;
@@ -132,7 +128,7 @@ const SandboxApp: React.FC<SandboxAppProps> = ({
   useEffect(() => {
     const doc = containerRef.current?.ownerDocument;
     if (!doc) return;
-    const styleId = "sandbox-spinner-style";
+    const styleId = "sandbox-layout-style";
     let styleEl = doc.getElementById(styleId) as HTMLStyleElement | null;
     if (!styleEl) {
       styleEl = doc.createElement("style");

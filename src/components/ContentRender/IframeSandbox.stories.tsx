@@ -336,7 +336,7 @@ export const StreamedLessonPreparation: Story = {
     await userEvent.click(canvasElement.querySelector("button")!);
     const overlay = await waitFor(() => {
       const currentStatus = status();
-      expect(currentStatus).toHaveTextContent("幻灯片正在生成…");
+      expect(currentStatus).toHaveTextContent("正在生成幻灯片…");
       expect(pointerEvents()).toBe("none");
       return currentStatus!;
     });
@@ -349,7 +349,7 @@ export const StreamedLessonPreparation: Story = {
 
     await waitFor(() => {
       expect(doc.querySelector("[data-extra-detail]")).toBeVisible();
-      expect(status()).toHaveTextContent("幻灯片正在生成…");
+      expect(status()).toHaveTextContent("正在生成幻灯片…");
     });
     expect(status()).toBe(overlay);
     expect(pointerEvents()).toBe("none");

@@ -33,7 +33,7 @@
     "confirmButtonText": "提交",
     "copyButtonText": "复制",
     "copiedButtonText": "已复制",
-    "sandboxLoadingText": "幻灯片正在生成…",
+    "sandboxLoadingText": "正在生成幻灯片…",
     "sandboxFullscreenButtonText": "全屏浏览",
     "sandboxExitFullscreenButtonText": "退出全屏",
     "sendButtonLabel": "发送",

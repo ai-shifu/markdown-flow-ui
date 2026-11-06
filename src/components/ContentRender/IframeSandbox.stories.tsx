@@ -282,7 +282,7 @@ export const StreamedLessonPreparation: Story = {
     content:
       '<p data-introduction>Lesson introduction</p><button type="button" data-check-answer>Check answer</button><output data-answer-result></output>',
     disableLoadingOverlay: false,
-    locale: "en-US",
+    locale: "zh-CN",
   },
   render: function Render(args) {
     const [chunkCount, setChunkCount] = useState(0);
@@ -336,7 +336,7 @@ export const StreamedLessonPreparation: Story = {
     await userEvent.click(canvasElement.querySelector("button")!);
     const overlay = await waitFor(() => {
       const currentStatus = status();
-      expect(currentStatus).toHaveTextContent("Building styles...");
+      expect(currentStatus).toHaveTextContent("幻灯片正在生成…");
       expect(pointerEvents()).toBe("none");
       return currentStatus!;
     });
@@ -349,7 +349,7 @@ export const StreamedLessonPreparation: Story = {
 
     await waitFor(() => {
       expect(doc.querySelector("[data-extra-detail]")).toBeVisible();
-      expect(status()).toHaveTextContent("Building scripts cache...");
+      expect(status()).toHaveTextContent("幻灯片正在生成…");
     });
     expect(status()).toBe(overlay);
     expect(pointerEvents()).toBe("none");

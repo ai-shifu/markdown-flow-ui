@@ -351,15 +351,11 @@ const SandboxApp: React.FC<SandboxAppProps & { hasPendingHtml?: boolean }> = ({
       return null;
     }
 
-    if (loadingResource === "script")
-      return (
-        scriptLoadingText || loadingText || localeTexts.sandboxScriptLoadingText
-      );
-    if (loadingResource === "style")
-      return (
-        styleLoadingText || loadingText || localeTexts.sandboxStyleLoadingText
-      );
-    if (!hasRenderedContent)
+    if (loadingResource === "script" && scriptLoadingText)
+      return scriptLoadingText;
+    if (loadingResource === "style" && styleLoadingText)
+      return styleLoadingText;
+    if (loadingResource || !hasRenderedContent)
       return loadingText || localeTexts.sandboxLoadingText;
     return null;
   })();

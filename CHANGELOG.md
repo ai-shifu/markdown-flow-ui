@@ -7,8 +7,9 @@
 - Keep streamed HTML visible while styles and scripts arrive. The empty HTML
   sandbox and Slide audio buffering still show their loading indicators.
 - Continue displaying content after the first complete image during streaming.
-  Run complete scripts once the stream pauses so they initialize against the
-  latest content.
+  When appending to HTML that contains an image, defer complete scripts until
+  the stream pauses. Complete scripts in the initial HTML can run before later
+  content arrives.
 
 ### Compatibility
 

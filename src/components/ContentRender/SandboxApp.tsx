@@ -52,12 +52,15 @@ const RESOURCE_HINT_DELAY_MS = 400;
 
 const resourceHintStyle: React.CSSProperties = {
   maxWidth: "calc(100% - 1rem)",
-  padding: "0.25rem 0.5rem",
-  borderRadius: "0.375rem",
-  backgroundColor: "#f1f5f9",
-  color: "#334155",
-  fontSize: "0.75rem",
+  padding: "0.5rem 0.875rem",
+  borderRadius: "0.5rem",
+  backgroundColor: "#1e293b",
+  color: "#fff",
+  boxShadow: "0 4px 12px rgba(15, 23, 42, 0.24)",
+  fontSize: "0.875rem",
+  fontWeight: 600,
   lineHeight: 1.4,
+  textAlign: "center",
 };
 
 const getImageReuseKey = (image: HTMLImageElement) =>

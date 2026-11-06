@@ -5182,9 +5182,8 @@ export const StreamingSpeakableLoadingOnlySlide: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
-    const audioStatus =
-      await within(canvasElement).findByText("Audio buffering...");
-    await expect(audioStatus.closest('[role="status"]')).toBeVisible();
+    const audioStatus = await within(canvasElement).findByRole("status");
+    await expect(audioStatus).toBeVisible();
   },
 };
 

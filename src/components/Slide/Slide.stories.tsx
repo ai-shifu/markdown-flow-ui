@@ -3349,7 +3349,7 @@ export const MobileInteractionOverlayPointerDrag: Story = {
     },
   },
   render: (args) => <MobilePointerDragSlidePreview {...args} />,
-  play: async ({ canvasElement }) => {
+  play: async ({ args, canvasElement }) => {
     const overlay = await waitFor(() => {
       const element = canvasElement.querySelector(
         ".slide--mobile-device .slide-interaction-overlay"
@@ -3361,7 +3361,9 @@ export const MobileInteractionOverlayPointerDrag: Story = {
     const handle = overlay.querySelector(
       '[aria-label="Move interaction"]'
     ) as HTMLElement | null;
-    const title = overlay.querySelector(".slide-player__interaction-title");
+    const title = overlay.querySelector(
+      ".slide-player__interaction-title"
+    ) as HTMLElement;
 
     expect(handle).not.toBeNull();
     expect(title).not.toBeNull();
@@ -3371,21 +3373,30 @@ export const MobileInteractionOverlayPointerDrag: Story = {
     );
     const beforeOffsets = getOverlayDragOffsets(overlay);
     const handleRect = (handle as HTMLElement).getBoundingClientRect();
+    const titleRect = title.getBoundingClientRect();
+    const startX = handleRect.left + handleRect.width / 2;
+    const startY = handleRect.top + handleRect.height / 2;
 
-    expect(handleRect.bottom).toBeLessThan(
-      (title as HTMLElement).getBoundingClientRect().top
+    expect(handleRect.bottom).toBeLessThan(titleRect.top);
+    expect(title.textContent).toBe(args.interactionTitle);
+    expect(titleRect.height).toBeGreaterThan(
+      Number.parseFloat(getComputedStyle(title).lineHeight)
+    );
+    expect(title.scrollHeight).toBeLessThanOrEqual(title.clientHeight + 1);
+    expect(canvasElement.ownerDocument.elementFromPoint(startX, startY)).toBe(
+      handle
     );
 
     await triggerPointerDrag(
       handle as HTMLElement,
       {
-        clientX: handleRect.left + handleRect.width / 2,
-        clientY: handleRect.top + handleRect.height / 2,
+        clientX: startX,
+        clientY: startY,
         pointerType: "touch",
       },
       {
-        clientX: handleRect.left + handleRect.width / 2 + 36,
-        clientY: handleRect.top + handleRect.height / 2 + 52,
+        clientX: startX + 36,
+        clientY: startY + 52,
         pointerType: "touch",
       }
     );

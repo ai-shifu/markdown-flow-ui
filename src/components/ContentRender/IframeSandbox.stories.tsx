@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { expect, userEvent, waitFor } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import IframeSandbox from "./IframeSandbox";
 
 const meta = {
@@ -336,7 +336,7 @@ export const StreamedLessonPreparation: Story = {
     await userEvent.click(canvasElement.querySelector("button")!);
     const overlay = await waitFor(() => {
       const currentStatus = status();
-      expect(currentStatus).toHaveTextContent("正在生成幻灯片…");
+      expect(within(currentStatus!).getByText("生成幻灯片…")).toBeVisible();
       expect(pointerEvents()).toBe("none");
       return currentStatus!;
     });
@@ -349,7 +349,7 @@ export const StreamedLessonPreparation: Story = {
 
     await waitFor(() => {
       expect(doc.querySelector("[data-extra-detail]")).toBeVisible();
-      expect(status()).toHaveTextContent("正在生成幻灯片…");
+      expect(within(status()!).getByText("生成幻灯片…")).toBeVisible();
     });
     expect(status()).toBe(overlay);
     expect(pointerEvents()).toBe("none");

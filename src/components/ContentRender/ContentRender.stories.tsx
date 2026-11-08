@@ -2664,7 +2664,7 @@ export const HTMLDemo: Story = {
 export const HTMLDemoIframeOnly: Story = {
   name: "HTML Demo (Iframe Only)",
   args: {
-    sandboxLoadingText: "正在生成幻灯片…",
+    sandboxLoadingText: "生成幻灯片…",
     sandboxFullscreenButtonText: "全屏浏览",
     sandboxMode: "blackboard",
   },

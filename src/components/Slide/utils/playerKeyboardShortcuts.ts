@@ -81,6 +81,10 @@ export const getPlayerKeyboardShortcutAction = (
   }
 
   switch (normalizedKey) {
+    case "arrowup":
+      return "previous";
+    case "arrowdown":
+      return "next";
     case "arrowleft":
       return direction === "rtl" ? "next" : "previous";
     case "arrowright":

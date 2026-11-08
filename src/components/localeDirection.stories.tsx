@@ -860,20 +860,32 @@ export const DirectionAwarePageShortcuts: Story = {
       const nextKey = direction === "rtl" ? "ArrowLeft" : "ArrowRight";
       await waitFor(() => {
         expect(getComputedStyle(player).direction).toBe(direction);
-        expect(previous).toHaveAttribute("aria-keyshortcuts", previousKey);
-        expect(next).toHaveAttribute("aria-keyshortcuts", nextKey);
-        expect(
-          previous.title.endsWith(direction === "rtl" ? "(→)" : "(←)")
-        ).toBe(true);
-        expect(next.title.endsWith(direction === "rtl" ? "(←)" : "(→)")).toBe(
-          true
+        expect(previous).toHaveAttribute(
+          "aria-keyshortcuts",
+          `${previousKey} ArrowUp`
         );
+        expect(next).toHaveAttribute(
+          "aria-keyshortcuts",
+          `${nextKey} ArrowDown`
+        );
+        expect(
+          previous.title.endsWith(direction === "rtl" ? "(→ / ↑)" : "(← / ↑)")
+        ).toBe(true);
+        expect(
+          next.title.endsWith(direction === "rtl" ? "(← / ↓)" : "(→ / ↓)")
+        ).toBe(true);
       });
       expectPlayerNavigationDirection(player);
       await userEvent.click(previous);
       await userEvent.keyboard(`{${nextKey}}`);
       expect(canvas.getByTestId("keyboard-result")).toHaveTextContent("next");
       await userEvent.keyboard(`{${previousKey}}`);
+      expect(canvas.getByTestId("keyboard-result")).toHaveTextContent(
+        "previous"
+      );
+      await userEvent.keyboard("{ArrowDown}");
+      expect(canvas.getByTestId("keyboard-result")).toHaveTextContent("next");
+      await userEvent.keyboard("{ArrowUp}");
       expect(canvas.getByTestId("keyboard-result")).toHaveTextContent(
         "previous"
       );
@@ -903,8 +915,11 @@ export const DirectionAwarePageShortcuts: Story = {
     expect(previous).not.toHaveAttribute("aria-keyshortcuts");
     expect(next).not.toHaveAttribute("aria-keyshortcuts");
     await userEvent.click(previous);
-    await userEvent.keyboard("{ArrowRight}");
+    await userEvent.keyboard("{ArrowRight}{ArrowDown}");
     expect(canvas.getByTestId("keyboard-result")).toHaveTextContent("previous");
+    await userEvent.click(next);
+    await userEvent.keyboard("{ArrowUp}");
+    expect(canvas.getByTestId("keyboard-result")).toHaveTextContent("next");
   },
 };
 

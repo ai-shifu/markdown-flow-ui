@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.11 - 2026-11-09
+
+### Added
+
+- Use Up and Down to turn slides. Focused scrollable content and the surrounding
+  page can scroll first, with page turns available at the scroll boundary.
+
+### Fixed
+
+- Keep the interaction panel's drag handle clear of the question text.
+- Shorten the Chinese slide loading message.
+
 ## 0.3.10 - 2026-11-06
 
 ### Fixed

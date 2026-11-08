@@ -2990,6 +2990,98 @@ export const ControlsHiddenWithKeyboardShortcuts: Story = {
   },
 };
 
+export const VerticalShortcutsWithScrollableContent: Story = {
+  args: {
+    elementList: ["First slide", "Second slide"].map((label, index) =>
+      createExampleElement({
+        sequenceNumber: index + 1,
+        type: "slot",
+        content: (
+          <div style={{ minHeight: 1200 }}>
+            <a href={`#slide-details-${index}`}>{label}</a>
+            <p id={`slide-details-${index}`}>Slide details</p>
+            {index === 0 && (
+              <div
+                data-testid="contained-scroll"
+                style={{
+                  height: 120,
+                  overflowY: "auto",
+                  overscrollBehaviorY: "contain",
+                }}
+              >
+                <a href="#contained-details">Contained slide details</a>
+                <p id="contained-details" style={{ minHeight: 240 }}>
+                  Additional content
+                </p>
+              </div>
+            )}
+          </div>
+        ),
+        isNew: true,
+      })
+    ),
+    markerAutoAdvanceDelay: 60_000,
+  },
+  render: (args) => (
+    <div style={{ width: "min(640px, 100%)", height: 360 }}>
+      <Slide {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const stage = canvasElement.querySelector<HTMLElement>(
+      ".slide-stage__layer"
+    )!;
+    const getScrollEnd = () => stage.scrollHeight - stage.clientHeight;
+    const dispatchArrow = (link: HTMLElement, key: "ArrowDown" | "ArrowUp") => {
+      const event = new KeyboardEvent("keydown", {
+        key,
+        bubbles: true,
+        cancelable: true,
+      });
+      link.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+
+    const first = await canvas.findByRole("link", { name: "First slide" });
+    first.focus({ preventScroll: true });
+    await expect(first).toHaveFocus();
+    await expect(getScrollEnd()).toBeGreaterThan(0);
+    await expect(dispatchArrow(first, "ArrowDown")).toBe(false);
+
+    stage.scrollTop = getScrollEnd();
+    await expect(dispatchArrow(first, "ArrowDown")).toBe(true);
+    const second = await canvas.findByRole("link", { name: "Second slide" });
+    await waitFor(() => expect(stage.scrollTop).toBeCloseTo(getScrollEnd(), 0));
+    second.focus({ preventScroll: true });
+    await expect(second).toHaveFocus();
+    await expect(dispatchArrow(second, "ArrowUp")).toBe(false);
+
+    stage.scrollTop = 0;
+    await expect(dispatchArrow(second, "ArrowUp")).toBe(true);
+    await expect(
+      await canvas.findByRole("link", { name: "First slide" })
+    ).toBeVisible();
+
+    await waitFor(() => expect(stage.scrollTop).toBeCloseTo(getScrollEnd(), 0));
+    stage.scrollTop = 0;
+    const nestedScroller = canvas.getByTestId("contained-scroll");
+    const nestedLink = canvas.getByRole("link", {
+      name: "Contained slide details",
+    });
+    nestedLink.focus({ preventScroll: true });
+    await expect(nestedLink).toHaveFocus();
+    await expect(dispatchArrow(nestedLink, "ArrowDown")).toBe(false);
+    nestedScroller.scrollTop = nestedScroller.scrollHeight;
+    await expect(nestedScroller.scrollTop).toBeGreaterThan(0);
+    await expect(stage.scrollTop).toBeLessThan(getScrollEnd());
+    await expect(dispatchArrow(nestedLink, "ArrowDown")).toBe(true);
+    await expect(
+      await canvas.findByRole("link", { name: "Second slide" })
+    ).toBeVisible();
+  },
+};
+
 export const ControlsAlwaysVisible: Story = {
   args: {
     elementList: exampleElementList,
@@ -5178,6 +5270,89 @@ export const StreamingSingleIframeSlide: Story = {
       <StreamingSlidePreview className="w-full" {...args} />
     </div>
   ),
+};
+
+export const ScrollableIframeKeyboardShortcuts: Story = {
+  args: {
+    disableLoadingOverlay: true,
+    elementList: [
+      createExampleElement({
+        sequenceNumber: 1,
+        type: "html",
+        content: `<section>
+          <div data-scroll-panel style="height:160px;overflow-y:auto">
+            <a href="#lesson-details">Read lesson details</a>
+            <div id="lesson-details" style="height:640px">More lesson details</div>
+          </div>
+        </section>`,
+      }),
+      createExampleElement({
+        sequenceNumber: 2,
+        type: "title",
+        content: "Next iframe lesson page",
+      }),
+    ],
+    playerControlsVisibility: "visible",
+  },
+  render: (args) => (
+    <div
+      data-scroll-embed
+      style={{ width: 760, height: 500, overflowY: "auto" }}
+    >
+      <div style={{ height: 500 }}>
+        <Slide {...args} className="h-full w-full" />
+      </div>
+      <div style={{ height: 240 }}>More content below the slideshow</div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const activeStep = () =>
+      canvasElement.querySelector('[data-active-step="true"]');
+    const panel = await waitFor(() => {
+      const frame = activeStep()?.querySelector("iframe");
+      const scrollPanel = frame?.contentDocument?.querySelector<HTMLElement>(
+        "[data-scroll-panel]"
+      );
+      expect(scrollPanel).toBeVisible();
+      expect(scrollPanel!.scrollHeight).toBeGreaterThan(
+        scrollPanel!.clientHeight
+      );
+      return scrollPanel!;
+    });
+    const link = panel.querySelector("a")!;
+    const firstStep = activeStep();
+    const press = (key: "ArrowDown" | "ArrowUp") =>
+      link.dispatchEvent(
+        new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true })
+      );
+
+    // An uncanceled event leaves the iframe's native scrolling available.
+    link.focus();
+    expect(press("ArrowDown")).toBe(true);
+    panel.scrollTop = 100;
+    expect(panel.scrollTop).toBeGreaterThan(0);
+    expect(press("ArrowUp")).toBe(true);
+    expect(activeStep()).toBe(firstStep);
+
+    panel.scrollTop = panel.scrollHeight;
+    const stage = canvasElement.querySelector<HTMLElement>(
+      ".slide-stage__layer"
+    )!;
+    stage.scrollTop = stage.scrollHeight;
+    const embed = canvasElement.querySelector<HTMLElement>(
+      "[data-scroll-embed]"
+    )!;
+    embed.scrollTop = 0;
+    expect(embed.scrollHeight).toBeGreaterThan(embed.clientHeight);
+    expect(press("ArrowDown")).toBe(true);
+    expect(activeStep()).toBe(firstStep);
+
+    panel.style.overscrollBehaviorY = "contain";
+    expect(press("ArrowDown")).toBe(false);
+    await waitFor(() =>
+      expect(activeStep()).toHaveTextContent("Next iframe lesson page")
+    );
+  },
 };
 
 export const StreamingSpeakableLoadingOnlySlide: Story = {

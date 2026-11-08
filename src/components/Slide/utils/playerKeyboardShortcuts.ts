@@ -32,6 +32,8 @@ const EDITABLE_SELECTOR =
 
 const NATIVE_SPACE_TARGET_SELECTOR = "button, [role='button']";
 
+export const forwardedIframeKeyboardShortcuts =
+  new WeakSet<PlayerKeyboardShortcutEventLike>();
 const playerKeyboardShortcutOwners = new Set<string>();
 let activePlayerKeyboardShortcutOwnerId: string | null = null;
 
@@ -144,9 +146,92 @@ export const isPlayerKeyboardShortcutNativeSpaceTarget = (
   return Boolean(candidate.closest?.(NATIVE_SPACE_TARGET_SELECTOR));
 };
 
+const getVerticalScrollState = (
+  element: Element,
+  scrollUp: boolean,
+  overflowY: string,
+  overscrollBehaviorY: string
+): "available" | "contained" | undefined => {
+  const hasRoom = scrollUp
+    ? element.scrollTop > 0
+    : element.scrollHeight - element.clientHeight - element.scrollTop > 1;
+  const allowsKeyboardScroll = overflowY === "auto" || overflowY === "scroll";
+  if (hasRoom && allowsKeyboardScroll) {
+    return "available";
+  }
+  if (
+    (allowsKeyboardScroll || overflowY === "hidden") &&
+    (overscrollBehaviorY === "contain" || overscrollBehaviorY === "none")
+  ) {
+    return "contained";
+  }
+};
+
+const getVerticalScrollStateFromTarget = (
+  target: EventTarget | null | undefined,
+  scrollUp: boolean,
+  includeDocumentViewport = false
+) => {
+  const candidate = getTargetCandidate(target);
+  if (candidate?.nodeType !== 1) {
+    return;
+  }
+
+  const targetElement = candidate as Element;
+  const { body, defaultView, documentElement, scrollingElement } =
+    targetElement.ownerDocument;
+  if (!defaultView) {
+    return;
+  }
+
+  for (
+    let element: Element | null = targetElement;
+    element && element !== documentElement;
+    element = element.parentElement
+  ) {
+    // Body overflow may be propagated to the document viewport.
+    if (
+      element === body &&
+      (element === scrollingElement ||
+        defaultView.getComputedStyle(documentElement).overflowY === "visible")
+    ) {
+      break;
+    }
+
+    const { overflowY, overscrollBehaviorY } =
+      defaultView.getComputedStyle(element);
+    const state = getVerticalScrollState(
+      element,
+      scrollUp,
+      overflowY,
+      overscrollBehaviorY
+    );
+    if (state) {
+      return state;
+    }
+  }
+
+  if (!includeDocumentViewport || !scrollingElement) {
+    return;
+  }
+
+  const rootStyle = defaultView.getComputedStyle(documentElement);
+  const viewportOverflow =
+    rootStyle.overflowY === "visible" && body
+      ? defaultView.getComputedStyle(body).overflowY
+      : rootStyle.overflowY;
+  return getVerticalScrollState(
+    scrollingElement,
+    scrollUp,
+    viewportOverflow === "visible" ? "auto" : viewportOverflow,
+    rootStyle.overscrollBehaviorY
+  );
+};
+
 export const shouldIgnorePlayerKeyboardShortcutEvent = (
   event: PlayerKeyboardShortcutEventLike,
-  action: PlayerKeyboardShortcutAction | null
+  action: PlayerKeyboardShortcutAction | null,
+  iframeElement?: HTMLIFrameElement
 ) => {
   if (event.defaultPrevented || !action) {
     return true;
@@ -154,6 +239,22 @@ export const shouldIgnorePlayerKeyboardShortcutEvent = (
 
   if (isPlayerKeyboardShortcutEditableTarget(event.target)) {
     return true;
+  }
+
+  const key = event.key.toLowerCase();
+  if (
+    (key === "arrowup" || key === "arrowdown") &&
+    !forwardedIframeKeyboardShortcuts.has(event)
+  ) {
+    const scrollUp = key === "arrowup";
+    // Include the iframe viewport as part of the slide's content.
+    const scrollState =
+      getVerticalScrollStateFromTarget(
+        event.target,
+        scrollUp,
+        Boolean(iframeElement)
+      ) ?? getVerticalScrollStateFromTarget(iframeElement, scrollUp);
+    return scrollState === "available";
   }
 
   return (

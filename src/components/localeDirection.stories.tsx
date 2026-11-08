@@ -860,20 +860,32 @@ export const DirectionAwarePageShortcuts: Story = {
       const nextKey = direction === "rtl" ? "ArrowLeft" : "ArrowRight";
       await waitFor(() => {
         expect(getComputedStyle(player).direction).toBe(direction);
-        expect(previous).toHaveAttribute("aria-keyshortcuts", previousKey);
-        expect(next).toHaveAttribute("aria-keyshortcuts", nextKey);
-        expect(
-          previous.title.endsWith(direction === "rtl" ? "(→)" : "(←)")
-        ).toBe(true);
-        expect(next.title.endsWith(direction === "rtl" ? "(←)" : "(→)")).toBe(
-          true
+        expect(previous).toHaveAttribute(
+          "aria-keyshortcuts",
+          `${previousKey} ArrowUp`
         );
+        expect(next).toHaveAttribute(
+          "aria-keyshortcuts",
+          `${nextKey} ArrowDown`
+        );
+        expect(
+          previous.title.endsWith(direction === "rtl" ? "(→ / ↑)" : "(← / ↑)")
+        ).toBe(true);
+        expect(
+          next.title.endsWith(direction === "rtl" ? "(← / ↓)" : "(→ / ↓)")
+        ).toBe(true);
       });
       expectPlayerNavigationDirection(player);
       await userEvent.click(previous);
       await userEvent.keyboard(`{${nextKey}}`);
       expect(canvas.getByTestId("keyboard-result")).toHaveTextContent("next");
       await userEvent.keyboard(`{${previousKey}}`);
+      expect(canvas.getByTestId("keyboard-result")).toHaveTextContent(
+        "previous"
+      );
+      await userEvent.keyboard("{ArrowDown}");
+      expect(canvas.getByTestId("keyboard-result")).toHaveTextContent("next");
+      await userEvent.keyboard("{ArrowUp}");
       expect(canvas.getByTestId("keyboard-result")).toHaveTextContent(
         "previous"
       );
@@ -903,8 +915,68 @@ export const DirectionAwarePageShortcuts: Story = {
     expect(previous).not.toHaveAttribute("aria-keyshortcuts");
     expect(next).not.toHaveAttribute("aria-keyshortcuts");
     await userEvent.click(previous);
-    await userEvent.keyboard("{ArrowRight}");
+    await userEvent.keyboard("{ArrowRight}{ArrowDown}");
     expect(canvas.getByTestId("keyboard-result")).toHaveTextContent("previous");
+    await userEvent.click(next);
+    await userEvent.keyboard("{ArrowUp}");
+    expect(canvas.getByTestId("keyboard-result")).toHaveTextContent("next");
+  },
+};
+
+export const VerticalPageShortcutsWithScrollableHost: Story = {
+  render: () => {
+    const [turns, setTurns] = useState(0);
+    return (
+      <div style={{ minHeight: "200vh" }}>
+        <button type="button">Outside player</button>
+        <Player
+          defaultPlaying={false}
+          locale="en-US"
+          onNext={() => setTurns((count) => count + 1)}
+        />
+        <output>{turns}</output>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const scroller = canvasElement.ownerDocument.scrollingElement!;
+    const outsideButton = canvas.getByRole("button", {
+      name: "Outside player",
+    });
+    const nextButton = canvas.getByRole("button", {
+      name: getSlidePlayerTexts("en-US").nextLabel,
+    });
+    const turns = canvas.getByRole("status");
+    const initialScrollTop = scroller.scrollTop;
+    const dispatchDown = () => {
+      const event = new KeyboardEvent("keydown", {
+        key: "ArrowDown",
+        bubbles: true,
+        cancelable: true,
+      });
+      outsideButton.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+
+    try {
+      nextButton.focus({ preventScroll: true });
+      outsideButton.focus({ preventScroll: true });
+      await expect(outsideButton).toHaveFocus();
+
+      scroller.scrollTop = 0;
+      await expect(scroller.scrollHeight).toBeGreaterThan(
+        scroller.clientHeight
+      );
+      await expect(dispatchDown()).toBe(false);
+      await expect(turns).toHaveTextContent("0");
+
+      scroller.scrollTop = scroller.scrollHeight;
+      await expect(dispatchDown()).toBe(true);
+      await waitFor(() => expect(turns).toHaveTextContent("1"));
+    } finally {
+      scroller.scrollTop = initialScrollTop;
+    }
   },
 };
 

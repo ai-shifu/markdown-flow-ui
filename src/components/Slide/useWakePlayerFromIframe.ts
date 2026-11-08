@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import {
+  forwardedIframeKeyboardShortcuts,
   getPlayerKeyboardShortcutAction,
   shouldIgnorePlayerKeyboardShortcutEvent,
 } from "./utils/playerKeyboardShortcuts";
@@ -109,7 +110,9 @@ const useWakePlayerFromIframe = ({
 
         const action = getPlayerKeyboardShortcutAction(event);
 
-        if (shouldIgnorePlayerKeyboardShortcutEvent(event, action)) {
+        if (
+          shouldIgnorePlayerKeyboardShortcutEvent(event, action, iframeElement)
+        ) {
           return;
         }
 
@@ -135,6 +138,8 @@ const useWakePlayerFromIframe = ({
           shiftKey: event.shiftKey,
         });
 
+        // Scroll arbitration already used the original focus and iframe.
+        forwardedIframeKeyboardShortcuts.add(hostKeyboardEvent);
         sectionElement.dispatchEvent(hostKeyboardEvent);
 
         if (hostKeyboardEvent.defaultPrevented) {

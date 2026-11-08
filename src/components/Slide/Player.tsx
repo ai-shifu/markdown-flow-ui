@@ -300,9 +300,7 @@ const PlayIcon = () => (
 
 const PLAYER_SHORTCUT_LABELS = {
   fullscreen: "F",
-  next: "→",
   nextSubtitle: "Shift+→",
-  previous: "←",
   previousSubtitle: "Shift+←",
   subtitle: "C",
 } as const;
@@ -496,10 +494,8 @@ const Player = ({
   );
   const previousShortcutMetadata = getShortcutMetadata(
     playerTexts.previousLabel,
-    isRtlNavigation
-      ? PLAYER_SHORTCUT_LABELS.next
-      : PLAYER_SHORTCUT_LABELS.previous,
-    isRtlNavigation ? "ArrowRight" : "ArrowLeft"
+    isRtlNavigation ? "→ / ↑" : "← / ↑",
+    isRtlNavigation ? "ArrowRight ArrowUp" : "ArrowLeft ArrowUp"
   );
   const previousSubtitleShortcutMetadata = getShortcutMetadata(
     playerTexts.previousSubtitleLabel,
@@ -513,10 +509,8 @@ const Player = ({
   );
   const nextShortcutMetadata = getShortcutMetadata(
     playerTexts.nextLabel,
-    isRtlNavigation
-      ? PLAYER_SHORTCUT_LABELS.previous
-      : PLAYER_SHORTCUT_LABELS.next,
-    isRtlNavigation ? "ArrowLeft" : "ArrowRight"
+    isRtlNavigation ? "← / ↓" : "→ / ↓",
+    isRtlNavigation ? "ArrowLeft ArrowDown" : "ArrowRight ArrowDown"
   );
   const nextSubtitleShortcutMetadata = getShortcutMetadata(
     playerTexts.nextSubtitleLabel,

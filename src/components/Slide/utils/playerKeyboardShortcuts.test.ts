@@ -43,7 +43,19 @@ describe("playerKeyboardShortcuts", () => {
     expect(getPlayerKeyboardShortcutAction({ key: "n" })).toBeNull();
   });
 
-  it("mirrors only page shortcuts in RTL", () => {
+  it.each(["ltr", "rtl"] as const)(
+    "maps up and down to page shortcuts in %s",
+    (direction) => {
+      expect(
+        getPlayerKeyboardShortcutAction({ key: "ArrowUp" }, direction)
+      ).toBe("previous");
+      expect(
+        getPlayerKeyboardShortcutAction({ key: "ArrowDown" }, direction)
+      ).toBe("next");
+    }
+  );
+
+  it("mirrors horizontal page shortcuts in RTL", () => {
     expect(getPlayerKeyboardShortcutAction({ key: "ArrowLeft" }, "rtl")).toBe(
       "next"
     );
@@ -81,6 +93,9 @@ describe("playerKeyboardShortcuts", () => {
     ).toBeNull();
     expect(
       getPlayerKeyboardShortcutAction({ key: "f", shiftKey: true })
+    ).toBeNull();
+    expect(
+      getPlayerKeyboardShortcutAction({ key: "ArrowDown", shiftKey: true })
     ).toBeNull();
   });
 

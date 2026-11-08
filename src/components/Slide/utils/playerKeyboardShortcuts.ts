@@ -169,8 +169,7 @@ const getVerticalScrollState = (
 
 const getVerticalScrollStateFromTarget = (
   target: EventTarget | null | undefined,
-  scrollUp: boolean,
-  includeDocumentViewport = false
+  scrollUp: boolean
 ) => {
   const candidate = getTargetCandidate(target);
   if (candidate?.nodeType !== 1) {
@@ -211,7 +210,7 @@ const getVerticalScrollStateFromTarget = (
     }
   }
 
-  if (!includeDocumentViewport || !scrollingElement) {
+  if (!scrollingElement) {
     return;
   }
 
@@ -247,13 +246,9 @@ export const shouldIgnorePlayerKeyboardShortcutEvent = (
     !forwardedIframeKeyboardShortcuts.has(event)
   ) {
     const scrollUp = key === "arrowup";
-    // Include the iframe viewport as part of the slide's content.
     const scrollState =
-      getVerticalScrollStateFromTarget(
-        event.target,
-        scrollUp,
-        Boolean(iframeElement)
-      ) ?? getVerticalScrollStateFromTarget(iframeElement, scrollUp);
+      getVerticalScrollStateFromTarget(event.target, scrollUp) ??
+      getVerticalScrollStateFromTarget(iframeElement, scrollUp);
     return scrollState === "available";
   }
 

@@ -3614,6 +3614,16 @@ export const InlineImageInput: Story = {
   play: async ({ canvasElement }) => {
     const { userEvent, within } = await import("storybook/test");
     const canvas = within(canvasElement);
+    const uploadIcon = canvas
+      .getByRole("button", { name: "Add image" })
+      .querySelector("svg")!;
+    const sendIcon = canvas.getByRole("img", { name: "Send" });
+    const uploadBounds = uploadIcon.getBoundingClientRect();
+    const sendBounds = sendIcon.getBoundingClientRect();
+    const uploadCenter = uploadBounds.top + uploadBounds.height / 2;
+    const sendCenter = sendBounds.top + sendBounds.height / 2;
+    await expect(Math.abs(uploadCenter - sendCenter)).toBeLessThan(1);
+
     await userEvent.upload(
       canvasElement.querySelector<HTMLInputElement>('input[type="file"]')!,
       new File(

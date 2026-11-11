@@ -128,7 +128,7 @@ export function ImageInputGroup({
                   uploading ? texts.imageUploadingLabel : texts.addImageLabel
                 }
                 title={texts.addImageLabel}
-                className="ms-1 mb-0.5 shrink-0"
+                className="ms-1 shrink-0"
               >
                 {uploading ? (
                   <LoaderCircle

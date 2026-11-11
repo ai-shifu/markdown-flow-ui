@@ -1,3 +1,4 @@
+import type { ImageInputOptions } from "./ImageInputGroup";
 import { trimVariablePadding } from "remark-flow";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -80,6 +81,10 @@ export type ContentRenderTypewriterPacing = "fixed" | "content-aware";
 
 // Define component Props type
 export interface ContentRenderProps {
+  /** Show the image picker in text-bearing interactions. Hidden by default. */
+  showImageInput?: boolean;
+  /** Host-controlled uploads and image presentation. */
+  imageInput?: ImageInputOptions;
   content: string;
   contentType?: string;
   /** Locale used for built-in UI text when a more specific text prop is not provided. */
@@ -285,6 +290,8 @@ type CustomComponents = ComponentsWithCustomVariable & {
 };
 
 type MarkdownComponentRuntimeValues = {
+  showImageInput?: boolean;
+  imageInput?: ImageInputOptions;
   onPlaceholderAccepted?: () => void;
   direction?: ContentRenderProps["dir"];
   language?: string;
@@ -644,6 +651,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   defaultInputText,
   defaultSelectedValues,
   readonly = false,
+  showImageInput = false,
+  imageInput,
   confirmButtonText,
   copyButtonText,
   copiedButtonText,
@@ -1147,15 +1156,29 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     ]
   );
 
+  const imageDefaultsEnabled = showImageInput || Boolean(imageInput);
+  const defaultValueOptions = useMemo(
+    () =>
+      imageDefaultsEnabled
+        ? { ...interactionDefaultValueOptions, allowImages: true }
+        : interactionDefaultValueOptions,
+    [imageDefaultsEnabled, interactionDefaultValueOptions]
+  );
   const interactionDefaults = useMemo(
     () =>
       getInteractionDefaultValues(
         renderContent,
         userInput,
-        interactionDefaultValueOptions
+        defaultValueOptions
       ),
-    [interactionDefaultValueOptions, renderContent, userInput]
+    [defaultValueOptions, renderContent, userInput]
   );
+
+  const resolvedImageInput =
+    imageInput ??
+    (interactionDefaults.images?.length
+      ? { images: interactionDefaults.images }
+      : undefined);
 
   const resolvedDefaultButtonText =
     (defaultButtonText ? trimVariablePadding(defaultButtonText) : undefined) ||
@@ -1179,6 +1202,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     resolvedDefaultSelectedValues
   );
   const componentRuntimeValuesRef = useRef<MarkdownComponentRuntimeValues>({
+    showImageInput,
+    imageInput: resolvedImageInput,
     onPlaceholderAccepted,
     direction,
     language,
@@ -1198,6 +1223,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
   });
 
   componentRuntimeValuesRef.current = {
+    showImageInput,
+    imageInput: resolvedImageInput,
     onPlaceholderAccepted,
     direction,
     language,
@@ -1239,6 +1266,8 @@ const ContentRender: React.FC<ContentRenderProps> = ({
       "custom-variable": (props) => (
         <CustomButtonInputVariable
           {...props}
+          showImageInput={componentRuntimeValuesRef.current.showImageInput}
+          imageInput={componentRuntimeValuesRef.current.imageInput}
           readonly={componentRuntimeValuesRef.current.readonly}
           defaultButtonText={
             componentRuntimeValuesRef.current.resolvedDefaultButtonText

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.12 - 2026-11-11
+
+### Added
+
+- Let hosts enable image selection, previews, and removal inside the input.
+  Submit text and images together through the existing send control.
+- Restore image attachments in lesson interactions and slide overlays.
+
 ## 0.3.11 - 2026-11-09
 
 ### Added

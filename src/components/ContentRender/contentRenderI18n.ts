@@ -12,6 +12,10 @@ export interface ContentRenderLocaleTexts {
   sandboxFullscreenButtonText: string;
   sandboxExitFullscreenButtonText: string;
   sendButtonLabel: string;
+  addImageLabel: string;
+  removeImageLabel: string;
+  attachedImageLabel: string;
+  imageUploadingLabel: string;
   scrollToBottomLabel: string;
   mermaidLoadingText: string;
   mermaidEmptyChartText: string;

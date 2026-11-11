@@ -12,7 +12,11 @@
     "mermaidEmptyChartText": "Empty chart content",
     "mermaidErrorText": "Unable to display the Mermaid chart",
     "footnoteLabel": "Footnotes",
-    "footnoteBackLabel": "Back to reference {reference}"
+    "footnoteBackLabel": "Back to reference {reference}",
+    "addImageLabel": "Add image",
+    "removeImageLabel": "Remove image",
+    "attachedImageLabel": "Attached image",
+    "imageUploadingLabel": "Uploading image"
   },
   "fr-FR": {
     "confirmButtonText": "Soumettre",
@@ -27,7 +31,11 @@
     "mermaidEmptyChartText": "Le diagramme est vide",
     "mermaidErrorText": "Impossible d’afficher le diagramme Mermaid",
     "footnoteLabel": "Notes de bas de page",
-    "footnoteBackLabel": "Retour à la référence {reference}"
+    "footnoteBackLabel": "Retour à la référence {reference}",
+    "addImageLabel": "Ajouter une image",
+    "removeImageLabel": "Retirer l’image",
+    "attachedImageLabel": "Image jointe",
+    "imageUploadingLabel": "Envoi de l’image"
   },
   "zh-CN": {
     "confirmButtonText": "提交",
@@ -42,7 +50,11 @@
     "mermaidEmptyChartText": "图表内容为空",
     "mermaidErrorText": "无法显示 Mermaid 图表",
     "footnoteLabel": "脚注",
-    "footnoteBackLabel": "返回正文引用 {reference}"
+    "footnoteBackLabel": "返回正文引用 {reference}",
+    "addImageLabel": "添加图片",
+    "removeImageLabel": "移除图片",
+    "attachedImageLabel": "已添加的图片",
+    "imageUploadingLabel": "图片上传中"
   },
   "ar-SA": {
     "confirmButtonText": "إرسال",
@@ -57,7 +69,11 @@
     "mermaidEmptyChartText": "محتوى المخطط فارغ",
     "mermaidErrorText": "تعذّر عرض مخطط Mermaid",
     "footnoteLabel": "الحواشي",
-    "footnoteBackLabel": "العودة إلى موضع الإحالة {reference}"
+    "footnoteBackLabel": "العودة إلى موضع الإحالة {reference}",
+    "addImageLabel": "إضافة صورة",
+    "removeImageLabel": "إزالة الصورة",
+    "attachedImageLabel": "صورة مرفقة",
+    "imageUploadingLabel": "جارٍ رفع الصورة"
   },
   "th-TH": {
     "confirmButtonText": "ส่งคำตอบ",
@@ -72,7 +88,11 @@
     "mermaidEmptyChartText": "ไม่มีเนื้อหาในแผนภาพ",
     "mermaidErrorText": "ไม่สามารถแสดงแผนภาพ Mermaid ได้",
     "footnoteLabel": "เชิงอรรถ",
-    "footnoteBackLabel": "กลับไปยังจุดอ้างอิง {reference}"
+    "footnoteBackLabel": "กลับไปยังจุดอ้างอิง {reference}",
+    "addImageLabel": "เพิ่มรูปภาพ",
+    "removeImageLabel": "ลบรูปภาพ",
+    "attachedImageLabel": "รูปภาพที่แนบ",
+    "imageUploadingLabel": "กำลังอัปโหลดรูปภาพ"
   },
   "es-ES": {
     "confirmButtonText": "Enviar",
@@ -87,7 +107,11 @@
     "mermaidEmptyChartText": "El diagrama está vacío",
     "mermaidErrorText": "No se puede mostrar el diagrama Mermaid",
     "footnoteLabel": "Notas al pie",
-    "footnoteBackLabel": "Volver a la referencia {reference}"
+    "footnoteBackLabel": "Volver a la referencia {reference}",
+    "addImageLabel": "Añadir imagen",
+    "removeImageLabel": "Quitar imagen",
+    "attachedImageLabel": "Imagen adjunta",
+    "imageUploadingLabel": "Subiendo imagen"
   },
   "de-DE": {
     "confirmButtonText": "Absenden",
@@ -102,7 +126,11 @@
     "mermaidEmptyChartText": "Das Diagramm ist leer",
     "mermaidErrorText": "Das Mermaid-Diagramm kann nicht angezeigt werden",
     "footnoteLabel": "Fußnoten",
-    "footnoteBackLabel": "Zurück zum Verweis {reference}"
+    "footnoteBackLabel": "Zurück zum Verweis {reference}",
+    "addImageLabel": "Bild hinzufügen",
+    "removeImageLabel": "Bild entfernen",
+    "attachedImageLabel": "Angehängtes Bild",
+    "imageUploadingLabel": "Bild wird hochgeladen"
   },
   "ja-JP": {
     "confirmButtonText": "送信",
@@ -117,7 +145,11 @@
     "mermaidEmptyChartText": "図の内容がありません",
     "mermaidErrorText": "Mermaid 図を表示できません",
     "footnoteLabel": "脚注",
-    "footnoteBackLabel": "参照箇所 {reference} に戻る"
+    "footnoteBackLabel": "参照箇所 {reference} に戻る",
+    "addImageLabel": "画像を追加",
+    "removeImageLabel": "画像を削除",
+    "attachedImageLabel": "添付画像",
+    "imageUploadingLabel": "画像をアップロード中"
   },
   "ur-PK": {
     "confirmButtonText": "جمع کرائیں",
@@ -132,7 +164,11 @@
     "mermaidEmptyChartText": "چارٹ کا مواد خالی ہے",
     "mermaidErrorText": "Mermaid چارٹ دکھایا نہیں جا سکا",
     "footnoteLabel": "حواشی",
-    "footnoteBackLabel": "حوالہ {reference} پر واپس جائیں"
+    "footnoteBackLabel": "حوالہ {reference} پر واپس جائیں",
+    "addImageLabel": "تصویر شامل کریں",
+    "removeImageLabel": "تصویر ہٹائیں",
+    "attachedImageLabel": "منسلک تصویر",
+    "imageUploadingLabel": "تصویر اپ لوڈ ہو رہی ہے"
   },
   "fil-PH": {
     "confirmButtonText": "Isumite",
@@ -147,7 +183,11 @@
     "mermaidEmptyChartText": "Walang laman ang diagram",
     "mermaidErrorText": "Hindi maipakita ang diagram ng Mermaid",
     "footnoteLabel": "Mga talababa",
-    "footnoteBackLabel": "Bumalik sa sanggunian {reference}"
+    "footnoteBackLabel": "Bumalik sa sanggunian {reference}",
+    "addImageLabel": "Magdagdag ng larawan",
+    "removeImageLabel": "Alisin ang larawan",
+    "attachedImageLabel": "Kalakip na larawan",
+    "imageUploadingLabel": "Ina-upload ang larawan"
   },
   "vi-VN": {
     "confirmButtonText": "Gửi",
@@ -162,6 +202,10 @@
     "mermaidEmptyChartText": "Sơ đồ không có nội dung",
     "mermaidErrorText": "Không thể hiển thị sơ đồ Mermaid",
     "footnoteLabel": "Chú thích cuối trang",
-    "footnoteBackLabel": "Quay lại tham chiếu {reference}"
+    "footnoteBackLabel": "Quay lại tham chiếu {reference}",
+    "addImageLabel": "Thêm ảnh",
+    "removeImageLabel": "Xóa ảnh",
+    "attachedImageLabel": "Ảnh đính kèm",
+    "imageUploadingLabel": "Đang tải ảnh lên"
   }
 }

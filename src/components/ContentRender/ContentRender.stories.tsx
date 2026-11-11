@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { expect, userEvent, waitFor } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import { MARKDOWN_FLOW_LOCALES } from "../../lib/locale";
 
 import runStreamFixtureText from "../../../tests/fixtures/ai-shifu-run-stream.sse?raw";
@@ -3573,5 +3573,110 @@ export const StableVideoWithWideSvg: Story = {
     } finally {
       for (const capture of captures) capture.cleanup();
     }
+  },
+};
+
+export const InlineImageInput: Story = {
+  args: { content: "?[...Ask about an image]", showImageInput: true },
+  render: (args) => {
+    const [images, setImages] = useState<string[]>([]);
+    const [result, setResult] = useState("");
+    return (
+      <div style={{ width: 600, maxWidth: "100%" }}>
+        <ContentRender
+          {...args}
+          imageInput={{
+            images,
+            onSelect: (files) => {
+              files.forEach((file) => {
+                const reader = new FileReader();
+                reader.onload = () =>
+                  setImages((current) => [...current, String(reader.result)]);
+                reader.readAsDataURL(file);
+              });
+            },
+            onRemove: (index) =>
+              setImages((current) => current.filter((_, i) => i !== index)),
+          }}
+          onSend={(value) =>
+            setResult(
+              JSON.stringify({
+                text: value.inputText,
+                imageCount: value.images?.length ?? 0,
+              })
+            )
+          }
+        />
+        <output data-testid="render-image-result">{result}</output>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const { userEvent, within } = await import("storybook/test");
+    const canvas = within(canvasElement);
+    await userEvent.upload(
+      canvasElement.querySelector<HTMLInputElement>('input[type="file"]')!,
+      new File(
+        [
+          Uint8Array.from(
+            atob(
+              "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAFElEQVR4nGNUTX7NgA0wYRUdtBIAJUMBgy4eB/0AAAAASUVORK5CYII="
+            ),
+            (char) => char.charCodeAt(0)
+          ),
+        ],
+        "sample.png",
+        { type: "image/png" }
+      )
+    );
+    await canvas.findByRole("img", { name: "Attached image 1" });
+    await userEvent.type(canvas.getByRole("textbox"), "Explain this");
+    await userEvent.click(canvas.getByRole("button", { name: "Send" }));
+    await expect(canvas.getByTestId("render-image-result")).toHaveTextContent(
+      '"imageCount":1'
+    );
+    await expect(canvas.getByTestId("render-image-result")).toHaveTextContent(
+      "Explain this"
+    );
+  },
+};
+
+export const InlineMultiSelectImageInput: Story = {
+  args: {
+    content: "?[A || B || ...Explain your choice]",
+    showImageInput: true,
+  },
+  render: InlineImageInput.render,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const picker =
+      canvasElement.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const image = new File(
+      [
+        Uint8Array.from(
+          atob(
+            "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAFElEQVR4nGNUTX7NgA0wYRUdtBIAJUMBgy4eB/0AAAAASUVORK5CYII="
+          ),
+          (char) => char.charCodeAt(0)
+        ),
+      ],
+      "sample.png",
+      {
+        type: "image/png",
+      }
+    );
+    await userEvent.upload(picker, image);
+    const preview = await canvas.findByRole("img", {
+      name: "Attached image 1",
+    });
+    const group = preview.closest('[data-slot="input-group"]')!;
+    const border = group.getBoundingClientRect();
+    const bounds = preview.getBoundingClientRect();
+    await expect(border.top).toBeLessThanOrEqual(bounds.top);
+    await expect(border.bottom).toBeGreaterThanOrEqual(bounds.bottom);
+    await userEvent.click(canvas.getByRole("button", { name: "Submit" }));
+    await expect(canvas.getByTestId("render-image-result")).toHaveTextContent(
+      '"imageCount":1'
+    );
   },
 };

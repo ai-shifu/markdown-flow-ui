@@ -18,6 +18,8 @@ export interface InteractionDefaultValues {
   buttonText?: string;
   inputText?: string;
   selectedValues?: string[];
+  /** Uploaded images restored from a structured submission. */
+  images?: string[];
 }
 
 export interface InteractionDefaultResolverParams {
@@ -32,12 +34,15 @@ export type InteractionDefaultResolver = (
 
 export interface InteractionDefaultValueOptions {
   resolveDefaultValues?: InteractionDefaultResolver;
+  /** Opt into native image defaults. Image-enabled components set this automatically. */
+  allowImages?: boolean;
 }
 
 interface StructuredInteractionPayload {
   buttonText?: unknown;
   inputText?: unknown;
   selectedValues?: unknown;
+  images?: unknown;
 }
 
 const interactionParser = createInteractionParser();
@@ -294,7 +299,8 @@ const resolveMultiSelectInteractionDefaults = (
 };
 
 const normalizeStructuredInteractionDefaults = (
-  payload?: StructuredInteractionPayload | null
+  payload?: StructuredInteractionPayload | null,
+  allowImages = false
 ): InteractionDefaultValues | null => {
   if (!payload || Array.isArray(payload)) {
     return null;
@@ -308,8 +314,15 @@ const normalizeStructuredInteractionDefaults = (
   const buttonText = trimVariablePadding(`${payload.buttonText ?? ""}`);
   const inputText =
     typeof payload.inputText === "string" ? payload.inputText : undefined;
+  const images =
+    allowImages && Array.isArray(payload.images)
+      ? payload.images.filter(
+          (value): value is string =>
+            typeof value === "string" && Boolean(value.trim())
+        )
+      : [];
 
-  if (!selectedValues?.length && !buttonText && !inputText) {
+  if (!selectedValues?.length && !buttonText && !inputText && !images.length) {
     return null;
   }
 
@@ -317,10 +330,14 @@ const normalizeStructuredInteractionDefaults = (
     buttonText: buttonText || undefined,
     inputText,
     selectedValues: selectedValues?.length ? selectedValues : undefined,
+    ...(images.length ? { images, selectedValues: selectedValues ?? [] } : {}),
   };
 };
 
-const parseStructuredInteractionDefaults = (rawValue?: string | null) => {
+const parseStructuredInteractionDefaults = (
+  rawValue?: string | null,
+  allowImages = false
+) => {
   if (!rawValue) {
     return null;
   }
@@ -331,7 +348,7 @@ const parseStructuredInteractionDefaults = (rawValue?: string | null) => {
 
   try {
     const parsed = JSON.parse(rawValue) as StructuredInteractionPayload;
-    return normalizeStructuredInteractionDefaults(parsed);
+    return normalizeStructuredInteractionDefaults(parsed, allowImages);
   } catch {
     return null;
   }
@@ -373,7 +390,10 @@ export const getInteractionDefaultValues = (
     return {};
   }
 
-  const structuredDefaults = parseStructuredInteractionDefaults(normalized);
+  const structuredDefaults = parseStructuredInteractionDefaults(
+    normalized,
+    options?.allowImages
+  );
 
   if (structuredDefaults) {
     return structuredDefaults;

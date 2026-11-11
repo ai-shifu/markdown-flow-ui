@@ -4,7 +4,6 @@ import sendIconDisable from "@/assets/icons/send_disable.svg";
 import sendIconEnable from "@/assets/icons/send_enable.svg";
 
 import {
-  InputGroup,
   InputGroupButton,
   InputGroupTextarea,
 } from "../ui/inputGroup/input-group";
@@ -15,10 +14,15 @@ import {
 } from "../../lib/locale";
 import { getContentRenderLocaleTexts } from "./contentRenderI18n";
 import { acceptPlaceholder } from "./utils/accept-placeholder";
+import { ImageInputGroup, type ImageInputOptions } from "./ImageInputGroup";
 
 type MarkdownFlowInputSendShortcut = "enter" | "none";
 
 interface MarkdownFlowInputProps {
+  /** Show the image picker inside the input. Hidden by default. */
+  showImageInput?: boolean;
+  /** Host-controlled image upload state and callbacks. */
+  imageInput?: ImageInputOptions;
   /** Overrides locale-derived input direction. */
   dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   disabled?: boolean;
@@ -62,11 +66,16 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   sendShortcut = "enter",
   className,
   textareaClassName,
+  showImageInput = false,
+  imageInput,
 }) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
   const resolvedSendButtonLabel =
     sendButtonLabel || localeTexts.sendButtonLabel;
-  const isSendDisabled = disabled || !value?.trim();
+  const isSendDisabled =
+    disabled ||
+    imageInput?.uploading ||
+    (!value?.trim() && !imageInput?.images.length);
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (acceptPlaceholder(e, placeholder, disabled, onAcceptPlaceholder)) {
       return;
@@ -86,7 +95,11 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
   };
 
   return (
-    <InputGroup
+    <ImageInputGroup
+      showImageInput={showImageInput}
+      imageInput={imageInput}
+      disabled={disabled}
+      locale={locale}
       dir={dir ?? getMarkdownFlowDirection(locale)}
       lang={lang ?? getMarkdownFlowLanguage(locale)}
       data-disabled={disabled}
@@ -122,7 +135,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
           className="size-6"
         />
       </InputGroupButton>
-    </InputGroup>
+    </ImageInputGroup>
   );
 };
 

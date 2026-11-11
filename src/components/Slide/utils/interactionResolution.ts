@@ -32,7 +32,9 @@ export const resolveSlideInteractionState = (
     activeInteractionElement.user_input?.trim()
   );
   const effectiveDefaultValueOptions = hasResolvedInteractionInput
-    ? undefined
+    ? interactionDefaultValueOptions?.allowImages
+      ? { allowImages: true }
+      : undefined
     : interactionDefaultValueOptions;
 
   return {

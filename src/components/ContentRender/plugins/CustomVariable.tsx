@@ -5,11 +5,9 @@ import { OnSendContentParams } from "../../types";
 import { Button } from "../../ui/button";
 import { Checkbox } from "../../ui/checkbox";
 import MarkdownFlowInput from "../MarkdownFlowInput";
+import { ImageInputGroup, type ImageInputOptions } from "../ImageInputGroup";
 import { acceptPlaceholder } from "../utils/accept-placeholder";
-import {
-  InputGroup,
-  InputGroupTextarea,
-} from "../../ui/inputGroup/input-group";
+import { InputGroupTextarea } from "../../ui/inputGroup/input-group";
 import type { MarkdownFlowLocale } from "../../../lib/locale";
 import { cn } from "../../../lib/utils";
 import { getContentRenderLocaleTexts } from "../contentRenderI18n";
@@ -28,6 +26,8 @@ interface CustomVariableNode {
 
 // Define custom variable component Props type
 interface CustomVariableProps {
+  showImageInput?: boolean;
+  imageInput?: ImageInputOptions;
   /** Explicit direction for nested input controls. */
   dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
   /** Explicit language for nested input controls. */
@@ -50,7 +50,10 @@ interface ComponentsWithCustomVariable extends Components {
 }
 
 // Multi select section( with checkboxes and input)
-interface MultiSelectSectionProps {
+interface MultiSelectSectionProps extends Pick<
+  CustomVariableProps,
+  "showImageInput" | "imageInput"
+> {
   node: CustomVariableNode;
   readonly?: boolean;
   selectedValues: string[];
@@ -60,6 +63,7 @@ interface MultiSelectSectionProps {
   handleInputChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   handleConfirmClick: () => void;
+  locale?: MarkdownFlowLocale;
 }
 
 const MultiSelectSection = ({
@@ -72,10 +76,17 @@ const MultiSelectSection = ({
   handleInputChange,
   handleKeyDown,
   handleConfirmClick,
+  showImageInput,
+  imageInput,
+  locale,
 }: MultiSelectSectionProps) => {
   const placeholder = node.properties?.placeholder;
   const confirmDisabled =
-    readonly || (selectedValues.length === 0 && !inputValue?.trim());
+    readonly ||
+    imageInput?.uploading ||
+    (selectedValues.length === 0 &&
+      !inputValue?.trim() &&
+      !(node.properties?.placeholder && imageInput?.images.length));
 
   const renderConfirmButton = (extraWrapperClassName?: string) => (
     <span
@@ -119,7 +130,13 @@ const MultiSelectSection = ({
       {placeholder ? (
         <span className="block mb-1 w-full max-w-[500px]">
           <span className="multi-select-input-row flex w-full items-end gap-3">
-            <InputGroup data-disabled={readonly} className="flex-1">
+            <ImageInputGroup
+              disabled={readonly}
+              locale={locale}
+              showImageInput={showImageInput}
+              imageInput={imageInput}
+              className="flex-1"
+            >
               <InputGroupTextarea
                 disabled={readonly}
                 placeholder={placeholder}
@@ -129,7 +146,7 @@ const MultiSelectSection = ({
                 className="text-sm px-3"
                 title={placeholder}
               />
-            </InputGroup>
+            </ImageInputGroup>
             {renderConfirmButton("shrink-0")}
           </span>
         </span>
@@ -141,7 +158,10 @@ const MultiSelectSection = ({
 };
 
 // Single select section( with buttons and input)
-interface SingleSelectSectionProps {
+interface SingleSelectSectionProps extends Pick<
+  CustomVariableProps,
+  "showImageInput" | "imageInput"
+> {
   dir?: CustomVariableProps["dir"];
   lang?: string;
   node: CustomVariableNode;
@@ -167,6 +187,8 @@ const SingleSelectSection = ({
   handleInputChange,
   handleSendClick,
   onAcceptPlaceholder,
+  showImageInput,
+  imageInput,
 }: SingleSelectSectionProps) => (
   <span className="single-select-container inline-flex w-full flex-col">
     <span className="flex flex-wrap gap-y-[9px] gap-x-2">
@@ -195,6 +217,8 @@ const SingleSelectSection = ({
     {node.properties?.placeholder && (
       <span className="mt-[9px] mb-1">
         <MarkdownFlowInput
+          showImageInput={showImageInput}
+          imageInput={imageInput}
           dir={dir}
           lang={lang}
           disabled={readonly}
@@ -212,7 +236,10 @@ const SingleSelectSection = ({
 );
 
 // Pure input
-interface InputSectionProps {
+interface InputSectionProps extends Pick<
+  CustomVariableProps,
+  "showImageInput" | "imageInput"
+> {
   dir?: CustomVariableProps["dir"];
   lang?: string;
   readonly?: boolean;
@@ -234,6 +261,8 @@ const InputSection = ({
   onChange,
   onSend,
   onAcceptPlaceholder,
+  showImageInput,
+  imageInput,
 }: InputSectionProps) => {
   if (!placeholder) {
     return null;
@@ -241,6 +270,8 @@ const InputSection = ({
 
   return (
     <MarkdownFlowInput
+      showImageInput={showImageInput}
+      imageInput={imageInput}
       dir={dir}
       lang={lang}
       disabled={readonly}
@@ -269,6 +300,8 @@ const CustomButtonInputVariable = ({
   confirmButtonText,
   beforeSend = () => true,
   onPlaceholderAccepted,
+  showImageInput,
+  imageInput,
 }: CustomVariableProps) => {
   const localeTexts = getContentRenderLocaleTexts(locale);
   const resolvedConfirmButtonText =
@@ -315,13 +348,31 @@ const CustomButtonInputVariable = ({
     singleSelectNode.properties?.buttonValues || [];
   const isSingleSelect = !isMultiSelect && singleSelectButtonTexts.length > 0;
 
+  const send = (param: OnSendContentParams) => {
+    if (readonly || imageInput?.uploading) return;
+    const images =
+      node.properties?.placeholder && imageInput?.images.length
+        ? [...imageInput.images]
+        : undefined;
+    const submission = images
+      ? {
+          ...param,
+          ...(param.buttonText !== undefined && inputValue
+            ? { inputText: inputValue }
+            : {}),
+          images,
+        }
+      : param;
+    if (!beforeSend?.(submission)) return;
+    onSend?.(submission);
+  };
+
   const handleButtonClick = (value: string) => {
     const param = {
       variableName: node.properties?.variableName || "",
       buttonText: value,
     };
-    if (!beforeSend?.(param)) return;
-    onSend?.(param);
+    send(param);
   };
 
   const handleCheckboxChange = (value: string, checked: boolean) => {
@@ -335,15 +386,17 @@ const CustomButtonInputVariable = ({
   };
 
   const handleConfirmClick = () => {
-    const noSelection = selectedValues.length === 0 && !inputValue?.trim();
+    const noSelection =
+      selectedValues.length === 0 &&
+      !inputValue?.trim() &&
+      !(node.properties?.placeholder && imageInput?.images.length);
     const param = {
       variableName: node.properties?.variableName || "",
       selectedValues,
       inputText: inputValue?.trim() || undefined,
     };
     if (readonly || noSelection) return;
-    if (!beforeSend?.(param)) return;
-    onSend?.(param);
+    send(param);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -373,7 +426,10 @@ const CustomButtonInputVariable = ({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (isMultiSelect) {
-        const noSelection = selectedValues.length === 0 && !inputValue.trim();
+        const noSelection =
+          selectedValues.length === 0 &&
+          !inputValue.trim() &&
+          !imageInput?.images.length;
         if (!noSelection) handleConfirmClick();
       } else {
         handleSendClick();
@@ -385,8 +441,7 @@ const CustomButtonInputVariable = ({
       variableName: node.properties?.variableName || "",
       inputText: inputValue,
     };
-    if (!beforeSend?.(param)) return;
-    onSend?.(param);
+    send(param);
   };
 
   const resolvedDefaultButtonText = React.useMemo(() => {
@@ -416,6 +471,9 @@ const CustomButtonInputVariable = ({
     <span className="custom-variable-container inline-flex items-center flex-wrap">
       {isMultiSelect && (
         <MultiSelectSection
+          locale={locale}
+          showImageInput={showImageInput}
+          imageInput={imageInput}
           node={node}
           readonly={readonly}
           selectedValues={selectedValues}
@@ -430,6 +488,8 @@ const CustomButtonInputVariable = ({
 
       {!isMultiSelect && isSingleSelect && (
         <SingleSelectSection
+          showImageInput={showImageInput}
+          imageInput={imageInput}
           dir={dir}
           lang={lang}
           node={singleSelectNode}
@@ -446,6 +506,8 @@ const CustomButtonInputVariable = ({
 
       {!isMultiSelect && !isSingleSelect && node.properties?.placeholder && (
         <InputSection
+          showImageInput={showImageInput}
+          imageInput={imageInput}
           dir={dir}
           lang={lang}
           readonly={readonly}

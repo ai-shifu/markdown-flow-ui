@@ -6,6 +6,7 @@ import {
   type MarkdownFlowLocale,
 } from "../../lib/locale";
 import ContentRender from "../ContentRender";
+import type { ImageInputOptions } from "../ContentRender/ImageInputGroup";
 import { CustomRenderBarProps, OnSendContentParams } from "../types";
 import "./markdownFlow.css";
 
@@ -18,6 +19,8 @@ export interface MarkdownFlowProps {
     defaultButtonText?: string;
     defaultSelectedValues?: string[];
     readonly?: boolean;
+    showImageInput?: boolean;
+    imageInput?: ImageInputOptions;
     customRenderBar?: CustomRenderBarProps;
     onClickCustomButtonAfterContent?: () => void;
     dynamicInteractionFormat?: string;
@@ -44,6 +47,10 @@ export interface MarkdownFlowProps {
   copiedButtonText?: string;
   beforeSend?: (content: OnSendContentParams) => boolean;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
+  /** Show the image picker on unfinished text interactions. Hidden by default. */
+  showImageInput?: boolean;
+  /** Controlled images for unfinished interactions; history uses each item. */
+  imageInput?: ImageInputOptions;
 }
 
 const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
@@ -59,7 +66,17 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
   copiedButtonText,
   beforeSend: beforeSendProp,
   interactionDefaultValueOptions,
+  showImageInput = false,
+  imageInput,
 }) => {
+  const imageDefaultsEnabled = showImageInput || Boolean(imageInput);
+  const defaultValueOptions = React.useMemo(
+    () =>
+      imageDefaultsEnabled
+        ? { ...interactionDefaultValueOptions, allowImages: true }
+        : interactionDefaultValueOptions,
+    [imageDefaultsEnabled, interactionDefaultValueOptions]
+  );
   return (
     <div
       className="markdown-flow"
@@ -79,6 +96,12 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             defaultButtonText={contentInfo.defaultButtonText}
             defaultSelectedValues={contentInfo.defaultSelectedValues}
             readonly={contentInfo.readonly}
+            showImageInput={
+              contentInfo.showImageInput ?? (!isFinished && showImageInput)
+            }
+            imageInput={
+              contentInfo.imageInput ?? (!isFinished ? imageInput : undefined)
+            }
             customRenderBar={contentInfo.customRenderBar || customRenderBar}
             onSend={onSend}
             onPlaceholderAccepted={onPlaceholderAccepted}
@@ -86,7 +109,7 @@ const MarkdownFlow: React.FC<MarkdownFlowProps> = ({
             locale={locale}
             lang={lang}
             dir={dir}
-            interactionDefaultValueOptions={interactionDefaultValueOptions}
+            interactionDefaultValueOptions={defaultValueOptions}
             onClickCustomButtonAfterContent={
               contentInfo.onClickCustomButtonAfterContent
             }

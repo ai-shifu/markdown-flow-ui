@@ -103,7 +103,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
       dir={dir ?? getMarkdownFlowDirection(locale)}
       lang={lang ?? getMarkdownFlowLanguage(locale)}
       data-disabled={disabled}
-      className={`input-container h-auto items-end bg-white border-[#e5e5e5] shadow-[0_1px_2px_rgba(0,0,0,0.05)] ${className || ""}`}
+      className={`input-container bg-white border-[#e5e5e5] shadow-[0_1px_2px_rgba(0,0,0,0.05)] ${className || ""}`}
     >
       <InputGroupTextarea
         disabled={disabled}
@@ -111,7 +111,7 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
         value={value}
         onChange={onChange}
         onKeyDown={handleKeyDown}
-        className={`text-[16px] leading-5 font-normal text-[#0A0A0A] placeholder:text-[rgba(99,114,128,1)] bg-transparent border-0 shadow-none ps-3 pe-0 py-1.5 min-h-[32px] ${textareaClassName || ""}`}
+        className={`text-[16px] leading-5 font-normal text-[#0A0A0A] placeholder:text-[rgba(99,114,128,1)] bg-transparent border-0 shadow-none ps-3 pe-0 py-1.5 min-h-8 ${textareaClassName || ""}`}
         title={title}
       />
       <InputGroupButton
@@ -121,11 +121,8 @@ const MarkdownFlowInput: React.FC<MarkdownFlowInputProps> = ({
         onClick={onSend}
         disabled={isSendDisabled}
         aria-label={resolvedSendButtonLabel}
-        style={{
-          margin: "0px 7px 4px 7px",
-          cursor: isSendDisabled ? "not-allowed" : "pointer",
-        }}
-        className="size-6 group self-end mb-[2px]"
+        style={{ cursor: isSendDisabled ? "not-allowed" : "pointer" }}
+        className="mx-[3px]"
       >
         <img
           src={resolveAssetSrc(

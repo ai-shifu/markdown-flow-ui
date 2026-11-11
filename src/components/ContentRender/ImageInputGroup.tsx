@@ -55,14 +55,16 @@ export function ImageInputGroup({
     (imageInput.maxImages !== undefined &&
       images.length >= imageInput.maxImages);
   const hasAttachments = showImageInput || images.length > 0;
+  const rowAlignment = "items-end";
 
   return (
     <InputGroup
       {...props}
       data-disabled={disabled}
       className={cn(
-        className,
-        hasAttachments && "h-auto flex-col !items-stretch"
+        "h-auto",
+        hasAttachments ? "flex-col items-stretch" : rowAlignment,
+        className
       )}
     >
       {images.length > 0 ? (
@@ -101,7 +103,7 @@ export function ImageInputGroup({
         </span>
       ) : null}
       {hasAttachments ? (
-        <span className="flex w-full min-w-0 items-end">
+        <span className={cn("flex w-full min-w-0", rowAlignment)}>
           {showImageInput && !disabled ? (
             <>
               <input
@@ -128,7 +130,7 @@ export function ImageInputGroup({
                   uploading ? texts.imageUploadingLabel : texts.addImageLabel
                 }
                 title={texts.addImageLabel}
-                className="ms-1 shrink-0"
+                className="ms-1"
               >
                 {uploading ? (
                   <LoaderCircle

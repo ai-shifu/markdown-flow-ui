@@ -14,6 +14,10 @@ const meta = {
   },
   tags: ["autodocs"],
   argTypes: {
+    showImageInput: {
+      control: "boolean",
+      description: "Opt into the image picker inside the input.",
+    },
     locale: {
       control: "select",
       options: [...MARKDOWN_FLOW_LOCALES],
@@ -158,4 +162,93 @@ export const FrenchLocale: Story = {
   render: (args) => (
     <InteractiveMarkdownFlowInput {...args} initialValue="Bonjour" />
   ),
+};
+
+export const InlineImageInput: Story = {
+  args: { showImageInput: true },
+  render: (args) => {
+    const [value, setValue] = React.useState("");
+    const [images, setImages] = React.useState<string[]>([]);
+    const [submitted, setSubmitted] = React.useState("");
+    return (
+      <div style={{ width: 420, maxWidth: "100%" }}>
+        <MarkdownFlowInput
+          {...args}
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          imageInput={{
+            images,
+            maxImages: 4,
+            onSelect: (files) => {
+              files.forEach((file) => {
+                const reader = new FileReader();
+                reader.onload = () =>
+                  setImages((current) => [...current, String(reader.result)]);
+                reader.readAsDataURL(file);
+              });
+            },
+            onRemove: (index) =>
+              setImages((current) => current.filter((_, i) => i !== index)),
+          }}
+          onSend={() =>
+            setSubmitted(
+              JSON.stringify({ text: value, imageCount: images.length })
+            )
+          }
+        />
+        <output data-testid="image-input-result">{submitted}</output>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const { userEvent, within } = await import("storybook/test");
+    const canvas = within(canvasElement);
+    const input =
+      canvasElement.querySelector<HTMLInputElement>('input[type="file"]')!;
+    await userEvent.upload(
+      input,
+      new File(
+        [
+          Uint8Array.from(
+            atob(
+              "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAFElEQVR4nGNUTX7NgA0wYRUdtBIAJUMBgy4eB/0AAAAASUVORK5CYII="
+            ),
+            (char) => char.charCodeAt(0)
+          ),
+        ],
+        "sample.png",
+        { type: "image/png" }
+      )
+    );
+    await canvas.findByRole("img", { name: "Attached image 1" });
+    await userEvent.click(canvas.getByRole("button", { name: "Send" }));
+    await expect(canvas.getByTestId("image-input-result")).toHaveTextContent(
+      '"imageCount":1'
+    );
+  },
+};
+
+export const UploadingImages: Story = {
+  args: {
+    showImageInput: true,
+    imageInput: { images: [], uploading: true },
+  },
+  render: (args) => (
+    <InteractiveMarkdownFlowInput
+      {...args}
+      initialValue="Keep typing while your image uploads"
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const { userEvent, within } = await import("storybook/test");
+    const canvas = within(canvasElement);
+    await userEvent.type(
+      canvas.getByRole("textbox"),
+      " and edit your question"
+    );
+    await expect(canvas.getByRole("textbox")).toHaveValue(
+      "Keep typing while your image uploads and edit your question"
+    );
+    await expect(canvas.getByRole("button", { name: "Send" })).toBeDisabled();
+  },
 };

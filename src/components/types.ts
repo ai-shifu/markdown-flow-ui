@@ -3,6 +3,8 @@ type OnSendContentParams = {
   variableName?: string; // Name of the variable being set by user
   inputText?: string; // Text input by user
   selectedValues?: string[]; // Array of selected values for multi-select mode
+  /** Uploaded images accompanying the selected values or free text. */
+  images?: string[];
 };
 
 type CustomRenderBarProps = React.ComponentType<{

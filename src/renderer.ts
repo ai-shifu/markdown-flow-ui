@@ -103,3 +103,4 @@ export type {
   InteractionParseResult,
 } from "./lib/interaction-defaults";
 export type { MarkdownFlowLocale } from "./lib/locale";
+export type { ImageInputOptions } from "./components/ContentRender/ImageInputGroup";

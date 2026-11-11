@@ -1,3 +1,4 @@
+import type { ImageInputOptions } from "../ContentRender/ImageInputGroup";
 import React, {
   memo,
   useCallback,
@@ -196,6 +197,8 @@ type RenderSlideElementOptions = {
 };
 
 interface InteractionOverlayCardProps {
+  showImageInput?: boolean;
+  imageInput?: ImageInputOptions;
   onPlaceholderAccepted?: () => void;
   dir?: ContentRenderProps["dir"];
   lang?: string;
@@ -234,6 +237,8 @@ export type SlideFullscreenHeader = {
 
 const InteractionOverlayCard = memo(
   ({
+    showImageInput,
+    imageInput,
     content,
     title,
     dragHandleAriaLabel,
@@ -270,6 +275,8 @@ const InteractionOverlayCard = memo(
       <div className="slide-player__interaction-body">
         <ContentRender
           content={content}
+          showImageInput={showImageInput}
+          imageInput={imageInput}
           locale={locale}
           dir={dir}
           lang={lang}
@@ -349,6 +356,10 @@ export interface SlideProps extends React.ComponentProps<"section"> {
     index: number
   ) => void;
   interactionDefaultValueOptions?: InteractionDefaultValueOptions;
+  /** Show an image picker in the active text interaction. Hidden by default. */
+  showImageInput?: boolean;
+  /** Host-controlled upload state for the active interaction. */
+  imageInput?: ImageInputOptions;
   onSend?: (content: OnSendContentParams, element?: Element) => void;
   /** Observes an accepted interaction Tab completion without receiving text. */
   onPlaceholderAccepted?: () => void;
@@ -416,6 +427,8 @@ const Slide: React.FC<SlideProps> = ({
   isSlideProgressGenerating = false,
   onSlideProgressNavigate,
   interactionDefaultValueOptions,
+  showImageInput = false,
+  imageInput,
   onSend,
   onPlaceholderAccepted,
   onPlayerVisibilityChange,
@@ -1780,6 +1793,14 @@ const Slide: React.FC<SlideProps> = ({
     setHasCurrentAudioPlaybackStarted(false);
   }, [currentPlaybackStartedResetKey]);
 
+  const imageDefaultsEnabled = showImageInput || Boolean(imageInput);
+  const defaultValueOptions = useMemo(
+    () =>
+      imageDefaultsEnabled
+        ? { ...interactionDefaultValueOptions, allowImages: true }
+        : interactionDefaultValueOptions,
+    [imageDefaultsEnabled, interactionDefaultValueOptions]
+  );
   const {
     interactionDefaults,
     interactionDefaultSelectedValues,
@@ -1789,9 +1810,9 @@ const Slide: React.FC<SlideProps> = ({
   } = useMemo(
     () =>
       resolveSlideInteractionState(activeInteractionElement, {
-        interactionDefaultValueOptions,
+        interactionDefaultValueOptions: defaultValueOptions,
       }),
-    [activeInteractionElement, interactionDefaultValueOptions]
+    [activeInteractionElement, defaultValueOptions]
   );
 
   const isInteractionReadonly =
@@ -1803,12 +1824,15 @@ const Slide: React.FC<SlideProps> = ({
 
   const handleInteractionSend = useCallback(
     (content: OnSendContentParams) => {
+      if (imageInput?.uploading) return;
       const submittedValues = [
         ...(content.selectedValues ?? []),
         content.inputText?.trim() ?? "",
         content.buttonText?.trim() ?? "",
       ].filter(Boolean);
-      const resolvedUserInput = submittedValues.join(", ");
+      const resolvedUserInput = content.images?.length
+        ? JSON.stringify(content)
+        : submittedValues.join(", ");
 
       setActiveInteractionElement((prevElement) => {
         if (!prevElement || !resolvedUserInput) {
@@ -1824,7 +1848,12 @@ const Slide: React.FC<SlideProps> = ({
       onSend?.(content, activeInteractionElement);
       continueAfterInteraction();
     },
-    [activeInteractionElement, continueAfterInteraction, onSend]
+    [
+      activeInteractionElement,
+      continueAfterInteraction,
+      onSend,
+      imageInput?.uploading,
+    ]
   );
 
   useEffect(() => {
@@ -2757,6 +2786,13 @@ const Slide: React.FC<SlideProps> = ({
             style={interactionOverlayStyle}
           >
             <InteractionOverlayCard
+              showImageInput={showImageInput}
+              imageInput={
+                imageInput ??
+                (interactionDefaults.images?.length
+                  ? { images: interactionDefaults.images }
+                  : undefined)
+              }
               dir={direction}
               lang={language}
               content={String(activeInteractionElement?.content ?? "")}

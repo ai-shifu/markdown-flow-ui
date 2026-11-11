@@ -127,6 +127,56 @@ Your name: ?[{{name}}...Enter your name]
 }
 ```
 
+## Image input
+
+`MarkdownFlowInput`, `ContentRender`, `MarkdownFlow` and `Slide` accept an opt-in
+`showImageInput` flag. It defaults to `false`, so existing hosts do not acquire an
+upload entry. Text-bearing interactions use the same send/confirm control for
+text, images, or both; choice-only controls retain their existing behavior.
+
+The host supplies controlled upload state through `imageInput`. It owns file
+validation, authentication, storage, upload errors and resetting images after an
+accepted submission. The library never makes an upload request itself.
+
+```tsx
+import {
+  ContentRender,
+  type ImageInputOptions,
+} from "markdown-flow-ui/renderer";
+
+// These values and callbacks come from the host's upload state.
+const imageInput: ImageInputOptions = {
+  images: uploadedImageUrls,
+  uploading: uploadingImages,
+  onSelect: uploadSelectedImages,
+  onRemove: removeImage,
+  accept: "image/jpeg,image/png,image/webp",
+  maxImages: 4,
+};
+
+<ContentRender
+  content="?[...Ask about an image]"
+  showImageInput={allowImages}
+  imageInput={imageInput}
+  onSend={submitAnswer}
+/>;
+```
+
+`OnSendContentParams.images` is an optional array of canonical image URLs; text
+and selected values remain in their existing fields. Direct `MarkdownFlowInput`
+hosts keep the existing zero-argument `onSend` callback and read their controlled
+image state. Uploads disable sending and attachment changes while allowing text
+composition. `imageInput.disabled` locks attachment changes independently of
+text editing. `resolvePreviewUrl` can resolve display URLs independently of the
+submitted URLs. `maxImages` disables the picker at the limit; the host still
+validates each selected batch.
+
+When image input is enabled, a structured `userInput` containing `images`
+restores thumbnails without putting
+JSON into the text field. Readonly inputs retain previews and hide picker/removal
+controls. For a `MarkdownFlow` list, use per-item `imageInput` state for history;
+the flow-level state is applied only to unfinished items.
+
 ## 📖 Documentation
 
 Existing percent-prefixed bindings remain accepted during the transition.

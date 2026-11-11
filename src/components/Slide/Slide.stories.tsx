@@ -5917,3 +5917,74 @@ export const GeneratedSlideNavigationTimeline: Story = {
     </div>
   ),
 };
+
+export const InlineImageInput: Story = {
+  args: {
+    showImageInput: true,
+    elementList: [
+      {
+        type: "interaction",
+        content: "?[...Ask about an image]",
+        sequence_number: 1,
+        is_marker: true,
+        is_renderable: true,
+        is_new: true,
+      },
+    ],
+  },
+  render: (args) => {
+    const [images, setImages] = useState<string[]>([]);
+    const [result, setResult] = useState("");
+    return (
+      <div style={{ width: 800, height: 600 }}>
+        <Slide
+          {...args}
+          className="h-full w-full"
+          imageInput={{
+            images,
+            onSelect: (files) => {
+              files.forEach((file) => {
+                const reader = new FileReader();
+                reader.onload = () =>
+                  setImages((current) => [...current, String(reader.result)]);
+                reader.readAsDataURL(file);
+              });
+            },
+            onRemove: (index) =>
+              setImages((current) => current.filter((_, i) => i !== index)),
+          }}
+          onSend={(value) =>
+            setResult(JSON.stringify({ imageCount: value.images?.length ?? 0 }))
+          }
+        />
+        <output data-testid="slide-image-result">{result}</output>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByRole("textbox");
+    const picker =
+      canvasElement.querySelector<HTMLInputElement>('input[type="file"]')!;
+    await userEvent.upload(
+      picker,
+      new File(
+        [
+          Uint8Array.from(
+            atob(
+              "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAFElEQVR4nGNUTX7NgA0wYRUdtBIAJUMBgy4eB/0AAAAASUVORK5CYII="
+            ),
+            (char) => char.charCodeAt(0)
+          ),
+        ],
+        "sample.png",
+        { type: "image/png" }
+      )
+    );
+    await canvas.findByRole("img", { name: "Attached image 1" });
+    await userEvent.click(canvas.getByRole("button", { name: "Send" }));
+    await expect(canvas.getByTestId("slide-image-result")).toHaveTextContent(
+      '"imageCount":1'
+    );
+  },
+};

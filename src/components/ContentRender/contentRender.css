@@ -231,7 +231,6 @@
 
 .content-render .input-container {
   display: flex;
-  align-items: end;
   max-width: 500px;
   width: 100%;
   border-radius: var(--border-radius-rounded-md, 8px);

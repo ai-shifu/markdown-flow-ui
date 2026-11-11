@@ -3614,6 +3614,19 @@ export const InlineImageInput: Story = {
   play: async ({ canvasElement }) => {
     const { userEvent, within } = await import("storybook/test");
     const canvas = within(canvasElement);
+    const uploadIcon = canvas
+      .getByRole("button", { name: "Add image" })
+      .querySelector("svg")!;
+    const sendIcon = canvas.getByRole("img", { name: "Send" });
+    const textarea = canvas.getByRole("textbox");
+    const centerY = (element: Element) => {
+      const { top, height } = element.getBoundingClientRect();
+      return top + height / 2;
+    };
+    const singleLine = textarea.getBoundingClientRect();
+    expect(centerY(uploadIcon)).toBeCloseTo(centerY(textarea), 0);
+    expect(centerY(sendIcon)).toBeCloseTo(centerY(textarea), 0);
+
     await userEvent.upload(
       canvasElement.querySelector<HTMLInputElement>('input[type="file"]')!,
       new File(
@@ -3630,7 +3643,15 @@ export const InlineImageInput: Story = {
       )
     );
     await canvas.findByRole("img", { name: "Attached image 1" });
-    await userEvent.type(canvas.getByRole("textbox"), "Explain this");
+    await userEvent.type(
+      textarea,
+      "Explain this{Shift>}{Enter}{/Shift}in more detail"
+    );
+    const multiline = textarea.getBoundingClientRect();
+    expect(multiline.height).toBeGreaterThan(singleLine.height);
+    const lastLineCenter = multiline.bottom - singleLine.height / 2;
+    expect(centerY(uploadIcon)).toBeCloseTo(lastLineCenter, 0);
+    expect(centerY(sendIcon)).toBeCloseTo(lastLineCenter, 0);
     await userEvent.click(canvas.getByRole("button", { name: "Send" }));
     await expect(canvas.getByTestId("render-image-result")).toHaveTextContent(
       '"imageCount":1'

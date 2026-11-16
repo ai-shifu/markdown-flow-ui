@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import { after, test } from "node:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -32,18 +33,88 @@ const { ContentRender } = require("../../dist/renderer.cjs");
 const rendererRequire = createRequire(require.resolve("rehype-katex"));
 const rendererKatex = rendererRequire("katex");
 const stylesheetKatex = require("katex");
+const mermaidRequire = createRequire(require.resolve("mermaid"));
+
+test("does not force the KaTeX dependency version", () => {
+  const manifest = require("../../package.json");
+  assert.equal(manifest.overrides?.katex, undefined);
+  assert.equal(manifest.pnpm?.overrides?.katex, undefined);
+});
 
 test("uses the same KaTeX version for Markdown rendering and its stylesheet", () => {
   assert.equal(rendererKatex.version, stylesheetKatex.version);
 });
 
-test("the Markdown math renderer rejects inherited trust settings", () => {
-  const inheritedOptions = Object.create({ trust: true });
-  const markup = rendererKatex.renderToString(
-    String.raw`\href{javascript:alert(1)}{click}`,
-    inheritedOptions
+test("Mermaid's math stylesheet and shared fonts match its renderer", () => {
+  const normalizeVersion = (css) =>
+    css.replace(
+      /(\.katex-version:after\{content:")[^"]+("\})/,
+      "$1<version>$2"
+    );
+  const actualStyles = readFileSync(
+    mermaidRequire.resolve("katex/dist/katex.min.css"),
+    "utf8"
   );
-  assert.doesNotMatch(markup, /href=/);
+  const suppliedStyles = readFileSync(
+    require.resolve("katex-mermaid-css/dist/katex.min.css"),
+    "utf8"
+  );
+  assert.equal(
+    normalizeVersion(suppliedStyles),
+    normalizeVersion(actualStyles)
+  );
+  const fonts = (name) =>
+    join(dirname(require.resolve(`${name}/package.json`)), "dist/fonts");
+  const markdownFonts = fonts("katex");
+  const mermaidFonts = fonts("katex-mermaid-css");
+  const actualMermaidFonts = join(
+    dirname(mermaidRequire.resolve("katex/package.json")),
+    "dist/fonts"
+  );
+  const files = readdirSync(mermaidFonts).sort();
+  assert.deepEqual(files, readdirSync(markdownFonts).sort());
+  for (const file of files) {
+    assert.deepEqual(
+      readFileSync(join(markdownFonts, file)),
+      readFileSync(join(mermaidFonts, file)),
+      file
+    );
+    assert.deepEqual(
+      readFileSync(join(actualMermaidFonts, file)),
+      readFileSync(join(mermaidFonts, file)),
+      file
+    );
+  }
+});
+
+test("the actual Markdown renderer blocks inherited trust for links and images", () => {
+  const previous = Object.getOwnPropertyDescriptor(Object.prototype, "trust");
+  Object.defineProperty(Object.prototype, "trust", {
+    configurable: true,
+    writable: true,
+    value: true,
+  });
+  try {
+    const expression = String.raw`\includegraphics{https://example.invalid/a.png}`;
+    // Confirm the installed KaTeX is vulnerable under this precondition.
+    assert.match(rendererKatex.renderToString(expression, {}), /<img/);
+    for (const source of [
+      String.raw`$\href{https://example.invalid/}{click}$`,
+      `$${expression}$`,
+      "```math\n" + expression + "\n```",
+      `<span class="math-inline">${expression}</span>`,
+      `<iframe data-tag="video"></iframe>\n\n$${expression}$`,
+    ]) {
+      const markup = renderToStaticMarkup(
+        React.createElement(ContentRender, { content: source })
+      );
+      assert.match(markup, /class="katex"/);
+      assert.doesNotMatch(markup, /(?:href|src)="https:\/\/example\.invalid/i);
+    }
+  } finally {
+    if (previous) Object.defineProperty(Object.prototype, "trust", previous);
+    else delete Object.prototype.trust;
+  }
 });
 
 for (const stylesheet of [
@@ -61,8 +132,9 @@ for (const stylesheet of [
       "utf8"
     );
 
-    assert.match(markup, /class="katex-base"/);
+    assert.match(markup, /class="base"/);
     assert.match(markup, /class="vlist"/);
+    assert.match(css, /\.katex\s+\.base\s*\{/);
     assert.match(css, /\.katex-base\s*\{/);
     assert.match(css, /\.vlist\s*\{/);
     assert.doesNotMatch(markup, /class="katex-error"/);

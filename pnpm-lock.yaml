@@ -6,7 +6,6 @@ settings:
 
 overrides:
   js-yaml: 4.3.2
-  katex: 0.19.1
   postcss: 8.5.23
   sharp: 0.35.5
   smol-toml: 1.9.1
@@ -82,8 +81,8 @@ importers:
         specifier: ^26.5.11
         version: 26.6.0(typescript@5.9.3)
       katex:
-        specifier: 0.19.1
-        version: 0.19.1
+        specifier: 0.16.47
+        version: 0.16.47
       lucide-react:
         specifier: ^1.61.0
         version: 1.66.0(@types/react@19.3.0)(react@19.3.1)
@@ -226,6 +225,9 @@ importers:
       jsdom:
         specifier: 26.1.0
         version: 26.1.0
+      katex-mermaid-css:
+        specifier: npm:katex@0.18.10
+        version: katex@0.18.10
       lint-staged:
         specifier: ^17.6.0
         version: 17.6.0
@@ -3028,6 +3030,10 @@ packages:
     resolution: {integrity: sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw==}
     engines: {node: '>= 10'}
 
+  commander@8.3.0:
+    resolution: {integrity: sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==}
+    engines: {node: '>= 12'}
+
   commitizen@4.3.2:
     resolution: {integrity: sha512-1Zs37z9JPvAcuTSSricZZwBhOPVNNxJouuY4yDEt+eD70EoxT2TU9kViG8CuB/PmVg2G4XsAGQiK4YCst97aDQ==}
     engines: {node: '>= 18'}
@@ -4489,8 +4495,12 @@ packages:
     resolution: {integrity: sha512-ZZow9HBI5O6EPgSJLUb8n2NKgmVWTwCvHGwFuJlMjvLFqlGG6pjirPhtdsseaLZjSibD8eegzmYpUZwoIlj2cQ==}
     engines: {node: '>=4.0'}
 
-  katex@0.19.1:
-    resolution: {integrity: sha512-jG8uKntjSEcm2EpQOh0XturpPuuC9r3Sq5HLHdsFdWZT27E672SF19QEi+of0/YeOy15lDgRhKvr5614uRrEfA==}
+  katex@0.16.47:
+    resolution: {integrity: sha512-Eeo8Ys1doU1z+x8AZsPpQu+p/QcZBI5PeOo7QGQdy2x2m0MU/hYagBbGOmXwr5KVbEfVuWv9LpnQWeehogurjg==}
+    hasBin: true
+
+  katex@0.18.10:
+    resolution: {integrity: sha512-/B6p9eY9DX7aHBfpkHdpirDTZ5QH9xTwL9y837PWuzuv41O5jFdqNQwVQEQsimY0/iVNkwBY4+4hMfhQ7d4Dbw==}
     hasBin: true
 
   keyv@4.5.4:
@@ -9228,6 +9238,8 @@ snapshots:
 
   commander@7.2.0: {}
 
+  commander@8.3.0: {}
+
   commitizen@4.3.2(@types/node@20.19.43)(typescript@5.9.3):
     dependencies:
       cachedir: 2.4.0
@@ -10960,7 +10972,11 @@ snapshots:
       object.assign: 4.1.7
       object.values: 1.2.1
 
-  katex@0.19.1:
+  katex@0.16.47:
+    dependencies:
+      commander: 8.3.0
+
+  katex@0.18.10:
     dependencies:
       commander: 15.0.0
 
@@ -11413,7 +11429,7 @@ snapshots:
       dompurify: 3.4.17
       elkjs: 0.12.1
       es-toolkit: 1.53.0
-      katex: 0.19.1
+      katex: 0.18.10
       khroma: 2.1.0
       marked: 16.4.2
       roughjs: 4.6.6
@@ -11539,7 +11555,7 @@ snapshots:
     dependencies:
       '@types/katex': 0.16.8
       devlop: 1.1.0
-      katex: 0.19.1
+      katex: 0.16.47
       micromark-factory-space: 2.1.0
       micromark-util-character: 2.1.1
       micromark-util-symbol: 2.0.1
@@ -12331,7 +12347,7 @@ snapshots:
       '@types/katex': 0.16.8
       hast-util-from-html-isomorphic: 2.0.0
       hast-util-to-text: 4.0.3
-      katex: 0.19.1
+      katex: 0.16.47
       unist-util-visit-parents: 6.1.0
       vfile: 6.0.3
 

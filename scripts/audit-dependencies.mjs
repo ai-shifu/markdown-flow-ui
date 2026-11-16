@@ -12,7 +12,24 @@ export const LEGACY_INTEGRITY =
 export const LEGACY_SOURCE_HASH =
   "746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d";
 export const ADVISORY = "GHSA-g3hv-75wg-m249";
-const advisoryUrl = `https://github.com/advisories/${ADVISORY}`;
+export const KATEX_ADVISORY = "GHSA-238p-pmpm-9mq7";
+export const KATEX_VERSION = "0.16.47";
+export const KATEX_INTEGRITY =
+  "sha512-Eeo8Ys1doU1z+x8AZsPpQu+p/QcZBI5PeOo7QGQdy2x2m0MU/hYagBbGOmXwr5KVbEfVuWv9LpnQWeehogurjg==";
+const dispositions = {
+  minimatch: {
+    advisory: ADVISORY,
+    version: LEGACY_VERSION,
+    integrity: LEGACY_INTEGRITY,
+    severity: "moderate",
+  },
+  katex: {
+    advisory: KATEX_ADVISORY,
+    version: KATEX_VERSION,
+    integrity: KATEX_INTEGRITY,
+    severity: "low",
+  },
+};
 const severities = ["info", "low", "moderate", "high", "critical"];
 const own = (value, key) => Object.hasOwn(value, key);
 const object = (value) =>
@@ -49,7 +66,7 @@ function validateCounts(metadata, findings, totalRequired) {
   }
 }
 
-function legacyNode(lock, node) {
+function dependencyNode(lock, node) {
   requireCondition(
     typeof node === "string" &&
       node.startsWith("node_modules/") &&
@@ -57,7 +74,11 @@ function legacyNode(lock, node) {
       own(lock.packages, node),
     "Unknown installed dependency node"
   );
-  const entry = lock.packages[node];
+  return lock.packages[node];
+}
+
+function legacyNode(lock, node) {
+  const entry = dependencyNode(lock, node);
   requireCondition(
     entry.dev === true,
     `Audit finding reaches a production dependency: ${node}`
@@ -107,12 +128,12 @@ export function validateNpmReport(report, lock) {
   let direct = 0;
   for (const [name, entry] of Object.entries(entries)) {
     requireCondition(
-      entry.name === name && entry.severity === "moderate",
+      entry.name === name && ["low", "moderate"].includes(entry.severity),
       "Invalid npm vulnerability entry"
     );
     const nodes = array(entry.nodes, "Missing npm dependency nodes");
     requireCondition(nodes.length > 0, "Empty npm dependency nodes");
-    nodes.forEach((node) => legacyNode(lock, node));
+    nodes.forEach((node) => dependencyNode(lock, node));
     const via = array(entry.via, "Missing npm advisory references");
     requireCondition(via.length > 0, "Empty npm advisory references");
     for (const cause of via) {
@@ -122,29 +143,41 @@ export function validateNpmReport(report, lock) {
           `Unknown transitive advisory reference: ${cause}`
         );
       } else {
+        const disposition = own(dispositions, name)
+          ? dispositions[name]
+          : undefined;
         requireCondition(
           object(cause) &&
-            name === "minimatch" &&
-            cause.name === "minimatch" &&
-            cause.dependency === "minimatch" &&
-            cause.url === advisoryUrl &&
-            cause.severity === "moderate" &&
-            entry.severity === "moderate",
+            disposition &&
+            cause.name === name &&
+            cause.dependency === name &&
+            cause.url ===
+              `https://github.com/advisories/${disposition.advisory}` &&
+            cause.severity === disposition.severity,
           `Untriaged npm security advisory in ${name}`
         );
         for (const node of nodes) {
           requireCondition(
-            node.endsWith("/minimatch"),
-            "Unexpected minimatch package location"
+            node.split(/(?:^|\/)node_modules\//).at(-1) === name,
+            "Unexpected advisory package location"
           );
-          checkLegacyEntry(legacyNode(lock, node));
+          const installed =
+            name === "minimatch"
+              ? legacyNode(lock, node)
+              : dependencyNode(lock, node);
+          requireCondition(
+            installed.version === disposition.version &&
+              installed.integrity === disposition.integrity,
+            "Unexpected allowed dependency version or integrity"
+          );
         }
         direct += 1;
       }
     }
   }
   const graph = new Map();
-  const directNodes = new Set();
+  const directNodes = new Map();
+  const names = new Map();
   for (const [name, entry] of Object.entries(entries)) {
     const accounted = new Set();
     for (const node of entry.nodes) {
@@ -154,9 +187,11 @@ export function validateNpmReport(report, lock) {
       );
       const edges = new Set();
       graph.set(node, edges);
+      names.set(node, name);
       for (const cause of entry.via) {
         if (typeof cause !== "string") {
-          directNodes.add(node);
+          if (!directNodes.has(node)) directNodes.set(node, new Set());
+          directNodes.get(node).add(cause.severity);
           continue;
         }
         const target = resolveNpmCause(lock, node, cause);
@@ -175,21 +210,39 @@ export function validateNpmReport(report, lock) {
   }
   // Each installed instance must reach the verified advisory through real
   // dependency edges; another instance or a peer cycle cannot stand in for it.
+  const packageSeverities = new Map();
   for (const node of graph.keys()) {
     const todo = [node];
     const seen = new Set();
-    let reachesDirect = false;
+    const reachedSeverities = new Set();
     while (todo.length) {
       const current = todo.pop();
       if (seen.has(current)) continue;
       seen.add(current);
       if (directNodes.has(current)) {
-        reachesDirect = true;
-        break;
+        for (const severity of directNodes.get(current))
+          reachedSeverities.add(severity);
       }
       todo.push(...graph.get(current));
     }
-    requireCondition(reachesDirect, `Unaccounted npm advisory path: ${node}`);
+    requireCondition(
+      reachedSeverities.size > 0,
+      `Unaccounted npm advisory path: ${node}`
+    );
+    if (reachedSeverities.has("moderate")) legacyNode(lock, node);
+    const name = names.get(node);
+    if (!packageSeverities.has(name)) packageSeverities.set(name, new Set());
+    for (const severity of reachedSeverities)
+      packageSeverities.get(name).add(severity);
+  }
+  for (const [name, reached] of packageSeverities) {
+    const highest = [...reached].sort(
+      (a, b) => severities.indexOf(b) - severities.indexOf(a)
+    )[0];
+    requireCondition(
+      entries[name].severity === highest,
+      `Unexpected npm carrier severity: ${name}`
+    );
   }
   return { findings: Object.keys(entries).length, direct };
 }
@@ -233,7 +286,7 @@ export function validatePnpmProductionGraph(lock) {
   }
 }
 
-function validatePnpmPath(path, lock) {
+function validatePnpmPath(path, lock, expectedName, expectedVersion) {
   requireCondition(
     typeof path === "string" && path.startsWith(".>"),
     "Invalid pnpm finding path"
@@ -241,13 +294,22 @@ function validatePnpmPath(path, lock) {
   const names = path.slice(2).split(">");
   const root = lock.importers["."];
   const first = names.shift();
+  const roots =
+    expectedName === "katex"
+      ? {
+          ...root.devDependencies,
+          ...root.dependencies,
+          ...root.optionalDependencies,
+        }
+      : (root.devDependencies ?? {});
   requireCondition(
-    own(root.devDependencies ?? {}, first) &&
-      !own(root.dependencies ?? {}, first) &&
-      !own(root.optionalDependencies ?? {}, first),
-    "pnpm finding does not start in a development dependency"
+    own(roots, first) &&
+      (expectedName !== "minimatch" ||
+        (!own(root.dependencies ?? {}, first) &&
+          !own(root.optionalDependencies ?? {}, first))),
+    "Unexpected pnpm finding root"
   );
-  let version = root.devDependencies[first].version;
+  let version = roots[first].version;
   let current = snapshot(lock, first, version);
   let name = first;
   for (name of names) {
@@ -263,7 +325,7 @@ function validatePnpmPath(path, lock) {
     current = snapshot(lock, name, version);
   }
   requireCondition(
-    name === "minimatch" && version === LEGACY_VERSION,
+    name === expectedName && version === expectedVersion,
     "Unexpected pnpm finding version"
   );
 }
@@ -280,39 +342,42 @@ export function validatePnpmReport(report, lock) {
   const actions = array(report.actions, "Missing pnpm audit actions");
   validatePnpmProductionGraph(lock);
   const entries = Object.values(report.advisories);
-  if (entries.length) {
-    requireCondition(
-      lock.packages?.[`minimatch@${LEGACY_VERSION}`]?.resolution?.integrity ===
-        LEGACY_INTEGRITY,
-      "Unexpected pnpm minimatch integrity"
-    );
-  }
   const findings = [];
   for (const entry of entries) {
+    const disposition = own(dispositions, entry.module_name)
+      ? dispositions[entry.module_name]
+      : undefined;
     requireCondition(
-      entry.github_advisory_id === ADVISORY &&
-        entry.module_name === "minimatch" &&
-        entry.severity === "moderate" &&
-        entry.url === advisoryUrl,
+      disposition &&
+        entry.github_advisory_id === disposition.advisory &&
+        entry.severity === disposition.severity &&
+        entry.url === `https://github.com/advisories/${disposition.advisory}`,
       "Untriaged pnpm security advisory"
+    );
+    requireCondition(
+      lock.packages?.[`${entry.module_name}@${disposition.version}`]?.resolution
+        ?.integrity === disposition.integrity,
+      "Unexpected pnpm dependency integrity"
     );
     const occurrences = array(entry.findings, "Missing pnpm advisory findings");
     requireCondition(occurrences.length > 0, "Empty pnpm advisory findings");
     for (const finding of occurrences) {
       requireCondition(
-        finding.version === LEGACY_VERSION,
-        "Unexpected pnpm minimatch version"
+        finding.version === disposition.version,
+        "Unexpected pnpm dependency version"
       );
       const paths = array(finding.paths, "Missing pnpm advisory paths");
       requireCondition(paths.length > 0, "Empty pnpm advisory paths");
-      paths.forEach((path) => validatePnpmPath(path, lock));
+      paths.forEach((path) =>
+        validatePnpmPath(path, lock, entry.module_name, disposition.version)
+      );
       findings.push(entry.severity);
     }
   }
   validateCounts(report.metadata, findings, false);
   for (const action of actions) {
     requireCondition(
-      action.action === "review" && action.module === "minimatch",
+      action.action === "review" && own(dispositions, action.module),
       "Unexpected pnpm audit action"
     );
     const resolutions = array(
@@ -323,9 +388,10 @@ export function validatePnpmReport(report, lock) {
     for (const resolution of resolutions) {
       const advisory = report.advisories[String(resolution.id)];
       requireCondition(
-        advisory?.findings.some((finding) =>
-          finding.paths.includes(resolution.path)
-        ),
+        advisory?.module_name === action.module &&
+          advisory.findings.some((finding) =>
+            finding.paths.includes(resolution.path)
+          ),
         "Unaccounted pnpm audit action"
       );
     }
@@ -423,7 +489,7 @@ function main() {
       throw error;
     }
     console.log(
-      `${command}: no untriaged findings; ${disposition.findings} known development-only false-positive finding(s).`
+      `${command}: no untriaged findings; ${disposition.findings} reviewed finding(s). WARNING: KaTeX 0.16.47 remains vulnerable in production; see docs/dependency-audit.md.`
     );
   }
 }

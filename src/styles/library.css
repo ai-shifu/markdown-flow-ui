@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "highlight.js/styles/github.css";
+@import "katex-mermaid-css/dist/katex.min.css";
 @import "katex/dist/katex.min.css";
 @import "../components/MarkdownFlow/markdownFlow.css";
 @source "../**/**/*.{ts,tsx,js,jsx}";

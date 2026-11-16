@@ -1451,6 +1451,37 @@ export const MathAndMermaidDemo: Story = {
   },
 };
 
+export const MarkdownAndMermaidMathStyles: Story = {
+  args: {
+    content: [
+      String.raw`Markdown fraction: $\frac{1}{2}$`,
+      "",
+      "```mermaid",
+      '%%{init: {"forceLegacyMathML": true}}%%',
+      "flowchart LR",
+      String.raw`A["$$\frac{1}{2}$$"]`,
+      "```",
+    ].join("\n"),
+  },
+  play: async ({ canvasElement }) => {
+    await waitFor(
+      () => {
+        const markdown = canvasElement.querySelector<HTMLElement>(
+          ".markdown-renderer .katex .base"
+        );
+        const mermaid = canvasElement.querySelector<HTMLElement>(
+          ".content-render-mermaid .katex-base"
+        );
+        expect(markdown).not.toBeNull();
+        expect(mermaid).not.toBeNull();
+        expect(getComputedStyle(markdown!).display).toBe("inline-block");
+        expect(getComputedStyle(mermaid!).display).toBe("inline-block");
+      },
+      { timeout: 15000 }
+    );
+  },
+};
+
 export const ContentRenderMathAndMermaid: Story = {
   args: {
     content: `# 数学公式和图表展示

@@ -41,3 +41,36 @@ versions or severities remain blocking. Remove this disposition when upstream
 corrects its affected range or legacy consumers migrate to the modern API.
 
 Regression checks run with `node --test tests/audit/*.test.mjs`.
+
+## KaTeX 0.16.47
+
+[GHSA-238p-pmpm-9mq7](https://github.com/KaTeX/KaTeX/security/advisories/GHSA-238p-pmpm-9mq7)
+is a real low-severity vulnerability in a production dependency, not a false
+positive. If another vulnerability has already polluted a prototype, KaTeX
+may inherit renderer settings and internal metadata. Untrusted expressions
+can then produce unsafe links or load external resources. The vulnerability
+also affects namespace and resource-limit handling.
+
+`rehype-katex` and `micromark-extension-math` currently depend on KaTeX 0.16.
+The Markdown renderer explicitly sets `trust: false` to block the common
+inherited `trust` path. This is a partial mitigation: polluted `processor` or
+other metadata can still change KaTeX behavior. It does not fix the advisory,
+protect other KaTeX entry points, or replace preventing prototype pollution.
+
+Mermaid 12 resolves a separate patched KaTeX version. The build includes the
+official 0.18 stylesheet through the `katex-mermaid-css` development
+dependency for Mermaid's legacy HTML math output, alongside the 0.16 Markdown
+stylesheet. Package tests compare those stylesheets and their font files with
+the actual resolved renderers so dependency updates cannot silently break
+either path.
+
+The audit reports this known production risk and allows only this exact
+advisory, low severity, version `0.16.47`, and published integrity
+`sha512-Eeo8Ys1doU1z+x8AZsPpQu+p/QcZBI5PeOo7QGQdy2x2m0MU/hYagBbGOmXwr5KVbEfVuWv9LpnQWeehogurjg==`.
+Every reported carrier must reach the advisory through lockfile dependency
+edges. Additional advisories, versions, severities, invalid paths and
+malformed reports remain blocking; the existing minimatch development-only
+checks remain in force.
+
+Upgrade the official dependencies when they support a patched KaTeX version,
+remove this disposition, and rerun the security and formula regression tests.

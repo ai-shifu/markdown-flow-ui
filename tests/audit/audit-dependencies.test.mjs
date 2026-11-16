@@ -13,6 +13,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   ADVISORY,
+  KATEX_ADVISORY,
+  KATEX_INTEGRITY,
   LEGACY_INTEGRITY,
   validateNpmReport,
   validatePnpmReport,
@@ -466,4 +468,223 @@ test("audit transport and schema failures never become clean results", () => {
     assert.throws(() => parseAuditOutput(result));
   assert.throws(() => validateNpmReport({}, { packages: {} }));
   assert.throws(() => validatePnpmReport({}, pnpmFixture().lock));
+});
+
+function katexNpmFixture() {
+  const lock = {
+    packages: {
+      "node_modules/katex": { version: "0.16.47", integrity: KATEX_INTEGRITY },
+      "node_modules/renderer": {
+        version: "1.0.0",
+        dependencies: { katex: "^0.16.0" },
+      },
+      "node_modules/linter": {
+        version: "1.0.0",
+        dev: true,
+        dependencies: { katex: "^0.16.0" },
+      },
+    },
+  };
+  const entry = (name, via) => ({
+    name,
+    severity: "low",
+    via,
+    nodes: [`node_modules/${name}`],
+  });
+  const report = {
+    auditReportVersion: 2,
+    metadata: counts(0),
+    vulnerabilities: {
+      katex: entry("katex", [
+        {
+          name: "katex",
+          dependency: "katex",
+          url: `https://github.com/advisories/${KATEX_ADVISORY}`,
+          severity: "low",
+        },
+      ]),
+      renderer: entry("renderer", ["katex"]),
+      linter: entry("linter", ["katex"]),
+    },
+  };
+  report.metadata.vulnerabilities.low = 3;
+  report.metadata.vulnerabilities.total = 3;
+  return { report, lock };
+}
+
+function katexPnpmFixture() {
+  const lock = {
+    importers: {
+      ".": {
+        dependencies: {
+          renderer: { version: "1.0.0" },
+          katex: { version: "0.16.47" },
+        },
+        devDependencies: { linter: { version: "1.0.0" } },
+      },
+    },
+    packages: {
+      "katex@0.16.47": { resolution: { integrity: KATEX_INTEGRITY } },
+    },
+    snapshots: {
+      "renderer@1.0.0": { dependencies: { katex: "0.16.47" } },
+      "linter@1.0.0": { dependencies: { katex: "0.16.47" } },
+      "katex@0.16.47": {},
+    },
+  };
+  const paths = [".>katex", ".>renderer>katex", ".>linter>katex"];
+  const report = {
+    actions: [
+      {
+        action: "review",
+        module: "katex",
+        resolves: paths.map((path) => ({ id: 1241206, path })),
+      },
+    ],
+    muted: [],
+    metadata: counts(0, false),
+    advisories: {
+      1241206: {
+        github_advisory_id: KATEX_ADVISORY,
+        module_name: "katex",
+        severity: "low",
+        url: `https://github.com/advisories/${KATEX_ADVISORY}`,
+        findings: [{ version: "0.16.47", paths }],
+      },
+    },
+  };
+  report.metadata.vulnerabilities.low = 1;
+  return { report, lock };
+}
+
+test("records the exact production KaTeX advisory and its dependency paths", () => {
+  const npm = katexNpmFixture();
+  const pnpm = katexPnpmFixture();
+  assert.deepEqual(validateNpmReport(npm.report, npm.lock), {
+    findings: 3,
+    direct: 1,
+  });
+  assert.deepEqual(validatePnpmReport(pnpm.report, pnpm.lock), {
+    findings: 1,
+    direct: 1,
+  });
+});
+
+for (const [label, mutate] of [
+  [
+    "different advisory",
+    ({ report }) => {
+      report.vulnerabilities.katex.via[0].url += "-other";
+    },
+  ],
+  [
+    "different severity",
+    ({ report }) => {
+      report.vulnerabilities.katex.via[0].severity = "high";
+    },
+  ],
+  [
+    "different version",
+    ({ lock }) => {
+      lock.packages["node_modules/katex"].version = "0.16.46";
+    },
+  ],
+  [
+    "different integrity",
+    ({ lock }) => {
+      lock.packages["node_modules/katex"].integrity = "other";
+    },
+  ],
+  [
+    "fabricated edge",
+    ({ lock }) => {
+      delete lock.packages["node_modules/renderer"].dependencies;
+    },
+  ],
+  [
+    "unreviewed advisory",
+    ({ report }) => {
+      report.vulnerabilities.katex.via.push({
+        name: "katex",
+        dependency: "katex",
+        url: "https://github.com/advisories/GHSA-other",
+        severity: "low",
+      });
+    },
+  ],
+])
+  test(`npm blocks KaTeX ${label}`, () => {
+    const x = katexNpmFixture();
+    mutate(x);
+    assert.throws(() => validateNpmReport(x.report, x.lock));
+  });
+
+for (const [label, mutate] of [
+  [
+    "different advisory",
+    ({ report }) => {
+      report.advisories[1241206].github_advisory_id = "GHSA-other";
+    },
+  ],
+  [
+    "different severity",
+    ({ report }) => {
+      report.advisories[1241206].severity = "moderate";
+    },
+  ],
+  [
+    "different version",
+    ({ report }) => {
+      report.advisories[1241206].findings[0].version = "0.16.46";
+    },
+  ],
+  [
+    "different integrity",
+    ({ lock }) => {
+      lock.packages["katex@0.16.47"].resolution.integrity = "other";
+    },
+  ],
+  [
+    "fabricated path",
+    ({ report }) => {
+      report.advisories[1241206].findings[0].paths = [
+        ".>renderer>missing>katex",
+      ];
+    },
+  ],
+  [
+    "unrelated action",
+    ({ report }) => {
+      report.actions[0].module = "minimatch";
+    },
+  ],
+])
+  test(`pnpm blocks KaTeX ${label}`, () => {
+    const x = katexPnpmFixture();
+    mutate(x);
+    assert.throws(() => validatePnpmReport(x.report, x.lock));
+  });
+
+test("npm validates each instance and compares the highest severity per package", () => {
+  const { report, lock } = npmFixture();
+  const katex = katexNpmFixture();
+  Object.assign(lock.packages, katex.lock.packages);
+  Object.assign(report.vulnerabilities, katex.report.vulnerabilities);
+  lock.packages["node_modules/eslint"].dependencies.katex = "^0.16.0";
+  const second = "node_modules/other/node_modules/eslint";
+  lock.packages[second] = {
+    version: "2.0.0",
+    dev: true,
+    dependencies: { katex: "^0.16.0" },
+  };
+  report.vulnerabilities.eslint.nodes.push(second);
+  report.vulnerabilities.eslint.via.push("katex");
+  report.metadata.vulnerabilities.low = 3;
+  report.metadata.vulnerabilities.total = 6;
+  assert.deepEqual(validateNpmReport(report, lock), { findings: 6, direct: 2 });
+  delete lock.packages[second].dependencies.katex;
+  assert.throws(
+    () => validateNpmReport(report, lock),
+    /Unaccounted npm advisory path/
+  );
 });

@@ -14,6 +14,8 @@ import { stripSvgTextLineBreaks } from "./utils/strip-svg-text-line-breaks";
 import "./contentRender.css";
 import "./github-markdown-light.css";
 import "highlight.js/styles/github.css";
+// Mermaid and the Markdown renderer currently require different KaTeX styles.
+import "katex-mermaid-css/dist/katex.min.css";
 import "katex/dist/katex.min.css";
 import CodeBlock, { CodeBlockContext } from "./CodeBlock";
 import CustomButtonInputVariable, {
@@ -368,7 +370,9 @@ const sourceRehypePlugins: PluggableList = [
 ];
 const formattingRehypePlugins: PluggableList = [
   [rehypeHighlight, { languages: highlightLanguages, subset: subsetLanguages }],
-  rehypeKatex,
+  // This blocks inherited `trust` settings; other prototype pollution paths
+  // remain until the upstream KaTeX dependency can be upgraded.
+  [rehypeKatex, { trust: false }],
 ];
 const rehypePlugins: PluggableList = [
   ...sourceRehypePlugins,

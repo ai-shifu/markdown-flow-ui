@@ -30,7 +30,7 @@
     "github-markdown-css": "^5.8.1",
     "highlight.js": "^11.11.1",
     "i18next": "^26.5.11",
-    "katex": "0.19.1",
+    "katex": "0.16.47",
     "lucide-react": "^1.61.0",
     "mermaid": "12.3.0",
     "micromark-util-decode-string": "^2.0.1",
@@ -81,6 +81,7 @@
     "husky": "^9.1.7",
     "js-yaml": "4.3.2",
     "jsdom": "26.1.0",
+    "katex-mermaid-css": "npm:katex@0.18.10",
     "lint-staged": "^17.6.0",
     "markdownlint-cli": "^0.50.0",
     "next": "15.5.28",
@@ -134,7 +135,6 @@
   "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748",
   "overrides": {
     "js-yaml": "$js-yaml",
-    "katex": "$katex",
     "postcss": "8.5.23",
     "sharp": "0.35.5",
     "smol-toml": "1.9.1",
@@ -145,7 +145,6 @@
   "pnpm": {
     "overrides": {
       "js-yaml": "4.3.2",
-      "katex": "0.19.1",
       "postcss": "8.5.23",
       "sharp": "0.35.5",
       "smol-toml": "1.9.1",

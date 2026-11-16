@@ -28,6 +28,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "github-markdown-css": "^5.8.1",
+    "hast-util-from-html-isomorphic": "^2.0.0",
+    "hast-util-to-text": "^4.0.0",
     "highlight.js": "^11.11.1",
     "i18next": "^26.5.11",
     "katex": "0.19.1",
@@ -38,19 +40,18 @@
     "react-i18next": "^15.5.1",
     "react-markdown": "^10.1.0",
     "rehype-highlight": "^7.0.2",
-    "rehype-katex": "^7.0.1",
     "rehype-raw": "^7.0.0",
     "remark-breaks": "^4.0.0",
     "remark-flow": "1.4.3",
     "remark-gfm": "^4.0.1",
-    "remark-math": "^6.0.0",
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.1.2",
     "tailwind-merge": "^3.3.1",
     "unicode-segmenter": "0.17.3",
     "unified": "^11.0.5",
     "unist": "^0.0.1",
-    "unist-util-visit": "^5.0.0"
+    "unist-util-visit": "^5.0.0",
+    "unist-util-visit-parents": "^6.0.0"
   },
   "description": "A React UI library for rendering markdown with interactive flow components, streaming support, and plugin extensibility",
   "devDependencies": {
@@ -88,6 +89,7 @@
     "prettier": "3.9.10",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "remark-math": "^6.0.0",
     "rollup": "^4.46.2",
     "rollup-plugin-dts": "^6.2.1",
     "standard-version": "^9.5.0",
@@ -100,7 +102,8 @@
     "vitest": "4.1.12"
   },
   "files": [
-    "dist"
+    "dist",
+    "licenses"
   ],
   "homepage": "https://github.com/ai-shifu/markdown-flow-ui#readme",
   "keywords": [
@@ -134,7 +137,6 @@
   "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748",
   "overrides": {
     "js-yaml": "$js-yaml",
-    "katex": "$katex",
     "postcss": "8.5.23",
     "sharp": "0.35.5",
     "smol-toml": "1.9.1",
@@ -145,7 +147,6 @@
   "pnpm": {
     "overrides": {
       "js-yaml": "4.3.2",
-      "katex": "0.19.1",
       "postcss": "8.5.23",
       "sharp": "0.35.5",
       "smol-toml": "1.9.1",

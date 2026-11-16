@@ -3,7 +3,7 @@ import { trimVariablePadding } from "remark-flow";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
-import rehypeKatex from "rehype-katex";
+import rehypeKatex from "@/vendor/markdown-math/rehype-katex";
 import rehypeRaw from "rehype-raw";
 import { unified, type PluggableList, type Plugin } from "unified";
 import remarkRehype from "remark-rehype";

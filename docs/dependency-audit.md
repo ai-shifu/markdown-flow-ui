@@ -41,3 +41,33 @@ versions or severities remain blocking. Remove this disposition when upstream
 corrects its affected range or legacy consumers migrate to the modern API.
 
 Regression checks run with `node --test tests/audit/*.test.mjs`.
+
+## Development-only KaTeX 0.16.47
+
+[GHSA-238p-pmpm-9mq7](https://github.com/KaTeX/KaTeX/security/advisories/GHSA-238p-pmpm-9mq7)
+reports a real low-severity vulnerability, not a false positive. If another
+vulnerability has already polluted a prototype, affected KaTeX versions can
+inherit renderer options such as `trust`; attacker-controlled expressions may
+then produce unsafe links or external resource loads when rendered output is
+inserted into a page without separate sanitization. This project accepts the
+remaining risk only for the development tooling dependency described below.
+
+`markdownlint-cli` and the development-only `remark-math` dependency reach
+`micromark-extension-math`, which currently requires KaTeX `^0.16.0`; the
+installed version is `0.16.47`. Its published integrity must be exactly
+`sha512-Eeo8Ys1doU1z+x8AZsPpQu+p/QcZBI5PeOo7QGQdy2x2m0MU/hYagBbGOmXwr5KVbEfVuWv9LpnQWeehogurjg==`.
+The audit disposition accepts only this exact version, integrity, advisory and
+low severity. Every reported npm node must be development-only and each carrier
+must reach the advisory through real lockfile dependency edges. Each pnpm path
+must start at a development dependency and match the lockfile. Both production
+graphs are independently traversed and reject every affected version in the
+advisory range `>=0.11.0 <0.18.2`, even when the audit report omits a path or
+marks a production-reachable node as development-only. Other advisories,
+versions, severities, missing paths and malformed reports remain blocking.
+
+Revisit this acceptance when `micromark-extension-math` or its consumers
+support a patched KaTeX version (at least 0.18.2), or a compatible replacement
+is available. Upgrade the development toolchain, verify both lockfiles and
+remove this disposition and its acceptance tests once neither lockfile retains
+the vulnerable dependency. Do not force an incompatible major version merely
+to silence the audit.

@@ -4,7 +4,7 @@ import { unified } from "unified";
 import remarkRehype from "remark-rehype";
 import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
-import rehypeKatex from "rehype-katex";
+import rehypeKatex from "@/vendor/markdown-math/rehype-katex";
 import { remarkPlugins } from "./markdown-plugins";
 import {
   createVideoMarkdownRunPlan,

@@ -13,6 +13,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   ADVISORY,
+  KATEX_ADVISORY,
+  KATEX_INTEGRITY,
+  validateNpmProductionGraph,
   LEGACY_INTEGRITY,
   validateNpmReport,
   validatePnpmReport,
@@ -46,6 +49,7 @@ function npmFixture() {
       ])
     ),
   };
+  lock.packages[""] = {};
   lock.packages["node_modules/eslint"].dependencies = {
     minimatch: "^3.1.5",
     "eslint-utils": "^1.0.0",
@@ -181,7 +185,7 @@ test("accepts structurally valid zero-finding reports", () => {
   assert.deepEqual(
     validateNpmReport(
       { auditReportVersion: 2, metadata: counts(0), vulnerabilities: {} },
-      { packages: {} }
+      { packages: { "": {} } }
     ),
     { findings: 0, direct: 0 }
   );
@@ -466,4 +470,304 @@ test("audit transport and schema failures never become clean results", () => {
     assert.throws(() => parseAuditOutput(result));
   assert.throws(() => validateNpmReport({}, { packages: {} }));
   assert.throws(() => validatePnpmReport({}, pnpmFixture().lock));
+});
+
+function katexNpmFixture() {
+  const nodes = {
+    katex: { version: "0.16.47", integrity: KATEX_INTEGRITY, dev: true },
+    "micromark-extension-math": {
+      version: "3.1.0",
+      dev: true,
+      dependencies: { katex: "^0.16.0" },
+    },
+    markdownlint: {
+      version: "0.42.0",
+      dev: true,
+      dependencies: { "micromark-extension-math": "3.1.0" },
+    },
+  };
+  const lock = {
+    packages: { "": { devDependencies: { markdownlint: "0.42.0" } } },
+  };
+  for (const [name, entry] of Object.entries(nodes))
+    lock.packages[`node_modules/${name}`] = entry;
+  const carrier = (name, via) => ({
+    name,
+    severity: "low",
+    via,
+    nodes: [`node_modules/${name}`],
+  });
+  const report = {
+    auditReportVersion: 2,
+    metadata: {
+      vulnerabilities: {
+        info: 0,
+        low: 3,
+        moderate: 0,
+        high: 0,
+        critical: 0,
+        total: 3,
+      },
+    },
+    vulnerabilities: {
+      katex: carrier("katex", [
+        {
+          name: "katex",
+          dependency: "katex",
+          url: `https://github.com/advisories/${KATEX_ADVISORY}`,
+          severity: "low",
+        },
+      ]),
+      "micromark-extension-math": carrier("micromark-extension-math", [
+        "katex",
+      ]),
+      markdownlint: carrier("markdownlint", ["micromark-extension-math"]),
+    },
+  };
+  return { report, lock };
+}
+function katexPnpmFixture() {
+  const lock = {
+    importers: {
+      ".": { devDependencies: { markdownlint: { version: "0.42.0" } } },
+    },
+    packages: {
+      "katex@0.16.47": { resolution: { integrity: KATEX_INTEGRITY } },
+    },
+    snapshots: {
+      "markdownlint@0.42.0": {
+        dependencies: { "micromark-extension-math": "3.1.0" },
+      },
+      "micromark-extension-math@3.1.0": { dependencies: { katex: "0.16.47" } },
+      "katex@0.16.47": {},
+    },
+  };
+  const path = ".>markdownlint>micromark-extension-math>katex";
+  const report = {
+    actions: [
+      { action: "review", module: "katex", resolves: [{ id: 1241206, path }] },
+    ],
+    muted: [],
+    metadata: {
+      vulnerabilities: { info: 0, low: 1, moderate: 0, high: 0, critical: 0 },
+    },
+    advisories: {
+      1241206: {
+        github_advisory_id: KATEX_ADVISORY,
+        module_name: "katex",
+        severity: "low",
+        url: `https://github.com/advisories/${KATEX_ADVISORY}`,
+        findings: [{ version: "0.16.47", paths: [path] }],
+      },
+    },
+  };
+  return { report, lock };
+}
+test("accepts the exact dev-only KaTeX advisory and real carrier paths", () => {
+  const npm = katexNpmFixture();
+  const pnpm = katexPnpmFixture();
+  assert.deepEqual(validateNpmReport(npm.report, npm.lock), {
+    findings: 3,
+    direct: 1,
+  });
+  assert.deepEqual(validatePnpmReport(pnpm.report, pnpm.lock), {
+    findings: 1,
+    direct: 1,
+  });
+});
+for (const [label, mutate] of [
+  [
+    "different advisory",
+    ({ report }) => {
+      report.vulnerabilities.katex.via[0].url += "-other";
+    },
+  ],
+  [
+    "different advisory severity",
+    ({ report }) => {
+      report.vulnerabilities.katex.via[0].severity = "moderate";
+    },
+  ],
+  [
+    "different carrier severity",
+    ({ report }) => {
+      report.vulnerabilities.markdownlint.severity = "moderate";
+      report.metadata.vulnerabilities.low--;
+      report.metadata.vulnerabilities.moderate++;
+    },
+  ],
+  [
+    "different version",
+    ({ lock }) => {
+      lock.packages["node_modules/katex"].version = "0.16.46";
+    },
+  ],
+  [
+    "different integrity",
+    ({ lock }) => {
+      lock.packages["node_modules/katex"].integrity = "other";
+    },
+  ],
+  [
+    "production flag",
+    ({ lock }) => {
+      lock.packages["node_modules/katex"].dev = false;
+    },
+  ],
+  [
+    "production reachability despite misleading dev flag",
+    ({ lock }) => {
+      lock.packages[""].dependencies = { markdownlint: "0.42.0" };
+    },
+  ],
+  [
+    "fabricated carrier edge",
+    ({ lock }) => {
+      delete lock.packages["node_modules/markdownlint"].dependencies;
+    },
+  ],
+  [
+    "additional advisory",
+    ({ report }) => {
+      report.vulnerabilities.katex.via.push({
+        name: "katex",
+        dependency: "katex",
+        url: "https://github.com/advisories/GHSA-other",
+        severity: "low",
+      });
+    },
+  ],
+])
+  test(`npm rejects KaTeX ${label}`, () => {
+    const x = katexNpmFixture();
+    mutate(x);
+    assert.throws(() => validateNpmReport(x.report, x.lock));
+  });
+for (const [label, mutate] of [
+  [
+    "different advisory",
+    ({ report }) => {
+      report.advisories[1241206].github_advisory_id = "GHSA-other";
+    },
+  ],
+  [
+    "different severity",
+    ({ report }) => {
+      report.advisories[1241206].severity = "moderate";
+    },
+  ],
+  [
+    "different version",
+    ({ report }) => {
+      report.advisories[1241206].findings[0].version = "0.16.46";
+    },
+  ],
+  [
+    "different integrity",
+    ({ lock }) => {
+      lock.packages["katex@0.16.47"].resolution.integrity = "other";
+    },
+  ],
+  [
+    "fabricated path",
+    ({ report }) => {
+      report.advisories[1241206].findings[0].paths = [".>markdownlint>katex"];
+    },
+  ],
+  [
+    "production root",
+    ({ lock }) => {
+      lock.importers["."].dependencies = {
+        markdownlint: { version: "0.42.0" },
+      };
+    },
+  ],
+  [
+    "transitive production reachability",
+    ({ lock }) => {
+      lock.importers["."].dependencies = { renderer: { version: "1.0.0" } };
+      lock.snapshots["renderer@1.0.0"] = { dependencies: { katex: "0.16.47" } };
+    },
+  ],
+  [
+    "unrelated action",
+    ({ report }) => {
+      report.actions[0].module = "minimatch";
+    },
+  ],
+  [
+    "invalid count",
+    ({ report }) => {
+      report.metadata.vulnerabilities.low = 0;
+    },
+  ],
+])
+  test(`pnpm rejects KaTeX ${label}`, () => {
+    const x = katexPnpmFixture();
+    mutate(x);
+    assert.throws(() => validatePnpmReport(x.report, x.lock));
+  });
+test("production graphs reject all affected KaTeX versions even without audit findings", () => {
+  for (const version of ["0.11.0", "0.16.47", "0.18.1"]) {
+    const npm = {
+      packages: {
+        "": { dependencies: { katex: version } },
+        "node_modules/katex": { version, dev: true },
+      },
+    };
+    assert.throws(() => validateNpmProductionGraph(npm), /production/);
+    const pnpm = {
+      importers: { ".": { dependencies: { katex: { version } } } },
+      snapshots: { [`katex@${version}`]: {} },
+    };
+    assert.throws(() => validatePnpmProductionGraph(pnpm), /production/);
+  }
+  for (const version of ["0.10.9", "0.18.2", "0.19.1"]) {
+    assert.doesNotThrow(() =>
+      validateNpmProductionGraph({
+        packages: {
+          "": { dependencies: { katex: version } },
+          "node_modules/katex": { version },
+        },
+      })
+    );
+    assert.doesNotThrow(() =>
+      validatePnpmProductionGraph({
+        importers: { ".": { dependencies: { katex: { version } } } },
+        snapshots: { [`katex@${version}`]: {} },
+      })
+    );
+  }
+});
+
+test("keeps both known dispositions strict when advisories coexist", () => {
+  const legacyNpm = npmFixture();
+  const katexNpm = katexNpmFixture();
+  Object.assign(legacyNpm.lock.packages, katexNpm.lock.packages);
+  Object.assign(
+    legacyNpm.report.vulnerabilities,
+    katexNpm.report.vulnerabilities
+  );
+  legacyNpm.report.metadata.vulnerabilities.low = 3;
+  legacyNpm.report.metadata.vulnerabilities.total = 6;
+  assert.deepEqual(validateNpmReport(legacyNpm.report, legacyNpm.lock), {
+    findings: 6,
+    direct: 2,
+  });
+
+  const legacyPnpm = pnpmFixture();
+  const katexPnpm = katexPnpmFixture();
+  Object.assign(
+    legacyPnpm.lock.importers["."].devDependencies,
+    katexPnpm.lock.importers["."].devDependencies
+  );
+  Object.assign(legacyPnpm.lock.packages, katexPnpm.lock.packages);
+  Object.assign(legacyPnpm.lock.snapshots, katexPnpm.lock.snapshots);
+  Object.assign(legacyPnpm.report.advisories, katexPnpm.report.advisories);
+  legacyPnpm.report.actions.push(...katexPnpm.report.actions);
+  legacyPnpm.report.metadata.vulnerabilities.low = 1;
+  assert.deepEqual(validatePnpmReport(legacyPnpm.report, legacyPnpm.lock), {
+    findings: 2,
+    direct: 2,
+  });
 });

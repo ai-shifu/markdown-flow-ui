@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.13 - 2026-11-26
+
+### Fixed
+
+- Align the upload and send buttons with the text in MarkdownFlow inputs. The
+  buttons stay aligned with the last line when the input grows.
+
+### Changed
+
+- Update the development dependency Next.js to 15.5.29.
+
 ## 0.3.12 - 2026-11-11
 
 ### Added

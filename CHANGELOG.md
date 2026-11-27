@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.14 - 2026-11-27
+
+### Added
+
+- Add a wrap button beside the copy button in code blocks so readers can wrap
+  long lines instead of scrolling sideways. The choice applies to every code
+  block and is remembered in the browser. Hosts can read and set it through the
+  renderer entry, and can be notified when a reader presses the button.
+
 ## 0.3.13 - 2026-11-26
 
 ### Fixed

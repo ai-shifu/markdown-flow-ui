@@ -25,7 +25,14 @@
   text-transform: lowercase; /* Often looks cleaner for langs like 'ts', 'js' */
 }
 
-.copy-button {
+.code-block-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.copy-button,
+.wrap-button {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -40,8 +47,14 @@
   font-family: inherit;
 }
 
-.copy-button:hover {
+.copy-button:hover,
+.wrap-button:hover,
+.wrap-button[aria-pressed="true"] {
   color: #212529;
+}
+
+.wrap-button[aria-pressed="true"] {
+  background-color: #e9ecef;
 }
 
 .copy-icon {
@@ -59,4 +72,12 @@
     var(--content-render-font-size, 16px) * 0.8125
   ); /* Slightly smaller font for the code itself if desired, or keep inherited */
   background-color: transparent !important; /* Ensure pre doesn't have its own background */
+}
+
+.code-block-container pre.code-block-pre--wrap,
+.code-block-container pre.code-block-pre--wrap code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  /* Wrapped source must not gain hyphens that are absent from the code. */
+  hyphens: none;
 }

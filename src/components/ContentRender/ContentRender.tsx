@@ -305,6 +305,7 @@ type MarkdownComponentRuntimeValues = {
   resolvedConfirmButtonText: string;
   resolvedCopiedButtonText: string;
   resolvedCopyButtonText: string;
+  wrapLinesLabel: string;
   resolvedDefaultButtonText?: string;
   resolvedDefaultInputText?: string;
   resolvedDefaultSelectedValues?: string[];
@@ -1217,6 +1218,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     resolvedConfirmButtonText,
     resolvedCopiedButtonText,
     resolvedCopyButtonText,
+    wrapLinesLabel: localeTexts.wrapLinesLabel,
     resolvedDefaultButtonText,
     resolvedDefaultInputText,
     resolvedDefaultSelectedValues: stableDefaultSelectedValues,
@@ -1238,6 +1240,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
     resolvedConfirmButtonText,
     resolvedCopiedButtonText,
     resolvedCopyButtonText,
+    wrapLinesLabel: localeTexts.wrapLinesLabel,
     resolvedDefaultButtonText,
     resolvedDefaultInputText,
     resolvedDefaultSelectedValues: stableDefaultSelectedValues,
@@ -1340,6 +1343,7 @@ const ContentRender: React.FC<ContentRenderProps> = ({
           copiedButtonText={
             componentRuntimeValuesRef.current.resolvedCopiedButtonText
           }
+          wrapLinesLabel={componentRuntimeValuesRef.current.wrapLinesLabel}
         />
       ),
     }),

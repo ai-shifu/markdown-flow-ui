@@ -166,6 +166,28 @@ interface ContentRenderProps {
 - `readonly` - Make interactive elements read-only
 - `onTypeFinished` - Called when typing completes
 
+**Code block line wrapping:**
+
+Every code block has a button that switches between scrolling long lines and
+wrapping them. The choice applies to all code blocks on the page and is
+remembered in the browser under the `markdown-flow-ui:code-wrap` localStorage
+key. The button's accessible name follows `locale`. Hosts can read, set, or
+observe the choice through `markdown-flow-ui/renderer`:
+
+```typescript
+import {
+  CODE_WRAP_STORAGE_KEY,
+  getCodeWrapPreference,
+  setCodeWrapPreference,
+  subscribeCodeWrapToggle,
+} from "markdown-flow-ui/renderer";
+
+// Called only when a reader presses the button in this page.
+const unsubscribe = subscribeCodeWrapToggle((wrap) => {
+  console.log("Wrap lines:", wrap);
+});
+```
+
 **Supported Markdown:**
 
 - Standard markdown (headers, lists, links, etc.)

@@ -5,6 +5,7 @@ import {
   toggleCodeWrapPreference,
   useCodeWrapPreference,
 } from "../../lib/codeWrapPreference";
+import { cn } from "../../lib/utils";
 
 // Nested code inherits the pre element's direction unless the author overrides it.
 export const CodeBlockContext = React.createContext(false);
@@ -124,9 +125,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
       <CodeBlockContext.Provider value={true}>
         <pre
           className={
-            isWrapped
-              ? [preClassName, "code-block-pre--wrap"].filter(Boolean).join(" ")
-              : preClassName
+            cn(preClassName, isWrapped && "code-block-pre--wrap") || undefined
           }
           dir={dir}
           lang={lang}

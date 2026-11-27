@@ -78,4 +78,6 @@
 .code-block-container pre.code-block-pre--wrap code {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  /* Wrapped source must not gain hyphens that are absent from the code. */
+  hyphens: none;
 }

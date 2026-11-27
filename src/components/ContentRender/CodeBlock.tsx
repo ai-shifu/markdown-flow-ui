@@ -1,6 +1,10 @@
 import React, { useState, ReactNode } from "react";
 import "./CodeBlock.css";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, WrapText } from "lucide-react";
+import {
+  toggleCodeWrapPreference,
+  useCodeWrapPreference,
+} from "../../lib/codeWrapPreference";
 
 // Nested code inherits the pre element's direction unless the author overrides it.
 export const CodeBlockContext = React.createContext(false);
@@ -21,6 +25,8 @@ export interface CodeBlockProps {
   copyButtonText?: string;
   /** Text to display when code is copied (i18n support). */
   copiedButtonText?: string;
+  /** Accessible name and tooltip of the line wrap toggle (i18n support). */
+  wrapLinesLabel?: string;
 }
 
 const getCodeString = (children: ReactNode): string => {
@@ -45,7 +51,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   lang,
   copyButtonText = "Copy",
   copiedButtonText = "Copied",
+  wrapLinesLabel = "Wrap lines",
 }) => {
+  const isWrapped = useCodeWrapPreference();
   const [isCopied, setIsCopied] = useState(false);
   const timeoutRef = React.useRef<number | null>(null);
 
@@ -92,17 +100,37 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     <div className="code-block-container">
       <div className="code-block-header">
         <span className="language-name">{language}</span>
-        <button onClick={handleCopy} className="copy-button">
-          {isCopied ? (
-            <Check className="copy-icon" />
-          ) : (
-            <Copy className="copy-icon" />
-          )}
-          {isCopied ? copiedButtonText : copyButtonText}
-        </button>
+        <div className="code-block-actions">
+          <button
+            type="button"
+            onClick={toggleCodeWrapPreference}
+            className="wrap-button"
+            aria-label={wrapLinesLabel}
+            aria-pressed={isWrapped}
+            title={wrapLinesLabel}
+          >
+            <WrapText className="copy-icon" aria-hidden="true" />
+          </button>
+          <button onClick={handleCopy} className="copy-button">
+            {isCopied ? (
+              <Check className="copy-icon" />
+            ) : (
+              <Copy className="copy-icon" />
+            )}
+            {isCopied ? copiedButtonText : copyButtonText}
+          </button>
+        </div>
       </div>
       <CodeBlockContext.Provider value={true}>
-        <pre className={preClassName} dir={dir} lang={lang}>
+        <pre
+          className={
+            isWrapped
+              ? [preClassName, "code-block-pre--wrap"].filter(Boolean).join(" ")
+              : preClassName
+          }
+          dir={dir}
+          lang={lang}
+        >
           {children}
         </pre>
       </CodeBlockContext.Provider>

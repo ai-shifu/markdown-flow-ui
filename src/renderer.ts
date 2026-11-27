@@ -11,6 +11,12 @@ import {
   getInteractionDefaultSelectedValues,
   getInteractionDefaultValues,
 } from "./lib/interaction-defaults";
+import {
+  CODE_WRAP_STORAGE_KEY,
+  getCodeWrapPreference,
+  setCodeWrapPreference,
+  subscribeCodeWrapToggle,
+} from "./lib/codeWrapPreference";
 import { RenderSegment } from "./components/ContentRender/utils/split-content";
 import { splitContentSegments } from "./components/ContentRender/utils/split-content";
 import type { MarkdownFlowProps } from "./components/MarkdownFlow/MarkdownFlow";
@@ -64,6 +70,10 @@ export {
   getInteractionDefaultValues,
   getInteractionDefaultSelectedValues,
   splitContentSegments,
+  CODE_WRAP_STORAGE_KEY,
+  getCodeWrapPreference,
+  setCodeWrapPreference,
+  subscribeCodeWrapToggle,
 };
 
 export type {

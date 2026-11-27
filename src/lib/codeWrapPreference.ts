@@ -12,8 +12,9 @@ const WRAP_VALUE = "1";
 const NO_WRAP_VALUE = "0";
 
 const listeners = new Set<() => void>();
-// Stands in for the stored choice while browser storage is unavailable.
-let memoryValue: boolean | null = null;
+// Holds a choice that could not be saved. It wins over the stored value, which
+// may be stale or unreadable, until a save succeeds or another tab changes it.
+let unsavedValue: boolean | null = null;
 
 const readStoredPreference = (): boolean | null => {
   try {
@@ -27,7 +28,7 @@ const readStoredPreference = (): boolean | null => {
 };
 
 const getSnapshot = (): boolean =>
-  readStoredPreference() ?? memoryValue ?? false;
+  unsavedValue ?? readStoredPreference() ?? false;
 
 // Server and hydration render the unwrapped default; the stored choice applies
 // right after hydration without a markup mismatch.
@@ -36,7 +37,7 @@ const getServerSnapshot = (): boolean => false;
 const handleStorageEvent = (event: StorageEvent) => {
   if (event.key !== null && event.key !== CODE_WRAP_STORAGE_KEY) return;
   // Another tab changed or cleared the preference; follow it.
-  memoryValue = null;
+  unsavedValue = null;
   listeners.forEach((listener) => listener());
 };
 
@@ -86,14 +87,15 @@ export const toggleCodeWrapPreference = (): void => {
 };
 
 export const setCodeWrapPreference = (wrap: boolean): void => {
-  memoryValue = wrap;
   try {
     window.localStorage.setItem(
       CODE_WRAP_STORAGE_KEY,
       wrap ? WRAP_VALUE : NO_WRAP_VALUE
     );
+    unsavedValue = null;
   } catch {
-    // The in-memory choice still applies for this page.
+    // The choice still applies for this page.
+    unsavedValue = wrap;
   }
   listeners.forEach((listener) => listener());
 };

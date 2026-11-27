@@ -127,6 +127,68 @@ describe("ContentRender code block line wrapping", () => {
     expect(getWrappedStates(container)).toEqual([true, true]);
   });
 
+  it("applies a choice that cannot be saved over a stale stored one", () => {
+    const stored = createMemoryStorage();
+    stored.setItem(CODE_WRAP_STORAGE_KEY, "0");
+    installStorage({
+      getItem: stored.getItem,
+      setItem: () => {
+        throw new Error("quota exceeded");
+      },
+    });
+    const { container } = render(<ContentRender content={twoCodeBlocks} />);
+
+    fireEvent.click(getWrapButtons(container)[0]);
+    expect(getWrappedStates(container)).toEqual([true, true]);
+
+    fireEvent.click(getWrapButtons(container)[0]);
+    expect(getWrappedStates(container)).toEqual([false, false]);
+
+    fireEvent.click(getWrapButtons(container)[0]);
+    expect(getWrappedStates(container)).toEqual([true, true]);
+
+    // A change from another tab replaces the unsaved choice.
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent("storage", { key: CODE_WRAP_STORAGE_KEY })
+      );
+    });
+    expect(getWrappedStates(container)).toEqual([false, false]);
+  });
+
+  it("returns to the stored choice once saving works again", () => {
+    const stored = createMemoryStorage();
+    stored.setItem(CODE_WRAP_STORAGE_KEY, "0");
+    installStorage({
+      getItem: stored.getItem,
+      setItem: () => {
+        throw new Error("quota exceeded");
+      },
+    });
+    const { container } = render(<ContentRender content={twoCodeBlocks} />);
+    fireEvent.click(getWrapButtons(container)[0]);
+    expect(getWrappedStates(container)).toEqual([true, true]);
+
+    installStorage(stored);
+    fireEvent.click(getWrapButtons(container)[0]);
+
+    expect(getWrappedStates(container)).toEqual([false, false]);
+    expect(stored.getItem(CODE_WRAP_STORAGE_KEY)).toBe("0");
+    fireEvent.click(getWrapButtons(container)[0]);
+    expect(stored.getItem(CODE_WRAP_STORAGE_KEY)).toBe("1");
+  });
+
+  it("keeps the authored class on the code block", () => {
+    const { container } = render(<ContentRender content={twoCodeBlocks} />);
+    const before = container.querySelector("pre")!.getAttribute("class");
+
+    fireEvent.click(getWrapButtons(container)[0]);
+
+    expect(container.querySelector("pre")!.getAttribute("class")).toBe(
+      [before, "code-block-pre--wrap"].filter(Boolean).join(" ")
+    );
+  });
+
   it("reports reader toggles only, and survives a failing observer", () => {
     const observer = vi.fn();
     const failingObserver = vi.fn(() => {

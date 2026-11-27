@@ -1263,10 +1263,13 @@ export const ArabicCodeBlocks: Story = {
         "ltr"
       );
       expect(pre.textContent?.trim()).toBe(sourceCode);
-      const copyButton = block.querySelector("button")!;
+      const copyButton = block.querySelector(".copy-button")!;
       expect(getComputedStyle(copyButton).direction).toBe("rtl");
       expect(copyButton).toHaveTextContent(
         getContentRenderLocaleTexts("ar-SA").copyButtonText
+      );
+      expect(block.querySelector(".wrap-button")).toHaveAccessibleName(
+        getContentRenderLocaleTexts("ar-SA").wrapLinesLabel
       );
     }
   },
